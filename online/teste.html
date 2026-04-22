@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TECFE Online - Teste em Andamento</title>
+  <link rel="stylesheet" href="tecfe-v7-styles.css">
+  <script src="libs/jspdf.umd.min.js"></script>
+  <script src="libs/jspdf.plugin.autotable.min.js"></script>
+  <style>
+    #activationPage { display: none !important; }
+    #coverPage { display: none !important; }
+    body { margin: 0; padding: 0; overflow: hidden; }
+  </style>
+</head>
+<body>
+
+  <!-- PAGINA DO TESTE -->
+  <div id="testPage" style="display:block;">
+    <h1>TECFE Online <span id="testVersion">v7</span></h1>
+    <div class="stimulus-container" id="stimulusCards">
+      <div class="card droppable" data-cor="vermelho" data-forma="triangulo" data-numero="1">
+        <svg viewBox="0 0 400 600" xmlns="http://www.w3.org/2000/svg">
+          <rect width="400" height="600" fill="#fff"/>
+          <polygon points="200,220 140,340 260,340" fill="red"/>
+        </svg>
+      </div>
+      <div class="card droppable" data-cor="verde" data-forma="estrela" data-numero="2">
+        <svg viewBox="0 0 400 600" xmlns="http://www.w3.org/2000/svg">
+          <rect width="400" height="600" fill="#fff"/>
+          <g transform="translate(100,200) scale(1.6)"><polygon fill="green" points="0,-50 14.7,-15.9 47.6,-15.9 22.1,7.6 29.4,42.3 0,20 -29.4,42.3 -22.1,7.6 -47.6,-15.9 -14.7,-15.9"/></g>
+          <g transform="translate(300,400) scale(1.6)"><polygon fill="green" points="0,-50 14.7,-15.9 47.6,-15.9 22.1,7.6 29.4,42.3 0,20 -29.4,42.3 -22.1,7.6 -47.6,-15.9 -14.7,-15.9"/></g>
+        </svg>
+      </div>
+      <div class="card droppable" data-cor="amarelo" data-forma="cruz" data-numero="3">
+        <svg viewBox="0 0 400 600" xmlns="http://www.w3.org/2000/svg">
+          <rect width="400" height="600" fill="#fff"/>
+          <g transform="translate(60,100)"><rect x="-20" y="-50" width="40" height="100" fill="yellow"/><rect x="-50" y="-20" width="100" height="40" fill="yellow"/></g>
+          <g transform="translate(340,100)"><rect x="-20" y="-50" width="40" height="100" fill="yellow"/><rect x="-50" y="-20" width="100" height="40" fill="yellow"/></g>
+          <g transform="translate(200,500)"><rect x="-20" y="-50" width="40" height="100" fill="yellow"/><rect x="-50" y="-20" width="100" height="40" fill="yellow"/></g>
+        </svg>
+      </div>
+      <div class="card droppable" data-cor="azul" data-forma="circulo" data-numero="4">
+        <svg viewBox="0 0 400 600" xmlns="http://www.w3.org/2000/svg">
+          <rect width="400" height="600" fill="#fff"/>
+          <circle cx="60" cy="100" r="40" fill="blue"/>
+          <circle cx="340" cy="100" r="40" fill="blue"/>
+          <circle cx="60" cy="500" r="40" fill="blue"/>
+          <circle cx="340" cy="500" r="40" fill="blue"/>
+        </svg>
+      </div>
+    </div>
+    <div class="response-container" id="responseCards"></div>
+    <div id="feedback"></div>
+  </div>
+
+  <button id="exitButton" onclick="exitOnlineTest()">Sair</button>
+
+  <script src="tecfe-v7-cards.js"></script>
+  <script src="tecfe-v7-ui.js"></script>
+  <script src="tecfe-v7-engine.js"></script>
+  <script src="tecfe-v7-ai.js"></script>
+  <script src="tecfe-v7-pdf.js"></script>
+  <script>
+    // Configuracao online
+    var API_URL = 'https://dguom5dfla.execute-api.sa-east-1.amazonaws.com';
+    var sessionData = JSON.parse(sessionStorage.getItem('tecfe_session') || '{}');
+
+    if (!sessionData.sessionId) {
+      alert('Sessao invalida. Volte ao painel.');
+      window.location.href = './';
+    }
+
+    // Inicializar o teste automaticamente
+    window.onload = function() {
+      // Preencher dados do formulario virtual
+      var formData = {
+        patientName: sessionData.patientName || '',
+        birthDate: sessionData.birthDate || '',
+        cpf: sessionData.cpf || '',
+        sex: sessionData.sex || '',
+        laterality: sessionData.laterality || '',
+        education: sessionData.education || '',
+        evaluator: sessionData.evaluator || '',
+        crp: sessionData.crp || ''
+      };
+
+      // Calcular idade
+      var age = '';
+      if (formData.birthDate) {
+        var b = new Date(formData.birthDate);
+        var now = new Date();
+        var years = now.getFullYear() - b.getFullYear();
+        var months = now.getMonth() - b.getMonth();
+        var days = now.getDate() - b.getDate();
+        if (days < 0) { months--; days += 30; }
+        if (months < 0) { years--; months += 12; }
+        age = years + ' anos ' + months + ' meses e ' + days + ' dias';
+      }
+      formData.age = age;
+
+      // Gerar cartas e iniciar
+      WCSTCards.generateDeck();
+      WCSTEngine.reset();
+      WCSTUI.setupClickMatch(document.getElementById('stimulusCards'), document.getElementById('responseCards'), handleMatch);
+      showNextCard();
+
+      // Guardar formData para uso no final
+      window._onlineFormData = formData;
+      window._onlineStartTime = Date.now();
+    };
+
+    function showNextCard() {
+      var card = WCSTCards.getCard(WCSTEngine.getCardIndex());
+      if (!card) {
+        finishOnlineTest('completo');
+        return;
+      }
+      var container = document.getElementById('responseCards');
+      container.innerHTML = '';
+      var div = document.createElement('div');
+      div.className = 'card draggable';
+      div.setAttribute('data-cor', card.cor);
+      div.setAttribute('data-forma', card.forma);
+      div.setAttribute('data-numero', String(card.numero));
+      div.innerHTML = card.svg;
+      container.appendChild(div);
+      WCSTUI.setupClickMatch(document.getElementById('stimulusCards'), container, handleMatch);
+    }
+
+    function handleMatch(selectedCard, targetCard) {
+      var resposta = {
+        cor: selectedCard.getAttribute('data-cor'),
+        forma: selectedCard.getAttribute('data-forma'),
+        numero: parseInt(selectedCard.getAttribute('data-numero'))
+      };
+      var modelo = {
+        cor: targetCard.getAttribute('data-cor'),
+        forma: targetCard.getAttribute('data-forma'),
+        numero: parseInt(targetCard.getAttribute('data-numero'))
+      };
+      var result = WCSTEngine.processTrial(resposta, modelo);
+      // Feedback
+      var fb = document.getElementById('feedback');
+      fb.textContent = result.correct ? 'CERTO' : 'ERRADO';
+      fb.style.color = result.correct ? '#2e7d32' : '#c62828';
+      fb.style.display = 'block';
+      setTimeout(function() { fb.style.display = 'none'; }, 800);
+
+      if (result.testComplete) {
+        finishOnlineTest(result.reason === 'categories' ? 'completo' : 'parcial');
+      } else {
+        showNextCard();
+      }
+    }
+
+    async function finishOnlineTest(status) {
+      var stats = WCSTEngine.computeStats();
+      var fd = window._onlineFormData;
+      var elapsed = Date.now() - window._onlineStartTime;
+      var min = Math.floor(elapsed / 60000);
+      var sec = Math.floor((elapsed % 60000) / 1000);
+      stats.tempo = min + 'min ' + sec + 's';
+      stats.status = status;
+
+      // Gerar laudo IA
+      var laudoIA = null;
+      try {
+        if (typeof TECFEAI !== 'undefined') {
+          laudoIA = await TECFEAI.generateReport(stats, fd);
+        }
+      } catch(e) {}
+
+      // Gerar PDF
+      try {
+        WCSTPDF.generate(stats, fd, [], laudoIA);
+      } catch(e) {
+        console.error('Erro ao gerar PDF:', e);
+      }
+
+      // Salvar resultado na API
+      try {
+        await fetch(API_URL + '/save-result', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId: sessionData.sessionId,
+            email: sessionData.email,
+            data: { stats: stats, formData: fd, status: status, date: new Date().toISOString() }
+          })
+        });
+      } catch(e) {
+        console.error('Erro ao salvar:', e);
+      }
+
+      // Voltar ao painel
+      setTimeout(function() {
+        alert('Teste finalizado! O PDF foi gerado.');
+        window.location.href = './';
+      }, 1500);
+    }
+
+    function exitOnlineTest() {
+      if (confirm('Deseja realmente sair? O teste sera registrado como abandonado.')) {
+        finishOnlineTest('abandonado');
+      }
+    }
+  </script>
+</body>
+</html>

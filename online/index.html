@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TECFE Online - Painel do Avaliador</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 50%, #a5d6a7 100%); min-height: 100vh; }
+    .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+    header { text-align: center; padding: 30px 0 15px; }
+    header img { height: 80px; margin-bottom: 8px; }
+    header h1 { font-size: 24px; color: #2e7d32; }
+    header p { font-size: 14px; color: #555; margin-top: 5px; }
+    .card { background: #fff; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); padding: 25px; margin: 15px 0; }
+    .card h2 { font-size: 20px; color: #2e7d32; margin-bottom: 12px; }
+    .btn { display: inline-block; padding: 12px 28px; border-radius: 8px; border: none; font-size: 16px; font-weight: bold; cursor: pointer; text-decoration: none; color: #fff; transition: background 0.2s; }
+    .btn-green { background: #2e7d32; }
+    .btn-green:hover { background: #1b5e20; }
+    .btn-orange { background: #ff9800; }
+    .btn-orange:hover { background: #e68900; }
+    .btn-red { background: #c62828; }
+    .btn-red:hover { background: #a01010; }
+    .btn-blue { background: #1565c0; }
+    .btn-blue:hover { background: #0d47a1; }
+    .btn:disabled { background: #bbb; cursor: default; }
+    .credits-box { background: #e8f5e9; border: 2px solid #2e7d32; border-radius: 10px; padding: 15px; text-align: center; margin: 15px 0; }
+    .credits-box .number { font-size: 48px; font-weight: bold; color: #2e7d32; }
+    .credits-box .label { font-size: 14px; color: #555; }
+    .hidden { display: none !important; }
+    .user-info { font-size: 14px; color: #555; margin-bottom: 10px; }
+    .session-link { background: #f5f5f5; border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin: 10px 0; word-break: break-all; font-family: monospace; font-size: 13px; }
+    .results-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    .results-table th, .results-table td { border: 1px solid #ddd; padding: 8px; text-align: center; font-size: 13px; }
+    .results-table th { background: #2e7d32; color: #fff; }
+    .results-table tr:nth-child(even) { background: #f9f9f9; }
+    .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px; }
+    .loading { text-align: center; padding: 40px; color: #555; font-size: 18px; }
+    input[type="text"], input[type="date"], select { padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+    .form-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+    .form-row label { font-size: 13px; color: #555; display: flex; flex-direction: column; gap: 4px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <img src="l.png" alt="STM">
+      <h1>TECFE Online v7</h1>
+      <p>Teste Eletronico de Classificacao de Cartas para Funcoes Executivas</p>
+    </header>
+
+    <!-- TELA DE LOGIN -->
+    <div id="loginPage" class="card">
+      <h2>Acesso do Avaliador</h2>
+      <p style="margin-bottom:15px;">Faca login para acessar o painel de aplicacao do teste.</p>
+      <button class="btn btn-green" onclick="doLogin()">Entrar com sua conta</button>
+      <p style="margin-top:15px;font-size:13px;color:#777;">Nao tem conta? O cadastro e feito automaticamente no primeiro acesso.</p>
+    </div>
+
+    <!-- LOADING -->
+    <div id="loadingPage" class="hidden">
+      <div class="loading">Carregando...</div>
+    </div>
+
+    <!-- PAINEL DO AVALIADOR -->
+    <div id="dashboardPage" class="hidden">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <p class="user-info">Logado como: <strong id="userEmail"></strong></p>
+          </div>
+          <button class="btn btn-red" style="padding:8px 16px;font-size:13px;" onclick="doLogout()">Sair</button>
+        </div>
+
+        <div class="credits-box">
+          <div class="number" id="creditsCount">-</div>
+          <div class="label">creditos disponiveis</div>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn btn-green" id="btnNewTest" onclick="showNewTest()">Nova Aplicacao</button>
+          <button class="btn btn-blue" onclick="showResults()">Resultados</button>
+          <a href="https://mpago.la/25usagb" target="_blank" class="btn btn-orange">Comprar Creditos</a>
+        </div>
+      </div>
+
+      <!-- NOVA APLICACAO -->
+      <div id="newTestSection" class="card hidden">
+        <h2>Nova Aplicacao</h2>
+        <p style="margin-bottom:12px;">Preencha os dados do paciente e clique em "Iniciar Teste".</p>
+        <div class="form-row">
+          <label>Nome: <input type="text" id="onPatientName" placeholder="Nome do paciente" style="width:220px;"></label>
+          <label>Data Nasc: <input type="date" id="onBirthDate"></label>
+          <label>CPF: <input type="text" id="onCpf" placeholder="000.000.000-00" maxlength="14" style="width:150px;"></label>
+        </div>
+        <div class="form-row">
+          <label>Sexo: <select id="onSex"><option value="" disabled selected>Selecione</option><option>Masculino</option><option>Feminino</option><option>Outro</option></select></label>
+          <label>Lateralidade: <select id="onLaterality"><option value="" disabled selected>Selecione</option><option>Destro</option><option>Canhoto</option><option>Ambidestro</option></select></label>
+          <label>Escolaridade: <select id="onEducation"><option value="" disabled selected>Selecione</option><option>1o ano EF</option><option>2o ano EF</option><option>3o ano EF</option><option>4o ano EF</option><option>5o ano EF</option><option>6o ano EF</option><option>7o ano EF</option><option>8o ano EF</option><option>9o ano EF</option><option>1o ano EM</option><option>2o ano EM</option><option>3o ano EM</option><option>Superior completo</option><option>Superior incompleto</option><option>Pos-graduacao</option><option>Mestrado</option><option>Doutorado</option></select></label>
+        </div>
+        <div class="form-row">
+          <label>Avaliador: <input type="text" id="onEvaluator" placeholder="Seu nome" style="width:220px;"></label>
+          <label>CRP: <input type="text" id="onCrp" placeholder="00/00000-0" maxlength="10" style="width:120px;"></label>
+        </div>
+        <button class="btn btn-green" style="margin-top:10px;" onclick="startOnlineTest()">Iniciar Teste</button>
+      </div>
+
+      <!-- RESULTADOS -->
+      <div id="resultsSection" class="card hidden">
+        <h2>Resultados</h2>
+        <div id="resultsList"><p style="color:#777;">Carregando resultados...</p></div>
+      </div>
+    </div>
+
+    <!-- PAGINA DO TESTE -->
+    <div id="testPage" class="hidden" style="position:fixed;top:0;left:0;width:100%;height:100%;background:#f0f0f0;z-index:9999;overflow:auto;">
+    </div>
+  </div>
+
+  <script>
+    // Configuracao
+    var API_URL = 'https://dguom5dfla.execute-api.sa-east-1.amazonaws.com';
+    var COGNITO_DOMAIN = 'https://sa-east-1msq8gxrbw.auth.sa-east-1.amazoncognito.com';
+    var CLIENT_ID = '3hbflr5cjb3jortib8nl7bpe60';
+    var REDIRECT_URI = 'https://setmonte.github.io/online/';
+    var currentUser = null;
+    var accessToken = null;
+
+    // Ao carregar a pagina, verificar se tem token na URL (retorno do Cognito)
+    window.onload = function() {
+      var params = new URLSearchParams(window.location.search);
+      var code = params.get('code');
+      if (code) {
+        // Trocar code por tokens
+        exchangeCodeForTokens(code);
+      } else {
+        // Verificar se tem token salvo
+        accessToken = sessionStorage.getItem('tecfe_access_token');
+        currentUser = sessionStorage.getItem('tecfe_user_email');
+        if (accessToken && currentUser) {
+          showDashboard();
+        }
+      }
+    };
+
+    function doLogin() {
+      var url = COGNITO_DOMAIN + '/login?client_id=' + CLIENT_ID +
+        '&response_type=code&scope=email+openid+profile&redirect_uri=' + encodeURIComponent(REDIRECT_URI);
+      window.location.href = url;
+    }
+
+    function doLogout() {
+      sessionStorage.removeItem('tecfe_access_token');
+      sessionStorage.removeItem('tecfe_user_email');
+      sessionStorage.removeItem('tecfe_id_token');
+      currentUser = null;
+      accessToken = null;
+      document.getElementById('loginPage').classList.remove('hidden');
+      document.getElementById('dashboardPage').classList.add('hidden');
+      // Redirecionar para logout do Cognito
+      var url = COGNITO_DOMAIN + '/logout?client_id=' + CLIENT_ID +
+        '&logout_uri=' + encodeURIComponent(REDIRECT_URI);
+      window.location.href = url;
+    }
+
+    async function exchangeCodeForTokens(code) {
+      document.getElementById('loginPage').classList.add('hidden');
+      document.getElementById('loadingPage').classList.remove('hidden');
+      try {
+        var resp = await fetch(COGNITO_DOMAIN + '/oauth2/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: 'grant_type=authorization_code&client_id=' + CLIENT_ID +
+            '&code=' + code + '&redirect_uri=' + encodeURIComponent(REDIRECT_URI)
+        });
+        var data = await resp.json();
+        if (data.access_token) {
+          accessToken = data.access_token;
+          // Decodificar ID token para pegar email
+          var idToken = data.id_token;
+          var payload = JSON.parse(atob(idToken.split('.')[1]));
+          currentUser = payload.email;
+          sessionStorage.setItem('tecfe_access_token', accessToken);
+          sessionStorage.setItem('tecfe_user_email', currentUser);
+          sessionStorage.setItem('tecfe_id_token', idToken);
+          // Limpar URL
+          window.history.replaceState({}, '', REDIRECT_URI.replace('https://setmonte.github.io', ''));
+          showDashboard();
+        } else {
+          alert('Erro no login. Tente novamente.');
+          window.location.href = REDIRECT_URI.replace('https://setmonte.github.io', '');
+        }
+      } catch(e) {
+        alert('Erro de conexao: ' + e.message);
+        document.getElementById('loadingPage').classList.add('hidden');
+        document.getElementById('loginPage').classList.remove('hidden');
+      }
+    }
+
+    async function showDashboard() {
+      document.getElementById('loginPage').classList.add('hidden');
+      document.getElementById('loadingPage').classList.add('hidden');
+      document.getElementById('dashboardPage').classList.remove('hidden');
+      document.getElementById('userEmail').textContent = currentUser;
+      // Buscar creditos
+      try {
+        var resp = await fetch(API_URL + '/credits?email=' + encodeURIComponent(currentUser));
+        var data = await resp.json();
+        document.getElementById('creditsCount').textContent = data.credits || 0;
+        var btn = document.getElementById('btnNewTest');
+        if ((data.credits || 0) <= 0) {
+          btn.disabled = true;
+          btn.textContent = 'Sem creditos';
+        } else {
+          btn.disabled = false;
+          btn.textContent = 'Nova Aplicacao';
+        }
+      } catch(e) {
+        document.getElementById('creditsCount').textContent = '?';
+      }
+    }
+
+    function showNewTest() {
+      document.getElementById('newTestSection').classList.toggle('hidden');
+      document.getElementById('resultsSection').classList.add('hidden');
+    }
+
+    function showResults() {
+      document.getElementById('resultsSection').classList.toggle('hidden');
+      document.getElementById('newTestSection').classList.add('hidden');
+      loadResults();
+    }
+
+    async function loadResults() {
+      try {
+        var resp = await fetch(API_URL + '/credits?email=' + encodeURIComponent(currentUser));
+        var data = await resp.json();
+        // Por enquanto mostra mensagem simples
+        document.getElementById('resultsList').innerHTML = '<p style="color:#555;">Funcionalidade em desenvolvimento. Os resultados dos testes serao listados aqui.</p>';
+      } catch(e) {
+        document.getElementById('resultsList').innerHTML = '<p style="color:red;">Erro ao carregar resultados.</p>';
+      }
+    }
+
+    async function startOnlineTest() {
+      var name = document.getElementById('onPatientName').value.trim();
+      var birth = document.getElementById('onBirthDate').value;
+      if (!name || !birth) {
+        alert('Preencha pelo menos o nome e a data de nascimento.');
+        return;
+      }
+      // Consumir 1 credito
+      try {
+        var resp = await fetch(API_URL + '/use-credit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: currentUser })
+        });
+        var data = await resp.json();
+        if (data.error) {
+          alert('Erro: ' + data.error);
+          return;
+        }
+        // Salvar dados da sessao
+        var sessionData = {
+          sessionId: data.sessionId,
+          patientName: name,
+          birthDate: birth,
+          cpf: document.getElementById('onCpf').value,
+          sex: document.getElementById('onSex').value,
+          laterality: document.getElementById('onLaterality').value,
+          education: document.getElementById('onEducation').value,
+          evaluator: document.getElementById('onEvaluator').value,
+          crp: document.getElementById('onCrp').value,
+          email: currentUser
+        };
+        sessionStorage.setItem('tecfe_session', JSON.stringify(sessionData));
+        // Abrir teste
+        window.location.href = 'teste.html';
+      } catch(e) {
+        alert('Erro de conexao: ' + e.message);
+      }
+    }
+  </script>
+</body>
+</html>
