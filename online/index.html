@@ -287,21 +287,34 @@
         alert('Preencha pelo menos o nome e a data de nascimento.');
         return;
       }
-      // Consumir 1 credito
-      try {
-        var resp = await fetch(API_URL + '/use-credit', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: currentUser })
-        });
-        var data = await resp.json();
-        if (data.error) {
-          alert('Erro: ' + data.error);
+      // Gerar sessionId local (sem consumir credito em modo teste)
+      var isAdmin = (currentUser === 'setmonte@gmail.com');
+      var sessionId = '';
+      if (isAdmin) {
+        sessionId = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+      } else {
+        // Consumir 1 credito
+        try {
+          var resp = await fetch(API_URL + '/use-credit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: currentUser })
+          });
+          var data = await resp.json();
+          if (data.error) {
+            alert('Erro: ' + data.error);
+            return;
+          }
+          sessionId = data.sessionId;
+          document.getElementById('creditsCount').textContent = data.credits;
+        } catch(e) {
+          alert('Erro de conexao: ' + e.message);
           return;
         }
+      }
         // Salvar sessao na API para o paciente acessar
         var sessionData = {
-          sessionId: data.sessionId,
+          sessionId: sessionId,
           patientName: name,
           birthDate: birth,
           cpf: document.getElementById('onCpf').value,
@@ -316,15 +329,13 @@
         await fetch(API_URL + '/save-result', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sessionId: data.sessionId, email: currentUser, data: { formData: sessionData, status: 'aguardando' } })
+          body: JSON.stringify({ sessionId: sessionId, email: currentUser, data: { formData: sessionData, status: 'aguardando' } })
         });
         // Gerar link
         var params = btoa(JSON.stringify(sessionData));
         generatedLink = 'https://setmonte.github.io/online/teste.html?d=' + encodeURIComponent(params);
         document.getElementById('sessionLink').textContent = generatedLink;
         document.getElementById('linkResult').classList.remove('hidden');
-        // Atualizar creditos
-        document.getElementById('creditsCount').textContent = data.credits;
       } catch(e) {
         alert('Erro de conexao: ' + e.message);
       }
