@@ -162,17 +162,15 @@
       selectedCard.remove();
 
       // Troca de baralho
-      if (outcome.newDeck) {
+      if (outcome.needNewDeck) {
         var newDeck = WCSTCards.shuffle(WCSTCards.buildDeck());
         WCSTEngine.state.currentDeck = newDeck;
         renderDeck();
       }
 
       // Teste terminou
-      if (outcome.result.testComplete || outcome.result.categoriesComplete) {
-        finishTest('completo');
-      } else if (WCSTEngine.state.cardIndex >= WCSTEngine.state.currentDeck.length) {
-        finishTest('parcial');
+      if (outcome.testEnded) {
+        finishTest(outcome.completedAll ? 'completo' : 'parcial');
       }
     }
 
