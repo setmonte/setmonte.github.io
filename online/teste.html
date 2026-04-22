@@ -10,7 +10,8 @@
   <style>
     #activationPage { display: none !important; }
     #coverPage { display: none !important; }
-    body { margin: 0; padding: 0; overflow: hidden; }
+    body { margin: 0; padding: 0; }
+    #testPage h1 { text-align: center; }
   </style>
 </head>
 <body>
@@ -62,28 +63,23 @@
   <script src="tecfe-v7-ai.js"></script>
   <script src="tecfe-v7-pdf.js"></script>
   <script>
-    // Configuracao online
     var API_URL = 'https://dguom5dfla.execute-api.sa-east-1.amazonaws.com';
     var sessionData = {};
+    var deck = [];
     try {
       var params = new URLSearchParams(window.location.search);
       var d = params.get('d');
-      if (d) {
-        sessionData = JSON.parse(atob(decodeURIComponent(d)));
-      } else {
-        sessionData = JSON.parse(sessionStorage.getItem('tecfe_session') || '{}');
-      }
+      if (d) sessionData = JSON.parse(atob(decodeURIComponent(d)));
     } catch(e) {}
 
     if (!sessionData.sessionId) {
-      alert('Link invalido ou expirado. Solicite um novo link ao avaliador.');
-      document.body.innerHTML = '<div style="text-align:center;padding:50px;font-size:18px;">Link invalido. Solicite um novo link ao seu avaliador.</div>';
+      document.body.innerHTML = '<div style="text-align:center;padding:50px;font-size:18px;color:#c62828;">Link invalido ou expirado.<br>Solicite um novo link ao seu avaliador.</div>';
     }
 
-    // Inicializar o teste automaticamente
     window.onload = function() {
-      // Preencher dados do formulario virtual
-      var formData = {
+      if (!sessionData.sessionId) return;
+      // Dados do formulario
+      window._fd = {
         patientName: sessionData.patientName || '',
         birthDate: sessionData.birthDate || '',
         cpf: sessionData.cpf || '',
@@ -91,128 +87,73 @@
         laterality: sessionData.laterality || '',
         education: sessionData.education || '',
         evaluator: sessionData.evaluator || '',
-        crp: sessionData.crp || ''
+        crp: sessionData.crp || '',
+        age: WCSTUI.calculateAge(sessionData.birthDate || '')
       };
-
-      // Calcular idade
-      var age = '';
-      if (formData.birthDate) {
-        var b = new Date(formData.birthDate);
-        var now = new Date();
-        var years = now.getFullYear() - b.getFullYear();
-        var months = now.getMonth() - b.getMonth();
-        var days = now.getDate() - b.getDate();
-        if (days < 0) { months--; days += 30; }
-        if (months < 0) { years--; months += 12; }
-        age = years + ' anos ' + months + ' meses e ' + days + ' dias';
-      }
-      formData.age = age;
-
-      // Gerar cartas e iniciar
-      WCSTCards.generateDeck();
+      // Gerar baralho
+      deck = WCSTCards.shuffle(WCSTCards.buildDeck());
       WCSTEngine.reset();
-      WCSTUI.setupClickMatch(document.getElementById('stimulusCards'), document.getElementById('responseCards'), handleMatch);
+      // Configurar clique nos modelos
+      WCSTUI.setupClickMatch('#stimulusCards .card', handleMatch);
+      window._startTime = Date.now();
       showNextCard();
-
-      // Guardar formData para uso no final
-      window._onlineFormData = formData;
-      window._onlineStartTime = Date.now();
     };
 
     function showNextCard() {
-      var card = WCSTCards.getCard(WCSTEngine.getCardIndex());
-      if (!card) {
-        finishOnlineTest('completo');
-        return;
-      }
+      var idx = WCSTEngine.state.cardIndex;
+      if (idx >= deck.length) { finishTest('parcial'); return; }
+      var c = deck[idx];
       var container = document.getElementById('responseCards');
       container.innerHTML = '';
-      var div = document.createElement('div');
-      div.className = 'card draggable';
-      div.setAttribute('data-cor', card.cor);
-      div.setAttribute('data-forma', card.forma);
-      div.setAttribute('data-numero', String(card.numero));
-      div.innerHTML = card.svg;
-      container.appendChild(div);
-      WCSTUI.setupClickMatch(document.getElementById('stimulusCards'), container, handleMatch);
+      var el = WCSTUI.createResponseCard(c, idx);
+      container.appendChild(el);
     }
 
     function handleMatch(selectedCard, targetCard) {
       var resposta = {
-        cor: selectedCard.getAttribute('data-cor'),
-        forma: selectedCard.getAttribute('data-forma'),
-        numero: parseInt(selectedCard.getAttribute('data-numero'))
+        cor: selectedCard.dataset.cor,
+        forma: selectedCard.dataset.forma,
+        numero: parseInt(selectedCard.dataset.numero)
       };
       var modelo = {
-        cor: targetCard.getAttribute('data-cor'),
-        forma: targetCard.getAttribute('data-forma'),
-        numero: parseInt(targetCard.getAttribute('data-numero'))
+        cor: targetCard.dataset.cor,
+        forma: targetCard.dataset.forma,
+        numero: parseInt(targetCard.dataset.numero)
       };
       var result = WCSTEngine.processTrial(resposta, modelo);
-      // Feedback
-      var fb = document.getElementById('feedback');
-      fb.textContent = result.correct ? 'CERTO' : 'ERRADO';
-      fb.style.color = result.correct ? '#2e7d32' : '#c62828';
-      fb.style.display = 'block';
-      setTimeout(function() { fb.style.display = 'none'; }, 800);
-
+      WCSTUI.showFeedback(result.correct);
+      setTimeout(function() { WCSTUI.hideFeedback(); }, 700);
       if (result.testComplete) {
-        finishOnlineTest(result.reason === 'categories' ? 'completo' : 'parcial');
+        finishTest(result.reason === 'categories' ? 'completo' : 'parcial');
       } else {
         showNextCard();
       }
     }
 
-    async function finishOnlineTest(status) {
+    async function finishTest(status) {
       var stats = WCSTEngine.computeStats();
-      var fd = window._onlineFormData;
-      var elapsed = Date.now() - window._onlineStartTime;
-      var min = Math.floor(elapsed / 60000);
-      var sec = Math.floor((elapsed % 60000) / 1000);
-      stats.tempo = min + 'min ' + sec + 's';
+      var elapsed = Date.now() - window._startTime;
+      stats.tempo = Math.floor(elapsed/60000) + 'min ' + Math.floor((elapsed%60000)/1000) + 's';
       stats.status = status;
-
-      // Gerar laudo IA
+      var fd = window._fd;
+      // IA
       var laudoIA = null;
-      try {
-        if (typeof TECFEAI !== 'undefined') {
-          laudoIA = await TECFEAI.generateReport(stats, fd);
-        }
-      } catch(e) {}
-
-      // Gerar PDF
-      try {
-        WCSTPDF.generate(stats, fd, [], laudoIA);
-      } catch(e) {
-        console.error('Erro ao gerar PDF:', e);
-      }
-
-      // Salvar resultado na API
+      try { if (typeof TECFEAI !== 'undefined') laudoIA = await TECFEAI.generateReport(stats, fd); } catch(e) {}
+      // PDF
+      try { WCSTPDF.generate(stats, fd, [], laudoIA); } catch(e) { console.error('PDF:', e); }
+      // Salvar na API
       try {
         await fetch(API_URL + '/save-result', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            sessionId: sessionData.sessionId,
-            email: sessionData.email,
-            data: { stats: stats, formData: fd, status: status, date: new Date().toISOString() }
-          })
+          body: JSON.stringify({ sessionId: sessionData.sessionId, email: sessionData.email, data: { stats: stats, formData: fd, status: status, date: new Date().toISOString() } })
         });
-      } catch(e) {
-        console.error('Erro ao salvar:', e);
-      }
-
-      // Voltar ao painel
-      setTimeout(function() {
-        alert('Teste finalizado! O PDF foi gerado.');
-        window.location.href = './';
-      }, 1500);
+      } catch(e) {}
+      setTimeout(function() { alert('Teste finalizado! O PDF foi gerado.'); }, 1000);
     }
 
     function exitOnlineTest() {
-      if (confirm('Deseja realmente sair? O teste sera registrado como abandonado.')) {
-        finishOnlineTest('abandonado');
-      }
+      if (confirm('Deseja realmente sair? O teste sera registrado como abandonado.')) finishTest('abandonado');
     }
   </script>
 </body>
