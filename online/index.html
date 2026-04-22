@@ -153,6 +153,12 @@
     </div>
   </div>
 
+  <script src="libs/jspdf.umd.min.js"></script>
+  <script src="libs/jspdf.plugin.autotable.min.js"></script>
+  <script src="tecfe-v7-cards.js"></script>
+  <script src="tecfe-v7-engine.js"></script>
+  <script src="tecfe-v7-ai.js"></script>
+  <script src="tecfe-v7-pdf.js"></script>
   <script>
     // Configuracao
     var API_URL = 'https://dguom5dfla.execute-api.sa-east-1.amazonaws.com';
@@ -269,12 +275,32 @@
 
     async function loadResults() {
       try {
-        var resp = await fetch(API_URL + '/credits?email=' + encodeURIComponent(currentUser));
+        var resp = await fetch(API_URL + '/get-results?email=' + encodeURIComponent(currentUser));
         var data = await resp.json();
-        // Por enquanto mostra mensagem simples
-        document.getElementById('resultsList').innerHTML = '<p style="color:#555;">Funcionalidade em desenvolvimento. Os resultados dos testes serao listados aqui.</p>';
+        if (data.results && data.results.length > 0) {
+          var html = '<table class="results-table"><tr><th>Data</th><th>Paciente</th><th>Status</th><th>Categorias</th><th>% Erros</th><th>Tempo</th><th>Acao</th></tr>';
+          data.results.forEach(function(r) {
+            var d = r.data || {};
+            var stats = d.stats || {};
+            var fd = d.formData || {};
+            var date = d.date ? new Date(d.date).toLocaleString('pt-BR') : '-';
+            html += '<tr>';
+            html += '<td>' + date + '</td>';
+            html += '<td>' + (fd.patientName || '-') + '</td>';
+            html += '<td>' + (d.status || '-') + '</td>';
+            html += '<td>' + (stats.categoriesCompleted || '-') + '</td>';
+            html += '<td>' + (stats.pctErrors || '-') + '</td>';
+            html += '<td>' + (stats.tempo || '-') + '</td>';
+            html += '<td><button class="btn btn-green" style="padding:5px 12px;font-size:12px;" onclick=\'generatePDF(' + JSON.stringify(JSON.stringify(r)) + ')\'>PDF</button></td>';
+            html += '</tr>';
+          });
+          html += '</table>';
+          document.getElementById('resultsList').innerHTML = html;
+        } else {
+          document.getElementById('resultsList').innerHTML = '<p style="color:#777;">Nenhum resultado encontrado.</p>';
+        }
       } catch(e) {
-        document.getElementById('resultsList').innerHTML = '<p style="color:red;">Erro ao carregar resultados.</p>';
+        document.getElementById('resultsList').innerHTML = '<p style="color:#777;">Nenhum resultado encontrado.</p>';
       }
     }
 
@@ -338,6 +364,22 @@
     function sendWhatsApp() {
       var text = 'Ola! Acesse o link abaixo para realizar o teste TECFE: ' + generatedLink;
       window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+    }
+
+    async function generatePDF(resultJson) {
+      try {
+        var r = JSON.parse(resultJson);
+        var d = r.data || {};
+        var stats = d.stats || {};
+        var fd = d.formData || {};
+        // Gerar laudo IA
+        var laudoIA = null;
+        try { if (typeof TECFEAI !== 'undefined') laudoIA = await TECFEAI.generateReport(stats, fd); } catch(e) {}
+        // Gerar PDF
+        WCSTPDF.generate(stats, fd, [], laudoIA);
+      } catch(e) {
+        alert('Erro ao gerar PDF: ' + e.message);
+      }
     }
   </script>
 </body>

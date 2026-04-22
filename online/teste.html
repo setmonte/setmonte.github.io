@@ -183,9 +183,7 @@
       stats.tempo = Math.floor(elapsed/60000) + 'min ' + Math.floor((elapsed%60000)/1000) + 's';
       stats.status = status;
       var fd = window._fd;
-      var laudoIA = null;
-      try { if (typeof TECFEAI !== 'undefined') laudoIA = await TECFEAI.generateReport(stats, fd); } catch(e) {}
-      try { WCSTPDF.generate(stats, fd, [], laudoIA); } catch(e) { console.error('PDF:', e); }
+      // Salvar resultado na API (sem gerar PDF - o avaliador gera no painel)
       try {
         await fetch(API_URL + '/save-result', {
           method: 'POST',
@@ -193,7 +191,11 @@
           body: JSON.stringify({ sessionId: sessionData.sessionId, email: sessionData.email, data: { stats: stats, formData: fd, status: status, date: new Date().toISOString() } })
         });
       } catch(e) {}
-      setTimeout(function() { alert('Teste finalizado! O PDF foi gerado.'); }, 1000);
+      // Mostrar tela de encerramento
+      document.getElementById('testPage').style.display = 'none';
+      document.getElementById('exitButton').style.display = 'none';
+      var msg = status === 'completo' ? 'Teste finalizado com sucesso!' : status === 'abandonado' ? 'Teste encerrado.' : 'Teste finalizado.';
+      document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#e8f5e9,#c8e6c9);text-align:center;padding:20px;"><img src="l.png" style="height:80px;margin-bottom:20px;"><h1 style="color:#2e7d32;font-size:28px;margin-bottom:10px;">' + msg + '</h1><p style="font-size:16px;color:#555;margin-bottom:5px;">Obrigado pela sua participacao.</p><p style="font-size:16px;color:#555;">Os resultados foram enviados ao avaliador.</p><p style="margin-top:30px;font-size:14px;color:#888;">Voce pode fechar esta janela.</p></div>';
     }
 
     function showOnlineFeedback(text, color) {
