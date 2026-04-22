@@ -64,11 +64,20 @@
   <script>
     // Configuracao online
     var API_URL = 'https://dguom5dfla.execute-api.sa-east-1.amazonaws.com';
-    var sessionData = JSON.parse(sessionStorage.getItem('tecfe_session') || '{}');
+    var sessionData = {};
+    try {
+      var params = new URLSearchParams(window.location.search);
+      var d = params.get('d');
+      if (d) {
+        sessionData = JSON.parse(atob(decodeURIComponent(d)));
+      } else {
+        sessionData = JSON.parse(sessionStorage.getItem('tecfe_session') || '{}');
+      }
+    } catch(e) {}
 
     if (!sessionData.sessionId) {
-      alert('Sessao invalida. Volte ao painel.');
-      window.location.href = './';
+      alert('Link invalido ou expirado. Solicite um novo link ao avaliador.');
+      document.body.innerHTML = '<div style="text-align:center;padding:50px;font-size:18px;">Link invalido. Solicite um novo link ao seu avaliador.</div>';
     }
 
     // Inicializar o teste automaticamente
