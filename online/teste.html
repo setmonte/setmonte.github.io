@@ -78,7 +78,6 @@
 
     window.onload = function() {
       if (!sessionData.sessionId) return;
-      // Dados do formulario
       window._fd = {
         patientName: sessionData.patientName || '',
         birthDate: sessionData.birthDate || '',
@@ -90,58 +89,79 @@
         crp: sessionData.crp || '',
         age: WCSTUI.calculateAge(sessionData.birthDate || '')
       };
-      // Gerar baralho
+      // Gerar baralho e guardar no state do engine
       deck = WCSTCards.shuffle(WCSTCards.buildDeck());
       WCSTEngine.reset();
+      WCSTEngine.state.currentDeck = deck;
       // Configurar clique nos modelos
       WCSTUI.setupClickMatch('#stimulusCards .card', handleMatch);
+      renderDeck();
       window._startTime = Date.now();
-      showNextCard();
+      document.getElementById('exitButton').style.display = 'block';
     };
 
-    function showNextCard() {
-      var idx = WCSTEngine.state.cardIndex;
-      if (idx >= deck.length) { finishTest('parcial'); return; }
-      var c = deck[idx];
+    function renderDeck() {
       var container = document.getElementById('responseCards');
       container.innerHTML = '';
-      var el = WCSTUI.createResponseCard(c, idx);
-      container.appendChild(el);
+      var start = WCSTEngine.state.cardIndex;
+      var d = WCSTEngine.state.currentDeck;
+      for (var i = start; i < d.length; i++) {
+        var el = WCSTUI.createResponseCard(d[i], i);
+        container.appendChild(el);
+      }
     }
 
     function handleMatch(selectedCard, targetCard) {
-      var resposta = {
-        cor: selectedCard.dataset.cor,
-        forma: selectedCard.dataset.forma,
-        numero: parseInt(selectedCard.dataset.numero)
-      };
-      var modelo = {
-        cor: targetCard.dataset.cor,
-        forma: targetCard.dataset.forma,
-        numero: parseInt(targetCard.dataset.numero)
-      };
-      var result = WCSTEngine.processTrial(resposta, modelo);
-      WCSTUI.showFeedback(result.correct);
-      setTimeout(function() { WCSTUI.hideFeedback(); }, 700);
-      if (result.testComplete) {
-        finishTest(result.reason === 'categories' ? 'completo' : 'parcial');
+      if (!WCSTEngine.state.isActive) return;
+      var selCor = selectedCard.dataset.cor;
+      var selForma = selectedCard.dataset.forma;
+      var selNumero = selectedCard.dataset.numero;
+      var targetCor = targetCard.dataset.cor;
+      var targetForma = targetCard.dataset.forma;
+      var targetNumero = targetCard.dataset.numero;
+      if (!selCor || !selForma || !selNumero) return;
+      var rt = (Date.now() - (window._lastCardTime || window._startTime)) / 1000;
+      window._lastCardTime = Date.now();
+
+      var outcome = WCSTEngine.processTrial(
+        selCor, selForma, selNumero,
+        targetCor, targetForma, targetNumero,
+        rt
+      );
+
+      if (outcome.result.correct) {
+        WCSTUI.showFeedback('Acertou!!!', 'correct', 1000);
       } else {
-        showNextCard();
+        WCSTUI.showFeedback('Errou!!!', 'incorrect', 1000);
+      }
+
+      selectedCard.remove();
+
+      // Troca de baralho
+      if (outcome.newDeck) {
+        var newDeck = WCSTCards.shuffle(WCSTCards.buildDeck());
+        WCSTEngine.state.currentDeck = newDeck;
+        renderDeck();
+      }
+
+      // Teste terminou
+      if (outcome.result.testComplete || outcome.result.categoriesComplete) {
+        finishTest('completo');
+      } else if (WCSTEngine.state.cardIndex >= WCSTEngine.state.currentDeck.length) {
+        finishTest('parcial');
       }
     }
 
     async function finishTest(status) {
+      WCSTEngine.state.isActive = false;
       var stats = WCSTEngine.computeStats();
       var elapsed = Date.now() - window._startTime;
       stats.tempo = Math.floor(elapsed/60000) + 'min ' + Math.floor((elapsed%60000)/1000) + 's';
       stats.status = status;
       var fd = window._fd;
-      // IA
       var laudoIA = null;
       try { if (typeof TECFEAI !== 'undefined') laudoIA = await TECFEAI.generateReport(stats, fd); } catch(e) {}
-      // PDF
       try { WCSTPDF.generate(stats, fd, [], laudoIA); } catch(e) { console.error('PDF:', e); }
-      // Salvar na API
       try {
         await fetch(API_URL + '/save-result', {
           method: 'POST',
