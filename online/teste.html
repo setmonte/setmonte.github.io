@@ -124,12 +124,22 @@
       window.addEventListener('load', function() {
         // Sobrescrever jsPDF.save para nao baixar no PC do paciente
         if (window.jspdf && window.jspdf.jsPDF) {
-          var origProto = window.jspdf.jsPDF.prototype.save;
-          window.jspdf.jsPDF.prototype.save = function(filename) {
-            // Nao salvar no PC do paciente - enviar dados ao banco
-            console.log('PDF interceptado: ' + filename);
-          };
+          window.jspdf.jsPDF.prototype.save = function() {};
+          window.jspdf.jsPDF.prototype.output = function() { return ''; };
         }
+        // Tambem bloquear download via createElement('a')
+        var origCreateElement = document.createElement.bind(document);
+        document.createElement = function(tag) {
+          var el = origCreateElement(tag);
+          if (tag === 'a') {
+            var origClick = el.click;
+            el.click = function() {
+              if (el.download) return; // bloquear download automatico
+              origClick.call(el);
+            };
+          }
+          return el;
+        };
 
         // Observar quando o teste termina (testPage fica hidden)
         var observer = new MutationObserver(function(mutations) {
@@ -157,11 +167,25 @@
       async function sendResultToServer() {
         try {
           var stats = WCSTEngine.computeStats();
-          var fd = WCSTUI.getFormData ? WCSTUI.getFormData() : {};
-          fd.age = document.getElementById('ageDisplay') ? document.getElementById('ageDisplay').value : '';
+          var fd = {
+            patientName: sessionData.patientName || '',
+            birthDate: sessionData.birthDate || '',
+            cpf: sessionData.cpf || '',
+            sex: sessionData.sex || '',
+            laterality: sessionData.laterality || '',
+            education: sessionData.education || '',
+            evaluator: sessionData.evaluator || '',
+            crp: sessionData.crp || '',
+            age: document.getElementById('ageDisplay') ? document.getElementById('ageDisplay').value : ''
+          };
+          var elapsed = stats ? stats.totalTime : 0;
+          var min = Math.floor(elapsed / 60);
+          var sec = Math.floor(elapsed % 60);
+          var tempo = min + 'min ' + sec + 's';
           var status = 'completo';
-          if (stats && stats.completedCategories < 6 && stats.trialsPerformed < 128) status = 'abandonado';
-          else if (stats && stats.completedCategories < 6) status = 'parcial';
+          if (!stats) status = 'erro';
+          else if (stats.completedCategories < 6 && stats.trialsPerformed < 128) status = 'abandonado';
+          else if (stats.completedCategories < 6) status = 'parcial';
 
           await fetch(API_URL + '/save-result', {
             method: 'POST',
@@ -169,7 +193,7 @@
             body: JSON.stringify({
               sessionId: sessionData.sessionId,
               email: sessionData.email,
-              data: { stats: stats, formData: fd, status: status, date: new Date().toISOString() }
+              data: { stats: stats, formData: fd, status: status, tempo: tempo, date: new Date().toISOString() }
             })
           });
         } catch(e) {
