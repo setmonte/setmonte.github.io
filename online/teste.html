@@ -3,213 +3,124 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TECFE Online - Teste em Andamento</title>
+  <title>TECFE Online v7</title>
   <link rel="stylesheet" href="tecfe-v7-styles.css">
   <script src="libs/jspdf.umd.min.js"></script>
   <script src="libs/jspdf.plugin.autotable.min.js"></script>
   <style>
     #activationPage { display: none !important; }
-    #coverPage { display: none !important; }
-    body { margin: 0; padding: 0; background: #f0f0f0; }
-    #testPage {
-      display: flex !important;
-      flex-direction: column !important;
-      align-items: center !important;
-      width: 100% !important;
-      min-height: 100vh !important;
-      padding: 10px !important;
-    }
-    #testPage h1 { text-align: center; width: 100%; }
-    .stimulus-container { justify-content: center !important; }
-    .response-container { justify-content: center !important; flex-wrap: wrap !important; }
-    #exitButton {
-      position: fixed !important;
-      bottom: 20px !important;
-      right: 20px !important;
-      left: auto !important;
-      z-index: 99999 !important;
-      background: rgba(200,0,0,0.7) !important;
-      color: #fff !important;
-      border: none !important;
-      padding: 10px 20px !important;
-      border-radius: 8px !important;
-      font-size: 14px !important;
-      cursor: pointer !important;
-    }
   </style>
 </head>
 <body>
 
+  <!-- PAGINA DE CAPA / FORMULARIO (escondida, preenchida automaticamente) -->
+  <div id="coverPage">
+    <div class="logo-container">
+      <img src="l.png" alt="STM" class="logo-img">
+    </div>
+    <h1>TECFE Online <span id="appVersion">v7</span></h1>
+    <p class="instructions">
+      Voce vera 4 cartas modelo e abaixo varias cartas resposta.
+      Clique em uma carta resposta para seleciona-la (borda laranja),
+      depois clique na carta modelo que deseja combinar.
+      O objetivo e combinar as cartas com base em um padrao que voce
+      deve descobrir usando os avisos. Boa sorte!
+    </p>
+    <div class="identification" style="display:none;">
+      <div class="identification-row">
+        <label>Nome: <input type="text" id="patientName"></label>
+        <label>Idade: <input type="text" id="ageDisplay" readonly></label>
+        <label>Data Nasc: <input type="date" id="birthDate"></label>
+        <label>CPF: <input type="text" id="cpf" maxlength="14"></label>
+      </div>
+      <div class="identification-row">
+        <label>Sexo: <select id="sex"><option value="">-</option><option value="Masculino">Masculino</option><option value="Feminino">Feminino</option><option value="Outro">Outro</option></select></label>
+        <label>Lateralidade: <select id="laterality"><option value="">-</option><option value="Destro">Destro</option><option value="Canhoto">Canhoto</option><option value="Ambidestro">Ambidestro</option></select></label>
+        <label>Escolaridade: <select id="education"><option value="">-</option><option value="1o ano EF">1o ano EF</option><option value="2o ano EF">2o ano EF</option><option value="3o ano EF">3o ano EF</option><option value="4o ano EF">4o ano EF</option><option value="5o ano EF">5o ano EF</option><option value="6o ano EF">6o ano EF</option><option value="7o ano EF">7o ano EF</option><option value="8o ano EF">8o ano EF</option><option value="9o ano EF">9o ano EF</option><option value="1o ano EM">1o ano EM</option><option value="2o ano EM">2o ano EM</option><option value="3o ano EM">3o ano EM</option><option value="Superior completo">Superior completo</option><option value="Superior incompleto">Superior incompleto</option><option value="Pos-graduacao">Pos-graduacao</option><option value="Mestrado">Mestrado</option><option value="Doutorado">Doutorado</option></select></label>
+        <label>Profissao: <input type="text" id="profession"></label>
+      </div>
+      <div class="identification-row">
+        <label>Avaliador: <input type="text" id="evaluator"></label>
+        <label>CRP: <input type="text" id="crp" maxlength="10"></label>
+      </div>
+    </div>
+    <div>
+      <button id="startButton" onclick="startTest()">Iniciar Teste</button>
+    </div>
+    <div id="historicoAlerta" style="display:none;"></div>
+  </div>
+
   <!-- PAGINA DO TESTE -->
-  <div id="testPage" style="display:block;">
+  <div id="testPage">
     <h1>TECFE Online <span id="testVersion">v7</span></h1>
     <div class="stimulus-container" id="stimulusCards">
       <div class="card droppable" data-cor="vermelho" data-forma="triangulo" data-numero="1">
-        <svg viewBox="0 0 400 600" xmlns="http://www.w3.org/2000/svg">
-          <rect width="400" height="600" fill="#fff"/>
-          <polygon points="200,220 140,340 260,340" fill="red"/>
-        </svg>
+        <svg viewBox="0 0 400 600" xmlns="http://www.w3.org/2000/svg"><rect width="400" height="600" fill="#fff"/><polygon points="200,220 140,340 260,340" fill="red"/></svg>
       </div>
       <div class="card droppable" data-cor="verde" data-forma="estrela" data-numero="2">
-        <svg viewBox="0 0 400 600" xmlns="http://www.w3.org/2000/svg">
-          <rect width="400" height="600" fill="#fff"/>
-          <g transform="translate(100,200) scale(1.6)"><polygon fill="green" points="0,-50 14.7,-15.9 47.6,-15.9 22.1,7.6 29.4,42.3 0,20 -29.4,42.3 -22.1,7.6 -47.6,-15.9 -14.7,-15.9"/></g>
-          <g transform="translate(300,400) scale(1.6)"><polygon fill="green" points="0,-50 14.7,-15.9 47.6,-15.9 22.1,7.6 29.4,42.3 0,20 -29.4,42.3 -22.1,7.6 -47.6,-15.9 -14.7,-15.9"/></g>
-        </svg>
+        <svg viewBox="0 0 400 600" xmlns="http://www.w3.org/2000/svg"><rect width="400" height="600" fill="#fff"/><g transform="translate(100,200) scale(1.6)"><polygon fill="green" points="0,-50 14.7,-15.9 47.6,-15.9 22.1,7.6 29.4,42.3 0,20 -29.4,42.3 -22.1,7.6 -47.6,-15.9 -14.7,-15.9"/></g><g transform="translate(300,400) scale(1.6)"><polygon fill="green" points="0,-50 14.7,-15.9 47.6,-15.9 22.1,7.6 29.4,42.3 0,20 -29.4,42.3 -22.1,7.6 -47.6,-15.9 -14.7,-15.9"/></g></svg>
       </div>
       <div class="card droppable" data-cor="amarelo" data-forma="cruz" data-numero="3">
-        <svg viewBox="0 0 400 600" xmlns="http://www.w3.org/2000/svg">
-          <rect width="400" height="600" fill="#fff"/>
-          <g transform="translate(60,100)"><rect x="-20" y="-50" width="40" height="100" fill="yellow"/><rect x="-50" y="-20" width="100" height="40" fill="yellow"/></g>
-          <g transform="translate(340,100)"><rect x="-20" y="-50" width="40" height="100" fill="yellow"/><rect x="-50" y="-20" width="100" height="40" fill="yellow"/></g>
-          <g transform="translate(200,500)"><rect x="-20" y="-50" width="40" height="100" fill="yellow"/><rect x="-50" y="-20" width="100" height="40" fill="yellow"/></g>
-        </svg>
+        <svg viewBox="0 0 400 600" xmlns="http://www.w3.org/2000/svg"><rect width="400" height="600" fill="#fff"/><g transform="translate(60,100)"><rect x="-20" y="-50" width="40" height="100" fill="yellow"/><rect x="-50" y="-20" width="100" height="40" fill="yellow"/></g><g transform="translate(340,100)"><rect x="-20" y="-50" width="40" height="100" fill="yellow"/><rect x="-50" y="-20" width="100" height="40" fill="yellow"/></g><g transform="translate(200,500)"><rect x="-20" y="-50" width="40" height="100" fill="yellow"/><rect x="-50" y="-20" width="100" height="40" fill="yellow"/></g></svg>
       </div>
       <div class="card droppable" data-cor="azul" data-forma="circulo" data-numero="4">
-        <svg viewBox="0 0 400 600" xmlns="http://www.w3.org/2000/svg">
-          <rect width="400" height="600" fill="#fff"/>
-          <circle cx="60" cy="100" r="40" fill="blue"/>
-          <circle cx="340" cy="100" r="40" fill="blue"/>
-          <circle cx="60" cy="500" r="40" fill="blue"/>
-          <circle cx="340" cy="500" r="40" fill="blue"/>
-        </svg>
+        <svg viewBox="0 0 400 600" xmlns="http://www.w3.org/2000/svg"><rect width="400" height="600" fill="#fff"/><circle cx="60" cy="100" r="40" fill="blue"/><circle cx="340" cy="100" r="40" fill="blue"/><circle cx="60" cy="500" r="40" fill="blue"/><circle cx="340" cy="500" r="40" fill="blue"/></svg>
       </div>
     </div>
     <div class="response-container" id="responseCards"></div>
     <div id="feedback"></div>
   </div>
 
-  <button id="exitButton" onclick="exitOnlineTest()">Sair</button>
+  <button id="exitButton" onclick="exitTest()">Sair</button>
 
+  <!-- SCRIPTS (mesma ordem do desktop) -->
   <script src="tecfe-v7-cards.js"></script>
   <script src="tecfe-v7-ui.js"></script>
   <script src="tecfe-v7-engine.js"></script>
   <script src="tecfe-v7-ai.js"></script>
   <script src="tecfe-v7-pdf.js"></script>
+  <script src="tecfe-v7-main.js"></script>
+
   <script>
-    var API_URL = 'https://dguom5dfla.execute-api.sa-east-1.amazonaws.com';
-    var sessionData = {};
-    var deck = [];
-    try {
-      var params = new URLSearchParams(window.location.search);
-      var d = params.get('d');
-      if (d) sessionData = JSON.parse(atob(decodeURIComponent(d)));
-    } catch(e) {}
-
-    if (!sessionData.sessionId) {
-      document.body.innerHTML = '<div style="text-align:center;padding:50px;font-size:18px;color:#c62828;">Link invalido ou expirado.<br>Solicite um novo link ao seu avaliador.</div>';
-    }
-
-    window.onload = function() {
-      if (!sessionData.sessionId) return;
-      window._fd = {
-        patientName: sessionData.patientName || '',
-        birthDate: sessionData.birthDate || '',
-        cpf: sessionData.cpf || '',
-        sex: sessionData.sex || '',
-        laterality: sessionData.laterality || '',
-        education: sessionData.education || '',
-        evaluator: sessionData.evaluator || '',
-        crp: sessionData.crp || '',
-        age: WCSTUI.calculateAge(sessionData.birthDate || '')
-      };
-      // Gerar 2 baralhos e guardar no state do engine
-      var deck1 = WCSTCards.shuffle(WCSTCards.buildDeck());
-      var deck2 = WCSTCards.shuffle(WCSTCards.buildDeck());
-      WCSTEngine.reset();
-      WCSTEngine.state.rounds = [deck1, deck2];
-      WCSTEngine.state.currentDeck = deck1;
-      WCSTEngine.state.currentDeckIndex = 0;
-      WCSTEngine.state.isActive = true;
-      WCSTEngine.state.startTimestamp = Date.now();
-      // Configurar clique nos modelos
-      WCSTUI.setupClickMatch('#stimulusCards .card', handleMatch);
-      renderDeck();
-      window._startTime = Date.now();
-      document.getElementById('exitButton').style.display = 'block';
-    };
-
-    function renderDeck() {
-      var container = document.getElementById('responseCards');
-      container.innerHTML = '';
-      var start = WCSTEngine.state.cardIndex;
-      var d = WCSTEngine.state.currentDeck;
-      for (var i = start; i < d.length; i++) {
-        var el = WCSTUI.createResponseCard(d[i], i);
-        container.appendChild(el);
-      }
-    }
-
-    function handleMatch(selectedCard, targetCard) {
-      if (!WCSTEngine.state.isActive) return;
-      var selCor = selectedCard.dataset.cor;
-      var selForma = selectedCard.dataset.forma;
-      var selNumero = selectedCard.dataset.numero;
-      var targetCor = targetCard.dataset.cor;
-      var targetForma = targetCard.dataset.forma;
-      var targetNumero = targetCard.dataset.numero;
-      if (!selCor || !selForma || !selNumero) return;
-      var rt = (Date.now() - (window._lastCardTime || window._startTime)) / 1000;
-      window._lastCardTime = Date.now();
-
-      var outcome = WCSTEngine.processTrial(
-        selCor, selForma, selNumero,
-        targetCor, targetForma, targetNumero,
-        rt
-      );
-
-      if (outcome.result.correct) {
-        showOnlineFeedback('Acertou!!!', '#2e7d32');
-      } else {
-        showOnlineFeedback('Errou!!!', '#c62828');
-      }
-
-      selectedCard.remove();
-
-      // Troca de baralho
-      if (outcome.needNewDeck) {
-        WCSTEngine.loadNextDeck();
-        renderDeck();
-      }
-
-      // Teste terminou
-      if (outcome.testEnded) {
-        finishTest(outcome.completedAll ? 'completo' : 'parcial');
-      }
-    }
-
-    async function finishTest(status) {
-      WCSTEngine.state.isActive = false;
-      var stats = WCSTEngine.computeStats();
-      var elapsed = Date.now() - window._startTime;
-      stats.tempo = Math.floor(elapsed/60000) + 'min ' + Math.floor((elapsed%60000)/1000) + 's';
-      stats.status = status;
-      var fd = window._fd;
-      // Salvar resultado na API (sem gerar PDF - o avaliador gera no painel)
+    // Preencher formulario com dados da sessao e iniciar automaticamente
+    (function() {
+      var sessionData = {};
       try {
-        await fetch(API_URL + '/save-result', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sessionId: sessionData.sessionId, email: sessionData.email, data: { stats: stats, formData: fd, status: status, date: new Date().toISOString() } })
-        });
+        var params = new URLSearchParams(window.location.search);
+        var d = params.get('d');
+        if (d) sessionData = JSON.parse(atob(decodeURIComponent(d)));
       } catch(e) {}
-      // Mostrar tela de encerramento
-      document.getElementById('testPage').style.display = 'none';
-      document.getElementById('exitButton').style.display = 'none';
-      var msg = status === 'completo' ? 'Teste finalizado com sucesso!' : status === 'abandonado' ? 'Teste encerrado.' : 'Teste finalizado.';
-      document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#e8f5e9,#c8e6c9);text-align:center;padding:20px;"><img src="l.png" style="height:80px;margin-bottom:20px;"><h1 style="color:#2e7d32;font-size:28px;margin-bottom:10px;">' + msg + '</h1><p style="font-size:16px;color:#555;margin-bottom:5px;">Obrigado pela sua participacao.</p><p style="font-size:16px;color:#555;">Os resultados foram enviados ao avaliador.</p><p style="margin-top:30px;font-size:14px;color:#888;">Voce pode fechar esta janela.</p></div>';
-    }
 
-    function showOnlineFeedback(text, color) {
-      var fb = document.getElementById('feedback');
-      fb.textContent = text;
-      fb.style.cssText = 'display:block !important;position:fixed !important;top:50% !important;left:50% !important;transform:translate(-50%,-50%) !important;font-size:48px !important;font-weight:bold !important;color:' + color + ' !important;z-index:99999 !important;background:rgba(255,255,255,0.95) !important;padding:20px 40px !important;border-radius:12px !important;box-shadow:0 4px 20px rgba(0,0,0,0.3) !important;text-align:center !important;pointer-events:none !important;';
-      setTimeout(function() { fb.style.display = 'none'; }, 1000);
-    }
+      if (!sessionData.sessionId) {
+        document.body.innerHTML = '<div style="text-align:center;padding:50px;font-size:18px;color:#c62828;">Link invalido ou expirado.<br>Solicite um novo link ao seu avaliador.</div>';
+        return;
+      }
 
-    function exitOnlineTest() {
-      if (confirm('Deseja realmente sair? O teste sera registrado como abandonado.')) finishTest('abandonado');
-    }
+      // Preencher campos do formulario
+      document.getElementById('patientName').value = sessionData.patientName || '';
+      document.getElementById('birthDate').value = sessionData.birthDate || '';
+      document.getElementById('cpf').value = sessionData.cpf || '';
+      document.getElementById('sex').value = sessionData.sex || '';
+      document.getElementById('laterality').value = sessionData.laterality || '';
+      document.getElementById('education').value = sessionData.education || '';
+      document.getElementById('evaluator').value = sessionData.evaluator || '';
+      document.getElementById('crp').value = sessionData.crp || '';
+
+      // Guardar sessionData para salvar resultado depois
+      window._onlineSession = sessionData;
+
+      // Disparar calculo de idade
+      var evt = new Event('change');
+      document.getElementById('birthDate').dispatchEvent(evt);
+
+      // Clicar automaticamente em "Iniciar Teste" apos carregar
+      window.addEventListener('load', function() {
+        setTimeout(function() {
+          var btn = document.getElementById('startButton');
+          if (btn) btn.click();
+        }, 500);
+      });
+    })();
   </script>
 </body>
 </html>
