@@ -388,12 +388,49 @@
       });
     }
 
+    async function generatePDF(idx) {
+      try {
+        var r = _resultCache[idx];
+        if (!r) { alert('Resultado nao encontrado'); return; }
+        var d = r.data || {};
+        var stats = d.stats || {};
+        var fd = d.formData || {};
+        fd.nome = fd.nome || fd.patientName || '';
+        fd.nascimento = fd.nascimento || fd.birthDate || '';
+        fd.sexo = fd.sexo || fd.sex || '';
+        fd.lateralidade = fd.lateralidade || fd.laterality || '';
+        fd.escolaridade = fd.escolaridade || fd.education || '';
+        fd.avaliador = fd.avaliador || fd.evaluator || '';
+        fd.profissao = fd.profissao || fd.profession || '';
+        fd.idade = fd.idade || fd.age || '';
+        if (!fd.idade && fd.nascimento) fd.idade = WCSTUI.calculateAge(fd.nascimento);
+        fd.idadeAnos = fd.idadeAnos || WCSTUI.getAgeYears(fd.nascimento) || 0;
+        var fields = ['pctErrors','pctPersevResp','pctPersevErr','pctConceptual','pctNonPersevErr','totalErrors','persevResponses','persevErrors','nonPersevErrors','conceptualLevel','completedCategories','trialsPerformed','trialsToFirst','failMaintain','escoreT','escorePadrao','impulsivityIndex','avgRT','totalTime','totalCorrect'];
+        fields.forEach(function(f) { if (stats[f] !== undefined && stats[f] !== null) stats[f] = Number(stats[f]); else stats[f] = 0; });
+        if (stats.learningToLearn !== null && stats.learningToLearn !== undefined) stats.learningToLearn = Number(stats.learningToLearn);
+        if (!stats.insightCurve) stats.insightCurve = [];
+        if (!stats.randomAlerts) stats.randomAlerts = [];
+        if (!stats.roundStats) stats.roundStats = {};
+        stats.tempo = d.tempo || stats.tempo || '';
+        if (!stats.tempo && stats.totalTime) { var tt = Number(stats.totalTime); stats.tempo = Math.floor(tt/60) + 'min ' + Math.floor(tt%60) + 's'; }
+        stats.status = d.status || stats.status || 'completo';
+        var laudoIA = null;
+        try { if (typeof TECFEAI !== 'undefined') laudoIA = await TECFEAI.generateReport(stats, fd); } catch(e) {}
+        var doc = WCSTPDF.generate(fd, stats, false, [], laudoIA);
+        var fname = WCSTPDF.filename(fd.nome, false);
+        doc.save(fname);
+      } catch(e) {
+        alert('Erro ao gerar PDF: ' + e.message);
+        console.error(e);
+      }
+    }
+
     function sendWhatsApp() {
       var text = 'Ola! Acesse o link abaixo para realizar o teste TECFE: ' + generatedLink;
       window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
     }
 
-    async function generatePDF(idx) {
+    async function generatePDF_OLD(idx) {
       try {
         var r = _resultCache[idx];
         if (!r) { alert('Resultado nao encontrado'); return; }
