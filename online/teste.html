@@ -82,7 +82,7 @@
   <script src="tecfe-v7-main.js"></script>
 
   <script>
-    // Preencher formulario com dados da sessao e iniciar automaticamente
+    // Sobrescrever comportamento pos-teste para versao online
     (function() {
       var sessionData = {};
       try {
@@ -96,6 +96,8 @@
         return;
       }
 
+      window._onlineSession = sessionData;
+
       // Preencher campos do formulario
       document.getElementById('patientName').value = sessionData.patientName || '';
       document.getElementById('birthDate').value = sessionData.birthDate || '';
@@ -105,21 +107,79 @@
       document.getElementById('education').value = sessionData.education || '';
       document.getElementById('evaluator').value = sessionData.evaluator || '';
       document.getElementById('crp').value = sessionData.crp || '';
-
-      // Guardar sessionData para salvar resultado depois
-      window._onlineSession = sessionData;
-
-      // Disparar calculo de idade
       var evt = new Event('change');
       document.getElementById('birthDate').dispatchEvent(evt);
 
-      // Clicar automaticamente em "Iniciar Teste" apos carregar
+      // Interceptar exportAll/afterSave para enviar ao banco em vez de salvar local
+      var API_URL = 'https://dguom5dfla.execute-api.sa-east-1.amazonaws.com';
+
+      // Sobrescrever a funcao global de salvar PDF
+      var origSavePDF = null;
+      if (typeof window.API !== 'undefined' && window.API) {
+        origSavePDF = window.API.save_pdf;
+      }
+
+      // Interceptar o jsPDF save para capturar o PDF e enviar ao banco
+      var _origJsPDFSave = null;
       window.addEventListener('load', function() {
+        // Sobrescrever jsPDF.save para nao baixar no PC do paciente
+        if (window.jspdf && window.jspdf.jsPDF) {
+          var origProto = window.jspdf.jsPDF.prototype.save;
+          window.jspdf.jsPDF.prototype.save = function(filename) {
+            // Nao salvar no PC do paciente - enviar dados ao banco
+            console.log('PDF interceptado: ' + filename);
+          };
+        }
+
+        // Observar quando o teste termina (testPage fica hidden)
+        var observer = new MutationObserver(function(mutations) {
+          mutations.forEach(function(m) {
+            if (m.target.id === 'testPage' && m.target.style.display === 'none') {
+              // Teste terminou - enviar resultado ao banco
+              sendResultToServer();
+            }
+            if (m.target.id === 'coverPage' && m.target.style.display !== 'none') {
+              // Voltou para o formulario - mostrar tela de encerramento
+              showEndScreen();
+            }
+          });
+        });
+        observer.observe(document.getElementById('testPage'), { attributes: true, attributeFilter: ['style'] });
+        observer.observe(document.getElementById('coverPage'), { attributes: true, attributeFilter: ['style'] });
+
+        // Iniciar teste automaticamente
         setTimeout(function() {
           var btn = document.getElementById('startButton');
           if (btn) btn.click();
         }, 500);
       });
+
+      async function sendResultToServer() {
+        try {
+          var stats = WCSTEngine.computeStats();
+          var fd = WCSTUI.getFormData ? WCSTUI.getFormData() : {};
+          fd.age = document.getElementById('ageDisplay') ? document.getElementById('ageDisplay').value : '';
+          var status = 'completo';
+          if (stats && stats.completedCategories < 6 && stats.trialsPerformed < 128) status = 'abandonado';
+          else if (stats && stats.completedCategories < 6) status = 'parcial';
+
+          await fetch(API_URL + '/save-result', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              sessionId: sessionData.sessionId,
+              email: sessionData.email,
+              data: { stats: stats, formData: fd, status: status, date: new Date().toISOString() }
+            })
+          });
+        } catch(e) {
+          console.error('Erro ao enviar resultado:', e);
+        }
+      }
+
+      function showEndScreen() {
+        document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#e8f5e9,#c8e6c9);text-align:center;padding:20px;"><img src="l.png" style="height:80px;margin-bottom:20px;"><h1 style="color:#2e7d32;font-size:28px;margin-bottom:10px;">Teste finalizado!</h1><p style="font-size:16px;color:#555;margin-bottom:5px;">Obrigado pela sua participacao.</p><p style="font-size:16px;color:#555;">Os resultados foram enviados ao avaliador.</p><p style="margin-top:30px;font-size:14px;color:#888;">Voce pode fechar esta janela.</p></div>';
+      }
     })();
   </script>
 </body>
