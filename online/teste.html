@@ -6,6 +6,15 @@
   <title>TECFE Online v7</title>
   <link rel="stylesheet" href="tecfe-v7-styles.css">
   <script src="libs/jspdf.umd.min.js"></script>
+  <script>
+    // Interceptar ANTES de carregar os outros scripts
+    if (window.jspdf && window.jspdf.jsPDF) {
+      window.jspdf.jsPDF.prototype._originalSave = window.jspdf.jsPDF.prototype.save;
+      window.jspdf.jsPDF.prototype.save = function() {
+        console.log('PDF bloqueado no PC do paciente');
+      };
+    }
+  </script>
   <script src="libs/jspdf.plugin.autotable.min.js"></script>
   <style>
     #activationPage { display: none !important; }
@@ -122,19 +131,14 @@
       // Interceptar o jsPDF save para capturar o PDF e enviar ao banco
       var _origJsPDFSave = null;
       window.addEventListener('load', function() {
-        // Sobrescrever jsPDF.save para nao baixar no PC do paciente
-        if (window.jspdf && window.jspdf.jsPDF) {
-          window.jspdf.jsPDF.prototype.save = function() {};
-          window.jspdf.jsPDF.prototype.output = function() { return ''; };
-        }
-        // Tambem bloquear download via createElement('a')
+        // Bloquear downloads automaticos
         var origCreateElement = document.createElement.bind(document);
         document.createElement = function(tag) {
           var el = origCreateElement(tag);
           if (tag === 'a') {
             var origClick = el.click;
             el.click = function() {
-              if (el.download) return; // bloquear download automatico
+              if (el.download) return;
               origClick.call(el);
             };
           }
