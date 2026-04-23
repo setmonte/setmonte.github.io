@@ -151,15 +151,16 @@
       window.addEventListener('load', function() {
         // PDF bloqueado via jsPDF.save override no topo do arquivo
 
+        var testStarted = false;
+
         // Observar quando o teste termina (testPage fica hidden)
         var observer = new MutationObserver(function(mutations) {
+          if (!testStarted) return;
           mutations.forEach(function(m) {
             if (m.target.id === 'testPage' && m.target.style.display === 'none') {
-              // Teste terminou - enviar resultado ao banco
               sendResultToServer();
             }
             if (m.target.id === 'coverPage' && m.target.style.display !== 'none') {
-              // Voltou para o formulario - mostrar tela de encerramento
               showEndScreen();
             }
           });
@@ -171,6 +172,7 @@
         setTimeout(function() {
           var btn = document.getElementById('startButton');
           if (btn) btn.click();
+          setTimeout(function() { testStarted = true; }, 1000);
         }, 500);
       });
 
