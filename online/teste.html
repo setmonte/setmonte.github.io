@@ -113,10 +113,13 @@
         crp: sessionData.crp || '',
         age: WCSTUI.calculateAge(sessionData.birthDate || '')
       };
-      // Gerar baralho e guardar no state do engine
-      deck = WCSTCards.shuffle(WCSTCards.buildDeck());
+      // Gerar 2 baralhos e guardar no state do engine
+      var deck1 = WCSTCards.shuffle(WCSTCards.buildDeck());
+      var deck2 = WCSTCards.shuffle(WCSTCards.buildDeck());
       WCSTEngine.reset();
-      WCSTEngine.state.currentDeck = deck;
+      WCSTEngine.state.rounds = [deck1, deck2];
+      WCSTEngine.state.currentDeck = deck1;
+      WCSTEngine.state.currentDeckIndex = 0;
       WCSTEngine.state.isActive = true;
       WCSTEngine.state.startTimestamp = Date.now();
       // Configurar clique nos modelos
@@ -165,8 +168,7 @@
 
       // Troca de baralho
       if (outcome.needNewDeck) {
-        var newDeck = WCSTCards.shuffle(WCSTCards.buildDeck());
-        WCSTEngine.state.currentDeck = newDeck;
+        WCSTEngine.loadNextDeck();
         renderDeck();
       }
 
