@@ -444,7 +444,13 @@
           pdfBlob = this.output('blob');
           window._pdfFilename = fname;
         };
-        WCSTPDF.generate(fd, stats, false, [], laudoIA);
+        console.log('FD para PDF:', JSON.stringify(fd));
+        try {
+          WCSTPDF.generate(fd, stats, false, [], laudoIA);
+        } catch(pdfErr) {
+          console.error('Erro dentro do generate:', pdfErr);
+        }
+        jsPDF.prototype.save = origSave;
         jsPDF.prototype.save = origSave;
         if (pdfBlob) {
           var url = URL.createObjectURL(pdfBlob);
