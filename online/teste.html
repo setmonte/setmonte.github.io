@@ -6,16 +6,16 @@
   <title>TECFE Online v7</title>
   <link rel="stylesheet" href="tecfe-v7-styles.css">
   <script src="libs/jspdf.umd.min.js"></script>
-  <script>
-    // Interceptar ANTES de carregar os outros scripts
-    if (window.jspdf && window.jspdf.jsPDF) {
-      window.jspdf.jsPDF.prototype._originalSave = window.jspdf.jsPDF.prototype.save;
-      window.jspdf.jsPDF.prototype.save = function() {
-        console.log('PDF bloqueado no PC do paciente');
-      };
-    }
-  </script>
   <script src="libs/jspdf.plugin.autotable.min.js"></script>
+  <script>
+    // Bloquear QUALQUER download no PC do paciente
+    window._isOnlineTest = true;
+    var _origSave = window.jspdf.jsPDF.prototype.save;
+    window.jspdf.jsPDF.prototype.save = function() {
+      if (window._isOnlineTest) return;
+      _origSave.apply(this, arguments);
+    };
+  </script>
   <style>
     #activationPage { display: none !important; }
   </style>
@@ -131,19 +131,7 @@
       // Interceptar o jsPDF save para capturar o PDF e enviar ao banco
       var _origJsPDFSave = null;
       window.addEventListener('load', function() {
-        // Bloquear downloads automaticos
-        var origCreateElement = document.createElement.bind(document);
-        document.createElement = function(tag) {
-          var el = origCreateElement(tag);
-          if (tag === 'a') {
-            var origClick = el.click;
-            el.click = function() {
-              if (el.download) return;
-              origClick.call(el);
-            };
-          }
-          return el;
-        };
+        // PDF bloqueado via jsPDF.save override no topo do arquivo
 
         // Observar quando o teste termina (testPage fica hidden)
         var observer = new MutationObserver(function(mutations) {
