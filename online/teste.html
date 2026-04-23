@@ -175,8 +175,16 @@
         observer.observe(document.getElementById('testPage'), { attributes: true, attributeFilter: ['style'] });
         observer.observe(document.getElementById('coverPage'), { attributes: true, attributeFilter: ['style'] });
 
-        // Iniciar teste automaticamente
-        setTimeout(function() {
+        // Iniciar teste automaticamente (verificar se sessao ja foi usada)
+        setTimeout(async function() {
+          try {
+            var resp = await fetch('https://dguom5dfla.execute-api.sa-east-1.amazonaws.com/session-status?sessionId=' + encodeURIComponent(sessionData.sessionId));
+            var data = await resp.json();
+            if (data.status !== 'aguardando' && data.status !== 'not_found') {
+              document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#e8f5e9,#c8e6c9);text-align:center;padding:20px;"><img src="l.png" style="height:80px;margin-bottom:20px;"><h1 style="color:#c62828;font-size:24px;margin-bottom:10px;">Este link ja foi utilizado.</h1><p style="font-size:16px;color:#555;">Solicite um novo link ao seu avaliador.</p></div>';
+              return;
+            }
+          } catch(e) {}
           var btn = document.getElementById('startButton');
           if (btn) btn.click();
           setTimeout(function() { testStarted = true; }, 1000);
