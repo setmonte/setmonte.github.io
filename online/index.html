@@ -118,7 +118,7 @@
         <div class="form-row">
           <label>Nome: <input type="text" id="onPatientName" placeholder="Nome do paciente" style="width:220px;"></label>
           <label>Data Nasc: <input type="date" id="onBirthDate"></label>
-          <label>CPF: <input type="text" id="onCpf" placeholder="XXX.XXX.XXX-XX" maxlength="14" style="width:150px;"></label>
+          <label>CPF: <input type="text" id="onCpf" placeholder="XXX.XXX.XXX-XX" maxlength="14" style="width:150px;" oninput="maskCPF(this)"></label>
         </div>
         <div class="form-row">
           <label>Sexo: <select id="onSex"><option value="" disabled selected>Selecione</option><option>Masculino</option><option>Feminino</option><option>Outro</option></select></label>
@@ -127,7 +127,7 @@
         </div>
         <div class="form-row">
           <label>Avaliador: <input type="text" id="onEvaluator" placeholder="Seu nome" style="width:220px;"></label>
-          <label>CRP: <input type="text" id="onCrp" placeholder="XX/XXXXX-X" maxlength="10" style="width:120px;"></label>
+          <label>CRP: <input type="text" id="onCrp" placeholder="XX/XXXXX-X" maxlength="10" style="width:120px;" oninput="maskCRP(this)"></label>
         </div>
         <button class="btn btn-green" style="margin-top:10px;" onclick="startOnlineTest()">Gerar Link do Paciente</button>
         <div id="linkResult" class="hidden" style="margin-top:15px;">
@@ -156,6 +156,7 @@
   <script src="libs/jspdf.umd.min.js"></script>
   <script src="libs/jspdf.plugin.autotable.min.js"></script>
   <script src="tecfe-v7-cards.js"></script>
+  <script src="tecfe-v7-ui.js"></script>
   <script src="tecfe-v7-engine.js"></script>
   <script src="tecfe-v7-ai.js"></script>
   <script src="tecfe-v7-pdf.js"></script>
@@ -284,7 +285,7 @@
             var stats = d.stats || {};
             var fd = d.formData || {};
             var date = d.date ? new Date(d.date).toLocaleString('pt-BR') : '-';
-            var nome = fd.patientName || '-';
+            var nome = fd.patientName || fd.nome || '-';
             var tempo = d.tempo || '-';
             if (tempo === '-' && stats.totalTime) {
               var tt = Number(stats.totalTime);
@@ -361,6 +362,21 @@
       }
     }
 
+    function maskCPF(el) {
+      var v = el.value.replace(/\D/g, '').slice(0, 11);
+      if (v.length > 9) v = v.slice(0,3) + '.' + v.slice(3,6) + '.' + v.slice(6,9) + '-' + v.slice(9);
+      else if (v.length > 6) v = v.slice(0,3) + '.' + v.slice(3,6) + '.' + v.slice(6);
+      else if (v.length > 3) v = v.slice(0,3) + '.' + v.slice(3);
+      el.value = v;
+    }
+
+    function maskCRP(el) {
+      var v = el.value.replace(/\D/g, '').slice(0, 8);
+      if (v.length > 7) v = v.slice(0,2) + '/' + v.slice(2,7) + '-' + v.slice(7);
+      else if (v.length > 2) v = v.slice(0,2) + '/' + v.slice(2);
+      el.value = v;
+    }
+
     function copyLink() {
       navigator.clipboard.writeText(generatedLink).then(function() {
         alert('Link copiado!');
@@ -378,6 +394,15 @@
         var d = r.data || {};
         var stats = d.stats || {};
         var fd = d.formData || {};
+        // Normalizar nomes dos campos (portugues -> ingles)
+        fd.patientName = fd.patientName || fd.nome || '';
+        fd.birthDate = fd.birthDate || fd.nascimento || '';
+        fd.sex = fd.sex || fd.sexo || '';
+        fd.laterality = fd.laterality || fd.lateralidade || '';
+        fd.education = fd.education || fd.escolaridade || '';
+        fd.evaluator = fd.evaluator || fd.avaliador || '';
+        fd.age = fd.age || fd.idade || '';
+        if (!fd.age && fd.birthDate) fd.age = WCSTUI.calculateAge(fd.birthDate);
         // Garantir que campos numericos sao numeros
         var fields = ['pctErrors','pctPersevResp','pctPersevErr','pctConceptual','pctNonPersevErr',
           'totalErrors','persevResponses','persevErrors','nonPersevErrors','conceptualLevel',
@@ -387,9 +412,14 @@
         if (stats.learningToLearn !== null && stats.learningToLearn !== undefined) stats.learningToLearn = Number(stats.learningToLearn);
         if (!stats.insightCurve) stats.insightCurve = [];
         if (!stats.randomAlerts) stats.randomAlerts = [];
-        if (!stats.roundStats) stats.roundStats = [];
-        stats.tempo = d.tempo || '0min 0s';
-        stats.status = d.status || 'completo';
+        if (!stats.roundStats) stats.roundStats = {};
+        // Tempo
+        stats.tempo = d.tempo || stats.tempo || '';
+        if (!stats.tempo && stats.totalTime) {
+          var tt = Number(stats.totalTime);
+          stats.tempo = Math.floor(tt/60) + 'min ' + Math.floor(tt%60) + 's';
+        }
+        stats.status = d.status || stats.status || 'completo';
         // Gerar laudo IA
         var laudoIA = null;
         try { if (typeof TECFEAI !== 'undefined') laudoIA = await TECFEAI.generateReport(stats, fd); } catch(e) {}
