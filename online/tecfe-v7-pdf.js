@@ -91,7 +91,8 @@ var WCSTPDF = (function () {
     doc.setTextColor(0, 0, 0);
     var appVer = '6';
     try { var el = document.getElementById('appVersion'); if (el) appVer = el.textContent.replace('v',''); } catch(e) {}
-    var title = 'RESULTADOS DO TECFE v' + appVer;
+    var isOnline = window._isOnlineTest || false;
+    var title = isOnline ? 'RESULTADOS DO TECFEON v' + appVer : 'RESULTADOS DO TECFE v' + appVer;
     if (abandoned === 'interrompido') title += ' - TESTE INTERROMPIDO';
     else if (abandoned) title += ' - TESTE ABANDONADO';
     else if (stats.trialsPerformed < 128 && stats.completedCategories < 6) title += ' - TESTE PARCIAL';
