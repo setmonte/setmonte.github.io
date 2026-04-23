@@ -436,8 +436,29 @@
         var laudoIA = null;
         try { if (typeof TECFEAI !== 'undefined') laudoIA = await TECFEAI.generateReport(stats, fd); } catch(e) {}
         // Gerar PDF
+        // Gerar PDF manualmente para garantir download
+        var jsPDF = window.jspdf.jsPDF;
+        var origSave = jsPDF.prototype.save;
+        var pdfBlob = null;
+        jsPDF.prototype.save = function(fname) {
+          pdfBlob = this.output('blob');
+          window._pdfFilename = fname;
+        };
         WCSTPDF.generate(fd, stats, false, [], laudoIA);
-        console.log('PDF gerado com sucesso');
+        jsPDF.prototype.save = origSave;
+        if (pdfBlob) {
+          var url = URL.createObjectURL(pdfBlob);
+          var a = document.createElement('a');
+          a.href = url;
+          a.download = window._pdfFilename || 'TECFE_resultado.pdf';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          console.log('PDF baixado: ' + (window._pdfFilename || 'TECFE_resultado.pdf'));
+        } else {
+          console.error('PDF blob nao foi gerado');
+        }
       } catch(e) {
         alert('Erro ao gerar PDF: ' + e.message);
         console.error(e);
