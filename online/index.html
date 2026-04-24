@@ -428,7 +428,15 @@
         } catch(e) {
           console.error('Erro IA:', e);
         }
-        var doc = WCSTPDF.generate(fd, stats, false, [], laudoIA);
+        var laudoTexto = null;
+        var estrategia = null;
+        if (laudoIA && typeof laudoIA === 'object') {
+          laudoTexto = laudoIA.laudo || null;
+          estrategia = laudoIA.estrategia || null;
+        } else if (typeof laudoIA === 'string') {
+          laudoTexto = laudoIA;
+        }
+        var doc = WCSTPDF.generate(fd, stats, false, [], laudoTexto, estrategia);
         var ts = new Date().toISOString().replace(/[-:T]/g,'').slice(0,12);
         var nome = (fd.nome || 'paciente').replace(/\s+/g, '_');
         var fname = 'TECFEON_' + nome + '_' + ts + '.pdf';
