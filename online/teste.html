@@ -102,16 +102,22 @@
     WCSTUI.exitFullscreen = function() {};
     // Sobrescrever save do PDF para nao abrir dialogo de salvamento
     WCSTPDF.save = function(doc, fname) { return Promise.resolve({ success: true }); };
-    // Sobrescrever generate do PDF para separar laudo/estrategia do objeto IA
+    // Interceptar IA para separar laudo/estrategia
+    window._onlineEstrategia = null;
+    var _origGenerateReport = TECFEAI.generateReport;
+    TECFEAI.generateReport = function(formData, stats, abandoned) {
+      return _origGenerateReport(formData, stats, abandoned).then(function(result) {
+        if (result && typeof result === 'object') {
+          window._onlineEstrategia = result.estrategia || null;
+          return result.laudo || '';
+        }
+        return result;
+      });
+    };
+    // Interceptar generate do PDF para passar estrategia
     var _origGenerate = WCSTPDF.generate;
     WCSTPDF.generate = function(formData, stats, abandoned, historico, laudoIA, estrategia) {
-      var laudo = laudoIA;
-      var estrat = estrategia;
-      if (laudoIA && typeof laudoIA === 'object') {
-        laudo = laudoIA.laudo || null;
-        estrat = laudoIA.estrategia || estrategia || null;
-      }
-      return _origGenerate(formData, stats, abandoned, historico, laudo, estrat);
+      return _origGenerate(formData, stats, abandoned, historico, laudoIA, estrategia || window._onlineEstrategia);
     };
   </script>
   <script src="tecfe-v7-main.js"></script>
@@ -203,7 +209,7 @@
         observer.observe(document.getElementById('testPage'), { attributes: true, attributeFilter: ['style'] });
         observer.observe(document.getElementById('coverPage'), { attributes: true, attributeFilter: ['style'] });
 
-        // Iniciar teste automaticamente (verificar se sessao ja foi usada)
+        // Iniciar teste quando paciente clicar no botao (verificar se sessao ja foi usada)
         setTimeout(async function() {
           try {
             var resp = await fetch('https://dguom5dfla.execute-api.sa-east-1.amazonaws.com/session-status?sessionId=' + encodeURIComponent(sessionData.sessionId));
@@ -213,9 +219,11 @@
               return;
             }
           } catch(e) {}
-          var btn = document.getElementById('startButton');
-          if (btn) btn.click();
-          setTimeout(function() { testStarted = true; }, 1000);
+          // Mostrar pagina de instrucoes e aguardar clique do paciente
+          document.getElementById('coverPage').style.display = 'flex';
+          document.getElementById('startButton').addEventListener('click', function() {
+            setTimeout(function() { testStarted = true; }, 1000);
+          });
         }, 500);
       });
 
