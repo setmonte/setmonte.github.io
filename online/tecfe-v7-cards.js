@@ -4,7 +4,7 @@
 var WCSTCards = (function () {
 
   var colorMap = {
-    vermelho: 'red', verde: 'green', amarelo: 'yellow', azul: 'blue'
+    vermelho: 'red', verde: 'green', amarelo: '#FF8C00', azul: 'blue'
   };
   var shapeMap = {
     triangulo: 'triangle', estrela: 'star', cruz: 'cross', circulo: 'circle'
