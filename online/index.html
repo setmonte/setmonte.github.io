@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
@@ -444,83 +444,6 @@
       window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
     }
 
-    async function generatePDF_OLD(idx) {
-      try {
-        var r = _resultCache[idx];
-        if (!r) { alert('Resultado nao encontrado'); return; }
-        var d = r.data || {};
-        var stats = d.stats || {};
-        var fd = d.formData || {};
-        console.log('STATS:', JSON.stringify(stats));
-        console.log('FD:', JSON.stringify(fd));
-        var stats = d.stats || {};
-        var fd = d.formData || {};
-        // Normalizar nomes dos campos (ingles -> portugues para o PDF)
-        fd.nome = fd.nome || fd.patientName || '';
-        fd.nascimento = fd.nascimento || fd.birthDate || '';
-        fd.sexo = fd.sexo || fd.sex || '';
-        fd.lateralidade = fd.lateralidade || fd.laterality || '';
-        fd.escolaridade = fd.escolaridade || fd.education || '';
-        fd.avaliador = fd.avaliador || fd.evaluator || '';
-        fd.profissao = fd.profissao || fd.profession || '';
-        fd.idade = fd.idade || fd.age || '';
-        if (!fd.idade && fd.nascimento) fd.idade = WCSTUI.calculateAge(fd.nascimento);
-        fd.idadeAnos = fd.idadeAnos || WCSTUI.getAgeYears(fd.nascimento) || 0;
-        // Garantir que campos numericos sao numeros
-        var fields = ['pctErrors','pctPersevResp','pctPersevErr','pctConceptual','pctNonPersevErr',
-          'totalErrors','persevResponses','persevErrors','nonPersevErrors','conceptualLevel',
-          'completedCategories','trialsPerformed','trialsToFirst','failMaintain',
-          'escoreT','escorePadrao','impulsivityIndex','avgRT','totalTime','totalCorrect'];
-        fields.forEach(function(f) { if (stats[f] !== undefined && stats[f] !== null) stats[f] = Number(stats[f]); else stats[f] = 0; });
-        if (stats.learningToLearn !== null && stats.learningToLearn !== undefined) stats.learningToLearn = Number(stats.learningToLearn);
-        if (!stats.insightCurve) stats.insightCurve = [];
-        if (!stats.randomAlerts) stats.randomAlerts = [];
-        if (!stats.roundStats) stats.roundStats = {};
-        // Tempo
-        stats.tempo = d.tempo || stats.tempo || '';
-        if (!stats.tempo && stats.totalTime) {
-          var tt = Number(stats.totalTime);
-          stats.tempo = Math.floor(tt/60) + 'min ' + Math.floor(tt%60) + 's';
-        }
-        stats.status = d.status || stats.status || 'completo';
-        // Gerar laudo IA
-        var laudoIA = null;
-        try { if (typeof TECFEAI !== 'undefined') laudoIA = await TECFEAI.generateReport(stats, fd); } catch(e) {}
-        // Gerar PDF
-        // Gerar PDF manualmente para garantir download
-        var jsPDF = window.jspdf.jsPDF;
-        var origSave = jsPDF.prototype.save;
-        var pdfBlob = null;
-        jsPDF.prototype.save = function(fname) {
-          pdfBlob = this.output('blob');
-          window._pdfFilename = fname;
-        };
-        console.log('FD para PDF:', JSON.stringify(fd));
-        try {
-          WCSTPDF.generate(fd, stats, false, [], laudoIA);
-        } catch(pdfErr) {
-          console.error('Erro dentro do generate:', pdfErr);
-        }
-        jsPDF.prototype.save = origSave;
-        jsPDF.prototype.save = origSave;
-        if (pdfBlob) {
-          var url = URL.createObjectURL(pdfBlob);
-          var a = document.createElement('a');
-          a.href = url;
-          a.download = window._pdfFilename || 'TECFE_resultado.pdf';
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-          console.log('PDF baixado: ' + (window._pdfFilename || 'TECFE_resultado.pdf'));
-        } else {
-          console.error('PDF blob nao foi gerado');
-        }
-      } catch(e) {
-        alert('Erro ao gerar PDF: ' + e.message);
-        console.error(e);
-      }
-    }
   </script>
 </body>
 </html>
