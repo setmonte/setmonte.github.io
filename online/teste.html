@@ -102,6 +102,17 @@
     WCSTUI.exitFullscreen = function() {};
     // Sobrescrever save do PDF para nao abrir dialogo de salvamento
     WCSTPDF.save = function(doc, fname) { return Promise.resolve({ success: true }); };
+    // Sobrescrever generate do PDF para separar laudo/estrategia do objeto IA
+    var _origGenerate = WCSTPDF.generate;
+    WCSTPDF.generate = function(formData, stats, abandoned, historico, laudoIA, estrategia) {
+      var laudo = laudoIA;
+      var estrat = estrategia;
+      if (laudoIA && typeof laudoIA === 'object') {
+        laudo = laudoIA.laudo || null;
+        estrat = laudoIA.estrategia || estrategia || null;
+      }
+      return _origGenerate(formData, stats, abandoned, historico, laudo, estrat);
+    };
   </script>
   <script src="tecfe-v7-main.js"></script>
 
