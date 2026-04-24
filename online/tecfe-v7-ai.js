@@ -5,7 +5,7 @@
 var TECFEAI = (function () {
 
   // Chave da API Gemini (substituir pelo valor real)
-  var API_KEY = 'AIzaSyDH4xHBQMNezLUfX-JNoofW73mAcYjqlxk';
+  var API_KEY = 'AIzaSyAT374RWKbRCJBV9v2umrDfCuLvR5iCm0w';
   var API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=';
 
   function buildPrompt(formData, stats, abandoned) {
