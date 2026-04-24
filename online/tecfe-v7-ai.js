@@ -1,12 +1,10 @@
 // tecfe-v7-ai.js
-// Geracao de laudo clinico via Gemini AI
+// Geracao de laudo clinico via Gemini AI (via Lambda proxy)
 // SEM acentos nos comentarios/strings do codigo
 
 var TECFEAI = (function () {
 
-  // Chave da API Gemini (substituir pelo valor real)
-  var API_KEY = 'AIzaSyAT374RWKbRCJBV9v2umrDfCuLvR5iCm0w';
-  var API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=';
+  var API_URL = 'https://dguom5dfla.execute-api.sa-east-1.amazonaws.com/generate-ai';
 
   function buildPrompt(formData, stats, abandoned) {
     var status = 'completo';
@@ -14,7 +12,7 @@ var TECFEAI = (function () {
     else if (abandoned) status = 'abandonado pelo avaliador';
     else if (stats.trialsPerformed < 128 && stats.completedCategories < 6) status = 'parcial (cartas esgotadas)';
 
-    var prompt = 'Voce e um neuropsicólogo experiente. Gere um LAUDO CLINICO breve (maximo 8 linhas) ' +
+    var prompt = 'Voce e um neuropsicologo experiente. Gere um LAUDO CLINICO breve (maximo 8 linhas) ' +
       'baseado nos resultados abaixo do Teste Eletronico de Classificacao de Cartas (TECFE), ' +
       'versao computadorizada do Wisconsin Card Sorting Test.\n\n' +
       'DADOS DO PACIENTE:\n' +
@@ -40,9 +38,8 @@ var TECFEAI = (function () {
       prompt += '- ALERTA: Padrao de resposta aleatoria detectado em ' + stats.randomAlerts.length + ' bloco(s)\n';
     }
 
-    // Dados brutos para analise de estrategia
     prompt += '\nSEQUENCIA DE RESPOSTAS (categoria vigente | match | resultado):\n';
-    var results = WCSTEngine.state.results || [];
+    var results = (typeof WCSTEngine !== 'undefined' && WCSTEngine.state) ? (WCSTEngine.state.results || []) : [];
     var maxShow = Math.min(results.length, 40);
     for (var i = 0; i < maxShow; i++) {
       var r = results[i];
@@ -59,9 +56,9 @@ var TECFEAI = (function () {
       '- NAO repita os numeros, interprete-os clinicamente\n' +
       '- Termine com uma conclusao sobre o funcionamento executivo global\n' +
       '- Na ULTIMA LINHA, escreva EXATAMENTE neste formato (sem mais nada depois):\n' +
-      '  ESTRATEGIA: [classificacao] — [descricao breve]\n' +
+      '  ESTRATEGIA: [classificacao] - [descricao breve]\n' +
       '  Classificacoes possiveis: Sistematica, Sistematica por eliminacao, Parcialmente sistematica, Tentativa e erro, Perseverativa, Aleatoria, Impulsiva\n' +
-      '  Exemplo: ESTRATEGIA: Sistematica por eliminacao — descartou hipoteses apos feedback negativo';
+      '  Exemplo: ESTRATEGIA: Sistematica por eliminacao - descartou hipoteses apos feedback negativo';
 
     return prompt;
   }
@@ -70,32 +67,20 @@ var TECFEAI = (function () {
     return new Promise(function (resolve, reject) {
       var prompt = buildPrompt(formData, stats, abandoned);
 
-      var body = JSON.stringify({
-        contents: [{
-          parts: [{ text: prompt }]
-        }]
-      });
-
-      fetch(API_URL + API_KEY, {
+      fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: body
+        body: JSON.stringify({ prompt: prompt })
       })
       .then(function (response) {
         if (!response.ok) throw new Error('HTTP ' + response.status);
         return response.json();
       })
       .then(function (data) {
-        var text = '';
-        if (data.candidates && data.candidates[0] && data.candidates[0].content) {
-          text = data.candidates[0].content.parts[0].text || '';
-        }
-        text = text.trim();
-        // Separar estrategia do laudo
+        var text = (data.text || '').trim();
         var estrategia = '';
         var laudo = text;
         var idx = text.indexOf('ESTRATEGIA:');
-        if (idx === -1) idx = text.indexOf('ESTRATÉGIA:');
         if (idx >= 0) {
           estrategia = text.substring(idx).replace(/^ESTRAT[EÉ]GIA:\s*/i, '').trim();
           laudo = text.substring(0, idx).trim();
