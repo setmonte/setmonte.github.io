@@ -185,7 +185,7 @@ var WCSTPDF = (function () {
     if (estrategia) {
       doc.setFontSize(8);
       doc.setFont(undefined, 'bold');
-      doc.setTextColor(0, 70, 130);
+      doc.setTextColor(200, 0, 0);
       doc.text('ESTRATEGIA IDENTIFICADA: ', 10, yPos);
       var estratX = doc.getTextWidth('ESTRATEGIA IDENTIFICADA: ') + 10;
       doc.setFont(undefined, 'normal');
