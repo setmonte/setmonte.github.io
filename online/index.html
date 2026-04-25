@@ -419,33 +419,16 @@
         stats.status = d.status || stats.status || 'completo';
         var laudoIA = null;
         try {
-          // Chamar Gemini direto do painel (chave protegida - so avaliador acessa)
-          var aiPrompt = 'Voce e um neuropsicologo experiente. Gere um LAUDO CLINICO breve (maximo 8 linhas) baseado nos resultados do TECFE.\n' +
-            'Idade: ' + fd.idade + ', Escolaridade: ' + fd.escolaridade + ', Sexo: ' + (fd.sexo || 'N/I') + '\n' +
-            'Tentativas: ' + stats.trialsPerformed + '/128, Categorias: ' + stats.completedCategories + '/6\n' +
-            'Erros: ' + stats.totalErrors + ' (' + stats.pctErrors.toFixed(1) + '%), Persev: ' + stats.persevErrors + ' (' + stats.pctPersevErr.toFixed(1) + '%)\n' +
-            'Nivel conceitual: ' + stats.pctConceptual.toFixed(1) + '%, Escore T: ' + stats.escoreT + ', Padrao: ' + stats.escorePadrao + '\n' +
-            'Impulsividade: ' + stats.impulsivityIndex.toFixed(2) + ', Fracasso manter: ' + stats.failMaintain + '\n' +
-            'Escreva em portugues brasileiro. Interprete clinicamente. NAO repita numeros. Termine com conclusao sobre funcionamento executivo.\n' +
-            'OBRIGATORIO: Na ULTIMA LINHA do texto, escreva EXATAMENTE neste formato:\n' +
-            'ESTRATEGIA: [tipo] - [descricao breve]\n' +
-            'Tipos possiveis: Sistematica, Sistematica por eliminacao, Parcialmente sistematica, Tentativa e erro, Perseverativa, Aleatoria, Impulsiva\n' +
-            'Exemplo: ESTRATEGIA: Sistematica por eliminacao - descartou hipoteses apos feedback negativo\n' +
-            'A linha ESTRATEGIA e OBRIGATORIA e deve ser a ultima linha.';
-          var aiResp = await fetch('https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws/generate-ai', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt: aiPrompt })
-          });
-          if (aiResp.ok) {
-            var aiData = await aiResp.json();
-            var aiText = (aiData.text || '').trim();
-            if (aiText) laudoIA = aiText;
+          if (typeof TECFEAI !== 'undefined') {
+            laudoIA = await TECFEAI.generateReport(fd, stats);
           }
         } catch(e) {}
         var laudoTexto = null;
         var estrategia = null;
-        if (laudoIA) {
+        if (laudoIA && typeof laudoIA === 'object') {
+          laudoTexto = laudoIA.laudo || null;
+          estrategia = laudoIA.estrategia || null;
+        } else if (typeof laudoIA === 'string') {
           var eidx = laudoIA.indexOf('ESTRAT');
           if (eidx >= 0) {
             laudoTexto = laudoIA.substring(0, eidx).trim();
@@ -453,6 +436,15 @@
           } else {
             laudoTexto = laudoIA;
           }
+        }
+        // Fallback: se IA nao gerou estrategia, calcular dos dados
+        if (!estrategia && stats.completedCategories > 0) {
+          if (stats.pctPersevErr > 15) estrategia = 'Perseverativa - tendencia a manter criterio anterior apos mudanca';
+          else if (stats.impulsivityIndex > 0.5) estrategia = 'Impulsiva - respostas rapidas sem analise do feedback';
+          else if (stats.completedCategories >= 6 && stats.pctErrors < 10) estrategia = 'Sistematica - formou e manteve conceitos com precisao';
+          else if (stats.completedCategories >= 6) estrategia = 'Sistematica por eliminacao - ajustou estrategia apos feedback';
+          else if (stats.completedCategories >= 3) estrategia = 'Parcialmente sistematica - formou conceitos com dificuldade em transicoes';
+          else estrategia = 'Tentativa e erro - explorou hipoteses de forma limitada';
         }
         var doc = WCSTPDF.generate(fd, stats, false, [], laudoTexto, estrategia);
         var ts = new Date().toISOString().replace(/[-:T]/g,'').slice(0,12);
