@@ -183,7 +183,7 @@ var WCSTPDF = (function () {
 
     // -- Estrategia identificada pela IA --
     if (estrategia) {
-      doc.setFontSize(8);
+      doc.setFontSize(6.5);
       doc.setFont(undefined, 'bold');
       doc.setTextColor(200, 0, 0);
       doc.text('ESTRATEGIA IDENTIFICADA: ', 10, yPos);
@@ -198,7 +198,7 @@ var WCSTPDF = (function () {
           doc.text(estratLines[el], 10, yPos);
         }
       }
-      yPos += 2;
+      yPos += 1;
     }
 
     // -- Tabela comparativa normativa --
