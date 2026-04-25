@@ -429,22 +429,7 @@
           laudoTexto = laudoIA.laudo || null;
           estrategia = laudoIA.estrategia || null;
         } else if (typeof laudoIA === 'string') {
-          var eidx = laudoIA.indexOf('ESTRAT');
-          if (eidx >= 0) {
-            laudoTexto = laudoIA.substring(0, eidx).trim();
-            estrategia = laudoIA.substring(eidx).replace(/^ESTRAT[EÉ]GIA:\s*/i, '').trim();
-          } else {
-            laudoTexto = laudoIA;
-          }
-        }
-        // Fallback: se IA nao gerou estrategia, calcular dos dados
-        if (!estrategia && stats.completedCategories > 0) {
-          if (stats.pctPersevErr > 15) estrategia = 'Perseverativa - tendencia a manter criterio anterior apos mudanca';
-          else if (stats.impulsivityIndex > 0.5) estrategia = 'Impulsiva - respostas rapidas sem analise do feedback';
-          else if (stats.completedCategories >= 6 && stats.pctErrors < 10) estrategia = 'Sistematica - formou e manteve conceitos com precisao';
-          else if (stats.completedCategories >= 6) estrategia = 'Sistematica por eliminacao - ajustou estrategia apos feedback';
-          else if (stats.completedCategories >= 3) estrategia = 'Parcialmente sistematica - formou conceitos com dificuldade em transicoes';
-          else estrategia = 'Tentativa e erro - explorou hipoteses de forma limitada';
+          laudoTexto = laudoIA;
         }
         var doc = WCSTPDF.generate(fd, stats, false, [], laudoTexto, estrategia);
         var ts = new Date().toISOString().replace(/[-:T]/g,'').slice(0,12);
