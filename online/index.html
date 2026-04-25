@@ -422,13 +422,15 @@
           if (stats.trialsPerformed > 0) {
             // Chamar Gemini direto com timeout de 10s
             var k = ['AIza','SyA_','Xxm8','ObIN','uPtn','_23X','fo5p','AUWS','Nzfh','GvI'].join('');
-            var aiPrompt = TECFEAI ? TECFEAI.__buildPrompt(fd, stats) : '';
-            if (!aiPrompt) {
-              aiPrompt = 'Gere um LAUDO CLINICO breve (max 8 linhas) de neuropsicologo sobre TECFE.\n' +
-                'Idade: ' + fd.idade + ', Categorias: ' + stats.completedCategories + '/6, Erros: ' + stats.pctErrors.toFixed(1) + '%, Persev: ' + stats.pctPersevErr.toFixed(1) + '%\n' +
-                'Nivel conceitual: ' + stats.pctConceptual.toFixed(1) + '%, Escore T: ' + stats.escoreT + '\n' +
-                'Portugues brasileiro. Interprete clinicamente. Na ULTIMA LINHA: ESTRATEGIA: [tipo] - [descricao]';
-            }
+            var aiPrompt = 'Voce e um neuropsicologo experiente. Gere um LAUDO CLINICO breve (max 8 linhas) do TECFE.\n' +
+              'Idade: ' + fd.idade + ', Escolaridade: ' + fd.escolaridade + ', Sexo: ' + (fd.sexo || 'N/I') + '\n' +
+              'Tentativas: ' + stats.trialsPerformed + '/128, Categorias: ' + stats.completedCategories + '/6\n' +
+              'Erros: ' + stats.totalErrors + ' (' + stats.pctErrors.toFixed(1) + '%), Persev: ' + stats.persevErrors + ' (' + stats.pctPersevErr.toFixed(1) + '%)\n' +
+              'Nivel conceitual: ' + stats.pctConceptual.toFixed(1) + '%, Escore T: ' + stats.escoreT + ', Padrao: ' + stats.escorePadrao + '\n' +
+              'Impulsividade: ' + stats.impulsivityIndex.toFixed(2) + ', Fracasso manter: ' + stats.failMaintain + '\n' +
+              'Portugues brasileiro. Interprete clinicamente. NAO repita numeros.\n' +
+              'OBRIGATORIO na ULTIMA LINHA: ESTRATEGIA: [tipo] - [descricao]\n' +
+              'Tipos: Sistematica, Sistematica por eliminacao, Parcialmente sistematica, Tentativa e erro, Perseverativa, Aleatoria, Impulsiva';
             var aiTimeout = new Promise(function(_, reject) { setTimeout(function() { reject('timeout'); }, 30000); });
             var aiCall = fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=' + k, {
               method: 'POST',
