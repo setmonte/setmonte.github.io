@@ -4,7 +4,7 @@
 
 var TECFEAI = (function () {
 
-  var API_URL = 'https://dguom5dfla.execute-api.sa-east-1.amazonaws.com/generate-ai';
+  var API_URL = 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws/generate-ai';
 
   function buildPrompt(formData, stats, abandoned) {
     var status = 'completo';

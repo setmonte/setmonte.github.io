@@ -419,18 +419,37 @@
         stats.status = d.status || stats.status || 'completo';
         var laudoIA = null;
         try {
-          if (typeof TECFEAI !== 'undefined') {
-            laudoIA = await TECFEAI.generateReport(fd, stats);
-          } else {
+          // Chamar Gemini direto do painel (chave protegida - so avaliador acessa)
+          var aiPrompt = 'Voce e um neuropsicologo experiente. Gere um LAUDO CLINICO breve (maximo 8 linhas) baseado nos resultados do TECFE.\n' +
+            'Idade: ' + fd.idade + ', Escolaridade: ' + fd.escolaridade + ', Sexo: ' + (fd.sexo || 'N/I') + '\n' +
+            'Tentativas: ' + stats.trialsPerformed + '/128, Categorias: ' + stats.completedCategories + '/6\n' +
+            'Erros: ' + stats.totalErrors + ' (' + stats.pctErrors.toFixed(1) + '%), Persev: ' + stats.persevErrors + ' (' + stats.pctPersevErr.toFixed(1) + '%)\n' +
+            'Nivel conceitual: ' + stats.pctConceptual.toFixed(1) + '%, Escore T: ' + stats.escoreT + ', Padrao: ' + stats.escorePadrao + '\n' +
+            'Impulsividade: ' + stats.impulsivityIndex.toFixed(2) + ', Fracasso manter: ' + stats.failMaintain + '\n' +
+            'Escreva em portugues brasileiro. Interprete clinicamente. NAO repita numeros. Termine com conclusao sobre funcionamento executivo.\n' +
+            'Na ULTIMA LINHA escreva: ESTRATEGIA: [tipo] - [descricao breve]\n' +
+            'Tipos: Sistematica, Sistematica por eliminacao, Parcialmente sistematica, Tentativa e erro, Perseverativa, Aleatoria, Impulsiva';
+          var aiResp = await fetch('https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws/generate-ai', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt: aiPrompt })
+          });
+          if (aiResp.ok) {
+            var aiData = await aiResp.json();
+            var aiText = (aiData.text || '').trim();
+            if (aiText) laudoIA = aiText;
           }
         } catch(e) {}
         var laudoTexto = null;
         var estrategia = null;
-        if (laudoIA && typeof laudoIA === 'object') {
-          laudoTexto = laudoIA.laudo || null;
-          estrategia = laudoIA.estrategia || null;
-        } else if (typeof laudoIA === 'string') {
-          laudoTexto = laudoIA;
+        if (laudoIA) {
+          var eidx = laudoIA.indexOf('ESTRAT');
+          if (eidx >= 0) {
+            laudoTexto = laudoIA.substring(0, eidx).trim();
+            estrategia = laudoIA.substring(eidx).replace(/^ESTRAT[EÉ]GIA:\s*/i, '').trim();
+          } else {
+            laudoTexto = laudoIA;
+          }
         }
         var doc = WCSTPDF.generate(fd, stats, false, [], laudoTexto, estrategia);
         var ts = new Date().toISOString().replace(/[-:T]/g,'').slice(0,12);
