@@ -198,7 +198,7 @@ var WCSTPDF = (function () {
           doc.text(estratLines[el], 10, yPos);
         }
       }
-      yPos += 5;
+      yPos += 2;
     }
 
     // -- Tabela comparativa normativa --
