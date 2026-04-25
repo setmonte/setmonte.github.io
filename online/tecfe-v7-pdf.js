@@ -311,9 +311,26 @@ var WCSTPDF = (function () {
       doc.setFont(undefined, 'normal');
       doc.setFontSize(6.5);
       doc.setTextColor(0, 0, 0);
-      var aiLines = doc.splitTextToSize(laudoIA, 190);
+      // Separar estrategia do laudo para colorir
+      var laudoTexto = laudoIA;
+      var estrategiaTexto = '';
+      var eidx = laudoIA.indexOf('ESTRAT');
+      if (eidx >= 0) {
+        laudoTexto = laudoIA.substring(0, eidx).trim();
+        estrategiaTexto = laudoIA.substring(eidx).trim();
+      }
+      var aiLines = doc.splitTextToSize(laudoTexto, 190);
       doc.text(aiLines, rightX, rightY);
       rightY += aiLines.length * 2.8 + 1;
+      if (estrategiaTexto) {
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(200, 0, 0);
+        var estLines = doc.splitTextToSize(estrategiaTexto, 190);
+        doc.text(estLines, rightX, rightY);
+        rightY += estLines.length * 2.8 + 1;
+        doc.setTextColor(0, 0, 0);
+        doc.setFont(undefined, 'normal');
+      }
     }
 
     // yPos avanca para o maior entre grafico e texto direito
