@@ -146,6 +146,10 @@
       <!-- RESULTADOS -->
       <div id="resultsSection" class="card hidden">
         <h2>Resultados</h2>
+        <div style="margin-bottom:10px;display:flex;gap:10px;">
+          <button class="btn btn-green" style="padding:8px 16px;font-size:13px;" onclick="exportExcel()">Exportar Excel</button>
+          <button class="btn btn-red" style="padding:8px 16px;font-size:13px;" onclick="clearResults()">Limpar Dados</button>
+        </div>
         <div id="resultsList"><p style="color:#777;">Carregando resultados...</p></div>
       </div>
     </div>
@@ -157,6 +161,7 @@
 
   <script src="libs/jspdf.umd.min.js"></script>
   <script src="libs/jspdf.plugin.autotable.min.js"></script>
+  <script src="libs/xlsx.min.js"></script>
   <script src="tecfe-v7-cards.js"></script>
   <script src="tecfe-v7-ui.js"></script>
   <script src="tecfe-v7-engine.js"></script>
@@ -487,6 +492,81 @@
     function sendWhatsApp() {
       var text = 'Ola! Acesse o link abaixo para realizar o teste TECFE: ' + generatedLink;
       window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+    }
+
+    function exportExcel() {
+      if (_resultCache.length === 0) { alert('Nenhum resultado para exportar.'); return; }
+      var rows = [];
+      _resultCache.forEach(function(r) {
+        var d = r.data || {};
+        var s = d.stats || {};
+        var fd = d.formData || {};
+        var nome = fd.patientName || fd.nome || '';
+        var nasc = fd.birthDate || fd.nascimento || '';
+        var idade = fd.idade || fd.age || '';
+        var escol = fd.education || fd.escolaridade || '';
+        var sexo = fd.sex || fd.sexo || '';
+        var tempo = d.tempo || '';
+        if (!tempo && s.totalTime) { var tt = Number(s.totalTime); tempo = Math.floor(tt/60) + 'min ' + Math.floor(tt%60) + 's'; }
+        // Estrategia da IA (se disponivel no laudo salvo)
+        var estrategia = '';
+        if (s.completedCategories >= 6 && s.pctErrors < 10) estrategia = 'Sistematica';
+        else if (s.completedCategories >= 6) estrategia = 'Sistematica por eliminacao';
+        else if (s.completedCategories >= 3) estrategia = 'Parcialmente sistematica';
+        else if (s.pctPersevErr > 15) estrategia = 'Perseverativa';
+        else estrategia = 'Tentativa e erro';
+        rows.push({
+          'Data': d.date ? new Date(d.date).toLocaleString('pt-BR') : '',
+          'Paciente': nome,
+          'Nascimento': nasc,
+          'Idade': idade,
+          'Sexo': sexo,
+          'Escolaridade': escol,
+          'Status': d.status || '',
+          'Categorias': s.completedCategories || 0,
+          'Tentativas': s.trialsPerformed || 0,
+          'Total Erros': s.totalErrors || 0,
+          '% Erros': s.pctErrors ? Number(s.pctErrors).toFixed(1) : '0',
+          'Resp Persev': s.persevResponses || 0,
+          '% Resp Persev': s.pctPersevResp ? Number(s.pctPersevResp).toFixed(1) : '0',
+          'Erros Persev': s.persevErrors || 0,
+          '% Erros Persev': s.pctPersevErr ? Number(s.pctPersevErr).toFixed(1) : '0',
+          'Erros Nao-Persev': s.nonPersevErrors || 0,
+          '% Nivel Conceitual': s.pctConceptual ? Number(s.pctConceptual).toFixed(1) : '0',
+          'Escore T': s.escoreT || 0,
+          'Escore Padrao': s.escorePadrao || 0,
+          'Ensaios 1a Cat': s.trialsToFirst || 0,
+          'Fracasso Manter': s.failMaintain || 0,
+          'Aprend a Aprender': s.learningToLearn != null ? Number(s.learningToLearn).toFixed(2) : 'N/A',
+          'Impulsividade': s.impulsivityIndex != null ? Number(s.impulsivityIndex).toFixed(2) : '0',
+          'Tempo': tempo,
+          'Estrategia': estrategia
+        });
+      });
+      var ws = XLSX.utils.json_to_sheet(rows);
+      var wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Resultados');
+      var ts = new Date().toISOString().replace(/[-:T]/g,'').slice(0,12);
+      XLSX.writeFile(wb, 'TECFEON_resultados_' + ts + '.xlsx');
+    }
+
+    async function clearResults() {
+      if (_resultCache.length === 0) { alert('Nenhum resultado para limpar.'); return; }
+      if (!confirm('Deseja realmente apagar TODOS os ' + _resultCache.length + ' resultados? Esta acao nao pode ser desfeita.')) return;
+      var errors = 0;
+      for (var i = 0; i < _resultCache.length; i++) {
+        try {
+          await fetch(API_URL + '/delete-result', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId: _resultCache[i].sessionId, email: currentUser })
+          });
+        } catch(e) { errors++; }
+      }
+      if (errors > 0) alert(errors + ' resultado(s) nao puderam ser apagados.');
+      else alert('Todos os resultados foram apagados.');
+      _resultCache = [];
+      document.getElementById('resultsList').innerHTML = '<p style="color:#777;">Nenhum resultado encontrado.</p>';
     }
 
   </script>
