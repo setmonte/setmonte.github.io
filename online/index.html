@@ -148,7 +148,7 @@
         <h2>Resultados</h2>
         <div style="margin-bottom:10px;display:flex;gap:10px;">
           <button class="btn btn-green" style="padding:8px 16px;font-size:13px;" onclick="exportExcel()">Exportar Excel</button>
-          <button class="btn btn-red" style="padding:8px 16px;font-size:13px;" onclick="clearResults()">Limpar Dados</button>
+          <button class="btn btn-red" style="padding:8px 16px;font-size:13px;" onclick="deleteSelected()">Apagar Selecionados</button>
         </div>
         <div id="resultsList"><p style="color:#777;">Carregando resultados...</p></div>
       </div>
@@ -290,7 +290,7 @@
         var data = await resp.json();
         if (data.results && data.results.length > 0) {
           _resultCache = [];
-          var html = '<table class="results-table"><tr><th>Data</th><th>Paciente</th><th>Status</th><th>Categorias</th><th>% Erros</th><th>Tempo</th><th>Acao</th></tr>';
+          var html = '<table class="results-table"><tr><th><input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)"></th><th>Data</th><th>Paciente</th><th>Status</th><th>Categorias</th><th>% Erros</th><th>Tempo</th><th>Acao</th></tr>';
           data.results.forEach(function(r) {
             var d = r.data || {};
             var stats = d.stats || null;
@@ -304,6 +304,7 @@
               tempo = Math.floor(tt/60) + 'min ' + Math.floor(tt%60) + 's';
             }
             html += '<tr>';
+            html += '<td><input type="checkbox" class="result-check" data-idx="' + _resultCache.length + '"></td>';
             html += '<td>' + date + '</td>';
             html += '<td>' + nome + '</td>';
             html += '<td>' + (d.status || '-') + '</td>';
@@ -494,6 +495,30 @@
       window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
     }
 
+    function toggleSelectAll(master) {
+      document.querySelectorAll('.result-check').forEach(function(cb) { cb.checked = master.checked; });
+    }
+
+    async function deleteSelected() {
+      var checks = document.querySelectorAll('.result-check:checked');
+      if (checks.length === 0) { alert('Selecione pelo menos um resultado para apagar.'); return; }
+      if (!confirm('Deseja apagar ' + checks.length + ' resultado(s) selecionado(s)? Esta acao nao pode ser desfeita.')) return;
+      var errors = 0;
+      for (var i = 0; i < checks.length; i++) {
+        var idx = parseInt(checks[i].dataset.idx);
+        try {
+          await fetch(API_URL + '/delete-result', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId: _resultCache[idx].sessionId, email: currentUser })
+          });
+        } catch(e) { errors++; }
+      }
+      if (errors > 0) alert(errors + ' resultado(s) nao puderam ser apagados.');
+      else alert(checks.length + ' resultado(s) apagado(s).');
+      loadResults();
+    }
+
     function exportExcel() {
       if (_resultCache.length === 0) { alert('Nenhum resultado para exportar.'); return; }
       var rows = [];
@@ -568,7 +593,6 @@
       _resultCache = [];
       document.getElementById('resultsList').innerHTML = '<p style="color:#777;">Nenhum resultado encontrado.</p>';
     }
-
   </script>
 </body>
 </html>
