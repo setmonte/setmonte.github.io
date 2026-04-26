@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BAPQ - Broader Autism Phenotype Questionnaire</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #4a90e2 0%, #7b68ee 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4a90e2 0%, #7b68ee 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.2em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .dados-pessoais {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            border-left: 5px solid #4a90e2;
+        }
+
+        .dados-pessoais h2 {
+            color: #4a90e2;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .form-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #4a90e2;
+        }
+
+        .bloco {
+            margin-bottom: 30px;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+
+        .bloco-header {
+            background: linear-gradient(135deg, #4a90e2 0%, #7b68ee 100%);
+            color: white;
+            padding: 20px;
+            font-size: 1.3em;
+            font-weight: 600;
+        }
+
+        .item {
+            padding: 20px;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background-color 0.3s;
+        }
+
+        .item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .item:last-child {
+            border-bottom: none;
+        }
+
+        .item-numero {
+            font-weight: bold;
+            color: #4a90e2;
+            margin-right: 10px;
+        }
+
+        .item-texto {
+            font-size: 1.1em;
+            margin-bottom: 15px;
+            color: #444;
+            line-height: 1.5;
+        }
+
+        .opcoes {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .opcao {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+            min-width: 70px;
+            min-height: 70px;
+        }
+
+        .opcao:hover {
+            background-color: #e3f2fd;
+            border-color: #4a90e2;
+        }
+
+        .opcao input[type="radio"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .opcao label {
+            cursor: pointer;
+            font-weight: 500;
+            color: #555;
+            text-align: center;
+            font-size: 0.8em;
+            line-height: 1.2;
+            min-height: 30px;
+            display: flex;
+            align-items: center;
+        }
+
+        .botoes {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #4a90e2 0%, #7b68ee 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(74, 144, 226, 0.3);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(40, 167, 69, 0.3);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(220, 53, 69, 0.3);
+        }
+
+        .resultados {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 10px;
+            margin-top: 30px;
+            border-left: 5px solid #4a90e2;
+            display: none;
+        }
+
+        .resultados h2 {
+            color: #4a90e2;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .resultado-bloco {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .resultado-nome {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .resultado-detalhes {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .total-geral {
+            background: linear-gradient(135deg, #4a90e2 0%, #7b68ee 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 10px;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .interpretacao {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            border: 2px solid #4a90e2;
+            text-align: center;
+        }
+
+        .interpretacao h3 {
+            color: #4a90e2;
+            margin-bottom: 15px;
+        }
+
+        .positivo {
+            background: #28a745;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+        }
+
+        .negativo {
+            background: #dc3545;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+        }
+
+        .neutro {
+            background: #ffc107;
+            color: #212529;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+        }
+
+        @media print {
+            @page {
+                size: portrait;
+                margin: 1cm;
+            }
+            body {
+                background: white;
+                padding: 0;
+            }
+            .botoes, .btn {
+                display: none !important;
+            }
+            button {
+                display: none !important;
+            }
+            .container {
+                box-shadow: none;
+                max-width: 100%;
+            }
+            .dados-pessoais[style*="#e3f2fd"] {
+                display: none !important;
+            }
+            .resultados {
+                display: none !important;
+            }
+            .dados-pessoais {
+                page-break-inside: avoid;
+            }
+            .header {
+                background: #4a90e2 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .bloco-header {
+                background: #4a90e2 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .item {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+            .bloco {
+                page-break-inside: auto;
+            }
+            .bloco-header {
+                page-break-after: avoid;
+            }
+            .opcoes {
+                display: flex !important;
+                flex-direction: row !important;
+                flex-wrap: wrap !important;
+                justify-content: center !important;
+            }
+            .opcao {
+                display: flex !important;
+                flex-direction: column !important;
+            }
+            #referencias-impressao {
+                display: block !important;
+                page-break-before: auto;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 10px;
+            }
+            
+            .header {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 1.8em;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .form-row {
+                flex-direction: column;
+            }
+            
+            .opcoes {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .botoes {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧠 BAPQ</h1>
+            <p>Broader Autism Phenotype Questionnaire - Fenótipo Ampliado do Autismo</p>
+        </div>
+
+        <div class="content">
+            <div class="dados-pessoais" style="background: #e3f2fd; border-left-color: #1976d2; position: relative;">
+                <button onclick="imprimirFormulario()" style="position: absolute; top: 20px; right: 20px; padding: 10px 20px; background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%); color: white; border: none; border-radius: 20px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s; box-shadow: 0 2px 5px rgba(0,0,0,0.2);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 5px 15px rgba(25,118,210,0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 5px rgba(0,0,0,0.2)'">🖨️ Imprimir Formulário</button>
+                <h2 style="color: #1976d2;">📚 Informações Técnicas</h2>
+                <p style="margin-bottom: 15px; color: #555; line-height: 1.6;">
+                    <strong>Instrumento:</strong> BAPQ - Broader Autism Phenotype Questionnaire<br>
+                    <strong>Autores originais:</strong> HURLEY et al., 2007<br>
+                    <strong>Validação brasileira:</strong> PRATA et al., 2019<br>
+                    <strong>Estrutura:</strong> 36 itens, 3 domínios, escala Likert 6 pontos<br>
+                    <strong>População:</strong> Adultos (≥18 anos) sem diagnóstico de TEA<br>
+                    <strong>Ponto de corte (Brasil):</strong> ≥3,15 (Sensibilidade: 78%, Especificidade: 74%)
+                </p>
+            </div>
+
+            <div class="dados-pessoais">
+                <h2>📋 Dados Pessoais</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="nome">Nome:</label>
+                        <input type="text" id="nome" placeholder="Nome completo">
+                    </div>
+                    <div class="form-group">
+                        <label for="dataNascimento">Data de Nascimento:</label>
+                        <input type="date" id="dataNascimento" onchange="calcularIdade()">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="idadeCalculada">Idade:</label>
+                        <input type="text" id="idadeCalculada" readonly style="background-color: #f0f0f0;" placeholder="Calculada automaticamente">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="sexo">Sexo:</label>
+                        <select id="sexo">
+                            <option value="">Selecione</option>
+                            <option value="Masculino">Masculino</option>
+                            <option value="Feminino">Feminino</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="data">Data da Avaliação:</label>
+                        <input type="date" id="data">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="observacoes">Observações (opcional):</label>
+                    <input type="text" id="observacoes" placeholder="Informações adicionais">
+                </div>
+            </div>
+
+            <div id="questionario">
+                <!-- Blocos serão inseridos aqui pelo JavaScript -->
+            </div>
+
+            <div class="dados-pessoais" id="referencias-impressao" style="display: none; background: #f8f9fa; border-left-color: #4a90e2; margin-top: 30px;">
+                <h2 style="color: #4a90e2;">📚 Referências</h2>
+                <p style="color: #555; line-height: 1.8; font-size: 0.9em;">
+                    <strong>HURLEY, R. S. E. et al.</strong> The broad autism phenotype questionnaire. <em>Journal of Autism and Developmental Disorders</em>, v. 37, n. 9, p. 1679-1690, 2007.<br><br>
+                    <strong>PRATA, J. C. et al.</strong> Psychometric properties of the Broad Autism Phenotype Questionnaire - Brazilian version. <em>Psicologia: Reflexão e Crítica</em>, v. 32, n. 1, 2019. Disponível em: https://doi.org/10.1186/s41155-019-0116-2
+                </p>
+            </div>
+
+            <div class="botoes">
+                <button class="btn btn-primary" onclick="calcularResultados()">📊 Calcular Resultados</button>
+                <button class="btn btn-secondary" onclick="gerarRelatorioPDF()">📄 Gerar Relatório PDF</button>
+                <button class="btn btn-danger" onclick="limparDados()">🗑️ Limpar Dados</button>
+            </div>
+
+            <div id="resultados" class="resultados">
+                <!-- Resultados serão inseridos aqui -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Dados do questionário BAPQ
+        const questionario = {
+            "Personalidade Distante (Aloof Personality)": [
+                "Prefiro socializar com poucos amigos próximos em vez de com um grande grupo.",
+                "Encontro situações sociais fáceis.", // invertido
+                "É difícil para mim fazer novos amigos.",
+                "Gosto do vai e vem nas conversas com os outros.", // invertido
+                "Prefiro fazer coisas com os outros em vez de sozinho.", // invertido
+                "Encontro situações sociais confusas.",
+                "É difícil para mim descobrir o que alguém está pensando ou sentindo só olhando para o rosto dele.",
+                "Gosto de planejar as coisas com cuidado.",
+                "Gosto de conversa fiada social.", // invertido
+                "Ter uma conversa com alguém que acabei de conhecer me deixa sentindo drenado.",
+                "Não sou bom em me empatizar com os sentimentos dos outros.",
+                "As pessoas frequentemente me dizem que eu continuo e continuo sobre a mesma coisa."
+            ],
+            "Personalidade Rígida (Rigid Personality)": [
+                "Gosto de planejar qualquer atividade em que participo com muito cuidado.",
+                "Gosto de fazer coisas espontaneamente.", // invertido
+                "Sou um bom diplomata.", // invertido
+                "Fico chateado se os planos mudam inesperadamente.",
+                "Acho muito fácil manter uma conversa fluindo.", // invertido
+                "Normalmente não noto pequenas mudanças em uma situação ou na aparência de uma pessoa.",
+                "Acho fácil 'ler nas entrelinhas' quando alguém está falando comigo.", // invertido
+                "Sei como dizer se alguém que está me ouvindo está ficando entediado.", // invertido
+                "Acho fácil descobrir o que alguém está pensando ou sentindo só olhando para o rosto dele.", // invertido
+                "Acho difícil imaginar como seria ser outra pessoa.",
+                "Gosto de coletar informações sobre categorias de coisas (ex.: tipos de carros, pássaros, trens, plantas).",
+                "É difícil para mim fazer novos amigos."
+            ],
+            "Problemas de Linguagem Pragmática (Pragmatic Language)": [
+                "Quando estou falando com alguém, posso dizer se eles querem que eu elabore no que acabei de dizer.", // invertido
+                "As pessoas frequentemente me dizem que eu continuo e continuo sobre a mesma coisa.",
+                "Quando eu era jovem, eu gostava de brincar de faz de conta com outras crianças.", // invertido
+                "Acho difícil descobrir as intenções das pessoas.",
+                "Sou um bom diplomata.", // invertido
+                "Acho fácil descobrir o que alguém está pensando ou sentindo só olhando para o rosto dele.", // invertido
+                "Acho difícil descobrir as intenções e pensamentos das pessoas.",
+                "Situações novas me deixam ansioso.",
+                "Gosto de conversa fiada social.", // invertido
+                "As pessoas frequentemente me dizem que eu falo demais sobre certos tópicos.",
+                "Acho difícil dizer quando uma piada está vindo.",
+                "Gosto de planejar com cuidado qualquer atividade em que participo."
+            ]
+        };
+
+        // Itens invertidos (reverse-scored) - baseado no arquivo .md
+        const itensInvertidos = [1, 3, 4, 8, 13, 14, 16, 18, 20, 24, 26, 28, 32];
+
+        // Gerar questionário
+        function gerarQuestionario() {
+            const container = document.getElementById('questionario');
+            let html = '';
+            let itemIndex = 0;
+
+            Object.keys(questionario).forEach(bloco => {
+                html += `
+                    <div class="bloco">
+                        <div class="bloco-header">${bloco}</div>
+                `;
+
+                questionario[bloco].forEach((item, index) => {
+                    html += `
+                        <div class="item" id="item${itemIndex}">
+                            <div class="item-texto">
+                                <span class="item-numero">${itemIndex + 1}.</span>
+                                ${item}
+                            </div>
+                            <div class="opcoes">
+                                <div class="opcao">
+                                    <input type="radio" id="item${itemIndex}_1" name="item${itemIndex}" value="1">
+                                    <label for="item${itemIndex}_1">Muito<br>Raramente</label>
+                                </div>
+                                <div class="opcao">
+                                    <input type="radio" id="item${itemIndex}_2" name="item${itemIndex}" value="2">
+                                    <label for="item${itemIndex}_2">Raramente</label>
+                                </div>
+                                <div class="opcao">
+                                    <input type="radio" id="item${itemIndex}_3" name="item${itemIndex}" value="3">
+                                    <label for="item${itemIndex}_3">Às<br>Vezes</label>
+                                </div>
+                                <div class="opcao">
+                                    <input type="radio" id="item${itemIndex}_4" name="item${itemIndex}" value="4">
+                                    <label for="item${itemIndex}_4">Um Pouco<br>Frequente</label>
+                                </div>
+                                <div class="opcao">
+                                    <input type="radio" id="item${itemIndex}_5" name="item${itemIndex}" value="5">
+                                    <label for="item${itemIndex}_5">Frequente-<br>mente</label>
+                                </div>
+                                <div class="opcao">
+                                    <input type="radio" id="item${itemIndex}_6" name="item${itemIndex}" value="6">
+                                    <label for="item${itemIndex}_6">Muito<br>Frequente</label>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    itemIndex++;
+                });
+
+                html += '</div>';
+            });
+
+            container.innerHTML = html;
+        }
+
+        // Imprimir formulário
+        function imprimirFormulario() {
+            window.print();
+        }
+
+        // Calcular idade
+        function calcularIdade() {
+            const dataNasc = document.getElementById('dataNascimento').value;
+            if (!dataNasc) return;
+
+            const hoje = new Date();
+            const nascimento = new Date(dataNasc);
+            
+            let anos = hoje.getFullYear() - nascimento.getFullYear();
+            let meses = hoje.getMonth() - nascimento.getMonth();
+            let dias = hoje.getDate() - nascimento.getDate();
+
+            if (dias < 0) {
+                meses--;
+                dias += new Date(hoje.getFullYear(), hoje.getMonth(), 0).getDate();
+            }
+            if (meses < 0) {
+                anos--;
+                meses += 12;
+            }
+
+            document.getElementById('idadeCalculada').value = `${anos} anos, ${meses} meses e ${dias} dias`;
+        }
+
+        // Calcular resultados
+        function calcularResultados() {
+            const nome = document.getElementById('nome').value;
+            const idade = document.getElementById('idadeCalculada').value;
+            const sexo = document.getElementById('sexo').value;
+
+            if (!nome || !idade || !sexo) {
+                alert('Por favor, preencha todos os dados pessoais antes de calcular.');
+                return;
+            }
+
+            const resultados = {};
+            let totalGeral = 0;
+            let itemIndex = 0;
+            let itensRespondidos = 0;
+
+            // Calcular por domínio
+            Object.keys(questionario).forEach(bloco => {
+                let pontuacaoBloco = 0;
+                let itensBloco = 0;
+                
+                questionario[bloco].forEach(item => {
+                    const resposta = document.querySelector(`input[name="item${itemIndex}"]:checked`);
+                    if (resposta) {
+                        let valor = parseInt(resposta.value);
+                        
+                        // Inverter pontuação se necessário
+                        if (itensInvertidos.includes(itemIndex)) {
+                            valor = 7 - valor; // Inverte escala de 6 pontos
+                        }
+                        
+                        pontuacaoBloco += valor;
+                        itensBloco++;
+                        itensRespondidos++;
+                    }
+                    itemIndex++;
+                });
+
+                const mediaBloco = itensBloco > 0 ? (pontuacaoBloco / itensBloco).toFixed(2) : 0;
+                
+                resultados[bloco] = {
+                    pontuacao: pontuacaoBloco,
+                    media: parseFloat(mediaBloco),
+                    itens: itensBloco
+                };
+                totalGeral += pontuacaoBloco;
+            });
+
+            const mediaGeral = itensRespondidos > 0 ? (totalGeral / itensRespondidos).toFixed(2) : 0;
+
+            mostrarResultados(resultados, totalGeral, parseFloat(mediaGeral), sexo);
+        }
+
+        // Mostrar resultados
+        function mostrarResultados(resultados, totalGeral, mediaGeral, sexo) {
+            const container = document.getElementById('resultados');
+            let html = '<h2>📊 Resultados BAPQ</h2>';
+
+            // Resultados por domínio
+            Object.keys(resultados).forEach(bloco => {
+                const dados = resultados[bloco];
+                
+                html += `
+                    <div class="resultado-bloco">
+                        <div class="resultado-nome">${bloco}</div>
+                        <div class="resultado-detalhes">
+                            Pontuação: ${dados.pontuacao} | Média: ${dados.media} | Itens respondidos: ${dados.itens}
+                        </div>
+                    </div>
+                `;
+            });
+
+            // Total geral
+            html += `
+                <div class="total-geral">
+                    <h3>Pontuação Total: ${totalGeral} pontos</h3>
+                    <h3>Média Geral: ${mediaGeral}</h3>
+                </div>
+            `;
+
+            // Interpretação
+            const interpretacao = getInterpretacao(mediaGeral, sexo, resultados);
+            html += `
+                <div class="interpretacao">
+                    <h3>🎯 Interpretação</h3>
+                    <div>${interpretacao.texto}</div>
+                    <div class="${interpretacao.classe}">${interpretacao.resultado}</div>
+                </div>
+            `;
+
+            container.innerHTML = html;
+            container.style.display = 'block';
+        }
+
+        // Obter interpretação baseada na validação brasileira
+        function getInterpretacao(mediaGeral, sexo, resultados) {
+            let texto = '';
+            let resultado = '';
+            let classe = '';
+
+            // Pontos de corte da validação brasileira (Prata et al., 2019)
+            const corteBrasil = 3.15; // Sensibilidade 78%, Especificidade 74%
+            const corteOriginal = sexo === 'Masculino' ? 3.5 : 3.2; // Hurley et al., 2007
+
+            texto = `<p><strong>Validação Brasileira (PRATA et al., 2019):</strong> ≥ 3,15</p>`;
+            texto += `<p><strong>Validação Original (HURLEY et al., 2007):</strong> ≥ ${corteOriginal} (${sexo})</p>`;
+            texto += `<p><strong>Sua média geral:</strong> ${mediaGeral}</p><br>`;
+
+            // Usar critério brasileiro como principal
+            if (mediaGeral >= corteBrasil) {
+                texto += `<p>Sua pontuação indica <strong>provável presença do Fenótipo Ampliado do Autismo (BAP)</strong>.</p>`;
+                texto += `<p>Traços autísticos leves e subclínicos, mais comuns em familiares de pessoas com TEA.</p>`;
+                texto += `<p><strong>Sensibilidade:</strong> 78% | <strong>Especificidade:</strong> 74% (validação brasileira)</p>`;
+                resultado = '⚠️ PROVÁVEL PRESENÇA DE BAP';
+                classe = 'positivo';
+            } else {
+                const diferenca = (corteBrasil - mediaGeral).toFixed(2);
+                texto += `<p>Sua pontuação está <strong>${diferenca} pontos abaixo</strong> do ponto de corte brasileiro.</p>`;
+                texto += `<p>Isso indica <strong>ausência de traços significativos</strong> do Fenótipo Ampliado do Autismo.</p>`;
+                resultado = '✅ AUSÊNCIA DE BAP SIGNIFICATIVO';
+                classe = 'negativo';
+            }
+
+            texto += `<br><p><em>Baseado na validação brasileira (PRATA et al., 2019). Para fins de pesquisa e triagem. Não substitui avaliação profissional.</em></p>`;
+
+            return { texto, resultado, classe };
+        }
+
+        // Gerar relatório PDF
+        function gerarRelatorioPDF() {
+            const nome = document.getElementById('nome').value;
+            const idade = document.getElementById('idadeCalculada').value;
+            const sexo = document.getElementById('sexo').value;
+            const data = document.getElementById('data').value || new Date().toLocaleDateString('pt-BR');
+
+            if (!nome) {
+                alert('Por favor, preencha pelo menos o nome antes de gerar o relatório.');
+                return;
+            }
+
+            // Calcular resultados para o PDF
+            const resultados = {};
+            let totalGeral = 0;
+            let itemIndex = 0;
+            let itensRespondidos = 0;
+
+            Object.keys(questionario).forEach(bloco => {
+                let pontuacaoBloco = 0;
+                let itensBloco = 0;
+                
+                questionario[bloco].forEach(item => {
+                    const resposta = document.querySelector(`input[name="item${itemIndex}"]:checked`);
+                    if (resposta) {
+                        let valor = parseInt(resposta.value);
+                        
+                        if (itensInvertidos.includes(itemIndex)) {
+                            valor = 7 - valor;
+                        }
+                        
+                        pontuacaoBloco += valor;
+                        itensBloco++;
+                        itensRespondidos++;
+                    }
+                    itemIndex++;
+                });
+
+                const mediaBloco = itensBloco > 0 ? (pontuacaoBloco / itensBloco).toFixed(2) : 0;
+                
+                resultados[bloco] = {
+                    pontuacao: pontuacaoBloco,
+                    media: parseFloat(mediaBloco),
+                    itens: itensBloco
+                };
+                totalGeral += pontuacaoBloco;
+            });
+
+            const mediaGeral = itensRespondidos > 0 ? (totalGeral / itensRespondidos).toFixed(2) : 0;
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // Cabeçalho
+            doc.setFillColor(74, 144, 226);
+            doc.rect(0, 0, 210, 40, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(16);
+            doc.setFont(undefined, 'bold');
+            doc.text('BAPQ - RELATÓRIO DE AVALIAÇÃO', 105, 20, { align: 'center' });
+            doc.setFontSize(11);
+            doc.text('Broader Autism Phenotype Questionnaire', 105, 30, { align: 'center' });
+
+            // Dados pessoais
+            doc.setFillColor(248, 249, 250);
+            doc.rect(20, 50, 170, 35, 'F');
+            doc.setDrawColor(74, 144, 226);
+            doc.rect(20, 50, 170, 35);
+            doc.setTextColor(74, 144, 226);
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'bold');
+            doc.text('DADOS PESSOAIS', 25, 60);
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(9);
+            doc.setFont(undefined, 'normal');
+            doc.text(`Nome: ${nome}`, 25, 70);
+            doc.text(`Idade: ${idade}`, 120, 70);
+            doc.text(`Sexo: ${sexo}`, 25, 75);
+            doc.text(`Data: ${data}`, 120, 75);
+            doc.text('Instrumento: BAPQ-Br (PRATA et al., 2019)', 25, 80);
+
+            // Resultados
+            let yPos = 95;
+            doc.setFillColor(74, 144, 226);
+            doc.rect(20, yPos, 170, 10, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(11);
+            doc.setFont(undefined, 'bold');
+            doc.text('RESULTADOS POR DOMÍNIO', 25, yPos + 7);
+
+            yPos += 20;
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(9);
+            Object.keys(resultados).forEach(bloco => {
+                const dados = resultados[bloco];
+                doc.text(`${bloco}:`, 25, yPos);
+                doc.text(`Média: ${dados.media} | Pontuação: ${dados.pontuacao}`, 25, yPos + 5);
+                yPos += 12;
+            });
+
+            // Total geral
+            yPos += 5;
+            doc.setFillColor(40, 167, 69);
+            doc.rect(20, yPos, 170, 15, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(11);
+            doc.setFont(undefined, 'bold');
+            doc.text(`MÉDIA GERAL: ${mediaGeral}`, 25, yPos + 10);
+
+            // Interpretação
+            yPos += 25;
+            const corteBrasil = 3.15;
+            const corteOriginal = sexo === 'Masculino' ? 3.5 : 3.2;
+            
+            doc.setFillColor(255, 193, 7);
+            doc.rect(20, yPos, 170, 10, 'F');
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(11);
+            doc.setFont(undefined, 'bold');
+            doc.text('INTERPRETAÇÃO', 25, yPos + 7);
+
+            yPos += 20;
+            doc.setFontSize(9);
+            doc.setFont(undefined, 'normal');
+            doc.text(`Ponto de corte (Brasil): ≥ ${corteBrasil}`, 25, yPos);
+            doc.text(`Ponto de corte (Original): ≥ ${corteOriginal} (${sexo})`, 25, yPos + 5);
+            
+            yPos += 15;
+            if (parseFloat(mediaGeral) >= corteBrasil) {
+                doc.setTextColor(220, 53, 69);
+                doc.text('✓ PROVÁVEL PRESENÇA DE BAP', 25, yPos);
+                doc.setTextColor(0, 0, 0);
+                doc.text('Traços autísticos leves e subclínicos identificados.', 25, yPos + 5);
+            } else {
+                doc.setTextColor(40, 167, 69);
+                doc.text('✗ AUSÊNCIA DE BAP SIGNIFICATIVO', 25, yPos);
+                doc.setTextColor(0, 0, 0);
+                doc.text('Pontuação abaixo do ponto de corte.', 25, yPos + 5);
+            }
+
+            // Referências - Página 2
+            doc.addPage();
+            yPos = 20;
+            doc.setFillColor(248, 249, 250);
+            doc.rect(20, yPos, 170, 50, 'F');
+            doc.setTextColor(74, 144, 226);
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'bold');
+            doc.text('REFERÊNCIAS', 25, yPos + 10);
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(7);
+            doc.setFont(undefined, 'normal');
+            doc.text('HURLEY, R. S. E. et al. The broad autism phenotype questionnaire. Journal of', 25, yPos + 18);
+            doc.text('Autism and Developmental Disorders, v. 37, n. 9, p. 1679-1690, 2007.', 25, yPos + 23);
+            doc.text('PRATA, J. C. et al. Psychometric properties of the Broad Autism Phenotype', 25, yPos + 30);
+            doc.text('Questionnaire - Brazilian version. Psicologia: Reflexão e Crítica, v. 32, n. 1, 2019.', 25, yPos + 35);
+            doc.text('Disponível em: https://doi.org/10.1186/s41155-019-0116-2', 25, yPos + 40);
+
+            // Rodapé página 2
+            doc.setFillColor(108, 117, 125);
+            doc.rect(0, 280, 210, 17, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(8);
+            doc.text(`Relatório gerado em: ${new Date().toLocaleString('pt-BR')}`, 105, 290, { align: 'center' });
+
+            // Salvar PDF
+            const timestamp = new Date().toISOString().slice(0,16).replace(/[-:T]/g, '').slice(0,12);
+            const nomeArquivo = `BAPQ_${nome.replace(/\s+/g, '')}_${timestamp}.pdf`;
+            doc.save(nomeArquivo);
+        }
+
+        // Limpar dados
+        function limparDados() {
+            if (confirm('Tem certeza que deseja limpar todos os dados? Esta ação não pode ser desfeita.')) {
+                document.getElementById('nome').value = '';
+                document.getElementById('dataNascimento').value = '';
+                document.getElementById('idadeCalculada').value = '';
+                document.getElementById('sexo').value = '';
+                document.getElementById('data').value = '';
+                document.getElementById('observacoes').value = '';
+                
+                document.querySelectorAll('input[type="radio"]').forEach(radio => {
+                    radio.checked = false;
+                });
+                
+                document.getElementById('resultados').style.display = 'none';
+                
+                alert('Dados limpos com sucesso!');
+            }
+        }
+
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', function() {
+            gerarQuestionario();
+            document.getElementById('data').value = new Date().toISOString().split('T')[0];
+        });
+    </script>
+</body>
+</html>
