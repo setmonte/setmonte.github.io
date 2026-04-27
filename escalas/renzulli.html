@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Escala de Renzulli (SRBCSS-R)</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #ff9a56 0%, #ff6b95 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #ff6b95 0%, #ff9a56 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .dados-pessoais {
+            background: #fff5f5;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            border-left: 5px solid #ff6b95;
+        }
+
+        .dados-pessoais h2 {
+            color: #ff6b95;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .form-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #ff6b95;
+        }
+
+        .bloco {
+            margin-bottom: 30px;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+
+        .bloco-header {
+            background: linear-gradient(135deg, #ff9a56 0%, #ff6b95 100%);
+            color: white;
+            padding: 20px;
+            font-size: 1.3em;
+            font-weight: 600;
+        }
+
+        .item {
+            padding: 20px;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background-color 0.3s;
+        }
+
+        .item:hover {
+            background-color: #fff5f5;
+        }
+
+        .item:last-child {
+            border-bottom: none;
+        }
+
+        .item-numero {
+            font-weight: bold;
+            color: #ff6b95;
+            margin-right: 10px;
+        }
+
+        .item-texto {
+            font-size: 1.1em;
+            margin-bottom: 15px;
+            color: #444;
+            line-height: 1.5;
+        }
+
+        .opcoes {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .opcao {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            padding: 10px;
+            border-radius: 10px;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+            min-width: 80px;
+        }
+
+        .opcao:hover {
+            background-color: #fff0f5;
+            border-color: #ff6b95;
+        }
+
+        .opcao input[type="radio"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .opcao label {
+            cursor: pointer;
+            font-weight: 500;
+            color: #555;
+            text-align: center;
+            font-size: 0.9em;
+        }
+
+        .botoes {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #ff6b95 0%, #ff9a56 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(255, 107, 149, 0.3);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(255, 107, 107, 0.3);
+        }
+
+        .btn-print {
+            background: linear-gradient(135deg, #9c27b0 0%, #673ab7 100%);
+            color: white;
+        }
+
+        .btn-print:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(156, 39, 176, 0.3);
+        }
+
+        .resultados {
+            background: #fff5f5;
+            padding: 30px;
+            border-radius: 10px;
+            margin-top: 30px;
+            border-left: 5px solid #ff6b95;
+            display: none;
+        }
+
+        .resultados h2 {
+            color: #ff6b95;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .resultado-bloco {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .resultado-nome {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .resultado-pontos {
+            font-size: 1.2em;
+            font-weight: bold;
+            padding: 8px 15px;
+            border-radius: 20px;
+            color: white;
+        }
+
+        .total-geral {
+            background: linear-gradient(135deg, #ff6b95 0%, #ff9a56 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 10px;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .interpretacao {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            border: 2px solid #ff6b95;
+            text-align: center;
+        }
+
+        .interpretacao h3 {
+            color: #ff6b95;
+            margin-bottom: 15px;
+        }
+
+        .interpretacao-texto {
+            font-size: 1.1em;
+            line-height: 1.6;
+            color: #555;
+        }
+
+        .analise {
+            background: #fff0f5;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            border-left: 4px solid #ff6b95;
+        }
+
+        .analise h4 {
+            color: #d81b60;
+            margin-bottom: 10px;
+        }
+
+        .salvar-emergencia {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #ff9800;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
+            z-index: 1000;
+        }
+
+        .salvar-emergencia:hover {
+            background: #f57c00;
+            transform: translateY(-2px);
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 2mm;
+                font-size: 12px;
+            }
+            
+            .container {
+                box-shadow: none;
+                border-radius: 0;
+                max-width: 95%;
+                margin: 0 auto;
+            }
+            
+            .header {
+                background: white !important;
+                color: black !important;
+                border-bottom: 2px solid #333;
+            }
+            
+            .botoes, .salvar-emergencia {
+                display: none !important;
+            }
+            
+            .opcoes input[type="radio"] {
+                width: 25px;
+                height: 25px;
+                border: 2px solid #333;
+                background: white;
+            }
+            
+            .bloco-header {
+                background: white !important;
+                color: black !important;
+                border-bottom: 2px solid #333;
+            }
+            
+            .form-group input, .form-group select {
+                border: 1px solid #333;
+                background: white;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 10px;
+            }
+            
+            .header {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .form-row {
+                flex-direction: column;
+            }
+            
+            .opcoes {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .botoes {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button class="salvar-emergencia" onclick="salvarDadosManual()">🚨 Salvar</button>
+    
+    <div class="container">
+        <div class="header">
+            <h1>🌟 Escala de Renzulli</h1>
+            <p>SRBCSS-R - Identificação de Altas Habilidades/Superdotação</p>
+        </div>
+
+        <div class="content">
+            <div class="botoes">
+                <button class="btn btn-print" onclick="imprimirEscala()">🖨️ Imprimir Escala para Papel</button>
+            </div>
+
+            <div class="dados-pessoais">
+                <h2>📋 Dados do Estudante</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="nome">Nome Completo:</label>
+                        <input type="text" id="nome" placeholder="Digite o nome completo">
+                    </div>
+                    <div class="form-group">
+                        <label for="idade">Idade:</label>
+                        <input type="number" id="idade" min="6" max="18" placeholder="Anos">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="sexo">Sexo:</label>
+                        <select id="sexo">
+                            <option value="">Selecione</option>
+                            <option value="Masculino">Masculino</option>
+                            <option value="Feminino">Feminino</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="serie">Série/Ano:</label>
+                        <input type="text" id="serie" placeholder="Ex: 5º ano, 1ª série">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="escola">Escola:</label>
+                        <input type="text" id="escola" placeholder="Nome da escola">
+                    </div>
+                    <div class="form-group">
+                        <label for="data">Data da Avaliação:</label>
+                        <input type="date" id="data">
+                    </div>
+                </div>
+            </div>
+
+            <div id="questionario">
+                <!-- Blocos serão inseridos aqui pelo JavaScript -->
+            </div>
+
+            <div class="botoes">
+                <button class="btn btn-primary" onclick="calcularResultados()">📊 Calcular Resultados</button>
+                <button class="btn btn-secondary" onclick="gerarRelatorioPDF()">📄 Gerar Relatório PDF</button>
+                <button class="btn btn-danger" onclick="limparDados()">🗑️ Limpar Dados</button>
+            </div>
+
+            <div id="resultados" class="resultados">
+                <!-- Resultados serão inseridos aqui -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Dados da Escala de Renzulli (SRBCSS-R)
+        const questionario = {
+            "Habilidade Geral": [
+                "Tem vocabulário avançado para sua idade ou série; usa termos de forma apropriada",
+                "Possui informações sobre uma variedade de tópicos além daqueles de sua idade",
+                "É rápido para compreender os princípios subjacentes e pode fazer generalizações válidas sobre eventos, pessoas ou coisas",
+                "É um observador atento; geralmente 'vê mais' ou 'obtém mais' de uma história, filme, etc., do que outros",
+                "Lê muito por conta própria; geralmente prefere livros para adultos; não evita material longo ou desafiador",
+                "Tenta compreender coisas complicadas analisando-as em partes componentes",
+                "É um pensador lógico; vê relações de causa e efeito",
+                "Pega rapidamente e lembra de informações factuais",
+                "Quer saber como e por que as coisas acontecem como acontecem",
+                "Torna-se absorto e verdadeiramente envolvido em certos tópicos ou problemas"
+            ],
+            "Habilidade Específica": [
+                "Mostra habilidade superior em algumas áreas de desempenho",
+                "Mostra senso de 'como fazer' em arte, drama, música, etc.",
+                "Exibe habilidade criativa ou imaginação em arte, música, drama, etc.",
+                "Tem habilidade mecânica; facilmente compreende como as coisas funcionam",
+                "Tem habilidade excepcional em matemática ou ciências",
+                "Tem habilidade excepcional em uma ou mais áreas acadêmicas",
+                "Tem habilidades de liderança excepcionais",
+                "Tem habilidade atlética superior",
+                "Trabalha facilmente com números, vê relações numéricas",
+                "Lembra de coisas que ouviu ou leu sem muito esforço de memorização"
+            ],
+            "Criatividade": [
+                "Exibe pensamento original em trabalhos orais e escritos",
+                "Chega a soluções que são incomuns, únicas, inteligentes",
+                "É aventureiro e especulativo; 'brinca' com ideias que podem parecer selvagens ou fantásticas",
+                "Tende a ser inconformista; aceita desordem; não se preocupa com detalhes",
+                "É sensível à beleza; presta atenção à estética das coisas",
+                "É autocrítico; não se satisfaz facilmente com seu próprio trabalho",
+                "Pensa 'fora da caixa' e sugere muitas respostas incomuns",
+                "É um tomador de riscos; aventureiro em pensamento e ação",
+                "Prefere trabalhar independentemente; requer pouca direção dos professores",
+                "Está interessado em muitas 'coisas de adultos'; frequentemente preocupado com problemas 'maiores' como religião, política, sexo, etc."
+            ],
+            "Comprometimento com a Tarefa": [
+                "Torna-se absorto e verdadeiramente envolvido em certos tópicos ou problemas",
+                "É facilmente entediado com tarefas de rotina",
+                "Precisa de pouco estímulo externo para seguir um trabalho que inicialmente o excitou",
+                "Luta para alcançar perfeição; é autocrítico",
+                "Prefere trabalhar independentemente; requer pouca direção dos professores",
+                "Está interessado em muitos 'assuntos de adultos' como religião, política, sexo, etc.",
+                "Frequentemente se preocupa com problemas do mundo - guerra, pobreza, etc.",
+                "Frequentemente perde a noção do tempo quando trabalha em algo que o interessa",
+                "Demonstra responsabilidade; pode ser contado para fazer o que prometeu",
+                "Estabelece padrões altos para si mesmo; pode ficar frustrado se o trabalho não atender a esses padrões"
+            ]
+        };
+
+        // Gerar questionário
+        function gerarQuestionario() {
+            const container = document.getElementById('questionario');
+            let html = '';
+            let itemIndex = 0;
+
+            Object.keys(questionario).forEach(bloco => {
+                html += `
+                    <div class="bloco">
+                        <div class="bloco-header">${bloco}</div>
+                `;
+
+                questionario[bloco].forEach((item, index) => {
+                    html += `
+                        <div class="item">
+                            <div class="item-texto">
+                                <span class="item-numero">${index + 1}.</span>
+                                ${item}
+                            </div>
+                            <div class="opcoes">
+                                <div class="opcao">
+                                    <input type="radio" id="item${itemIndex}_1" name="item${itemIndex}" value="1">
+                                    <label for="item${itemIndex}_1">1<br>Nunca</label>
+                                </div>
+                                <div class="opcao">
+                                    <input type="radio" id="item${itemIndex}_2" name="item${itemIndex}" value="2">
+                                    <label for="item${itemIndex}_2">2<br>Raramente</label>
+                                </div>
+                                <div class="opcao">
+                                    <input type="radio" id="item${itemIndex}_3" name="item${itemIndex}" value="3">
+                                    <label for="item${itemIndex}_3">3<br>Ocasionalmente</label>
+                                </div>
+                                <div class="opcao">
+                                    <input type="radio" id="item${itemIndex}_4" name="item${itemIndex}" value="4">
+                                    <label for="item${itemIndex}_4">4<br>Frequentemente</label>
+                                </div>
+                                <div class="opcao">
+                                    <input type="radio" id="item${itemIndex}_5" name="item${itemIndex}" value="5">
+                                    <label for="item${itemIndex}_5">5<br>Sempre</label>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    itemIndex++;
+                });
+
+                html += '</div>';
+            });
+
+            container.innerHTML = html;
+        }
+
+        // Calcular resultados
+        function calcularResultados() {
+            const nome = document.getElementById('nome').value;
+            const idade = document.getElementById('idade').value;
+            const sexo = document.getElementById('sexo').value;
+
+            if (!nome || !idade || !sexo) {
+                alert('Por favor, preencha todos os dados pessoais antes de calcular.');
+                return;
+            }
+
+            const resultados = {};
+            let totalGeral = 0;
+            let itemIndex = 0;
+
+            Object.keys(questionario).forEach(bloco => {
+                let pontuacaoBloco = 0;
+                let itensRespondidos = 0;
+                
+                questionario[bloco].forEach(item => {
+                    const resposta = document.querySelector(`input[name="item${itemIndex}"]:checked`);
+                    if (resposta) {
+                        pontuacaoBloco += parseInt(resposta.value);
+                        itensRespondidos++;
+                    }
+                    itemIndex++;
+                });
+
+                // Calcular média do bloco
+                const mediaBloco = itensRespondidos > 0 ? (pontuacaoBloco / itensRespondidos).toFixed(2) : 0;
+                resultados[bloco] = {
+                    pontuacao: pontuacaoBloco,
+                    media: parseFloat(mediaBloco),
+                    itens: itensRespondidos
+                };
+                totalGeral += pontuacaoBloco;
+            });
+
+            mostrarResultados(resultados, totalGeral);
+        }
+
+        // Mostrar resultados
+        function mostrarResultados(resultados, totalGeral) {
+            const container = document.getElementById('resultados');
+            let html = '<h2>📊 Resultados da Escala de Renzulli</h2>';
+
+            // Resultados por bloco
+            Object.keys(resultados).forEach(bloco => {
+                const dados = resultados[bloco];
+                const cor = getCorMedia(dados.media);
+                const classificacao = getClassificacaoMedia(dados.media);
+                
+                html += `
+                    <div class="resultado-bloco">
+                        <div>
+                            <span class="resultado-nome">${bloco}</span>
+                            <div style="font-size: 0.9em; color: #666; margin-top: 5px;">
+                                Pontuação: ${dados.pontuacao} | Itens: ${dados.itens} | ${classificacao}
+                            </div>
+                        </div>
+                        <span class="resultado-pontos" style="background-color: ${cor}">
+                            Média: ${dados.media}
+                        </span>
+                    </div>
+                `;
+            });
+
+            // Total geral
+            const mediaGeral = (totalGeral / 40).toFixed(2);
+            html += `
+                <div class="total-geral">
+                    <h3>Pontuação Total: ${totalGeral} pontos</h3>
+                    <h3>Média Geral: ${mediaGeral}</h3>
+                </div>
+            `;
+
+            // Interpretação
+            const interpretacao = getInterpretacao(parseFloat(mediaGeral), resultados);
+            html += `
+                <div class="interpretacao">
+                    <h3>🎯 Interpretação</h3>
+                    <div class="interpretacao-texto">${interpretacao.texto}</div>
+                </div>
+            `;
+
+            // Análise
+            const analise = getAnalise(resultados);
+            html += `
+                <div class="analise">
+                    <h4>📋 Análise por Área</h4>
+                    <p>${analise}</p>
+                </div>
+            `;
+
+            container.innerHTML = html;
+            container.style.display = 'block';
+        }
+
+        // Obter cor baseada na média
+        function getCorMedia(media) {
+            if (media >= 4.5) return '#4caf50'; // Verde - Muito Alto
+            if (media >= 4.0) return '#8bc34a'; // Verde Claro - Alto
+            if (media >= 3.5) return '#ff9800'; // Laranja - Moderado
+            if (media >= 3.0) return '#ff5722'; // Laranja Escuro - Baixo Moderado
+            return '#f44336'; // Vermelho - Baixo
+        }
+
+        // Obter classificação baseada na média
+        function getClassificacaoMedia(media) {
+            if (media >= 4.5) return 'Muito Alto';
+            if (media >= 4.0) return 'Alto';
+            if (media >= 3.5) return 'Moderado';
+            if (media >= 3.0) return 'Baixo Moderado';
+            return 'Baixo';
+        }
+
+        // Obter interpretação
+        function getInterpretacao(mediaGeral, resultados) {
+            let texto = '';
+            
+            if (mediaGeral >= 4.5) {
+                texto = "Indicativo MUITO FORTE de Altas Habilidades/Superdotação. O estudante apresenta características excepcionais em múltiplas áreas. Recomenda-se avaliação psicológica especializada e implementação imediata de programas de enriquecimento curricular.";
+            } else if (mediaGeral >= 4.0) {
+                texto = "Indicativo FORTE de Altas Habilidades/Superdotação. O estudante demonstra potencial superior significativo. Sugere-se avaliação mais aprofundada e consideração para programas especiais de desenvolvimento de talentos.";
+            } else if (mediaGeral >= 3.5) {
+                texto = "Indicativo MODERADO de Altas Habilidades. O estudante apresenta algumas características de superdotação. Recomenda-se acompanhamento especializado e atividades de enriquecimento.";
+            } else if (mediaGeral >= 3.0) {
+                texto = "Algumas características de potencial superior identificadas. Sugere-se monitoramento contínuo e estímulo ao desenvolvimento das áreas de interesse.";
+            } else {
+                texto = "Perfil dentro da média esperada. Continuar acompanhamento regular do desenvolvimento acadêmico e pessoal.";
+            }
+
+            return { texto };
+        }
+
+        // Obter análise detalhada
+        function getAnalise(resultados) {
+            let analise = "Áreas de destaque: ";
+            let areasAltas = [];
+            let pontosFracos = [];
+            
+            Object.keys(resultados).forEach(bloco => {
+                const media = resultados[bloco].media;
+                if (media >= 4.0) {
+                    areasAltas.push(`${bloco} (${media})`);
+                } else if (media < 3.0) {
+                    pontosFracos.push(`${bloco} (${media})`);
+                }
+            });
+
+            if (areasAltas.length > 0) {
+                analise += areasAltas.join(", ") + ". ";
+            } else {
+                analise += "Nenhuma área com pontuação significativamente alta. ";
+            }
+
+            if (pontosFracos.length > 0) {
+                analise += `Áreas para desenvolvimento: ${pontosFracos.join(", ")}. `;
+            }
+
+            if (areasAltas.length >= 3) {
+                analise += "A presença de múltiplas áreas com pontuação alta sugere um perfil de superdotação geral.";
+            } else if (areasAltas.length === 1 || areasAltas.length === 2) {
+                analise += "Perfil sugere talentos específicos que merecem atenção e desenvolvimento direcionado.";
+            }
+
+            return analise;
+        }
+
+        // Gerar relatório PDF
+        function gerarRelatorioPDF() {
+            const nome = document.getElementById('nome').value;
+            const idade = document.getElementById('idade').value;
+            const sexo = document.getElementById('sexo').value;
+            const serie = document.getElementById('serie').value;
+            const escola = document.getElementById('escola').value;
+            const data = document.getElementById('data').value || new Date().toLocaleDateString('pt-BR');
+
+            if (!nome) {
+                alert('Por favor, preencha pelo menos o nome antes de gerar o relatório.');
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // Cabeçalho
+            doc.setFillColor(255, 107, 149);
+            doc.rect(0, 0, 210, 40, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(18);
+            doc.setFont(undefined, 'bold');
+            doc.text('ESCALA DE RENZULLI (SRBCSS-R)', 105, 20, { align: 'center' });
+            doc.setFontSize(12);
+            doc.text('Identificação de Altas Habilidades/Superdotação', 105, 30, { align: 'center' });
+
+            // Dados pessoais
+            doc.setFillColor(255, 245, 245);
+            doc.rect(20, 50, 170, 35, 'F');
+            doc.setDrawColor(255, 107, 149);
+            doc.rect(20, 50, 170, 35);
+            doc.setTextColor(255, 107, 149);
+            doc.setFontSize(14);
+            doc.setFont(undefined, 'bold');
+            doc.text('DADOS DO ESTUDANTE', 25, 60);
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'normal');
+            doc.text(`Nome: ${nome}`, 25, 70);
+            doc.text(`Idade: ${idade} anos`, 120, 70);
+            doc.text(`Sexo: ${sexo}`, 25, 75);
+            doc.text(`Série: ${serie}`, 120, 75);
+            doc.text(`Escola: ${escola}`, 25, 80);
+            doc.text(`Data: ${data}`, 120, 80);
+
+            // Calcular resultados para o PDF
+            const resultados = {};
+            let totalGeral = 0;
+            let itemIndex = 0;
+
+            Object.keys(questionario).forEach(bloco => {
+                let pontuacaoBloco = 0;
+                let itensRespondidos = 0;
+                
+                questionario[bloco].forEach(item => {
+                    const resposta = document.querySelector(`input[name="item${itemIndex}"]:checked`);
+                    if (resposta) {
+                        pontuacaoBloco += parseInt(resposta.value);
+                        itensRespondidos++;
+                    }
+                    itemIndex++;
+                });
+
+                const mediaBloco = itensRespondidos > 0 ? (pontuacaoBloco / itensRespondidos).toFixed(2) : 0;
+                resultados[bloco] = {
+                    pontuacao: pontuacaoBloco,
+                    media: parseFloat(mediaBloco),
+                    itens: itensRespondidos
+                };
+                totalGeral += pontuacaoBloco;
+            });
+
+            // Resultados
+            doc.setFillColor(255, 154, 86);
+            doc.rect(20, 95, 170, 10, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'bold');
+            doc.text('RESULTADOS POR ÁREA', 25, 102);
+
+            let yPos = 115;
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(9);
+            Object.keys(resultados).forEach(bloco => {
+                const dados = resultados[bloco];
+                const classificacao = getClassificacaoMedia(dados.media);
+                doc.text(`${bloco}: Média ${dados.media} (${dados.pontuacao} pts) - ${classificacao}`, 25, yPos);
+                yPos += 8;
+            });
+
+            // Total
+            const mediaGeral = (totalGeral / 40).toFixed(2);
+            doc.setFillColor(255, 107, 149);
+            doc.rect(20, yPos + 5, 170, 15, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'bold');
+            doc.text(`MÉDIA GERAL: ${mediaGeral} | TOTAL: ${totalGeral} PONTOS`, 105, yPos + 15, { align: 'center' });
+
+            // Interpretação
+            yPos += 30;
+            doc.setFillColor(255, 193, 7);
+            doc.rect(20, yPos, 170, 10, 'F');
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'bold');
+            doc.text('INTERPRETAÇÃO', 25, yPos + 7);
+
+            yPos += 20;
+            const interpretacao = getInterpretacao(parseFloat(mediaGeral), resultados);
+            doc.setFontSize(9);
+            doc.setFont(undefined, 'normal');
+            const linhasInterpretacao = doc.splitTextToSize(interpretacao.texto, 160);
+            doc.text(linhasInterpretacao, 25, yPos);
+
+            // Análise
+            yPos += linhasInterpretacao.length * 4 + 15;
+            const analise = getAnalise(resultados);
+            const linhasAnalise = doc.splitTextToSize(analise, 160);
+            doc.text(linhasAnalise, 25, yPos);
+
+            // Rodapé
+            doc.setFillColor(108, 117, 125);
+            doc.rect(0, 280, 210, 17, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(8);
+            doc.text(`Relatório gerado em: ${new Date().toLocaleString('pt-BR')}`, 105, 290, { align: 'center' });
+
+            // Salvar PDF
+            const nomeArquivo = `Renzulli-${nome.replace(/\s+/g, '')}-${new Date().toISOString().slice(0,10)}.pdf`;
+            doc.save(nomeArquivo);
+        }
+
+        // Limpar dados
+        function limparDados() {
+            if (confirm('Tem certeza que deseja limpar todos os dados? Esta ação não pode ser desfeita.')) {
+                document.getElementById('nome').value = '';
+                document.getElementById('idade').value = '';
+                document.getElementById('sexo').value = '';
+                document.getElementById('serie').value = '';
+                document.getElementById('escola').value = '';
+                document.getElementById('data').value = '';
+                
+                document.querySelectorAll('input[type="radio"]').forEach(radio => {
+                    radio.checked = false;
+                });
+                
+                document.getElementById('resultados').style.display = 'none';
+                
+                alert('Dados limpos com sucesso!');
+            }
+        }
+
+        // Imprimir escala
+        function imprimirEscala() {
+            const dadosAtuais = {
+                nome: document.getElementById('nome').value,
+                idade: document.getElementById('idade').value,
+                sexo: document.getElementById('sexo').value,
+                serie: document.getElementById('serie').value,
+                escola: document.getElementById('escola').value,
+                data: document.getElementById('data').value
+            };
+            
+            const respostasAtuais = {};
+            document.querySelectorAll('input[type="radio"]:checked').forEach(radio => {
+                respostasAtuais[radio.name] = radio.value;
+            });
+            
+            // Limpar para impressão
+            Object.keys(dadosAtuais).forEach(key => {
+                document.getElementById(key).value = '';
+            });
+            
+            document.querySelectorAll('input[type="radio"]').forEach(radio => {
+                radio.checked = false;
+            });
+            
+            document.getElementById('resultados').style.display = 'none';
+            
+            window.print();
+            
+            // Restaurar dados
+            setTimeout(() => {
+                Object.keys(dadosAtuais).forEach(key => {
+                    document.getElementById(key).value = dadosAtuais[key];
+                });
+                
+                Object.keys(respostasAtuais).forEach(name => {
+                    const radio = document.querySelector(`input[name="${name}"][value="${respostasAtuais[name]}"]`);
+                    if (radio) radio.checked = true;
+                });
+            }, 1000);
+        }
+
+        // Salvar dados manual
+        function salvarDadosManual() {
+            const dados = {
+                nome: document.getElementById('nome').value,
+                idade: document.getElementById('idade').value,
+                sexo: document.getElementById('sexo').value,
+                serie: document.getElementById('serie').value,
+                escola: document.getElementById('escola').value,
+                data: document.getElementById('data').value,
+                respostas: {}
+            };
+            
+            document.querySelectorAll('input[type="radio"]:checked').forEach(radio => {
+                dados.respostas[radio.name] = radio.value;
+            });
+            
+            const dataStr = JSON.stringify(dados, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Renzulli-Backup-${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            alert('Dados salvos com sucesso!');
+        }
+
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', function() {
+            gerarQuestionario();
+            document.getElementById('data').value = new Date().toISOString().split('T')[0];
+            
+            // Salvamento automático a cada 30 segundos
+            setInterval(() => {
+                const nome = document.getElementById('nome').value;
+                if (nome) {
+                    localStorage.setItem('renzulli_backup', JSON.stringify({
+                        timestamp: new Date().toISOString(),
+                        nome: nome,
+                        idade: document.getElementById('idade').value,
+                        sexo: document.getElementById('sexo').value
+                    }));
+                }
+            }, 30000);
+        });
+    </script>
+</body>
+</html>

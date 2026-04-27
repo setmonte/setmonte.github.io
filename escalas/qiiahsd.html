@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QIIAHSD-R - Questionário para Identificação de Altas Habilidades</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.2em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .dados-pessoais {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            border-left: 5px solid #667eea;
+        }
+
+        .dados-pessoais h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .form-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .bloco {
+            margin-bottom: 30px;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+
+        .bloco-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            font-size: 1.3em;
+            font-weight: 600;
+        }
+
+        .item {
+            padding: 20px;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background-color 0.3s;
+        }
+
+        .item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .item:last-child {
+            border-bottom: none;
+        }
+
+        .item.pulada {
+            background-color: #ff9800 !important;
+            color: white;
+        }
+
+        .item-numero {
+            font-weight: bold;
+            color: #667eea;
+            margin-right: 10px;
+        }
+
+        .item-texto {
+            font-size: 1.1em;
+            margin-bottom: 15px;
+            color: #444;
+            line-height: 1.5;
+        }
+
+        .opcoes {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .opcao {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            padding: 10px;
+            border-radius: 10px;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+            min-width: 80px;
+        }
+
+        .opcao:hover {
+            background-color: #e3f2fd;
+            border-color: #667eea;
+        }
+
+        .opcao input[type="radio"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .opcao label {
+            cursor: pointer;
+            font-weight: 500;
+            color: #555;
+            text-align: center;
+            font-size: 0.9em;
+        }
+
+        .botoes {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(79, 172, 254, 0.3);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(255, 107, 107, 0.3);
+        }
+
+        .btn-print {
+            background: linear-gradient(135deg, #9c27b0 0%, #673ab7 100%);
+            color: white;
+        }
+
+        .btn-print:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(156, 39, 176, 0.3);
+        }
+
+        .resultados {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 10px;
+            margin-top: 30px;
+            border-left: 5px solid #667eea;
+            display: none;
+        }
+
+        .resultados h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .resultado-bloco {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .resultado-nome {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .resultado-detalhes {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .total-geral {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 10px;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .interpretacao {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            border: 2px solid #667eea;
+            text-align: center;
+        }
+
+        .interpretacao h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .interpretacao-texto {
+            font-size: 1.1em;
+            line-height: 1.6;
+            color: #555;
+        }
+
+        .positivo {
+            background: #4caf50;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+        }
+
+        .negativo {
+            background: #f44336;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+        }
+
+        .salvar-emergencia {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #ff9800;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
+            z-index: 1000;
+        }
+
+        .salvar-emergencia:hover {
+            background: #f57c00;
+            transform: translateY(-2px);
+        }
+
+        .contador-pulos {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: #f44336;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-weight: 600;
+            z-index: 1000;
+            display: none;
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 2mm;
+                font-size: 12px;
+            }
+            
+            .container {
+                box-shadow: none;
+                border-radius: 0;
+                max-width: 95%;
+                margin: 0 auto;
+            }
+            
+            .header {
+                background: white !important;
+                color: black !important;
+                border-bottom: 2px solid #333;
+            }
+            
+            .botoes, .salvar-emergencia, .contador-pulos {
+                display: none !important;
+            }
+            
+            .opcoes input[type="radio"] {
+                width: 25px;
+                height: 25px;
+                border: 2px solid #333;
+                background: white;
+            }
+            
+            .bloco-header {
+                background: white !important;
+                color: black !important;
+                border-bottom: 2px solid #333;
+            }
+            
+            .form-group input, .form-group select {
+                border: 1px solid #333;
+                background: white;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 10px;
+            }
+            
+            .header {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 1.8em;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .form-row {
+                flex-direction: column;
+            }
+            
+            .opcoes {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .botoes {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button class="salvar-emergencia" onclick="salvarDadosManual()">💾 Salvar</button>
+    <div class="contador-pulos" id="contadorPulos">⚠️ Pulos: 0</div>
+    
+    <div class="container">
+        <div class="header">
+            <h1>🎯 QIIAHSD-R</h1>
+            <p>Questionário para Identificação de Indicadores de Altas Habilidades/Superdotação - Responsáveis</p>
+        </div>
+
+        <div class="content">
+            <div class="botoes">
+                <button class="btn btn-print" onclick="imprimirEscala()">🖨️ Imprimir Questionário para Papel</button>
+            </div>
+
+            <div class="dados-pessoais">
+                <h2>📋 Dados do Responsável e do Filho/a</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="nomeResponsavel">Seu Nome:</label>
+                        <input type="text" id="nomeResponsavel" placeholder="Nome do responsável">
+                    </div>
+                    <div class="form-group">
+                        <label for="parentesco">Parentesco:</label>
+                        <select id="parentesco">
+                            <option value="">Selecione</option>
+                            <option value="Pai">Pai</option>
+                            <option value="Mãe">Mãe</option>
+                            <option value="Outro">Outro</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="nomeFilho">Nome do/a Filho/a:</label>
+                        <input type="text" id="nomeFilho" placeholder="Nome completo do filho/a">
+                    </div>
+                    <div class="form-group">
+                        <label for="idade">Idade do/a Filho/a:</label>
+                        <input type="number" id="idade" min="5" max="18" placeholder="Anos">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="data">Data da Avaliação:</label>
+                        <input type="date" id="data">
+                    </div>
+                    <div class="form-group">
+                        <label for="cidade">Cidade:</label>
+                        <input type="text" id="cidade" placeholder="Cidade">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Em quais áreas seu/sua filho/a é um/uma dos/das melhores da sua turma? (marque até 4)</label>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-top: 10px;">
+                        <label style="display: flex; align-items: center; cursor: pointer;"><input type="checkbox" name="materia" value="Matemática" style="margin-right: 8px;"> Matemática</label>
+                        <label style="display: flex; align-items: center; cursor: pointer;"><input type="checkbox" name="materia" value="Português" style="margin-right: 8px;"> Português</label>
+                        <label style="display: flex; align-items: center; cursor: pointer;"><input type="checkbox" name="materia" value="História" style="margin-right: 8px;"> História</label>
+                        <label style="display: flex; align-items: center; cursor: pointer;"><input type="checkbox" name="materia" value="Geografia" style="margin-right: 8px;"> Geografia</label>
+                        <label style="display: flex; align-items: center; cursor: pointer;"><input type="checkbox" name="materia" value="Ciências" style="margin-right: 8px;"> Ciências</label>
+                        <label style="display: flex; align-items: center; cursor: pointer;"><input type="checkbox" name="materia" value="Física" style="margin-right: 8px;"> Física</label>
+                        <label style="display: flex; align-items: center; cursor: pointer;"><input type="checkbox" name="materia" value="Química" style="margin-right: 8px;"> Química</label>
+                        <label style="display: flex; align-items: center; cursor: pointer;"><input type="checkbox" name="materia" value="Biologia" style="margin-right: 8px;"> Biologia</label>
+                        <label style="display: flex; align-items: center; cursor: pointer;"><input type="checkbox" name="materia" value="Línguas Estrangeiras" style="margin-right: 8px;"> Línguas Estrangeiras</label>
+                        <label style="display: flex; align-items: center; cursor: pointer;"><input type="checkbox" name="materia" value="Artes" style="margin-right: 8px;"> Artes</label>
+                        <label style="display: flex; align-items: center; cursor: pointer;"><input type="checkbox" name="materia" value="Música" style="margin-right: 8px;"> Música</label>
+                        <label style="display: flex; align-items: center; cursor: pointer;"><input type="checkbox" name="materia" value="Educação Física" style="margin-right: 8px;"> Educação Física</label>
+                    </div>
+                    <input type="text" id="outraMateria" placeholder="Outra matéria (se não listada acima)" style="margin-top: 15px; width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px;">
+                </div>
+            </div>
+
+            <div id="questionario">
+                <!-- Blocos serão inseridos aqui pelo JavaScript -->
+            </div>
+
+            <div class="dados-pessoais" style="background: #fff3e0; border-left-color: #ff9800; margin-top: 30px;">
+                <h2 style="color: #ff9800;">⭐ ETAPA 2 - Marcadores Qualitativos</h2>
+                <p style="margin-bottom: 20px; color: #666;">Marque SIM apenas se a característica for claramente presente e forte. São necessários pelo menos 2 marcadores para confirmação.</p>
+                <div id="etapa2">
+                    <!-- Marcadores da Etapa 2 serão inseridos aqui -->
+                </div>
+            </div>
+
+            <div class="botoes">
+                <button class="btn btn-primary" onclick="calcularResultados()">📊 Calcular Resultados</button>
+                <button class="btn btn-secondary" onclick="gerarRelatorioPDF()">📄 Gerar Relatório PDF</button>
+                <button class="btn btn-danger" onclick="limparDados()">🗑️ Limpar Dados</button>
+            </div>
+
+            <div id="resultados" class="resultados">
+                <!-- Resultados serão inseridos aqui -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Dados do questionário QIIAHSD-R
+        const etapa2Marcadores = {
+            "Marcadores Qualitativos - Etapa 2": [
+                "Começou a ler antes dos 5 anos (frases completas)?",
+                "Lê mais de 10 livros por ano por conta própria?",
+                "Tem interesses intensos e específicos (astronomia, mitologia, etc.)?",
+                "Amigos são significativamente mais velhos (2+ anos de diferença)?",
+                "É reconhecido como um dos melhores em pelo menos 2 áreas acadêmicas?",
+                "Pratica atividade artística (música, dança, pintura, etc.) por mais de 10h/semana?",
+                "Já participou ou ganhou prêmios em competições (esportes, artes, acadêmicas)?",
+                "Tem habilidade especial reconhecida em área artística ou esportiva?"
+            ]
+        };
+
+        const questionario = {
+            "Características Gerais": [
+                "Com quantos anos seu/sua filho/a começou a ler (não só o seu nome, mas frases)?",
+                "Ele/ela lê por conta própria livros de seu interesse? (fora os da escola). Quantos por ano?",
+                "Sobre que assuntos seu/sua filho/a mais gosta de conversar ou estudar ou que atividades mais gosta de fazer?",
+                "Que idade têm os/as 4 melhores amigos/as dele/dela?",
+                "Em quais áreas seu/sua filho/a é um/uma dos/das melhores da sua turma?"
+            ],
+            "Comunicação": [
+                "Seu/sua filho/a se sente diferente aos seus colegas na maneira de pensar, sentir ou agir?",
+                "Seu/sua filho/a prefere trabalhar/estudar/treinar/praticar sozinho/a?",
+                "Seu/sua filho/a prefere ler livros mais difíceis, ou enciclopédias, biografias ou atlas?",
+                "Seu/sua filho/a é independente e faz as coisas sozinho/a?",
+                "Seu/sua filho/a tem senso de humor e às vezes encontra humor em situações que não são humorísticas para os demais?",
+                "Seu/sua filho/a se preocupa com temas que normalmente interessam aos adultos, como violência, corrupção, fome, injustiça?",
+                "Seu/sua filho/a é perfeccionista?",
+                "Ele/a é mais observador/a que seus colegas, percebendo coisas que os demais não percebem?",
+                "Seu/sua filho/a gosta e prefere jogar xadrez ou jogos de estratégia?",
+                "Seu/sua filho/a é autossuficiente?"
+            ],
+            "Liderança": [
+                "Seu/sua filho/a é escolhido/a pelos seus colegas e amigos para funções de líder (líder de turma, coordenador/a)?",
+                "Ele/ela é cooperativo/a com os demais?",
+                "Ele/ela tende a organizar o grupo?",
+                "Ele/ela sabe se expressar bem e convence os outros com os seus argumentos?"
+            ],
+            "Habilidade Acima da Média": [
+                "A memória dele/a é muito destacada, especialmente em assuntos do seu interesse?",
+                "Ele/ela tem muitas informações sobre os temas que são de seu interesse?",
+                "Seu/sua filho/a conhece mais palavras que seus colegas, ou palavras mais difíceis e complexas que seus colegas não conhecem?",
+                "Ele/a tenta entender coisas complicadas examinando-as parte por parte?",
+                "Seu/sua filho/a aprende rapidamente coisas que lhe interessam e usa o que aprendeu em outras áreas?",
+                "Seu/sua filho/a percebe facilmente as relações entre as partes e o todo?",
+                "Normalmente, seu/sua filho/a aprende mais de uma história, um filme, etc. do que as outras crianças de sua idade?",
+                "Seu/sua filho/a tenta descobrir o 'como' e o 'porquê' das coisas fazendo perguntas inteligentes?",
+                "As notas ou conceitos do/a seu/sua filho/a na escola são melhores que as dos demais colegas da sua turma?",
+                "Seu/sua filho/a aprende mais rápido que seus colegas?",
+                "Seu/sua filho/a se adapta facilmente a situações novas ou as modifica?",
+                "Seu/sua filho/a tem um pensamento abstrato muito desenvolvido?"
+            ],
+            "Criatividade": [
+                "As ideias que ele/ela propõe são vistas como diferentes ou esquisitas pelos demais?",
+                "Seu/sua filho/a é muito curioso/a?",
+                "Seu/sua filho/a tem muitas ideias, soluções e respostas incomuns, diferentes e inteligentes?",
+                "Seu/sua filho/a gosta de arriscar-se?",
+                "Ele/a gosta de enfrentar desafios?",
+                "Ele/ela é muito imaginativo/a e inventivo/a?",
+                "Ele/a é sensível às coisas bonitas?",
+                "Seu/sua filho/a é inconformista e não se importa em ser diferente?",
+                "Seu/sua filho/a sabe compreender ideias diferentes das suas?",
+                "Fica chateado/a quando tem que repetir um exercício de algo que já sabe?",
+                "Ele/a descobre novos e diferentes caminhos para solucionar problemas?",
+                "Ele/ela é questionador/a quando algum adulto fala algo com o qual não concorda?",
+                "Ele/a presta atenção, mesmo que o assunto não lhe interesse?",
+                "Os cadernos dele/a são completos e organizados?",
+                "Ele/a gosta de cumprir regras?"
+            ],
+            "Comprometimento com a Tarefa": [
+                "Seu/sua filho/a dedica muito mais tempo e energia a algum tema ou atividade que gosta ou que lhe interessa?",
+                "Seu/sua filho/a é muito exigente e crítico/a consigo mesmo/a, e nunca fica satisfeito/a com o que faz?",
+                "Seu/sua filho/a insiste em buscar soluções para os problemas?",
+                "Ele/a tem sua própria organização?",
+                "Seu/sua filho/a é muito seguro/a e, às vezes, teimoso/a, em suas convicções?",
+                "Ele/a precisa de muito estímulo para terminar um trabalho que lhe interessa?",
+                "Seu/sua filho/a deixa de fazer outras coisas para envolver-se numa atividade que lhe interessa?",
+                "Seu/sua filho/a sabe identificar as áreas de dificuldade que podem surgir em uma atividade?",
+                "Seu/sua filho/a sabe estabelecer prioridades com facilidade?",
+                "Ele/a consegue prever as etapas e os detalhes para realizar uma atividade?",
+                "Ele/ela é persistente nas atividades que lhe interessam e busca concluir as tarefas?",
+                "Seu/sua filho/a é interessado/a e eficiente na organização de tarefas?",
+                "Ele/ela sabe distinguir as consequências e os efeitos de ações?"
+            ]
+        };
+
+        let contadorPulos = 0;
+
+        // Gerar Etapa 2
+        function gerarEtapa2() {
+            const container = document.getElementById('etapa2');
+            let html = '';
+            let marcadorIndex = 0;
+
+            etapa2Marcadores["Marcadores Qualitativos - Etapa 2"].forEach((marcador, index) => {
+                html += `
+                    <div style="padding: 15px; margin-bottom: 10px; background: white; border-radius: 8px; border-left: 4px solid #ff9800;">
+                        <label style="display: flex; align-items: center; cursor: pointer;">
+                            <input type="checkbox" id="marcador${marcadorIndex}" style="width: 20px; height: 20px; margin-right: 15px; cursor: pointer;">
+                            <span style="font-size: 1.05em; color: #333;">${marcador}</span>
+                        </label>
+                    </div>
+                `;
+                marcadorIndex++;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // Gerar questionário
+        function gerarQuestionario() {
+            const container = document.getElementById('questionario');
+            let html = '';
+            let itemIndex = 0;
+
+            Object.keys(questionario).forEach(bloco => {
+                html += `
+                    <div class="bloco">
+                        <div class="bloco-header">${bloco}</div>
+                `;
+
+                questionario[bloco].forEach((item, index) => {
+                    html += `
+                        <div class="item" id="item${itemIndex}">
+                            <div class="item-texto">
+                                <span class="item-numero">${itemIndex + 1}.</span>
+                                ${item}
+                            </div>
+                            <div class="opcoes">
+                                <div class="opcao">
+                                    <input type="radio" id="item${itemIndex}_1" name="item${itemIndex}" value="1" onchange="verificarPulos()">
+                                    <label for="item${itemIndex}_1">Nunca</label>
+                                </div>
+                                <div class="opcao">
+                                    <input type="radio" id="item${itemIndex}_2" name="item${itemIndex}" value="2" onchange="verificarPulos()">
+                                    <label for="item${itemIndex}_2">Raramente</label>
+                                </div>
+                                <div class="opcao">
+                                    <input type="radio" id="item${itemIndex}_3" name="item${itemIndex}" value="3" onchange="verificarPulos()">
+                                    <label for="item${itemIndex}_3">Às vezes</label>
+                                </div>
+                                <div class="opcao">
+                                    <input type="radio" id="item${itemIndex}_4" name="item${itemIndex}" value="4" onchange="verificarPulos()">
+                                    <label for="item${itemIndex}_4">Frequentemente</label>
+                                </div>
+                                <div class="opcao">
+                                    <input type="radio" id="item${itemIndex}_5" name="item${itemIndex}" value="5" onchange="verificarPulos()">
+                                    <label for="item${itemIndex}_5">Sempre</label>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    itemIndex++;
+                });
+
+                html += '</div>';
+            });
+
+            container.innerHTML = html;
+        }
+
+        // Verificar perguntas puladas
+        function verificarPulos() {
+            const totalItens = Object.values(questionario).reduce((acc, arr) => acc + arr.length, 0);
+            let pulosDetectados = 0;
+
+            for (let i = 0; i < totalItens; i++) {
+                const item = document.getElementById(`item${i}`);
+                const respondida = document.querySelector(`input[name="item${i}"]:checked`);
+                
+                if (!respondida) {
+                    // Verificar se há respostas depois desta
+                    let temRespostaDepois = false;
+                    for (let j = i + 1; j < totalItens; j++) {
+                        if (document.querySelector(`input[name="item${j}"]:checked`)) {
+                            temRespostaDepois = true;
+                            break;
+                        }
+                    }
+                    
+                    if (temRespostaDepois) {
+                        item.classList.add('pulada');
+                        pulosDetectados++;
+                    } else {
+                        item.classList.remove('pulada');
+                    }
+                } else {
+                    item.classList.remove('pulada');
+                }
+            }
+
+            contadorPulos = pulosDetectados;
+            const contador = document.getElementById('contadorPulos');
+            if (contadorPulos > 0) {
+                contador.textContent = `⚠️ Pulos: ${contadorPulos}`;
+                contador.style.display = 'block';
+            } else {
+                contador.style.display = 'none';
+            }
+        }
+
+        // Calcular resultados
+        function calcularResultados() {
+            const nomeFilho = document.getElementById('nomeFilho').value;
+            const idade = document.getElementById('idade').value;
+            const nomeResponsavel = document.getElementById('nomeResponsavel').value;
+
+            if (!nomeFilho || !idade || !nomeResponsavel) {
+                alert('Por favor, preencha todos os dados pessoais antes de calcular.');
+                return;
+            }
+
+            const resultados = {};
+            let totalGeral = 0;
+            let itemIndex = 0;
+
+            // Contar marcadores da Etapa 2
+            let marcadoresAtivos = 0;
+            const totalMarcadores = etapa2Marcadores["Marcadores Qualitativos - Etapa 2"].length;
+            for (let i = 0; i < totalMarcadores; i++) {
+                if (document.getElementById(`marcador${i}`)?.checked) {
+                    marcadoresAtivos++;
+                }
+            }
+
+            // Calcular por domínio
+            Object.keys(questionario).forEach(bloco => {
+                let pontuacaoBloco = 0;
+                let itensRespondidos = 0;
+                let frequentementeSempre = 0;
+                
+                questionario[bloco].forEach(item => {
+                    const resposta = document.querySelector(`input[name="item${itemIndex}"]:checked`);
+                    if (resposta) {
+                        const valor = parseInt(resposta.value);
+                        pontuacaoBloco += valor;
+                        itensRespondidos++;
+                        if (valor >= 4) { // Frequentemente ou Sempre
+                            frequentementeSempre++;
+                        }
+                    }
+                    itemIndex++;
+                });
+
+                const mediaBloco = itensRespondidos > 0 ? (pontuacaoBloco / itensRespondidos).toFixed(2) : 0;
+                const percentualAlto = itensRespondidos > 0 ? ((frequentementeSempre / itensRespondidos) * 100).toFixed(1) : 0;
+                
+                resultados[bloco] = {
+                    pontuacao: pontuacaoBloco,
+                    media: parseFloat(mediaBloco),
+                    itens: itensRespondidos,
+                    percentualAlto: parseFloat(percentualAlto),
+                    perfilElevado: percentualAlto >= 50 // 50% ou mais de respostas "Frequentemente"/"Sempre"
+                };
+                totalGeral += pontuacaoBloco;
+            });
+
+            mostrarResultados(resultados, totalGeral, marcadoresAtivos);
+        }
+
+        // Mostrar resultados
+        function mostrarResultados(resultados, totalGeral, marcadoresAtivos) {
+            const container = document.getElementById('resultados');
+            let html = '<h2>📊 Resultados QIIAHSD-R</h2>';
+
+            // Verificar critérios de AH/SD
+            let dominiosElevados = 0;
+            let dominiosElevadosNomes = [];
+
+            // Resultados por domínio
+            Object.keys(resultados).forEach(bloco => {
+                const dados = resultados[bloco];
+                const cor = dados.perfilElevado ? '#4caf50' : '#ff9800';
+                const status = dados.perfilElevado ? 'PERFIL ELEVADO' : 'Perfil Normal';
+                
+                if (dados.perfilElevado) {
+                    dominiosElevados++;
+                    dominiosElevadosNomes.push(bloco);
+                }
+                
+                html += `
+                    <div class="resultado-bloco">
+                        <div class="resultado-nome">${bloco}</div>
+                        <div class="resultado-detalhes">
+                            Pontuação: ${dados.pontuacao} | Média: ${dados.media} | 
+                            <span style="color: ${cor}; font-weight: bold;">
+                                ${dados.percentualAlto}% Freq./Sempre - ${status}
+                            </span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            // Total geral
+            const mediaGeral = Object.values(resultados).reduce((acc, r) => acc + r.pontuacao, 0) / 
+                              Object.values(resultados).reduce((acc, r) => acc + r.itens, 0);
+            
+            html += `
+                <div class="total-geral">
+                    <h3>Pontuação Total: ${totalGeral} pontos</h3>
+                    <h3>Média Geral: ${mediaGeral.toFixed(2)}</h3>
+                </div>
+            `;
+
+            // Interpretação baseada nos critérios
+            const interpretacao = getInterpretacao(dominiosElevados, dominiosElevadosNomes, resultados, marcadoresAtivos);
+            html += `
+                <div class="interpretacao">
+                    <h3>🎯 Interpretação</h3>
+                    <div class="interpretacao-texto">${interpretacao.texto}</div>
+                    <div class="${interpretacao.classe}">${interpretacao.resultado}</div>
+                </div>
+            `;
+
+            container.innerHTML = html;
+            container.style.display = 'block';
+        }
+
+        // Obter interpretação baseada nos critérios
+        function getInterpretacao(dominiosElevados, dominiosElevadosNomes, resultados, marcadoresAtivos) {
+            let texto = '';
+            let resultado = '';
+            let classe = '';
+
+            const etapa1OK = dominiosElevados >= 1;
+            const etapa2OK = marcadoresAtivos >= 2;
+
+            texto = `<strong>ETAPA 1:</strong> `;
+            if (etapa1OK) {
+                texto += `✅ ATENDIDA - Perfil elevado em ${dominiosElevados} domínio(s): ${dominiosElevadosNomes.join(', ')}.<br><br>`;
+            } else {
+                texto += `❌ NÃO ATENDIDA - Nenhum domínio com 50%+ de respostas "Frequentemente"/"Sempre".<br><br>`;
+            }
+
+            texto += `<strong>ETAPA 2:</strong> `;
+            if (etapa2OK) {
+                texto += `✅ ATENDIDA - ${marcadoresAtivos} marcadores qualitativos identificados (mínimo: 2).<br><br>`;
+            } else {
+                texto += `❌ NÃO ATENDIDA - ${marcadoresAtivos} marcadores identificados (necessário: 2 ou mais).<br><br>`;
+            }
+
+            texto += `<strong>CRITÉRIO FINAL:</strong> `;
+            if (etapa1OK && etapa2OK) {
+                texto += `Ambas as etapas atendidas. Indicativo positivo para AH/SD.`;
+                resultado = '✅ INDICATIVO POSITIVO PARA ALTAS HABILIDADES/SUPERDOTAÇÃO';
+                classe = 'positivo';
+            } else if (etapa1OK && !etapa2OK) {
+                texto += `Apenas Etapa 1 atendida. Necessário confirmar marcadores qualitativos.`;
+                resultado = '⚠️ PERFIL ELEVADO MAS SEM CONFIRMAÇÃO QUALITATIVA';
+                classe = 'negativo';
+            } else if (!etapa1OK && etapa2OK) {
+                texto += `Apenas Etapa 2 atendida. Necessário perfil elevado em domínios comportamentais.`;
+                resultado = '⚠️ MARCADORES PRESENTES MAS SEM PERFIL COMPORTAMENTAL ELEVADO';
+                classe = 'negativo';
+            } else {
+                texto += `Nenhuma das etapas atendida. Não atende aos critérios de rastreio.`;
+                resultado = '❌ NÃO ATENDE AOS CRITÉRIOS DE RASTREIO PARA AH/SD';
+                classe = 'negativo';
+            }
+
+            return { texto, resultado, classe };
+        }
+
+        // Gerar relatório PDF
+        function gerarRelatorioPDF() {
+            const nomeFilho = document.getElementById('nomeFilho').value;
+            const nomeResponsavel = document.getElementById('nomeResponsavel').value;
+            const parentesco = document.getElementById('parentesco').value;
+            const idade = document.getElementById('idade').value;
+            const cidade = document.getElementById('cidade').value;
+            const data = document.getElementById('data').value || new Date().toLocaleDateString('pt-BR');
+
+            if (!nomeFilho || !nomeResponsavel) {
+                alert('Por favor, preencha pelo menos os nomes antes de gerar o relatório.');
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // Cabeçalho
+            doc.setFillColor(102, 126, 234);
+            doc.rect(0, 0, 210, 40, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(16);
+            doc.setFont(undefined, 'bold');
+            doc.text('QIIAHSD-R - RELATÓRIO DE AVALIAÇÃO', 105, 20, { align: 'center' });
+            doc.setFontSize(11);
+            doc.text('Questionário para Identificação de Altas Habilidades/Superdotação', 105, 30, { align: 'center' });
+
+            // Dados pessoais
+            doc.setFillColor(248, 249, 250);
+            doc.rect(20, 50, 170, 35, 'F');
+            doc.setDrawColor(102, 126, 234);
+            doc.rect(20, 50, 170, 35);
+            doc.setTextColor(102, 126, 234);
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'bold');
+            doc.text('DADOS DA AVALIAÇÃO', 25, 60);
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(9);
+            doc.setFont(undefined, 'normal');
+            doc.text(`Responsável: ${nomeResponsavel} (${parentesco})`, 25, 70);
+            doc.text(`Filho/a: ${nomeFilho}`, 25, 75);
+            doc.text(`Idade: ${idade} anos`, 120, 75);
+            doc.text(`Cidade: ${cidade}`, 25, 80);
+            doc.text(`Data: ${data}`, 120, 80);
+
+            // Calcular resultados para o PDF
+            const resultados = {};
+            let totalGeral = 0;
+            let itemIndex = 0;
+            let dominiosElevados = 0;
+
+            Object.keys(questionario).forEach(bloco => {
+                let pontuacaoBloco = 0;
+                let itensRespondidos = 0;
+                let frequentementeSempre = 0;
+                
+                questionario[bloco].forEach(item => {
+                    const resposta = document.querySelector(`input[name="item${itemIndex}"]:checked`);
+                    if (resposta) {
+                        const valor = parseInt(resposta.value);
+                        pontuacaoBloco += valor;
+                        itensRespondidos++;
+                        if (valor >= 4) {
+                            frequentementeSempre++;
+                        }
+                    }
+                    itemIndex++;
+                });
+
+                const percentualAlto = itensRespondidos > 0 ? ((frequentementeSempre / itensRespondidos) * 100).toFixed(1) : 0;
+                const perfilElevado = percentualAlto >= 50;
+                
+                if (perfilElevado) dominiosElevados++;
+                
+                resultados[bloco] = {
+                    pontuacao: pontuacaoBloco,
+                    percentualAlto: parseFloat(percentualAlto),
+                    perfilElevado: perfilElevado
+                };
+                totalGeral += pontuacaoBloco;
+            });
+
+            // Resultados
+            doc.setFillColor(76, 175, 80);
+            doc.rect(20, 95, 170, 10, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(11);
+            doc.setFont(undefined, 'bold');
+            doc.text('RESULTADOS POR DOMÍNIO', 25, 102);
+
+            let yPos = 115;
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(8);
+            Object.keys(resultados).forEach(bloco => {
+                const dados = resultados[bloco];
+                const status = dados.perfilElevado ? 'ELEVADO' : 'Normal';
+                const cor = dados.perfilElevado ? [76, 175, 80] : [255, 152, 0];
+                
+                doc.setTextColor(...cor);
+                doc.text(`${bloco}: ${dados.percentualAlto}% Freq./Sempre - ${status}`, 25, yPos);
+                doc.setTextColor(0, 0, 0);
+                yPos += 6;
+            });
+
+            // Interpretação
+            yPos += 10;
+            doc.setFillColor(255, 193, 7);
+            doc.rect(20, yPos, 170, 10, 'F');
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(11);
+            doc.setFont(undefined, 'bold');
+            doc.text('INTERPRETAÇÃO', 25, yPos + 7);
+
+            yPos += 20;
+            doc.setFontSize(9);
+            doc.setFont(undefined, 'normal');
+            
+            if (dominiosElevados >= 1) {
+                doc.setTextColor(76, 175, 80);
+                doc.text('✓ POSSÍVEL INDICATIVO DE ALTAS HABILIDADES/SUPERDOTAÇÃO', 25, yPos);
+                yPos += 8;
+                doc.setTextColor(0, 0, 0);
+                doc.text('Etapa 1 atendida. Verificar Etapa 2 (marcadores qualitativos).', 25, yPos);
+            } else {
+                doc.setTextColor(244, 67, 54);
+                doc.text('✗ NÃO ATENDE AOS CRITÉRIOS DE RASTREIO', 25, yPos);
+                yPos += 8;
+                doc.setTextColor(0, 0, 0);
+                doc.text('Continuar observando desenvolvimento da criança.', 25, yPos);
+            }
+
+            // Rodapé
+            doc.setFillColor(108, 117, 125);
+            doc.rect(0, 280, 210, 17, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(8);
+            doc.text(`Relatório gerado em: ${new Date().toLocaleString('pt-BR')}`, 105, 290, { align: 'center' });
+
+            // Salvar PDF
+            const timestamp = new Date().toISOString().slice(0,16).replace(/[-:T]/g, '').slice(0,12);
+            const nomeArquivo = `QIIAHSD_${nomeFilho.replace(/\s+/g, '')}_${timestamp}.pdf`;
+            doc.save(nomeArquivo);
+        }
+
+        // Limpar dados
+        function limparDados() {
+            if (confirm('Tem certeza que deseja limpar todos os dados? Esta ação não pode ser desfeita.')) {
+                document.getElementById('nomeResponsavel').value = '';
+                document.getElementById('parentesco').value = '';
+                document.getElementById('nomeFilho').value = '';
+                document.getElementById('idade').value = '';
+                document.getElementById('cidade').value = '';
+                document.getElementById('data').value = '';
+                
+                document.querySelectorAll('input[type="radio"]').forEach(radio => {
+                    radio.checked = false;
+                });
+                
+                document.querySelectorAll('.item').forEach(item => {
+                    item.classList.remove('pulada');
+                });
+                
+                document.getElementById('resultados').style.display = 'none';
+                document.getElementById('contadorPulos').style.display = 'none';
+                contadorPulos = 0;
+                
+                alert('Dados limpos com sucesso!');
+            }
+        }
+
+        // Imprimir escala
+        function imprimirEscala() {
+            const dadosAtuais = {
+                nomeResponsavel: document.getElementById('nomeResponsavel').value,
+                parentesco: document.getElementById('parentesco').value,
+                nomeFilho: document.getElementById('nomeFilho').value,
+                idade: document.getElementById('idade').value,
+                cidade: document.getElementById('cidade').value,
+                data: document.getElementById('data').value
+            };
+            
+            const respostasAtuais = {};
+            document.querySelectorAll('input[type="radio"]:checked').forEach(radio => {
+                respostasAtuais[radio.name] = radio.value;
+            });
+            
+            // Limpar para impressão
+            Object.keys(dadosAtuais).forEach(key => {
+                document.getElementById(key).value = '';
+            });
+            
+            document.querySelectorAll('input[type="radio"]').forEach(radio => {
+                radio.checked = false;
+            });
+            
+            document.querySelectorAll('.item').forEach(item => {
+                item.classList.remove('pulada');
+            });
+            
+            document.getElementById('resultados').style.display = 'none';
+            
+            window.print();
+            
+            // Restaurar dados
+            setTimeout(() => {
+                Object.keys(dadosAtuais).forEach(key => {
+                    document.getElementById(key).value = dadosAtuais[key];
+                });
+                
+                Object.keys(respostasAtuais).forEach(name => {
+                    const radio = document.querySelector(`input[name="${name}"][value="${respostasAtuais[name]}"]`);
+                    if (radio) radio.checked = true;
+                });
+                
+                verificarPulos();
+            }, 1000);
+        }
+
+        // Salvar dados manual
+        function salvarDadosManual() {
+            const dados = {
+                nomeResponsavel: document.getElementById('nomeResponsavel').value,
+                parentesco: document.getElementById('parentesco').value,
+                nomeFilho: document.getElementById('nomeFilho').value,
+                idade: document.getElementById('idade').value,
+                cidade: document.getElementById('cidade').value,
+                data: document.getElementById('data').value,
+                respostas: {}
+            };
+            
+            document.querySelectorAll('input[type="radio"]:checked').forEach(radio => {
+                dados.respostas[radio.name] = radio.value;
+            });
+            
+            const dataStr = JSON.stringify(dados, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const timestamp = new Date().toISOString().slice(0,19).replace(/:/g, '-');
+            a.download = `QIIAHSD-Backup-${timestamp}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            alert('Dados salvos com sucesso!');
+        }
+
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', function() {
+            gerarQuestionario();
+            gerarEtapa2();
+            document.getElementById('data').value = new Date().toISOString().split('T')[0];
+            
+            // Salvamento automático a cada 30 segundos
+            setInterval(() => {
+                const nomeFilho = document.getElementById('nomeFilho').value;
+                if (nomeFilho) {
+                    localStorage.setItem('qiiahsd_backup', JSON.stringify({
+                        timestamp: new Date().toISOString(),
+                        nomeFilho: nomeFilho,
+                        nomeResponsavel: document.getElementById('nomeResponsavel').value
+                    }));
+                }
+            }, 30000);
+        });
+    </script>
+</body>
+</html>

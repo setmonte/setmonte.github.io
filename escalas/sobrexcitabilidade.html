@@ -1,0 +1,1366 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Questionário de Sobrexcitabilidade - AH/SD</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .dados-pessoais {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            border-left: 5px solid #4facfe;
+        }
+
+        .dados-pessoais h2 {
+            color: #4facfe;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .form-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #4facfe;
+        }
+
+        .bloco {
+            margin-bottom: 30px;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+
+        .bloco-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            font-size: 1.3em;
+            font-weight: 600;
+        }
+
+        .item {
+            padding: 20px;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background-color 0.3s;
+        }
+
+        .item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .item:last-child {
+            border-bottom: none;
+        }
+
+        .item-texto {
+            font-size: 1.1em;
+            margin-bottom: 15px;
+            color: #444;
+            line-height: 1.5;
+        }
+
+        .opcoes {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .opcao {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 20px;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+
+        .opcao:hover {
+            background-color: #e3f2fd;
+            border-color: #4facfe;
+        }
+
+        .opcao input[type="radio"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .opcao label {
+            cursor: pointer;
+            font-weight: 500;
+            color: #555;
+        }
+
+        .botoes {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(79, 172, 254, 0.3);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(255, 107, 107, 0.3);
+        }
+
+        .btn-print {
+            background: linear-gradient(135deg, #9c27b0 0%, #673ab7 100%);
+            color: white;
+        }
+
+        .btn-print:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(156, 39, 176, 0.3);
+        }
+
+        .resultados {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 10px;
+            margin-top: 30px;
+            border-left: 5px solid #4facfe;
+            display: none;
+        }
+
+        .resultados h2 {
+            color: #4facfe;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .resultado-bloco {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .resultado-nome {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .resultado-pontos {
+            font-size: 1.2em;
+            font-weight: bold;
+            padding: 8px 15px;
+            border-radius: 20px;
+            color: white;
+        }
+
+        .total-geral {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 10px;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .interpretacao {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            border: 2px solid #4facfe;
+            text-align: center;
+        }
+
+        .interpretacao h3 {
+            color: #4facfe;
+            margin-bottom: 15px;
+        }
+
+        .interpretacao-texto {
+            font-size: 1.1em;
+            line-height: 1.6;
+            color: #555;
+        }
+
+        .analise {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            border-left: 4px solid #2196f3;
+        }
+
+        .analise h4 {
+            color: #1976d2;
+            margin-bottom: 10px;
+        }
+
+        .salvar-emergencia {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #ff9800;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
+            z-index: 1000;
+        }
+
+        .salvar-emergencia:hover {
+            background: #f57c00;
+            transform: translateY(-2px);
+        }
+
+        @media print {
+            @page {
+                size: A4 portrait;
+                margin: 8mm;
+            }
+            
+            body {
+                background: white !important;
+                padding: 0;
+                font-size: 13px;
+                line-height: 1.2;
+            }
+            
+            .container {
+                box-shadow: none;
+                border-radius: 0;
+                max-width: 100%;
+                margin: 0;
+            }
+            
+            .header {
+                background: white !important;
+                color: black !important;
+                border-bottom: 1px solid #333;
+                padding: 0.1cm;
+            }
+            
+            .header h1 {
+                font-size: 1.2em;
+                text-shadow: none;
+                margin-bottom: 0.05cm;
+            }
+            
+            .header p {
+                font-size: 0.8em;
+            }
+            
+            .content {
+                padding: 0.1cm;
+            }
+            
+            .botoes, .salvar-emergencia, .resultados {
+                display: none !important;
+            }
+            
+            .dados-pessoais {
+                background: #f5f5f5 !important;
+                border: 1px solid #333;
+                border-left: 3px solid #333;
+                padding: 0.1cm;
+                margin-bottom: 0.1cm;
+                page-break-after: avoid;
+            }
+            
+            .dados-pessoais h2 {
+                font-size: 0.9em;
+                margin-bottom: 0.1cm;
+                color: black !important;
+            }
+            
+            .form-row {
+                margin-bottom: 0.1cm;
+            }
+            
+            .form-group {
+                min-width: 120px;
+            }
+            
+            .form-group label {
+                font-size: 11px;
+                margin-bottom: 0.05cm;
+                color: black !important;
+            }
+            
+            .form-group input, .form-group select {
+                border: 1px solid #333;
+                background: white;
+                color: transparent;
+                padding: 2px;
+                font-size: 11px;
+                height: 20px;
+            }
+            
+            .bloco {
+                margin-bottom: 0.05cm;
+                border: 1px solid #333;
+            }
+            
+            .bloco-header {
+                color: black !important;
+                border-bottom: 1px solid #333;
+                font-size: 1.1em;
+                padding: 0.1cm;
+                font-weight: bold;
+            }
+            
+            .bloco:nth-child(1) .bloco-header {
+                background: #ffcdd2 !important; /* Rosa claro */
+            }
+            
+            .bloco:nth-child(2) .bloco-header {
+                background: #c8e6c9 !important; /* Verde claro */
+            }
+            
+            .bloco:nth-child(3) .bloco-header {
+                background: #bbdefb !important; /* Azul claro */
+            }
+            
+            .bloco:nth-child(4) .bloco-header {
+                background: #fff3e0 !important; /* Laranja claro */
+            }
+            
+            .bloco:nth-child(5) .bloco-header {
+                background: #f3e5f5 !important; /* Roxo claro */
+            }
+            
+            .item {
+                padding: 0.08cm;
+                border-bottom: 1px solid #ddd;
+            }
+            
+            .item:nth-child(even) {
+                background-color: #f8f8f8 !important;
+            }
+            
+            .item:nth-child(odd) {
+                background-color: white !important;
+            }
+            
+            .item-texto {
+                font-size: 11px;
+                margin-bottom: 0.05cm;
+                line-height: 1.0;
+                color: black !important;
+                margin-top: 0;
+            }
+            
+            .opcoes {
+                gap: 0.1cm;
+                margin-bottom: 0;
+            }
+            
+            .opcao {
+                padding: 0.05cm;
+                font-size: 11px;
+            }
+            
+            .opcao label {
+                color: black !important;
+            }
+            
+            .opcoes input[type="radio"] {
+                width: 14px;
+                height: 14px;
+                border: 1px solid #333;
+                background: white;
+                -webkit-appearance: none;
+                appearance: none;
+                border-radius: 50%;
+            }
+            
+            .opcoes input[type="radio"]:checked {
+                display: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 10px;
+            }
+            
+            .header {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .form-row {
+                flex-direction: column;
+            }
+            
+            .opcoes {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .botoes {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button class="salvar-emergencia" onclick="salvarDadosManual()">🚨 Salvar</button>
+    
+    <div class="container">
+        <div class="header">
+            <h1>🧠 Questionário de Sobrexcitabilidade</h1>
+            <p>Indicadores de Sobre-excitabilidade em AH/SD</p>
+        </div>
+
+        <div class="content">
+            <div class="botoes">
+                <button class="btn btn-print" onclick="imprimirEscala()">🖨️ Imprimir Escala para Papel</button>
+            </div>
+
+            <div class="dados-pessoais">
+                <h2>📋 Dados de Identificação</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="responsavel">Nome do Respondente:</label>
+                        <input type="text" id="responsavel" placeholder="Pai, mãe, professor(a) ou outro">
+                    </div>
+                    <div class="form-group">
+                        <label for="crianca">Nome da Criança/Adolescente:</label>
+                        <input type="text" id="crianca" placeholder="Nome completo">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="dataNascimento">Data de Nascimento da Criança/Adolescente:</label>
+                        <input type="date" id="dataNascimento" onchange="calcularIdade()">
+                    </div>
+                    <div class="form-group">
+                        <label for="idadeCalculada">Idade Atual:</label>
+                        <input type="text" id="idadeCalculada" readonly style="background-color: #f0f0f0; cursor: not-allowed;" placeholder="Calculada automaticamente">
+                    </div>
+                </div>
+                <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin-top: 15px;">
+                    <h4 style="color: #1976d2; margin-bottom: 10px;">📝 Instruções:</h4>
+                    <p><strong>1.</strong> Pense na criança/adolescente (3 a 17 anos) e marque a frequência que você observa cada situação.</p>
+                    <p><strong>2.</strong> Se não souber responder, deixe em branco.</p>
+                    <p><strong>3.</strong> Legenda: <strong>N</strong> = Nunca | <strong>A</strong> = Às vezes | <strong>F</strong> = Frequentemente | <strong>S</strong> = Sempre | <strong>NO</strong> = Não observado</p>
+                </div>
+            </div>
+
+            <div id="questionario">
+                <!-- Blocos serão inseridos aqui pelo JavaScript -->
+            </div>
+
+            <div class="botoes">
+                <button class="btn btn-primary" onclick="calcularResultados()">📊 Calcular Resultados</button>
+                <button class="btn btn-secondary" onclick="gerarRelatorioPDF()">📄 Gerar Relatório PDF</button>
+                <button class="btn btn-danger" onclick="limparDados()">🗑️ Limpar Dados</button>
+            </div>
+
+            <div id="resultados" class="resultados">
+                <!-- Resultados serão inseridos aqui -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Calcular idade automaticamente
+        function calcularIdade() {
+            const dataNascimento = document.getElementById('dataNascimento').value;
+            if (!dataNascimento) {
+                document.getElementById('idadeCalculada').value = '';
+                return;
+            }
+
+            const hoje = new Date();
+            const nascimento = new Date(dataNascimento);
+            
+            let anos = hoje.getFullYear() - nascimento.getFullYear();
+            let meses = hoje.getMonth() - nascimento.getMonth();
+            let dias = hoje.getDate() - nascimento.getDate();
+
+            if (dias < 0) {
+                meses--;
+                dias += new Date(hoje.getFullYear(), hoje.getMonth(), 0).getDate();
+            }
+            if (meses < 0) {
+                anos--;
+                meses += 12;
+            }
+
+            document.getElementById('idadeCalculada').value = `${anos} anos, ${meses} meses, ${dias} dias`;
+        }
+        const questionario = {
+            "1. Sobre-excitabilidade Imaginativa": [
+                "Mostra facilidade em associar imagens e impressões vindas dos sentidos (visão, audição, tato, paladar e/ou olfato)",
+                "Utiliza e/ou gosta de metáforas para expressar ideias",
+                "Gosta de inventar e/ou construir coisas com os materiais que tem a sua volta",
+                "Mostra elevada capacidade de enxergar detalhes que outras pessoas, comumente, não percebem",
+                "Tem sonhos, sejam agradáveis ou pesadelos, com muitos detalhes",
+                "Tem muitas imaginações a partir de elementos da realidade a sua volta",
+                "Tem muitas ideias, mas nem sempre consegue colocar em prática",
+                "Começa uma atividade ou projeto, mas não conclui até o final. Larga pela metade para logo começar outro que também não conclui",
+                "Distrai-se com facilidade com qualquer coisa ao seu redor, pois quase qualquer coisa estimula a imaginação",
+                "Se pudesse, gostaria de ficar mais no mundo da imaginação que no mundo real",
+                "Em algumas situações, mostra-se resistente a mudanças",
+                "Vivencia intensamente suas imaginações (por exemplo, ao contar uma estória, é como se estivesse nela vivendo cada momento)",
+                "Prefere ficções (como Senhor dos Anéis, Harry Potter etc) e/ou contos de fadas, fábulas, histórias em quadrinhos etc",
+                "Gosta de inventar/criar estórias, fazer desenhos ou qualquer tipo de arte",
+                "Faz muitos planos e tem muitas ideias",
+                "É intolerante ao tédio",
+                "Tem necessidade de atividades novas e/ou desafiadoras todo ou a maior parte do tempo"
+            ],
+            "2. Sobre-excitabilidade Emocional": [
+                "Mostra que tem consciência de suas emoções e estados internos",
+                "Tem intenso apego e mostra dificuldade em desapegar (por ex.: objetos, pessoas, animais, lugares, etc)",
+                "É muito autocrítica(o)",
+                "Mostra elevada intensidade em alguns ou todos esses sentimentos: inibição, entusiasmo, euforia, orgulho, culpa, vergonha, ansiedade, raiva e medo",
+                "Tem estados de nervosismo, dor de estômago, tristeza profunda, insônia, palpitação e/ou suor excessivo",
+                "Tem o sono agitado e/ou dorme poucas horas",
+                "Irrita-se intensamente quando uma situação gera alguma frustração e/ou quando contrariada(o)",
+                "A raiva ou outra emoção pode ser tanta que, em alguns momentos, \"escapa\" do controle e leva a crises emocionais",
+                "Mostra-se empática(o) com o sofrimento em relação a pessoas e/ou à natureza (por ex.: animais, plantas, etc)",
+                "Chora com facilidade por situações que comumente não comovem outras pessoas de sua idade ou mesmo as mais velhas",
+                "Sente-se profundamente decepcionada(o) quando não é correspondida(o) em suas emoções na relação com os outros",
+                "Busca estabelecer intenso vínculo afetivo com outras pessoas",
+                "Mostra dificuldade de adaptação a ambientes novos",
+                "Sente responsabilidade pelos outros (por ajudar, cuidar, proteger, etc)",
+                "Mostra profunda sensibilidade às diferentes situações do cotidiano",
+                "Identifica-se com as emoções e sentimentos dos outros, principalmente o sofrimento"
+            ],
+            "3. Sobre-excitabilidade Intelectual": [
+                "Mostra intensa atividade mental (pensamentos e ideias incomuns para a idade)",
+                "Mostra elevada curiosidade em assuntos de seu interesse",
+                "Mostra grande concentração no que gosta de fazer",
+                "Fala de lembranças e/ou ideias em detalhes",
+                "É observadora(or) em detalhes naquilo que comumente os outros não percebem",
+                "Faz planejamentos detalhados de atividades de seu interesse",
+                "Constrói e/ou compreende ideias inesperadas para sua idade",
+                "Fala e pensa sobre suas próprias ideias com frequência",
+                "Fala e pensa sobre as ideias de outras pessoas com frequência (coisas que ouviu alguém dizer, que viu num filme, leu num livro, etc)",
+                "Tende a preferir a ficar mais consigo mesma(o) com seus próprios pensamentos",
+                "É questionadora(or)",
+                "Tem desejo intenso por conhecimentos de uma área específica (ou várias áreas)",
+                "Busca saber sempre o porquê das coisas, como elas são ou funcionam",
+                "Mostra compreensão de ideias inesperadas para sua idade",
+                "Tem preocupações inesperadas para sua idade (por ex.: questões éticas, morais, políticas, ambientais, etc)",
+                "Prefere atividades que exigem raciocínio lógico (por ex.: jogos, brincadeiras, etc)"
+            ],
+            "4. Sobre-excitabilidade Psicomotora": [
+                "Gosta de atividade física intensa",
+                "É competitiva(o) mesmo que o ambiente social não estimule essa conduta",
+                "Fala e/ou age sem pensar nas consequências, mostra-se impulsiva(o)",
+                "Tem dificuldade em ficar quieta(o), mostra-se agitada(o)",
+                "Fala rápido, faz muitas coisas uma na sequência da outra, tem muita energia",
+                "Prefere esportes e/ou jogos que gaste bastante energia física",
+                "Mostra vontade intensa para fazer coisas, para agir",
+                "Ficar parada(o) gera irritação",
+                "Tem necessidade de atividades físicas novas e/ou desafiadoras todo ou a maior parte do tempo",
+                "Envolve-se em brigas, conflitos (às vezes, também, para defender amigos ou os mais indefesos)"
+            ],
+            "5. Sobre-excitabilidade Sensorial": [
+                "Apresenta intensos estados de ansiedade (que pode se mostrar como medos e preocupações)",
+                "Mostra sensibilidade às coisas belas, à estética de lugares, de objetos, de plantas, etc",
+                "Detalhes relacionados às coisas belas são frequentemente notados e há uma satisfação em observá-los",
+                "Tem os sentidos mais aguçados (por ex.: fala de detalhes do gosto dos alimentos, percebe nuances dos sons, tem sensibilidade no tato, nos cheiros, etc)",
+                "Mostra sensibilidade a certos tipos de luz, sons, gostos, texturas e/ou cheiros ao ponto de o incômodo ser tanto que gera profunda irritação",
+                "Apresenta necessidade de ser percebido(a) e de receber atenção dos outros de modo mais intenso que outras crianças de sua idade",
+                "Gosta e busca espontaneamente contato físico com pessoas (por ex.: abraços, beijos, toques, etc)",
+                "Prefere a companhia de alguém que ficar sozinha(o)",
+                "Busca experiências prazerosas e confortáveis"
+            ]
+        };
+
+        // Gerar questionário
+        function gerarQuestionario() {
+            const container = document.getElementById('questionario');
+            let html = '';
+            let itemIndex = 0;
+
+            Object.keys(questionario).forEach(bloco => {
+                html += `
+                    <div class="bloco">
+                        <div class="bloco-header">${bloco}</div>
+                `;
+
+                questionario[bloco].forEach((item, index) => {
+                    html += `
+                        <div class="item">
+                            <div class="item-texto"><strong>${index + 1}.</strong> ${item}</div>
+                            <div class="opcoes">
+                                <div class="opcao">
+                                    <input type="radio" id="item${itemIndex}_0" name="item${itemIndex}" value="0">
+                                    <label for="item${itemIndex}_0">N - Nunca</label>
+                                </div>
+                                <div class="opcao">
+                                    <input type="radio" id="item${itemIndex}_1" name="item${itemIndex}" value="1">
+                                    <label for="item${itemIndex}_1">A - Às vezes</label>
+                                </div>
+                                <div class="opcao">
+                                    <input type="radio" id="item${itemIndex}_3" name="item${itemIndex}" value="3">
+                                    <label for="item${itemIndex}_3">F - Frequentemente</label>
+                                </div>
+                                <div class="opcao">
+                                    <input type="radio" id="item${itemIndex}_4" name="item${itemIndex}" value="4">
+                                    <label for="item${itemIndex}_4">S - Sempre</label>
+                                </div>
+                                <div class="opcao">
+                                    <input type="radio" id="item${itemIndex}_-1" name="item${itemIndex}" value="-1">
+                                    <label for="item${itemIndex}_-1">NO - Não observado</label>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    itemIndex++;
+                });
+
+                html += '</div>';
+            });
+
+            container.innerHTML = html;
+        }
+
+        // Calcular resultados
+        function calcularResultados() {
+            const responsavel = document.getElementById('responsavel').value;
+            const crianca = document.getElementById('crianca').value;
+            const dataNascimento = document.getElementById('dataNascimento').value;
+            const idadeTexto = document.getElementById('idadeCalculada').value;
+
+            if (!responsavel || !crianca || !dataNascimento || !idadeTexto) {
+                alert('Por favor, preencha todos os dados de identificação antes de calcular.');
+                return;
+            }
+
+            // Extrair idade em anos do texto calculado
+            const idadeAnos = parseInt(idadeTexto.split(' ')[0]);
+
+            // Verificar faixa etária
+            if (idadeAnos < 3 || idadeAnos > 17) {
+                alert('⚠️ ATENÇÃO: Este questionário foi validado para crianças e adolescentes de 3 a 17 anos.\n\nA idade atual (' + idadeAnos + ' anos) está fora da faixa etária recomendada.\n\nOs resultados podem não ser precisos para esta idade.');
+                const continuar = confirm('Deseja continuar mesmo assim?');
+                if (!continuar) {
+                    return;
+                }
+            }
+
+            // Verificar se todos os itens foram respondidos
+            let totalItens = 0;
+            Object.keys(questionario).forEach(bloco => {
+                totalItens += questionario[bloco].length;
+            });
+
+            let itensNaoRespondidos = [];
+            let itemIndex = 0;
+
+            Object.keys(questionario).forEach(bloco => {
+                questionario[bloco].forEach((item, index) => {
+                    const resposta = document.querySelector(`input[name="item${itemIndex}"]:checked`);
+                    if (!resposta) {
+                        itensNaoRespondidos.push(`${bloco} - Item ${index + 1}`);
+                    }
+                    itemIndex++;
+                });
+            });
+
+            if (itensNaoRespondidos.length > 0) {
+                alert(`Por favor, responda todos os itens antes de calcular os resultados.\n\nItens não respondidos:\n${itensNaoRespondidos.slice(0, 5).join('\n')}${itensNaoRespondidos.length > 5 ? '\n... e mais ' + (itensNaoRespondidos.length - 5) + ' itens' : ''}`);
+                return;
+            }
+
+            const resultados = {};
+            let totalGeral = 0;
+            itemIndex = 0;
+
+            Object.keys(questionario).forEach(bloco => {
+                let pontuacaoBloco = 0;
+                
+                questionario[bloco].forEach(item => {
+                    const resposta = document.querySelector(`input[name="item${itemIndex}"]:checked`);
+                    if (resposta && resposta.value !== '-1') {
+                        pontuacaoBloco += parseInt(resposta.value);
+                    }
+                    itemIndex++;
+                });
+
+                resultados[bloco] = pontuacaoBloco;
+                totalGeral += pontuacaoBloco;
+            });
+
+            mostrarResultados(resultados, totalGeral);
+        }
+
+        // Mostrar resultados
+        function mostrarResultados(resultados, totalGeral) {
+            const container = document.getElementById('resultados');
+            let html = '<h2>📊 Resultados da Avaliação de Sobrexcitabilidade</h2>';
+
+            // Resultados por bloco
+            Object.keys(resultados).forEach(bloco => {
+                const pontos = resultados[bloco];
+                const nivel = getNivelSobrexcitabilidade(pontos, bloco);
+                const cor = getCorPontuacao(pontos, bloco);
+                
+                html += `
+                    <div class="resultado-bloco">
+                        <span class="resultado-nome">${bloco}</span>
+                        <div style="text-align: right;">
+                            <span class="resultado-pontos" style="background-color: ${cor}">${pontos} pontos</span>
+                            <div style="font-size: 0.9em; color: #666; margin-top: 5px;">Nível: <strong>${nivel}</strong></div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            // Total geral
+            html += `
+                <div class="total-geral">
+                    <h3>Pontuação Total: ${totalGeral} pontos</h3>
+                </div>
+            `;
+
+            // Interpretação
+            const interpretacao = getInterpretacao(totalGeral, resultados);
+            html += `
+                <div class="interpretacao">
+                    <h3>🎯 Interpretação dos Resultados</h3>
+                    <div class="interpretacao-texto">${interpretacao.texto}</div>
+                </div>
+            `;
+
+            // Análise detalhada
+            const analise = getAnalise(resultados);
+            html += `
+                <div class="analise">
+                    <h4>📋 Análise por Área de Sobrexcitabilidade</h4>
+                    <p>${analise}</p>
+                </div>
+            `;
+
+            // Referências
+            html += `
+                <div style="background: #f0f0f0; padding: 15px; border-radius: 8px; margin-top: 20px; font-size: 0.85em; color: #666; line-height: 1.4;">
+                    <strong>Referências:</strong><br><br>
+                    DĄBROWSKI, Kazimierz. <strong>Dezintegracja pozytywna.</strong> Warszawa: Państwowy Instytut Wydawniczy, 1979.<br><br>
+                    DĄBROWSKI, Kazimierz. Types on Increased Psycho Excitability. <strong>Advanced Development Journal</strong>, v. 17, p. 1-26, 1938.<br><br>
+                    DANIELS, Susan; PIECHOWSKI, Michael M. <strong>Living with intensity:</strong> understanding the sensitivity, excitability, and emotional development of gifted children, adolescents, and adults. Scottsdale: Great Potential Press, 2009.<br><br>
+                    NEUMANN, Patricia. A sobre-excitabilidade e a educação nas altas habilidades ou superdotação. <strong>Revista Cocar</strong>, Belém, v. 17, n. 35, p. 1-20, 2022. ISSN: 2237-0315.
+                </div>
+            `;
+
+            container.innerHTML = html;
+            container.style.display = 'block';
+        }
+
+        // Obter cor baseada na pontuação
+        function getCorPontuacao(pontos, bloco) {
+            const nivel = getNivelSobrexcitabilidade(pontos, bloco);
+            
+            if (nivel === 'Muito alto') return '#e91e63'; // Rosa intenso
+            if (nivel === 'Alto') return '#ff9800'; // Laranja
+            if (nivel === 'Médio') return '#2196f3'; // Azul
+            return '#4caf50'; // Verde
+        }
+
+        // Obter nível de sobrexcitabilidade
+        function getNivelSobrexcitabilidade(pontos, bloco) {
+            const niveis = {
+                'Imaginativa': { baixo: [0, 17], medio: [18, 34], alto: [35, 51], muitoAlto: [52, 68] },
+                'Emocional': { baixo: [0, 16], medio: [17, 32], alto: [33, 48], muitoAlto: [49, 64] },
+                'Intelectual': { baixo: [0, 16], medio: [17, 32], alto: [33, 48], muitoAlto: [49, 64] },
+                'Psicomotora': { baixo: [0, 10], medio: [11, 20], alto: [21, 30], muitoAlto: [31, 40] },
+                'Sensorial': { baixo: [0, 9], medio: [10, 18], alto: [19, 27], muitoAlto: [28, 36] }
+            };
+
+            const area = Object.keys(niveis).find(key => bloco.includes(key));
+            if (!area) return 'Baixo';
+
+            const n = niveis[area];
+            if (pontos >= n.muitoAlto[0] && pontos <= n.muitoAlto[1]) return 'Muito alto';
+            if (pontos >= n.alto[0] && pontos <= n.alto[1]) return 'Alto';
+            if (pontos >= n.medio[0] && pontos <= n.medio[1]) return 'Médio';
+            return 'Baixo';
+        }
+
+        // Obter interpretação
+        function getInterpretacao(total, resultados) {
+            const maxTotal = 272; // Total máximo possível
+            const percentual = (total / maxTotal) * 100;
+
+            // Contar níveis altos e muito altos
+            let areasAltas = 0;
+            Object.keys(resultados).forEach(bloco => {
+                const nivel = getNivelSobrexcitabilidade(resultados[bloco], bloco);
+                if (nivel === 'Alto' || nivel === 'Muito alto') {
+                    areasAltas++;
+                }
+            });
+
+            if (areasAltas >= 3) {
+                return {
+                    texto: "Perfil com ALTA intensidade de sobrexcitabilidade em múltiplas áreas. Indica forte presença de características típicas de Altas Habilidades/Superdotação. Recomenda-se avaliação especializada e acompanhamento educacional diferenciado."
+                };
+            } else if (areasAltas >= 2) {
+                return {
+                    texto: "Perfil com MODERADA a ALTA intensidade de sobrexcitabilidade. Sugere presença de características de AH/SD em algumas áreas. Recomenda-se observação continuada e possível enriquecimento curricular."
+                };
+            } else if (areasAltas >= 1) {
+                return {
+                    texto: "Perfil com intensidade MODERADA de sobrexcitabilidade. Uma ou poucas áreas apresentam características diferenciadas. Continuar observação do desenvolvimento."
+                };
+            } else {
+                return {
+                    texto: "Perfil com intensidade BAIXA a MODERADA de sobrexcitabilidade. Desenvolvimento dentro dos parâmetros típicos para a idade. Manter acompanhamento regular."
+                };
+            }
+        }
+
+        // Obter análise detalhada
+        function getAnalise(resultados) {
+            let analise = "Áreas com nível alto ou muito alto: ";
+            let areasAltas = [];
+            
+            Object.keys(resultados).forEach(bloco => {
+                const nivel = getNivelSobrexcitabilidade(resultados[bloco], bloco);
+                if (nivel === 'Alto' || nivel === 'Muito alto') {
+                    areasAltas.push(`${bloco} (${nivel})`);
+                }
+            });
+
+            if (areasAltas.length > 0) {
+                analise += areasAltas.join(", ") + ". ";
+                analise += "Essas áreas apresentam pontuações elevadas, indicando maior intensidade de sobrexcitabilidade. ";
+                
+                if (areasAltas.length >= 3) {
+                    analise += "A presença de múltiplas áreas com nível alto é um forte indicativo de Altas Habilidades/Superdotação.";
+                }
+            } else {
+                analise += "Nenhuma área apresentou nível alto ou muito alto. ";
+                analise += "O perfil sugere desenvolvimento típico, mas é importante continuar observando o potencial da criança/adolescente.";
+            }
+
+            return analise;
+        }
+
+        function gerarRelatorioPDF() {
+            try {
+                const responsavel = document.getElementById('responsavel').value;
+                const crianca = document.getElementById('crianca').value;
+                const dataNascimento = document.getElementById('dataNascimento').value;
+                const idadeTexto = document.getElementById('idadeCalculada').value;
+
+                if (!responsavel || !crianca) {
+                    alert('Por favor, preencha pelo menos os nomes antes de gerar o relatório.');
+                    return;
+                }
+
+                // Calcular resultados para o PDF
+                const resultados = {};
+                let totalGeral = 0;
+                let itemIndex = 0;
+
+                Object.keys(questionario).forEach(bloco => {
+                    let pontuacaoBloco = 0;
+                    
+                    questionario[bloco].forEach(item => {
+                        const resposta = document.querySelector(`input[name="item${itemIndex}"]:checked`);
+                        if (resposta && resposta.value !== '-1') {
+                            pontuacaoBloco += parseInt(resposta.value);
+                        }
+                        itemIndex++;
+                    });
+
+                    resultados[bloco] = pontuacaoBloco;
+                    totalGeral += pontuacaoBloco;
+                });
+
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+
+                // Cabeçalho
+                doc.setFillColor(79, 172, 254);
+                doc.rect(0, 0, 210, 40, 'F');
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(18);
+                doc.setFont(undefined, 'bold');
+                doc.text('QUESTIONÁRIO DE SOBREXCITABILIDADE - AH/SD', 105, 20, { align: 'center' });
+                doc.setFontSize(12);
+                doc.text('Relatório de Avaliação', 105, 30, { align: 'center' });
+
+                // Dados pessoais
+                doc.setFillColor(248, 249, 250);
+                doc.rect(20, 50, 170, 35, 'F');
+                doc.setDrawColor(79, 172, 254);
+                doc.rect(20, 50, 170, 35);
+                doc.setTextColor(79, 172, 254);
+                doc.setFontSize(14);
+                doc.setFont(undefined, 'bold');
+                doc.text('DADOS DE IDENTIFICAÇÃO', 25, 60);
+                doc.setTextColor(0, 0, 0);
+                doc.setFontSize(10);
+                doc.setFont(undefined, 'normal');
+                doc.text('Responsavel: ' + responsavel, 25, 70);
+                doc.text('Crianca/Adolescente: ' + crianca, 25, 75);
+                doc.text('Data de Nascimento: ' + (dataNascimento ? new Date(dataNascimento).toLocaleDateString('pt-BR') : 'Nao informada'), 25, 80);
+                doc.text('Idade: ' + (idadeTexto || 'Nao calculada'), 120, 70);
+
+                // Resultados
+                doc.setFillColor(76, 175, 80);
+                doc.rect(20, 95, 170, 10, 'F');
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(12);
+                doc.setFont(undefined, 'bold');
+                doc.text('RESULTADOS POR AREA DE SOBREXCITABILIDADE', 25, 102);
+
+                let yPos = 115;
+                doc.setTextColor(0, 0, 0);
+                doc.setFontSize(10);
+                Object.keys(resultados).forEach(bloco => {
+                    const nivel = getNivelSobrexcitabilidade(resultados[bloco], bloco);
+                    doc.text(bloco + ': ' + resultados[bloco] + ' pontos (' + nivel + ')', 25, yPos);
+                    yPos += 8;
+                });
+
+                // Total
+                doc.setFillColor(79, 172, 254);
+                doc.rect(20, yPos + 5, 170, 15, 'F');
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(14);
+                doc.setFont(undefined, 'bold');
+                doc.text('PONTUACAO TOTAL: ' + totalGeral + ' PONTOS', 105, yPos + 15, { align: 'center' });
+
+                // Interpretação
+                yPos += 30;
+                doc.setFillColor(255, 193, 7);
+                doc.rect(20, yPos, 170, 10, 'F');
+                doc.setTextColor(0, 0, 0);
+                doc.setFontSize(12);
+                doc.setFont(undefined, 'bold');
+                doc.text('INTERPRETACAO', 25, yPos + 7);
+
+                yPos += 20;
+                const interpretacao = getInterpretacao(totalGeral, resultados);
+                doc.setFontSize(10);
+                doc.setFont(undefined, 'normal');
+                const linhasInterpretacao = doc.splitTextToSize(interpretacao.texto, 160);
+                doc.text(linhasInterpretacao, 25, yPos);
+
+                // Análise
+                yPos += linhasInterpretacao.length * 5 + 15;
+                const analise = getAnalise(resultados);
+                const linhasAnalise = doc.splitTextToSize(analise, 160);
+                doc.text(linhasAnalise, 25, yPos);
+
+                // Gerar nome do arquivo
+                const agora = new Date();
+                const ano = agora.getFullYear();
+                const mes = String(agora.getMonth() + 1).padStart(2, '0');
+                const dia = String(agora.getDate()).padStart(2, '0');
+                const hora = String(agora.getHours()).padStart(2, '0');
+                const minuto = String(agora.getMinutes()).padStart(2, '0');
+                const nomeArquivo = 'SOBREXCITABILIDADE_' + crianca.replace(/\s+/g, '_').toUpperCase() + '_' + ano + mes + dia + hora + minuto + '.pdf';
+
+                // Rodapé
+                doc.setFillColor(108, 117, 125);
+                doc.rect(0, 270, 210, 27, 'F');
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(6);
+                doc.text('Relatorio gerado em: ' + new Date().toLocaleString('pt-BR'), 105, 278, { align: 'center' });
+                doc.text('Baseado em: DABROWSKI, K. (1979). DANIELS, S.; PIECHOWSKI, M. M. (2009).', 105, 282, { align: 'center' });
+                doc.text('NEUMANN, P. A sobre-excitabilidade e a educacao nas AH/SD. Revista Cocar, v.17, n.35, 2022.', 105, 286, { align: 'center' });
+                doc.text('Questionario adaptado para fins educacionais e de pesquisa.', 105, 290, { align: 'center' });
+
+                // Salvar PDF
+                doc.save(nomeArquivo);
+                alert('PDF gerado com sucesso! Arquivo: ' + nomeArquivo);
+            } catch (error) {
+                alert('Erro ao gerar PDF: ' + error.message);
+                console.error('Erro PDF:', error);
+            }
+        }
+        function gerarRelatorioPDF() {
+            try {
+                const responsavel = document.getElementById('responsavel').value;
+                const crianca = document.getElementById('crianca').value;
+                const dataNascimento = document.getElementById('dataNascimento').value;
+                const idadeTexto = document.getElementById('idadeCalculada').value;
+
+                if (!responsavel || !crianca) {
+                    alert('Por favor, preencha pelo menos os nomes antes de gerar o relatório.');
+                    return;
+                }
+
+                // Calcular resultados para o PDF
+                const resultados = {};
+                let totalGeral = 0;
+                let itemIndex = 0;
+
+                Object.keys(questionario).forEach(bloco => {
+                    let pontuacaoBloco = 0;
+                    
+                    questionario[bloco].forEach(item => {
+                        const resposta = document.querySelector(`input[name="item${itemIndex}"]:checked`);
+                        if (resposta && resposta.value !== '-1') {
+                            pontuacaoBloco += parseInt(resposta.value);
+                        }
+                        itemIndex++;
+                    });
+
+                    resultados[bloco] = pontuacaoBloco;
+                    totalGeral += pontuacaoBloco;
+                });
+
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+
+                // Cabeçalho
+                doc.setFillColor(79, 172, 254);
+                doc.rect(0, 0, 210, 40, 'F');
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(18);
+                doc.setFont(undefined, 'bold');
+                doc.text('QUESTIONÁRIO DE SOBREXCITABILIDADE - AH/SD', 105, 20, { align: 'center' });
+                doc.setFontSize(12);
+                doc.text('Relatório de Avaliação', 105, 30, { align: 'center' });
+
+                // Dados pessoais
+                doc.setFillColor(248, 249, 250);
+                doc.rect(20, 50, 170, 35, 'F');
+                doc.setDrawColor(79, 172, 254);
+                doc.rect(20, 50, 170, 35);
+                doc.setTextColor(79, 172, 254);
+                doc.setFontSize(14);
+                doc.setFont(undefined, 'bold');
+                doc.text('DADOS DE IDENTIFICAÇÃO', 25, 60);
+                doc.setTextColor(0, 0, 0);
+                doc.setFontSize(10);
+                doc.setFont(undefined, 'normal');
+                doc.text('Responsavel: ' + responsavel, 25, 70);
+                doc.text('Crianca/Adolescente: ' + crianca, 25, 75);
+                doc.text('Data de Nascimento: ' + (dataNascimento ? new Date(dataNascimento).toLocaleDateString('pt-BR') : 'Nao informada'), 25, 80);
+                doc.text('Idade: ' + (idadeTexto || 'Nao calculada'), 120, 70);
+
+                // Resultados
+                doc.setFillColor(76, 175, 80);
+                doc.rect(20, 95, 170, 10, 'F');
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(12);
+                doc.setFont(undefined, 'bold');
+                doc.text('RESULTADOS POR AREA DE SOBREXCITABILIDADE', 25, 102);
+
+                let yPos = 115;
+                doc.setTextColor(0, 0, 0);
+                doc.setFontSize(10);
+                Object.keys(resultados).forEach(bloco => {
+                    const nivel = getNivelSobrexcitabilidade(resultados[bloco], bloco);
+                    doc.text(bloco + ': ' + resultados[bloco] + ' pontos (' + nivel + ')', 25, yPos);
+                    yPos += 8;
+                });
+
+                // Total
+                doc.setFillColor(79, 172, 254);
+                doc.rect(20, yPos + 5, 170, 15, 'F');
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(14);
+                doc.setFont(undefined, 'bold');
+                doc.text('PONTUACAO TOTAL: ' + totalGeral + ' PONTOS', 105, yPos + 15, { align: 'center' });
+
+                // Interpretação
+                yPos += 30;
+                doc.setFillColor(255, 193, 7);
+                doc.rect(20, yPos, 170, 10, 'F');
+                doc.setTextColor(0, 0, 0);
+                doc.setFontSize(12);
+                doc.setFont(undefined, 'bold');
+                doc.text('INTERPRETACAO', 25, yPos + 7);
+
+                yPos += 20;
+                const interpretacao = getInterpretacao(totalGeral, resultados);
+                doc.setFontSize(10);
+                doc.setFont(undefined, 'normal');
+                const linhasInterpretacao = doc.splitTextToSize(interpretacao.texto, 160);
+                doc.text(linhasInterpretacao, 25, yPos);
+
+                // Análise
+                yPos += linhasInterpretacao.length * 5 + 15;
+                const analise = getAnalise(resultados);
+                const linhasAnalise = doc.splitTextToSize(analise, 160);
+                doc.text(linhasAnalise, 25, yPos);
+
+                // Gerar nome do arquivo
+                const agora = new Date();
+                const ano = agora.getFullYear();
+                const mes = String(agora.getMonth() + 1).padStart(2, '0');
+                const dia = String(agora.getDate()).padStart(2, '0');
+                const hora = String(agora.getHours()).padStart(2, '0');
+                const minuto = String(agora.getMinutes()).padStart(2, '0');
+                const nomeArquivo = 'SOBREXCITABILIDADE_' + crianca.replace(/\s+/g, '_').toUpperCase() + '_' + ano + mes + dia + hora + minuto + '.pdf';
+
+                // Rodapé
+                doc.setFillColor(108, 117, 125);
+                doc.rect(0, 270, 210, 27, 'F');
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(6);
+                doc.text('Relatorio gerado em: ' + new Date().toLocaleString('pt-BR'), 105, 278, { align: 'center' });
+                doc.text('Baseado em: DABROWSKI, K. (1979). DANIELS, S.; PIECHOWSKI, M. M. (2009).', 105, 282, { align: 'center' });
+                doc.text('NEUMANN, P. A sobre-excitabilidade e a educacao nas AH/SD. Revista Cocar, v.17, n.35, 2022.', 105, 286, { align: 'center' });
+                doc.text('Questionario adaptado para fins educacionais e de pesquisa.', 105, 290, { align: 'center' });
+
+                // Salvar PDF
+                doc.save(nomeArquivo);
+                alert('PDF gerado com sucesso! Arquivo: ' + nomeArquivo);
+            } catch (error) {
+                alert('Erro ao gerar PDF: ' + error.message);
+                console.error('Erro PDF:', error);
+            }
+        }
+
+        // Limpar dados
+        function limparDados() {
+            if (confirm('Tem certeza que deseja limpar todos os dados? Esta ação não pode ser desfeita.')) {
+                document.getElementById('responsavel').value = '';
+                document.getElementById('crianca').value = '';
+                document.getElementById('dataNascimento').value = '';
+                document.getElementById('idadeCalculada').value = '';
+                
+                // Limpar todas as respostas
+                document.querySelectorAll('input[type="radio"]').forEach(radio => {
+                    radio.checked = false;
+                });
+                
+                // Ocultar resultados
+                document.getElementById('resultados').style.display = 'none';
+                
+                alert('Dados limpos com sucesso!');
+            }
+        }
+
+        // Imprimir escala
+        function imprimirEscala() {
+            // Salvar dados atuais
+            const dadosAtuais = {
+                responsavel: document.getElementById('responsavel').value,
+                crianca: document.getElementById('crianca').value,
+                dataNascimento: document.getElementById('dataNascimento').value,
+                idadeCalculada: document.getElementById('idadeCalculada').value
+            };
+            
+            const respostasAtuais = {};
+            document.querySelectorAll('input[type="radio"]:checked').forEach(radio => {
+                respostasAtuais[radio.name] = radio.value;
+            });
+            
+            // Limpar para impressão
+            document.getElementById('responsavel').value = '';
+            document.getElementById('crianca').value = '';
+            document.getElementById('dataNascimento').value = '';
+            document.getElementById('idadeCalculada').value = '';
+            
+            document.querySelectorAll('input[type="radio"]').forEach(radio => {
+                radio.checked = false;
+            });
+            
+            document.getElementById('resultados').style.display = 'none';
+            
+            // Imprimir
+            window.print();
+            
+            // Restaurar dados
+            setTimeout(() => {
+                document.getElementById('responsavel').value = dadosAtuais.responsavel;
+                document.getElementById('crianca').value = dadosAtuais.crianca;
+                document.getElementById('dataNascimento').value = dadosAtuais.dataNascimento;
+                document.getElementById('idadeCalculada').value = dadosAtuais.idadeCalculada;
+                
+                Object.keys(respostasAtuais).forEach(name => {
+                    const radio = document.querySelector(`input[name="${name}"][value="${respostasAtuais[name]}"]`);
+                    if (radio) radio.checked = true;
+                });
+            }, 1000);
+        }
+
+        function salvarDadosManual() {
+            try {
+                const dados = {
+                    responsavel: document.getElementById('responsavel').value,
+                    crianca: document.getElementById('crianca').value,
+                    dataNascimento: document.getElementById('dataNascimento').value,
+                    idadeCalculada: document.getElementById('idadeCalculada').value,
+                    respostas: {}
+                };
+                
+                document.querySelectorAll('input[type="radio"]:checked').forEach(radio => {
+                    dados.respostas[radio.name] = radio.value;
+                });
+                
+                const dataStr = JSON.stringify(dados, null, 2);
+                const blob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'Sobrexcitabilidade-Backup-' + new Date().toISOString().slice(0,19).replace(/:/g, '-') + '.json';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                alert('Dados salvos com sucesso! Arquivo JSON baixado para Downloads.');
+            } catch (error) {
+                alert('Erro ao salvar: ' + error.message);
+                console.error('Erro salvamento:', error);
+            }
+        }
+
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', function() {
+            gerarQuestionario();
+            
+            // Salvamento automático a cada 30 segundos
+            setInterval(() => {
+                const crianca = document.getElementById('crianca').value;
+                if (crianca) {
+                    localStorage.setItem('sobrexcitabilidade_backup', JSON.stringify({
+                        timestamp: new Date().toISOString(),
+                        responsavel: document.getElementById('responsavel').value,
+                        crianca: crianca,
+                        dataNascimento: document.getElementById('dataNascimento').value,
+                        idadeCalculada: document.getElementById('idadeCalculada').value
+                    }));
+                }
+            }, 30000);
+        });
+    </script>
+</body>
+</html>
