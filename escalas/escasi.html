@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESCASI - Escala de Ansiedade Infantil</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; background: white; border-radius: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); padding: 40px; }
+        h1 { color: #4a5568; text-align: center; margin-bottom: 10px; font-size: 28px; }
+        .subtitle { text-align: center; color: #718096; margin-bottom: 30px; font-size: 14px; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; color: #2d3748; font-weight: 600; margin-bottom: 8px; font-size: 14px; }
+        input, select { width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; transition: border 0.3s; }
+        input:focus, select:focus { outline: none; border-color: #667eea; }
+        .row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .question { background: #f7fafc; padding: 20px; border-radius: 10px; margin-bottom: 15px; border-left: 4px solid #667eea; }
+        .question-text { color: #2d3748; font-weight: 500; margin-bottom: 12px; font-size: 15px; }
+        .category { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; margin-bottom: 8px; }
+        .cat-fisica { background: #fed7d7; color: #c53030; }
+        .cat-cognitiva { background: #bee3f8; color: #2c5282; }
+        .cat-emocional { background: #feebc8; color: #c05621; }
+        .cat-ambiental { background: #c6f6d5; color: #22543d; }
+        .options { display: flex; gap: 10px; justify-content: space-between; }
+        .option { flex: 1; text-align: center; }
+        .option input[type="radio"] { display: none; }
+        .option label { display: block; padding: 12px; background: white; border: 2px solid #e2e8f0; border-radius: 8px; cursor: pointer; transition: all 0.3s; font-size: 13px; }
+        .option input[type="radio"]:checked + label { background: #667eea; color: white; border-color: #667eea; transform: scale(1.05); }
+        .timer { position: fixed; top: 20px; right: 20px; background: white; padding: 15px 25px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); font-weight: 600; color: #4a5568; }
+        .buttons { display: flex; gap: 15px; margin-top: 30px; }
+        button { flex: 1; padding: 15px; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+        .btn-primary { background: #667eea; color: white; }
+        .btn-primary:hover { background: #5a67d8; transform: translateY(-2px); }
+        .btn-secondary { background: #e2e8f0; color: #4a5568; }
+        .btn-secondary:hover { background: #cbd5e0; }
+        .btn-danger { background: #fc8181; color: white; }
+        .btn-danger:hover { background: #f56565; }
+        .result { background: #edf2f7; padding: 25px; border-radius: 10px; margin-top: 30px; display: none; }
+        .result h2 { color: #2d3748; margin-bottom: 15px; }
+        .score-item { display: flex; justify-content: space-between; padding: 10px; background: white; margin: 8px 0; border-radius: 6px; }
+        .hidden { display: none; }
+        @media print { body { background: white; } .timer, .buttons { display: none; } }
+    </style>
+</head>
+<body>
+    <div class="timer" id="timer">Tempo: 00:00</div>
+    <div class="container">
+        <h1>ESCASI</h1>
+        <p class="subtitle">Escala de Ansiedade Infantil - Baseada em DSM-5-TR</p>
+        
+        <form id="escasiForm">
+            <div class="row">
+                <div class="form-group">
+                    <label>Nome Completo *</label>
+                    <input type="text" id="nome" required>
+                </div>
+                <div class="form-group">
+                    <label>Data de Nascimento *</label>
+                    <input type="date" id="dataNasc" required>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="form-group">
+                    <label>Idade Calculada</label>
+                    <input type="text" id="idade" readonly style="background: #f7fafc;">
+                </div>
+                <div class="form-group">
+                    <label>CPF</label>
+                    <input type="text" id="cpf" maxlength="14" placeholder="000.000.000-00">
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="form-group">
+                    <label>Escolaridade *</label>
+                    <select id="escolaridade" required>
+                        <option value="">Selecione...</option>
+                        <option value="Pré-Escolar">Pré-Escolar</option>
+                        <option value="1º Ano Fundamental">1º Ano Fundamental</option>
+                        <option value="2º Ano Fundamental">2º Ano Fundamental</option>
+                        <option value="3º Ano Fundamental">3º Ano Fundamental</option>
+                        <option value="4º Ano Fundamental">4º Ano Fundamental</option>
+                        <option value="5º Ano Fundamental">5º Ano Fundamental</option>
+                        <option value="6º Ano Fundamental">6º Ano Fundamental</option>
+                        <option value="7º Ano Fundamental">7º Ano Fundamental</option>
+                        <option value="8º Ano Fundamental">8º Ano Fundamental</option>
+                        <option value="9º Ano Fundamental">9º Ano Fundamental</option>
+                        <option value="1º Ano Médio">1º Ano Médio</option>
+                        <option value="2º Ano Médio">2º Ano Médio</option>
+                        <option value="3º Ano Médio">3º Ano Médio</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Quem Responde *</label>
+                    <select id="respondente" required>
+                        <option value="">Selecione...</option>
+                        <option value="Própria Criança">Própria Criança</option>
+                        <option value="Mãe">Mãe</option>
+                        <option value="Pai">Pai</option>
+                        <option value="Responsável Legal">Responsável Legal</option>
+                        <option value="Outro">Outro</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="form-group">
+                    <label>Grau de Parentesco</label>
+                    <input type="text" id="parentesco">
+                </div>
+                <div class="form-group"></div>
+            </div>
+
+            <h2 style="color: #4a5568; margin: 30px 0 20px; font-size: 20px;">Questionário</h2>
+            <p style="color: #718096; margin-bottom: 20px; font-size: 14px;">Responda cada questão de acordo com a intensidade: 1 (Nunca) a 4 (Sempre)</p>
+
+            <div id="questions"></div>
+
+            <div class="buttons">
+                <button type="button" class="btn-secondary" onclick="limparDados()">Limpar Dados</button>
+                <button type="button" class="btn-danger" onclick="novoFormulario()">Novo Formulário</button>
+                <button type="submit" class="btn-primary">Gerar Resultado</button>
+            </div>
+        </form>
+
+        <div class="result" id="result"></div>
+    </div>
+
+    <script>
+        const questions = [
+            {q: "Sente o coração bater rápido sem motivo aparente", cat: "fisica", inv: false},
+            {q: "Preocupa-se excessivamente com o futuro ou com coisas ruins que podem acontecer", cat: "cognitiva", inv: false},
+            {q: "Fica irritado ou nervoso com facilidade", cat: "emocional", inv: false},
+            {q: "Evita situações sociais como festas ou atividades em grupo", cat: "ambiental", inv: false},
+            {q: "Tem dores de barriga ou dores de cabeça frequentes", cat: "fisica", inv: false},
+            {q: "Tem pensamentos repetitivos que não consegue controlar", cat: "cognitiva", inv: false},
+            {q: "Sente-se triste ou com vontade de chorar sem motivo claro", cat: "emocional", inv: false},
+            {q: "Tem medo de ir à escola ou de separar-se dos pais", cat: "ambiental", inv: false},
+            {q: "Sente-se relaxado e tranquilo na maior parte do tempo", cat: "emocional", inv: true},
+            {q: "Tem dificuldade para respirar ou sensação de falta de ar", cat: "fisica", inv: false},
+            {q: "Consegue se concentrar facilmente nas tarefas", cat: "cognitiva", inv: true},
+            {q: "Sente medo de coisas específicas (escuro, animais, altura)", cat: "emocional", inv: false},
+            {q: "Adapta-se bem a mudanças e situações novas", cat: "ambiental", inv: true},
+            {q: "Tem tremores ou sensação de formigamento no corpo", cat: "fisica", inv: false},
+            {q: "Tem dificuldade para tomar decisões simples", cat: "cognitiva", inv: false},
+            {q: "Sente-se confiante e seguro de si", cat: "emocional", inv: true},
+            {q: "Reclama de barulhos ou ambientes muito movimentados", cat: "ambiental", inv: false},
+            {q: "Tem problemas para dormir ou pesadelos frequentes", cat: "fisica", inv: false},
+            {q: "Pensa que algo ruim vai acontecer com pessoas queridas", cat: "cognitiva", inv: false},
+            {q: "Demonstra alegria e entusiasmo nas atividades diárias", cat: "emocional", inv: true},
+            {q: "Sente-se confortável em ambientes desconhecidos", cat: "ambiental", inv: true},
+            {q: "Sente enjoo ou desconforto no estômago com frequência", cat: "fisica", inv: false},
+            {q: "Tem dificuldade para lembrar de coisas ou se concentrar", cat: "cognitiva", inv: false},
+            {q: "Chora ou faz birra quando precisa enfrentar situações novas", cat: "emocional", inv: false},
+            {q: "Precisa de companhia constante dos pais ou cuidadores", cat: "ambiental", inv: false},
+            {q: "Sente cansaço ou fraqueza sem ter feito esforço físico", cat: "fisica", inv: false},
+            {q: "Consegue expressar seus sentimentos e pensamentos claramente", cat: "cognitiva", inv: true},
+            {q: "Fica muito assustado com situações do dia a dia", cat: "emocional", inv: false},
+            {q: "Participa ativamente de brincadeiras e atividades com outras crianças", cat: "ambiental", inv: true},
+            {q: "Tem suor excessivo nas mãos ou no corpo", cat: "fisica", inv: false}
+        ];
+
+        let startTime = Date.now();
+        let questionTimes = {};
+        let currentQuestion = 0;
+
+        function calcularIdade() {
+            const nasc = new Date(document.getElementById('dataNasc').value);
+            const hoje = new Date();
+            let anos = hoje.getFullYear() - nasc.getFullYear();
+            let meses = hoje.getMonth() - nasc.getMonth();
+            let dias = hoje.getDate() - nasc.getDate();
+            
+            if (dias < 0) { meses--; dias += 30; }
+            if (meses < 0) { anos--; meses += 12; }
+            
+            document.getElementById('idade').value = `${anos} anos, ${meses} meses e ${dias} dias`;
+        }
+
+        function formatarCPF(cpf) {
+            cpf = cpf.replace(/\D/g, '');
+            return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+        }
+
+        function renderQuestions() {
+            const container = document.getElementById('questions');
+            questions.forEach((q, i) => {
+                const catClass = `cat-${q.cat}`;
+                const catName = {fisica: 'Física', cognitiva: 'Cognitiva', emocional: 'Emocional', ambiental: 'Ambiental'}[q.cat];
+                
+                container.innerHTML += `
+                    <div class="question" data-question="${i}">
+                        <span class="category ${catClass}">${catName}</span>
+                        <div class="question-text">${i + 1}. ${q.q}</div>
+                        <div class="options">
+                            <div class="option">
+                                <input type="radio" name="q${i}" value="1" id="q${i}_1" required onchange="trackTime(${i})">
+                                <label for="q${i}_1">1<br>Nunca</label>
+                            </div>
+                            <div class="option">
+                                <input type="radio" name="q${i}" value="2" id="q${i}_2" onchange="trackTime(${i})">
+                                <label for="q${i}_2">2<br>Às vezes</label>
+                            </div>
+                            <div class="option">
+                                <input type="radio" name="q${i}" value="3" id="q${i}_3" onchange="trackTime(${i})">
+                                <label for="q${i}_3">3<br>Frequente</label>
+                            </div>
+                            <div class="option">
+                                <input type="radio" name="q${i}" value="4" id="q${i}_4" onchange="trackTime(${i})">
+                                <label for="q${i}_4">4<br>Sempre</label>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function trackTime(questionIndex) {
+            if (!questionTimes[questionIndex]) {
+                questionTimes[questionIndex] = Date.now();
+            }
+        }
+
+        function updateTimer() {
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            const mins = Math.floor(elapsed / 60).toString().padStart(2, '0');
+            const secs = (elapsed % 60).toString().padStart(2, '0');
+            document.getElementById('timer').textContent = `Tempo: ${mins}:${secs}`;
+        }
+
+        function calcularResultado() {
+            let scores = {fisica: 0, cognitiva: 0, emocional: 0, ambiental: 0, total: 0};
+            
+            questions.forEach((q, i) => {
+                const value = parseInt(document.querySelector(`input[name="q${i}"]:checked`).value);
+                const score = q.inv ? (5 - value) : value;
+                scores[q.cat] += score;
+                scores.total += score;
+            });
+
+            const nivel = scores.total <= 40 ? 'Mínima' : scores.total <= 60 ? 'Leve' : scores.total <= 80 ? 'Moderada' : 'Grave';
+            const cor = scores.total <= 40 ? '#22543d' : scores.total <= 60 ? '#c05621' : scores.total <= 80 ? '#c53030' : '#742a2a';
+
+            return {scores, nivel, cor};
+        }
+
+        document.getElementById('escasiForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const {scores, nivel, cor} = calcularResultado();
+            const tempoTotal = Math.floor((Date.now() - startTime) / 1000);
+            
+            document.getElementById('result').innerHTML = `
+                <h2>Resultado da Avaliação</h2>
+                <div class="score-item"><strong>Ansiedade Física:</strong> <span>${scores.fisica} pontos</span></div>
+                <div class="score-item"><strong>Ansiedade Cognitiva:</strong> <span>${scores.cognitiva} pontos</span></div>
+                <div class="score-item"><strong>Ansiedade Emocional:</strong> <span>${scores.emocional} pontos</span></div>
+                <div class="score-item"><strong>Ansiedade Ambiental:</strong> <span>${scores.ambiental} pontos</span></div>
+                <div class="score-item" style="background: ${cor}; color: white; font-size: 18px;">
+                    <strong>Classificação:</strong> <span>${nivel} (${scores.total} pontos)</span>
+                </div>
+                <div class="score-item"><strong>Tempo Total:</strong> <span>${Math.floor(tempoTotal/60)}min ${tempoTotal%60}s</span></div>
+                <button onclick="gerarPDF()" class="btn-primary" style="width: 100%; margin-top: 15px;">Baixar PDF</button>
+            `;
+            document.getElementById('result').style.display = 'block';
+        });
+
+        function gerarPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const nome = document.getElementById('nome').value;
+            const now = new Date();
+            const timestamp = now.getFullYear() + 
+                (now.getMonth()+1).toString().padStart(2,'0') + 
+                now.getDate().toString().padStart(2,'0') + 
+                now.getHours().toString().padStart(2,'0') + 
+                now.getMinutes().toString().padStart(2,'0');
+            
+            const {scores, nivel} = calcularResultado();
+            
+            doc.setFontSize(18);
+            doc.text('ESCASI - Escala de Ansiedade Infantil', 105, 20, {align: 'center'});
+            doc.setFontSize(12);
+            doc.text(`Nome: ${nome}`, 20, 40);
+            doc.text(`Idade: ${document.getElementById('idade').value}`, 20, 50);
+            doc.text(`CPF: ${document.getElementById('cpf').value}`, 20, 60);
+            doc.text(`Escolaridade: ${document.getElementById('escolaridade').value}`, 20, 70);
+            doc.text(`Respondente: ${document.getElementById('respondente').value}`, 20, 80);
+            doc.text(`Parentesco: ${document.getElementById('parentesco').value}`, 20, 90);
+            doc.text(`Data: ${now.toLocaleDateString('pt-BR')}`, 20, 100);
+            
+            doc.text('RESULTADOS:', 20, 120);
+            doc.text(`Ansiedade Física: ${scores.fisica} pontos`, 20, 130);
+            doc.text(`Ansiedade Cognitiva: ${scores.cognitiva} pontos`, 20, 140);
+            doc.text(`Ansiedade Emocional: ${scores.emocional} pontos`, 20, 150);
+            doc.text(`Ansiedade Ambiental: ${scores.ambiental} pontos`, 20, 160);
+            doc.setFontSize(14);
+            doc.text(`Classificação: ${nivel} (${scores.total} pontos)`, 20, 175);
+            
+            doc.save(`ESCASI_${nome.replace(/\s/g,'_')}_${timestamp}.pdf`);
+        }
+
+        function limparDados() {
+            if (confirm('Deseja limpar todos os dados do formulário?')) {
+                document.getElementById('escasiForm').reset();
+                document.getElementById('result').style.display = 'none';
+                questionTimes = {};
+                startTime = Date.now();
+            }
+        }
+
+        function novoFormulario() {
+            if (confirm('Deseja iniciar um novo formulário? Os dados atuais serão perdidos.')) {
+                location.reload();
+            }
+        }
+
+        document.getElementById('dataNasc').addEventListener('change', calcularIdade);
+        document.getElementById('cpf').addEventListener('input', function(e) {
+            e.target.value = formatarCPF(e.target.value);
+        });
+
+        renderQuestions();
+        setInterval(updateTimer, 1000);
+    </script>
+</body>
+</html>

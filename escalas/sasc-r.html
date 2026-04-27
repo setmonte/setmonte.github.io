@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>SASC-R — Escala de Ansiedade Social para Crianças</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 20px; }
+.container { background: white; max-width: 800px; width: 100%; padding: 40px 35px; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,0.1); }
+h1 { text-align: center; font-size: 20px; color: #1a3c6e; margin-bottom: 4px; }
+.subtitulo { text-align: center; font-size: 11px; color: #666; margin-bottom: 20px; }
+.dados { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #1a3c6e; }
+.dados label { font-size: 12px; font-weight: 600; color: #333; }
+.dados input, .dados select { border: none; border-bottom: 1.5px solid #aaa; padding: 4px 6px; font-size: 12px; outline: none; background: transparent; }
+.instrucoes { font-size: 11px; background: #f7f9fc; padding: 12px; border-radius: 5px; margin-bottom: 18px; line-height: 1.6; border-left: 3px solid #1a3c6e; }
+.escala-header { display: grid; grid-template-columns: 30px 1fr repeat(5, 80px); gap: 0; background: #1a3c6e; color: white; font-size: 10px; font-weight: 600; text-align: center; padding: 8px 5px; border-radius: 5px 5px 0 0; }
+.escala-header div:nth-child(2) { text-align: left; padding-left: 8px; }
+.item-row { display: grid; grid-template-columns: 30px 1fr repeat(5, 80px); gap: 0; padding: 7px 5px; border-bottom: 1px solid #eee; align-items: center; font-size: 11.5px; }
+.item-row:hover { background: #f7f9fc; }
+.item-row:nth-child(even) { background: #fafbfc; }
+.item-num { text-align: center; font-weight: 700; color: #1a3c6e; font-size: 11px; }
+.item-text { padding-left: 8px; line-height: 1.4; color: #333; }
+.check-cell { display: flex; justify-content: center; align-items: center; }
+.check-box { width: 26px; height: 26px; border: 2px solid #bbb; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 800; color: transparent; user-select: none; }
+.check-box:hover { border-color: #1a3c6e; background: #f0f4fa; }
+.check-box.selected { border-color: #1a3c6e; background: #1a3c6e; color: white; }
+.btn-area { text-align: center; margin-top: 25px; }
+.btn { padding: 12px 35px; font-size: 14px; font-weight: 600; border: none; border-radius: 6px; cursor: pointer; margin: 0 8px; }
+.btn-calc { background: #1a3c6e; color: white; }
+.btn-calc:hover { background: #2a5c9e; }
+.btn-pdf { background: #27ae60; color: white; display: none; }
+.btn-pdf:hover { background: #219a52; }
+.btn-limpar { background: #e74c3c; color: white; }
+.btn-limpar:hover { background: #c0392b; }
+#resultados { display: none; margin-top: 25px; padding: 20px; background: #fafafa; border: 1px solid #ddd; border-radius: 6px; }
+#resultados h2 { font-size: 16px; color: #1a3c6e; margin-bottom: 15px; text-align: center; }
+.scores-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+.score-card { padding: 12px; border-radius: 6px; text-align: center; }
+.score-card .label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.score-card .valor { font-size: 28px; font-weight: 800; margin: 4px 0; }
+.score-card .range { font-size: 9px; color: #888; }
+.card-fne { background: #fde8e8; border: 2px solid #e74c3c; }
+.card-fne .label, .card-fne .valor { color: #c0392b; }
+.card-sadn { background: #e8f4fd; border: 2px solid #3498db; }
+.card-sadn .label, .card-sadn .valor { color: #2471a3; }
+.card-sadg { background: #e8fdf0; border: 2px solid #2ecc71; }
+.card-sadg .label, .card-sadg .valor { color: #1e8449; }
+.card-total { background: #fff3e0; border: 2px solid #f39c12; }
+.card-total .label, .card-total .valor { color: #d68910; }
+.classificacao { margin-top: 15px; padding: 15px; border-radius: 6px; text-align: center; font-size: 14px; font-weight: 700; }
+.classif-baixa { background: #e8fdf0; border: 2px solid #27ae60; color: #1e8449; }
+.classif-tracos { background: #fff8e1; border: 2px solid #f39c12; color: #d68910; }
+.classif-moderada { background: #fde8e8; border: 2px solid #e74c3c; color: #c0392b; }
+.classif-elevada { background: #f5e0ff; border: 2px solid #8e44ad; color: #6c3483; }
+.detalhes-classif { margin-top: 12px; font-size: 11px; color: #555; line-height: 1.6; text-align: left; padding: 10px; background: white; border-radius: 5px; border: 1px solid #eee; }
+.normas-table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 10px; }
+.normas-table th { background: #1a3c6e; color: white; padding: 6px; }
+.normas-table td { padding: 5px 6px; border: 1px solid #ddd; text-align: center; }
+.rodape { margin-top: 20px; font-size: 8.5px; color: #999; border-top: 1px solid #eee; padding-top: 8px; line-height: 1.5; }
+#pdf-header { display: none; }
+
+@media print {
+  body { background: white !important; display: block !important; padding: 0 !important; }
+  .container { box-shadow: none !important; padding: 15px !important; max-width: 100% !important; }
+  .no-print { display: none !important; }
+  #pdf-header { display: block !important; }
+  #resultados { display: block !important; border: none !important; margin-top: 0 !important; }
+  .score-card { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .classificacao { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .normas-table th { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .card-fne { background: #fde8e8 !important; }
+  .card-sadn { background: #e8f4fd !important; }
+  .card-sadg { background: #e8fdf0 !important; }
+  .card-total { background: #fff3e0 !important; }
+  .classif-baixa { background: #e8fdf0 !important; }
+  .classif-tracos { background: #fff8e1 !important; }
+  .classif-moderada { background: #fde8e8 !important; }
+  .classif-elevada { background: #f5e0ff !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="container" id="conteudo">
+
+<!-- Titulo e dados - escondidos na impressao -->
+<div class="no-print">
+  <h1>SASC-R</h1>
+  <div class="subtitulo">Escala de Ansiedade Social para Crianças — Forma Revista<br>La Greca & Stone (1993) · Versão Portuguesa: Martins, Almeida & Viana (2014) · Adaptação PT-BR</div>
+
+  <div class="dados">
+    <div><label>Nome:</label><br><input type="text" id="nome" style="width:200px;" placeholder="Nome completo"></div>
+    <div><label>Data de Nascimento:</label><br><input type="date" id="dataNasc" style="width:140px;" onchange="calcularIdade()"></div>
+    <div><label>Idade:</label><br><span id="idadeCalc" style="font-size:13px;font-weight:700;color:#1a3c6e;">—</span></div>
+    <div><label>Sexo:</label><br>
+      <select id="sexo"><option value="">—</option><option value="M">Masculino</option><option value="F">Feminino</option></select>
+    </div>
+    <div><label>Data de Aplicação:</label><br><input type="date" id="dataAplic" style="width:140px;" onchange="calcularIdade()"></div>
+  </div>
+
+  <div class="instrucoes">
+    <strong>Instruções:</strong> Leia cada frase e marque com um <strong>X</strong> a opção que melhor descreve como você se sente.<br>
+    <strong>1</strong> = Nunca &nbsp; <strong>2</strong> = Quase nunca &nbsp; <strong>3</strong> = Às vezes &nbsp; <strong>4</strong> = Quase sempre &nbsp; <strong>5</strong> = Sempre
+  </div>
+
+  <div class="escala-header">
+    <div>Nº</div><div>Frase</div>
+    <div>1<br>Nunca</div><div>2<br>Quase<br>nunca</div><div>3<br>Às<br>vezes</div><div>4<br>Quase<br>sempre</div><div>5<br>Sempre</div>
+  </div>
+  <div id="itens">
+    <div class="item-row"><div class="item-num">1</div><div class="item-text">Me preocupo em ter que fazer coisas novas na frente dos outros colegas</div><div class="check-cell"><div class="check-box" data-item="1" data-val="1" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="1" data-val="2" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="1" data-val="3" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="1" data-val="4" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="1" data-val="5" onclick="marcar(this)"></div></div></div>
+    <div class="item-row"><div class="item-num">2</div><div class="item-text">Gosto de brincar com meus colegas</div><div class="check-cell"><div class="check-box" data-item="2" data-val="1" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="2" data-val="2" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="2" data-val="3" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="2" data-val="4" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="2" data-val="5" onclick="marcar(this)"></div></div></div>
+    <div class="item-row"><div class="item-num">3</div><div class="item-text">Me preocupo com a possibilidade de ser zoado(a)</div><div class="check-cell"><div class="check-box" data-item="3" data-val="1" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="3" data-val="2" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="3" data-val="3" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="3" data-val="4" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="3" data-val="5" onclick="marcar(this)"></div></div></div>
+    <div class="item-row"><div class="item-num">4</div><div class="item-text">Me sinto tímido(a) quando estou com meninos/meninas que não conheço</div><div class="check-cell"><div class="check-box" data-item="4" data-val="1" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="4" data-val="2" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="4" data-val="3" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="4" data-val="4" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="4" data-val="5" onclick="marcar(this)"></div></div></div>
+    <div class="item-row"><div class="item-num">5</div><div class="item-text">Só converso com colegas que eu conheço muito bem</div><div class="check-cell"><div class="check-box" data-item="5" data-val="1" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="5" data-val="2" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="5" data-val="3" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="5" data-val="4" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="5" data-val="5" onclick="marcar(this)"></div></div></div>
+    <div class="item-row"><div class="item-num">6</div><div class="item-text">Acho que meus colegas falam de mim pelas costas</div><div class="check-cell"><div class="check-box" data-item="6" data-val="1" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="6" data-val="2" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="6" data-val="3" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="6" data-val="4" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="6" data-val="5" onclick="marcar(this)"></div></div></div>
+    <div class="item-row"><div class="item-num">7</div><div class="item-text">Eu gosto de ler</div><div class="check-cell"><div class="check-box" data-item="7" data-val="1" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="7" data-val="2" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="7" data-val="3" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="7" data-val="4" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="7" data-val="5" onclick="marcar(this)"></div></div></div>
+    <div class="item-row"><div class="item-num">8</div><div class="item-text">Me preocupo com o que os outros colegas pensam de mim</div><div class="check-cell"><div class="check-box" data-item="8" data-val="1" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="8" data-val="2" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="8" data-val="3" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="8" data-val="4" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="8" data-val="5" onclick="marcar(this)"></div></div></div>
+    <div class="item-row"><div class="item-num">9</div><div class="item-text">Tenho medo de que os outros possam não gostar de mim</div><div class="check-cell"><div class="check-box" data-item="9" data-val="1" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="9" data-val="2" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="9" data-val="3" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="9" data-val="4" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="9" data-val="5" onclick="marcar(this)"></div></div></div>
+    <div class="item-row"><div class="item-num">10</div><div class="item-text">Fico nervoso(a) quando converso com colegas que não conheço muito bem</div><div class="check-cell"><div class="check-box" data-item="10" data-val="1" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="10" data-val="2" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="10" data-val="3" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="10" data-val="4" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="10" data-val="5" onclick="marcar(this)"></div></div></div>
+    <div class="item-row"><div class="item-num">11</div><div class="item-text">Gosto de praticar esportes</div><div class="check-cell"><div class="check-box" data-item="11" data-val="1" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="11" data-val="2" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="11" data-val="3" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="11" data-val="4" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="11" data-val="5" onclick="marcar(this)"></div></div></div>
+    <div class="item-row"><div class="item-num">12</div><div class="item-text">Me preocupo com o que os outros dizem sobre mim</div><div class="check-cell"><div class="check-box" data-item="12" data-val="1" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="12" data-val="2" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="12" data-val="3" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="12" data-val="4" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="12" data-val="5" onclick="marcar(this)"></div></div></div>
+    <div class="item-row"><div class="item-num">13</div><div class="item-text">Fico nervoso(a) quando conheço colegas novos</div><div class="check-cell"><div class="check-box" data-item="13" data-val="1" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="13" data-val="2" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="13" data-val="3" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="13" data-val="4" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="13" data-val="5" onclick="marcar(this)"></div></div></div>
+    <div class="item-row"><div class="item-num">14</div><div class="item-text">Me preocupo que os outros colegas não gostem de mim</div><div class="check-cell"><div class="check-box" data-item="14" data-val="1" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="14" data-val="2" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="14" data-val="3" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="14" data-val="4" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="14" data-val="5" onclick="marcar(this)"></div></div></div>
+    <div class="item-row"><div class="item-num">15</div><div class="item-text">Fico calado(a) quando estou em um grupo de meninos/meninas</div><div class="check-cell"><div class="check-box" data-item="15" data-val="1" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="15" data-val="2" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="15" data-val="3" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="15" data-val="4" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="15" data-val="5" onclick="marcar(this)"></div></div></div>
+    <div class="item-row"><div class="item-num">16</div><div class="item-text">Gosto de fazer as coisas sozinho(a)</div><div class="check-cell"><div class="check-box" data-item="16" data-val="1" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="16" data-val="2" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="16" data-val="3" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="16" data-val="4" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="16" data-val="5" onclick="marcar(this)"></div></div></div>
+    <div class="item-row"><div class="item-num">17</div><div class="item-text">Acho que os outros colegas zombam de mim</div><div class="check-cell"><div class="check-box" data-item="17" data-val="1" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="17" data-val="2" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="17" data-val="3" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="17" data-val="4" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="17" data-val="5" onclick="marcar(this)"></div></div></div>
+    <div class="item-row"><div class="item-num">18</div><div class="item-text">Se discuto com outro colega, me preocupo que ele/a possa não gostar de mim</div><div class="check-cell"><div class="check-box" data-item="18" data-val="1" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="18" data-val="2" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="18" data-val="3" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="18" data-val="4" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="18" data-val="5" onclick="marcar(this)"></div></div></div>
+    <div class="item-row"><div class="item-num">19</div><div class="item-text">Tenho medo de convidar outros(as) meninos/meninas para fazer alguma coisa comigo, porque podem dizer que não</div><div class="check-cell"><div class="check-box" data-item="19" data-val="1" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="19" data-val="2" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="19" data-val="3" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="19" data-val="4" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="19" data-val="5" onclick="marcar(this)"></div></div></div>
+    <div class="item-row"><div class="item-num">20</div><div class="item-text">Me sinto nervoso(a) quando estou perto de alguns/algumas colegas</div><div class="check-cell"><div class="check-box" data-item="20" data-val="1" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="20" data-val="2" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="20" data-val="3" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="20" data-val="4" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="20" data-val="5" onclick="marcar(this)"></div></div></div>
+    <div class="item-row"><div class="item-num">21</div><div class="item-text">Me sinto tímido(a) até com colegas que conheço bem</div><div class="check-cell"><div class="check-box" data-item="21" data-val="1" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="21" data-val="2" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="21" data-val="3" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="21" data-val="4" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="21" data-val="5" onclick="marcar(this)"></div></div></div>
+    <div class="item-row"><div class="item-num">22</div><div class="item-text">Para mim é difícil pedir para outros colegas fazerem coisas comigo</div><div class="check-cell"><div class="check-box" data-item="22" data-val="1" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="22" data-val="2" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="22" data-val="3" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="22" data-val="4" onclick="marcar(this)"></div></div><div class="check-cell"><div class="check-box" data-item="22" data-val="5" onclick="marcar(this)"></div></div></div>
+  </div>
+
+  <div class="btn-area">
+    <button class="btn btn-calc" onclick="calcular()">Calcular Resultado</button>
+    <button class="btn btn-pdf" id="btnPdf" onclick="gerarPDF()">Exportar PDF</button>
+    <button class="btn btn-limpar" onclick="limpar()">Limpar</button>
+  </div>
+</div>
+
+<!-- Cabecalho PDF - visivel apenas na impressao -->
+<div id="pdf-header">
+  <h1>SASC-R — Resultado</h1>
+  <div class="subtitulo">Escala de Ansiedade Social para Crianças — Forma Revista</div>
+  <div id="pdf-dados" style="display:flex;flex-wrap:wrap;gap:20px;padding:12px 0;border-bottom:2px solid #1a3c6e;border-top:2px solid #1a3c6e;margin:10px 0 18px 0;font-size:12px;"></div>
+</div>
+
+<!-- Resultados - visivel na tela apos calculo e na impressao -->
+<div id="resultados">
+  <h2 class="no-print">Resultado</h2>
+  <div class="scores-grid">
+    <div class="score-card card-fne"><div class="label">FNE — Medo de Avaliação Negativa</div><div class="valor" id="v-fne">—</div><div class="range">Itens 3,6,8,9,12,14,17,18 · Mín: 8 / Máx: 40</div></div>
+    <div class="score-card card-sadn"><div class="label">SAD-N — Desconforto em Situações Novas</div><div class="valor" id="v-sadn">—</div><div class="range">Itens 1,4,10,13,19,22 · Mín: 6 / Máx: 30</div></div>
+    <div class="score-card card-sadg"><div class="label">SAD-G — Desconforto Social Geral</div><div class="valor" id="v-sadg">—</div><div class="range">Itens 5,15,20,21 · Mín: 4 / Máx: 20</div></div>
+    <div class="score-card card-total"><div class="label">SASC-R Total</div><div class="valor" id="v-total">—</div><div class="range">18 itens · Mín: 18 / Máx: 90</div></div>
+  </div>
+  <div id="aviso-idade" style="display:none;margin-bottom:10px;padding:10px;border-radius:6px;background:#fff3cd;border:2px solid #ffc107;color:#856404;font-size:12px;font-weight:600;text-align:center;"></div>
+  <div id="classif-box" class="classificacao"></div>
+  <div id="detalhes" class="detalhes-classif"></div>
+  <table class="normas-table">
+    <thead><tr><th>Dados Normativos</th><th>SASC-R Total</th><th>FNE</th><th>SAD-N</th><th>SAD-G</th></tr></thead>
+    <tbody>
+      <tr><td style="font-weight:600;">Masculino</td><td>45,66 (±12,40)</td><td>20,98 (±6,99)</td><td>14,48 (±4,49)</td><td>8,01 (±3,12)</td></tr>
+      <tr><td style="font-weight:600;">Feminino</td><td>51,49 (±12,92)</td><td>23,68 (±7,10)</td><td>16,32 (±4,46)</td><td>8,84 (±3,39)</td></tr>
+    </tbody>
+  </table>
+  <div class="rodape">
+    <strong>Referência:</strong> Martins, A. C., Almeida, J. P. & Viana, V. (2014). Ansiedade Social na Infância e Pré-Adolescência: Adaptação para o Português de Portugal da SASC-R. <em>Psicologia: Reflexão e Crítica, 27</em>(2), 300-307.<br>
+    <strong>Escala original:</strong> La Greca, A. M., & Stone, W. (1993). Social Anxiety Scale for Children-Revised. <em>J. Clinical Child Psychology, 22</em>, 17-27.<br>
+    <strong>Nota:</strong> Itens 2, 7, 11 e 16 são neutros e não entram na pontuação. Pontuações mais elevadas = maior ansiedade social.
+  </div>
+</div>
+
+</div>
+
+<script>
+var respostas = {};
+
+function marcar(el) {
+  var item = el.getAttribute('data-item'), val = parseInt(el.getAttribute('data-val'));
+  document.querySelectorAll('.check-box[data-item="' + item + '"]').forEach(function(b) { b.classList.remove('selected'); b.textContent = ''; });
+  el.classList.add('selected'); el.textContent = 'X'; respostas[item] = val;
+}
+
+function getResp(n) { return respostas[String(n)] || null; }
+
+function calcular() {
+  var fneI = [3,6,8,9,12,14,17,18], sadnI = [1,4,10,13,19,22], sadgI = [5,15,20,21];
+  var todos = fneI.concat(sadnI).concat(sadgI);
+  for (var k = 0; k < todos.length; k++) { if (!getResp(todos[k])) { alert('Marque uma resposta para todos os 18 itens de ansiedade.'); return; } }
+
+  var fne = 0, sadn = 0, sadg = 0;
+  fneI.forEach(function(i) { fne += getResp(i); });
+  sadnI.forEach(function(i) { sadn += getResp(i); });
+  sadgI.forEach(function(i) { sadg += getResp(i); });
+  var total = fne + sadn + sadg;
+
+  document.getElementById('v-fne').textContent = fne;
+  document.getElementById('v-sadn').textContent = sadn;
+  document.getElementById('v-sadg').textContent = sadg;
+  document.getElementById('v-total').textContent = total;
+
+  var sexo = document.getElementById('sexo').value;
+  var normas = { M: {m:45.66,dp:12.40}, F: {m:51.49,dp:12.92}, G: {m:48.52,dp:12.89} };
+  var ref = (sexo==='M'||sexo==='F') ? normas[sexo] : normas.G;
+  var z = (total - ref.m) / ref.dp;
+
+  var cb = document.getElementById('classif-box'), classif, css;
+  if (z < -0.5) { classif='✅ Baixa Ansiedade Social'; css='classif-baixa'; }
+  else if (z < 1.0) { classif='➡️ Ansiedade Social Dentro da Média'; css='classif-baixa'; }
+  else if (z < 1.5) { classif='⚠️ Traços de Ansiedade Social'; css='classif-tracos'; }
+  else if (z < 2.0) { classif='🔶 Ansiedade Social Moderada'; css='classif-moderada'; }
+  else { classif='🔴 Ansiedade Social Elevada'; css='classif-elevada'; }
+  cb.className = 'classificacao ' + css; cb.textContent = classif;
+
+  var nF={M:{m:20.98,dp:6.99},F:{m:23.68,dp:7.10},G:{m:22.30,dp:7.14}};
+  var nN={M:{m:14.48,dp:4.49},F:{m:16.32,dp:4.46},G:{m:15.38,dp:4.56}};
+  var nG={M:{m:8.01,dp:3.12},F:{m:8.84,dp:3.39},G:{m:8.42,dp:3.27}};
+  var ch = (sexo==='M'||sexo==='F') ? sexo : 'G';
+  var zF=((fne-nF[ch].m)/nF[ch].dp).toFixed(2), zN=((sadn-nN[ch].m)/nN[ch].dp).toFixed(2), zG=((sadg-nG[ch].m)/nG[ch].dp).toFixed(2), zT=z.toFixed(2);
+
+  document.getElementById('detalhes').innerHTML =
+    '<strong>Análise por subescala' + (sexo ? ' (ref: sexo '+(sexo==='M'?'masculino':'feminino')+')' : ' (ref: amostra geral)') + ':</strong><br><br>' +
+    '• <strong>FNE</strong>: ' + fne + ' pts | z=' + zF + ' | ' + interp(zF) + '<br>' +
+    '• <strong>SAD-N</strong>: ' + sadn + ' pts | z=' + zN + ' | ' + interp(zN) + '<br>' +
+    '• <strong>SAD-G</strong>: ' + sadg + ' pts | z=' + zG + ' | ' + interp(zG) + '<br>' +
+    '• <strong>TOTAL</strong>: ' + total + ' pts | z=' + zT + ' | ' + interp(zT);
+
+  var av = document.getElementById('aviso-idade'), idade = getIdade();
+  if (idade !== null && (idade < 9 || idade > 15)) {
+    av.innerHTML = '⚠️ ATENÇÃO: Idade (' + idade + ' anos) <strong>fora da faixa normativa</strong> (9–15 anos). Resultados devem ser interpretados com cautela.';
+    av.style.display = 'block';
+  } else { av.style.display = 'none'; }
+
+  document.getElementById('resultados').style.display = 'block';
+  document.getElementById('btnPdf').style.display = 'inline-block';
+}
+
+function interp(z) {
+  z = parseFloat(z);
+  if (z < -0.5) return '⬇ Abaixo da média';
+  if (z < 1.0) return '✔ Dentro da média';
+  if (z < 1.5) return '⬆ Traços elevados';
+  if (z < 2.0) return '⚠ Moderadamente elevado';
+  return '🔴 Significativamente elevado';
+}
+
+function gerarPDF() {
+  var idadeTexto = document.getElementById('idadeCalc').textContent;
+  var sexoEl = document.getElementById('sexo');
+  var sexoTexto = sexoEl.options[sexoEl.selectedIndex].text;
+  var dataNasc = document.getElementById('dataNasc').value;
+  var dataAplic = document.getElementById('dataAplic').value;
+  if (dataNasc) { var p=dataNasc.split('-'); dataNasc=p[2]+'/'+p[1]+'/'+p[0]; }
+  if (dataAplic) { var p2=dataAplic.split('-'); dataAplic=p2[2]+'/'+p2[1]+'/'+p2[0]; }
+
+  document.getElementById('pdf-dados').innerHTML =
+    '<div><strong>Nome:</strong> '+(document.getElementById('nome').value||'—')+'</div>' +
+    '<div><strong>Data Nasc.:</strong> '+(dataNasc||'—')+'</div>' +
+    '<div><strong>Idade:</strong> '+idadeTexto+'</div>' +
+    '<div><strong>Sexo:</strong> '+sexoTexto+'</div>' +
+    '<div><strong>Data Aplicação:</strong> '+(dataAplic||'—')+'</div>';
+
+  // Usar nome para sugerir nome do arquivo (instrucao ao usuario)
+  var nome = document.getElementById('nome').value.trim() || 'SemNome';
+  var nomeLimpo = nome.replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_\-]/g,'');
+  var agora = new Date();
+  var ts = agora.getFullYear()+String(agora.getMonth()+1).padStart(2,'0')+String(agora.getDate()).padStart(2,'0')+String(agora.getHours()).padStart(2,'0')+String(agora.getMinutes()).padStart(2,'0');
+
+  document.title = 'SASC-R_' + nomeLimpo + '_' + ts;
+  window.print();
+  document.title = 'SASC-R — Escala de Ansiedade Social para Crianças';
+}
+
+function limpar() {
+  respostas = {};
+  document.querySelectorAll('.check-box').forEach(function(b) { b.classList.remove('selected'); b.textContent = ''; });
+  document.getElementById('resultados').style.display = 'none';
+  document.getElementById('btnPdf').style.display = 'none';
+  document.getElementById('nome').value = '';
+  document.getElementById('dataNasc').value = '';
+  document.getElementById('idadeCalc').textContent = '—';
+  document.getElementById('idadeCalc').style.color = '#1a3c6e';
+  document.getElementById('sexo').value = '';
+  document.getElementById('aviso-idade').style.display = 'none';
+  // Manter data de aplicacao como hoje
+  var h=new Date(); document.getElementById('dataAplic').value=h.getFullYear()+'-'+String(h.getMonth()+1).padStart(2,'0')+'-'+String(h.getDate()).padStart(2,'0');
+}
+
+function calcularIdade() {
+  var n = document.getElementById('dataNasc').value;
+  if (!n) { document.getElementById('idadeCalc').textContent='—'; return; }
+  var nasc=new Date(n), ref=document.getElementById('dataAplic').value?new Date(document.getElementById('dataAplic').value):new Date();
+  var idade=ref.getFullYear()-nasc.getFullYear(), m=ref.getMonth()-nasc.getMonth();
+  if (m<0||(m===0&&ref.getDate()<nasc.getDate())) idade--;
+  document.getElementById('idadeCalc').textContent = idade + ' anos';
+  document.getElementById('idadeCalc').style.color = (idade<9||idade>15) ? '#e74c3c' : '#1a3c6e';
+}
+
+function getIdade() {
+  var n=document.getElementById('dataNasc').value; if(!n) return null;
+  var nasc=new Date(n), ref=document.getElementById('dataAplic').value?new Date(document.getElementById('dataAplic').value):new Date();
+  var idade=ref.getFullYear()-nasc.getFullYear(), m=ref.getMonth()-nasc.getMonth();
+  if(m<0||(m===0&&ref.getDate()<nasc.getDate())) idade--;
+  return idade;
+}
+
+// Data de aplicacao = hoje
+(function(){var h=new Date();document.getElementById('dataAplic').value=h.getFullYear()+'-'+String(h.getMonth()+1).padStart(2,'0')+'-'+String(h.getDate()).padStart(2,'0');})();
+
+
+</script>
+</body>
+</html>
