@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Escala de Avaliação de TDI</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; padding: 15px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1 { font-size: 20px; margin-bottom: 15px; color: #333; }
+        .info { margin-bottom: 20px; }
+        .info input { width: 100%; padding: 8px; margin: 5px 0; border: 1px solid #ddd; border-radius: 4px; }
+        .question { margin: 15px 0; padding: 15px; background: #f9f9f9; border-radius: 6px; border-left: 4px solid #4CAF50; }
+        .question-text { margin-bottom: 10px; font-size: 15px; line-height: 1.4; }
+        .options { display: flex; gap: 10px; }
+        .options button { flex: 1; padding: 10px; border: 2px solid #ddd; background: white; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold; }
+        .options button.selected-sim { background: #4CAF50; color: white; border-color: #4CAF50; }
+        .options button.selected-nao { background: #f44336; color: white; border-color: #f44336; }
+        .results { margin-top: 30px; padding: 20px; background: #e3f2fd; border-radius: 8px; }
+        .result-item { margin: 10px 0; padding: 10px; background: white; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; }
+        .result-label { font-weight: bold; }
+        .result-value { font-size: 18px; }
+        .normal { color: #4CAF50; }
+        .dificuldade { color: #f44336; }
+        .btn-calcular { width: 100%; padding: 15px; background: #2196F3; color: white; border: none; border-radius: 4px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 20px; }
+        .btn-calcular:hover { background: #1976D2; }
+        .btn-limpar { width: 100%; padding: 12px; background: #ff9800; color: white; border: none; border-radius: 4px; font-size: 14px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .btn-exportar { width: 100%; padding: 12px; background: #4CAF50; color: white; border: none; border-radius: 4px; font-size: 14px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .btn-whatsapp { width: 100%; padding: 12px; background: #25D366; color: white; border: none; border-radius: 4px; font-size: 14px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        @media print { .btn-calcular, .btn-limpar, .btn-exportar, .btn-whatsapp { display: none; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ESCALA PARA AVALIAÇÃO DE TDI</h1>
+        
+        <div class="info">
+            <input type="text" id="nome" placeholder="Nome">
+            <input type="number" id="idade" placeholder="Idade">
+            <input type="date" id="data">
+            <input type="text" id="respondente" placeholder="Respondente">
+        </div>
+
+        <p style="margin-bottom: 20px; font-style: italic;">Marque "SIM" ou "NÃO" nas perguntas que identificar o comportamento do avaliado.</p>
+
+        <div id="questions"></div>
+
+        <button class="btn-calcular" onclick="calcular()">CALCULAR RESULTADOS</button>
+        <button class="btn-exportar" onclick="gerarPDF()" style="display: none;" id="btn-exportar">📄 GERAR PDF / IMPRIMIR</button>
+        <button class="btn-whatsapp" onclick="enviarWhatsApp()" style="display: none;" id="btn-whatsapp">📱 ENVIAR POR WHATSAPP</button>
+        <button class="btn-limpar" onclick="limpar()">LIMPAR RESPOSTAS</button>
+
+        <div class="results" id="results" style="display: none;">
+            <h2 style="margin-bottom: 15px;">Resultados</h2>
+            <div class="result-item">
+                <span class="result-label">Conceitual:</span>
+                <span><span class="result-value" id="conceitual-score">0</span> - <span id="conceitual-status"></span></span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">Social:</span>
+                <span><span class="result-value" id="social-score">0</span> - <span id="social-status"></span></span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">Prático:</span>
+                <span><span class="result-value" id="pratico-score">0</span> - <span id="pratico-status"></span></span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const perguntas = [
+            {texto: "Tem dificuldades para entender conceitos abstratos, como o tempo (ex.: ontem, amanhã, mais tarde).", dominio: 'conceitual', valor: 0},
+            {texto: "É capaz de compreender instruções com várias etapas sem dificuldade.", dominio: 'conceitual', valor: 1},
+            {texto: "Tem dificuldade em lembrar informações aprendidas recentemente.", dominio: 'conceitual', valor: 0},
+            {texto: "Apresenta habilidades sociais adequadas para a idade.", dominio: 'social', valor: 1},
+            {texto: "Demonstra baixa capacidade de resolução de problemas.", dominio: 'conceitual', valor: 0},
+            {texto: "Tem dificuldades com habilidades básicas de autossuficiência, como higiene pessoal.", dominio: 'pratico', valor: 0},
+            {texto: "Consegue controlar suas emoções de forma adequada.", dominio: 'social', valor: 1},
+            {texto: "Necessita de ajuda frequente para realizar tarefas diárias.", dominio: 'pratico', valor: 0},
+            {texto: "É capaz de entender piadas e sarcasmo.", dominio: 'social', valor: 1},
+            {texto: "Demonstra dificuldades em aprender novas habilidades.", dominio: 'conceitual', valor: 0},
+            {texto: "Mostra uma falta de iniciativa para realizar tarefas por conta própria.", dominio: 'social', valor: 0},
+            {texto: "Sabe identificar sentimentos e emoções em outras pessoas.", dominio: 'social', valor: 1},
+            {texto: "Tem dificuldades para entender e seguir regras sociais.", dominio: 'social', valor: 0},
+            {texto: "Consegue participar de atividades grupais de forma produtiva.", dominio: 'social', valor: 1},
+            {texto: "Necessita de ajuda constante para atividades diárias, como cozinhar.", dominio: 'pratico', valor: 0},
+            {texto: "Consegue realizar cálculos matemáticos simples.", dominio: 'conceitual', valor: 1},
+            {texto: "Tem dificuldade para se comunicar claramente.", dominio: 'social', valor: 0},
+            {texto: "Demonstra habilidades básicas de planejamento.", dominio: 'conceitual', valor: 1},
+            {texto: "Apresenta dificuldades em fazer amigos.", dominio: 'social', valor: 0},
+            {texto: "É capaz de resolver conflitos de forma autônoma.", dominio: 'social', valor: 1},
+            {texto: "Necessita de apoio para realizar atividades cotidianas como compras.", dominio: 'pratico', valor: 0},
+            {texto: "Sabe expressar suas necessidades e vontades de forma clara.", dominio: 'pratico', valor: 1},
+            {texto: "Demonstra um vocabulário limitado para sua idade.", dominio: 'conceitual', valor: 0},
+            {texto: "Apresenta uma boa capacidade de memória a longo prazo.", dominio: 'conceitual', valor: 1},
+            {texto: "Tem dificuldades para entender conceitos financeiros simples, como dinheiro.", dominio: 'conceitual', valor: 0},
+            {texto: "Sabe gerenciar seu tempo de forma produtiva.", dominio: 'conceitual', valor: 1},
+            {texto: "Tem dificuldade para seguir uma rotina.", dominio: 'conceitual', valor: 0},
+            {texto: "Consegue fazer escolhas adequadas sem orientação.", dominio: 'pratico', valor: 1},
+            {texto: "Demonstra dificuldades para tomar decisões importantes.", dominio: 'conceitual', valor: 0},
+            {texto: "É capaz de cuidar de suas próprias necessidades básicas.", dominio: 'pratico', valor: 1},
+            {texto: "Mostra baixa resistência a frustrações.", dominio: 'pratico', valor: 0},
+            {texto: "Consegue comunicar bem suas ideias e necessidades.", dominio: 'pratico', valor: 1},
+            {texto: "Demonstra dificuldades em resolver problemas de forma independente.", dominio: 'pratico', valor: 0},
+            {texto: "Sabe administrar suas próprias finanças de forma adequada.", dominio: 'pratico', valor: 1},
+            {texto: "Tem dificuldade para planejar atividades futuras.", dominio: 'pratico', valor: 0},
+            {texto: "Mantém bons relacionamentos interpessoais.", dominio: 'social', valor: 1},
+            {texto: "Apresenta pouca capacidade para resolver problemas complexos.", dominio: 'conceitual', valor: 0},
+            {texto: "É responsável por suas tarefas diárias e realiza sem ajuda.", dominio: 'pratico', valor: 1},
+            {texto: "Tem dificuldade em expressar emoções de maneira adequada.", dominio: 'social', valor: 0},
+            {texto: "Demonstra habilidades sociais boas para a idade.", dominio: 'social', valor: 1},
+            {texto: "Tem dificuldade para lidar com mudanças na rotina.", dominio: 'pratico', valor: 0},
+            {texto: "Compreende instruções detalhadas e complexas.", dominio: 'conceitual', valor: 1},
+            {texto: "Mostra baixa capacidade para aprender novas informações.", dominio: 'conceitual', valor: 0},
+            {texto: "Demonstra segurança ao realizar atividades diárias.", dominio: 'pratico', valor: 1},
+            {texto: "Necessita de supervisão constante para tarefas simples.", dominio: 'pratico', valor: 0},
+            {texto: "Mantém o foco em uma tarefa até concluí-la.", dominio: 'conceitual', valor: 1},
+            {texto: "Apresenta dificuldade para realizar tarefas que envolvam planejamento.", dominio: 'conceitual', valor: 0},
+            {texto: "Lida bem com situações inesperadas e novas.", dominio: 'pratico', valor: 1},
+            {texto: "Mostra pouca capacidade de reflexão sobre suas ações.", dominio: 'pratico', valor: 0},
+            {texto: "Demonstra boa compreensão das normas sociais e culturais.", dominio: 'social', valor: 1}
+        ];
+
+        const respostas = {};
+
+        function renderPerguntas() {
+            const container = document.getElementById('questions');
+            perguntas.forEach((p, i) => {
+                const div = document.createElement('div');
+                div.className = 'question';
+                div.innerHTML = `
+                    <div class="question-text"><strong>${i + 1}.</strong> ${p.texto}</div>
+                    <div class="options">
+                        <button onclick="responder(${i}, 'sim')" id="btn-${i}-sim">SIM</button>
+                        <button onclick="responder(${i}, 'nao')" id="btn-${i}-nao">NÃO</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function responder(index, resposta) {
+            respostas[index] = resposta;
+            document.getElementById(`btn-${index}-sim`).className = resposta === 'sim' ? 'selected-sim' : '';
+            document.getElementById(`btn-${index}-nao`).className = resposta === 'nao' ? 'selected-nao' : '';
+        }
+
+        function calcular() {
+            let conceitual = 0, social = 0, pratico = 0;
+
+            perguntas.forEach((p, i) => {
+                const resp = respostas[i];
+                if (!resp) return;
+
+                let pontos = p.valor;
+                
+                if (p.valor === 1 && resp === 'sim') {
+                    pontos = 0;
+                } else if (p.valor === 0 && resp === 'sim') {
+                    pontos = 1;
+                }
+
+                if (p.dominio === 'conceitual') conceitual += pontos;
+                if (p.dominio === 'social') social += pontos;
+                if (p.dominio === 'pratico') pratico += pontos;
+            });
+
+            document.getElementById('conceitual-score').textContent = conceitual;
+            document.getElementById('social-score').textContent = social;
+            document.getElementById('pratico-score').textContent = pratico;
+
+            const conceitualStatus = conceitual <= 7 ? 'Normal' : 'Dificuldades no domínio Conceitual';
+            const socialStatus = social <= 9 ? 'Normal' : 'Dificuldades no domínio Social';
+            const praticoStatus = pratico <= 8 ? 'Normal' : 'Dificuldades no domínio Prático';
+
+            document.getElementById('conceitual-status').textContent = conceitualStatus;
+            document.getElementById('conceitual-status').className = conceitual <= 7 ? 'normal' : 'dificuldade';
+            
+            document.getElementById('social-status').textContent = socialStatus;
+            document.getElementById('social-status').className = social <= 9 ? 'normal' : 'dificuldade';
+            
+            document.getElementById('pratico-status').textContent = praticoStatus;
+            document.getElementById('pratico-status').className = pratico <= 8 ? 'normal' : 'dificuldade';
+
+            document.getElementById('results').style.display = 'block';
+            document.getElementById('btn-exportar').style.display = 'block';
+            document.getElementById('btn-whatsapp').style.display = 'block';
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function limpar() {
+            Object.keys(respostas).forEach(key => delete respostas[key]);
+            perguntas.forEach((p, i) => {
+                document.getElementById(`btn-${i}-sim`).className = '';
+                document.getElementById(`btn-${i}-nao`).className = '';
+            });
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('btn-exportar').style.display = 'none';
+            document.getElementById('btn-whatsapp').style.display = 'none';
+        }
+
+        function gerarPDF() {
+            window.print();
+        }
+
+        function enviarWhatsApp() {
+            const nome = document.getElementById('nome').value || 'Não informado';
+            const idade = document.getElementById('idade').value || 'Não informada';
+            const data = document.getElementById('data').value || 'Não informada';
+            const respondente = document.getElementById('respondente').value || 'Não informado';
+            
+            const conceitual = document.getElementById('conceitual-score').textContent;
+            const conceitualStatus = document.getElementById('conceitual-status').textContent;
+            const social = document.getElementById('social-score').textContent;
+            const socialStatus = document.getElementById('social-status').textContent;
+            const pratico = document.getElementById('pratico-score').textContent;
+            const praticoStatus = document.getElementById('pratico-status').textContent;
+
+            let respostasTexto = '';
+            perguntas.forEach((p, i) => {
+                if (respostas[i]) {
+                    respostasTexto += `${i + 1}. ${respostas[i].toUpperCase()}\n`;
+                }
+            });
+
+            const mensagem = `*ESCALA DE AVALIAÇÃO TDI*\n\n` +
+                `*Nome:* ${nome}\n` +
+                `*Idade:* ${idade}\n` +
+                `*Data:* ${data}\n` +
+                `*Respondente:* ${respondente}\n\n` +
+                `*RESULTADOS:*\n` +
+                `📊 Conceitual: ${conceitual} - ${conceitualStatus}\n` +
+                `📊 Social: ${social} - ${socialStatus}\n` +
+                `📊 Prático: ${pratico} - ${praticoStatus}\n\n` +
+                `*RESPOSTAS:*\n${respostasTexto}`;
+
+            const url = `https://wa.me/?text=${encodeURIComponent(mensagem)}`;
+            window.open(url, '_blank');
+        }
+
+        renderPerguntas();
+        document.getElementById('data').valueAsDate = new Date();
+    </script>
+</body>
+</html>
