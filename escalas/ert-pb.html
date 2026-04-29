@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ERT-PB — Escala de Rastreio para Traços de Personalidade Borderline</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6; color: #333;
+            background: linear-gradient(135deg, #6a1b9a 0%, #e91e63 100%);
+            min-height: 100vh; padding: 20px;
+        }
+        .container {
+            max-width: 1000px; margin: 0 auto; background: white;
+            border-radius: 15px; box-shadow: 0 20px 40px rgba(0,0,0,0.15); overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #6a1b9a 0%, #e91e63 100%);
+            color: white; padding: 30px; text-align: center;
+        }
+        .header h1 { font-size: 2.2em; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        .header p { font-size: 1.1em; opacity: 0.9; }
+        .content { padding: 30px; }
+
+        .info-tecnica {
+            background: #f3e5f5; padding: 25px; border-radius: 10px;
+            margin-bottom: 30px; border-left: 5px solid #6a1b9a; position: relative;
+        }
+        .info-tecnica h2 { color: #6a1b9a; margin-bottom: 15px; font-size: 1.4em; }
+        .info-tecnica p { color: #555; line-height: 1.7; font-size: 0.95em; }
+
+        .dados-pessoais {
+            background: #f8f9fa; padding: 25px; border-radius: 10px;
+            margin-bottom: 30px; border-left: 5px solid #6a1b9a;
+        }
+        .dados-pessoais h2 { color: #6a1b9a; margin-bottom: 20px; font-size: 1.5em; }
+        .form-row { display: flex; gap: 20px; margin-bottom: 15px; flex-wrap: wrap; }
+        .form-group { flex: 1; min-width: 200px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; color: #555; }
+        .form-group input, .form-group select {
+            width: 100%; padding: 12px; border: 2px solid #e0e0e0;
+            border-radius: 8px; font-size: 16px; transition: border-color 0.3s;
+        }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: #6a1b9a; }
+
+        .instrucoes {
+            background: #fce4ec; padding: 20px; border-radius: 10px;
+            margin-bottom: 30px; border-left: 5px solid #e91e63;
+        }
+        .instrucoes h3 { color: #c2185b; margin-bottom: 10px; }
+        .instrucoes p { color: #555; font-size: 0.95em; line-height: 1.7; }
+
+        .item {
+            padding: 20px; border-bottom: 1px solid #f0f0f0;
+            transition: background-color 0.3s;
+        }
+        .item:hover { background-color: #fce4ec; }
+        .item:last-child { border-bottom: none; }
+        .item-texto { font-size: 1.05em; margin-bottom: 15px; color: #444; line-height: 1.5; }
+        .item-numero { font-weight: bold; color: #6a1b9a; margin-right: 8px; }
+
+        .opcoes { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+        .opcao {
+            display: flex; flex-direction: column; align-items: center; gap: 5px;
+            cursor: pointer; padding: 8px; border-radius: 8px;
+            transition: all 0.3s; border: 2px solid transparent;
+            min-width: 70px; min-height: 70px;
+        }
+        .opcao:hover { background-color: #f3e5f5; border-color: #6a1b9a; }
+        .opcao input[type="radio"] { width: 18px; height: 18px; cursor: pointer; accent-color: #6a1b9a; }
+        .opcao label {
+            cursor: pointer; font-weight: 500; color: #555; text-align: center;
+            font-size: 0.8em; line-height: 1.2; min-height: 30px;
+            display: flex; align-items: center;
+        }
+
+        .botoes { display: flex; gap: 15px; justify-content: center; margin: 30px 0; flex-wrap: wrap; }
+        .btn {
+            padding: 15px 30px; border: none; border-radius: 25px;
+            font-size: 16px; font-weight: 600; cursor: pointer;
+            transition: all 0.3s; text-align: center;
+        }
+        .btn-primary { background: linear-gradient(135deg, #6a1b9a 0%, #e91e63 100%); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(106,27,154,0.3); }
+        .btn-secondary { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; }
+        .btn-secondary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(40,167,69,0.3); }
+        .btn-danger { background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%); color: white; }
+        .btn-danger:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(220,53,69,0.3); }
+
+        .resultados {
+            background: #f8f9fa; padding: 30px; border-radius: 10px;
+            margin-top: 30px; border-left: 5px solid #6a1b9a; display: none;
+        }
+        .resultados h2 { color: #6a1b9a; margin-bottom: 20px; text-align: center; }
+
+        .resultado-criterio {
+            background: white; padding: 15px; border-radius: 8px;
+            margin-bottom: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
+        }
+        .resultado-criterio .nome { font-weight: 600; color: #333; flex: 1; min-width: 200px; }
+        .resultado-criterio .badges { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .badge {
+            padding: 4px 12px; border-radius: 15px; font-size: 0.8em; font-weight: 600;
+        }
+        .badge-presente { background: #ffcdd2; color: #c62828; }
+        .badge-ausente { background: #c8e6c9; color: #2e7d32; }
+        .badge-intensidade {
+            padding: 4px 12px; border-radius: 15px; font-size: 0.8em; font-weight: 600;
+        }
+        .intensidade-minimo { background: #e8f5e9; color: #1b5e20; }
+        .intensidade-leve { background: #fff9c4; color: #f57f17; }
+        .intensidade-moderado { background: #ffe0b2; color: #e65100; }
+        .intensidade-significativo { background: #ffccbc; color: #bf360c; }
+        .intensidade-intenso { background: #ffcdd2; color: #b71c1c; }
+
+        .barra-container { width: 120px; height: 10px; background: #e0e0e0; border-radius: 5px; overflow: hidden; }
+        .barra-fill { height: 100%; border-radius: 5px; transition: width 0.5s; }
+
+        .dominio-card {
+            background: white; padding: 20px; border-radius: 10px;
+            margin-bottom: 15px; box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+            border-left: 4px solid #6a1b9a;
+        }
+        .dominio-card h4 { color: #6a1b9a; margin-bottom: 8px; }
+        .dominio-card .valor { font-size: 1.8em; font-weight: 800; color: #333; }
+
+        .total-geral {
+            background: linear-gradient(135deg, #6a1b9a 0%, #e91e63 100%);
+            color: white; padding: 25px; border-radius: 10px;
+            text-align: center; margin: 20px 0;
+        }
+        .total-geral h3 { margin-bottom: 5px; }
+
+        .rastreio-box {
+            padding: 20px; border-radius: 10px; text-align: center;
+            margin: 20px 0; font-size: 1.2em; font-weight: 700;
+        }
+        .rastreio-positivo { background: #ffcdd2; border: 3px solid #c62828; color: #b71c1c; }
+        .rastreio-negativo { background: #c8e6c9; border: 3px solid #2e7d32; color: #1b5e20; }
+
+        .analise-texto {
+            background: white; padding: 25px; border-radius: 10px;
+            margin-top: 20px; border: 2px solid #6a1b9a; line-height: 1.8;
+        }
+        .analise-texto h3 { color: #6a1b9a; margin-bottom: 15px; }
+        .analise-texto p { margin-bottom: 10px; color: #444; font-size: 0.95em; }
+
+        .disclaimer {
+            background: #fff3e0; padding: 15px; border-radius: 8px;
+            margin-top: 20px; border-left: 4px solid #ff9800;
+            font-size: 0.85em; color: #e65100; line-height: 1.6;
+        }
+
+        .btn-imprimir {
+            position: absolute; top: 20px; right: 20px; padding: 10px 20px;
+            background: linear-gradient(135deg, #6a1b9a 0%, #4a148c 100%);
+            color: white; border: none; border-radius: 20px; font-size: 14px;
+            font-weight: 600; cursor: pointer; transition: all 0.3s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .btn-imprimir:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(106,27,154,0.4); }
+
+        @media print {
+            @page { size: portrait; margin: 1cm; }
+            body { background: white; padding: 0; }
+            .botoes, .btn, .btn-imprimir { display: none !important; }
+            .container { box-shadow: none; max-width: 100%; }
+            .info-tecnica { display: none !important; }
+            .resultados { display: none !important; }
+            .header { background: #6a1b9a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .item { page-break-inside: avoid; break-inside: avoid; }
+            .opcoes { display: flex !important; flex-direction: row !important; flex-wrap: wrap !important; justify-content: center !important; }
+            .opcao { display: flex !important; flex-direction: column !important; }
+        }
+
+        @media (max-width: 768px) {
+            .container { margin: 10px; border-radius: 10px; }
+            .header { padding: 20px; }
+            .header h1 { font-size: 1.6em; }
+            .content { padding: 15px; }
+            .form-row { flex-direction: column; }
+            .opcoes { flex-direction: column; align-items: center; }
+            .botoes { flex-direction: column; }
+            .btn { width: 100%; }
+            .resultado-criterio { flex-direction: column; align-items: flex-start; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧠 ERT-PB</h1>
+            <p>Escala de Rastreio para Traços de Personalidade Borderline</p>
+            <p style="font-size:0.85em; opacity:0.8; margin-top:5px;">Baseada nos critérios do DSM-5-TR</p>
+        </div>
+
+        <div class="content">
+            <div class="info-tecnica">
+                <button class="btn-imprimir" onclick="window.print()">🖨️ Imprimir Formulário</button>
+                <h2>📚 Informações Técnicas</h2>
+                <p>
+                    <strong>Instrumento:</strong> ERT-PB — Escala de Rastreio para Traços de Personalidade Borderline<br>
+                    <strong>Base teórica:</strong> Critérios diagnósticos do DSM-5-TR para Transtorno de Personalidade Borderline<br>
+                    <strong>Estrutura:</strong> 36 itens, 9 dimensões, escala Likert 5 pontos<br>
+                    <strong>Resultado:</strong> Híbrido — Rastreio categorial (critérios presentes/ausentes) + Perfil dimensional (intensidade dos traços)<br>
+                    <strong>Domínios:</strong> Desregulação Emocional, Desregulação Interpessoal, Desregulação Comportamental/Identitária<br>
+                    <strong>População:</strong> Adultos (≥18 anos) — instrumento de rastreio
+                </p>
+            </div>
+
+            <div class="dados-pessoais">
+                <h2>📋 Dados Pessoais</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="nome">Nome:</label>
+                        <input type="text" id="nome" placeholder="Nome completo">
+                    </div>
+                    <div class="form-group">
+                        <label for="dataNascimento">Data de Nascimento:</label>
+                        <input type="date" id="dataNascimento" onchange="calcularIdade()">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="idadeCalculada">Idade:</label>
+                        <input type="text" id="idadeCalculada" readonly style="background-color:#f0f0f0;" placeholder="Calculada automaticamente">
+                    </div>
+                    <div class="form-group">
+                        <label for="sexo">Sexo:</label>
+                        <select id="sexo">
+                            <option value="">Selecione</option>
+                            <option value="Masculino">Masculino</option>
+                            <option value="Feminino">Feminino</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="data">Data da Avaliação:</label>
+                        <input type="date" id="data">
+                    </div>
+                    <div class="form-group">
+                        <label for="observacoes">Observações (opcional):</label>
+                        <input type="text" id="observacoes" placeholder="Informações adicionais">
+                    </div>
+                </div>
+            </div>
+
+            <div class="instrucoes">
+                <h3>📝 Instruções</h3>
+                <p>
+                    Leia cada afirmação com atenção e marque a opção que melhor descreve como você tem se sentido
+                    <strong>nos últimos 2 anos ou mais</strong>. Não existem respostas certas ou erradas.
+                    Responda de forma honesta e espontânea, sem pensar demais em cada item.
+                </p>
+            </div>
+
+            <div id="questionario">
+                <!-- Itens serão inseridos pelo JavaScript -->
+            </div>
+
+            <div class="botoes">
+                <button class="btn btn-primary" onclick="calcularResultados()">📊 Calcular Resultados</button>
+                <button class="btn btn-secondary" onclick="gerarRelatorioPDF()">📄 Gerar Relatório PDF</button>
+                <button class="btn btn-danger" onclick="limparDados()">🗑️ Limpar Dados</button>
+            </div>
+
+            <div id="resultados" class="resultados">
+                <!-- Resultados serão inseridos pelo JavaScript -->
+            </div>
+
+            <div class="info-tecnica" id="referencias" style="margin-top:30px; background:#f8f9fa; border-left-color:#6a1b9a;">
+                <h2 style="color:#6a1b9a;">📚 Referências</h2>
+                <p style="color:#555; line-height:1.9; font-size:0.88em;">
+                    <strong>AMERICAN PSYCHIATRIC ASSOCIATION.</strong> <em>Diagnostic and Statistical Manual of Mental Disorders</em> (DSM-5-TR). 5th ed., text rev. Washington, DC: APA, 2022.<br><br>
+                    <strong>KERNBERG, O. F.</strong> Borderline Personality Organization. <em>Journal of the American Psychoanalytic Association</em>, v. 15, p. 641-685, 1967.<br><br>
+                    <strong>KERNBERG, O. F.</strong> <em>Severe Personality Disorders: Psychotherapeutic Strategies</em>. New Haven: Yale University Press, 1986.<br><br>
+                    <strong>KERNBERG, O. F.</strong> <em>Borderline Conditions and Pathological Narcissism</em>. New York: J. Aronson, 2004.<br><br>
+                    <strong>LEICHSENRING, F.</strong> Development and First Results of the Borderline Personality Inventory. <em>Journal of Personality Assessment</em>, v. 73, n. 1, p. 45-63, 1999.<br><br>
+                    <strong>POREH, A. M. et al.</strong> The BPQ: A Scale for the Assessment of Borderline Personality Based on DSM-IV Criteria. <em>Journal of Personality Disorders</em>, v. 20, n. 3, p. 247-260, 2006.<br><br>
+                    <strong>ZANARINI, M. C. et al.</strong> The McLean Screening Instrument for Borderline Personality Disorder (MSI-BPD). <em>Journal of Personality Disorders</em>, v. 17, n. 6, p. 568-573, 2003.<br><br>
+                    <strong>LIEB, K. et al.</strong> Borderline Personality Disorder. <em>The Lancet</em>, v. 364, n. 9432, p. 453-461, 2004.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script src="../id-paciente.js"></script>
+    <script src="ERT-PB_itens.js"></script>
+    <script src="ERT-PB_app.js"></script>
+</body>
+</html>
