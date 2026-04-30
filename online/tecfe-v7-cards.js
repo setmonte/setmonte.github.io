@@ -4,23 +4,23 @@
 var WCSTCards = (function () {
 
   var colorMap = {
-    vermelho: '#8B0000', verde: 'green', amarelo: '#FF8C00', azul: 'blue'
+    roxo: '#8B008B', laranja: '#FF6600', azul: '#0055CC', verde: '#228B22'
   };
   var shapeMap = {
-    triangulo: 'triangle', estrela: 'star', cruz: 'cross', circulo: 'circle'
+    losango: 'diamond', hexagono: 'hexagon', estrela4: 'star4', coracao: 'heart'
   };
 
   var stimulusCards = [
-    { cor: 'vermelho', forma: 'triangulo', numero: '1' },
-    { cor: 'verde',    forma: 'estrela',   numero: '2' },
-    { cor: 'amarelo',  forma: 'cruz',      numero: '3' },
-    { cor: 'azul',     forma: 'circulo',   numero: '4' }
+    { cor: 'roxo',    forma: 'losango',  numero: '2' },
+    { cor: 'laranja', forma: 'hexagono', numero: '3' },
+    { cor: 'azul',    forma: 'estrela4', numero: '4' },
+    { cor: 'verde',   forma: 'coracao',  numero: '5' }
   ];
 
   function buildDeck() {
-    var cores = ['vermelho', 'verde', 'amarelo', 'azul'];
-    var formas = ['triangulo', 'estrela', 'cruz', 'circulo'];
-    var nums = ['1', '2', '3', '4'];
+    var cores = ['roxo', 'laranja', 'azul', 'verde'];
+    var formas = ['losango', 'hexagono', 'estrela4', 'coracao'];
+    var nums = ['2', '3', '4', '5'];
     var deck = [];
     for (var i = 0; i < 64; i++) {
       deck.push({
@@ -33,7 +33,6 @@ var WCSTCards = (function () {
   }
 
   function shuffle(arr) {
-    // Cria copia profunda para evitar compartilhar referencias
     var copy = [];
     for (var i = 0; i < arr.length; i++) {
       copy.push({ cor: arr[i].cor, forma: arr[i].forma, numero: arr[i].numero });
@@ -45,65 +44,123 @@ var WCSTCards = (function () {
     return copy;
   }
 
+  // Losango (diamante)
+  function drawDiamond(cx, cy, size, color) {
+    var h = size;
+    var w = size * 0.65;
+    return '<polygon points="' +
+      cx + ',' + (cy - h) + ' ' +
+      (cx + w) + ',' + cy + ' ' +
+      cx + ',' + (cy + h) + ' ' +
+      (cx - w) + ',' + cy +
+      '" fill="' + color + '"/>';
+  }
+
+  // Hexagono
+  function drawHexagon(cx, cy, r, color) {
+    var pts = '';
+    for (var i = 0; i < 6; i++) {
+      var angle = (Math.PI / 3) * i - Math.PI / 6;
+      var px = cx + r * Math.cos(angle);
+      var py = cy + r * Math.sin(angle);
+      pts += px.toFixed(1) + ',' + py.toFixed(1) + ' ';
+    }
+    return '<polygon points="' + pts.trim() + '" fill="' + color + '"/>';
+  }
+
+  // Estrela de 4 pontas
+  function drawStar4(cx, cy, outer, color) {
+    var inner = outer * 0.35;
+    var pts = '';
+    for (var i = 0; i < 8; i++) {
+      var angle = (Math.PI / 4) * i - Math.PI / 2;
+      var r = (i % 2 === 0) ? outer : inner;
+      var px = cx + r * Math.cos(angle);
+      var py = cy + r * Math.sin(angle);
+      pts += px.toFixed(1) + ',' + py.toFixed(1) + ' ';
+    }
+    return '<polygon points="' + pts.trim() + '" fill="' + color + '"/>';
+  }
+
+  // Coracao
+  function drawHeart(cx, cy, size, color) {
+    var s = size;
+    return '<path d="M ' + cx + ' ' + (cy + s * 0.4) +
+      ' C ' + (cx - s * 0.02) + ' ' + (cy + s * 0.15) +
+      ' ' + (cx - s * 0.65) + ' ' + (cy + s * 0.1) +
+      ' ' + (cx - s * 0.65) + ' ' + (cy - s * 0.2) +
+      ' C ' + (cx - s * 0.65) + ' ' + (cy - s * 0.55) +
+      ' ' + cx + ' ' + (cy - s * 0.55) +
+      ' ' + cx + ' ' + (cy - s * 0.25) +
+      ' C ' + cx + ' ' + (cy - s * 0.55) +
+      ' ' + (cx + s * 0.65) + ' ' + (cy - s * 0.55) +
+      ' ' + (cx + s * 0.65) + ' ' + (cy - s * 0.2) +
+      ' C ' + (cx + s * 0.65) + ' ' + (cy + s * 0.1) +
+      ' ' + (cx + s * 0.02) + ' ' + (cy + s * 0.15) +
+      ' ' + cx + ' ' + (cy + s * 0.4) +
+      ' Z" fill="' + color + '"/>';
+  }
+
+  // Disposicoes por quantidade
+  // 2 = vertical (um em cima do outro)
+  // 3 = diagonal (superior-direito ao inferior-esquerdo)
+  // 4 = losangular (cima, direita, baixo, esquerda)
+  // 5 = circular (em roda)
+  function getPositions(count) {
+    if (count === 2) {
+      return [
+        { x: 200, y: 200 },
+        { x: 200, y: 420 }
+      ];
+    }
+    if (count === 3) {
+      return [
+        { x: 300, y: 170 },
+        { x: 200, y: 310 },
+        { x: 100, y: 450 }
+      ];
+    }
+    if (count === 4) {
+      return [
+        { x: 200, y: 140 },
+        { x: 310, y: 300 },
+        { x: 200, y: 460 },
+        { x: 90,  y: 300 }
+      ];
+    }
+    if (count === 5) {
+      var cx = 200, cy = 300, r = 140;
+      var pos = [];
+      for (var i = 0; i < 5; i++) {
+        var angle = (2 * Math.PI / 5) * i - Math.PI / 2;
+        pos.push({
+          x: Math.round(cx + r * Math.cos(angle)),
+          y: Math.round(cy + r * Math.sin(angle))
+        });
+      }
+      return pos;
+    }
+    return [];
+  }
+
   function svg(shape, color, count) {
     var s = '<svg viewBox="0 0 400 600" xmlns="http://www.w3.org/2000/svg">';
     s += '<rect width="400" height="600" fill="#fff"/>';
 
-    if (shape === 'triangle') {
-      var pts = [
-        ['200,220 140,340 260,340'],
-        ['60,120 20,220 100,220', '340,380 300,480 380,480'],
-        ['60,120 20,220 100,220', '340,120 300,220 380,220', '200,420 160,520 240,520'],
-        ['60,120 20,220 100,220', '340,120 300,220 380,220', '60,420 20,520 100,520', '340,420 300,520 380,520']
-      ];
-      var p = pts[count - 1];
-      for (var i = 0; i < p.length; i++) {
-        s += '<polygon points="' + p[i] + '" fill="' + color + '"/>';
-      }
-    }
+    var positions = getPositions(count);
 
-    if (shape === 'star') {
-      var sp = '0,-50 14.7,-15.9 47.6,-15.9 22.1,7.6 29.4,42.3 0,20 -29.4,42.3 -22.1,7.6 -47.6,-15.9 -14.7,-15.9';
-      var pos = [
-        ['200,300'],
-        ['100,200', '300,400'],
-        ['80,180', '320,180', '200,420'],
-        ['80,180', '320,180', '80,420', '320,420']
-      ];
-      var pp = pos[count - 1];
-      for (var i = 0; i < pp.length; i++) {
-        s += '<g transform="translate(' + pp[i] + ') scale(1.6)">';
-        s += '<polygon fill="' + color + '" points="' + sp + '"/></g>';
-      }
-    }
+    for (var i = 0; i < positions.length; i++) {
+      var px = positions[i].x;
+      var py = positions[i].y;
 
-    if (shape === 'cross') {
-      var cp = [
-        ['200,300'],
-        ['60,200', '340,450'],
-        ['60,200', '340,200', '200,450'],
-        ['60,200', '340,200', '60,450', '340,450']
-      ];
-      var cc = cp[count - 1];
-      for (var i = 0; i < cc.length; i++) {
-        s += '<g transform="translate(' + cc[i] + ')">';
-        s += '<rect x="-20" y="-50" width="40" height="100" fill="' + color + '"/>';
-        s += '<rect x="-50" y="-20" width="100" height="40" fill="' + color + '"/>';
-        s += '</g>';
-      }
-    }
-
-    if (shape === 'circle') {
-      var rp = [
-        ['200,300'],
-        ['60,200', '340,440'],
-        ['60,200', '340,200', '200,440'],
-        ['60,200', '340,200', '60,450', '340,450']
-      ];
-      var rc = rp[count - 1];
-      for (var i = 0; i < rc.length; i++) {
-        var xy = rc[i].split(',');
-        s += '<circle cx="' + xy[0] + '" cy="' + xy[1] + '" r="40" fill="' + color + '"/>';
+      if (shape === 'diamond') {
+        s += drawDiamond(px, py, 50, color);
+      } else if (shape === 'hexagon') {
+        s += drawHexagon(px, py, 42, color);
+      } else if (shape === 'star4') {
+        s += drawStar4(px, py, 48, color);
+      } else if (shape === 'heart') {
+        s += drawHeart(px, py, 80, color);
       }
     }
 
