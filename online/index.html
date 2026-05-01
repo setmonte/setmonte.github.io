@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TECFE Online - Painel do Avaliador</title>
+  <title>SΨM Online - Painel do Avaliador</title>
   <link rel="icon" href="../favicon.svg" type="image/svg+xml">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -37,6 +37,13 @@
     .results-table tr:nth-child(even) { background: #f9f9f9; }
     .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px; }
     .loading { text-align: center; padding: 40px; color: #555; font-size: 18px; }
+    .tab-bar { display:flex; gap:0; margin-bottom:15px; }
+    .tab-btn { flex:1; padding:12px; border:none; font-size:15px; font-weight:bold; cursor:pointer; transition:all 0.2s; border-radius:8px 8px 0 0; }
+    .tab-btn.active { background:#2e7d32; color:#fff; }
+    .tab-btn:not(.active) { background:#e0e0e0; color:#555; }
+    .tab-btn:not(.active):hover { background:#c8e6c9; }
+    .tab-content { display:none; }
+    .tab-content.active { display:block; }
     input[type="text"], input[type="date"], select { padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
     .form-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
     .form-row label { font-size: 13px; color: #555; display: flex; flex-direction: column; gap: 4px; }
@@ -46,9 +53,9 @@
   <div class="container">
     <header>
       <img src="l.png" alt="STM">
-      <h1>TECFE Online v7</h1>
+      <h1>SΨM Online</h1>
       <span id="appVersion" style="display:none;">7</span>
-      <p>Teste Eletronico de Classificacao de Cartas para Funcoes Executivas</p>
+      <p>Centro de Testagem em Neuropsicologia Online</p>
     </header>
 
     <!-- TELA DE LOGIN -->
@@ -76,19 +83,40 @@
           <button class="btn btn-red" style="padding:8px 16px;font-size:13px;" onclick="doLogout()">Sair</button>
         </div>
 
-        <div class="credits-box">
-          <div class="number" id="creditsCount">-</div>
-          <div class="label">creditos disponiveis</div>
+        <!-- TAB BAR -->
+        <div class="tab-bar">
+          <button class="tab-btn active" id="tabTecfe" onclick="switchTab('tecfe')">TECFE</button>
+          <button class="tab-btn" id="tabBae" onclick="switchTab('bae')">BAE</button>
         </div>
 
-        <div class="btn-row">
-          <button class="btn btn-green" id="btnNewTest" onclick="showNewTest()">Nova Aplicacao</button>
-          <button class="btn btn-blue" onclick="showResults()">Resultados</button>
-          <a href="#" class="btn btn-orange" onclick="document.getElementById('plansSection').classList.toggle('hidden');return false;">Comprar Creditos</a>
+        <!-- === ABA TECFE === -->
+        <div id="tecfeTab" class="tab-content active">
+          <div class="credits-box">
+            <div class="number" id="tecfeCreditsCount">-</div>
+            <div class="label">creditos TECFE disponiveis</div>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-green" id="btnNewTest" onclick="showNewTest()">Nova Aplicacao</button>
+            <button class="btn btn-blue" onclick="showResults()">Resultados</button>
+            <a href="#" class="btn btn-orange" onclick="document.getElementById('plansSection').classList.toggle('hidden');return false;">Comprar Creditos</a>
+          </div>
+        </div>
+
+        <!-- === ABA BAE === -->
+        <div id="baeTab" class="tab-content">
+          <div class="credits-box" style="border-color:#1565c0;background:#e3f2fd;">
+            <div class="number" id="baeCreditsCount" style="color:#1565c0;">-</div>
+            <div class="label">creditos BAE disponiveis</div>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-green" id="btnNewBae" onclick="showNewBae()">Nova Aplicacao BAE</button>
+            <button class="btn btn-blue" onclick="showBaeResults()">Resultados BAE</button>
+            <a href="#" class="btn btn-orange" onclick="document.getElementById('baePlansSection').classList.toggle('hidden');return false;">Comprar Creditos</a>
+          </div>
         </div>
       </div>
 
-      <!-- PLANOS -->
+      <!-- PLANOS TECFE -->
       <div id="plansSection" class="card hidden">
         <h2>Comprar Creditos</h2>
         <p style="margin-bottom:15px;">Escolha o plano ideal para voce:</p>
@@ -115,7 +143,75 @@
         <p style="margin-top:15px;font-size:12px;color:#777;">Apos o pagamento, os creditos serao adicionados automaticamente a sua conta.</p>
       </div>
 
-      <!-- NOVA APLICACAO -->
+      <!-- PLANOS BAE -->
+      <div id="baePlansSection" class="card hidden">
+        <h2>Comprar Creditos BAE</h2>
+        <p style="margin-bottom:15px;">Escolha o plano para a Bateria de Atencao Eletronica:</p>
+        <div style="display:flex;gap:15px;flex-wrap:wrap;">
+          <div style="flex:1;min-width:200px;border:2px solid #2e7d32;border-radius:10px;padding:20px;text-align:center;">
+            <div style="font-size:14px;color:#555;">Avulso</div>
+            <div style="font-size:36px;font-weight:bold;color:#2e7d32;">R$25</div>
+            <div style="font-size:13px;color:#777;margin-bottom:12px;">1 aplicacao</div>
+            <button onclick="comprarCreditosBae(1)" class="btn btn-green" style="padding:10px 20px;font-size:14px;">Comprar</button>
+          </div>
+          <div style="flex:1;min-width:200px;border:2px solid #ff9800;border-radius:10px;padding:20px;text-align:center;background:#fff8e1;">
+            <div style="font-size:14px;color:#555;">Pacote 10</div>
+            <div style="font-size:36px;font-weight:bold;color:#ff9800;">R$200</div>
+            <div style="font-size:13px;color:#777;margin-bottom:12px;">R$20 por aplicacao</div>
+            <button onclick="comprarCreditosBae(10)" class="btn btn-orange" style="padding:10px 20px;font-size:14px;">Comprar</button>
+          </div>
+          <div style="flex:1;min-width:200px;border:2px solid #1565c0;border-radius:10px;padding:20px;text-align:center;background:#e3f2fd;">
+            <div style="font-size:14px;color:#555;">Pacote 50</div>
+            <div style="font-size:36px;font-weight:bold;color:#1565c0;">R$750</div>
+            <div style="font-size:13px;color:#777;margin-bottom:12px;">R$15 por aplicacao</div>
+            <button onclick="comprarCreditosBae(50)" class="btn btn-blue" style="padding:10px 20px;font-size:14px;">Comprar</button>
+          </div>
+        </div>
+        <p style="margin-top:15px;font-size:12px;color:#777;">Apos o pagamento, os creditos serao adicionados automaticamente a sua conta.</p>
+      </div>
+
+      <!-- NOVA APLICACAO BAE -->
+      <div id="newBaeSection" class="card hidden">
+        <h2>Nova Aplicacao BAE</h2>
+        <p style="margin-bottom:12px;">Preencha os dados do paciente para a Bateria de Atencao Eletronica.</p>
+        <div class="form-row">
+          <label>Nome: <input type="text" id="baePatientName" placeholder="Nome do paciente" style="width:220px;"></label>
+          <label>Data Nasc: <input type="date" id="baeBirthDate"></label>
+          <label>CPF: <input type="text" id="baeCpf" placeholder="XXX.XXX.XXX-XX" maxlength="14" style="width:150px;" oninput="maskCPF(this)"></label>
+        </div>
+        <div class="form-row">
+          <label>Sexo: <select id="baeSex"><option value="" disabled selected>Selecione</option><option>Masculino</option><option>Feminino</option><option>Outro</option></select></label>
+          <label>Lateralidade: <select id="baeLaterality"><option value="" disabled selected>Selecione</option><option>Destro</option><option>Canhoto</option><option>Ambidestro</option></select></label>
+          <label>Escolaridade: <select id="baeEducation"><option value="" disabled selected>Selecione</option><option>1o ano EF</option><option>2o ano EF</option><option>3o ano EF</option><option>4o ano EF</option><option>5o ano EF</option><option>6o ano EF</option><option>7o ano EF</option><option>8o ano EF</option><option>9o ano EF</option><option>1o ano EM</option><option>2o ano EM</option><option>3o ano EM</option><option>Superior completo</option><option>Superior incompleto</option><option>Pos-graduacao</option><option>Mestrado</option><option>Doutorado</option></select></label>
+        </div>
+        <div class="form-row">
+          <label>Avaliador: <input type="text" id="baeEvaluator" placeholder="Seu nome" style="width:220px;"></label>
+          <label>CRP: <input type="text" id="baeCrp" placeholder="XX/XXXXX-X" maxlength="10" style="width:120px;" oninput="maskCRP(this)"></label>
+          <label>Observacoes: <input type="text" id="baeObs" placeholder="Observacoes" style="width:220px;"></label>
+        </div>
+        <button class="btn btn-green" style="margin-top:10px;" onclick="startBaeOnlineTest()">Gerar Link do Paciente</button>
+        <div id="baeLinkResult" class="hidden" style="margin-top:15px;">
+          <p style="font-size:14px;color:#2e7d32;font-weight:bold;">Link gerado com sucesso!</p>
+          <div class="session-link" id="baeSessionLink"></div>
+          <div style="margin-top:10px;display:flex;gap:10px;">
+            <button class="btn btn-blue" style="padding:8px 16px;font-size:13px;" onclick="copyBaeLink()">Copiar Link</button>
+            <button class="btn btn-green" style="padding:8px 16px;font-size:13px;" onclick="sendBaeWhatsApp()">Enviar por WhatsApp</button>
+          </div>
+          <p style="margin-top:10px;font-size:12px;color:#777;">Envie este link para o paciente. A bateria completa (5 testes) sera aplicada no navegador.</p>
+        </div>
+      </div>
+
+      <!-- RESULTADOS BAE -->
+      <div id="baeResultsSection" class="card hidden">
+        <h2>Resultados BAE</h2>
+        <div style="margin-bottom:10px;display:flex;gap:10px;">
+          <button class="btn btn-green" style="padding:8px 16px;font-size:13px;" onclick="exportBaeExcel()">Exportar Excel</button>
+          <button class="btn btn-red" style="padding:8px 16px;font-size:13px;" onclick="deleteBaeSelected()">Apagar Selecionados</button>
+        </div>
+        <div id="baeResultsList"><p style="color:#777;">Carregando resultados...</p></div>
+      </div>
+
+      <!-- NOVA APLICACAO TECFE -->
       <div id="newTestSection" class="card hidden">
         <h2>Nova Aplicacao</h2>
         <p style="margin-bottom:12px;">Preencha os dados do paciente e clique em "Iniciar Teste".</p>
@@ -279,11 +375,14 @@
       document.getElementById('loadingPage').classList.add('hidden');
       document.getElementById('dashboardPage').classList.remove('hidden');
       document.getElementById('userEmail').textContent = currentUser;
+      // BAE so visivel para admin ate liberacao
+      if (currentUser !== 'setmonte@gmail.com') document.getElementById('tabBae').style.display = 'none';
       // Buscar creditos
       try {
         var resp = await fetch(API_URL + '/credits?email=' + encodeURIComponent(currentUser));
         var data = await resp.json();
-        document.getElementById('creditsCount').textContent = data.credits || 0;
+        document.getElementById('tecfeCreditsCount').textContent = data.credits || 0;
+        document.getElementById('baeCreditsCount').textContent = data.baeCredits || 0;
         var btn = document.getElementById('btnNewTest');
         if ((data.credits || 0) <= 0) {
           btn.disabled = true;
@@ -293,7 +392,8 @@
           btn.textContent = 'Nova Aplicacao';
         }
       } catch(e) {
-        document.getElementById('creditsCount').textContent = '?';
+        document.getElementById('tecfeCreditsCount').textContent = '?';
+        document.getElementById('baeCreditsCount').textContent = '?';
       }
     }
 
@@ -374,7 +474,7 @@
           var data = await resp.json();
           if (data.error) { alert('Erro: ' + data.error); return; }
           sessionId = data.sessionId;
-          document.getElementById('creditsCount').textContent = data.credits;
+          document.getElementById('tecfeCreditsCount').textContent = data.credits;
         }
         var sessionData = {
           sessionId: sessionId,
@@ -599,6 +699,193 @@
       XLSX.utils.book_append_sheet(wb, ws, 'Resultados');
       var ts = new Date().toISOString().replace(/[-:T]/g,'').slice(0,12);
       XLSX.writeFile(wb, 'TECFEON_resultados_' + ts + '.xlsx');
+    }
+
+
+    // ===== FUNCOES BAE =====
+    function switchTab(tab) {
+      document.getElementById('tecfeTab').classList.remove('active');
+      document.getElementById('baeTab').classList.remove('active');
+      document.getElementById('tabTecfe').classList.remove('active');
+      document.getElementById('tabBae').classList.remove('active');
+      ['plansSection','newTestSection','resultsSection','baePlansSection','newBaeSection','baeResultsSection'].forEach(function(id) {
+        var el = document.getElementById(id); if (el) el.classList.add('hidden');
+      });
+      if (tab === 'tecfe') {
+        document.getElementById('tecfeTab').classList.add('active');
+        document.getElementById('tabTecfe').classList.add('active');
+      } else {
+        document.getElementById('baeTab').classList.add('active');
+        document.getElementById('tabBae').classList.add('active');
+      }
+    }
+
+    function showNewBae() {
+      document.getElementById('newBaeSection').classList.toggle('hidden');
+      document.getElementById('baeResultsSection').classList.add('hidden');
+    }
+
+    function showBaeResults() {
+      document.getElementById('baeResultsSection').classList.toggle('hidden');
+      document.getElementById('newBaeSection').classList.add('hidden');
+      loadBaeResults();
+    }
+
+    var generatedBaeLink = '';
+    var _baeResultCache = [];
+
+    async function startBaeOnlineTest() {
+      var name = document.getElementById('baePatientName').value.trim();
+      var birth = document.getElementById('baeBirthDate').value;
+      if (!name || !birth) { alert('Preencha pelo menos o nome e a data de nascimento.'); return; }
+      try {
+        var isAdmin = (currentUser === 'setmonte@gmail.com');
+        var sessionId = '';
+        if (isAdmin) {
+          sessionId = 'bae-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+        } else {
+          var resp = await fetch(API_URL + '/use-credit', {
+            method: 'POST', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({email: currentUser, tipo: 'bae'})
+          });
+          var data = await resp.json();
+          if (data.error) { alert('Erro: ' + data.error); return; }
+          sessionId = data.sessionId;
+          document.getElementById('baeCreditsCount').textContent = data.credits;
+        }
+        var sessionData = {
+          sessionId: sessionId,
+          patientName: name,
+          birthDate: birth,
+          cpf: document.getElementById('baeCpf').value,
+          sex: document.getElementById('baeSex').value,
+          laterality: document.getElementById('baeLaterality').value,
+          education: document.getElementById('baeEducation').value,
+          evaluator: document.getElementById('baeEvaluator').value,
+          crp: document.getElementById('baeCrp').value,
+          email: currentUser
+        };
+        await fetch(API_URL + '/save-result', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId: sessionId, email: currentUser, tipo: 'bae', data: { formData: sessionData, status: 'aguardando' } })
+        });
+        var params = btoa(JSON.stringify(sessionData));
+        generatedBaeLink = 'https://setmonte.github.io/online/teste-bae.html?d=' + encodeURIComponent(params);
+        document.getElementById('baeSessionLink').textContent = generatedBaeLink;
+        document.getElementById('baeLinkResult').classList.remove('hidden');
+      } catch(e) { alert('Erro: ' + e.message); }
+    }
+
+    function copyBaeLink() {
+      navigator.clipboard.writeText(generatedBaeLink).then(function() { alert('Link copiado!'); });
+    }
+
+    function sendBaeWhatsApp() {
+      var text = 'Ola! Acesse o link abaixo para realizar a Bateria de Atencao Eletronica: ' + generatedBaeLink;
+      window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+    }
+
+    async function loadBaeResults() {
+      try {
+        var resp = await fetch(API_URL + '/get-results?email=' + encodeURIComponent(currentUser) + '&tipo=bae');
+        var data = await resp.json();
+        _baeResultCache = [];
+        if (data.results && data.results.length > 0) {
+          var html = '<table class="results-table"><tr><th><input type="checkbox" id="baeSelectAll" onclick="toggleBaeSelectAll(this)"></th><th>Data</th><th>Paciente</th><th>Status</th><th>Conc</th><th>Sel</th><th>Div</th><th>Alt</th><th>Sus</th><th>PDF</th></tr>';
+          data.results.forEach(function(r) {
+            var d = r.data || {};
+            if (d.status === 'aguardando') return;
+            var date = d.date ? new Date(d.date).toLocaleString('pt-BR') : '-';
+            var p = d.paciente || d.formData || {};
+            var nome = p.patientName || p.nome || '-';
+            function taxa(t) { return t ? (t.taxaAcerto||0).toFixed(0) + '%' : '-'; }
+            html += '<tr>';
+            html += '<td><input type="checkbox" class="bae-result-check" data-idx="' + _baeResultCache.length + '"></td>';
+            html += '<td>' + date + '</td>';
+            html += '<td>' + nome + '</td>';
+            html += '<td>' + (d.status || '-') + '</td>';
+            html += '<td>' + taxa(d.concentrada) + '</td>';
+            html += '<td>' + taxa(d.seletiva) + '</td>';
+            html += '<td>' + taxa(d.dividida) + '</td>';
+            html += '<td>' + taxa(d.alternada) + '</td>';
+            html += '<td>' + taxa(d.sustentada) + '</td>';
+            html += '<td><button class="btn btn-green" style="padding:5px 12px;font-size:12px;" onclick="generateBAEPDF(' + _baeResultCache.length + ')">PDF</button></td>';
+            html += '</tr>';
+            _baeResultCache.push(r);
+          });
+          html += '</table>';
+          document.getElementById('baeResultsList').innerHTML = html;
+        } else {
+          document.getElementById('baeResultsList').innerHTML = '<p style="color:#777;">Nenhum resultado BAE encontrado.</p>';
+        }
+      } catch(e) {
+        document.getElementById('baeResultsList').innerHTML = '<p style="color:#777;">Erro ao carregar resultados.</p>';
+      }
+    }
+
+    function toggleBaeSelectAll(master) {
+      document.querySelectorAll('.bae-result-check').forEach(function(cb) { cb.checked = master.checked; });
+    }
+
+    async function deleteBaeSelected() {
+      var checks = document.querySelectorAll('.bae-result-check:checked');
+      if (checks.length === 0) { alert('Selecione pelo menos um resultado.'); return; }
+      if (!confirm('Apagar ' + checks.length + ' resultado(s)?')) return;
+      for (var i = 0; i < checks.length; i++) {
+        var idx = parseInt(checks[i].dataset.idx);
+        try {
+          await fetch(API_URL + '/delete-result', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId: _baeResultCache[idx].sessionId, email: currentUser })
+          });
+        } catch(e) {}
+      }
+      loadBaeResults();
+    }
+
+    function exportBaeExcel() {
+      if (_baeResultCache.length === 0) { alert('Nenhum resultado para exportar.'); return; }
+      var rows = [];
+      _baeResultCache.forEach(function(r) {
+        var d = r.data || {};
+        var p = d.paciente || d.formData || {};
+        function val(t, f) { return t ? (t[f]||0) : ''; }
+        rows.push({
+          'Data': d.date ? new Date(d.date).toLocaleString('pt-BR') : '',
+          'Paciente': p.patientName || p.nome || '',
+          'Status': d.status || '',
+          'Conc.Taxa': val(d.concentrada,'taxaAcerto'), 'Conc.RT': val(d.concentrada,'tempoMedio'),
+          'Sel.Taxa': val(d.seletiva,'taxaAcerto'), 'Sel.RT': val(d.seletiva,'tempoMedio'),
+          'Div.Taxa': val(d.dividida,'taxaAcerto'), 'Div.RT': val(d.dividida,'tempoMedio'),
+          'Alt.Taxa': val(d.alternada,'taxaAcerto'), 'Alt.RT': val(d.alternada,'tempoMedio'),
+          'Sus.Taxa': val(d.sustentada,'taxaAcerto'), 'Sus.RT': val(d.sustentada,'tempoMedio')
+        });
+      });
+      var ws = XLSX.utils.json_to_sheet(rows);
+      var wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'BAE Resultados');
+      XLSX.writeFile(wb, 'BAE_resultados_' + new Date().toISOString().slice(0,10) + '.xlsx');
+    }
+
+    async function generateBAEPDF(idx) {
+      // TODO: implementar geracao de PDF BAE no painel
+      alert('Geracao de PDF BAE no painel sera implementada em breve.');
+    }
+
+    async function comprarCreditosBae(qtd) {
+      try {
+        var btn = event.target; btn.textContent = 'Aguarde...'; btn.disabled = true;
+        var resp = await fetch(API_URL + '/create-payment', {
+          method: 'POST', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({email: currentUser, quantidade: qtd, tipo: 'bae'})
+        });
+        var data = await resp.json();
+        if (data.url) { window.open(data.url, '_blank'); }
+        else { alert('Erro ao gerar link de pagamento'); }
+      } catch(e) { alert('Erro: ' + e.message); }
+      finally { btn.textContent = 'Comprar'; btn.disabled = false; }
     }
 
     async function clearResults() {

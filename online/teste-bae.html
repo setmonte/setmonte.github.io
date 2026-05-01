@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BAE Online - Bateria de Atenção Eletrônica</title>
+  <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+  <base href="bae/">
+  <link rel="stylesheet" href="style.css">
+  <script src="libs/pdfmake.min.js"></script>
+  <script src="libs/vfs_fonts.js"></script>
+  <script src="libs/chart.min.js"></script>
+  <script>
+    // Bloquear download no PC do paciente
+    window._isOnlineTest = true;
+  </script>
+</head>
+<body>
+
+  <!-- TELA DE INSTRUÇÕES / CAPA -->
+  <div id="coverPage" class="container" style="display:none;">
+    <div class="logo">
+      <span class="s">S</span><span class="psi">Ψ</span><span class="m">M</span>
+    </div>
+    <h1>Bateria de Atenção Eletrônica</h1>
+    <p style="text-align:center; color:#888; font-size:12px;">BAE 3.0 Online</p>
+    <p id="pacienteNome" style="text-align:center; font-size:16px; color:#2e7d32; font-weight:bold; margin:15px 0;"></p>
+    <div style="background:#f8f9fa; padding:20px; border-radius:10px; margin:20px 0; text-align:left; max-width:600px; margin:20px auto;">
+      <p style="font-size:14px; line-height:1.6; color:#555;">
+        Você realizará <strong>5 testes de atenção</strong>. Cada teste tem instruções próprias que aparecerão antes de iniciar.<br><br>
+        <strong>Importante:</strong><br>
+        • Fique em um ambiente silencioso<br>
+        • Não feche esta janela durante o teste<br>
+        • Siga as instruções de cada teste<br>
+        • O teste dura aproximadamente 30-40 minutos
+      </p>
+    </div>
+    <button id="startButton" class="botao-iniciar" style="font-size:18px; padding:15px 40px;" onclick="iniciarBateria()">
+      ▶ Iniciar Bateria
+    </button>
+  </div>
+
+  <!-- TELAS DOS TESTES (escondidas, iguais ao desktop) -->
+  <div id="testeConcentrada" class="container" style="display:none">
+    <div class="logo"><span class="s">S</span><span class="psi">Ψ</span><span class="m">M</span></div>
+    <h1>Atenção Concentrada</h1>
+    <div id="quadroConcentrada"></div>
+    <button id="startConcentrada" class="botao-iniciar" type="button" onclick="startTesteConcentrada()" style="margin:20px auto;display:block;">Iniciar Teste</button>
+  </div>
+
+  <div id="testeSeletiva" class="container" style="display:none">
+    <div class="logo"><span class="s">S</span><span class="psi">Ψ</span><span class="m">M</span></div>
+    <h1>Atenção Seletiva</h1>
+    <button id="startSeletiva" class="botao-iniciar" type="button" onclick="startTesteSeletiva()" style="margin:20px auto;display:block;">Iniciar Teste</button>
+    <div id="quadroSeletiva"><img id="animal" style="position:absolute;display:none;"></div>
+  </div>
+
+  <div id="testeDividida" class="container" style="display:none">
+    <div class="logo"><span class="s">S</span><span class="psi">Ψ</span><span class="m">M</span></div>
+    <h1>Atenção Dividida</h1>
+    <button id="iniciarDividida" class="botao-iniciar" type="button" onclick="iniciarTesteDividida()" style="margin:20px auto;display:block;">Iniciar Teste</button>
+    <div id="quadroDividida"><div id="figuraDiv"></div></div>
+  </div>
+
+  <div id="paginaTesteAlternado" style="display:none;text-align:center;">
+    <div class="subtitulo">Atenção Alternada</div>
+    <button id="iniciarAlternado" class="botao-iniciar" onclick="iniciarTesteAlternado()" style="margin:20px auto;display:block;">Iniciar Teste</button>
+    <div id="quadroAlternado" style="width:7cm;height:3cm;margin:auto;position:relative;display:flex;justify-content:space-around;align-items:center;">
+      <div id="figuraEsquerda"></div>
+      <div id="figuraDireita"></div>
+    </div>
+    <div id="resultadoAlternado" style="display:none;"></div>
+    <button id="proximoTesteAlt" class="botao-iniciar" type="button" onclick="mostrarBotoesNavegacao()" style="display:none;margin:20px auto;">Próximo Teste</button>
+  </div>
+
+  <div id="testeSustentada" style="display:none">
+    <div class="subtitulo">Atenção Sustentada</div>
+    <button id="iniciarSustentada" class="botao-iniciar" type="button" onclick="iniciarTesteSustentada()" style="margin:20px auto;display:block;">Iniciar Teste</button>
+    <div id="quadroSustentada"></div>
+  </div>
+
+  <!-- TELA FINAL -->
+  <div id="endPage" style="display:none;">
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#e8f5e9,#c8e6c9);text-align:center;padding:20px;">
+      <div class="logo" style="font-size:48px;"><span class="s">S</span><span class="psi">Ψ</span><span class="m">M</span></div>
+      <h1 style="color:#2e7d32;font-size:28px;margin:20px 0;">Teste finalizado!</h1>
+      <p style="font-size:16px;color:#555;">Obrigado pela sua participação.</p>
+      <p style="font-size:16px;color:#555;">Os resultados foram enviados ao avaliador.</p>
+      <p style="margin-top:30px;font-size:14px;color:#888;">Você pode fechar esta janela.</p>
+    </div>
+  </div>
+
+  <!-- Campos ocultos para compatibilidade com scripts do desktop -->
+  <input type="hidden" id="nome" value="">
+  <input type="hidden" id="dataNascimento" value="">
+  <input type="hidden" id="idTeste" value="">
+
+  <!-- Scripts BAE (mesmos do desktop) -->
+  <script src="js/formulario.js"></script>
+  <script src="js/validacao-campos.js"></script>
+  <script src="js/botoes-controle.js"></script>
+  <script src="js/botoes-hover.js"></script>
+  <script src="js/gerador-pdf-pdfmake.js"></script>
+  <script src="js/dados-simulados.js"></script>
+  <script src="js/ia-observadora.js"></script>
+  <script src="js/simulacao-ia-realistica.js"></script>
+  <script src="js/bae-ai.js"></script>
+  <script src="js/concentrada/variaveis-concentrada.js"></script>
+  <script src="js/concentrada/atencao-concentrada.js"></script>
+  <script src="js/seletiva/variaveis-seletiva.js"></script>
+  <script src="js/seletiva/atencao-seletiva.js"></script>
+  <script src="js/dividida/variaveis-dividida.js"></script>
+  <script src="js/dividida/atencao-dividida.js"></script>
+  <script src="js/alternada/variaveis-alternada.js"></script>
+  <script src="js/alternada/atencao-alternada.js"></script>
+  <script src="js/sustentada/variaveis-sustentada.js"></script>
+  <script src="js/sustentada/atencao-sustentada.js"></script>
+
+  <script>
+    // ===== BAE ONLINE — LÓGICA DO TESTE =====
+    var API_URL = 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
+    var sessionData = {};
+
+    // Decodifica dados da URL
+    try {
+      var params = new URLSearchParams(window.location.search);
+      var d = params.get('d');
+      if (d) sessionData = JSON.parse(atob(decodeURIComponent(d)));
+    } catch(e) {}
+
+    if (!sessionData.sessionId) {
+      document.body.innerHTML = '<div style="text-align:center;padding:50px;font-size:18px;color:#c62828;">Link inválido ou expirado.<br>Solicite um novo link ao seu avaliador.</div>';
+    }
+
+    // Preenche campos ocultos para os scripts do desktop
+    document.getElementById('nome').value = sessionData.patientName || '';
+    document.getElementById('dataNascimento').value = sessionData.birthDate || '';
+    localStorage.setItem('dataNascimento', sessionData.birthDate || '');
+    localStorage.setItem('nome', sessionData.patientName || '');
+
+    // Verifica se sessão já foi usada
+    (async function() {
+      try {
+        var resp = await fetch(API_URL + '/session-status?sessionId=' + encodeURIComponent(sessionData.sessionId));
+        var data = await resp.json();
+        if (data.status !== 'aguardando' && data.status !== 'not_found') {
+          document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#e8f5e9,#c8e6c9);text-align:center;padding:20px;"><h1 style="color:#c62828;">Este link já foi utilizado.</h1><p style="font-size:16px;color:#555;">Solicite um novo link ao seu avaliador.</p></div>';
+          return;
+        }
+      } catch(e) {}
+
+      // Mostra tela de capa
+      document.getElementById('pacienteNome').textContent = sessionData.patientName || '';
+      document.getElementById('coverPage').style.display = 'block';
+
+      // Captura dados do paciente para o sistema BAE
+      window.resultadosBAE = window.resultadosBAE || {};
+      window.resultadosBAE.paciente = {
+        idTeste: sessionData.idPaciente || '',
+        nome: sessionData.patientName || '',
+        dataNascimento: sessionData.birthDate || '',
+        sexo: sessionData.sex || '',
+        cpf: sessionData.cpf || '',
+        escolaridade: sessionData.education || '',
+        lateralidade: sessionData.laterality || '',
+        observacoes: sessionData.observacoes || '',
+        nomePsicologo: sessionData.evaluator || '',
+        crp: sessionData.crp || '',
+        email: sessionData.email || '',
+        dataAplicacao: new Date().toLocaleDateString('pt-BR')
+      };
+      var age = typeof calcularIdade === 'function' ? calcularIdade(sessionData.birthDate) : null;
+      if (age) {
+        window.resultadosBAE.paciente.idade = age.years + ' anos, ' + age.months + ' meses e ' + age.days + ' dias';
+        window.resultadosBAE.paciente.idadeAnos = age.years;
+      }
+    })();
+
+    // Inicia a bateria
+    function iniciarBateria() {
+      document.getElementById('coverPage').style.display = 'none';
+      document.getElementById('testeConcentrada').style.display = 'block';
+      mostrarBotoesFixos();
+    }
+
+    // Desabilitar botões de bypass/voltar para o paciente (só avançar pelo fluxo normal)
+    // O paciente não deve poder pular testes
+    setTimeout(function() {
+      var bypass = document.querySelector('.botao-bypassar');
+      var voltar = document.querySelector('.botao-voltar');
+      if (bypass) bypass.style.display = 'none';
+      if (voltar) voltar.style.display = 'none';
+    }, 2000);
+
+    // Sobrescrever gerarRelatorioPDF para enviar ao servidor em vez de baixar
+    var _origGerarPDF = null;
+    setTimeout(function() {
+      _origGerarPDF = window.gerarRelatorioPDF;
+      window.gerarRelatorioPDF = async function() {
+        // Envia resultados ao servidor
+        await enviarResultados('completo');
+        // Mostra tela final
+        mostrarTelaFinal();
+      };
+    }, 3000);
+
+    // Interceptar fim do último teste (sustentada) para enviar resultados
+    var _origFinalizarSustentada = null;
+    setTimeout(function() {
+      if (typeof finalizarTesteSustentada === 'function') {
+        _origFinalizarSustentada = finalizarTesteSustentada;
+      }
+    }, 2000);
+
+    // Observar quando todos os testes terminam
+    var testesObserver = setInterval(function() {
+      var r = window.resultadosBAE || {};
+      var realizados = ['concentrada','seletiva','dividida','alternada','sustentada'].filter(function(t) { return r[t]; });
+      if (realizados.length >= 5) {
+        clearInterval(testesObserver);
+        setTimeout(async function() {
+          await enviarResultados('completo');
+          mostrarTelaFinal();
+        }, 5000);
+      }
+    }, 3000);
+
+    async function enviarResultados(status) {
+      try {
+        var r = window.resultadosBAE || {};
+        await fetch(API_URL + '/save-result', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId: sessionData.sessionId,
+            email: sessionData.email,
+            tipo: 'bae',
+            data: {
+              paciente: r.paciente,
+              concentrada: r.concentrada || null,
+              seletiva: r.seletiva || null,
+              dividida: r.dividida || null,
+              alternada: r.alternada || null,
+              sustentada: r.sustentada || null,
+              status: status,
+              date: new Date().toISOString()
+            }
+          })
+        });
+        console.log('✅ Resultados BAE enviados ao servidor');
+      } catch(e) {
+        console.error('❌ Erro ao enviar resultados:', e);
+      }
+    }
+
+    function mostrarTelaFinal() {
+      // Esconde tudo
+      ['coverPage','testeConcentrada','testeSeletiva','testeDividida','paginaTesteAlternado','testeSustentada'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+      });
+      // Esconde botões hover
+      var hover = document.getElementById('container-botoes-hover');
+      if (hover) hover.style.display = 'none';
+      var area = document.getElementById('area-hover-botoes');
+      if (area) area.style.display = 'none';
+      // Mostra tela final
+      document.getElementById('endPage').style.display = 'block';
+    }
+
+    // Se paciente fechar a janela no meio, envia o que tem
+    window.addEventListener('beforeunload', function() {
+      var r = window.resultadosBAE || {};
+      var realizados = ['concentrada','seletiva','dividida','alternada','sustentada'].filter(function(t) { return r[t]; });
+      if (realizados.length > 0) {
+        navigator.sendBeacon(API_URL + '/save-result', JSON.stringify({
+          sessionId: sessionData.sessionId,
+          email: sessionData.email,
+          tipo: 'bae',
+          data: {
+            paciente: r.paciente,
+            concentrada: r.concentrada || null,
+            seletiva: r.seletiva || null,
+            dividida: r.dividida || null,
+            alternada: r.alternada || null,
+            sustentada: r.sustentada || null,
+            status: 'abandonado',
+            date: new Date().toISOString()
+          }
+        }));
+      }
+    });
+  </script>
+</body>
+</html>

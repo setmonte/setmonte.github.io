@@ -18,17 +18,13 @@
         .row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .question { background: #f7fafc; padding: 20px; border-radius: 10px; margin-bottom: 15px; border-left: 4px solid #667eea; }
         .question-text { color: #2d3748; font-weight: 500; margin-bottom: 12px; font-size: 15px; }
-        .category { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; margin-bottom: 8px; }
-        .cat-fisica { background: #fed7d7; color: #c53030; }
-        .cat-cognitiva { background: #bee3f8; color: #2c5282; }
-        .cat-emocional { background: #feebc8; color: #c05621; }
-        .cat-ambiental { background: #c6f6d5; color: #22543d; }
+
         .options { display: flex; gap: 10px; justify-content: space-between; }
         .option { flex: 1; text-align: center; }
         .option input[type="radio"] { display: none; }
         .option label { display: block; padding: 12px; background: white; border: 2px solid #e2e8f0; border-radius: 8px; cursor: pointer; transition: all 0.3s; font-size: 13px; }
         .option input[type="radio"]:checked + label { background: #667eea; color: white; border-color: #667eea; transform: scale(1.05); }
-        .timer { position: fixed; top: 20px; right: 20px; background: white; padding: 15px 25px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); font-weight: 600; color: #4a5568; }
+
         .buttons { display: flex; gap: 15px; margin-top: 30px; }
         button { flex: 1; padding: 15px; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s; }
         .btn-primary { background: #667eea; color: white; }
@@ -41,11 +37,13 @@
         .result h2 { color: #2d3748; margin-bottom: 15px; }
         .score-item { display: flex; justify-content: space-between; padding: 10px; background: white; margin: 8px 0; border-radius: 6px; }
         .hidden { display: none; }
-        @media print { body { background: white; } .timer, .buttons { display: none; } }
+        @media print { body { background: white; } .buttons { display: none; } }
     </style>
-    <script src="../id-paciente.js"></script>\n</head>
+    <script src="../id-paciente.js"></script>
+</head>
 <body>
-    <div class="timer" id="timer">Tempo: 00:00</div>
+<div style="padding:10px 20px;background:#2e7d32;"><a href="../" style="display:inline-block;background:#fff;color:#2e7d32;text-decoration:none;font-family:Segoe UI,Arial,sans-serif;font-size:14px;font-weight:bold;padding:8px 20px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.15);transition:background 0.2s;">&#11013; Voltar ao In&#237;cio</a></div>
+
     <div class="container">
         <h1>ESCASI</h1>
         <p class="subtitle">Escala de Ansiedade Infantil - Baseada em DSM-5-TR</p>
@@ -188,12 +186,8 @@
         function renderQuestions() {
             const container = document.getElementById('questions');
             questions.forEach((q, i) => {
-                const catClass = `cat-${q.cat}`;
-                const catName = {fisica: 'Física', cognitiva: 'Cognitiva', emocional: 'Emocional', ambiental: 'Ambiental'}[q.cat];
-                
                 container.innerHTML += `
                     <div class="question" data-question="${i}">
-                        <span class="category ${catClass}">${catName}</span>
                         <div class="question-text">${i + 1}. ${q.q}</div>
                         <div class="options">
                             <div class="option">
@@ -224,12 +218,7 @@
             }
         }
 
-        function updateTimer() {
-            const elapsed = Math.floor((Date.now() - startTime) / 1000);
-            const mins = Math.floor(elapsed / 60).toString().padStart(2, '0');
-            const secs = (elapsed % 60).toString().padStart(2, '0');
-            document.getElementById('timer').textContent = `Tempo: ${mins}:${secs}`;
-        }
+
 
         function calcularResultado() {
             let scores = {fisica: 0, cognitiva: 0, emocional: 0, ambiental: 0, total: 0};
@@ -250,7 +239,6 @@
         document.getElementById('escasiForm').addEventListener('submit', function(e) {
             e.preventDefault();
             const {scores, nivel, cor} = calcularResultado();
-            const tempoTotal = Math.floor((Date.now() - startTime) / 1000);
             
             document.getElementById('result').innerHTML = `
                 <h2>Resultado da Avaliação</h2>
@@ -261,7 +249,7 @@
                 <div class="score-item" style="background: ${cor}; color: white; font-size: 18px;">
                     <strong>Classificação:</strong> <span>${nivel} (${scores.total} pontos)</span>
                 </div>
-                <div class="score-item"><strong>Tempo Total:</strong> <span>${Math.floor(tempoTotal/60)}min ${tempoTotal%60}s</span></div>
+
                 <button onclick="gerarPDF()" class="btn-primary" style="width: 100%; margin-top: 15px;">Baixar PDF</button>
             `;
             document.getElementById('result').style.display = 'block';
@@ -323,7 +311,7 @@
         });
 
         renderQuestions();
-        setInterval(updateTimer, 1000);
+
     </script>
 </body>
 </html>
