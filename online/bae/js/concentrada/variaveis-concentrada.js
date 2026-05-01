@@ -1,10 +1,10 @@
 // ===== VARIÁVEIS GLOBAIS DO TESTE DE ATENÇÃO CONCENTRADA =====
-let trialDataConc = [];
+var trialDataConc = [];
 let currentTrialConc = 0;
 let trialsConc = [];
 let canvasConc = null;
 let ctxConc = null;
-let isTestRunningConc = false;
+var isTestRunningConc = false;
 let testeJaFinalizadoConc = false;
 
 // Configuração fixa (canvas, cores)
