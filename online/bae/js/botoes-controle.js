@@ -166,7 +166,6 @@ function pararTesteAtivo(motivo = 'PARADO') {
         console.log('🛑 Parando alternada...');
         salvarDadosParciais('alternada', motivo);
         testeAtivoAlternada = false;
-        if (typeof finalizarTesteAlternada === 'function') finalizarTesteAlternada();
         return true;
     }
     if (typeof testeAtivoSustentada !== 'undefined' && testeAtivoSustentada) {
