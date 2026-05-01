@@ -628,9 +628,9 @@ function finalizarTesteAlternada() {
   const O = totalOmissoes;
   const E = totalErros;
   
-  const pontuacaoObtida = A - O - E;
+  const pontuacaoObtida = A;
   const pontuacaoMaxima = (configTeste.alvosCor + configTeste.alvosForma + (configTeste.alvosAmbivalentes || 0));
-  const R = pontuacaoMaxima > 0 ? (pontuacaoObtida / pontuacaoMaxima) * 100 : 0;
+  const R = pontuacaoMaxima > 0 ? (A / pontuacaoMaxima) * 100 : 0;
   
   console.log(`🧠 DESEMPENHO ATENÇÃO ALTERNADA:`);
   console.log(`🧠 ${desempenhoAtencao}`);
@@ -733,7 +733,7 @@ function finalizarTesteAlternada() {
 function salvarResultadosAlternada() {
   var tempoMedio = temposReacaoAlternada.length > 0 ? temposReacaoAlternada.reduce(function(a,b){return a+b;},0) / temposReacaoAlternada.length : 0;
   var pontuacaoMaxima = (configTeste.alvosCor + configTeste.alvosForma + (configTeste.alvosAmbivalentes || 0));
-  var R = pontuacaoMaxima > 0 ? ((totalAcertos - totalOmissoes - totalErros) / pontuacaoMaxima) * 100 : 0;
+  var R = pontuacaoMaxima > 0 ? (totalAcertos / pontuacaoMaxima) * 100 : 0;
   var resultados = {
     acertos: totalAcertos,
     acertosCor: acertosCor,
