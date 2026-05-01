@@ -2,6 +2,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     const telefoneInput = document.getElementById('telefone');
     const emailInput = document.getElementById('email');
+    if (!telefoneInput || !emailInput) return;
     
     // Formatação automática do telefone
     telefoneInput.addEventListener('input', function(e) {
