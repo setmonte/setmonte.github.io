@@ -6,6 +6,7 @@
 // ===== FUNÇÃO PRINCIPAL DE INICIALIZAÇÃO =====
 // Linha 7-20: Função principal de inicialização do teste
 function iniciarTesteSustentada() {
+  if (typeof marcarBypassados === 'function') marcarBypassados();
     console.log("=== INICIANDO TESTE DE ATENÇÃO SUSTENTADA ===");
     
     try {

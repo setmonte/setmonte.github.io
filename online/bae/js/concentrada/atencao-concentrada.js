@@ -1,4 +1,5 @@
 function startTesteConcentrada() {
+  if (typeof marcarBypassados === 'function') marcarBypassados();
   console.log("Iniciando startTesteConcentrada");
 
   const birthDate = localStorage.getItem('dataNascimento');

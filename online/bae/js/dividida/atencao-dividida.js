@@ -52,6 +52,7 @@ function tocarSomFamiliarizacao(frequencia) {
 
 // ===== FUNÇÃO PRINCIPAL =====
 function iniciarTesteDividida() {
+  if (typeof marcarBypassados === 'function') marcarBypassados();
     var dividida = document.getElementById('testeDividida');
     if (!dividida || dividida.style.display === 'none') return;
 

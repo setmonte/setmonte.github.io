@@ -19,6 +19,20 @@ function registrarExecucao(nomeTeste, motivo, dados) {
     console.log('📝 ' + nomeTeste + ': execução #' + n + ' registrada (' + motivo + ')');
 }
 
+// Chamada quando qualquer teste INICIA - marca testes pulados como BYPASSADO
+function marcarBypassados() {
+    if (!window._testesNavegadosSemIniciar) return;
+    window._testesNavegadosSemIniciar.forEach(function(nome) {
+        if (!window.resultadosBAE[nome]) {
+            salvarResultadoTeste(nome, { statusTeste: 'BYPASSADO', abandonado: true, acertos: 0, erros: 0, omissoes: 0, taxaAcerto: 0, tempoMedio: 0 });
+            registrarExecucao(nome, 'BYPASSADO', window.resultadosBAE[nome]);
+            console.log('⏭️ ' + nome + ' marcado como BYPASSADO');
+        }
+    });
+    window._testesNavegadosSemIniciar = [];
+}
+window.marcarBypassados = marcarBypassados;
+
 // ===== FUNÇÃO AUXILIAR: SALVA DADOS PARCIAIS DE QUALQUER TESTE =====
 function salvarDadosParciais(nomeTeste, motivo) {
     if (typeof salvarResultadoTeste !== 'function') return;
@@ -76,7 +90,7 @@ function salvarDadosParciais(nomeTeste, motivo) {
                 acertosVisuais: acertosVisuaisDividida,
                 acertosAuditivos: acertosAuditivosDividida,
                 totalAcertos: totalAcertos,
-                taxaAcerto: totalAcertos > 0 ? 50 : 0,
+                taxaAcerto: (acertosVisuaisDividida + acertosAuditivosDividida + errosVisuaisDividida + errosAuditivosDividida + omissoesVisuaisDividida + omissoesAuditivasDividida) > 0 ? (totalAcertos / (acertosVisuaisDividida + acertosAuditivosDividida + errosVisuaisDividida + errosAuditivosDividida + omissoesVisuaisDividida + omissoesAuditivasDividida)) * 100 : 0,
                 tempoMedio: allRTs.length ? allRTs.reduce((a, b) => a + b, 0) / allRTs.length : 0,
                 abandonado: true,
                 statusTeste: motivo
@@ -94,7 +108,7 @@ function salvarDadosParciais(nomeTeste, motivo) {
                 acertos: totalAcertos,
                 erros: totalErros,
                 omissoes: totalOmissoes,
-                taxaAcerto: pontuacaoMaxima > 0 ? ((totalAcertos - totalOmissoes - totalErros) / pontuacaoMaxima) * 100 : 0,
+                taxaAcerto: pontuacaoMaxima > 0 ? (totalAcertos / pontuacaoMaxima) * 100 : 0,
                 tempoMedio: tempoMedio,
                 abandonado: true,
                 statusTeste: motivo
@@ -206,8 +220,11 @@ const ordemTelas = [
 ];
 
 // ===== BOTÃO AZUL: AVANÇAR PARA PRÓXIMO TESTE =====
+// Rastreia testes que foram navegados sem iniciar (para marcar BYPASSADO depois)
+window._testesNavegadosSemIniciar = window._testesNavegadosSemIniciar || [];
+
 function bypassarTestes() {
-    pararTesteAtivo('BYPASSADO');
+    var testeParou = pararTesteAtivo('ABANDONADO');
 
     const telaAtual = detectarTelaAtual();
     if (!telaAtual) {
@@ -222,6 +239,16 @@ function bypassarTestes() {
         return;
     }
 
+    // Se nenhum teste estava rodando, está apenas navegando
+    if (!testeParou) {
+        var nomesMap = {testeConcentrada:'concentrada', testeSeletiva:'seletiva', testeDividida:'dividida', paginaTesteAlternado:'alternada', testeSustentada:'sustentada'};
+        var nomeAtual = nomesMap[telaAtual.id];
+        if (nomeAtual && !window.resultadosBAE[nomeAtual] && window._testesNavegadosSemIniciar.indexOf(nomeAtual) === -1) {
+            window._testesNavegadosSemIniciar.push(nomeAtual);
+            console.log('🔀 ' + nomeAtual + ' navegado sem iniciar (será BYPASSADO se próximo iniciar)');
+        }
+    }
+
     const proximaTelaId = ordemTelas[indiceAtual + 1];
     document.getElementById(telaAtual.id).style.display = 'none';
     document.getElementById(proximaTelaId).style.display = 'block';
@@ -231,7 +258,7 @@ function bypassarTestes() {
 
 // ===== BOTÃO LARANJA: VOLTAR PARA TESTE ANTERIOR =====
 function voltarTeste() {
-    pararTesteAtivo('RETROCEDIDO');
+    pararTesteAtivo('ABANDONADO');
 
     const telaAtual = detectarTelaAtual();
     if (!telaAtual) return;
