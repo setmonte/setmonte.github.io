@@ -37,6 +37,7 @@ function obterConfigTeste() {
 // ===== FUNÇÃO PRINCIPAL - INICIA O TESTE =====
 // Linha 42-75: Função principal de inicialização do teste
 function iniciarTesteAlternado() {
+  if (typeof marcarBypassados === 'function') marcarBypassados();
   try {
     // Esconde botão iniciar
     const botaoIniciar = document.getElementById('iniciarAlternado');

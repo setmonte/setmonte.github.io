@@ -60,6 +60,7 @@ function mostrarInstrucoesSeletiva() {
 
 // ===== FUNÇÃO PRINCIPAL QUE INICIA O TESTE =====
 async function startTesteSeletiva() {
+  if (typeof marcarBypassados === 'function') marcarBypassados();
   console.log("Iniciando startTesteSeletiva");
   
   const birthDate = localStorage.getItem('dataNascimento');
