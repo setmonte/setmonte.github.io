@@ -4,7 +4,7 @@
 
 // ===== CONTROLE DO TESTE =====
 // Linha 6-12: Variáveis de controle principal
-let testeAtivoSustentada = false;
+var testeAtivoSustentada = false;
 let inicioTeste = 0;
 let fimTeste = 0;
 let estimuloAtual = null;
@@ -23,21 +23,21 @@ let distrator = 'circulo'; // Círculo VERMELHO grande
 // ===== CONTADORES =====
 // Linha 23-30: Contadores de estímulos e resultados
 let totalEstimulos = 0;
-let estimulosAlvo = 0;
+var estimulosAlvo = 0;
 let estimulosDistrator = 0;
-let acertos = 0; // 200-650ms
+var acertos = 0; // 200-650ms
 let acertosComprometidos = 0; // 651-1000ms
-let negligencias = 0; // 1001-2000ms
-let omissoes = 0; // >2000ms
-let respostasImpulsivas = 0; // Apertar no distrator
+var negligencias = 0; // 1001-2000ms
+var omissoes = 0; // >2000ms
+var respostasImpulsivas = 0; // Apertar no distrator
 
 // ===== ARRAYS DE TEMPOS =====
 // Linha 33-37: Arrays para análise temporal
-let temposReacaoSustentada = [];
+var temposReacaoSustentada = [];
 let temposAcertosComprometidos = [];
 let temposNegligencias = [];
 let todosTemposReacao = [];
-let respostasOpositorias = 0;
+var respostasOpositorias = 0;
 
 // ===== CONTROLE DE SEXTANTES =====
 let sextantesUsados = [];

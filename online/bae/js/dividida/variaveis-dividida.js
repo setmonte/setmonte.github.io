@@ -6,17 +6,17 @@ const alvoVisual = 'triangulo';
 const alvoAuditivo = 400;
 
 // Contadores
-let acertosVisuaisDividida = 0;
-let acertosAuditivosDividida = 0;
-let errosVisuaisDividida = 0;
-let errosAuditivosDividida = 0;
-let omissoesVisuaisDividida = 0;
-let omissoesAuditivasDividida = 0;
-let temposReacaoVisuaisDividida = [];
-let temposReacaoAuditivosDividida = [];
+var acertosVisuaisDividida = 0;
+var acertosAuditivosDividida = 0;
+var errosVisuaisDividida = 0;
+var errosAuditivosDividida = 0;
+var omissoesVisuaisDividida = 0;
+var omissoesAuditivasDividida = 0;
+var temposReacaoVisuaisDividida = [];
+var temposReacaoAuditivosDividida = [];
 
 // Controle
-let isTesteDivididaRunning = false;
+var isTesteDivididaRunning = false;
 let currentEstimulo = 0;
 let totalEstimulosDividida = 0;
 let startTimeDividida = 0;

@@ -1,16 +1,16 @@
 // ===== VARIÁVEIS GLOBAIS DO TESTE DE ATENÇÃO SELETIVA =====
 const animais = ["leao", "pato", "elefante", "girafa", "cachorro"];
-let acertosSeletiva = 0;
-let errosSeletiva = 0;
+var acertosSeletiva = 0;
+var errosSeletiva = 0;
 let omissoesSeletiva = 0;
-let temposReacaoSeletiva = [];
+var temposReacaoSeletiva = [];
 let currentAnimal;
 let startTimeSeletiva;
 let intervalId;
 let testDuration = 0;
-let isTestRunningSeletiva = false;
+var isTestRunningSeletiva = false;
 let previousAnimal;
-let totalLeoes = 0;
+var totalLeoes = 0;
 let firstCall = true;
 let respondeuAnimalAnterior = false;
 let testeJaFinalizado = false;
