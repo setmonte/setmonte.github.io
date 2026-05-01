@@ -576,6 +576,8 @@ function exibirResultadosFinais() {
 // ===== SALVAMENTO NO SISTEMA GLOBAL =====
 // Linha 532-550: Salvamento dos resultados
 function salvarResultadoTesteSustentada() {
+    // Não sobrescrever se já foi salvo como ABANDONADO
+    if (window.resultadosBAE && window.resultadosBAE.sustentada && window.resultadosBAE.sustentada.statusTeste === 'ABANDONADO') return;
     const taxaAcerto = estimulosAlvo > 0 ? (acertos / estimulosAlvo) * 100 : 0;
     const tempoMedioReacao = temposReacaoSustentada.length > 0 ? 
         temposReacaoSustentada.reduce((a, b) => a + b, 0) / temposReacaoSustentada.length : 0;

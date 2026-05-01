@@ -732,6 +732,8 @@ function finalizarTesteAlternada() {
 // ===== SALVAR RESULTADOS COM FAIXA =====
 // Chamada dentro de finalizarTesteAlternada, antes do botão próximo
 function salvarResultadosAlternada() {
+  // Não sobrescrever se já foi salvo como ABANDONADO
+  if (window.resultadosBAE && window.resultadosBAE.alternada && window.resultadosBAE.alternada.statusTeste === 'ABANDONADO') return;
   var tempoMedio = temposReacaoAlternada.length > 0 ? temposReacaoAlternada.reduce(function(a,b){return a+b;},0) / temposReacaoAlternada.length : 0;
   var pontuacaoMaxima = (configTeste.alvosCor + configTeste.alvosForma + (configTeste.alvosAmbivalentes || 0));
   var R = pontuacaoMaxima > 0 ? (totalAcertos / pontuacaoMaxima) * 100 : 0;
