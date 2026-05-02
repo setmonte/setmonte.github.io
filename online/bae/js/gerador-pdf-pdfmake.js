@@ -7,10 +7,10 @@ window.dadosPaciente = window.dadosPaciente || {};
 
 // ===== FUNÇÃO PARA SALVAR RESULTADO DE TESTE =====
 function salvarResultadoTeste(nomeTeste, dados) {
-    // Não sobrescrever se já foi salvo como ABANDONADO (botão azul/vermelho/laranja)
+    // Não sobrescrever se já foi salvo como ABANDONADO
     var existente = window.resultadosBAE[nomeTeste];
-    if (existente && existente.statusTeste === 'ABANDONADO' && dados.statusTeste !== 'ABANDONADO') {
-        console.log(`⛔ ${nomeTeste}: já salvo como ABANDONADO, ignorando sobrescrita (${dados.statusTeste || 'CONCLUÍDO'})`);
+    if (existente && existente.statusTeste === 'ABANDONADO' && (!dados.statusTeste || dados.statusTeste !== 'ABANDONADO')) {
+        console.log(`⛔ ${nomeTeste}: já salvo como ABANDONADO, ignorando sobrescrita`);
         return;
     }
     console.log(`📊 Salvando resultado do teste: ${nomeTeste}`);
