@@ -143,6 +143,8 @@ function salvarDadosParciais(nomeTeste, motivo) {
 
 // ===== FUNÇÃO AUXILIAR: PARA QUALQUER TESTE ATIVO =====
 function pararTesteAtivo(motivo = 'PARADO') {
+    console.log('🔍 pararTesteAtivo chamado com motivo:', motivo);
+    console.log('🔍 FLAGS: conc=' + (typeof isTestRunningConc !== 'undefined' ? isTestRunningConc : 'UNDEF') + ' sel=' + (typeof isTestRunningSeletiva !== 'undefined' ? isTestRunningSeletiva : 'UNDEF') + ' div=' + (typeof isTesteDivididaRunning !== 'undefined' ? isTesteDivididaRunning : 'UNDEF') + ' alt=' + (typeof testeAtivoAlternada !== 'undefined' ? testeAtivoAlternada : 'UNDEF') + ' sus=' + (typeof testeAtivoSustentada !== 'undefined' ? testeAtivoSustentada : 'UNDEF'));
     // Verifica cada flag diretamente (let no escopo global não fica em window)
     if (typeof isTestRunningConc !== 'undefined' && isTestRunningConc) {
         console.log('🛑 Parando concentrada...');
