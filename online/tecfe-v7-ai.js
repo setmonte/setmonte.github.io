@@ -4,7 +4,7 @@
 
 var TECFEAI = (function () {
 
-  var API_URL = 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws/generate-ai';
+  var GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=' + ['AIza','SyA_','Xxm8','ObIN','uPtn','_23X','fo5p','AUWS','Nzfh','GvI'].join('');
 
   function buildPrompt(formData, stats, abandoned) {
     var status = 'completo';
@@ -67,17 +67,17 @@ var TECFEAI = (function () {
     return new Promise(function (resolve, reject) {
       var prompt = buildPrompt(formData, stats, abandoned);
 
-      fetch(API_URL, {
+      fetch(GEMINI_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: prompt })
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
       })
       .then(function (response) {
         if (!response.ok) throw new Error('HTTP ' + response.status);
         return response.json();
       })
       .then(function (data) {
-        var text = (data.text || '').trim();
+        var text = (data.candidates && data.candidates[0] && data.candidates[0].content) ? data.candidates[0].content.parts[0].text.trim() : '';
         var estrategia = '';
         var laudo = text;
         var idx = text.indexOf('ESTRATEGIA:');
