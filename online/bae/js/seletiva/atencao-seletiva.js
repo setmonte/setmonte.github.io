@@ -22,11 +22,10 @@ function mostrarInstrucoesSeletiva() {
     titulo.style.cssText = 'margin-bottom: 30px; color: #333;';
     
     const instrucoes = document.createElement('div');
-    var isTouchDevice = window.dispositivoBAE && window.dispositivoBAE.isTouch;
     instrucoes.innerHTML = `
       <p style="font-size: 18px; line-height: 1.6; text-align: center; max-width: 600px; margin-bottom: 30px;">
         Neste teste, você verá animais aparecendo na tela.<br><br>
-        <strong>${isTouchDevice ? 'Toque no botão RESPONDER' : 'Pressione a BARRA DE ESPAÇO'}</strong> apenas quando aparecer um <strong>LEÃO</strong> 🦁<br><br>
+        <strong>Pressione a BARRA DE ESPAÇO</strong> apenas quando aparecer um <strong>LEÃO</strong> 🦁<br><br>
         Ignore todos os outros animais.<br><br>
         Seja rápido e preciso!
       </p>
@@ -62,7 +61,6 @@ function mostrarInstrucoesSeletiva() {
 // ===== FUNÇÃO PRINCIPAL QUE INICIA O TESTE =====
 async function startTesteSeletiva() {
   if (typeof marcarBypassados === 'function') marcarBypassados();
-  if (window.dispositivoBAE) window.dispositivoBAE.iniciarTeste('seletiva');
   console.log("Iniciando startTesteSeletiva");
   
   const birthDate = localStorage.getItem('dataNascimento');
@@ -89,7 +87,6 @@ async function startTesteSeletiva() {
   
   isTestRunningSeletiva = true;
   mostrarBotoesControle();
-  if (window.touchControls) window.touchControls.mostrarBotaoResponder();
   
   const quadro = document.getElementById("quadroSeletiva");
   
@@ -222,26 +219,29 @@ function showNextAnimal(forceCall = false) {
   img.src = `figuras/${currentAnimal}.png`;
   img.style.display = "block";
   
-  // Usa tamanho real do quadro na tela
-  var quadroEl = document.getElementById('quadroSeletiva');
-  var quadroWidth = quadroEl ? quadroEl.clientWidth : 20 * 37.8;
-  var quadroHeight = quadroEl ? quadroEl.clientHeight : 15 * 37.8;
-  const margem = 10;
-  const imgWidth = 76;
-  const imgHeight = 76;
+  // Dimensões do quadro e margem de 5mm
+  const quadroWidth = 20 * 37.8; // 20cm em pixels
+  const quadroHeight = 15 * 37.8; // 15cm em pixels
+  const margem = 2 * 3.78; // 2mm em pixels
+  const imgWidth = 2 * 37.8; // 2cm
+  const imgHeight = 2 * 37.8; // 2cm
   
+  // Área útil (quadro menos margens)
   const areaUtilWidth = quadroWidth - (2 * margem) - imgWidth;
   const areaUtilHeight = quadroHeight - (2 * margem) - imgHeight;
   
+  // Posição limitada à área útil
   const posX = margem + (Math.random() * areaUtilWidth);
   const posY = margem + (Math.random() * areaUtilHeight);
   
   img.style.left = `${posX}px`;
   img.style.top = `${posY}px`;
   
-  // Determina sextante (quadro real, 3 colunas x 2 linhas)
-  const terco = quadroWidth / 3;
-  const metade = quadroHeight / 2;
+  // Determina sextante (quadro 20x15cm, 3 colunas x 2 linhas)
+  const larguraQuadro = 20 * 37.8;
+  const alturaQuadro = 15 * 37.8;
+  const terco = larguraQuadro / 3;
+  const metade = alturaQuadro / 2;
   let col = posX < terco ? 0 : posX < terco * 2 ? 1 : 2;
   let lin = posY < metade ? 0 : 1;
   const sextantes = [['S1','S2','S3'],['S4','S5','S6']];
@@ -268,9 +268,6 @@ function checkResponse(event) {
   event.preventDefault();
   
   const reactionTime = performance.now() - startTimeSeletiva;
-  var modo = window._ultimaEntradaTouch ? 'touch' : 'teclado';
-  window._ultimaEntradaTouch = false;
-  if (window.dispositivoBAE) window.dispositivoBAE.registrar(modo, reactionTime);
   respondeuAnimalAnterior = true;
   
   if (currentAnimal === "leao") {
@@ -290,7 +287,6 @@ function checkResponse(event) {
 }
 
 function endTesteSeletiva(abandonado = false) {
-  if (window.touchControls) window.touchControls.limpar();
   console.log(`🎯 ENDTEST SELETIVA CHAMADO!`);
   
   if (testeJaFinalizado) {
@@ -369,9 +365,7 @@ function endTesteSeletiva(abandonado = false) {
     faixaEtaria: CONFIG_SELETIVA ? CONFIG_SELETIVA.faixa : 'adulto',
     intervaloAnimal: CONFIG_SELETIVA ? CONFIG_SELETIVA.intervaloAnimal : 1000,
     abandonado: abandonado,
-    statusTeste: abandonado ? 'ABANDONADO' : 'CONCLUÍDO',
-    dispositivo: window.dispositivoBAE ? window.dispositivoBAE.obterInfoDispositivo() : null,
-    modoEntrada: window.dispositivoBAE ? window.dispositivoBAE.obterResumo('seletiva') : null
+    statusTeste: abandonado ? 'ABANDONADO' : 'CONCLUÍDO'
   };
   
   if (typeof salvarResultadoTeste === 'function') {

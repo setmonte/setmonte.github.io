@@ -289,7 +289,6 @@ function voltarTeste() {
 
 // ===== VISIBILIDADE DOS BOTÕES =====
 function mostrarBotoesNavegacao() {
-    if (window.dispositivoBAE && window.dispositivoBAE.isTouch) return;
     const botaoParar = document.querySelector('.botao-parar');
     const botaoBypass = document.querySelector('.botao-bypassar');
     const botaoVoltar = document.querySelector('.botao-voltar');
@@ -305,7 +304,6 @@ function mostrarBotoesNavegacao() {
 }
 
 function mostrarBotoesFixos() {
-    if (window.dispositivoBAE && window.dispositivoBAE.isTouch) return;
     mostrarBotoesNavegacao();
 }
 
@@ -338,7 +336,6 @@ function criarBotaoProximoTeste(telaAtual, proximaTela) {
 
 // ===== CRIAÇÃO DOS BOTÕES NO DOM =====
 function criarBotoesSeNaoExistirem() {
-    if (window.dispositivoBAE && window.dispositivoBAE.isTouch) return;
     if (!document.querySelector('.botao-parar')) {
         const btn = document.createElement('button');
         btn.className = 'botao-parar';

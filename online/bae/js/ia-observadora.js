@@ -45,21 +45,13 @@ function iaObservarTeste(nomeTeste, dados) {
 
 // ===== ANÁLISE DE PADRÕES POR TESTE =====
 function analisarPadraoTeste(nomeTeste, dados) {
-    // Detecta modo de entrada do teste
-    var resumoModo = dados.modoEntrada || (window.dispositivoBAE ? window.dispositivoBAE.obterResumo(nomeTeste) : null);
-    var isTouch = resumoModo && resumoModo.touch > 0 && resumoModo.teclado === 0;
-    var isMisto = resumoModo && resumoModo.touch > 0 && resumoModo.teclado > 0;
-    var alternancias = resumoModo ? (resumoModo.alternanciasModo || 0) : 0;
-
     const padrao = {
-        velocidade: classificarVelocidade(dados.tempoMedio || 0, isTouch),
+        velocidade: classificarVelocidade(dados.tempoMedio || 0),
         precisao: classificarPrecisao(dados.taxaAcerto || 0),
         consistencia: calcularConsistencia(dados),
         fadiga: detectarFadiga(dados),
-        impulsividade: detectarImpulsividade(dados, isTouch),
-        negligencia: detectarNegligencia(dados),
-        modoEntrada: isTouch ? 'touch' : isMisto ? 'misto' : 'teclado',
-        alternanciasModo: alternancias
+        impulsividade: detectarImpulsividade(dados),
+        negligencia: detectarNegligencia(dados)
     };
     
     return padrao;
@@ -77,7 +69,7 @@ function obterFaixaEtariaIA() {
     return 'adulto';
 }
 
-function classificarVelocidade(tempoMedio, isTouch) {
+function classificarVelocidade(tempoMedio) {
     const faixa = obterFaixaEtariaIA();
     // Limiares ajustados: criança e idoso têm processamento mais lento (Kail, 1991)
     const limiares = {
@@ -86,12 +78,10 @@ function classificarVelocidade(tempoMedio, isTouch) {
         idoso:   { muitoRapida: 500, rapida: 700, normal: 950,  lenta: 1400 }
     };
     const l = limiares[faixa];
-    // Touch: +100ms nos limiares (diferença média teclado vs touch: 50-150ms)
-    var ajuste = isTouch ? 100 : 0;
-    if (tempoMedio < l.muitoRapida + ajuste) return 'MUITO_RAPIDA';
-    if (tempoMedio < l.rapida + ajuste) return 'RAPIDA';
-    if (tempoMedio < l.normal + ajuste) return 'NORMAL';
-    if (tempoMedio < l.lenta + ajuste) return 'LENTA';
+    if (tempoMedio < l.muitoRapida) return 'MUITO_RAPIDA';
+    if (tempoMedio < l.rapida) return 'RAPIDA';
+    if (tempoMedio < l.normal) return 'NORMAL';
+    if (tempoMedio < l.lenta) return 'LENTA';
     return 'MUITO_LENTA';
 }
 
@@ -120,10 +110,9 @@ function detectarFadiga(dados) {
     return dados.fadigaDetectada || (dados.omissoes || 0) > (dados.totalAlvos || 0) * 0.3;
 }
 
-function detectarImpulsividade(dados, isTouch) {
+function detectarImpulsividade(dados) {
     const faixa = obterFaixaEtariaIA();
-    var limiarRapido = faixa === 'crianca' ? 500 : faixa === 'idoso' ? 500 : 400;
-    if (isTouch) limiarRapido += 100;
+    const limiarRapido = faixa === 'crianca' ? 500 : faixa === 'idoso' ? 500 : 400;
     const tempoMedio = dados.tempoMedio || 0;
     const erros = dados.erros || 0;
     return tempoMedio < limiarRapido && erros > 5;
@@ -206,12 +195,6 @@ function calcularFatoresLikelihood(padrao) {
     if (padrao.negligencia) {
         fatores.TDI *= 2.0;
         fatores.Normal *= 0.3;
-    }
-    
-    // Alternância de modo teclado/touch (indicador de inquietação motora)
-    if (padrao.alternanciasModo > 5) {
-        fatores.TDAH *= 1.5;  // Inquietação motora (Barkley, 1997)
-        fatores.Normal *= 0.7;
     }
     
     return fatores;
@@ -331,5 +314,5 @@ window.iaObservarTeste = iaObservarTeste;
 window.obterRelatorioIA = obterRelatorioIA;
 window.resetIA = resetIA;
 
-console.log('🤖 IA Observadora Híbrida carregada - Sistema BAE 2.4.0');
-console.log('📚 Baseada em: Kail (1991), Luce (1986), Ratcliff (1978), Weiss & Kingsbury (1984), Nickerson (2002)');
+console.log('🤖 IA Observadora Híbrida carregada - Sistema BAE 2.3');
+console.log('📚 Baseada em: Kail (1991), Luce (1986), Ratcliff (1978), Weiss & Kingsbury (1984)');

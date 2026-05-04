@@ -7,7 +7,6 @@
 // Linha 7-20: Função principal de inicialização do teste
 function iniciarTesteSustentada() {
   if (typeof marcarBypassados === 'function') marcarBypassados();
-    if (window.dispositivoBAE) window.dispositivoBAE.iniciarTeste('sustentada');
     console.log("=== INICIANDO TESTE DE ATENÇÃO SUSTENTADA ===");
     
     try {
@@ -32,7 +31,6 @@ function prepararInterfaceSustentada() {
     
     prepararQuadroEstimulosSustentada();
     document.addEventListener('keydown', processarRespostaSustentada);
-    if (window.touchControls) window.touchControls.mostrarBotaoResponder();
     
     setTimeout(() => {
         mostrarInstrucoesSustentada(() => {
@@ -67,7 +65,6 @@ function mostrarInstrucoesSustentada(callback) {
         return;
     }
     
-    var isTouchDevice = window.dispositivoBAE && window.dispositivoBAE.isTouch;
     quadro.innerHTML = `
         <div style="
             color: white;
@@ -83,16 +80,17 @@ function mostrarInstrucoesSustentada(callback) {
                 Você verá <strong>QUADRADOS AMARELOS</strong> pequenos aparecendo na tela preta.
             </p>
             <p style="font-size: 18px; margin-bottom: 15px;">
-                ${isTouchDevice ? 'Toque em <strong>RESPONDER</strong>' : 'Pressione <strong>ESPAÇO</strong>'} sempre que ver um <strong>QUADRADO AMARELO</strong>.
+                Pressione <strong>ESPAÇO</strong> sempre que ver um <strong>QUADRADO AMARELO</strong>.
             </p>
             <div style="font-size: 16px; margin: 20px 0; color: #FF6B6B;">
-                • <strong>NÃO</strong> ${isTouchDevice ? 'toque' : 'pressione'} para círculos vermelhos<br>
-                • <strong>NÃO</strong> ${isTouchDevice ? 'toque' : 'pressione'} quando a tela estiver vazia
+                • <strong>NÃO</strong> pressione para círculos vermelhos<br>
+                • <strong>NÃO</strong> pressione quando a tela estiver vazia
             </div>
             <p style="font-size: 16px; color: #FFD700;">
                 Mantenha atenção por vários minutos!
             </p>
-            <button style="
+            <button onclick="this.parentElement.parentElement.innerHTML=''; arguments[0]()" 
+                    style="
                         margin-top: 20px;
                         padding: 10px 20px;
                         font-size: 18px;
@@ -336,11 +334,8 @@ function exibirEstimulo(tipo) {
 function gerarPosicaoAleatoria(tipoEstimulo) {
     const colunas = 18;
     const linhas = 18;
-    var quadroEl = document.getElementById('quadroSustentada');
-    var quadroW = quadroEl ? quadroEl.clientWidth : 20 * 37.8;
-    var quadroH = quadroEl ? quadroEl.clientHeight : 15 * 37.8;
-    const larguraCelula = quadroW / colunas;
-    const alturaCelula = quadroH / linhas;
+    const larguraCelula = 20 / colunas;
+    const alturaCelula = 15 / linhas;
     
     let sextante, coluna, linha;
     
@@ -355,8 +350,8 @@ function gerarPosicaoAleatoria(tipoEstimulo) {
         sextante = null;
     }
     
-    const x = (coluna * larguraCelula) + (larguraCelula / 2) - 10;
-    const y = (linha * alturaCelula) + (alturaCelula / 2) - 10;
+    const x = (coluna * larguraCelula * 37.8) + (larguraCelula * 37.8 / 2) - 10;
+    const y = (linha * alturaCelula * 37.8) + (alturaCelula * 37.8 / 2) - 10;
     
     return { x, y, coluna, linha, sextante };
 }
@@ -408,9 +403,6 @@ function processarRespostaSustentada(event) {
         if (respostaDetectadaSustentada) return;
         
         const tempoReacao = performance.now() - tempoInicioEstimulo;
-        var modo = window._ultimaEntradaTouch ? 'touch' : 'teclado';
-        window._ultimaEntradaTouch = false;
-        if (window.dispositivoBAE) window.dispositivoBAE.registrar(modo, tempoReacao);
         respostaDetectadaSustentada = true;
         todosTemposReacao.push(tempoReacao);
         
@@ -471,7 +463,6 @@ function processarRespostaSustentada(event) {
 // ===== FINALIZAÇÃO DO TESTE =====
 // Linha 402-450: Finalização e cálculo de resultados
 function finalizarTesteSustentada() {
-    if (window.touchControls) window.touchControls.limpar();
     testeAtivoSustentada = false;
     fimTeste = performance.now();
     
@@ -605,9 +596,7 @@ function salvarResultadoTesteSustentada() {
         impulsividade: respostasImpulsivas,
         sextantes: JSON.parse(JSON.stringify(desempenhoPorSextante)),
         faixaEtaria: (window.idadePaciente || 18) < 13 ? 'crianca' : (window.idadePaciente || 18) >= 60 ? 'idoso' : 'adulto',
-        statusTeste: 'CONCLUÍDO',
-        dispositivo: window.dispositivoBAE ? window.dispositivoBAE.obterInfoDispositivo() : null,
-        modoEntrada: window.dispositivoBAE ? window.dispositivoBAE.obterResumo('sustentada') : null
+        statusTeste: 'CONCLUÍDO'
     };
     
     if (typeof salvarResultadoTeste === 'function') {
