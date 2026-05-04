@@ -1,54 +1,73 @@
 // ===== SISTEMA DE HOVER PARA BOTÕES DE NAVEGAÇÃO =====
 
 function configurarHoverBotoes() {
+    if (document.getElementById('btn-hamburger')) return;
     if (document.getElementById('area-hover-botoes')) return;
     
-    const areaHover = document.createElement('div');
-    areaHover.id = 'area-hover-botoes';
-    areaHover.style.cssText = `
-        position: fixed;
-        left: 0;
-        top: 0;
-        width: 50px;
-        height: 100vh;
-        z-index: 9999;
-        background: transparent;
-        pointer-events: auto;
-    `;
-    document.body.appendChild(areaHover);
+    var isTouch = window.dispositivoBAE && window.dispositivoBAE.isTouch;
     
-    const containerBotoes = document.createElement('div');
-    containerBotoes.id = 'container-botoes-hover';
-    containerBotoes.style.cssText = `
-        position: fixed;
-        left: -80px;
-        top: 50%;
-        transform: translateY(-50%);
-        z-index: 10000;
-        transition: left 0.3s ease;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-    `;
-    document.body.appendChild(containerBotoes);
-    
-    moverBotoesParaContainer(containerBotoes);
-    
-    areaHover.addEventListener('mouseenter', () => {
-        containerBotoes.style.left = '10px';
-    });
-    
-    areaHover.addEventListener('mouseleave', () => {
-        containerBotoes.style.left = '-80px';
-    });
-    
-    containerBotoes.addEventListener('mouseenter', () => {
-        containerBotoes.style.left = '10px';
-    });
-    
-    containerBotoes.addEventListener('mouseleave', () => {
-        containerBotoes.style.left = '-80px';
-    });
+    if (isTouch) {
+        var btnHamburger = document.createElement('button');
+        btnHamburger.id = 'btn-hamburger';
+        btnHamburger.textContent = '\u2630';
+        btnHamburger.style.cssText = 'position:fixed;left:10px;top:10px;width:45px;height:45px;border-radius:50%;border:none;background:#333;color:white;font-size:24px;cursor:pointer;z-index:10001;box-shadow:0 2px 8px rgba(0,0,0,0.3);-webkit-tap-highlight-color:transparent;';
+        document.body.appendChild(btnHamburger);
+        
+        var containerBotoes = document.createElement('div');
+        containerBotoes.id = 'container-botoes-hover';
+        containerBotoes.style.cssText = 'position:fixed;left:-80px;top:60px;z-index:10000;transition:left 0.3s ease;display:flex;flex-direction:column;gap:10px;';
+        document.body.appendChild(containerBotoes);
+        
+        var bp = document.createElement('button');
+        estilizarBotaoHover(bp, '#e74c3c', '\ud83d\uded1');
+        bp.onclick = pararTeste;
+        containerBotoes.appendChild(bp);
+        
+        var bb = document.createElement('button');
+        estilizarBotaoHover(bb, '#3498db', '\u23ed\ufe0f');
+        bb.onclick = bypassarTestes;
+        containerBotoes.appendChild(bb);
+        
+        var bv = document.createElement('button');
+        estilizarBotaoHover(bv, '#f39c12', '\u23ee\ufe0f');
+        bv.onclick = voltarTeste;
+        containerBotoes.appendChild(bv);
+        
+        criarBotaoPDFHover(containerBotoes);
+        
+        var aberto = false;
+        btnHamburger.addEventListener('click', function() {
+            aberto = !aberto;
+            containerBotoes.style.left = aberto ? '10px' : '-80px';
+            btnHamburger.textContent = aberto ? '\u2715' : '\u2630';
+        });
+        
+        document.addEventListener('click', function(e) {
+            if (aberto && !containerBotoes.contains(e.target) && e.target !== btnHamburger) {
+                aberto = false;
+                containerBotoes.style.left = '-80px';
+                btnHamburger.textContent = '\u2630';
+            }
+        });
+    } else {
+        // DESKTOP: hover na lateral esquerda (comportamento original)
+        var areaHover = document.createElement('div');
+        areaHover.id = 'area-hover-botoes';
+        areaHover.style.cssText = 'position:fixed;left:0;top:0;width:50px;height:100vh;z-index:9999;background:transparent;pointer-events:auto;';
+        document.body.appendChild(areaHover);
+        
+        var containerBotoes = document.createElement('div');
+        containerBotoes.id = 'container-botoes-hover';
+        containerBotoes.style.cssText = 'position:fixed;left:-80px;top:50%;transform:translateY(-50%);z-index:10000;transition:left 0.3s ease;display:flex;flex-direction:column;gap:10px;';
+        document.body.appendChild(containerBotoes);
+        
+        moverBotoesParaContainer(containerBotoes);
+        
+        areaHover.addEventListener('mouseenter', function() { containerBotoes.style.left = '10px'; });
+        areaHover.addEventListener('mouseleave', function() { containerBotoes.style.left = '-80px'; });
+        containerBotoes.addEventListener('mouseenter', function() { containerBotoes.style.left = '10px'; });
+        containerBotoes.addEventListener('mouseleave', function() { containerBotoes.style.left = '-80px'; });
+    }
 }
 
 function moverBotoesParaContainer(container) {
