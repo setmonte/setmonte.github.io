@@ -1,5 +1,6 @@
 function startTesteConcentrada() {
   if (typeof marcarBypassados === 'function') marcarBypassados();
+  if (window.dispositivoBAE) window.dispositivoBAE.iniciarTeste('concentrada');
   console.log("Iniciando startTesteConcentrada");
 
   const birthDate = localStorage.getItem('dataNascimento');
@@ -117,6 +118,7 @@ function showInstructionsConc() {
   ctxConc.textAlign = 'center';
   const centerX = WIDTH_CONC / 2;
 
+  const isTouchDevice = window.dispositivoBAE && window.dispositivoBAE.isTouch;
   const lines = [
     "ATENÇÃO CONCENTRADA",
     "",
@@ -124,7 +126,7 @@ function showInstructionsConc() {
     "Uma será ligeiramente mais longa que a outra.",
     "",
     "Sua tarefa é indicar QUAL LINHA É MAIS LONGA",
-    "usando as TECLAS DE SETA do teclado:",
+    isTouchDevice ? "usando os BOTÕES NA TELA:" : "usando as TECLAS DE SETA do teclado:",
     "",
     "←  = LINHA da ESQUERDA",
     "→  = LINHA da DIREITA",
@@ -134,7 +136,7 @@ function showInstructionsConc() {
     "Responda assim que perceber.",
     `O teste tem ${CONFIG_CONC.numTrials} tentativas.`,
     "",
-    "PRESSIONE ESPAÇO PARA COMEÇAR"
+    isTouchDevice ? "TOQUE EM COMEÇAR" : "PRESSIONE ESPAÇO PARA COMEÇAR"
   ];
 
   const startY = 80;
@@ -157,11 +159,13 @@ function showInstructionsConc() {
     if (e.code === 'Space' && isTestRunningConc) {
       e.preventDefault();
       document.removeEventListener('keydown', startListener);
+      if (window.touchControls) window.touchControls.limpar();
       window._concStartTime = performance.now();
       runTrialConc();
     }
   };
   document.addEventListener('keydown', startListener);
+  if (window.touchControls) window.touchControls.mostrarBotaoEspaco('COMEÇAR');
 }
 
 function runTrialConc() {
@@ -193,11 +197,15 @@ function runTrialConc() {
         if (response === null) {
           response = e.key;
           rt = performance.now() - trialStart;
+          var modo = window._ultimaEntradaTouch ? 'touch' : 'teclado';
+          window._ultimaEntradaTouch = false;
+          if (window.dispositivoBAE) window.dispositivoBAE.registrar(modo, rt);
           document.removeEventListener('keydown', responseListener);
         }
       }
     };
     document.addEventListener('keydown', responseListener);
+    if (window.touchControls) window.touchControls.mostrarBotoesConcentrada();
 
     setTimeout(() => {
       document.removeEventListener('keydown', responseListener);
@@ -233,6 +241,7 @@ function runTrialConc() {
 }
 
 function endTesteConcentrada(abandonado = false) {
+  if (window.touchControls) window.touchControls.limpar();
   console.log("🎯 ENDTEST CONCENTRADA CHAMADO!");
 
   if (testeJaFinalizadoConc) {
@@ -272,7 +281,9 @@ function endTesteConcentrada(abandonado = false) {
     diferenciaLinhas: CONFIG_CONC.difference,
     janelaResposta: CONFIG_CONC.responseWindow,
     abandonado: abandonado,
-    statusTeste: abandonado ? 'ABANDONADO' : 'CONCLUÍDO'
+    statusTeste: abandonado ? 'ABANDONADO' : 'CONCLUÍDO',
+    dispositivo: window.dispositivoBAE ? window.dispositivoBAE.obterInfoDispositivo() : null,
+    modoEntrada: window.dispositivoBAE ? window.dispositivoBAE.obterResumo('concentrada') : null
   };
 
   if (typeof salvarResultadoTeste === 'function') {

@@ -38,6 +38,7 @@ function obterConfigTeste() {
 // Linha 42-75: Função principal de inicialização do teste
 function iniciarTesteAlternado() {
   if (typeof marcarBypassados === 'function') marcarBypassados();
+  if (window.dispositivoBAE) window.dispositivoBAE.iniciarTeste('alternada');
   try {
     // Esconde botão iniciar
     const botaoIniciar = document.getElementById('iniciarAlternado');
@@ -97,64 +98,64 @@ function resetTeste() {
   tempoInicioResposta = 0;
 }
 
-// ===== GERAÇÃO DE SEQUÊNCIA VERDADEIRAMENTE ALEATÓRIA =====
+// ===== GERAÇÃO DE SEQUÊNCIA COM ESPAÇAMENTO MÍNIMO =====
+// Padrão CPT (Conners, 1995; TOVA): mínimo 2 distratores entre alvos
+// Evita efeito de expectativa sequencial (Nickerson, 2002)
 function gerarSequenciaLimpa() {
-  // CONTROLE RIGOROSO BASEADO NA IDADE
-  const totalAlvos = Math.floor(configTeste.totalPares * 0.20); // 20% do total
-  const alvosAmbivalentes = Math.floor(totalAlvos * 0.10); // 2% do total (10% dos alvos)
+  const totalAlvos = Math.floor(configTeste.totalPares * 0.20);
+  const alvosAmbivalentes = Math.floor(totalAlvos * 0.10);
   const alvosRestantes = totalAlvos - alvosAmbivalentes;
   const alvosCor = Math.floor(alvosRestantes / 2);
   const alvosForma = alvosRestantes - alvosCor;
+  const MIN_GAP = 2; // mínimo 2 distratores entre qualquer alvo
   
-  console.log(`🎯 DISTRIBUIÇÃO ALEATÓRIA:`);
+  console.log(`🎯 DISTRIBUIÇÃO COM ESPAÇAMENTO (gap=${MIN_GAP}):`);
   console.log(`🎯 Total pares: ${configTeste.totalPares}`);
-  console.log(`🎯 Alvos COR: ${alvosCor}`);
-  console.log(`🎯 Alvos FORMA: ${alvosForma}`);
-  console.log(`🎯 Ambivalentes: ${alvosAmbivalentes}`);
+  console.log(`🎯 Alvos COR: ${alvosCor} | FORMA: ${alvosForma} | AMBIVALENTES: ${alvosAmbivalentes}`);
   console.log(`🎯 Total alvos: ${totalAlvos} (${(totalAlvos/configTeste.totalPares*100).toFixed(1)}%)`);
   
-  // Cria array com todas as posições possíveis (exceto primeira)
-  let posicoesDisponiveis = [];
-  for (let i = 1; i < configTeste.totalPares; i++) {
-    posicoesDisponiveis.push(i);
-  }
-  
-  // Embaralha posições usando Fisher-Yates
-  for (let i = posicoesDisponiveis.length - 1; i > 0; i--) {
+  // Cria array de tipos de alvo e embaralha
+  let tiposAlvo = [];
+  for (let i = 0; i < alvosCor; i++) tiposAlvo.push('cor');
+  for (let i = 0; i < alvosForma; i++) tiposAlvo.push('forma');
+  for (let i = 0; i < alvosAmbivalentes; i++) tiposAlvo.push('ambivalente');
+  for (let i = tiposAlvo.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [posicoesDisponiveis[i], posicoesDisponiveis[j]] = [posicoesDisponiveis[j], posicoesDisponiveis[i]];
+    [tiposAlvo[i], tiposAlvo[j]] = [tiposAlvo[j], tiposAlvo[i]];
   }
   
-  // Inicializa sequência com distratores
+  // Inicializa tudo como distrator
   sequenciaTeste = new Array(configTeste.totalPares).fill('none');
   
-  // Distribui alvos nas primeiras posições embaralhadas
-  let posIndex = 0;
-  
-  // Distribui alvos de COR
-  for (let i = 0; i < alvosCor; i++) {
-    sequenciaTeste[posicoesDisponiveis[posIndex]] = 'cor';
-    posIndex++;
+  // Distribui alvos com espaçamento mínimo garantido
+  let candidatas = [];
+  for (let i = 1; i < configTeste.totalPares; i++) candidatas.push(i);
+  // Fisher-Yates
+  for (let i = candidatas.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [candidatas[i], candidatas[j]] = [candidatas[j], candidatas[i]];
   }
   
-  // Distribui alvos de FORMA
-  for (let i = 0; i < alvosForma; i++) {
-    sequenciaTeste[posicoesDisponiveis[posIndex]] = 'forma';
-    posIndex++;
+  let selecionadas = [];
+  for (let c = 0; c < candidatas.length && selecionadas.length < totalAlvos; c++) {
+    let pos = candidatas[c];
+    let valida = true;
+    for (let s = 0; s < selecionadas.length; s++) {
+      if (Math.abs(pos - selecionadas[s]) <= MIN_GAP) { valida = false; break; }
+    }
+    if (valida) selecionadas.push(pos);
+  }
+  selecionadas.sort((a, b) => a - b);
+  
+  for (let i = 0; i < selecionadas.length && i < tiposAlvo.length; i++) {
+    sequenciaTeste[selecionadas[i]] = tiposAlvo[i];
   }
   
-  // Distribui alvos AMBIVALENTES
-  for (let i = 0; i < alvosAmbivalentes; i++) {
-    sequenciaTeste[posicoesDisponiveis[posIndex]] = 'ambivalente';
-    posIndex++;
-  }
-  
-  // Salva configuração
   configTeste.alvosCor = alvosCor;
   configTeste.alvosForma = alvosForma;
   configTeste.alvosAmbivalentes = alvosAmbivalentes;
   
-  console.log(`🎯 DISTRIBUIÇÃO CONCLUÍDA: ${totalAlvos} alvos espalhados aleatoriamente`);
+  console.log(`🎯 DISTRIBUIÇÃO CONCLUÍDA: ${selecionadas.length} alvos com gap mínimo=${MIN_GAP}`);
 }
 
 // ===== INSTRUÇÕES DO TESTE =====
@@ -165,35 +166,45 @@ function mostrarInstrucoesAlternada(callback) {
     return;
   }
   
+  var isTouchDevice = window.dispositivoBAE && window.dispositivoBAE.isTouch;
+  var isMobile = window.innerWidth <= 768;
+  
+  // Expande quadro temporariamente para caber instruções no mobile
+  if (isMobile) {
+    quadro.style.height = 'auto';
+    quadro.style.minHeight = '200px';
+    quadro.style.overflow = 'auto';
+  }
+  
   quadro.innerHTML = `
     <div style="
       color: white;
       text-align: center;
-      padding: 20px;
+      padding: ${isMobile ? '10px' : '20px'};
       font-family: Arial, sans-serif;
       background: rgba(0,0,0,0.8);
       border-radius: 10px;
-      margin: 20px;
+      margin: ${isMobile ? '5px' : '20px'};
+      font-size: ${isMobile ? '13px' : '16px'};
     ">
-      <h2 style="color: #FFD700; margin-bottom: 20px;">ATENÇÃO ALTERNADA</h2>
-      <p style="font-size: 18px; margin-bottom: 15px;">
+      <h2 style="color: #FFD700; margin-bottom: ${isMobile ? '10px' : '20px'}; font-size: ${isMobile ? '18px' : '24px'};">ATENÇÃO ALTERNADA</h2>
+      <p style="margin-bottom: 10px;">
         Você verá <strong>DUAS FIGURAS</strong> lado a lado.
       </p>
-      <p style="font-size: 18px; margin-bottom: 15px;">
-        Pressione <strong>ESPAÇO</strong> quando as figuras tiverem:
+      <p style="margin-bottom: 10px;">
+        ${isTouchDevice ? 'Toque em <strong>RESPONDER</strong>' : 'Pressione <strong>ESPAÇO</strong>'} quando tiverem:
       </p>
-      <div style="font-size: 16px; margin: 20px 0;">
-        • <strong>MESMA COR</strong> (ambas vermelhas, ambas azuis, etc.)<br>
-        • <strong>MESMA FORMA</strong> (ambos quadrados, ambos círculos, etc.)
+      <div style="margin: 10px 0;">
+        • <strong>MESMA COR</strong><br>
+        • <strong>MESMA FORMA</strong>
       </div>
-      <p style="font-size: 16px; color: #FFD700;">
-        <strong>NÃO</strong> pressione se forem diferentes!
+      <p style="color: #FFD700;">
+        <strong>NÃO</strong> ${isTouchDevice ? 'toque' : 'pressione'} se forem diferentes!
       </p>
-      <button onclick="this.parentElement.parentElement.remove(); arguments[0]()" 
-              style="
-                margin-top: 20px;
+      <button style="
+                margin-top: 10px;
                 padding: 10px 20px;
-                font-size: 18px;
+                font-size: ${isMobile ? '16px' : '18px'};
                 background: #27ae60;
                 color: white;
                 border: none;
@@ -203,10 +214,15 @@ function mostrarInstrucoesAlternada(callback) {
     </div>
   `;
   
-  // Configura o botão para chamar o callback
   const botao = quadro.querySelector('button');
   botao.onclick = () => {
     quadro.innerHTML = '';
+    // Restaura tamanho original no mobile
+    if (isMobile) {
+      quadro.style.height = '';
+      quadro.style.minHeight = '';
+      quadro.style.overflow = '';
+    }
     callback();
   };
 }
@@ -264,6 +280,7 @@ function executarTeste() {
   
   // Adiciona listener único no document com capture
   document.addEventListener('keydown', processarTecla, { capture: true, passive: false });
+  if (window.touchControls) window.touchControls.mostrarBotaoResponder();
   
   // Garante foco para captura de teclas
   document.body.focus();
@@ -399,10 +416,13 @@ function processarTecla(event) {
     event.preventDefault();
     event.stopImmediatePropagation();
     
-    aguardandoResposta = false; // Bloqueia imediatamente
+    aguardandoResposta = false;
     
     const agora = performance.now();
     const tempoReacao = agora - tempoInicioResposta;
+    var modo = window._ultimaEntradaTouch ? 'touch' : 'teclado';
+    window._ultimaEntradaTouch = false;
+    if (window.dispositivoBAE) window.dispositivoBAE.registrar(modo, tempoReacao);
     processarResposta(tempoReacao);
   }
 }
@@ -542,6 +562,7 @@ function criarFiguraSVG(forma, cor) {
 
 // ===== FINALIZAÇÃO DO TESTE =====
 function finalizarTesteAlternada() {
+  if (window.touchControls) window.touchControls.limpar();
   testeAtivoAlternada = false;
   document.removeEventListener('keydown', processarTecla, { capture: true });
   document.removeEventListener('keydown', processarTecla, true);
@@ -752,7 +773,9 @@ function salvarResultadosAlternada() {
     totalPares: configTeste.totalPares,
     faixaEtaria: configTeste.faixa,
     intervalo: configTeste.intervalo,
-    statusTeste: 'CONCLUÍDO'
+    statusTeste: 'CONCLUÍDO',
+    dispositivo: window.dispositivoBAE ? window.dispositivoBAE.obterInfoDispositivo() : null,
+    modoEntrada: window.dispositivoBAE ? window.dispositivoBAE.obterResumo('alternada') : null
   };
   if (typeof salvarResultadoTeste === 'function') salvarResultadoTeste('alternada', resultados);
 }

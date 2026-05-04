@@ -3,32 +3,38 @@ function mostrarInstrucoesDividida() {
     const quadro = document.getElementById('quadroDividida');
     const instrucoesDiv = document.createElement('div');
     instrucoesDiv.className = 'instrucoes-dividida';
+    var isTouchDevice = window.dispositivoBAE && window.dispositivoBAE.isTouch;
+    var isMobile = window.innerWidth <= 768;
+    if (isMobile) {
+        instrucoesDiv.style.cssText = 'display:flex;flex-direction:column;align-items:center;width:100%;height:auto;max-height:90vh;overflow-y:auto;padding:15px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);border-radius:10px;color:white;text-align:center;font-size:14px;box-sizing:border-box;';
+    }
     instrucoesDiv.innerHTML = `
-        <div class="instrucoes-conteudo">
+        <div class="instrucoes-conteudo" ${isMobile ? 'style="font-size:14px;line-height:1.4;margin-bottom:10px;"' : ''}>
             <p><strong>Você verá figuras e ouvirá sons ao mesmo tempo.</strong></p>
             <p>Sua tarefa é detectar os ALVOS:</p>
-            <div class="alvos-container">
-                <p><span class="triangulo-exemplo"></span> <strong>VISUAL:</strong> Triângulo branco → Pressione <span class="tecla-espaco">ESPAÇO</span></p>
-                <p>🔊 <strong>AUDITIVO:</strong> Som médio (400Hz) → Pressione <span class="tecla-enter">ENTER</span></p>
+            <div class="alvos-container" ${isMobile ? 'style="margin:10px 0;padding:10px;"' : ''}>
+                <p><span class="triangulo-exemplo" ${isMobile ? 'style="border-left-width:15px;border-right-width:15px;border-bottom-width:26px;"' : ''}></span> <strong>VISUAL:</strong> Triângulo → ${isTouchDevice ? '<span class="tecla-espaco">👁️ VISUAL</span>' : '<span class="tecla-espaco">ESPAÇO</span>'}</p>
+                <p>🔊 <strong>AUDITIVO:</strong> 400Hz → ${isTouchDevice ? '<span class="tecla-enter">🔊 AUDITIVO</span>' : '<span class="tecla-enter">ENTER</span>'}</p>
             </div>
-            <div class="familiarizacao-container">
-                <p><strong>Primeiro, familiarize-se com os sons:</strong></p>
+            <div class="familiarizacao-container" ${isMobile ? 'style="margin:10px 0;padding:10px;"' : ''}>
+                <p><strong>Familiarize-se com os sons:</strong></p>
                 <div class="botoes-som">
-                    <button class="botao-som" onclick="tocarSomFamiliarizacao(200)">Som Grave (200Hz)</button>
-                    <button class="botao-som botao-som-alvo" onclick="tocarSomFamiliarizacao(400)">Som ALVO (400Hz)</button>
-                    <button class="botao-som" onclick="tocarSomFamiliarizacao(800)">Som Agudo (800Hz)</button>
+                    <button class="botao-som" onclick="tocarSomFamiliarizacao(200)">Grave</button>
+                    <button class="botao-som botao-som-alvo" onclick="tocarSomFamiliarizacao(400)">ALVO</button>
+                    <button class="botao-som" onclick="tocarSomFamiliarizacao(800)">Agudo</button>
                 </div>
             </div>
             <p><strong>Ignore</strong> outras figuras e sons!</p>
         </div>
-        <button id="iniciarTesteDivididaAposInstrucoes" class="botao-iniciar">Iniciar Teste</button>
+        <button id="iniciarTesteDivididaAposInstrucoes" class="botao-iniciar" ${isMobile ? 'style="margin:10px auto;min-height:50px;"' : ''}>Iniciar Teste</button>
     `;
     quadro.innerHTML = '';
+    quadro.classList.add('instrucoes-ativas');
     quadro.appendChild(instrucoesDiv);
     return new Promise(function(resolve) {
         setTimeout(function() {
             var botao = document.getElementById('iniciarTesteDivididaAposInstrucoes');
-            if (botao) { botao.onclick = function() { quadro.innerHTML = ''; resolve(); }; }
+            if (botao) { botao.onclick = function() { quadro.classList.remove('instrucoes-ativas'); quadro.innerHTML = ''; resolve(); }; }
         }, 100);
     });
 }
@@ -53,6 +59,7 @@ function tocarSomFamiliarizacao(frequencia) {
 // ===== FUNÇÃO PRINCIPAL =====
 function iniciarTesteDividida() {
   if (typeof marcarBypassados === 'function') marcarBypassados();
+    if (window.dispositivoBAE) window.dispositivoBAE.iniciarTeste('dividida');
     var dividida = document.getElementById('testeDividida');
     if (!dividida || dividida.style.display === 'none') return;
 
@@ -72,10 +79,12 @@ function iniciarTesteDividida() {
     document.getElementById('quadroDividida').style.display = 'block';
 
     resetarContadoresDividida();
+    testeJaFinalizadoDividida = false;
     isTesteDivididaRunning = true;
     document.addEventListener('keydown', processarRespostaDividida);
 
     mostrarInstrucoesDividida().then(function() {
+        if (window.touchControls) window.touchControls.mostrarBotoesDividida();
         iniciarContagemRegressivaDividida(function() {
             gerarSequenciaEstimulosDividida(totalEstimulosDividida);
             console.log('✅ Sequência: ' + sequenciaEstimulosDividida.length + ' estímulos');
@@ -84,6 +93,15 @@ function iniciarTesteDividida() {
             apresentarEstimulo();
             intervalDividida = setInterval(apresentarEstimulo, CONFIG_DIVIDIDA.intervaloEstimulo);
             setTimeout(finalizarTesteDividida, duracaoSegundos * 1000);
+            // Monitor backup (como seletiva)
+            var _dividHoraInicio = Date.now();
+            window._dividMonitor = setInterval(function() {
+                if (!isTesteDivididaRunning) { clearInterval(window._dividMonitor); return; }
+                if ((Date.now() - _dividHoraInicio) / 1000 >= duracaoSegundos) {
+                    console.log('🚨 DIVIDIDA: Monitor backup ativado!');
+                    finalizarTesteDividida();
+                }
+            }, 10000);
         });
     });
 }
@@ -183,16 +201,17 @@ function exibirFigura() {
     container.style.position = 'absolute';
     container.style.width = '60px';
     container.style.height = '60px';
-    var maxX = 20 * 37.8 - 60;
-    var maxY = 15 * 37.8 - 60;
+    var quadroEl = document.getElementById('quadroDividida');
+    var maxX = (quadroEl ? quadroEl.clientWidth : 20 * 37.8) - 60;
+    var maxY = (quadroEl ? quadroEl.clientHeight : 15 * 37.8) - 60;
     container.style.left = (Math.random() * maxX) + 'px';
     container.style.top = (Math.random() * maxY) + 'px';
     
     // Determina sextante (3 colunas x 2 linhas)
     var posXval = parseFloat(container.style.left);
     var posYval = parseFloat(container.style.top);
-    var terco = (20 * 37.8) / 3;
-    var metade = (15 * 37.8) / 2;
+    var terco = (quadroEl ? quadroEl.clientWidth : 20 * 37.8) / 3;
+    var metade = (quadroEl ? quadroEl.clientHeight : 15 * 37.8) / 2;
     var col = posXval < terco ? 0 : posXval < terco * 2 ? 1 : 2;
     var lin = posYval < metade ? 0 : 1;
     var sextMap = [['S1','S2','S3'],['S4','S5','S6']];
@@ -242,6 +261,9 @@ function processarRespostaDividida(event) {
         event.preventDefault();
         if (respostaVisualDetectada) return;
         respostaVisualDetectada = true;
+        var modo = window._ultimaEntradaTouch ? 'touch' : 'teclado';
+        window._ultimaEntradaTouch = false;
+        if (window.dispositivoBAE) window.dispositivoBAE.registrar(modo, tempoReacao);
         if (figuraAtualDividida === alvoVisual) {
             acertosVisuaisDividida++;
             temposReacaoVisuaisDividida.push(tempoReacao);
@@ -255,6 +277,9 @@ function processarRespostaDividida(event) {
         event.preventDefault();
         if (respostaAuditivaDetectada) return;
         respostaAuditivaDetectada = true;
+        var modoA = window._ultimaEntradaTouch ? 'touch' : 'teclado';
+        window._ultimaEntradaTouch = false;
+        if (window.dispositivoBAE) window.dispositivoBAE.registrar(modoA, tempoReacao);
         if (somAtualDividida === alvoAuditivo) {
             acertosAuditivosDividida++;
             temposReacaoAuditivosDividida.push(tempoReacao);
@@ -269,6 +294,7 @@ function processarRespostaDividida(event) {
 // ===== PARA TESTE =====
 function pararTesteDividida() {
     if (!isTesteDivididaRunning) return;
+    if (window.touchControls) window.touchControls.limpar();
     isTesteDivididaRunning = false;
     document.removeEventListener('keydown', processarRespostaDividida);
     if (intervalDividida) { clearInterval(intervalDividida); intervalDividida = null; }
@@ -279,8 +305,15 @@ function pararTesteDividida() {
 }
 
 // ===== FINALIZA TESTE =====
+var testeJaFinalizadoDividida = false;
 function finalizarTesteDividida() {
+    if (testeJaFinalizadoDividida) {
+        console.log('⚠️ DIVIDIDA: finalizarTeste já foi chamado, ignorando...');
+        return;
+    }
+    testeJaFinalizadoDividida = true;
     console.log('🏁 Finalizando Teste de Atenção Dividida');
+    if (window._dividMonitor) { clearInterval(window._dividMonitor); window._dividMonitor = null; }
     pararTesteDividida();
 
     // Verifica omissão do último estímulo
@@ -324,7 +357,9 @@ function finalizarTesteDividida() {
         acertosPorSextante: JSON.parse(JSON.stringify(acertosPorSextanteDividida)),
         faixaEtaria: CONFIG_DIVIDIDA.faixa,
         intervaloEstimulo: CONFIG_DIVIDIDA.intervaloEstimulo,
-        statusTeste: 'CONCLUÍDO'
+        statusTeste: 'CONCLUÍDO',
+        dispositivo: window.dispositivoBAE ? window.dispositivoBAE.obterInfoDispositivo() : null,
+        modoEntrada: window.dispositivoBAE ? window.dispositivoBAE.obterResumo('dividida') : null
     };
 
     if (typeof salvarResultadoTeste === 'function') salvarResultadoTeste('dividida', resultados);
@@ -384,17 +419,36 @@ function mostrarParabensDividida() {
     setTimeout(function() { if (quadro.contains(telaParabens)) quadro.removeChild(telaParabens); }, 4000);
 }
 
-// ===== GERA SEQUÊNCIA =====
+// ===== GERA SEQUÊNCIA COM ESPAÇAMENTO MÍNIMO =====
+// Padrão CPT (Conners, 1995; TOVA): mínimo 2 distratores entre alvos
+// Evita efeito de expectativa sequencial (Nickerson, 2002)
 function gerarSequenciaEstimulosDividida(total) {
     var alvosVisuais = Math.floor(total * 0.1);
     var alvosAuditivos = Math.floor(total * 0.1);
-    var distratores = total - alvosVisuais - alvosAuditivos;
-    var tipos = [];
+    var totalAlvos = alvosVisuais + alvosAuditivos;
+    var MIN_GAP = 2; // mínimo 2 distratores entre qualquer alvo
+
+    // Cria array de tipos de alvo e embaralha
+    var tiposAlvo = [];
     var i;
-    for (i = 0; i < alvosVisuais; i++) tipos.push('visual');
-    for (i = 0; i < alvosAuditivos; i++) tipos.push('auditivo');
-    for (i = 0; i < distratores; i++) tipos.push('distrator');
-    tipos = embaralharSemSequenciaDividida(tipos);
+    for (i = 0; i < alvosVisuais; i++) tiposAlvo.push('visual');
+    for (i = 0; i < alvosAuditivos; i++) tiposAlvo.push('auditivo');
+    for (i = tiposAlvo.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var tmp = tiposAlvo[i]; tiposAlvo[i] = tiposAlvo[j]; tiposAlvo[j] = tmp;
+    }
+
+    // Distribui alvos com espaçamento mínimo garantido
+    var tipos = new Array(total);
+    for (i = 0; i < total; i++) tipos[i] = 'distrator';
+
+    // Calcula posições válidas com espaçamento
+    var posicoes = distribuirComEspacamento(total, totalAlvos, MIN_GAP);
+    for (i = 0; i < posicoes.length && i < tiposAlvo.length; i++) {
+        tipos[posicoes[i]] = tiposAlvo[i];
+    }
+
+    console.log('🎯 Sequência dividida: ' + totalAlvos + ' alvos (' + alvosVisuais + 'V+' + alvosAuditivos + 'A) em ' + total + ' estímulos, gap mínimo=' + MIN_GAP);
 
     sequenciaEstimulosDividida = tipos.map(function(tipo) {
         if (tipo === 'visual') {
@@ -411,20 +465,28 @@ function gerarSequenciaEstimulosDividida(total) {
     });
 }
 
-function embaralharSemSequenciaDividida(array) {
-    var tentativas = 0, resultado;
-    do {
-        resultado = array.slice().sort(function() { return Math.random() - 0.5; });
-        tentativas++;
-    } while (temSequenciaConsecutivaDividida(resultado) && tentativas < 100);
-    return resultado;
-}
-
-function temSequenciaConsecutivaDividida(array) {
-    for (var i = 0; i < array.length - 1; i++) {
-        if ((array[i] === 'visual' && array[i + 1] === 'visual') || (array[i] === 'auditivo' && array[i + 1] === 'auditivo')) return true;
+// Distribui N alvos em T posições com gap mínimo entre qualquer par de alvos
+function distribuirComEspacamento(totalPosicoes, totalAlvos, minGap) {
+    // Gera posições candidatas (excluindo as primeiras minGap posições)
+    var candidatas = [];
+    for (var i = minGap; i < totalPosicoes; i++) candidatas.push(i);
+    // Fisher-Yates
+    for (var k = candidatas.length - 1; k > 0; k--) {
+        var j = Math.floor(Math.random() * (k + 1));
+        var tmp = candidatas[k]; candidatas[k] = candidatas[j]; candidatas[j] = tmp;
     }
-    return false;
+    // Seleciona posições respeitando gap
+    var selecionadas = [];
+    for (var c = 0; c < candidatas.length && selecionadas.length < totalAlvos; c++) {
+        var pos = candidatas[c];
+        var valida = true;
+        for (var s = 0; s < selecionadas.length; s++) {
+            if (Math.abs(pos - selecionadas[s]) <= minGap) { valida = false; break; }
+        }
+        if (valida) selecionadas.push(pos);
+    }
+    selecionadas.sort(function(a, b) { return a - b; });
+    return selecionadas;
 }
 
 console.log('✅ Teste de Atenção Dividida carregado!');
