@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SΨM — Escalas e Instrumentos</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f2f5; min-height: 100vh; padding: 20px;
+        }
+        .container {
+            max-width: 1100px; margin: 0 auto; background: white;
+            border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #1a237e 0%, #4a148c 50%, #00695c 100%);
+            color: white; padding: 40px 30px; text-align: center;
+        }
+        .header h1 { font-size: 2.5em; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        .header p { font-size: 1.1em; opacity: 0.9; }
+        .content { padding: 30px; }
+
+        .categoria {
+            margin-bottom: 40px;
+        }
+        .categoria-header {
+            display: flex; align-items: center; gap: 12px;
+            padding: 15px 20px; border-radius: 10px; margin-bottom: 20px;
+            font-size: 1.3em; font-weight: 700; color: white;
+        }
+        .cat-personalidade { background: linear-gradient(135deg, #6a1b9a, #e91e63); }
+        .cat-autismo { background: linear-gradient(135deg, #1565c0, #7b68ee); }
+        .cat-ansiedade { background: linear-gradient(135deg, #e65100, #f57f17); }
+        .cat-superdotacao { background: linear-gradient(135deg, #2e7d32, #66bb6a); }
+        .cat-outros { background: linear-gradient(135deg, #37474f, #78909c); }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 15px;
+        }
+        .card {
+            background: white; border-radius: 10px; padding: 20px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+            border-left: 4px solid #6a1b9a;
+            transition: all 0.3s;
+            text-decoration: none; color: inherit;
+            display: block;
+        }
+        .card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        .card-sigla {
+            font-size: 1.1em; font-weight: 800; color: #6a1b9a;
+            margin-bottom: 5px;
+        }
+        .card-nome {
+            font-size: 0.85em; color: #555; margin-bottom: 8px; line-height: 1.4;
+        }
+        .card-info {
+            font-size: 0.75em; color: #888; display: flex; gap: 10px; flex-wrap: wrap;
+        }
+        .card-badge {
+            background: #f3e5f5; color: #6a1b9a; padding: 2px 8px;
+            border-radius: 10px; font-size: 0.75em; font-weight: 600;
+        }
+
+        /* Cores por cluster */
+        .cluster-a .card { border-left-color: #1a237e; }
+        .cluster-a .card-sigla { color: #1a237e; }
+        .cluster-a .card-badge { background: #e8eaf6; color: #1a237e; }
+
+        .cluster-b .card { border-left-color: #6a1b9a; }
+        .cluster-b .card-sigla { color: #6a1b9a; }
+        .cluster-b .card-badge { background: #f3e5f5; color: #6a1b9a; }
+
+        .cluster-c .card { border-left-color: #00695c; }
+        .cluster-c .card-sigla { color: #00695c; }
+        .cluster-c .card-badge { background: #e0f2f1; color: #00695c; }
+
+        .cat-autismo-cards .card { border-left-color: #1565c0; }
+        .cat-autismo-cards .card-sigla { color: #1565c0; }
+        .cat-autismo-cards .card-badge { background: #e3f2fd; color: #1565c0; }
+
+        .cat-ansiedade-cards .card { border-left-color: #e65100; }
+        .cat-ansiedade-cards .card-sigla { color: #e65100; }
+        .cat-ansiedade-cards .card-badge { background: #fff3e0; color: #e65100; }
+
+        .cat-superdotacao-cards .card { border-left-color: #2e7d32; }
+        .cat-superdotacao-cards .card-sigla { color: #2e7d32; }
+        .cat-superdotacao-cards .card-badge { background: #e8f5e9; color: #2e7d32; }
+
+        .cat-outros-cards .card { border-left-color: #37474f; }
+        .cat-outros-cards .card-sigla { color: #37474f; }
+        .cat-outros-cards .card-badge { background: #eceff1; color: #37474f; }
+
+        .sub-header {
+            font-size: 0.9em; color: #666; margin-bottom: 12px;
+            padding-left: 10px; border-left: 3px solid #ccc;
+            font-style: italic;
+        }
+
+        .footer {
+            text-align: center; padding: 20px; color: #888;
+            font-size: 0.85em; border-top: 1px solid #eee; margin-top: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .cards-grid { grid-template-columns: 1fr; }
+            .header h1 { font-size: 1.8em; }
+        }
+    </style>
+</head>
+<body>
+<div style="padding:10px 20px;background:#2e7d32;"><a href="../" style="display:inline-block;background:#fff;color:#2e7d32;text-decoration:none;font-family:Segoe UI,Arial,sans-serif;font-size:14px;font-weight:bold;padding:8px 20px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.15);">⬅ Voltar ao Início</a></div>
+
+<div class="container">
+    <div class="header">
+        <h1>📋 Escalas e Instrumentos</h1>
+        <p>Instrumentos de domínio público digitalizados para aplicação online</p>
+        <p style="font-size:0.85em; opacity:0.7; margin-top:8px;">Geração automática de relatório PDF com escores e interpretação</p>
+    </div>
+
+    <div class="content">
+
+        <!-- TRANSTORNOS DE PERSONALIDADE -->
+        <div class="categoria">
+            <div class="categoria-header cat-personalidade">🎭 Transtornos de Personalidade (DSM-5-TR)</div>
+
+            <div class="sub-header">Cluster A — Excêntricos / Estranhos</div>
+            <div class="cards-grid cluster-a" style="margin-bottom:20px;">
+                <a href="ert-pp.html" class="card">
+                    <div class="card-sigla">ERT-PP</div>
+                    <div class="card-nome">Escala de Rastreio para Traços de Personalidade Paranoide</div>
+                    <div class="card-info"><span class="card-badge">36 itens</span><span class="card-badge">7 critérios</span></div>
+                </a>
+                <a href="ert-pes.html" class="card">
+                    <div class="card-sigla">ERT-PEs</div>
+                    <div class="card-nome">Escala de Rastreio para Traços de Personalidade Esquizoide</div>
+                    <div class="card-info"><span class="card-badge">36 itens</span><span class="card-badge">7 critérios</span></div>
+                </a>
+                <a href="ert-pet.html" class="card">
+                    <div class="card-sigla">ERT-PEt</div>
+                    <div class="card-nome">Escala de Rastreio para Traços de Personalidade Esquizotípica</div>
+                    <div class="card-info"><span class="card-badge">36 itens</span><span class="card-badge">9 critérios</span></div>
+                </a>
+            </div>
+
+            <div class="sub-header">Cluster B — Dramáticos / Emocionais</div>
+            <div class="cards-grid cluster-b" style="margin-bottom:20px;">
+                <a href="ert-pa.html" class="card">
+                    <div class="card-sigla">ERT-PA</div>
+                    <div class="card-nome">Escala de Rastreio para Traços de Personalidade Antissocial</div>
+                    <div class="card-info"><span class="card-badge">36 itens</span><span class="card-badge">7 critérios</span></div>
+                </a>
+                <a href="ert-pb.html" class="card">
+                    <div class="card-sigla">ERT-PB</div>
+                    <div class="card-nome">Escala de Rastreio para Traços de Personalidade Borderline</div>
+                    <div class="card-info"><span class="card-badge">36 itens</span><span class="card-badge">9 critérios</span></div>
+                </a>
+                <a href="ert-ph.html" class="card">
+                    <div class="card-sigla">ERT-PH</div>
+                    <div class="card-nome">Escala de Rastreio para Traços de Personalidade Histriônica</div>
+                    <div class="card-info"><span class="card-badge">36 itens</span><span class="card-badge">8 critérios</span></div>
+                </a>
+                <a href="ert-pn.html" class="card">
+                    <div class="card-sigla">ERT-PN</div>
+                    <div class="card-nome">Escala de Rastreio para Traços de Personalidade Narcisista</div>
+                    <div class="card-info"><span class="card-badge">36 itens</span><span class="card-badge">9 critérios</span></div>
+                </a>
+            </div>
+
+            <div class="sub-header">Cluster C — Ansiosos / Medrosos</div>
+            <div class="cards-grid cluster-c">
+                <a href="ert-pev.html" class="card">
+                    <div class="card-sigla">ERT-PEv</div>
+                    <div class="card-nome">Escala de Rastreio para Traços de Personalidade Evitativa</div>
+                    <div class="card-info"><span class="card-badge">36 itens</span><span class="card-badge">7 critérios</span></div>
+                </a>
+                <a href="ert-pd.html" class="card">
+                    <div class="card-sigla">ERT-PD</div>
+                    <div class="card-nome">Escala de Rastreio para Traços de Personalidade Dependente</div>
+                    <div class="card-info"><span class="card-badge">36 itens</span><span class="card-badge">8 critérios</span></div>
+                </a>
+                <a href="ert-poc.html" class="card">
+                    <div class="card-sigla">ERT-POC</div>
+                    <div class="card-nome">Escala de Rastreio para Traços de Personalidade Obsessivo-Compulsiva</div>
+                    <div class="card-info"><span class="card-badge">36 itens</span><span class="card-badge">8 critérios</span></div>
+                </a>
+            </div>
+        </div>
+
+        <!-- AUTISMO E NEURODESENVOLVIMENTO -->
+        <div class="categoria">
+            <div class="categoria-header cat-autismo">🧠 Autismo e Neurodesenvolvimento</div>
+            <div class="cards-grid cat-autismo-cards">
+                <a href="bapq.html" class="card">
+                    <div class="card-sigla">BAPQ</div>
+                    <div class="card-nome">Broader Autism Phenotype Questionnaire — Fenótipo Ampliado do Autismo</div>
+                    <div class="card-info"><span class="card-badge">36 itens</span><span class="card-badge">Likert 6pts</span></div>
+                </a>
+                <a href="raads.html" class="card">
+                    <div class="card-sigla">RAADS-R</div>
+                    <div class="card-nome">Ritvo Autism Asperger Diagnostic Scale - Revised</div>
+                    <div class="card-info"><span class="card-badge">80 itens</span><span class="card-badge">4 domínios</span></div>
+                </a>
+                <a href="tea-ah.html" class="card">
+                    <div class="card-sigla">TEA/AH</div>
+                    <div class="card-nome">Questionário de Dupla Excepcionalidade (TEA + Altas Habilidades)</div>
+                    <div class="card-info"><span class="card-badge">Rastreio</span><span class="card-badge">Dupla Excepcionalidade</span></div>
+                </a>
+            </div>
+        </div>
+
+        <!-- ANSIEDADE -->
+        <div class="categoria">
+            <div class="categoria-header cat-ansiedade">😰 Ansiedade</div>
+            <div class="cards-grid cat-ansiedade-cards">
+                <a href="sasc-r.html" class="card">
+                    <div class="card-sigla">SASC-R</div>
+                    <div class="card-nome">Social Anxiety Scale for Children - Revised</div>
+                    <div class="card-info"><span class="card-badge">22 itens</span><span class="card-badge">3 subescalas</span></div>
+                </a>
+                <a href="escasi.html" class="card">
+                    <div class="card-sigla">ESCASI</div>
+                    <div class="card-nome">Escala de Ansiedade Infantil (6-8 anos)</div>
+                    <div class="card-info"><span class="card-badge">30 itens</span><span class="card-badge">4 domínios</span></div>
+                </a>
+            </div>
+        </div>
+
+        <!-- ALTAS HABILIDADES -->
+        <div class="categoria">
+            <div class="categoria-header cat-superdotacao">⭐ Altas Habilidades / Superdotação</div>
+            <div class="cards-grid cat-superdotacao-cards">
+                <a href="renzulli.html" class="card">
+                    <div class="card-sigla">SRBCSS-R</div>
+                    <div class="card-nome">Escala de Características Comportamentais de Superdotação</div>
+                    <div class="card-info"><span class="card-badge">Renzulli</span><span class="card-badge">Professores</span></div>
+                </a>
+                <a href="sobrexcitabilidade.html" class="card">
+                    <div class="card-sigla">Sobrexcitabilidade</div>
+                    <div class="card-nome">Questionário de Sobrexcitabilidade de Dabrowski</div>
+                    <div class="card-info"><span class="card-badge">5 áreas</span><span class="card-badge">AH/SD</span></div>
+                </a>
+                <a href="qiiahsd.html" class="card">
+                    <div class="card-sigla">QIIAHSD-R</div>
+                    <div class="card-nome">Questionário de Identificação de Altas Habilidades</div>
+                    <div class="card-info"><span class="card-badge">Responsáveis</span><span class="card-badge">Múltiplos domínios</span></div>
+                </a>
+            </div>
+        </div>
+
+        <!-- OUTROS -->
+        <div class="categoria">
+            <div class="categoria-header cat-outros">📚 Outros Instrumentos</div>
+            <div class="cards-grid cat-outros-cards">
+                <a href="dislexia.html" class="card">
+                    <div class="card-sigla">Checklist Dislexia</div>
+                    <div class="card-nome">Checklist de Rastreio para Dislexia</div>
+                    <div class="card-info"><span class="card-badge">Detalhado</span><span class="card-badge">Múltiplos domínios</span></div>
+                </a>
+                <a href="tdi.html" class="card">
+                    <div class="card-sigla">Escala TDI</div>
+                    <div class="card-nome">Escala de Avaliação de Transtorno do Desenvolvimento Intelectual</div>
+                    <div class="card-info"><span class="card-badge">Likert</span><span class="card-badge">Domínios adaptativos</span></div>
+                </a>
+            </div>
+        </div>
+
+        <div class="footer">
+            Instrumentos de domínio público, digitalizados por SΨM.<br>
+            Referências bibliográficas disponíveis em cada instrumento.
+        </div>
+    </div>
+</div>
+</body>
+</html>
