@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ERT-TB — Escala de Rastreio para Transtorno Bipolar</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6; color: #333;
+            background: linear-gradient(135deg, #1565c0 0%, #f57f17 100%);
+            min-height: 100vh; padding: 20px;
+        }
+        .container {
+            max-width: 1000px; margin: 0 auto; background: white;
+            border-radius: 15px; box-shadow: 0 20px 40px rgba(0,0,0,0.15); overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #1565c0 0%, #f57f17 100%);
+            color: white; padding: 30px; text-align: center;
+        }
+        .header h1 { font-size: 2.2em; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        .header p { font-size: 1.1em; opacity: 0.9; }
+        .content { padding: 30px; }
+
+        .info-tecnica {
+            background: #e3f2fd; padding: 25px; border-radius: 10px;
+            margin-bottom: 30px; border-left: 5px solid #1565c0; position: relative;
+        }
+        .info-tecnica h2 { color: #1565c0; margin-bottom: 15px; font-size: 1.4em; }
+        .info-tecnica p { color: #555; line-height: 1.7; font-size: 0.95em; }
+
+        .dados-pessoais {
+            background: #f8f9fa; padding: 25px; border-radius: 10px;
+            margin-bottom: 30px; border-left: 5px solid #1565c0;
+        }
+        .dados-pessoais h2 { color: #1565c0; margin-bottom: 20px; font-size: 1.5em; }
+        .form-row { display: flex; gap: 20px; margin-bottom: 15px; flex-wrap: wrap; }
+        .form-group { flex: 1; min-width: 200px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; color: #555; }
+        .form-group input, .form-group select {
+            width: 100%; padding: 12px; border: 2px solid #e0e0e0;
+            border-radius: 8px; font-size: 16px; transition: border-color 0.3s;
+        }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: #1565c0; }
+
+        .instrucoes {
+            background: #fff8e1; padding: 20px; border-radius: 10px;
+            margin-bottom: 30px; border-left: 5px solid #f57f17;
+        }
+        .instrucoes h3 { color: #e65100; margin-bottom: 10px; }
+        .instrucoes p { color: #555; font-size: 0.95em; line-height: 1.7; }
+
+        .item {
+            padding: 20px; border-bottom: 1px solid #f0f0f0;
+            transition: background-color 0.3s;
+        }
+        .item:hover { background-color: #e3f2fd; }
+        .item:last-child { border-bottom: none; }
+        .item-texto { font-size: 1.05em; margin-bottom: 15px; color: #444; line-height: 1.5; }
+        .item-numero { font-weight: bold; color: #1565c0; margin-right: 8px; }
+
+        .opcoes { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+        .opcao {
+            display: flex; flex-direction: column; align-items: center; gap: 5px;
+            cursor: pointer; padding: 8px; border-radius: 8px;
+            transition: all 0.3s; border: 2px solid transparent;
+            min-width: 70px; min-height: 70px;
+        }
+        .opcao:hover { background-color: #e3f2fd; border-color: #1565c0; }
+        .opcao input[type="radio"] { width: 18px; height: 18px; cursor: pointer; accent-color: #1565c0; }
+        .opcao label {
+            cursor: pointer; font-weight: 500; color: #555; text-align: center;
+            font-size: 0.8em; line-height: 1.2; min-height: 30px;
+            display: flex; align-items: center;
+        }
+
+        .botoes { display: flex; gap: 15px; justify-content: center; margin: 30px 0; flex-wrap: wrap; }
+        .btn {
+            padding: 15px 30px; border: none; border-radius: 25px;
+            font-size: 16px; font-weight: 600; cursor: pointer;
+            transition: all 0.3s; text-align: center;
+        }
+        .btn-primary { background: linear-gradient(135deg, #1565c0 0%, #f57f17 100%); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(21,101,192,0.3); }
+        .btn-secondary { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; }
+        .btn-secondary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(40,167,69,0.3); }
+        .btn-danger { background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%); color: white; }
+        .btn-danger:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(220,53,69,0.3); }
+
+        .resultados {
+            background: #f8f9fa; padding: 30px; border-radius: 10px;
+            margin-top: 30px; border-left: 5px solid #1565c0; display: none;
+        }
+        .resultados h2 { color: #1565c0; margin-bottom: 20px; text-align: center; }
+
+        .resultado-criterio {
+            background: white; padding: 15px; border-radius: 8px;
+            margin-bottom: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
+        }
+        .resultado-criterio .nome { font-weight: 600; color: #333; flex: 1; min-width: 200px; }
+        .resultado-criterio .badges { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .badge {
+            padding: 4px 12px; border-radius: 15px; font-size: 0.8em; font-weight: 600;
+        }
+        .badge-presente { background: #ffcdd2; color: #c62828; }
+        .badge-ausente { background: #c8e6c9; color: #2e7d32; }
+        .badge-intensidade {
+            padding: 4px 12px; border-radius: 15px; font-size: 0.8em; font-weight: 600;
+        }
+        .intensidade-minimo { background: #e8f5e9; color: #1b5e20; }
+        .intensidade-leve { background: #fff9c4; color: #f57f17; }
+        .intensidade-moderado { background: #ffe0b2; color: #e65100; }
+        .intensidade-significativo { background: #ffccbc; color: #bf360c; }
+        .intensidade-intenso { background: #ffcdd2; color: #b71c1c; }
+
+        .barra-container { width: 120px; height: 10px; background: #e0e0e0; border-radius: 5px; overflow: hidden; }
+        .barra-fill { height: 100%; border-radius: 5px; transition: width 0.5s; }
+
+        .dominio-card {
+            background: white; padding: 20px; border-radius: 10px;
+            margin-bottom: 15px; box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+            border-left: 4px solid #1565c0;
+        }
+        .dominio-card h4 { color: #1565c0; margin-bottom: 8px; }
+        .dominio-card .valor { font-size: 1.8em; font-weight: 800; color: #333; }
+
+        .total-geral {
+            background: linear-gradient(135deg, #1565c0 0%, #f57f17 100%);
+            color: white; padding: 25px; border-radius: 10px;
+            text-align: center; margin: 20px 0;
+        }
+        .total-geral h3 { margin-bottom: 5px; }
+
+        .rastreio-box {
+            padding: 20px; border-radius: 10px; text-align: center;
+            margin: 20px 0; font-size: 1.2em; font-weight: 700;
+        }
+        .rastreio-positivo { background: #ffcdd2; border: 3px solid #c62828; color: #b71c1c; }
+        .rastreio-negativo { background: #c8e6c9; border: 3px solid #2e7d32; color: #1b5e20; }
+        .rastreio-tipo1 { background: #ffcdd2; border: 3px solid #b71c1c; color: #b71c1c; }
+        .rastreio-tipo2 { background: #fff3e0; border: 3px solid #e65100; color: #e65100; }
+        .rastreio-tracos { background: #fff9c4; border: 3px solid #f57f17; color: #e65100; }
+
+        .analise-texto {
+            background: white; padding: 25px; border-radius: 10px;
+            margin-top: 20px; border: 2px solid #1565c0; line-height: 1.8;
+        }
+        .analise-texto h3 { color: #1565c0; margin-bottom: 15px; }
+        .analise-texto p { margin-bottom: 10px; color: #444; font-size: 0.95em; }
+
+        .disclaimer {
+            background: #fff3e0; padding: 15px; border-radius: 8px;
+            margin-top: 20px; border-left: 4px solid #ff9800;
+            font-size: 0.85em; color: #e65100; line-height: 1.6;
+        }
+
+        .btn-imprimir {
+            position: absolute; top: 20px; right: 20px; padding: 10px 20px;
+            background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%);
+            color: white; border: none; border-radius: 20px; font-size: 14px;
+            font-weight: 600; cursor: pointer; transition: all 0.3s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .btn-imprimir:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(21,101,192,0.4); }
+
+        @media print {
+            @page { size: portrait; margin: 1cm; }
+            body { background: white; padding: 0; }
+            .botoes, .btn, .btn-imprimir { display: none !important; }
+            .container { box-shadow: none; max-width: 100%; }
+            .info-tecnica { display: none !important; }
+            .resultados { display: none !important; }
+            .header { background: #1565c0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .item { page-break-inside: avoid; break-inside: avoid; }
+            .opcoes { display: flex !important; flex-direction: row !important; flex-wrap: wrap !important; justify-content: center !important; }
+            .opcao { display: flex !important; flex-direction: column !important; }
+        }
+
+        @media (max-width: 768px) {
+            .container { margin: 10px; border-radius: 10px; }
+            .header { padding: 20px; }
+            .header h1 { font-size: 1.6em; }
+            .content { padding: 15px; }
+            .form-row { flex-direction: column; }
+            .opcoes { flex-direction: column; align-items: center; }
+            .botoes { flex-direction: column; }
+            .btn { width: 100%; }
+            .resultado-criterio { flex-direction: column; align-items: flex-start; }
+        }
+    </style>
+</head>
+<body>
+<div style="padding:10px 20px;background:#2e7d32;"><a href="../" style="display:inline-block;background:#fff;color:#2e7d32;text-decoration:none;font-family:Segoe UI,Arial,sans-serif;font-size:14px;font-weight:bold;padding:8px 20px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.15);transition:background 0.2s;">&#11013; Voltar ao In&#237;cio</a></div>
+    <div class="container">
+        <div class="header">
+            <h1>🧠 ERT-TB</h1>
+            <p>Escala de Rastreio para Transtorno Bipolar</p>
+            <p style="font-size:0.85em; opacity:0.8; margin-top:5px;">Rastreio diferencial para Transtorno Bipolar Tipo 1 e Tipo 2 — Baseada nos critérios do DSM-5-TR</p>
+        </div>
+
+        <div class="content">
+            <div class="info-tecnica">
+                <button class="btn-imprimir" onclick="window.print()">🖨️ Imprimir Formulário</button>
+                <h2>📚 Informações Técnicas</h2>
+                <p>
+                    <strong>Instrumento:</strong> ERT-TB — Escala de Rastreio para Transtorno Bipolar<br>
+                    <strong>Base teórica:</strong> Critérios diagnósticos do DSM-5-TR para Episódio Maníaco, Hipomaníaco e Depressivo Maior<br>
+                    <strong>Estrutura:</strong> 54 itens, 17 dimensões, escala Likert 5 pontos<br>
+                    <strong>Resultado:</strong> Híbrido — Rastreio categorial (Tipo 1 vs Tipo 2) + Perfil dimensional (intensidade por polo)<br>
+                    <strong>Domínios:</strong> Polo Maníaco/Hipomaníaco, Gravidade e Impacto Funcional, Polo Depressivo<br>
+                    <strong>População:</strong> Adultos (≥18 anos) — instrumento de rastreio
+                </p>
+            </div>
+
+            <div class="dados-pessoais">
+                <h2>📋 Dados Pessoais</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="nome">Nome:</label>
+                        <input type="text" id="nome" placeholder="Nome completo">
+                    </div>
+                    <div class="form-group">
+                        <label for="dataNascimento">Data de Nascimento:</label>
+                        <input type="date" id="dataNascimento" onchange="calcularIdade()">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="idadeCalculada">Idade:</label>
+                        <input type="text" id="idadeCalculada" readonly style="background-color:#f0f0f0;" placeholder="Calculada automaticamente">
+                    </div>
+                    <div class="form-group">
+                        <label for="sexo">Sexo:</label>
+                        <select id="sexo">
+                            <option value="">Selecione</option>
+                            <option value="Masculino">Masculino</option>
+                            <option value="Feminino">Feminino</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="data">Data da Avaliação:</label>
+                        <input type="date" id="data">
+                    </div>
+                    <div class="form-group">
+                        <label for="observacoes">Observações (opcional):</label>
+                        <input type="text" id="observacoes" placeholder="Informações adicionais">
+                    </div>
+                </div>
+            </div>
+
+            <div class="instrucoes">
+                <h3>📝 Instruções</h3>
+                <p>
+                    Leia cada afirmação com atenção e marque a opção que melhor descreve como você tem se sentido
+                    <strong>ao longo da sua vida</strong>, considerando períodos distintos de alteração do humor.
+                    Não existem respostas certas ou erradas. Responda de forma honesta e espontânea,
+                    sem pensar demais em cada item. Considere tanto os períodos de "alta energia" quanto os de "baixa energia".
+                </p>
+            </div>
+
+            <div id="questionario">
+                <!-- Itens serão inseridos pelo JavaScript -->
+            </div>
+
+            <div class="botoes">
+                <button class="btn btn-primary" onclick="calcularResultados()">📊 Calcular Resultados</button>
+                <button class="btn btn-secondary" onclick="gerarRelatorioPDF()">📄 Gerar Relatório PDF</button>
+                <button class="btn btn-danger" onclick="limparDados()">🗑️ Limpar Dados</button>
+            </div>
+
+            <div id="resultados" class="resultados">
+                <!-- Resultados serão inseridos pelo JavaScript -->
+            </div>
+
+            <div class="info-tecnica" id="referencias" style="margin-top:30px; background:#f8f9fa; border-left-color:#1565c0;">
+                <h2 style="color:#1565c0;">📚 Referências</h2>
+                <p style="color:#555; line-height:1.9; font-size:0.88em;">
+                    <strong>AMERICAN PSYCHIATRIC ASSOCIATION.</strong> <em>Diagnostic and Statistical Manual of Mental Disorders</em> (DSM-5-TR). 5th ed., text rev. Washington, DC: APA, 2022.<br><br>
+                    <strong>CARVALHO, L. F.</strong> Dimensional Clinical Personality Inventory 2: antecedents, development, and future improvements. <em>Psicologia: Teoria e Pesquisa</em>, v. 37, e37316, 2021. Disponível em: https://doi.org/10.1590/0102.3772e37316<br><br>
+                    <strong>HIRSCHFELD, R. M. A. et al.</strong> Development and Validation of a Screening Instrument for Bipolar Spectrum Disorder: the Mood Disorder Questionnaire. <em>American Journal of Psychiatry</em>, v. 157, n. 11, p. 1873-1875, 2000.<br><br>
+                    <strong>ANGST, J. et al.</strong> The HCL-32: Towards a Self-Assessment Tool for Hypomanic Symptoms in Outpatients. <em>Journal of Affective Disorders</em>, v. 88, n. 2, p. 217-233, 2005.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script src="../id-paciente.js"></script>
+    <script>
+// ===== ITENS (54 itens: 18 polo maníaco + 8 gravidade + 18 polo depressivo + 10 invertidos distribuídos) =====
+var ITENS=[
+// --- POLO MANÍACO / HIPOMANÍACO (critérios 1-7, 18 itens) ---
+// Critério 1: Grandiosidade (3 itens, 1 invertido)
+{texto:"Tenho períodos em que me sinto extraordinariamente capaz, como se pudesse fazer qualquer coisa.",criterio:1,invertido:false},
+{texto:"Em certas fases, sinto que sou especial ou que tenho talentos superiores aos dos outros.",criterio:1,invertido:false},
+{texto:"Mantenho uma visão realista e equilibrada sobre minhas capacidades e limitações.",criterio:1,invertido:true},
+// Critério 2: Redução do Sono (3 itens, 1 invertido)
+{texto:"Há períodos em que durmo muito menos que o habitual e mesmo assim me sinto cheio(a) de energia.",criterio:2,invertido:false},
+{texto:"Às vezes passo noites quase sem dormir e no dia seguinte me sinto perfeitamente disposto(a).",criterio:2,invertido:false},
+{texto:"Preciso de uma quantidade regular de sono para funcionar bem no dia seguinte.",criterio:2,invertido:true},
+// Critério 3: Pressão de Fala (3 itens)
+{texto:"Há fases em que falo muito mais que o normal, de forma acelerada e difícil de interromper.",criterio:3,invertido:false},
+{texto:"Em certos períodos, as pessoas comentam que estou falando demais ou rápido demais.",criterio:3,invertido:false},
+{texto:"Consigo manter um ritmo de fala tranquilo e pausado na maior parte do tempo.",criterio:3,invertido:true},
+// Critério 4: Aceleração do Pensamento (3 itens, 1 invertido)
+{texto:"Tenho épocas em que meus pensamentos correm tão rápido que não consigo acompanhá-los.",criterio:4,invertido:false},
+{texto:"Em certas fases, minha mente pula de uma ideia para outra sem parar.",criterio:4,invertido:false},
+{texto:"Meus pensamentos costumam ser organizados e seguem um fluxo lógico na maior parte do tempo.",criterio:4,invertido:true},
+// Critério 5: Distratibilidade (3 itens)
+{texto:"Há períodos em que me distraio com qualquer estímulo e não consigo manter o foco.",criterio:5,invertido:false},
+{texto:"Em certas fases, minha atenção é facilmente desviada por coisas irrelevantes ao meu redor.",criterio:5,invertido:false},
+{texto:"Em fases de energia elevada, começo várias tarefas mas não consigo terminar nenhuma por me distrair.",criterio:5,invertido:false},
+// Critério 6: Hiperatividade (3 itens, 1 invertido)
+{texto:"Tenho fases de energia extrema em que inicio muitos projetos ao mesmo tempo.",criterio:6,invertido:false},
+{texto:"Em certos períodos, sinto uma agitação interna que me impede de ficar parado(a).",criterio:6,invertido:false},
+{texto:"Meu nível de energia e atividade costuma ser constante e previsível.",criterio:6,invertido:true},
+// Critério 7: Comportamento de Risco (3 itens)
+{texto:"Em certas fases, me envolvo em atividades arriscadas sem pensar nas consequências (gastos excessivos, direção perigosa, decisões impulsivas).",criterio:7,invertido:false},
+{texto:"Há períodos em que faço coisas que normalmente não faria, como gastar muito dinheiro ou ter comportamentos sexuais de risco.",criterio:7,invertido:false},
+{texto:"Mesmo em fases de muita energia, consigo avaliar os riscos antes de agir.",criterio:7,invertido:true},
+// --- GRAVIDADE E IMPACTO FUNCIONAL (critério 8, 8 itens) ---
+{texto:"Já precisei ser hospitalizado(a) por causa de alterações intensas no meu humor ou comportamento.",criterio:8,invertido:false},
+{texto:"Em fases de humor elevado, já tive experiências que pareciam irreais (ouvir vozes, crenças incomuns, sentir-se perseguido).",criterio:8,invertido:false},
+{texto:"Meus episódios de humor alterado já causaram prejuízos graves no meu trabalho ou estudos.",criterio:8,invertido:false},
+{texto:"Em fases de euforia ou agitação, fiquei completamente incapaz de cumprir minhas responsabilidades.",criterio:8,invertido:false},
+{texto:"Já tive problemas legais (dívidas, processos, conflitos com a lei) por causa do meu comportamento em fases de humor alterado.",criterio:8,invertido:false},
+{texto:"Meus episódios de humor elevado já destruíram relacionamentos importantes na minha vida.",criterio:8,invertido:false},
+{texto:"Já tive ruína financeira (falência, dívidas impagáveis) por decisões tomadas em fases de euforia.",criterio:8,invertido:false},
+{texto:"Outras pessoas já precisaram intervir para me proteger durante episódios de humor alterado (família, amigos, profissionais).",criterio:8,invertido:false},
+// --- POLO DEPRESSIVO (critérios 9-17, 18 itens) ---
+// Critério 9: Humor Deprimido (3 itens)
+{texto:"Tenho períodos prolongados em que me sinto profundamente triste, vazio(a) ou sem esperança.",criterio:9,invertido:false},
+{texto:"Em certas fases, sinto uma tristeza tão intensa que parece que nunca vai passar.",criterio:9,invertido:false},
+{texto:"Nos períodos de baixo humor, choro com facilidade ou sinto vontade de chorar sem motivo aparente.",criterio:9,invertido:false},
+// Critério 10: Anedonia (3 itens)
+{texto:"Há épocas em que perco completamente o interesse ou prazer em atividades que antes me agradavam.",criterio:10,invertido:false},
+{texto:"Em certos períodos, nada me dá prazer e tudo parece sem graça ou sem sentido.",criterio:10,invertido:false},
+{texto:"Mesmo nos períodos mais difíceis, consigo sentir prazer em pelo menos algumas atividades.",criterio:10,invertido:true},
+// Critério 11: Alteração Apetite (3 itens)
+{texto:"Em fases de humor baixo, meu apetite muda drasticamente (como muito mais ou muito menos que o habitual).",criterio:11,invertido:false},
+{texto:"Nos períodos depressivos, perco ou ganho peso de forma significativa sem estar fazendo dieta.",criterio:11,invertido:false},
+{texto:"Meu apetite permanece relativamente estável independentemente do meu estado emocional.",criterio:11,invertido:true},
+// Critério 12: Alteração Sono (2 itens, 1 invertido)
+{texto:"Em fases depressivas, tenho insônia severa ou durmo excessivamente (mais de 10 horas por dia).",criterio:12,invertido:false},
+{texto:"Mesmo em períodos difíceis, consigo manter um padrão de sono razoavelmente regular.",criterio:12,invertido:true},
+// Critério 13: Alteração Psicomotora (3 itens)
+{texto:"Em períodos depressivos, sinto-me extremamente lento(a) nos movimentos e no pensamento.",criterio:13,invertido:false},
+{texto:"Em fases de humor baixo, fico tão agitado(a) que não consigo ficar sentado(a) ou parado(a).",criterio:13,invertido:false},
+{texto:"Outras pessoas já notaram que fico visivelmente mais lento(a) ou mais agitado(a) em fases depressivas.",criterio:13,invertido:false},
+// Critério 14: Fadiga (2 itens, 1 invertido)
+{texto:"Em períodos depressivos, sinto uma fadiga tão intensa que até tarefas simples parecem impossíveis.",criterio:14,invertido:false},
+{texto:"Mesmo nos meus piores momentos, consigo manter um nível mínimo de energia para o dia a dia.",criterio:14,invertido:true},
+// Critério 15: Culpa/Inutilidade (3 itens)
+{texto:"Em fases depressivas, sinto-me completamente inútil ou carrego uma culpa desproporcional.",criterio:15,invertido:false},
+{texto:"Nos períodos de humor baixo, acredito que sou um peso para as pessoas ao meu redor.",criterio:15,invertido:false},
+{texto:"Em fases depressivas, me culpo por coisas que não são minha responsabilidade.",criterio:15,invertido:false},
+// Critério 16: Dificuldade Concentração (3 itens, 1 invertido)
+{texto:"Em fases depressivas, minha capacidade de pensar, concentrar-me ou tomar decisões fica muito prejudicada.",criterio:16,invertido:false},
+{texto:"Nos períodos de humor baixo, leio a mesma página várias vezes sem conseguir absorver o conteúdo.",criterio:16,invertido:false},
+{texto:"Mesmo em períodos difíceis, consigo manter minha capacidade de raciocínio e tomada de decisão.",criterio:16,invertido:true},
+// Critério 17: Ideação Suicida (3 itens)
+{texto:"Em períodos depressivos, tenho pensamentos recorrentes de morte ou de que seria melhor não estar vivo(a).",criterio:17,invertido:false},
+{texto:"Em fases de humor muito baixo, já pensei em formas de acabar com meu sofrimento de maneira definitiva.",criterio:17,invertido:false},
+{texto:"Nos piores momentos depressivos, sinto que as pessoas ao meu redor ficariam melhor sem mim.",criterio:17,invertido:false}
+];
+var CRITERIOS={1:"Grandiosidade",2:"Redução do Sono",3:"Pressão de Fala",4:"Aceleração do Pensamento",5:"Distratibilidade",6:"Hiperatividade",7:"Comportamento de Risco",8:"Gravidade/Impacto",9:"Humor Deprimido",10:"Anedonia",11:"Alteração Apetite",12:"Alteração Sono",13:"Alteração Psicomotora",14:"Fadiga",15:"Culpa/Inutilidade",16:"Dificuldade Concentração",17:"Ideação Suicida"};
+var DOMINIOS={"Polo Maníaco / Hipomaníaco":[1,2,3,4,5,6,7],"Gravidade e Impacto Funcional":[8],"Polo Depressivo":[9,10,11,12,13,14,15,16,17]};
+var OPCOES_LIKERT=[{valor:1,texto:"Nunca"},{valor:2,texto:"Raramente"},{valor:3,texto:"Às vezes"},{valor:4,texto:"Frequente-\nmente"},{valor:5,texto:"Sempre"}];
+
+// ===== APP =====
+function gerarQuestionario(){var c=document.getElementById('questionario');var h='';ITENS.forEach(function(item,i){h+='<div class="item" id="item'+i+'"><div class="item-texto"><span class="item-numero">'+(i+1)+'.</span> '+item.texto+'</div><div class="opcoes">';OPCOES_LIKERT.forEach(function(op){h+='<div class="opcao"><input type="radio" id="item'+i+'_'+op.valor+'" name="item'+i+'" value="'+op.valor+'"><label for="item'+i+'_'+op.valor+'">'+op.texto.replace('\n','<br>')+'</label></div>';});h+='</div></div>';});c.innerHTML=h;}
+function calcularIdade(){var d=document.getElementById('dataNascimento').value;if(!d)return;var h=new Date(),n=new Date(d),a=h.getFullYear()-n.getFullYear(),m=h.getMonth()-n.getMonth(),di=h.getDate()-n.getDate();if(di<0){m--;di+=new Date(h.getFullYear(),h.getMonth(),0).getDate();}if(m<0){a--;m+=12;}document.getElementById('idadeCalculada').value=a+' anos, '+m+' meses e '+di+' dias';}
+function obterRespostas(){var r=[];for(var i=0;i<ITENS.length;i++){var s=document.querySelector('input[name="item'+i+'"]:checked');if(!s)return null;var v=parseInt(s.value);if(ITENS[i].invertido)v=6-v;r.push({valor:v,criterio:ITENS[i].criterio});}return r;}
+function calcularPorCriterio(r){var res={};for(var c=1;c<=17;c++){var it=r.filter(function(x){return x.criterio===c;});if(it.length===0){res[c]={soma:0,media:0,presente:false,intensidade:classificarIntensidade(0)};continue;}var s=it.reduce(function(a,x){return a+x.valor;},0);var m=s/it.length;res[c]={soma:s,media:parseFloat(m.toFixed(2)),presente:m>=3.5,intensidade:classificarIntensidade(m)};}return res;}
+function classificarIntensidade(m){if(m<2)return{texto:"Mínimo",classe:"intensidade-minimo",cor:"#4caf50"};if(m<2.5)return{texto:"Leve",classe:"intensidade-leve",cor:"#ffeb3b"};if(m<3)return{texto:"Leve-Moderado",classe:"intensidade-leve",cor:"#ffc107"};if(m<3.5)return{texto:"Moderado",classe:"intensidade-moderado",cor:"#ff9800"};if(m<4)return{texto:"Significativo",classe:"intensidade-significativo",cor:"#ff5722"};return{texto:"Intenso",classe:"intensidade-intenso",cor:"#f44336"};}
+function calcularDominios(cr){var res={};Object.keys(DOMINIOS).forEach(function(n){var cs=DOMINIOS[n];var s=cs.reduce(function(a,c){return a+cr[c].media;},0);var m=s/cs.length;res[n]={media:parseFloat(m.toFixed(2)),intensidade:classificarIntensidade(m),criterios:cs};});return res;}
+function determinarRastreio(cr,dom){var maniaPresentes=0;for(var c=1;c<=7;c++){if(cr[c].presente)maniaPresentes++;}var depPresentes=0;for(var c=9;c<=17;c++){if(cr[c].presente)depPresentes++;}var gravidadeMedia=cr[8].media;var maniaMet=maniaPresentes>=3;var depMet=depPresentes>=5;var resultado={maniaPresentes:maniaPresentes,depPresentes:depPresentes,gravidadeMedia:gravidadeMedia,maniaMet:maniaMet,depMet:depMet,tipo:'negativo',texto:'',classe:''};if(maniaMet&&gravidadeMedia>=3.5){resultado.tipo='tipo1';resultado.texto='⚠️ RASTREIO POSITIVO — Indicativo de Transtorno Bipolar TIPO 1';resultado.classe='rastreio-tipo1';}else if(maniaMet&&gravidadeMedia<3.5&&depMet){resultado.tipo='tipo2';resultado.texto='⚠️ RASTREIO POSITIVO — Indicativo de Transtorno Bipolar TIPO 2';resultado.classe='rastreio-tipo2';}else if(maniaMet&&gravidadeMedia<3.5&&!depMet){resultado.tipo='tracos';resultado.texto='⚡ Traços hipomaníacos identificados — avaliar longitudinalmente';resultado.classe='rastreio-tracos';}else{resultado.tipo='negativo';resultado.texto='✅ RASTREIO NEGATIVO para Transtorno Bipolar';resultado.classe='rastreio-negativo';}return resultado;}
+function gerarAnalise(cr,dom,mg,rastreio){var t='';if(rastreio.tipo==='tipo1'){t+='<p><strong>⚠️ Rastreio Categorial — Transtorno Bipolar Tipo 1:</strong> Foram identificados <strong>'+rastreio.maniaPresentes+' de 7 critérios maníacos</strong> com pontuação significativa (média ≥ 3,5), acima do limiar de 3 critérios. A dimensão de <strong>Gravidade/Impacto Funcional</strong> apresentou média de <strong>'+rastreio.gravidadeMedia+'</strong> (≥ 3,5), indicando episódios com comprometimento funcional grave, compatível com <strong>mania</strong> (Tipo 1). Este resultado sugere a <strong>necessidade de avaliação psiquiátrica urgente</strong>.</p>';}else if(rastreio.tipo==='tipo2'){t+='<p><strong>⚠️ Rastreio Categorial — Transtorno Bipolar Tipo 2:</strong> Foram identificados <strong>'+rastreio.maniaPresentes+' de 7 critérios maníacos/hipomaníacos</strong> com pontuação significativa. A dimensão de Gravidade apresentou média de <strong>'+rastreio.gravidadeMedia+'</strong> (< 3,5), sugerindo episódios de <strong>hipomania</strong> (sem comprometimento funcional grave). Adicionalmente, foram identificados <strong>'+rastreio.depPresentes+' de 9 critérios depressivos</strong> presentes, configurando o padrão de <strong>Transtorno Bipolar Tipo 2</strong> (hipomania + depressão maior).</p>';}else if(rastreio.tipo==='tracos'){t+='<p><strong>⚡ Traços Hipomaníacos:</strong> Foram identificados <strong>'+rastreio.maniaPresentes+' de 7 critérios maníacos/hipomaníacos</strong> com pontuação significativa, porém sem episódio depressivo maior associado ('+rastreio.depPresentes+'/9 critérios depressivos). A gravidade funcional é baixa-moderada ('+rastreio.gravidadeMedia+'). Recomenda-se <strong>acompanhamento longitudinal</strong> para monitorar possível evolução para Transtorno Bipolar.</p>';}else{t+='<p><strong>✅ Rastreio Negativo:</strong> Foram identificados <strong>'+rastreio.maniaPresentes+' de 7 critérios maníacos</strong> (limiar: ≥3). O perfil atual <strong>não sugere presença de Transtorno Bipolar</strong>. ';if(rastreio.maniaPresentes>=2)t+='No entanto, a presença de '+rastreio.maniaPresentes+' critérios sublimiares merece atenção clínica.';t+='</p>';}t+='<p><strong>📊 Perfil Dimensional:</strong> A média geral foi de <strong>'+mg.toFixed(2)+'</strong> (escala 1-5), classificada como <strong>'+classificarIntensidade(mg).texto+'</strong>.</p>';t+='<p><strong>🔍 Análise por Domínios:</strong></p>';Object.keys(dom).forEach(function(n){var d=dom[n];t+='<p>• <strong>'+n+'</strong> (média '+d.media+' — '+d.intensidade.texto+'): ';if(n==="Polo Maníaco / Hipomaníaco"){if(d.media>=3.5)t+='Indica presença significativa de sintomas maníacos/hipomaníacos, incluindo grandiosidade, redução da necessidade de sono, pressão de fala, aceleração do pensamento, distratibilidade, hiperatividade e/ou comportamentos de risco.';else if(d.media>=2.5)t+='Sugere presença moderada de traços maníacos/hipomaníacos que podem se manifestar em episódios distintos.';else t+='Sintomas maníacos/hipomaníacos dentro de parâmetros esperados.';}else if(n==="Gravidade e Impacto Funcional"){if(d.media>=3.5)t+='Indica episódios com <strong>comprometimento funcional grave</strong> (hospitalização, sintomas psicóticos, incapacidade laboral, problemas legais), compatível com episódios maníacos plenos (Tipo 1).';else if(d.media>=2.5)t+='Sugere impacto funcional moderado nos episódios, mais compatível com hipomania (Tipo 2).';else t+='Impacto funcional dos episódios dentro de parâmetros leves, sugerindo ausência de mania grave.';}else{if(d.media>=3.5)t+='Indica presença significativa de sintomas depressivos, incluindo humor deprimido, anedonia, alterações de sono/apetite, fadiga, sentimentos de inutilidade e/ou dificuldade de concentração.';else if(d.media>=2.5)t+='Sugere presença moderada de sintomas depressivos que podem configurar episódios depressivos.';else t+='Sintomas depressivos dentro de parâmetros esperados.';}t+='</p>';});t+='<p><strong>📋 Diferenciação Tipo 1 vs Tipo 2:</strong></p>';t+='<p>• <strong>Tipo 1 (Mania):</strong> Episódios com duração ≥ 7 dias, comprometimento funcional grave, possíveis sintomas psicóticos, necessidade de hospitalização.</p>';t+='<p>• <strong>Tipo 2 (Hipomania + Depressão):</strong> Episódios hipomaníacos (≥ 4 dias) sem comprometimento funcional grave, alternados com episódios depressivos maiores.</p>';var el=[];for(var c=1;c<=17;c++){if(cr[c].media>=3.5)el.push(CRITERIOS[c]+' ('+cr[c].media+')');}if(el.length>0)t+='<p><strong>🔴 Dimensões com pontuação significativa:</strong> '+el.join(', ')+'.</p>';if(cr[17].media>=3.0)t+='<p style="color:#c62828;"><strong>⚠️ ATENÇÃO — RISCO:</strong> A dimensão de Ideação Suicida apresentou pontuação elevada ('+cr[17].media+'). Recomenda-se <strong>avaliação de risco imediata</strong> por profissional de saúde mental. Se você está em sofrimento, procure ajuda: <strong>CVV 188</strong> (24h) ou <strong>SAMU 192</strong>.</p>';return t;}
+function mostrarResultados(cr,dom,mg){var c=document.getElementById('resultados');var rastreio=determinarRastreio(cr,dom);var h='<h2>📊 Resultados ERT-TB</h2>';h+='<div class="rastreio-box '+rastreio.classe+'">'+rastreio.texto+'</div>';h+='<div style="display:flex;gap:10px;flex-wrap:wrap;margin:15px 0;"><div style="flex:1;min-width:150px;background:#e3f2fd;padding:10px;border-radius:8px;text-align:center;"><small>Critérios Maníacos</small><div style="font-size:1.5em;font-weight:800;color:#1565c0;">'+rastreio.maniaPresentes+'/7</div></div><div style="flex:1;min-width:150px;background:#fff3e0;padding:10px;border-radius:8px;text-align:center;"><small>Gravidade</small><div style="font-size:1.5em;font-weight:800;color:#e65100;">'+rastreio.gravidadeMedia+'</div></div><div style="flex:1;min-width:150px;background:#fce4ec;padding:10px;border-radius:8px;text-align:center;"><small>Critérios Depressivos</small><div style="font-size:1.5em;font-weight:800;color:#c62828;">'+rastreio.depPresentes+'/9</div></div></div>';h+='<div class="total-geral"><h3>Média Geral: '+mg.toFixed(2)+' / 5,00</h3><h3>Classificação: '+classificarIntensidade(mg).texto+'</h3></div>';h+='<h3 style="color:#1565c0;margin:20px 0 15px;">🧩 Domínios</h3>';Object.keys(dom).forEach(function(n){var d=dom[n];var p=((d.media/5)*100).toFixed(0);h+='<div class="dominio-card"><h4>'+n+'</h4><div style="display:flex;align-items:center;gap:15px;flex-wrap:wrap;"><div class="valor">'+d.media+'</div><div class="barra-container"><div class="barra-fill" style="width:'+p+'%;background:'+d.intensidade.cor+';"></div></div><span class="badge '+d.intensidade.classe+'">'+d.intensidade.texto+'</span></div><div style="font-size:0.85em;color:#777;margin-top:8px;">Critérios: '+d.criterios.map(function(x){return CRITERIOS[x];}).join(', ')+'</div></div>';});h+='<h3 style="color:#1565c0;margin:20px 0 15px;">📋 Dimensões (17 Critérios DSM-5-TR)</h3>';for(var i=1;i<=17;i++){var x=cr[i];var p=((x.media/5)*100).toFixed(0);h+='<div class="resultado-criterio"><div class="nome">'+CRITERIOS[i]+'</div><div class="badges"><div class="barra-container"><div class="barra-fill" style="width:'+p+'%;background:'+x.intensidade.cor+';"></div></div><span style="font-weight:700;min-width:35px;text-align:center;">'+x.media+'</span><span class="badge '+x.intensidade.classe+'">'+x.intensidade.texto+'</span>'+(x.presente?'<span class="badge badge-presente">Presente</span>':(x.media>=3.0?'<span class="badge badge-ausente" style="background:#fff9c4;color:#f57f17;">Subcl\u00ednico</span>':'<span class="badge badge-ausente">Ausente</span>'))+'</div></div>';}h+='<div class="analise-texto"><h3>📝 Análise dos Resultados</h3>'+gerarAnalise(cr,dom,mg,rastreio)+'</div>';h+='<div class="disclaimer"><strong>⚠️ IMPORTANTE:</strong> Esta escala é um instrumento de <strong>rastreio</strong>, baseado nos critérios do DSM-5-TR para Episódio Maníaco, Hipomaníaco e Depressivo Maior, e <strong>não possui validação empírica formal</strong>. Não substitui avaliação clínica profissional. Os resultados devem ser interpretados exclusivamente por profissionais de saúde mental qualificados. O diagnóstico de Transtorno Bipolar requer avaliação clínica abrangente que considere história longitudinal, duração dos episódios, funcionamento global, diagnósticos diferenciais e comorbidades.</div>';if(cr[17].media>=3.0){h+='<div style="background:#ffebee;border:3px solid #c62828;border-radius:10px;padding:20px;margin-top:20px;text-align:center;"><p style="color:#c62828;font-size:1.1em;font-weight:700;">⚠️ ALERTA DE RISCO — IDEAÇÃO SUICIDA</p><p style="color:#c62828;margin-top:10px;">A dimensão de Ideação Suicida apresentou pontuação elevada ('+cr[17].media+').</p><p style="color:#c62828;margin-top:5px;">Se você está em sofrimento, procure ajuda AGORA:</p><p style="color:#c62828;font-size:1.3em;font-weight:800;margin-top:10px;">📞 CVV: 188 (24h) | SAMU: 192</p></div>';}c.innerHTML=h;c.style.display='block';c.scrollIntoView({behavior:'smooth'});}
+function calcularResultados(){var n=document.getElementById('nome').value,id=document.getElementById('idadeCalculada').value,s=document.getElementById('sexo').value;if(!n||!id||!s){alert('Por favor, preencha todos os dados pessoais antes de calcular.');return;}var r=obterRespostas();if(!r){alert('Por favor, responda todos os 54 itens antes de calcular.');return;}var cr=calcularPorCriterio(r),dom=calcularDominios(cr),sg=r.reduce(function(a,x){return a+x.valor;},0),mg=sg/r.length;mostrarResultados(cr,dom,mg);}
+function gerarRelatorioPDF(){var nome=document.getElementById('nome').value;if(!nome){alert('Preencha pelo menos o nome.');return;}var r=obterRespostas();if(!r){alert('Responda todos os itens antes de gerar o PDF.');return;}var cr=calcularPorCriterio(r),dom=calcularDominios(cr),sg=r.reduce(function(a,x){return a+x.valor;},0),mg=sg/r.length;var rastreio=determinarRastreio(cr,dom);var idade=document.getElementById('idadeCalculada').value,sexo=document.getElementById('sexo').value,dataAval=document.getElementById('data').value||new Date().toLocaleDateString('pt-BR');var jsPDF=window.jspdf.jsPDF;var doc=new jsPDF();doc.setFillColor(21,101,192);doc.rect(0,0,210,40,'F');doc.setTextColor(255,255,255);doc.setFontSize(16);doc.setFont(undefined,'bold');doc.text('ERT-TB — RELATÓRIO DE AVALIAÇÃO',105,18,{align:'center'});doc.setFontSize(10);doc.text('Escala de Rastreio para Transtorno Bipolar',105,27,{align:'center'});doc.setFontSize(8);doc.text('Rastreio diferencial Tipo 1 e Tipo 2 — Baseada nos critérios do DSM-5-TR',105,34,{align:'center'});doc.setFillColor(248,249,250);doc.rect(15,48,180,28,'F');doc.setDrawColor(21,101,192);doc.rect(15,48,180,28);doc.setTextColor(21,101,192);doc.setFontSize(11);doc.setFont(undefined,'bold');doc.text('DADOS PESSOAIS',20,56);doc.setTextColor(0,0,0);doc.setFontSize(9);doc.setFont(undefined,'normal');var idPac=document.getElementById('idPaciente')?document.getElementById('idPaciente').value:'';doc.text('Nome: '+nome,20,63);doc.text('Idade: '+idade,120,63);doc.text('Sexo: '+sexo,20,69);doc.text('Data: '+dataAval,120,69);if(idPac)doc.text('ID: '+idPac,20,75);var y=84;if(rastreio.tipo==='tipo1'){doc.setFillColor(255,205,210);doc.rect(15,y,180,12,'F');doc.setTextColor(183,28,28);}else if(rastreio.tipo==='tipo2'){doc.setFillColor(255,243,224);doc.rect(15,y,180,12,'F');doc.setTextColor(230,81,0);}else if(rastreio.tipo==='tracos'){doc.setFillColor(255,249,196);doc.rect(15,y,180,12,'F');doc.setTextColor(230,81,0);}else{doc.setFillColor(200,230,201);doc.rect(15,y,180,12,'F');doc.setTextColor(46,125,50);}doc.setFontSize(10);doc.setFont(undefined,'bold');var textoRastreio=rastreio.tipo==='tipo1'?'RASTREIO POSITIVO - Indicativo de TB TIPO 1':rastreio.tipo==='tipo2'?'RASTREIO POSITIVO - Indicativo de TB TIPO 2':rastreio.tipo==='tracos'?'Tracos hipomaniacos identificados - avaliar longitudinalmente':'RASTREIO NEGATIVO para Transtorno Bipolar';doc.text(textoRastreio,105,y+8,{align:'center'});y=102;doc.setFillColor(21,101,192);doc.rect(15,y,180,12,'F');doc.setTextColor(255,255,255);doc.setFontSize(10);doc.text('Media Geral: '+mg.toFixed(2)+' / 5,00 — '+classificarIntensidade(mg).texto,105,y+8,{align:'center'});y=120;doc.setTextColor(0,0,0);doc.setFontSize(8);doc.setFont(undefined,'normal');doc.text('Criterios Maniacos: '+rastreio.maniaPresentes+'/7 (limiar: >=3)    |    Gravidade: '+rastreio.gravidadeMedia+'    |    Criterios Depressivos: '+rastreio.depPresentes+'/9 (limiar: >=5)',105,y,{align:'center'});y=130;doc.setTextColor(21,101,192);doc.setFontSize(11);doc.setFont(undefined,'bold');doc.text('DOMINIOS',20,y);y+=8;doc.setTextColor(0,0,0);doc.setFontSize(9);doc.setFont(undefined,'normal');Object.keys(dom).forEach(function(n){doc.text(n+': '+dom[n].media+' ('+dom[n].intensidade.texto+')',20,y);y+=6;});y+=5;doc.setTextColor(21,101,192);doc.setFontSize(11);doc.setFont(undefined,'bold');doc.text('DIMENSOES (17 CRITERIOS)',20,y);y+=8;doc.setFontSize(7.5);doc.setFont(undefined,'bold');doc.setFillColor(21,101,192);doc.setTextColor(255,255,255);doc.rect(15,y-4,180,7,'F');doc.text('Dimensao',20,y);doc.text('Media',120,y);doc.text('Intensidade',140,y);doc.text('Status',175,y);y+=7;doc.setFont(undefined,'normal');doc.setTextColor(0,0,0);for(var c=1;c<=17;c++){if(c%2===0){doc.setFillColor(245,245,245);doc.rect(15,y-4,180,7,'F');}doc.setTextColor(0,0,0);doc.text(CRITERIOS[c],20,y);doc.text(String(cr[c].media),123,y);doc.text(cr[c].intensidade.texto,140,y);doc.text(cr[c].presente?'Presente':(cr[c].media>=3.0?'Subclinico':'Ausente'),175,y);y+=7;if(y>275){doc.addPage();y=20;}}
+doc.addPage();y=20;doc.setFillColor(21,101,192);doc.rect(0,0,210,15,'F');doc.setTextColor(255,255,255);doc.setFontSize(12);doc.setFont(undefined,'bold');doc.text('ANALISE DOS RESULTADOS',105,10,{align:'center'});y=25;doc.setTextColor(0,0,0);doc.setFontSize(9);doc.setFont(undefined,'bold');doc.text('Rastreio Categorial:',20,y);y+=6;doc.setFont(undefined,'normal');if(rastreio.tipo==='tipo1'){doc.text('Identificados '+rastreio.maniaPresentes+'/7 criterios maniacos (>=3,5). Gravidade: '+rastreio.gravidadeMedia+' (>=3,5).',20,y);y+=5;doc.text('Padrao compativel com Transtorno Bipolar TIPO 1 (episodios maniacos graves).',20,y);y+=5;doc.text('Sugere necessidade de avaliacao psiquiatrica urgente.',20,y);y+=8;}else if(rastreio.tipo==='tipo2'){doc.text('Identificados '+rastreio.maniaPresentes+'/7 criterios maniacos e '+rastreio.depPresentes+'/9 criterios depressivos.',20,y);y+=5;doc.text('Gravidade: '+rastreio.gravidadeMedia+' (<3,5) - episodios hipomaniacos sem comprometimento grave.',20,y);y+=5;doc.text('Padrao compativel com Transtorno Bipolar TIPO 2 (hipomania + depressao maior).',20,y);y+=8;}else if(rastreio.tipo==='tracos'){doc.text('Identificados '+rastreio.maniaPresentes+'/7 criterios maniacos, sem episodio depressivo maior associado.',20,y);y+=5;doc.text('Tracos hipomaniacos presentes. Recomenda-se acompanhamento longitudinal.',20,y);y+=8;}else{doc.text('Identificados '+rastreio.maniaPresentes+'/7 criterios maniacos. Abaixo do limiar de 3 criterios.',20,y);y+=5;doc.text('Perfil nao sugere presenca de Transtorno Bipolar.',20,y);y+=8;}doc.setFont(undefined,'bold');doc.text('Analise por Dominios:',20,y);y+=6;doc.setFont(undefined,'normal');Object.keys(dom).forEach(function(n){doc.text(n+' ('+dom[n].media+' - '+dom[n].intensidade.texto+')',20,y);y+=5;});y+=5;doc.setFont(undefined,'bold');doc.text('Diferenciacao Tipo 1 vs Tipo 2:',20,y);y+=6;doc.setFont(undefined,'normal');doc.text('Tipo 1: Episodios maniacos graves (>=7 dias), comprometimento funcional severo, possiveis',20,y);y+=5;doc.text('sintomas psicoticos, necessidade de hospitalizacao.',20,y);y+=5;doc.text('Tipo 2: Episodios hipomaniacos (>=4 dias) sem comprometimento grave, alternados com',20,y);y+=5;doc.text('episodios depressivos maiores.',20,y);y+=8;var el=[];for(var c=1;c<=17;c++){if(cr[c].media>=3.5)el.push(CRITERIOS[c]+' ('+cr[c].media+')');}if(el.length>0){doc.setFont(undefined,'bold');doc.text('Dimensoes com pontuacao significativa:',20,y);y+=6;doc.setFont(undefined,'normal');el.forEach(function(e){doc.text('- '+e,25,y);y+=5;if(y>270){doc.addPage();y=20;}});y+=3;}if(cr[17].media>=3.0){y+=3;doc.setFillColor(255,235,238);doc.rect(15,y-4,180,18,'F');doc.setTextColor(198,40,40);doc.setFont(undefined,'bold');doc.text('ATENCAO: Dimensao Ideacao Suicida com pontuacao elevada ('+cr[17].media+').',20,y+2);doc.setFont(undefined,'normal');doc.text('Recomenda-se avaliacao de risco imediata. CVV: 188 | SAMU: 192',20,y+9);doc.setTextColor(0,0,0);y+=22;}y+=10;doc.setFillColor(255,243,224);doc.rect(15,y-4,180,30,'F');doc.setTextColor(230,81,0);doc.setFontSize(7);doc.setFont(undefined,'bold');doc.text('IMPORTANTE:',20,y+2);doc.setFont(undefined,'normal');doc.text('Esta escala e um instrumento de rastreio baseado nos criterios do DSM-5-TR e nao possui',20,y+8);doc.text('validacao empirica formal. Nao substitui avaliacao clinica profissional. Os resultados devem ser',20,y+13);doc.text('interpretados exclusivamente por profissionais de saude mental qualificados.',20,y+18);
+doc.addPage();doc.setFillColor(21,101,192);doc.rect(0,0,210,15,'F');doc.setTextColor(255,255,255);doc.setFontSize(12);doc.setFont(undefined,'bold');doc.text('REFERENCIAS',105,10,{align:'center'});var yr=25;doc.setTextColor(0,0,0);doc.setFontSize(7.5);doc.setFont(undefined,'normal');['AMERICAN PSYCHIATRIC ASSOCIATION. Diagnostic and Statistical Manual of Mental Disorders','(DSM-5-TR). 5th ed., text rev. Washington, DC: APA, 2022.','','CARVALHO, L. F. Dimensional Clinical Personality Inventory 2: antecedents, development, and','future improvements. Psicologia: Teoria e Pesquisa, v. 37, e37316, 2021.','','HIRSCHFELD, R. M. A. et al. Development and Validation of a Screening Instrument for Bipolar','Spectrum Disorder: the Mood Disorder Questionnaire. American Journal of Psychiatry, v. 157,','n. 11, p. 1873-1875, 2000.','','ANGST, J. et al. The HCL-32: Towards a Self-Assessment Tool for Hypomanic Symptoms in','Outpatients. Journal of Affective Disorders, v. 88, n. 2, p. 217-233, 2005.'].forEach(function(l){if(l===''){yr+=2;}else{doc.text(l,20,yr);yr+=4;}});doc.setFillColor(108,117,125);doc.rect(0,280,210,17,'F');doc.setTextColor(255,255,255);doc.setFontSize(8);doc.text('Relatorio gerado em: '+new Date().toLocaleString('pt-BR'),105,290,{align:'center'});var ts=new Date().toISOString().slice(0,16).replace(/[-:T]/g,'').slice(0,12);doc.save('ERT-TB_'+nome.replace(/\s+/g,'_')+'_'+ts+'.pdf');}
+function limparDados(){if(!confirm('Tem certeza que deseja limpar todos os dados?'))return;document.getElementById('nome').value='';document.getElementById('dataNascimento').value='';document.getElementById('idadeCalculada').value='';document.getElementById('sexo').value='';document.getElementById('observacoes').value='';document.querySelectorAll('input[type="radio"]').forEach(function(r){r.checked=false;});document.getElementById('resultados').style.display='none';document.getElementById('data').value=new Date().toISOString().split('T')[0];}
+document.addEventListener('DOMContentLoaded',function(){gerarQuestionario();document.getElementById('data').value=new Date().toISOString().split('T')[0];});
+    </script>
+</body>
+</html>
