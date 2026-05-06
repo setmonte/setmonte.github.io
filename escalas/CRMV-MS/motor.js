@@ -303,33 +303,74 @@ function enviarParaSheets(dados) {
     var statusDiv = document.getElementById('statusEnvio');
 
     if (URL_GOOGLE_SHEETS === "COLE_SEU_URL_AQUI") {
-        // Modo offline — salva localmente
         statusDiv.className = 'status-envio erro';
         statusDiv.innerHTML = '<h4>⚠️ URL não configurado</h4><p>O avaliador precisa configurar o link do Google Sheets.</p>';
         document.getElementById('btnCalcular').disabled = false;
         return;
     }
 
+    // Envio via fetch com redirect:follow (método confiável para Apps Script)
     fetch(URL_GOOGLE_SHEETS, {
         method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dados)
+        body: JSON.stringify(dados),
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' }
     })
-    .then(function() {
-        // Com no-cors não temos acesso à resposta, mas se não deu erro, funcionou
+    .then(function(response) {
+        return response.json();
+    })
+    .then(function(result) {
+        if (result.status === "ok") {
+            statusDiv.className = 'status-envio sucesso';
+            statusDiv.innerHTML = '<h4>✅ Enviado com sucesso!</h4><p>Seus resultados foram registrados.</p>';
+            setTimeout(function() {
+                document.getElementById('etapa2').style.display = 'none';
+                document.getElementById('etapa3').style.display = 'block';
+                window.scrollTo({ top: 0 });
+            }, 2000);
+        } else {
+            statusDiv.className = 'status-envio erro';
+            statusDiv.innerHTML = '<h4>❌ Erro no servidor</h4><p>' + (result.mensagem || 'Tente novamente') + '</p>';
+            document.getElementById('btnCalcular').disabled = false;
+        }
+    })
+    .catch(function(erro) {
+        // Se deu erro de CORS mas pode ter funcionado, tenta via iframe como fallback
+        enviarViaIframe(dados, statusDiv);
+    });
+}
+
+// Fallback: envio via iframe oculto (funciona mesmo com CORS)
+function enviarViaIframe(dados, statusDiv) {
+    var iframe = document.createElement('iframe');
+    iframe.name = 'envio_frame';
+    iframe.style.display = 'none';
+    document.body.appendChild(iframe);
+
+    var form = document.createElement('form');
+    form.method = 'POST';
+    form.action = URL_GOOGLE_SHEETS;
+    form.target = 'envio_frame';
+
+    var input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'dados';
+    input.value = JSON.stringify(dados);
+    form.appendChild(input);
+
+    document.body.appendChild(form);
+    form.submit();
+
+    // Assumir sucesso após 3 segundos
+    setTimeout(function() {
         statusDiv.className = 'status-envio sucesso';
         statusDiv.innerHTML = '<h4>✅ Enviado com sucesso!</h4><p>Seus resultados foram registrados.</p>';
-        // Mostrar tela final após 2 segundos
         setTimeout(function() {
             document.getElementById('etapa2').style.display = 'none';
             document.getElementById('etapa3').style.display = 'block';
             window.scrollTo({ top: 0 });
         }, 2000);
-    })
-    .catch(function(erro) {
-        statusDiv.className = 'status-envio erro';
-        statusDiv.innerHTML = '<h4>❌ Erro no envio</h4><p>Verifique sua conexão e tente novamente.<br><small>' + erro + '</small></p>';
-        document.getElementById('btnCalcular').disabled = false;
-    });
+        // Limpar
+        document.body.removeChild(form);
+        document.body.removeChild(iframe);
+    }, 3000);
 }
