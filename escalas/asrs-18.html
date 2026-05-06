@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASRS-18 — Escala de Autoavaliação de TDAH em Adultos</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6; color: #333;
+            background: linear-gradient(135deg, #1565c0 0%, #00897b 100%);
+            min-height: 100vh; padding: 20px;
+        }
+        .container {
+            max-width: 1000px; margin: 0 auto; background: white;
+            border-radius: 15px; box-shadow: 0 20px 40px rgba(0,0,0,0.15); overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #1565c0 0%, #00897b 100%);
+            color: white; padding: 30px; text-align: center;
+        }
+        .header h1 { font-size: 2.2em; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        .header p { font-size: 1.1em; opacity: 0.9; }
+        .content { padding: 30px; }
+        .info-tecnica {
+            background: #e3f2fd; padding: 25px; border-radius: 10px;
+            margin-bottom: 30px; border-left: 5px solid #1565c0; position: relative;
+        }
+        .info-tecnica h2 { color: #1565c0; margin-bottom: 15px; font-size: 1.4em; }
+        .info-tecnica p { color: #555; line-height: 1.7; font-size: 0.95em; }
+        .dados-pessoais {
+            background: #f8f9fa; padding: 25px; border-radius: 10px;
+            margin-bottom: 30px; border-left: 5px solid #1565c0;
+        }
+        .dados-pessoais h2 { color: #1565c0; margin-bottom: 20px; font-size: 1.5em; }
+        .form-row { display: flex; gap: 20px; margin-bottom: 15px; flex-wrap: wrap; }
+        .form-group { flex: 1; min-width: 200px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; color: #555; }
+        .form-group input, .form-group select {
+            width: 100%; padding: 12px; border: 2px solid #e0e0e0;
+            border-radius: 8px; font-size: 16px; transition: border-color 0.3s;
+        }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: #1565c0; }
+        .instrucoes {
+            background: #e0f2f1; padding: 20px; border-radius: 10px;
+            margin-bottom: 30px; border-left: 5px solid #00897b;
+        }
+        .instrucoes h3 { color: #00695c; margin-bottom: 10px; }
+        .instrucoes p { color: #555; font-size: 0.95em; line-height: 1.7; }
+        .item {
+            padding: 20px; border-bottom: 1px solid #f0f0f0;
+            transition: background-color 0.3s;
+        }
+        .item:hover { background-color: #e3f2fd; }
+        .item:last-child { border-bottom: none; }
+        .item-texto { font-size: 1.05em; margin-bottom: 15px; color: #444; line-height: 1.5; }
+        .item-numero { font-weight: bold; color: #1565c0; margin-right: 8px; }
+        .opcoes { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+        .opcao {
+            display: flex; flex-direction: column; align-items: center; gap: 5px;
+            cursor: pointer; padding: 8px; border-radius: 8px;
+            transition: all 0.3s; border: 2px solid transparent;
+            min-width: 70px; min-height: 70px;
+        }
+        .opcao:hover { background-color: #e3f2fd; border-color: #1565c0; }
+        .opcao input[type="radio"] { width: 18px; height: 18px; cursor: pointer; accent-color: #1565c0; }
+        .opcao label {
+            cursor: pointer; font-weight: 500; color: #555; text-align: center;
+            font-size: 0.8em; line-height: 1.2; min-height: 30px;
+            display: flex; align-items: center;
+        }
+        .botoes { display: flex; gap: 15px; justify-content: center; margin: 30px 0; flex-wrap: wrap; }
+        .btn {
+            padding: 15px 30px; border: none; border-radius: 25px;
+            font-size: 16px; font-weight: 600; cursor: pointer;
+            transition: all 0.3s; text-align: center;
+        }
+        .btn-primary { background: linear-gradient(135deg, #1565c0 0%, #00897b 100%); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(21,101,192,0.3); }
+        .btn-secondary { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; }
+        .btn-secondary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(40,167,69,0.3); }
+        .btn-danger { background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%); color: white; }
+        .btn-danger:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(220,53,69,0.3); }
+        .resultados {
+            background: #f8f9fa; padding: 30px; border-radius: 10px;
+            margin-top: 30px; border-left: 5px solid #1565c0; display: none;
+        }
+        .resultados h2 { color: #1565c0; margin-bottom: 20px; text-align: center; }
+        .resultado-criterio {
+            background: white; padding: 15px; border-radius: 8px;
+            margin-bottom: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
+        }
+        .resultado-criterio .nome { font-weight: 600; color: #333; flex: 1; min-width: 200px; }
+        .badge {
+            padding: 4px 12px; border-radius: 15px; font-size: 0.8em; font-weight: 600;
+        }
+        .badge-presente { background: #ffcdd2; color: #c62828; }
+        .badge-ausente { background: #c8e6c9; color: #2e7d32; }
+        .barra-container { width: 120px; height: 10px; background: #e0e0e0; border-radius: 5px; overflow: hidden; }
+        .barra-fill { height: 100%; border-radius: 5px; transition: width 0.5s; }
+        .dominio-card {
+            background: white; padding: 20px; border-radius: 10px;
+            margin-bottom: 15px; box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+            border-left: 4px solid #1565c0;
+        }
+        .dominio-card h4 { color: #1565c0; margin-bottom: 8px; }
+        .dominio-card .valor { font-size: 1.8em; font-weight: 800; color: #333; }
+        .total-geral {
+            background: linear-gradient(135deg, #1565c0 0%, #00897b 100%);
+            color: white; padding: 25px; border-radius: 10px;
+            text-align: center; margin: 20px 0;
+        }
+        .total-geral h3 { margin-bottom: 5px; }
+        .rastreio-box {
+            padding: 20px; border-radius: 10px; text-align: center;
+            margin: 20px 0; font-size: 1.2em; font-weight: 700;
+        }
+        .rastreio-positivo { background: #ffcdd2; border: 3px solid #c62828; color: #b71c1c; }
+        .rastreio-negativo { background: #c8e6c9; border: 3px solid #2e7d32; color: #1b5e20; }
+        .analise-texto {
+            background: white; padding: 25px; border-radius: 10px;
+            margin-top: 20px; border: 2px solid #1565c0; line-height: 1.8;
+        }
+        .analise-texto h3 { color: #1565c0; margin-bottom: 15px; }
+        .analise-texto p { margin-bottom: 10px; color: #444; font-size: 0.95em; }
+        .disclaimer {
+            background: #fff3e0; padding: 15px; border-radius: 8px;
+            margin-top: 20px; border-left: 4px solid #ff9800;
+            font-size: 0.85em; color: #e65100; line-height: 1.6;
+        }
+        .btn-imprimir {
+            position: absolute; top: 20px; right: 20px; padding: 10px 20px;
+            background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%);
+            color: white; border: none; border-radius: 20px; font-size: 14px;
+            font-weight: 600; cursor: pointer; transition: all 0.3s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .btn-imprimir:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(21,101,192,0.4); }
+        .parte-header {
+            background: #e3f2fd; padding: 12px 20px; border-radius: 8px;
+            margin: 20px 0 10px; font-weight: 700; color: #1565c0; font-size: 1.1em;
+        }
+        @media print {
+            @page { size: portrait; margin: 1cm; }
+            body { background: white; padding: 0; }
+            .botoes, .btn, .btn-imprimir { display: none !important; }
+            .container { box-shadow: none; max-width: 100%; }
+            .info-tecnica { display: none !important; }
+            .resultados { display: none !important; }
+            .header { background: #1565c0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .item { page-break-inside: avoid; break-inside: avoid; }
+        }
+        @media (max-width: 768px) {
+            .container { margin: 10px; border-radius: 10px; }
+            .header { padding: 20px; }
+            .header h1 { font-size: 1.6em; }
+            .content { padding: 15px; }
+            .form-row { flex-direction: column; }
+            .opcoes { flex-direction: column; align-items: center; }
+            .botoes { flex-direction: column; }
+            .btn { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+<div style="padding:10px 20px;background:#2e7d32;"><a href="../" style="display:inline-block;background:#fff;color:#2e7d32;text-decoration:none;font-family:Segoe UI,Arial,sans-serif;font-size:14px;font-weight:bold;padding:8px 20px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.15);">⬅ Voltar ao Início</a></div>
+    <div class="container">
+        <div class="header">
+            <h1>🧠 ASRS-18</h1>
+            <p>Escala de Autoavaliação do TDAH em Adultos</p>
+            <p style="font-size:0.85em; opacity:0.8; margin-top:5px;">Adult ADHD Self-Report Scale v1.1 (OMS/WHO)</p>
+        </div>
+        <div class="content">
+            <div class="info-tecnica">
+                <button class="btn-imprimir" onclick="window.print()">🖨️ Imprimir Formulário</button>
+                <h2>📚 Informações Técnicas</h2>
+                <p>
+                    <strong>Instrumento:</strong> ASRS-18 — Adult ADHD Self-Report Scale v1.1<br>
+                    <strong>Autores:</strong> Kessler, Adler, Ames, Demler, Faraone, Hiripi, Howes, Jin, Secnik, Spencer, Ustun &amp; Walters (2005) — OMS/WHO<br>
+                    <strong>Base teórica:</strong> Critérios diagnósticos do DSM-IV-TR / DSM-5 para TDAH em adultos<br>
+                    <strong>Estrutura:</strong> 18 itens divididos em Parte A (6 itens — rastreio) e Parte B (12 itens — complementar)<br>
+                    <strong>Domínios:</strong> Desatenção (9 itens) e Hiperatividade/Impulsividade (9 itens)<br>
+                    <strong>Escala:</strong> Likert 5 pontos (Nunca a Muito Frequentemente)<br>
+                    <strong>Ponto de corte (Parte A):</strong> ≥4 itens nas faixas sombreadas = altamente consistente com TDAH<br>
+                    <strong>População:</strong> Adultos (≥18 anos) — instrumento de rastreio<br>
+                    <strong>Domínio público:</strong> Sim — desenvolvido pela OMS, uso livre
+                </p>
+            </div>
+            <div class="dados-pessoais">
+                <h2>📋 Dados Pessoais</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="nome">Nome:</label>
+                        <input type="text" id="nome" placeholder="Nome completo">
+                    </div>
+                    <div class="form-group">
+                        <label for="dataNascimento">Data de Nascimento:</label>
+                        <input type="date" id="dataNascimento" onchange="calcularIdade()">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="idadeCalculada">Idade:</label>
+                        <input type="text" id="idadeCalculada" readonly style="background-color:#f0f0f0;" placeholder="Calculada automaticamente">
+                    </div>
+                    <div class="form-group">
+                        <label for="sexo">Sexo:</label>
+                        <select id="sexo">
+                            <option value="">Selecione</option>
+                            <option value="Masculino">Masculino</option>
+                            <option value="Feminino">Feminino</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="data">Data da Avaliação:</label>
+                        <input type="date" id="data">
+                    </div>
+                    <div class="form-group">
+                        <label for="observacoes">Observações (opcional):</label>
+                        <input type="text" id="observacoes" placeholder="Informações adicionais">
+                    </div>
+                </div>
+            </div>
+            <div class="instrucoes">
+                <h3>📝 Instruções</h3>
+                <p>
+                    Por favor, responda as perguntas abaixo avaliando-se de acordo com os critérios ao lado de cada item.
+                    Ao responder cada pergunta, marque a opção que melhor descreve como você tem se sentido e se comportado
+                    <strong>nos últimos 6 meses</strong>. Não existem respostas certas ou erradas.
+                </p>
+            </div>
+            <div id="questionario"></div>
+            <div class="botoes">
+                <button class="btn btn-primary" onclick="calcularResultados()">📊 Calcular Resultados</button>
+                <button class="btn btn-secondary" onclick="gerarRelatorioPDF()">📄 Gerar Relatório PDF</button>
+                <button class="btn btn-danger" onclick="limparDados()">🗑️ Limpar Dados</button>
+            </div>
+            <div id="resultados" class="resultados"></div>
+            <div class="info-tecnica" id="referencias" style="margin-top:30px; background:#f8f9fa; border-left-color:#1565c0;">
+                <h2 style="color:#1565c0;">📚 Referências</h2>
+                <p style="color:#555; line-height:1.9; font-size:0.88em;">
+                    <strong>KESSLER, R. C. et al.</strong> The World Health Organization Adult ADHD Self-Report Scale (ASRS): a short screening scale for use in the general population. <em>Psychological Medicine</em>, v. 35, n. 2, p. 245-256, 2005.<br><br>
+                    <strong>MATTOS, P. et al.</strong> Apresentação de uma versão em português para uso no Brasil do instrumento MTA-SNAP-IV de avaliação de sintomas de transtorno do déficit de atenção/hiperatividade e sintomas de transtorno desafiador e de oposição. <em>Revista de Psiquiatria do Rio Grande do Sul</em>, v. 28, n. 3, p. 290-297, 2006.<br><br>
+                    <strong>AMERICAN PSYCHIATRIC ASSOCIATION.</strong> <em>Diagnostic and Statistical Manual of Mental Disorders</em> (DSM-5-TR). 5th ed., text rev. Washington, DC: APA, 2022.<br><br>
+                    <strong>LEITE, W. B.</strong> Avaliação das propriedades psicométricas da Escala de Autorrelato de Sintomas do TDAH – ASRS-18. <em>Dissertação de Mestrado</em>. Universidade São Francisco, 2011.
+                </p>
+            </div>
+        </div>
+    </div>
+    <script src="../id-paciente.js"></script>
+    <script>
+// ===== ITENS ASRS-18 =====
+// Parte A: itens 1-6 (rastreio); Parte B: itens 7-18 (complementar)
+// dominio: "D" = Desatenção, "HI" = Hiperatividade/Impulsividade
+// corte: valor a partir do qual o item é considerado "na faixa" para rastreio da Parte A
+var ITENS=[
+{texto:"Com que frequência você tem dificuldade para finalizar os detalhes finais de um projeto, depois que as partes mais difíceis já foram feitas?",dominio:"D",parte:"A",corte:3},
+{texto:"Com que frequência você tem dificuldade para colocar as coisas em ordem quando precisa realizar uma tarefa que exige organização?",dominio:"D",parte:"A",corte:3},
+{texto:"Com que frequência você tem problemas para lembrar de compromissos ou obrigações?",dominio:"D",parte:"A",corte:3},
+{texto:"Quando você tem uma tarefa que exige muita concentração, com que frequência você evita ou adia o início?",dominio:"D",parte:"A",corte:4},
+{texto:"Com que frequência você fica se mexendo na cadeira ou balançando as mãos ou os pés quando precisa ficar sentado(a) por muito tempo?",dominio:"HI",parte:"A",corte:4},
+{texto:"Com que frequência você se sente excessivamente ativo(a) e compelido(a) a fazer coisas, como se estivesse \"movido(a) por um motor\"?",dominio:"HI",parte:"A",corte:4},
+{texto:"Com que frequência você comete erros por falta de atenção quando tem de trabalhar num projeto chato ou difícil?",dominio:"D",parte:"B",corte:4},
+{texto:"Com que frequência você tem dificuldade para manter a atenção quando está fazendo um trabalho chato ou repetitivo?",dominio:"D",parte:"B",corte:4},
+{texto:"Com que frequência você tem dificuldade para se concentrar no que as pessoas dizem, mesmo quando elas estão falando diretamente com você?",dominio:"D",parte:"B",corte:4},
+{texto:"Com que frequência você coloca as coisas fora do lugar ou tem dificuldade de encontrar as coisas em casa ou no trabalho?",dominio:"D",parte:"B",corte:4},
+{texto:"Com que frequência você se distrai com atividades ou barulho ao seu redor?",dominio:"D",parte:"B",corte:4},
+{texto:"Com que frequência você levanta da cadeira em reuniões ou em outras situações onde deveria ficar sentado(a)?",dominio:"HI",parte:"B",corte:4},
+{texto:"Com que frequência você se sente inquieto(a) ou agitado(a)?",dominio:"HI",parte:"B",corte:4},
+{texto:"Com que frequência você tem dificuldade para sossegar e relaxar quando tem tempo livre para si?",dominio:"HI",parte:"B",corte:4},
+{texto:"Com que frequência você se pega falando demais em situações sociais?",dominio:"HI",parte:"B",corte:4},
+{texto:"Quando você está conversando, com que frequência você se pega terminando as frases das pessoas antes delas?",dominio:"HI",parte:"B",corte:3},
+{texto:"Com que frequência você tem dificuldade para esperar nas situações em que é necessário aguardar a sua vez?",dominio:"HI",parte:"B",corte:4},
+{texto:"Com que frequência você interrompe os outros quando eles estão ocupados?",dominio:"HI",parte:"B",corte:3}
+];
+var OPCOES_LIKERT=[{valor:0,texto:"Nunca"},{valor:1,texto:"Raramente"},{valor:2,texto:"Às vezes"},{valor:3,texto:"Frequente-\nmente"},{valor:4,texto:"Muito\nFrequente-\nmente"}];
+
+// ===== APP =====
+function gerarQuestionario(){var c=document.getElementById('questionario');var h='';var parteAtual='';ITENS.forEach(function(item,i){if(item.parte!==parteAtual){parteAtual=item.parte;if(parteAtual==='A')h+='<div class="parte-header">📋 Parte A — Rastreio (6 itens mais preditivos)</div>';else h+='<div class="parte-header">📋 Parte B — Complementar (12 itens adicionais)</div>';}h+='<div class="item" id="item'+i+'"><div class="item-texto"><span class="item-numero">'+(i+1)+'.</span> '+item.texto+'</div><div class="opcoes">';OPCOES_LIKERT.forEach(function(op){h+='<div class="opcao"><input type="radio" id="item'+i+'_'+op.valor+'" name="item'+i+'" value="'+op.valor+'"><label for="item'+i+'_'+op.valor+'">'+op.texto.replace(/\n/g,'<br>')+'</label></div>';});h+='</div></div>';});c.innerHTML=h;}
+function calcularIdade(){var d=document.getElementById('dataNascimento').value;if(!d)return;var h=new Date(),n=new Date(d),a=h.getFullYear()-n.getFullYear(),m=h.getMonth()-n.getMonth(),di=h.getDate()-n.getDate();if(di<0){m--;di+=new Date(h.getFullYear(),h.getMonth(),0).getDate();}if(m<0){a--;m+=12;}document.getElementById('idadeCalculada').value=a+' anos, '+m+' meses e '+di+' dias';}
+function obterRespostas(){var r=[];for(var i=0;i<ITENS.length;i++){var s=document.querySelector('input[name="item'+i+'"]:checked');if(!s)return null;r.push(parseInt(s.value));}return r;}
+function calcularResultados(){var n=document.getElementById('nome').value,id=document.getElementById('idadeCalculada').value,s=document.getElementById('sexo').value;if(!n||!id||!s){alert('Por favor, preencha todos os dados pessoais antes de calcular.');return;}var r=obterRespostas();if(!r){alert('Por favor, responda todos os 18 itens antes de calcular.');return;}
+// Parte A: contar itens na faixa
+var parteA=0;for(var i=0;i<6;i++){if(r[i]>=ITENS[i].corte)parteA++;}
+// Domínios
+var desatencao=[],hiper=[];ITENS.forEach(function(it,i){if(it.dominio==='D')desatencao.push(r[i]);else hiper.push(r[i]);});
+var somaD=desatencao.reduce(function(a,b){return a+b;},0);var somaHI=hiper.reduce(function(a,b){return a+b;},0);var somaTotal=somaD+somaHI;
+var mediaD=(somaD/9).toFixed(2);var mediaHI=(somaHI/9).toFixed(2);var mediaTotal=(somaTotal/18).toFixed(2);
+// Classificação
+function classif(m){if(m<1)return{t:"Mínimo",c:"#4caf50"};if(m<1.5)return{t:"Leve",c:"#8bc34a"};if(m<2)return{t:"Leve-Moderado",c:"#ffc107"};if(m<2.5)return{t:"Moderado",c:"#ff9800"};if(m<3)return{t:"Significativo",c:"#ff5722"};return{t:"Intenso",c:"#f44336"};}
+var clD=classif(mediaD),clHI=classif(mediaHI),clT=classif(mediaTotal);
+// Mostrar resultados
+var el=document.getElementById('resultados');var h='<h2>📊 Resultados ASRS-18</h2>';
+if(parteA>=4)h+='<div class="rastreio-box rastreio-positivo">⚠️ RASTREIO POSITIVO (Parte A) — '+parteA+'/6 itens na faixa clínica (limiar: ≥4)</div>';
+else h+='<div class="rastreio-box rastreio-negativo">✅ RASTREIO NEGATIVO (Parte A) — '+parteA+'/6 itens na faixa clínica (limiar: ≥4)</div>';
+h+='<div class="total-geral"><h3>Escore Total: '+somaTotal+' / 72</h3><h3>Média Geral: '+mediaTotal+' — '+clT.t+'</h3></div>';
+h+='<h3 style="color:#1565c0;margin:20px 0 15px;">🧩 Domínios</h3>';
+h+='<div class="dominio-card"><h4>Desatenção (9 itens)</h4><div style="display:flex;align-items:center;gap:15px;flex-wrap:wrap;"><div class="valor">'+somaD+'/36</div><div class="barra-container"><div class="barra-fill" style="width:'+((somaD/36)*100).toFixed(0)+'%;background:'+clD.c+';"></div></div><span class="badge" style="background:'+clD.c+'22;color:'+clD.c+';">'+clD.t+'</span></div><div style="font-size:0.85em;color:#777;margin-top:8px;">Média: '+mediaD+'</div></div>';
+h+='<div class="dominio-card"><h4>Hiperatividade / Impulsividade (9 itens)</h4><div style="display:flex;align-items:center;gap:15px;flex-wrap:wrap;"><div class="valor">'+somaHI+'/36</div><div class="barra-container"><div class="barra-fill" style="width:'+((somaHI/36)*100).toFixed(0)+'%;background:'+clHI.c+';"></div></div><span class="badge" style="background:'+clHI.c+'22;color:'+clHI.c+';">'+clHI.t+'</span></div><div style="font-size:0.85em;color:#777;margin-top:8px;">Média: '+mediaHI+'</div></div>';
+// Itens individuais
+h+='<h3 style="color:#1565c0;margin:20px 0 15px;">📋 Respostas por Item</h3>';
+ITENS.forEach(function(it,i){var v=r[i];var naFaixa=(it.parte==='A'&&v>=it.corte);h+='<div class="resultado-criterio"><div class="nome" style="font-size:0.85em;">'+(i+1)+'. '+it.texto.substring(0,60)+'...</div><div style="display:flex;gap:8px;align-items:center;"><span style="font-weight:700;">'+v+'</span><span class="badge" style="background:'+(it.dominio==='D'?'#e3f2fd':'#e0f2f1')+';color:'+(it.dominio==='D'?'#1565c0':'#00695c')+';">'+(it.dominio==='D'?'Desatenção':'Hiper/Impuls')+'</span>'+(naFaixa?'<span class="badge badge-presente">Faixa clínica</span>':'')+'</div></div>';});
+// Análise
+h+='<div class="analise-texto"><h3>📝 Análise dos Resultados</h3>';
+if(parteA>=4)h+='<p><strong>⚠️ Rastreio Parte A:</strong> '+parteA+' dos 6 itens mais preditivos pontuaram na faixa clínica. Resultado <strong>altamente consistente com TDAH em adultos</strong>. Recomenda-se avaliação clínica aprofundada.</p>';
+else h+='<p><strong>✅ Rastreio Parte A:</strong> '+parteA+' dos 6 itens pontuaram na faixa clínica. Abaixo do limiar de 4 itens. Resultado não sugere TDAH, mas sintomas isolados podem merecer atenção.</p>';
+h+='<p><strong>📊 Perfil Dimensional:</strong></p>';
+h+='<p>• <strong>Desatenção:</strong> '+somaD+'/36 (média '+mediaD+' — '+clD.t+')'+(parseFloat(mediaD)>=2?' — sugere dificuldades atencionais significativas':parseFloat(mediaD)>=1.5?' — sugere algumas dificuldades atencionais':' — dentro de parâmetros esperados')+'</p>';
+h+='<p>• <strong>Hiperatividade/Impulsividade:</strong> '+somaHI+'/36 (média '+mediaHI+' — '+clHI.t+')'+(parseFloat(mediaHI)>=2?' — sugere inquietação e impulsividade significativas':parseFloat(mediaHI)>=1.5?' — sugere alguma inquietação/impulsividade':' — dentro de parâmetros esperados')+'</p>';
+if(parseFloat(mediaD)>=2&&parseFloat(mediaHI)>=2)h+='<p><strong>Apresentação sugerida:</strong> Combinada (Desatenção + Hiperatividade/Impulsividade)</p>';
+else if(parseFloat(mediaD)>=2)h+='<p><strong>Apresentação sugerida:</strong> Predominantemente Desatenta</p>';
+else if(parseFloat(mediaHI)>=2)h+='<p><strong>Apresentação sugerida:</strong> Predominantemente Hiperativa/Impulsiva</p>';
+h+='</div>';
+h+='<div class="disclaimer"><strong>⚠️ IMPORTANTE:</strong> A ASRS-18 é um instrumento de <strong>rastreio</strong> desenvolvido pela OMS. <strong>Não substitui avaliação clínica profissional.</strong> O diagnóstico de TDAH em adultos requer avaliação abrangente incluindo história de desenvolvimento, funcionamento em múltiplos contextos, diagnósticos diferenciais e comorbidades. Os resultados devem ser interpretados exclusivamente por profissionais de saúde mental qualificados.</div>';
+el.innerHTML=h;el.style.display='block';el.scrollIntoView({behavior:'smooth'});}
+function gerarRelatorioPDF(){var nome=document.getElementById('nome').value;if(!nome){alert('Preencha pelo menos o nome.');return;}var r=obterRespostas();if(!r){alert('Responda todos os itens antes de gerar o PDF.');return;}
+var parteA=0;for(var i=0;i<6;i++){if(r[i]>=ITENS[i].corte)parteA++;}
+var desatencao=[],hiper=[];ITENS.forEach(function(it,i){if(it.dominio==='D')desatencao.push(r[i]);else hiper.push(r[i]);});
+var somaD=desatencao.reduce(function(a,b){return a+b;},0);var somaHI=hiper.reduce(function(a,b){return a+b;},0);var somaTotal=somaD+somaHI;
+var mediaD=(somaD/9).toFixed(2);var mediaHI=(somaHI/9).toFixed(2);var mediaTotal=(somaTotal/18).toFixed(2);
+function classif(m){if(m<1)return"Mínimo";if(m<1.5)return"Leve";if(m<2)return"Leve-Moderado";if(m<2.5)return"Moderado";if(m<3)return"Significativo";return"Intenso";}
+var idade=document.getElementById('idadeCalculada').value,sexo=document.getElementById('sexo').value,dataAval=document.getElementById('data').value||new Date().toLocaleDateString('pt-BR');
+var jsPDF=window.jspdf.jsPDF;var doc=new jsPDF();
+// Página 1
+doc.setFillColor(21,101,192);doc.rect(0,0,210,40,'F');doc.setTextColor(255,255,255);doc.setFontSize(16);doc.setFont(undefined,'bold');doc.text('ASRS-18 — RELATÓRIO DE AVALIAÇÃO',105,18,{align:'center'});doc.setFontSize(10);doc.text('Escala de Autoavaliação do TDAH em Adultos (OMS)',105,27,{align:'center'});doc.setFontSize(8);doc.text('Adult ADHD Self-Report Scale v1.1',105,34,{align:'center'});
+doc.setFillColor(248,249,250);doc.rect(15,48,180,25,'F');doc.setDrawColor(21,101,192);doc.rect(15,48,180,25);doc.setTextColor(21,101,192);doc.setFontSize(11);doc.setFont(undefined,'bold');doc.text('DADOS PESSOAIS',20,56);doc.setTextColor(0,0,0);doc.setFontSize(9);doc.setFont(undefined,'normal');
+var idPac=document.getElementById('idPaciente')?document.getElementById('idPaciente').value:'';doc.text('Nome: '+nome,20,63);doc.text('Idade: '+idade,120,63);doc.text('Sexo: '+sexo,20,69);doc.text('Data: '+dataAval,120,69);if(idPac)doc.text('ID: '+idPac,20,75);
+var y=82;if(parteA>=4){doc.setFillColor(255,205,210);doc.rect(15,y,180,12,'F');doc.setTextColor(198,40,40);}else{doc.setFillColor(200,230,201);doc.rect(15,y,180,12,'F');doc.setTextColor(46,125,50);}
+doc.setFontSize(11);doc.setFont(undefined,'bold');doc.text((parteA>=4?'RASTREIO POSITIVO':'RASTREIO NEGATIVO')+' (Parte A) — '+parteA+'/6 itens na faixa clínica',105,y+8,{align:'center'});
+y=100;doc.setFillColor(21,101,192);doc.rect(15,y,180,12,'F');doc.setTextColor(255,255,255);doc.setFontSize(10);doc.text('Escore Total: '+somaTotal+'/72 | Média: '+mediaTotal+' — '+classif(mediaTotal),105,y+8,{align:'center'});
+y=118;doc.setTextColor(21,101,192);doc.setFontSize(11);doc.setFont(undefined,'bold');doc.text('DOMÍNIOS',20,y);y+=8;doc.setTextColor(0,0,0);doc.setFontSize(9);doc.setFont(undefined,'normal');
+doc.text('Desatenção: '+somaD+'/36 (média '+mediaD+' — '+classif(mediaD)+')',20,y);y+=6;
+doc.text('Hiperatividade/Impulsividade: '+somaHI+'/36 (média '+mediaHI+' — '+classif(mediaHI)+')',20,y);y+=10;
+doc.setTextColor(21,101,192);doc.setFontSize(11);doc.setFont(undefined,'bold');doc.text('RESPOSTAS POR ITEM',20,y);y+=8;
+doc.setFontSize(7);doc.setFont(undefined,'bold');doc.setFillColor(21,101,192);doc.setTextColor(255,255,255);doc.rect(15,y-4,180,7,'F');doc.text('Item',18,y);doc.text('Domínio',130,y);doc.text('Valor',160,y);doc.text('Faixa',178,y);y+=7;
+doc.setFont(undefined,'normal');doc.setTextColor(0,0,0);
+ITENS.forEach(function(it,i){if(y>270){doc.addPage();y=20;}if(i%2===0){doc.setFillColor(245,245,245);doc.rect(15,y-4,180,7,'F');}doc.text((i+1)+'. '+it.texto.substring(0,65),18,y);doc.text(it.dominio==='D'?'Desatenção':'Hiper/Impuls',130,y);doc.text(String(r[i]),165,y);if(it.parte==='A'&&r[i]>=it.corte)doc.text('SIM',180,y);y+=7;});
+// Página 2 - Análise
+doc.addPage();y=20;doc.setFillColor(21,101,192);doc.rect(0,0,210,15,'F');doc.setTextColor(255,255,255);doc.setFontSize(12);doc.setFont(undefined,'bold');doc.text('ANÁLISE DOS RESULTADOS',105,10,{align:'center'});
+y=25;doc.setTextColor(0,0,0);doc.setFontSize(9);doc.setFont(undefined,'normal');
+if(parteA>=4){doc.text('Rastreio Parte A: '+parteA+'/6 itens na faixa clínica — ALTAMENTE CONSISTENTE COM TDAH.',20,y);y+=6;doc.text('Recomenda-se avaliação clínica aprofundada por profissional especializado.',20,y);}else{doc.text('Rastreio Parte A: '+parteA+'/6 itens na faixa clínica — abaixo do limiar.',20,y);y+=6;doc.text('Resultado não sugere TDAH, mas sintomas isolados podem merecer atenção.',20,y);}
+y+=12;doc.setFont(undefined,'bold');doc.text('Perfil Dimensional:',20,y);y+=7;doc.setFont(undefined,'normal');
+doc.text('Desatenção: '+mediaD+' ('+classif(mediaD)+')',20,y);y+=6;
+doc.text('Hiperatividade/Impulsividade: '+mediaHI+' ('+classif(mediaHI)+')',20,y);y+=10;
+if(parseFloat(mediaD)>=2&&parseFloat(mediaHI)>=2){doc.text('Apresentação sugerida: Combinada',20,y);}else if(parseFloat(mediaD)>=2){doc.text('Apresentação sugerida: Predominantemente Desatenta',20,y);}else if(parseFloat(mediaHI)>=2){doc.text('Apresentação sugerida: Predominantemente Hiperativa/Impulsiva',20,y);}
+y+=15;doc.setFillColor(255,243,224);doc.rect(15,y-4,180,25,'F');doc.setTextColor(230,81,0);doc.setFontSize(7);doc.setFont(undefined,'bold');doc.text('IMPORTANTE:',20,y+2);doc.setFont(undefined,'normal');doc.text('A ASRS-18 é um instrumento de rastreio desenvolvido pela OMS. Não substitui avaliação clínica',20,y+8);doc.text('profissional. O diagnóstico de TDAH requer avaliação abrangente incluindo história de desenvolvimento,',20,y+13);doc.text('funcionamento em múltiplos contextos, diagnósticos diferenciais e comorbidades.',20,y+18);
+// Página 3 - Referências
+doc.addPage();doc.setFillColor(21,101,192);doc.rect(0,0,210,15,'F');doc.setTextColor(255,255,255);doc.setFontSize(12);doc.setFont(undefined,'bold');doc.text('REFERÊNCIAS',105,10,{align:'center'});
+var yr=25;doc.setTextColor(0,0,0);doc.setFontSize(7.5);doc.setFont(undefined,'normal');
+['KESSLER, R. C. et al. The World Health Organization Adult ADHD Self-Report Scale (ASRS):','a short screening scale for use in the general population. Psychological Medicine, v. 35, n. 2,','p. 245-256, 2005.','','MATTOS, P. et al. Apresentação de uma versão em português para uso no Brasil do instrumento','MTA-SNAP-IV de avaliação de sintomas de TDAH. Revista de Psiquiatria do Rio Grande do Sul,','v. 28, n. 3, p. 290-297, 2006.','','AMERICAN PSYCHIATRIC ASSOCIATION. Diagnostic and Statistical Manual of Mental Disorders','(DSM-5-TR). 5th ed., text rev. Washington, DC: APA, 2022.','','LEITE, W. B. Avaliação das propriedades psicométricas da Escala de Autorrelato de Sintomas','do TDAH – ASRS-18. Dissertação de Mestrado. Universidade São Francisco, 2011.'].forEach(function(l){if(l===''){yr+=3;}else{doc.text(l,20,yr);yr+=4;}});
+doc.setFillColor(108,117,125);doc.rect(0,280,210,17,'F');doc.setTextColor(255,255,255);doc.setFontSize(8);doc.text('Relatório gerado em: '+new Date().toLocaleString('pt-BR'),105,290,{align:'center'});
+var ts=new Date().toISOString().slice(0,16).replace(/[-:T]/g,'').slice(0,12);doc.save('ASRS18_'+nome.replace(/\s+/g,'_')+'_'+ts+'.pdf');}
+function limparDados(){if(!confirm('Tem certeza que deseja limpar todos os dados?'))return;document.getElementById('nome').value='';document.getElementById('dataNascimento').value='';document.getElementById('idadeCalculada').value='';document.getElementById('sexo').value='';document.getElementById('observacoes').value='';document.querySelectorAll('input[type="radio"]').forEach(function(r){r.checked=false;});document.getElementById('resultados').style.display='none';document.getElementById('data').value=new Date().toISOString().split('T')[0];}
+document.addEventListener('DOMContentLoaded',function(){gerarQuestionario();document.getElementById('data').value=new Date().toISOString().split('T')[0];});
+    </script>
+</body>
+</html>

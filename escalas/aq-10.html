@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AQ-10 — Quociente do Espectro Autista (Versão Breve)</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background: linear-gradient(135deg, #0d47a1 0%, #7b68ee 100%); min-height: 100vh; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; border-radius: 15px; box-shadow: 0 20px 40px rgba(0,0,0,0.15); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #0d47a1 0%, #7b68ee 100%); color: white; padding: 30px; text-align: center; }
+        .header h1 { font-size: 2.2em; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        .header p { font-size: 1.1em; opacity: 0.9; }
+        .content { padding: 30px; }
+        .info-tecnica { background: #e3f2fd; padding: 25px; border-radius: 10px; margin-bottom: 30px; border-left: 5px solid #0d47a1; position: relative; }
+        .info-tecnica h2 { color: #0d47a1; margin-bottom: 15px; font-size: 1.4em; }
+        .info-tecnica p { color: #555; line-height: 1.7; font-size: 0.95em; }
+        .dados-pessoais { background: #f8f9fa; padding: 25px; border-radius: 10px; margin-bottom: 30px; border-left: 5px solid #0d47a1; }
+        .dados-pessoais h2 { color: #0d47a1; margin-bottom: 20px; font-size: 1.5em; }
+        .form-row { display: flex; gap: 20px; margin-bottom: 15px; flex-wrap: wrap; }
+        .form-group { flex: 1; min-width: 200px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; color: #555; }
+        .form-group input, .form-group select { width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 16px; transition: border-color 0.3s; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: #0d47a1; }
+        .instrucoes { background: #ede7f6; padding: 20px; border-radius: 10px; margin-bottom: 30px; border-left: 5px solid #7b68ee; }
+        .instrucoes h3 { color: #4a148c; margin-bottom: 10px; }
+        .instrucoes p { color: #555; font-size: 0.95em; line-height: 1.7; }
+        .item { padding: 20px; border-bottom: 1px solid #f0f0f0; transition: background-color 0.3s; }
+        .item:hover { background-color: #e3f2fd; }
+        .item:last-child { border-bottom: none; }
+        .item-texto { font-size: 1.05em; margin-bottom: 15px; color: #444; line-height: 1.5; }
+        .item-numero { font-weight: bold; color: #0d47a1; margin-right: 8px; }
+        .opcoes { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+        .opcao { display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; padding: 8px; border-radius: 8px; transition: all 0.3s; border: 2px solid transparent; min-width: 80px; min-height: 70px; }
+        .opcao:hover { background-color: #e3f2fd; border-color: #0d47a1; }
+        .opcao input[type="radio"] { width: 18px; height: 18px; cursor: pointer; accent-color: #0d47a1; }
+        .opcao label { cursor: pointer; font-weight: 500; color: #555; text-align: center; font-size: 0.8em; line-height: 1.2; min-height: 30px; display: flex; align-items: center; }
+        .botoes { display: flex; gap: 15px; justify-content: center; margin: 30px 0; flex-wrap: wrap; }
+        .btn { padding: 15px 30px; border: none; border-radius: 25px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s; text-align: center; }
+        .btn-primary { background: linear-gradient(135deg, #0d47a1 0%, #7b68ee 100%); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(13,71,161,0.3); }
+        .btn-secondary { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; }
+        .btn-secondary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(40,167,69,0.3); }
+        .btn-danger { background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%); color: white; }
+        .btn-danger:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(220,53,69,0.3); }
+        .resultados { background: #f8f9fa; padding: 30px; border-radius: 10px; margin-top: 30px; border-left: 5px solid #0d47a1; display: none; }
+        .resultados h2 { color: #0d47a1; margin-bottom: 20px; text-align: center; }
+        .total-geral { background: linear-gradient(135deg, #0d47a1 0%, #7b68ee 100%); color: white; padding: 25px; border-radius: 10px; text-align: center; margin: 20px 0; }
+        .total-geral h3 { margin-bottom: 5px; }
+        .rastreio-box { padding: 20px; border-radius: 10px; text-align: center; margin: 20px 0; font-size: 1.2em; font-weight: 700; }
+        .rastreio-positivo { background: #ffcdd2; border: 3px solid #c62828; color: #b71c1c; }
+        .rastreio-negativo { background: #c8e6c9; border: 3px solid #2e7d32; color: #1b5e20; }
+        .analise-texto { background: white; padding: 25px; border-radius: 10px; margin-top: 20px; border: 2px solid #0d47a1; line-height: 1.8; }
+        .analise-texto h3 { color: #0d47a1; margin-bottom: 15px; }
+        .analise-texto p { margin-bottom: 10px; color: #444; font-size: 0.95em; }
+        .disclaimer { background: #fff3e0; padding: 15px; border-radius: 8px; margin-top: 20px; border-left: 4px solid #ff9800; font-size: 0.85em; color: #e65100; line-height: 1.6; }
+        .btn-imprimir { position: absolute; top: 20px; right: 20px; padding: 10px 20px; background: linear-gradient(135deg, #0d47a1 0%, #1a237e 100%); color: white; border: none; border-radius: 20px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .btn-imprimir:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(13,71,161,0.4); }
+        @media print { @page { size: portrait; margin: 1cm; } body { background: white; padding: 0; } .botoes, .btn, .btn-imprimir { display: none !important; } .container { box-shadow: none; max-width: 100%; } .info-tecnica { display: none !important; } .resultados { display: none !important; } .header { background: #0d47a1 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; } .item { page-break-inside: avoid; break-inside: avoid; } }
+        @media (max-width: 768px) { .container { margin: 10px; border-radius: 10px; } .header { padding: 20px; } .header h1 { font-size: 1.6em; } .content { padding: 15px; } .form-row { flex-direction: column; } .opcoes { flex-direction: column; align-items: center; } .botoes { flex-direction: column; } .btn { width: 100%; } }
+    </style>
+</head>
+<body>
+<div style="padding:10px 20px;background:#2e7d32;"><a href="../" style="display:inline-block;background:#fff;color:#2e7d32;text-decoration:none;font-family:Segoe UI,Arial,sans-serif;font-size:14px;font-weight:bold;padding:8px 20px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.15);">⬅ Voltar ao Início</a></div>
+    <div class="container">
+        <div class="header">
+            <h1>🧩 AQ-10</h1>
+            <p>Quociente do Espectro Autista — Versão Breve</p>
+            <p style="font-size:0.85em; opacity:0.8; margin-top:5px;">Autism Spectrum Quotient-10 (Allison, Auyeung & Baron-Cohen, 2012)</p>
+        </div>
+        <div class="content">
+            <div class="info-tecnica">
+                <button class="btn-imprimir" onclick="window.print()">🖨️ Imprimir Formulário</button>
+                <h2>📚 Informações Técnicas</h2>
+                <p>
+                    <strong>Instrumento:</strong> AQ-10 — Autism Spectrum Quotient (versão breve de 10 itens)<br>
+                    <strong>Autores:</strong> Allison, Auyeung &amp; Baron-Cohen (2012); AQ original: Baron-Cohen et al. (2001)<br>
+                    <strong>Base teórica:</strong> Traços do espectro autista em adultos — comunicação social, atenção a detalhes, flexibilidade<br>
+                    <strong>Estrutura:</strong> 10 itens, escala de 4 pontos, pontuação dicotômica (0 ou 1)<br>
+                    <strong>Ponto de corte:</strong> ≥ 6 pontos = rastreio positivo (sensibilidade 0,88; especificidade 0,91)<br>
+                    <strong>População:</strong> Adultos (≥16 anos) sem deficiência intelectual<br>
+                    <strong>Domínio público:</strong> Sim — Autism Research Centre, Universidade de Cambridge
+                </p>
+            </div>
+            <div class="dados-pessoais">
+                <h2>📋 Dados Pessoais</h2>
+                <div class="form-row">
+                    <div class="form-group"><label for="nome">Nome:</label><input type="text" id="nome" placeholder="Nome completo"></div>
+                    <div class="form-group"><label for="dataNascimento">Data de Nascimento:</label><input type="date" id="dataNascimento" onchange="calcularIdade()"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label for="idadeCalculada">Idade:</label><input type="text" id="idadeCalculada" readonly style="background-color:#f0f0f0;" placeholder="Calculada automaticamente"></div>
+                    <div class="form-group"><label for="sexo">Sexo:</label><select id="sexo"><option value="">Selecione</option><option value="Masculino">Masculino</option><option value="Feminino">Feminino</option><option value="Não-binário">Não-binário</option></select></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label for="data">Data da Avaliação:</label><input type="date" id="data"></div>
+                    <div class="form-group"><label for="observacoes">Observações (opcional):</label><input type="text" id="observacoes" placeholder="Informações adicionais"></div>
+                </div>
+            </div>
+            <div class="instrucoes">
+                <h3>📝 Instruções</h3>
+                <p>Para cada afirmação abaixo, indique o quanto você concorda ou discorda. Não há respostas certas ou erradas. Responda rapidamente, sem pensar muito em cada item.</p>
+            </div>
+            <div id="questionario"></div>
+            <div class="botoes">
+                <button class="btn btn-primary" onclick="calcularResultados()">📊 Calcular Resultados</button>
+                <button class="btn btn-secondary" onclick="gerarRelatorioPDF()">📄 Gerar Relatório PDF</button>
+                <button class="btn btn-danger" onclick="limparDados()">🗑️ Limpar Dados</button>
+            </div>
+            <div id="resultados" class="resultados"></div>
+            <div class="info-tecnica" id="referencias" style="margin-top:30px; background:#f8f9fa; border-left-color:#0d47a1;">
+                <h2 style="color:#0d47a1;">📚 Referências</h2>
+                <p style="color:#555; line-height:1.9; font-size:0.88em;">
+                    <strong>ALLISON, C.; AUYEUNG, B.; BARON-COHEN, S.</strong> Toward brief "Red Flags" for autism screening: The Short Autism Spectrum Quotient and the Short Quantitative Checklist in 1,000 cases and 3,000 controls. <em>Journal of the American Academy of Child &amp; Adolescent Psychiatry</em>, v. 51, n. 2, p. 202-212, 2012.<br><br>
+                    <strong>BARON-COHEN, S. et al.</strong> The Autism-Spectrum Quotient (AQ): Evidence from Asperger Syndrome/High-Functioning Autism, Males and Females, Scientists and Mathematicians. <em>Journal of Autism and Developmental Disorders</em>, v. 31, n. 1, p. 5-17, 2001.<br><br>
+                    <strong>AMERICAN PSYCHIATRIC ASSOCIATION.</strong> <em>Diagnostic and Statistical Manual of Mental Disorders</em> (DSM-5-TR). 5th ed., text rev. Washington, DC: APA, 2022.
+                </p>
+            </div>
+        </div>
+    </div>
+    <script src="../id-paciente.js"></script>
+    <script>
+// ===== ITENS AQ-10 (Allison, Auyeung & Baron-Cohen, 2012) =====
+// pontuaAcordo: true = pontua 1 se Concordo/Concordo parcialmente; false = pontua 1 se Discordo/Discordo parcialmente
+var ITENS=[
+{texto:"Frequentemente percebo pequenos sons que os outros não percebem.",pontuaAcordo:true},
+{texto:"Geralmente me concentro mais no todo do que nos pequenos detalhes.",pontuaAcordo:false},
+{texto:"Acho fácil fazer mais de uma coisa ao mesmo tempo.",pontuaAcordo:false},
+{texto:"Se houver uma interrupção, consigo voltar rapidamente ao que estava fazendo.",pontuaAcordo:false},
+{texto:"Acho fácil \"ler nas entrelinhas\" quando alguém está falando comigo.",pontuaAcordo:false},
+{texto:"Sei dizer se alguém que está me ouvindo está ficando entediado.",pontuaAcordo:false},
+{texto:"Quando estou lendo uma história, acho difícil entender as intenções dos personagens.",pontuaAcordo:true},
+{texto:"Gosto de colecionar informações sobre categorias de coisas (ex: tipos de carros, pássaros, trens, plantas).",pontuaAcordo:true},
+{texto:"Acho fácil entender o que alguém está pensando ou sentindo apenas olhando para o rosto da pessoa.",pontuaAcordo:false},
+{texto:"Acho difícil entender as intenções das pessoas.",pontuaAcordo:true}
+];
+var OPCOES=[{valor:1,texto:"Concordo\ntotalmente"},{valor:2,texto:"Concordo\nparcialmente"},{valor:3,texto:"Discordo\nparcialmente"},{valor:4,texto:"Discordo\ntotalmente"}];
+
+function gerarQuestionario(){var c=document.getElementById('questionario');var h='';ITENS.forEach(function(item,i){h+='<div class="item" id="item'+i+'"><div class="item-texto"><span class="item-numero">'+(i+1)+'.</span> '+item.texto+'</div><div class="opcoes">';OPCOES.forEach(function(op){h+='<div class="opcao"><input type="radio" id="item'+i+'_'+op.valor+'" name="item'+i+'" value="'+op.valor+'"><label for="item'+i+'_'+op.valor+'">'+op.texto.replace(/\n/g,'<br>')+'</label></div>';});h+='</div></div>';});c.innerHTML=h;}
+function calcularIdade(){var d=document.getElementById('dataNascimento').value;if(!d)return;var h=new Date(),n=new Date(d),a=h.getFullYear()-n.getFullYear(),m=h.getMonth()-n.getMonth(),di=h.getDate()-n.getDate();if(di<0){m--;di+=new Date(h.getFullYear(),h.getMonth(),0).getDate();}if(m<0){a--;m+=12;}document.getElementById('idadeCalculada').value=a+' anos, '+m+' meses e '+di+' dias';}
+function obterRespostas(){var r=[];for(var i=0;i<ITENS.length;i++){var s=document.querySelector('input[name="item'+i+'"]:checked');if(!s)return null;r.push(parseInt(s.value));}return r;}
+function calcularPontuacao(r){var total=0;ITENS.forEach(function(it,i){var v=r[i];if(it.pontuaAcordo){if(v<=2)total++;}else{if(v>=3)total++;}});return total;}
+function calcularResultados(){var n=document.getElementById('nome').value,id=document.getElementById('idadeCalculada').value,s=document.getElementById('sexo').value;if(!n||!id||!s){alert('Por favor, preencha todos os dados pessoais.');return;}var r=obterRespostas();if(!r){alert('Por favor, responda todos os 10 itens.');return;}
+var total=calcularPontuacao(r);var positivo=total>=6;
+var el=document.getElementById('resultados');var h='<h2>📊 Resultados AQ-10</h2>';
+if(positivo)h+='<div class="rastreio-box rastreio-positivo">⚠️ RASTREIO POSITIVO — '+total+'/10 pontos (ponto de corte: ≥6)</div>';
+else h+='<div class="rastreio-box rastreio-negativo">✅ RASTREIO NEGATIVO — '+total+'/10 pontos (ponto de corte: ≥6)</div>';
+h+='<div class="total-geral"><h3>Escore: '+total+' / 10</h3></div>';
+h+='<div class="analise-texto"><h3>📝 Análise dos Resultados</h3>';
+if(positivo){h+='<p><strong>⚠️ Rastreio Positivo:</strong> O escore de '+total+'/10 está acima do ponto de corte de 6 pontos. Segundo Allison et al. (2012), este resultado sugere a presença de traços do espectro autista e indica a <strong>necessidade de encaminhamento para avaliação diagnóstica especializada</strong>.</p>';h+='<p>A sensibilidade do AQ-10 neste ponto de corte é de 0,88 e a especificidade de 0,91, com valor preditivo positivo de 0,85.</p>';}
+else{h+='<p><strong>✅ Rastreio Negativo:</strong> O escore de '+total+'/10 está abaixo do ponto de corte de 6 pontos. O resultado não sugere presença significativa de traços do espectro autista.</p>';if(total>=4)h+='<p>No entanto, o escore de '+total+' está próximo do limiar. Se houver suspeita clínica, considerar avaliação mais detalhada (AQ-50, RAADS-R).</p>';}
+h+='<p><strong>Nota:</strong> O AQ-10 é um rastreio rápido. Para avaliação mais abrangente, considere o RAADS-R (80 itens) ou BAPQ (36 itens), ambos disponíveis neste site.</p>';
+h+='</div>';
+h+='<div class="disclaimer"><strong>⚠️ IMPORTANTE:</strong> O AQ-10 é um instrumento de <strong>rastreio breve</strong>. <strong>Não é diagnóstico.</strong> Um resultado positivo indica necessidade de avaliação especializada, não confirma autismo. Um resultado negativo não exclui o diagnóstico. Interpretar por profissional qualificado.</div>';
+el.innerHTML=h;el.style.display='block';el.scrollIntoView({behavior:'smooth'});}
+function gerarRelatorioPDF(){var nome=document.getElementById('nome').value;if(!nome){alert('Preencha pelo menos o nome.');return;}var r=obterRespostas();if(!r){alert('Responda todos os itens.');return;}
+var total=calcularPontuacao(r);var positivo=total>=6;
+var idade=document.getElementById('idadeCalculada').value,sexo=document.getElementById('sexo').value,dataAval=document.getElementById('data').value||new Date().toLocaleDateString('pt-BR');
+var jsPDF=window.jspdf.jsPDF;var doc=new jsPDF();
+doc.setFillColor(13,71,161);doc.rect(0,0,210,40,'F');doc.setTextColor(255,255,255);doc.setFontSize(16);doc.setFont(undefined,'bold');doc.text('AQ-10 — RELATÓRIO DE AVALIAÇÃO',105,18,{align:'center'});doc.setFontSize(10);doc.text('Quociente do Espectro Autista — Versão Breve',105,27,{align:'center'});doc.setFontSize(8);doc.text('Allison, Auyeung & Baron-Cohen (2012)',105,34,{align:'center'});
+doc.setFillColor(248,249,250);doc.rect(15,48,180,25,'F');doc.setDrawColor(13,71,161);doc.rect(15,48,180,25);doc.setTextColor(13,71,161);doc.setFontSize(11);doc.setFont(undefined,'bold');doc.text('DADOS PESSOAIS',20,56);doc.setTextColor(0,0,0);doc.setFontSize(9);doc.setFont(undefined,'normal');
+var idPac=document.getElementById('idPaciente')?document.getElementById('idPaciente').value:'';doc.text('Nome: '+nome,20,63);doc.text('Idade: '+idade,120,63);doc.text('Sexo: '+sexo,20,69);doc.text('Data: '+dataAval,120,69);if(idPac)doc.text('ID: '+idPac,20,75);
+var y=82;if(positivo){doc.setFillColor(255,205,210);doc.rect(15,y,180,12,'F');doc.setTextColor(198,40,40);}else{doc.setFillColor(200,230,201);doc.rect(15,y,180,12,'F');doc.setTextColor(46,125,50);}
+doc.setFontSize(11);doc.setFont(undefined,'bold');doc.text((positivo?'RASTREIO POSITIVO':'RASTREIO NEGATIVO')+' — '+total+'/10 pontos (corte: >=6)',105,y+8,{align:'center'});
+y=100;doc.setTextColor(0,0,0);doc.setFontSize(9);doc.setFont(undefined,'normal');
+if(positivo){doc.text('Escore acima do ponto de corte. Sugere presença de traços do espectro autista.',20,y);y+=6;doc.text('Recomenda-se encaminhamento para avaliação diagnóstica especializada.',20,y);}else{doc.text('Escore abaixo do ponto de corte. Não sugere presença significativa de traços autistas.',20,y);if(total>=4){y+=6;doc.text('Escore próximo do limiar — considerar avaliação mais detalhada se houver suspeita.',20,y);}}
+y+=15;doc.setFillColor(255,243,224);doc.rect(15,y-4,180,20,'F');doc.setTextColor(230,81,0);doc.setFontSize(7);doc.setFont(undefined,'bold');doc.text('IMPORTANTE:',20,y+2);doc.setFont(undefined,'normal');doc.text('O AQ-10 é instrumento de rastreio breve. Não é diagnóstico. Resultado positivo indica necessidade',20,y+8);doc.text('de avaliação especializada. Resultado negativo não exclui diagnóstico.',20,y+13);
+doc.addPage();doc.setFillColor(13,71,161);doc.rect(0,0,210,15,'F');doc.setTextColor(255,255,255);doc.setFontSize(12);doc.setFont(undefined,'bold');doc.text('REFERÊNCIAS',105,10,{align:'center'});
+var yr=25;doc.setTextColor(0,0,0);doc.setFontSize(7.5);doc.setFont(undefined,'normal');
+['ALLISON, C.; AUYEUNG, B.; BARON-COHEN, S. Toward brief "Red Flags" for autism screening:','The Short Autism Spectrum Quotient and the Short Quantitative Checklist in 1,000 cases and','3,000 controls. Journal of the American Academy of Child & Adolescent Psychiatry, v. 51,','n. 2, p. 202-212, 2012.','','BARON-COHEN, S. et al. The Autism-Spectrum Quotient (AQ): Evidence from Asperger','Syndrome/High-Functioning Autism. Journal of Autism and Developmental Disorders, v. 31,','n. 1, p. 5-17, 2001.','','AMERICAN PSYCHIATRIC ASSOCIATION. DSM-5-TR. Washington, DC: APA, 2022.'].forEach(function(l){if(l===''){yr+=3;}else{doc.text(l,20,yr);yr+=4;}});
+doc.setFillColor(108,117,125);doc.rect(0,280,210,17,'F');doc.setTextColor(255,255,255);doc.setFontSize(8);doc.text('Relatório gerado em: '+new Date().toLocaleString('pt-BR'),105,290,{align:'center'});
+var ts=new Date().toISOString().slice(0,16).replace(/[-:T]/g,'').slice(0,12);doc.save('AQ10_'+nome.replace(/\s+/g,'_')+'_'+ts+'.pdf');}
+function limparDados(){if(!confirm('Limpar todos os dados?'))return;document.getElementById('nome').value='';document.getElementById('dataNascimento').value='';document.getElementById('idadeCalculada').value='';document.getElementById('sexo').value='';document.getElementById('observacoes').value='';document.querySelectorAll('input[type="radio"]').forEach(function(r){r.checked=false;});document.getElementById('resultados').style.display='none';document.getElementById('data').value=new Date().toISOString().split('T')[0];}
+document.addEventListener('DOMContentLoaded',function(){gerarQuestionario();document.getElementById('data').value=new Date().toISOString().split('T')[0];});
+    </script>
+</body>
+</html>

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SNAP-IV — Escala de Avaliação de TDAH e TOD para Crianças</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background: linear-gradient(135deg, #e65100 0%, #f9a825 100%); min-height: 100vh; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; border-radius: 15px; box-shadow: 0 20px 40px rgba(0,0,0,0.15); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #e65100 0%, #f9a825 100%); color: white; padding: 30px; text-align: center; }
+        .header h1 { font-size: 2.2em; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        .header p { font-size: 1.1em; opacity: 0.9; }
+        .content { padding: 30px; }
+        .info-tecnica { background: #fff3e0; padding: 25px; border-radius: 10px; margin-bottom: 30px; border-left: 5px solid #e65100; position: relative; }
+        .info-tecnica h2 { color: #e65100; margin-bottom: 15px; font-size: 1.4em; }
+        .info-tecnica p { color: #555; line-height: 1.7; font-size: 0.95em; }
+        .dados-pessoais { background: #f8f9fa; padding: 25px; border-radius: 10px; margin-bottom: 30px; border-left: 5px solid #e65100; }
+        .dados-pessoais h2 { color: #e65100; margin-bottom: 20px; font-size: 1.5em; }
+        .form-row { display: flex; gap: 20px; margin-bottom: 15px; flex-wrap: wrap; }
+        .form-group { flex: 1; min-width: 200px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; color: #555; }
+        .form-group input, .form-group select { width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 16px; transition: border-color 0.3s; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: #e65100; }
+        .instrucoes { background: #fbe9e7; padding: 20px; border-radius: 10px; margin-bottom: 30px; border-left: 5px solid #bf360c; }
+        .instrucoes h3 { color: #bf360c; margin-bottom: 10px; }
+        .instrucoes p { color: #555; font-size: 0.95em; line-height: 1.7; }
+        .item { padding: 20px; border-bottom: 1px solid #f0f0f0; transition: background-color 0.3s; }
+        .item:hover { background-color: #fff3e0; }
+        .item:last-child { border-bottom: none; }
+        .item-texto { font-size: 1.05em; margin-bottom: 15px; color: #444; line-height: 1.5; }
+        .item-numero { font-weight: bold; color: #e65100; margin-right: 8px; }
+        .opcoes { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+        .opcao { display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; padding: 8px; border-radius: 8px; transition: all 0.3s; border: 2px solid transparent; min-width: 70px; min-height: 70px; }
+        .opcao:hover { background-color: #fff3e0; border-color: #e65100; }
+        .opcao input[type="radio"] { width: 18px; height: 18px; cursor: pointer; accent-color: #e65100; }
+        .opcao label { cursor: pointer; font-weight: 500; color: #555; text-align: center; font-size: 0.8em; line-height: 1.2; min-height: 30px; display: flex; align-items: center; }
+        .botoes { display: flex; gap: 15px; justify-content: center; margin: 30px 0; flex-wrap: wrap; }
+        .btn { padding: 15px 30px; border: none; border-radius: 25px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s; text-align: center; }
+        .btn-primary { background: linear-gradient(135deg, #e65100 0%, #f9a825 100%); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(230,81,0,0.3); }
+        .btn-secondary { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; }
+        .btn-secondary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(40,167,69,0.3); }
+        .btn-danger { background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%); color: white; }
+        .btn-danger:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(220,53,69,0.3); }
+        .resultados { background: #f8f9fa; padding: 30px; border-radius: 10px; margin-top: 30px; border-left: 5px solid #e65100; display: none; }
+        .resultados h2 { color: #e65100; margin-bottom: 20px; text-align: center; }
+        .dominio-card { background: white; padding: 20px; border-radius: 10px; margin-bottom: 15px; box-shadow: 0 3px 10px rgba(0,0,0,0.08); border-left: 4px solid #e65100; }
+        .dominio-card h4 { color: #e65100; margin-bottom: 8px; }
+        .dominio-card .valor { font-size: 1.8em; font-weight: 800; color: #333; }
+        .total-geral { background: linear-gradient(135deg, #e65100 0%, #f9a825 100%); color: white; padding: 25px; border-radius: 10px; text-align: center; margin: 20px 0; }
+        .total-geral h3 { margin-bottom: 5px; }
+        .barra-container { width: 120px; height: 10px; background: #e0e0e0; border-radius: 5px; overflow: hidden; }
+        .barra-fill { height: 100%; border-radius: 5px; transition: width 0.5s; }
+        .badge { padding: 4px 12px; border-radius: 15px; font-size: 0.8em; font-weight: 600; }
+        .rastreio-box { padding: 20px; border-radius: 10px; text-align: center; margin: 20px 0; font-size: 1.1em; font-weight: 700; }
+        .rastreio-positivo { background: #ffcdd2; border: 3px solid #c62828; color: #b71c1c; }
+        .rastreio-negativo { background: #c8e6c9; border: 3px solid #2e7d32; color: #1b5e20; }
+        .analise-texto { background: white; padding: 25px; border-radius: 10px; margin-top: 20px; border: 2px solid #e65100; line-height: 1.8; }
+        .analise-texto h3 { color: #e65100; margin-bottom: 15px; }
+        .analise-texto p { margin-bottom: 10px; color: #444; font-size: 0.95em; }
+        .disclaimer { background: #fff3e0; padding: 15px; border-radius: 8px; margin-top: 20px; border-left: 4px solid #ff9800; font-size: 0.85em; color: #e65100; line-height: 1.6; }
+        .btn-imprimir { position: absolute; top: 20px; right: 20px; padding: 10px 20px; background: linear-gradient(135deg, #e65100 0%, #bf360c 100%); color: white; border: none; border-radius: 20px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .btn-imprimir:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(230,81,0,0.4); }
+        .parte-header { background: #fff3e0; padding: 12px 20px; border-radius: 8px; margin: 20px 0 10px; font-weight: 700; color: #e65100; font-size: 1.1em; }
+        @media print { @page { size: portrait; margin: 1cm; } body { background: white; padding: 0; } .botoes, .btn, .btn-imprimir { display: none !important; } .container { box-shadow: none; max-width: 100%; } .info-tecnica { display: none !important; } .resultados { display: none !important; } .header { background: #e65100 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; } .item { page-break-inside: avoid; break-inside: avoid; } }
+        @media (max-width: 768px) { .container { margin: 10px; border-radius: 10px; } .header { padding: 20px; } .header h1 { font-size: 1.6em; } .content { padding: 15px; } .form-row { flex-direction: column; } .opcoes { flex-direction: column; align-items: center; } .botoes { flex-direction: column; } .btn { width: 100%; } }
+    </style>
+</head>
+<body>
+<div style="padding:10px 20px;background:#2e7d32;"><a href="../" style="display:inline-block;background:#fff;color:#2e7d32;text-decoration:none;font-family:Segoe UI,Arial,sans-serif;font-size:14px;font-weight:bold;padding:8px 20px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.15);">⬅ Voltar ao Início</a></div>
+    <div class="container">
+        <div class="header">
+            <h1>📋 SNAP-IV</h1>
+            <p>Escala de Avaliação de TDAH e TOD — Pais e Professores</p>
+            <p style="font-size:0.85em; opacity:0.8; margin-top:5px;">MTA-SNAP-IV (Swanson, Nolan & Pelham) — Versão brasileira: Mattos et al. (2006)</p>
+        </div>
+        <div class="content">
+            <div class="info-tecnica">
+                <button class="btn-imprimir" onclick="window.print()">🖨️ Imprimir Formulário</button>
+                <h2>📚 Informações Técnicas</h2>
+                <p>
+                    <strong>Instrumento:</strong> SNAP-IV — Swanson, Nolan and Pelham Rating Scale (versão 26 itens)<br>
+                    <strong>Autores:</strong> Swanson et al. (1983); Versão brasileira: Mattos, Serra-Pinheiro, Rohde &amp; Pinto (2006)<br>
+                    <strong>Base teórica:</strong> Critérios do DSM-IV/DSM-5 para TDAH e TOD<br>
+                    <strong>Estrutura:</strong> 26 itens — Desatenção (9), Hiperatividade/Impulsividade (9), TOD (8)<br>
+                    <strong>Respondente:</strong> Pais ou Professores (sobre a criança/adolescente)<br>
+                    <strong>Escala:</strong> 4 pontos (0-3): Nem um pouco, Só um pouco, Bastante, Demais<br>
+                    <strong>Ponto de corte:</strong> Média ≥ 1,5 por domínio (Mattos et al., 2006)<br>
+                    <strong>População:</strong> Crianças e adolescentes (5-17 anos)<br>
+                    <strong>Domínio público:</strong> Sim — uso livre (MTA Cooperative Group)
+                </p>
+            </div>
+            <div class="dados-pessoais">
+                <h2>📋 Dados da Criança/Adolescente</h2>
+                <div class="form-row">
+                    <div class="form-group"><label for="nome">Nome da criança:</label><input type="text" id="nome" placeholder="Nome completo"></div>
+                    <div class="form-group"><label for="dataNascimento">Data de Nascimento:</label><input type="date" id="dataNascimento" onchange="calcularIdade()"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label for="idadeCalculada">Idade:</label><input type="text" id="idadeCalculada" readonly style="background-color:#f0f0f0;" placeholder="Calculada automaticamente"></div>
+                    <div class="form-group"><label for="sexo">Sexo:</label><select id="sexo"><option value="">Selecione</option><option value="Masculino">Masculino</option><option value="Feminino">Feminino</option></select></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label for="respondente">Respondente:</label><select id="respondente"><option value="">Selecione</option><option value="Pai/Mãe">Pai/Mãe</option><option value="Professor(a)">Professor(a)</option><option value="Outro responsável">Outro responsável</option></select></div>
+                    <div class="form-group"><label for="data">Data da Avaliação:</label><input type="date" id="data"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label for="observacoes">Observações (opcional):</label><input type="text" id="observacoes" placeholder="Série escolar, contexto, etc."></div>
+                </div>
+            </div>
+            <div class="instrucoes">
+                <h3>📝 Instruções</h3>
+                <p>Para cada item, marque a coluna que melhor descreve o comportamento da criança/adolescente. Considere o comportamento <strong>nos últimos 6 meses</strong>.</p>
+            </div>
+            <div id="questionario"></div>
+            <div class="botoes">
+                <button class="btn btn-primary" onclick="calcularResultados()">📊 Calcular Resultados</button>
+                <button class="btn btn-secondary" onclick="gerarRelatorioPDF()">📄 Gerar Relatório PDF</button>
+                <button class="btn btn-danger" onclick="limparDados()">🗑️ Limpar Dados</button>
+            </div>
+            <div id="resultados" class="resultados"></div>
+            <div class="info-tecnica" id="referencias" style="margin-top:30px; background:#f8f9fa; border-left-color:#e65100;">
+                <h2 style="color:#e65100;">📚 Referências</h2>
+                <p style="color:#555; line-height:1.9; font-size:0.88em;">
+                    <strong>MATTOS, P. et al.</strong> Apresentação de uma versão em português para uso no Brasil do instrumento MTA-SNAP-IV de avaliação de sintomas de transtorno do déficit de atenção/hiperatividade e sintomas de transtorno desafiador e de oposição. <em>Revista de Psiquiatria do Rio Grande do Sul</em>, v. 28, n. 3, p. 290-297, 2006.<br><br>
+                    <strong>SWANSON, J. M. et al.</strong> The SNAP rating scale for the diagnosis of attention deficit disorder. Paper presented at the meeting of the American Psychological Association, 1983.<br><br>
+                    <strong>MTA COOPERATIVE GROUP.</strong> A 14-month randomized clinical trial of treatment strategies for attention-deficit/hyperactivity disorder. <em>Archives of General Psychiatry</em>, v. 56, n. 12, p. 1073-1086, 1999.<br><br>
+                    <strong>AMERICAN PSYCHIATRIC ASSOCIATION.</strong> <em>Diagnostic and Statistical Manual of Mental Disorders</em> (DSM-5-TR). 5th ed., text rev. Washington, DC: APA, 2022.
+                </p>
+            </div>
+        </div>
+    </div>
+    <script src="../id-paciente.js"></script>
+    <script>
+// ===== ITENS SNAP-IV (26 itens - versão brasileira Mattos et al. 2006) =====
+// dominio: "D"=Desatenção, "HI"=Hiperatividade/Impulsividade, "TOD"=Transtorno Opositor Desafiador
+var ITENS=[
+{texto:"Não consegue prestar muita atenção a detalhes ou comete erros por descuido nos trabalhos da escola ou tarefas.",dominio:"D"},
+{texto:"Tem dificuldade de manter a atenção em tarefas ou atividades de lazer.",dominio:"D"},
+{texto:"Parece não estar ouvindo quando se fala diretamente com ele(a).",dominio:"D"},
+{texto:"Não segue instruções até o fim e não termina deveres de escola, tarefas ou obrigações.",dominio:"D"},
+{texto:"Tem dificuldade para organizar tarefas e atividades.",dominio:"D"},
+{texto:"Evita, não gosta ou se envolve contra a vontade em tarefas que exigem esforço mental prolongado.",dominio:"D"},
+{texto:"Perde coisas necessárias para atividades (ex: brinquedos, deveres da escola, lápis ou livros).",dominio:"D"},
+{texto:"Distrai-se com estímulos externos.",dominio:"D"},
+{texto:"É esquecido(a) em atividades do dia a dia.",dominio:"D"},
+{texto:"Mexe com as mãos ou os pés ou se remexe na cadeira.",dominio:"HI"},
+{texto:"Sai do lugar na sala de aula ou em outras situações em que se espera que fique sentado(a).",dominio:"HI"},
+{texto:"Corre de um lado para outro ou sobe demais nas coisas em situações em que isto é inapropriado.",dominio:"HI"},
+{texto:"Tem dificuldade em brincar ou envolver-se em atividades de lazer de forma calma.",dominio:"HI"},
+{texto:"Não para ou frequentemente está a \"mil por hora\".",dominio:"HI"},
+{texto:"Fala em excesso.",dominio:"HI"},
+{texto:"Responde as perguntas de forma precipitada antes delas terem sido terminadas.",dominio:"HI"},
+{texto:"Tem dificuldade de esperar sua vez.",dominio:"HI"},
+{texto:"Interrompe os outros ou se intromete (ex: intromete-se nas conversas ou jogos).",dominio:"HI"},
+{texto:"Descontrola-se (perde a paciência).",dominio:"TOD"},
+{texto:"Discute com adultos.",dominio:"TOD"},
+{texto:"Desafia ou se recusa a obedecer pedidos ou regras dos adultos.",dominio:"TOD"},
+{texto:"Faz coisas de propósito que incomodam os outros.",dominio:"TOD"},
+{texto:"Culpa os outros pelos seus erros ou mau comportamento.",dominio:"TOD"},
+{texto:"É irritável e facilmente incomodado(a) pelos outros.",dominio:"TOD"},
+{texto:"Fica bravo(a) e ressentido(a).",dominio:"TOD"},
+{texto:"É maldoso(a) e vingativo(a).",dominio:"TOD"}
+];
+var OPCOES_LIKERT=[{valor:0,texto:"Nem um\npouco"},{valor:1,texto:"Só um\npouco"},{valor:2,texto:"Bastante"},{valor:3,texto:"Demais"}];
+
+function gerarQuestionario(){var c=document.getElementById('questionario');var h='';var domAtual='';ITENS.forEach(function(item,i){if(item.dominio!==domAtual){domAtual=item.dominio;if(domAtual==='D')h+='<div class="parte-header">🔍 Desatenção (itens 1-9)</div>';else if(domAtual==='HI')h+='<div class="parte-header">⚡ Hiperatividade / Impulsividade (itens 10-18)</div>';else h+='<div class="parte-header">😤 Transtorno Opositor Desafiador (itens 19-26)</div>';}h+='<div class="item" id="item'+i+'"><div class="item-texto"><span class="item-numero">'+(i+1)+'.</span> '+item.texto+'</div><div class="opcoes">';OPCOES_LIKERT.forEach(function(op){h+='<div class="opcao"><input type="radio" id="item'+i+'_'+op.valor+'" name="item'+i+'" value="'+op.valor+'"><label for="item'+i+'_'+op.valor+'">'+op.texto.replace(/\n/g,'<br>')+'</label></div>';});h+='</div></div>';});c.innerHTML=h;}
+function calcularIdade(){var d=document.getElementById('dataNascimento').value;if(!d)return;var h=new Date(),n=new Date(d),a=h.getFullYear()-n.getFullYear(),m=h.getMonth()-n.getMonth(),di=h.getDate()-n.getDate();if(di<0){m--;di+=new Date(h.getFullYear(),h.getMonth(),0).getDate();}if(m<0){a--;m+=12;}document.getElementById('idadeCalculada').value=a+' anos, '+m+' meses e '+di+' dias';}
+function obterRespostas(){var r=[];for(var i=0;i<ITENS.length;i++){var s=document.querySelector('input[name="item'+i+'"]:checked');if(!s)return null;r.push(parseInt(s.value));}return r;}
+function calcularResultados(){var n=document.getElementById('nome').value,id=document.getElementById('idadeCalculada').value,s=document.getElementById('sexo').value,resp=document.getElementById('respondente').value;if(!n||!id||!s||!resp){alert('Por favor, preencha todos os dados antes de calcular.');return;}var r=obterRespostas();if(!r){alert('Por favor, responda todos os 26 itens.');return;}
+var somaD=0,somaHI=0,somaTOD=0,nD=0,nHI=0,nTOD=0;
+ITENS.forEach(function(it,i){if(it.dominio==='D'){somaD+=r[i];nD++;}else if(it.dominio==='HI'){somaHI+=r[i];nHI++;}else{somaTOD+=r[i];nTOD++;}});
+var mediaD=(somaD/nD).toFixed(2),mediaHI=(somaHI/nHI).toFixed(2),mediaTOD=(somaTOD/nTOD).toFixed(2);
+var posD=parseFloat(mediaD)>=1.5,posHI=parseFloat(mediaHI)>=1.5,posTOD=parseFloat(mediaTOD)>=1.5;
+function cor(m){if(m<1)return'#4caf50';if(m<1.5)return'#8bc34a';if(m<2)return'#ffc107';if(m<2.5)return'#ff9800';return'#f44336';}
+var el=document.getElementById('resultados');var h='<h2>📊 Resultados SNAP-IV</h2>';
+h+='<div class="total-geral"><h3>Respondente: '+resp+'</h3></div>';
+h+='<h3 style="color:#e65100;margin:20px 0 15px;">🧩 Domínios (ponto de corte: média ≥ 1,5)</h3>';
+h+='<div class="dominio-card"><h4>🔍 Desatenção</h4><div style="display:flex;align-items:center;gap:15px;flex-wrap:wrap;"><div class="valor">'+mediaD+'</div><div class="barra-container"><div class="barra-fill" style="width:'+((mediaD/3)*100).toFixed(0)+'%;background:'+cor(mediaD)+';"></div></div><span class="badge" style="background:'+(posD?'#ffcdd2':'#c8e6c9')+';color:'+(posD?'#c62828':'#2e7d32')+';">'+(posD?'POSITIVO':'Negativo')+'</span></div></div>';
+h+='<div class="dominio-card"><h4>⚡ Hiperatividade / Impulsividade</h4><div style="display:flex;align-items:center;gap:15px;flex-wrap:wrap;"><div class="valor">'+mediaHI+'</div><div class="barra-container"><div class="barra-fill" style="width:'+((mediaHI/3)*100).toFixed(0)+'%;background:'+cor(mediaHI)+';"></div></div><span class="badge" style="background:'+(posHI?'#ffcdd2':'#c8e6c9')+';color:'+(posHI?'#c62828':'#2e7d32')+';">'+(posHI?'POSITIVO':'Negativo')+'</span></div></div>';
+h+='<div class="dominio-card"><h4>😤 Transtorno Opositor Desafiador</h4><div style="display:flex;align-items:center;gap:15px;flex-wrap:wrap;"><div class="valor">'+mediaTOD+'</div><div class="barra-container"><div class="barra-fill" style="width:'+((mediaTOD/3)*100).toFixed(0)+'%;background:'+cor(mediaTOD)+';"></div></div><span class="badge" style="background:'+(posTOD?'#ffcdd2':'#c8e6c9')+';color:'+(posTOD?'#c62828':'#2e7d32')+';">'+(posTOD?'POSITIVO':'Negativo')+'</span></div></div>';
+h+='<div class="analise-texto"><h3>📝 Análise dos Resultados</h3>';
+if(posD&&posHI)h+='<p><strong>Apresentação sugerida:</strong> TDAH — Combinada (Desatenção + Hiperatividade/Impulsividade)</p>';
+else if(posD)h+='<p><strong>Apresentação sugerida:</strong> TDAH — Predominantemente Desatenta</p>';
+else if(posHI)h+='<p><strong>Apresentação sugerida:</strong> TDAH — Predominantemente Hiperativa/Impulsiva</p>';
+else h+='<p><strong>Rastreio TDAH:</strong> Negativo para ambos os domínios.</p>';
+if(posTOD)h+='<p><strong>⚠️ TOD:</strong> Rastreio positivo para Transtorno Opositor Desafiador. Recomenda-se avaliação clínica.</p>';
+h+='<p style="margin-top:10px;"><strong>Nota:</strong> O ponto de corte de 1,5 é baseado na versão brasileira (Mattos et al., 2006). Recomenda-se aplicação com pais E professores para comparação entre contextos.</p>';
+h+='</div>';
+h+='<div class="disclaimer"><strong>⚠️ IMPORTANTE:</strong> O SNAP-IV é um instrumento de <strong>rastreio</strong>. Não substitui avaliação clínica profissional. O diagnóstico de TDAH e TOD requer avaliação abrangente por profissional qualificado.</div>';
+el.innerHTML=h;el.style.display='block';el.scrollIntoView({behavior:'smooth'});}
+function gerarRelatorioPDF(){var nome=document.getElementById('nome').value;if(!nome){alert('Preencha pelo menos o nome.');return;}var r=obterRespostas();if(!r){alert('Responda todos os itens.');return;}
+var somaD=0,somaHI=0,somaTOD=0,nD=0,nHI=0,nTOD=0;ITENS.forEach(function(it,i){if(it.dominio==='D'){somaD+=r[i];nD++;}else if(it.dominio==='HI'){somaHI+=r[i];nHI++;}else{somaTOD+=r[i];nTOD++;}});
+var mediaD=(somaD/nD).toFixed(2),mediaHI=(somaHI/nHI).toFixed(2),mediaTOD=(somaTOD/nTOD).toFixed(2);
+var posD=parseFloat(mediaD)>=1.5,posHI=parseFloat(mediaHI)>=1.5,posTOD=parseFloat(mediaTOD)>=1.5;
+var idade=document.getElementById('idadeCalculada').value,sexo=document.getElementById('sexo').value,resp=document.getElementById('respondente').value,dataAval=document.getElementById('data').value||new Date().toLocaleDateString('pt-BR');
+var jsPDF=window.jspdf.jsPDF;var doc=new jsPDF();
+doc.setFillColor(230,81,0);doc.rect(0,0,210,40,'F');doc.setTextColor(255,255,255);doc.setFontSize(16);doc.setFont(undefined,'bold');doc.text('SNAP-IV — RELATÓRIO DE AVALIAÇÃO',105,18,{align:'center'});doc.setFontSize(10);doc.text('Escala de Avaliação de TDAH e TOD',105,27,{align:'center'});doc.setFontSize(8);doc.text('Versão brasileira: Mattos et al. (2006)',105,34,{align:'center'});
+doc.setFillColor(248,249,250);doc.rect(15,48,180,30,'F');doc.setDrawColor(230,81,0);doc.rect(15,48,180,30);doc.setTextColor(230,81,0);doc.setFontSize(11);doc.setFont(undefined,'bold');doc.text('DADOS',20,56);doc.setTextColor(0,0,0);doc.setFontSize(9);doc.setFont(undefined,'normal');
+var idPac=document.getElementById('idPaciente')?document.getElementById('idPaciente').value:'';doc.text('Criança: '+nome,20,63);doc.text('Idade: '+idade,120,63);doc.text('Sexo: '+sexo,20,69);doc.text('Respondente: '+resp,120,69);doc.text('Data: '+dataAval,20,75);if(idPac)doc.text('ID: '+idPac,120,75);
+var y=86;doc.setTextColor(230,81,0);doc.setFontSize(11);doc.setFont(undefined,'bold');doc.text('RESULTADOS (ponto de corte: média >= 1,5)',20,y);y+=10;
+doc.setTextColor(0,0,0);doc.setFontSize(9);doc.setFont(undefined,'normal');
+doc.text('Desatenção: média '+mediaD+' — '+(posD?'POSITIVO':'Negativo'),20,y);y+=7;
+doc.text('Hiperatividade/Impulsividade: média '+mediaHI+' — '+(posHI?'POSITIVO':'Negativo'),20,y);y+=7;
+doc.text('TOD: média '+mediaTOD+' — '+(posTOD?'POSITIVO':'Negativo'),20,y);y+=12;
+doc.setFont(undefined,'bold');doc.text('Apresentação sugerida:',20,y);y+=6;doc.setFont(undefined,'normal');
+if(posD&&posHI)doc.text('TDAH Combinada',20,y);else if(posD)doc.text('TDAH Predominantemente Desatenta',20,y);else if(posHI)doc.text('TDAH Predominantemente Hiperativa/Impulsiva',20,y);else doc.text('Rastreio negativo para TDAH',20,y);
+y+=15;doc.setFillColor(255,243,224);doc.rect(15,y-4,180,20,'F');doc.setTextColor(230,81,0);doc.setFontSize(7);doc.setFont(undefined,'bold');doc.text('IMPORTANTE:',20,y+2);doc.setFont(undefined,'normal');doc.text('O SNAP-IV é instrumento de rastreio. Não substitui avaliação clínica profissional.',20,y+8);doc.text('Recomenda-se aplicação com pais E professores para comparação entre contextos.',20,y+13);
+doc.addPage();doc.setFillColor(230,81,0);doc.rect(0,0,210,15,'F');doc.setTextColor(255,255,255);doc.setFontSize(12);doc.setFont(undefined,'bold');doc.text('REFERÊNCIAS',105,10,{align:'center'});
+var yr=25;doc.setTextColor(0,0,0);doc.setFontSize(7.5);doc.setFont(undefined,'normal');
+['MATTOS, P. et al. Apresentação de uma versão em português para uso no Brasil do instrumento','MTA-SNAP-IV. Revista de Psiquiatria do Rio Grande do Sul, v. 28, n. 3, p. 290-297, 2006.','','SWANSON, J. M. et al. The SNAP rating scale for the diagnosis of attention deficit disorder.','Paper presented at APA, 1983.','','MTA COOPERATIVE GROUP. A 14-month randomized clinical trial of treatment strategies for ADHD.','Archives of General Psychiatry, v. 56, n. 12, p. 1073-1086, 1999.','','AMERICAN PSYCHIATRIC ASSOCIATION. DSM-5-TR. Washington, DC: APA, 2022.'].forEach(function(l){if(l===''){yr+=3;}else{doc.text(l,20,yr);yr+=4;}});
+doc.setFillColor(108,117,125);doc.rect(0,280,210,17,'F');doc.setTextColor(255,255,255);doc.setFontSize(8);doc.text('Relatório gerado em: '+new Date().toLocaleString('pt-BR'),105,290,{align:'center'});
+var ts=new Date().toISOString().slice(0,16).replace(/[-:T]/g,'').slice(0,12);doc.save('SNAPIV_'+nome.replace(/\s+/g,'_')+'_'+ts+'.pdf');}
+function limparDados(){if(!confirm('Limpar todos os dados?'))return;document.getElementById('nome').value='';document.getElementById('dataNascimento').value='';document.getElementById('idadeCalculada').value='';document.getElementById('sexo').value='';document.getElementById('respondente').value='';document.getElementById('observacoes').value='';document.querySelectorAll('input[type="radio"]').forEach(function(r){r.checked=false;});document.getElementById('resultados').style.display='none';document.getElementById('data').value=new Date().toISOString().split('T')[0];}
+document.addEventListener('DOMContentLoaded',function(){gerarQuestionario();document.getElementById('data').value=new Date().toISOString().split('T')[0];});
+    </script>
+</body>
+</html>

@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CAT-Q — Questionário de Camuflagem de Traços Autistas</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6; color: #333;
+            background: linear-gradient(135deg, #4a148c 0%, #7b68ee 100%);
+            min-height: 100vh; padding: 20px;
+        }
+        .container {
+            max-width: 1000px; margin: 0 auto; background: white;
+            border-radius: 15px; box-shadow: 0 20px 40px rgba(0,0,0,0.15); overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #4a148c 0%, #7b68ee 100%);
+            color: white; padding: 30px; text-align: center;
+        }
+        .header h1 { font-size: 2.2em; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        .header p { font-size: 1.1em; opacity: 0.9; }
+        .content { padding: 30px; }
+        .info-tecnica {
+            background: #ede7f6; padding: 25px; border-radius: 10px;
+            margin-bottom: 30px; border-left: 5px solid #4a148c; position: relative;
+        }
+        .info-tecnica h2 { color: #4a148c; margin-bottom: 15px; font-size: 1.4em; }
+        .info-tecnica p { color: #555; line-height: 1.7; font-size: 0.95em; }
+        .dados-pessoais {
+            background: #f8f9fa; padding: 25px; border-radius: 10px;
+            margin-bottom: 30px; border-left: 5px solid #4a148c;
+        }
+        .dados-pessoais h2 { color: #4a148c; margin-bottom: 20px; font-size: 1.5em; }
+        .form-row { display: flex; gap: 20px; margin-bottom: 15px; flex-wrap: wrap; }
+        .form-group { flex: 1; min-width: 200px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; color: #555; }
+        .form-group input, .form-group select {
+            width: 100%; padding: 12px; border: 2px solid #e0e0e0;
+            border-radius: 8px; font-size: 16px; transition: border-color 0.3s;
+        }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: #4a148c; }
+        .instrucoes {
+            background: #f3e5f5; padding: 20px; border-radius: 10px;
+            margin-bottom: 30px; border-left: 5px solid #7b68ee;
+        }
+        .instrucoes h3 { color: #4a148c; margin-bottom: 10px; }
+        .instrucoes p { color: #555; font-size: 0.95em; line-height: 1.7; }
+        .item {
+            padding: 20px; border-bottom: 1px solid #f0f0f0;
+            transition: background-color 0.3s;
+        }
+        .item:hover { background-color: #ede7f6; }
+        .item:last-child { border-bottom: none; }
+        .item-texto { font-size: 1.05em; margin-bottom: 15px; color: #444; line-height: 1.5; }
+        .item-numero { font-weight: bold; color: #4a148c; margin-right: 8px; }
+        .opcoes { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+        .opcao {
+            display: flex; flex-direction: column; align-items: center; gap: 5px;
+            cursor: pointer; padding: 6px; border-radius: 8px;
+            transition: all 0.3s; border: 2px solid transparent;
+            min-width: 55px; min-height: 60px;
+        }
+        .opcao:hover { background-color: #ede7f6; border-color: #4a148c; }
+        .opcao input[type="radio"] { width: 18px; height: 18px; cursor: pointer; accent-color: #4a148c; }
+        .opcao label {
+            cursor: pointer; font-weight: 500; color: #555; text-align: center;
+            font-size: 0.7em; line-height: 1.2; min-height: 24px;
+            display: flex; align-items: center;
+        }
+        .botoes { display: flex; gap: 15px; justify-content: center; margin: 30px 0; flex-wrap: wrap; }
+        .btn {
+            padding: 15px 30px; border: none; border-radius: 25px;
+            font-size: 16px; font-weight: 600; cursor: pointer;
+            transition: all 0.3s; text-align: center;
+        }
+        .btn-primary { background: linear-gradient(135deg, #4a148c 0%, #7b68ee 100%); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(74,20,140,0.3); }
+        .btn-secondary { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; }
+        .btn-secondary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(40,167,69,0.3); }
+        .btn-danger { background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%); color: white; }
+        .btn-danger:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(220,53,69,0.3); }
+        .resultados {
+            background: #f8f9fa; padding: 30px; border-radius: 10px;
+            margin-top: 30px; border-left: 5px solid #4a148c; display: none;
+        }
+        .resultados h2 { color: #4a148c; margin-bottom: 20px; text-align: center; }
+        .dominio-card {
+            background: white; padding: 20px; border-radius: 10px;
+            margin-bottom: 15px; box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+            border-left: 4px solid #4a148c;
+        }
+        .dominio-card h4 { color: #4a148c; margin-bottom: 8px; }
+        .dominio-card .valor { font-size: 1.8em; font-weight: 800; color: #333; }
+        .total-geral {
+            background: linear-gradient(135deg, #4a148c 0%, #7b68ee 100%);
+            color: white; padding: 25px; border-radius: 10px;
+            text-align: center; margin: 20px 0;
+        }
+        .total-geral h3 { margin-bottom: 5px; }
+        .barra-container { width: 120px; height: 10px; background: #e0e0e0; border-radius: 5px; overflow: hidden; }
+        .barra-fill { height: 100%; border-radius: 5px; transition: width 0.5s; }
+        .badge { padding: 4px 12px; border-radius: 15px; font-size: 0.8em; font-weight: 600; }
+        .analise-texto {
+            background: white; padding: 25px; border-radius: 10px;
+            margin-top: 20px; border: 2px solid #4a148c; line-height: 1.8;
+        }
+        .analise-texto h3 { color: #4a148c; margin-bottom: 15px; }
+        .analise-texto p { margin-bottom: 10px; color: #444; font-size: 0.95em; }
+        .disclaimer {
+            background: #fff3e0; padding: 15px; border-radius: 8px;
+            margin-top: 20px; border-left: 4px solid #ff9800;
+            font-size: 0.85em; color: #e65100; line-height: 1.6;
+        }
+        .btn-imprimir {
+            position: absolute; top: 20px; right: 20px; padding: 10px 20px;
+            background: linear-gradient(135deg, #4a148c 0%, #311b92 100%);
+            color: white; border: none; border-radius: 20px; font-size: 14px;
+            font-weight: 600; cursor: pointer; transition: all 0.3s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .btn-imprimir:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(74,20,140,0.4); }
+        @media print {
+            @page { size: portrait; margin: 1cm; }
+            body { background: white; padding: 0; }
+            .botoes, .btn, .btn-imprimir { display: none !important; }
+            .container { box-shadow: none; max-width: 100%; }
+            .info-tecnica { display: none !important; }
+            .resultados { display: none !important; }
+            .header { background: #4a148c !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .item { page-break-inside: avoid; break-inside: avoid; }
+        }
+        @media (max-width: 768px) {
+            .container { margin: 10px; border-radius: 10px; }
+            .header { padding: 20px; }
+            .header h1 { font-size: 1.6em; }
+            .content { padding: 15px; }
+            .form-row { flex-direction: column; }
+            .opcoes { flex-direction: column; align-items: center; }
+            .botoes { flex-direction: column; }
+            .btn { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+<div style="padding:10px 20px;background:#2e7d32;"><a href="../" style="display:inline-block;background:#fff;color:#2e7d32;text-decoration:none;font-family:Segoe UI,Arial,sans-serif;font-size:14px;font-weight:bold;padding:8px 20px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.15);">⬅ Voltar ao Início</a></div>
+    <div class="container">
+        <div class="header">
+            <h1>🎭 CAT-Q</h1>
+            <p>Questionário de Camuflagem de Traços Autistas</p>
+            <p style="font-size:0.85em; opacity:0.8; margin-top:5px;">Camouflaging Autistic Traits Questionnaire (Hull et al., 2019)</p>
+        </div>
+        <div class="content">
+            <div class="info-tecnica">
+                <button class="btn-imprimir" onclick="window.print()">🖨️ Imprimir Formulário</button>
+                <h2>📚 Informações Técnicas</h2>
+                <p>
+                    <strong>Instrumento:</strong> CAT-Q — Camouflaging Autistic Traits Questionnaire<br>
+                    <strong>Autores:</strong> Hull, Mandy, Lai, Baron-Cohen, Allison, Smith &amp; Petrides (2019)<br>
+                    <strong>Base teórica:</strong> Modelo de camuflagem social no autismo — estratégias de compensação, mascaramento e assimilação<br>
+                    <strong>Estrutura:</strong> 25 itens, 3 subescalas, escala Likert 7 pontos<br>
+                    <strong>Subescalas:</strong> Compensação (9 itens), Mascaramento (8 itens), Assimilação (8 itens)<br>
+                    <strong>Escore:</strong> Total de 25 a 175 (maior = mais camuflagem). Itens com * são invertidos.<br>
+                    <strong>População:</strong> Adultos e adolescentes (≥16 anos)<br>
+                    <strong>Domínio público:</strong> Sim — uso livre para clínica e pesquisa (Hull et al., Universidade de Bristol)
+                </p>
+            </div>
+            <div class="dados-pessoais">
+                <h2>📋 Dados Pessoais</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="nome">Nome:</label>
+                        <input type="text" id="nome" placeholder="Nome completo">
+                    </div>
+                    <div class="form-group">
+                        <label for="dataNascimento">Data de Nascimento:</label>
+                        <input type="date" id="dataNascimento" onchange="calcularIdade()">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="idadeCalculada">Idade:</label>
+                        <input type="text" id="idadeCalculada" readonly style="background-color:#f0f0f0;" placeholder="Calculada automaticamente">
+                    </div>
+                    <div class="form-group">
+                        <label for="sexo">Sexo:</label>
+                        <select id="sexo">
+                            <option value="">Selecione</option>
+                            <option value="Masculino">Masculino</option>
+                            <option value="Feminino">Feminino</option>
+                            <option value="Não-binário">Não-binário</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="data">Data da Avaliação:</label>
+                        <input type="date" id="data">
+                    </div>
+                    <div class="form-group">
+                        <label for="observacoes">Observações (opcional):</label>
+                        <input type="text" id="observacoes" placeholder="Informações adicionais">
+                    </div>
+                </div>
+            </div>
+            <div class="instrucoes">
+                <h3>📝 Instruções</h3>
+                <p>
+                    As afirmações abaixo descrevem experiências sociais. Por favor, leia cada afirmação e indique
+                    o quanto você concorda ou discorda, usando a escala de 1 (Discordo totalmente) a 7 (Concordo totalmente).
+                    Não existem respostas certas ou erradas. Responda com base em como você <strong>geralmente</strong> se sente ou se comporta em situações sociais.
+                </p>
+            </div>
+            <div id="questionario"></div>
+            <div class="botoes">
+                <button class="btn btn-primary" onclick="calcularResultados()">📊 Calcular Resultados</button>
+                <button class="btn btn-secondary" onclick="gerarRelatorioPDF()">📄 Gerar Relatório PDF</button>
+                <button class="btn btn-danger" onclick="limparDados()">🗑️ Limpar Dados</button>
+            </div>
+            <div id="resultados" class="resultados"></div>
+            <div class="info-tecnica" id="referencias" style="margin-top:30px; background:#f8f9fa; border-left-color:#4a148c;">
+                <h2 style="color:#4a148c;">📚 Referências</h2>
+                <p style="color:#555; line-height:1.9; font-size:0.88em;">
+                    <strong>HULL, L. et al.</strong> Development and Validation of the Camouflaging Autistic Traits Questionnaire (CAT-Q). <em>Journal of Autism and Developmental Disorders</em>, v. 49, n. 3, p. 819-833, 2019. DOI: 10.1007/s10803-018-3792-6<br><br>
+                    <strong>HULL, L. et al.</strong> Gender differences in self-reported camouflaging in autistic and non-autistic adults. <em>Autism</em>, v. 24, n. 2, p. 352-363, 2020.<br><br>
+                    <strong>HULL, L. et al.</strong> Is social camouflaging associated with anxiety and depression in autistic adults? <em>Molecular Autism</em>, v. 12, n. 1, p. 13, 2021.<br><br>
+                    <strong>COOK, J. et al.</strong> Camouflaging in autism: A systematic review. <em>Clinical Psychology Review</em>, v. 89, 102080, 2021.<br><br>
+                    <strong>AMERICAN PSYCHIATRIC ASSOCIATION.</strong> <em>Diagnostic and Statistical Manual of Mental Disorders</em> (DSM-5-TR). 5th ed., text rev. Washington, DC: APA, 2022.
+                </p>
+            </div>
+        </div>
+    </div>
+    <script src="../id-paciente.js"></script>
+    <script>
+// ===== ITENS CAT-Q =====
+// subescala: "C" = Compensação, "M" = Mascaramento, "A" = Assimilação
+// invertido: true = item com pontuação reversa (8 - valor)
+var ITENS=[
+{texto:"Quando estou interagindo com alguém, deliberadamente copio suas expressões faciais ou linguagem corporal para parecer mais envolvido(a).",subescala:"C",invertido:false},
+{texto:"Eu monitoro minha linguagem corporal ou expressões faciais para que pareçam relaxadas.",subescala:"M",invertido:false},
+{texto:"Eu raramente sinto a necessidade de me encaixar em situações sociais.",subescala:"A",invertido:true},
+{texto:"Eu preciso me forçar a interagir com as pessoas.",subescala:"A",invertido:false},
+{texto:"Eu pratico expressões faciais e gestos para que pareçam naturais.",subescala:"M",invertido:false},
+{texto:"Eu não preciso de muito suporte social para me sentir confortável.",subescala:"A",invertido:true},
+{texto:"Eu desenvolvi um personagem para situações sociais.",subescala:"M",invertido:false},
+{texto:"Eu sempre penso sobre a impressão que estou causando nos outros.",subescala:"C",invertido:false},
+{texto:"Eu preciso de tempo para me recuperar após socializar.",subescala:"A",invertido:false},
+{texto:"Eu pesquiso e preparo tópicos de conversa antes de uma situação social.",subescala:"C",invertido:false},
+{texto:"Eu pratico como agir em situações sociais.",subescala:"C",invertido:false},
+{texto:"Eu não me sinto como eu mesmo(a) durante interações sociais.",subescala:"A",invertido:false},
+{texto:"Eu ajusto minhas expressões faciais para que pareçam apropriadas ao contexto.",subescala:"M",invertido:false},
+{texto:"Eu aprendi a imitar as respostas sociais de outras pessoas.",subescala:"C",invertido:false},
+{texto:"Eu me esforço para manter uma expressão facial adequada durante conversas.",subescala:"M",invertido:false},
+{texto:"Quando em situações sociais, tento encontrar maneiras de evitar interagir com os outros.",subescala:"A",invertido:false},
+{texto:"Eu uso comportamentos que aprendi observando outras pessoas para parecer socialmente competente.",subescala:"C",invertido:false},
+{texto:"Eu me sinto esgotado(a) após situações sociais, mesmo quando foram agradáveis.",subescala:"A",invertido:false},
+{texto:"Eu uso scripts ou frases prontas em conversas.",subescala:"C",invertido:false},
+{texto:"Eu me preocupo em parecer diferente dos outros.",subescala:"A",invertido:false},
+{texto:"Eu escondo meu verdadeiro eu em situações sociais.",subescala:"M",invertido:false},
+{texto:"Eu aprendi regras sociais observando outras pessoas e as aplico de forma consciente.",subescala:"C",invertido:false},
+{texto:"Eu me sinto como se estivesse atuando em situações sociais.",subescala:"M",invertido:false},
+{texto:"Eu forço contato visual durante conversas.",subescala:"M",invertido:false},
+{texto:"Eu tenho regras sobre como agir em situações sociais que sigo conscientemente.",subescala:"C",invertido:false}
+];
+var OPCOES_LIKERT=[{valor:1,texto:"Discordo\ntotalmente"},{valor:2,texto:"Discordo"},{valor:3,texto:"Discordo\nparcial-\nmente"},{valor:4,texto:"Neutro"},{valor:5,texto:"Concordo\nparcial-\nmente"},{valor:6,texto:"Concordo"},{valor:7,texto:"Concordo\ntotalmente"}];
+var SUBESCALAS={"Compensação":{sigla:"C",desc:"Estratégias para compensar dificuldades sociais"},"Mascaramento":{sigla:"M",desc:"Estratégias para esconder características autistas"},"Assimilação":{sigla:"A",desc:"Estratégias para se encaixar e evitar se destacar"}};
+
+// ===== APP =====
+function gerarQuestionario(){var c=document.getElementById('questionario');var h='';ITENS.forEach(function(item,i){h+='<div class="item" id="item'+i+'"><div class="item-texto"><span class="item-numero">'+(i+1)+'.</span> '+item.texto+'</div><div class="opcoes">';OPCOES_LIKERT.forEach(function(op){h+='<div class="opcao"><input type="radio" id="item'+i+'_'+op.valor+'" name="item'+i+'" value="'+op.valor+'"><label for="item'+i+'_'+op.valor+'">'+op.texto.replace(/\n/g,'<br>')+'</label></div>';});h+='</div></div>';});c.innerHTML=h;}
+function calcularIdade(){var d=document.getElementById('dataNascimento').value;if(!d)return;var h=new Date(),n=new Date(d),a=h.getFullYear()-n.getFullYear(),m=h.getMonth()-n.getMonth(),di=h.getDate()-n.getDate();if(di<0){m--;di+=new Date(h.getFullYear(),h.getMonth(),0).getDate();}if(m<0){a--;m+=12;}document.getElementById('idadeCalculada').value=a+' anos, '+m+' meses e '+di+' dias';}
+function obterRespostas(){var r=[];for(var i=0;i<ITENS.length;i++){var s=document.querySelector('input[name="item'+i+'"]:checked');if(!s)return null;var v=parseInt(s.value);if(ITENS[i].invertido)v=8-v;r.push(v);}return r;}
+function calcularResultados(){var n=document.getElementById('nome').value,id=document.getElementById('idadeCalculada').value,s=document.getElementById('sexo').value;if(!n||!id||!s){alert('Por favor, preencha todos os dados pessoais antes de calcular.');return;}var r=obterRespostas();if(!r){alert('Por favor, responda todos os 25 itens antes de calcular.');return;}
+// Calcular subescalas
+var comp=[],mask=[],assim=[];ITENS.forEach(function(it,i){if(it.subescala==='C')comp.push(r[i]);else if(it.subescala==='M')mask.push(r[i]);else assim.push(r[i]);});
+var somaC=comp.reduce(function(a,b){return a+b;},0);var somaM=mask.reduce(function(a,b){return a+b;},0);var somaA=assim.reduce(function(a,b){return a+b;},0);
+var total=somaC+somaM+somaA;var mediaC=(somaC/comp.length).toFixed(2);var mediaM=(somaM/mask.length).toFixed(2);var mediaA=(somaA/assim.length).toFixed(2);var mediaTotal=(total/25).toFixed(2);
+function classif(m){if(m<2.5)return{t:"Baixo",c:"#4caf50"};if(m<3.5)return{t:"Leve",c:"#8bc34a"};if(m<4.5)return{t:"Moderado",c:"#ffc107"};if(m<5.5)return{t:"Elevado",c:"#ff9800"};return{t:"Muito Elevado",c:"#f44336"};}
+var clC=classif(mediaC),clM=classif(mediaM),clA=classif(mediaA),clT=classif(mediaTotal);
+// Mostrar resultados
+var el=document.getElementById('resultados');var h='<h2>📊 Resultados CAT-Q</h2>';
+h+='<div class="total-geral"><h3>Escore Total: '+total+' / 175</h3><h3>Média: '+mediaTotal+' — Nível de Camuflagem: '+clT.t+'</h3></div>';
+h+='<h3 style="color:#4a148c;margin:20px 0 15px;">🧩 Subescalas</h3>';
+h+='<div class="dominio-card"><h4>Compensação ('+comp.length+' itens)</h4><p style="font-size:0.8em;color:#777;margin-bottom:8px;">Estratégias para compensar dificuldades sociais</p><div style="display:flex;align-items:center;gap:15px;flex-wrap:wrap;"><div class="valor">'+somaC+'/'+(comp.length*7)+'</div><div class="barra-container"><div class="barra-fill" style="width:'+((somaC/(comp.length*7))*100).toFixed(0)+'%;background:'+clC.c+';"></div></div><span class="badge" style="background:'+clC.c+'22;color:'+clC.c+';">'+clC.t+'</span></div><div style="font-size:0.85em;color:#777;margin-top:5px;">Média: '+mediaC+'</div></div>';
+h+='<div class="dominio-card"><h4>Mascaramento ('+mask.length+' itens)</h4><p style="font-size:0.8em;color:#777;margin-bottom:8px;">Estratégias para esconder características autistas</p><div style="display:flex;align-items:center;gap:15px;flex-wrap:wrap;"><div class="valor">'+somaM+'/'+(mask.length*7)+'</div><div class="barra-container"><div class="barra-fill" style="width:'+((somaM/(mask.length*7))*100).toFixed(0)+'%;background:'+clM.c+';"></div></div><span class="badge" style="background:'+clM.c+'22;color:'+clM.c+';">'+clM.t+'</span></div><div style="font-size:0.85em;color:#777;margin-top:5px;">Média: '+mediaM+'</div></div>';
+h+='<div class="dominio-card"><h4>Assimilação ('+assim.length+' itens)</h4><p style="font-size:0.8em;color:#777;margin-bottom:8px;">Estratégias para se encaixar e evitar se destacar</p><div style="display:flex;align-items:center;gap:15px;flex-wrap:wrap;"><div class="valor">'+somaA+'/'+(assim.length*7)+'</div><div class="barra-container"><div class="barra-fill" style="width:'+((somaA/(assim.length*7))*100).toFixed(0)+'%;background:'+clA.c+';"></div></div><span class="badge" style="background:'+clA.c+'22;color:'+clA.c+';">'+clA.t+'</span></div><div style="font-size:0.85em;color:#777;margin-top:5px;">Média: '+mediaA+'</div></div>';
+// Análise
+h+='<div class="analise-texto"><h3>📝 Análise dos Resultados</h3>';
+h+='<p><strong>📊 Escore Total:</strong> '+total+'/175 (média '+mediaTotal+' — '+clT.t+'). ';
+if(parseFloat(mediaTotal)>=5)h+='Nível muito elevado de camuflagem social, sugerindo uso intenso e frequente de estratégias para mascarar características autistas. Isso pode estar associado a <strong>esgotamento, ansiedade e depressão</strong>.</p>';
+else if(parseFloat(mediaTotal)>=4)h+='Nível elevado de camuflagem social. Indica uso frequente de estratégias compensatórias que podem gerar sobrecarga emocional significativa.</p>';
+else if(parseFloat(mediaTotal)>=3.5)h+='Nível moderado de camuflagem. Sugere uso regular de estratégias sociais que podem demandar esforço consciente.</p>';
+else h+='Nível baixo a leve de camuflagem. Sugere menor necessidade de estratégias compensatórias em situações sociais.</p>';
+h+='<p><strong>🔍 Análise por Subescalas:</strong></p>';
+h+='<p>• <strong>Compensação</strong> (média '+mediaC+' — '+clC.t+'): '+(parseFloat(mediaC)>=4.5?'Uso intenso de estratégias aprendidas (scripts, regras, imitação) para compensar dificuldades sociais.':parseFloat(mediaC)>=3.5?'Uso moderado de estratégias compensatórias em interações sociais.':'Menor necessidade de estratégias compensatórias.')+'</p>';
+h+='<p>• <strong>Mascaramento</strong> (média '+mediaM+' — '+clM.t+'): '+(parseFloat(mediaM)>=4.5?'Esforço significativo para esconder características autistas e apresentar uma persona social.':parseFloat(mediaM)>=3.5?'Algum esforço para controlar expressões e comportamentos em público.':'Menor necessidade de esconder características pessoais.')+'</p>';
+h+='<p>• <strong>Assimilação</strong> (média '+mediaA+' — '+clA.t+'): '+(parseFloat(mediaA)>=4.5?'Forte necessidade de se encaixar, com possível esgotamento pós-social e sensação de não ser autêntico(a).':parseFloat(mediaA)>=3.5?'Alguma dificuldade em se sentir autêntico(a) em situações sociais.':'Menor dificuldade em se sentir confortável sendo si mesmo(a).')+'</p>';
+if(parseFloat(mediaTotal)>=4.5)h+='<p style="color:#e65100;"><strong>⚠️ NOTA CLÍNICA:</strong> Níveis elevados de camuflagem estão associados na literatura a maior risco de ansiedade, depressão e burnout autista (Hull et al., 2021). Recomenda-se avaliação do impacto na saúde mental.</p>';
+h+='</div>';
+h+='<div class="disclaimer"><strong>⚠️ IMPORTANTE:</strong> O CAT-Q é um instrumento de <strong>pesquisa e rastreio</strong> que mede comportamentos de camuflagem social. <strong>Não é um instrumento diagnóstico para autismo.</strong> Pessoas autistas e não-autistas podem apresentar camuflagem. Escores elevados não confirmam nem excluem diagnóstico de TEA. Os resultados devem ser interpretados por profissionais qualificados no contexto de uma avaliação abrangente.</div>';
+el.innerHTML=h;el.style.display='block';el.scrollIntoView({behavior:'smooth'});}
+function gerarRelatorioPDF(){var nome=document.getElementById('nome').value;if(!nome){alert('Preencha pelo menos o nome.');return;}var r=obterRespostas();if(!r){alert('Responda todos os itens antes de gerar o PDF.');return;}
+var comp=[],mask=[],assim=[];ITENS.forEach(function(it,i){if(it.subescala==='C')comp.push(r[i]);else if(it.subescala==='M')mask.push(r[i]);else assim.push(r[i]);});
+var somaC=comp.reduce(function(a,b){return a+b;},0);var somaM=mask.reduce(function(a,b){return a+b;},0);var somaA=assim.reduce(function(a,b){return a+b;},0);
+var total=somaC+somaM+somaA;var mediaC=(somaC/comp.length).toFixed(2);var mediaM=(somaM/mask.length).toFixed(2);var mediaA=(somaA/assim.length).toFixed(2);var mediaTotal=(total/25).toFixed(2);
+function classif(m){if(m<2.5)return"Baixo";if(m<3.5)return"Leve";if(m<4.5)return"Moderado";if(m<5.5)return"Elevado";return"Muito Elevado";}
+var idade=document.getElementById('idadeCalculada').value,sexo=document.getElementById('sexo').value,dataAval=document.getElementById('data').value||new Date().toLocaleDateString('pt-BR');
+var jsPDF=window.jspdf.jsPDF;var doc=new jsPDF();
+doc.setFillColor(74,20,140);doc.rect(0,0,210,40,'F');doc.setTextColor(255,255,255);doc.setFontSize(16);doc.setFont(undefined,'bold');doc.text('CAT-Q — RELATÓRIO DE AVALIAÇÃO',105,18,{align:'center'});doc.setFontSize(10);doc.text('Questionário de Camuflagem de Traços Autistas',105,27,{align:'center'});doc.setFontSize(8);doc.text('Hull et al. (2019)',105,34,{align:'center'});
+doc.setFillColor(248,249,250);doc.rect(15,48,180,25,'F');doc.setDrawColor(74,20,140);doc.rect(15,48,180,25);doc.setTextColor(74,20,140);doc.setFontSize(11);doc.setFont(undefined,'bold');doc.text('DADOS PESSOAIS',20,56);doc.setTextColor(0,0,0);doc.setFontSize(9);doc.setFont(undefined,'normal');
+var idPac=document.getElementById('idPaciente')?document.getElementById('idPaciente').value:'';doc.text('Nome: '+nome,20,63);doc.text('Idade: '+idade,120,63);doc.text('Sexo: '+sexo,20,69);doc.text('Data: '+dataAval,120,69);if(idPac)doc.text('ID: '+idPac,20,75);
+var y=82;doc.setFillColor(74,20,140);doc.rect(15,y,180,12,'F');doc.setTextColor(255,255,255);doc.setFontSize(11);doc.setFont(undefined,'bold');doc.text('Escore Total: '+total+'/175 | Média: '+mediaTotal+' — '+classif(mediaTotal),105,y+8,{align:'center'});
+y=100;doc.setTextColor(74,20,140);doc.setFontSize(11);doc.setFont(undefined,'bold');doc.text('SUBESCALAS',20,y);y+=8;doc.setTextColor(0,0,0);doc.setFontSize(9);doc.setFont(undefined,'normal');
+doc.text('Compensação: '+somaC+'/'+(comp.length*7)+' (média '+mediaC+' — '+classif(mediaC)+')',20,y);y+=6;
+doc.text('Mascaramento: '+somaM+'/'+(mask.length*7)+' (média '+mediaM+' — '+classif(mediaM)+')',20,y);y+=6;
+doc.text('Assimilação: '+somaA+'/'+(assim.length*7)+' (média '+mediaA+' — '+classif(mediaA)+')',20,y);y+=12;
+doc.setTextColor(74,20,140);doc.setFontSize(11);doc.setFont(undefined,'bold');doc.text('ANÁLISE',20,y);y+=8;doc.setTextColor(0,0,0);doc.setFontSize(9);doc.setFont(undefined,'normal');
+doc.text('Nível de camuflagem: '+classif(mediaTotal),20,y);y+=6;
+if(parseFloat(mediaTotal)>=4.5){doc.text('Nível elevado de camuflagem. Associado a maior risco de ansiedade e depressão.',20,y);y+=6;doc.text('Recomenda-se avaliação do impacto na saúde mental.',20,y);}else if(parseFloat(mediaTotal)>=3.5){doc.text('Nível moderado de camuflagem. Uso regular de estratégias compensatórias.',20,y);}else{doc.text('Nível baixo a leve de camuflagem social.',20,y);}
+y+=15;doc.setFillColor(255,243,224);doc.rect(15,y-4,180,25,'F');doc.setTextColor(230,81,0);doc.setFontSize(7);doc.setFont(undefined,'bold');doc.text('IMPORTANTE:',20,y+2);doc.setFont(undefined,'normal');doc.text('O CAT-Q mede comportamentos de camuflagem social. Não é instrumento diagnóstico para autismo.',20,y+8);doc.text('Pessoas autistas e não-autistas podem apresentar camuflagem. Escores elevados não confirmam',20,y+13);doc.text('nem excluem diagnóstico de TEA. Interpretar no contexto de avaliação abrangente.',20,y+18);
+// Página 2 - Referências
+doc.addPage();doc.setFillColor(74,20,140);doc.rect(0,0,210,15,'F');doc.setTextColor(255,255,255);doc.setFontSize(12);doc.setFont(undefined,'bold');doc.text('REFERÊNCIAS',105,10,{align:'center'});
+var yr=25;doc.setTextColor(0,0,0);doc.setFontSize(7.5);doc.setFont(undefined,'normal');
+['HULL, L. et al. Development and Validation of the Camouflaging Autistic Traits Questionnaire','(CAT-Q). Journal of Autism and Developmental Disorders, v. 49, n. 3, p. 819-833, 2019.','DOI: 10.1007/s10803-018-3792-6','','HULL, L. et al. Gender differences in self-reported camouflaging in autistic and non-autistic','adults. Autism, v. 24, n. 2, p. 352-363, 2020.','','HULL, L. et al. Is social camouflaging associated with anxiety and depression in autistic','adults? Molecular Autism, v. 12, n. 1, p. 13, 2021.','','COOK, J. et al. Camouflaging in autism: A systematic review. Clinical Psychology Review,','v. 89, 102080, 2021.','','AMERICAN PSYCHIATRIC ASSOCIATION. Diagnostic and Statistical Manual of Mental Disorders','(DSM-5-TR). 5th ed., text rev. Washington, DC: APA, 2022.'].forEach(function(l){if(l===''){yr+=3;}else{doc.text(l,20,yr);yr+=4;}});
+doc.setFillColor(108,117,125);doc.rect(0,280,210,17,'F');doc.setTextColor(255,255,255);doc.setFontSize(8);doc.text('Relatório gerado em: '+new Date().toLocaleString('pt-BR'),105,290,{align:'center'});
+var ts=new Date().toISOString().slice(0,16).replace(/[-:T]/g,'').slice(0,12);doc.save('CATQ_'+nome.replace(/\s+/g,'_')+'_'+ts+'.pdf');}
+function limparDados(){if(!confirm('Tem certeza que deseja limpar todos os dados?'))return;document.getElementById('nome').value='';document.getElementById('dataNascimento').value='';document.getElementById('idadeCalculada').value='';document.getElementById('sexo').value='';document.getElementById('observacoes').value='';document.querySelectorAll('input[type="radio"]').forEach(function(r){r.checked=false;});document.getElementById('resultados').style.display='none';document.getElementById('data').value=new Date().toISOString().split('T')[0];}
+document.addEventListener('DOMContentLoaded',function(){gerarQuestionario();document.getElementById('data').value=new Date().toISOString().split('T')[0];});
+    </script>
+</body>
+</html>

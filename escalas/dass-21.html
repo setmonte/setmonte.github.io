@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DASS-21 — Escala de Depressão, Ansiedade e Estresse</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6; color: #333;
+            background: linear-gradient(135deg, #283593 0%, #00838f 100%);
+            min-height: 100vh; padding: 20px;
+        }
+        .container {
+            max-width: 1000px; margin: 0 auto; background: white;
+            border-radius: 15px; box-shadow: 0 20px 40px rgba(0,0,0,0.15); overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #283593 0%, #00838f 100%);
+            color: white; padding: 30px; text-align: center;
+        }
+        .header h1 { font-size: 2.2em; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        .header p { font-size: 1.1em; opacity: 0.9; }
+        .content { padding: 30px; }
+        .info-tecnica {
+            background: #e8eaf6; padding: 25px; border-radius: 10px;
+            margin-bottom: 30px; border-left: 5px solid #283593; position: relative;
+        }
+        .info-tecnica h2 { color: #283593; margin-bottom: 15px; font-size: 1.4em; }
+        .info-tecnica p { color: #555; line-height: 1.7; font-size: 0.95em; }
+        .dados-pessoais {
+            background: #f8f9fa; padding: 25px; border-radius: 10px;
+            margin-bottom: 30px; border-left: 5px solid #283593;
+        }
+        .dados-pessoais h2 { color: #283593; margin-bottom: 20px; font-size: 1.5em; }
+        .form-row { display: flex; gap: 20px; margin-bottom: 15px; flex-wrap: wrap; }
+        .form-group { flex: 1; min-width: 200px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; color: #555; }
+        .form-group input, .form-group select {
+            width: 100%; padding: 12px; border: 2px solid #e0e0e0;
+            border-radius: 8px; font-size: 16px; transition: border-color 0.3s;
+        }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: #283593; }
+        .instrucoes {
+            background: #e0f7fa; padding: 20px; border-radius: 10px;
+            margin-bottom: 30px; border-left: 5px solid #00838f;
+        }
+        .instrucoes h3 { color: #006064; margin-bottom: 10px; }
+        .instrucoes p { color: #555; font-size: 0.95em; line-height: 1.7; }
+        .item {
+            padding: 20px; border-bottom: 1px solid #f0f0f0;
+            transition: background-color 0.3s;
+        }
+        .item:hover { background-color: #e8eaf6; }
+        .item:last-child { border-bottom: none; }
+        .item-texto { font-size: 1.05em; margin-bottom: 15px; color: #444; line-height: 1.5; }
+        .item-numero { font-weight: bold; color: #283593; margin-right: 8px; }
+        .opcoes { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+        .opcao {
+            display: flex; flex-direction: column; align-items: center; gap: 5px;
+            cursor: pointer; padding: 8px; border-radius: 8px;
+            transition: all 0.3s; border: 2px solid transparent;
+            min-width: 80px; min-height: 70px;
+        }
+        .opcao:hover { background-color: #e8eaf6; border-color: #283593; }
+        .opcao input[type="radio"] { width: 18px; height: 18px; cursor: pointer; accent-color: #283593; }
+        .opcao label {
+            cursor: pointer; font-weight: 500; color: #555; text-align: center;
+            font-size: 0.8em; line-height: 1.2; min-height: 30px;
+            display: flex; align-items: center;
+        }
+        .botoes { display: flex; gap: 15px; justify-content: center; margin: 30px 0; flex-wrap: wrap; }
+        .btn {
+            padding: 15px 30px; border: none; border-radius: 25px;
+            font-size: 16px; font-weight: 600; cursor: pointer;
+            transition: all 0.3s; text-align: center;
+        }
+        .btn-primary { background: linear-gradient(135deg, #283593 0%, #00838f 100%); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(40,53,147,0.3); }
+        .btn-secondary { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; }
+        .btn-secondary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(40,167,69,0.3); }
+        .btn-danger { background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%); color: white; }
+        .btn-danger:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(220,53,69,0.3); }
+        .resultados {
+            background: #f8f9fa; padding: 30px; border-radius: 10px;
+            margin-top: 30px; border-left: 5px solid #283593; display: none;
+        }
+        .resultados h2 { color: #283593; margin-bottom: 20px; text-align: center; }
+        .dominio-card {
+            background: white; padding: 20px; border-radius: 10px;
+            margin-bottom: 15px; box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+            border-left: 4px solid #283593;
+        }
+        .dominio-card h4 { color: #283593; margin-bottom: 8px; }
+        .dominio-card .valor { font-size: 1.8em; font-weight: 800; color: #333; }
+        .total-geral {
+            background: linear-gradient(135deg, #283593 0%, #00838f 100%);
+            color: white; padding: 25px; border-radius: 10px;
+            text-align: center; margin: 20px 0;
+        }
+        .total-geral h3 { margin-bottom: 5px; }
+        .barra-container { width: 120px; height: 10px; background: #e0e0e0; border-radius: 5px; overflow: hidden; }
+        .barra-fill { height: 100%; border-radius: 5px; transition: width 0.5s; }
+        .badge { padding: 4px 12px; border-radius: 15px; font-size: 0.8em; font-weight: 600; }
+        .analise-texto {
+            background: white; padding: 25px; border-radius: 10px;
+            margin-top: 20px; border: 2px solid #283593; line-height: 1.8;
+        }
+        .analise-texto h3 { color: #283593; margin-bottom: 15px; }
+        .analise-texto p { margin-bottom: 10px; color: #444; font-size: 0.95em; }
+        .disclaimer {
+            background: #fff3e0; padding: 15px; border-radius: 8px;
+            margin-top: 20px; border-left: 4px solid #ff9800;
+            font-size: 0.85em; color: #e65100; line-height: 1.6;
+        }
+        .btn-imprimir {
+            position: absolute; top: 20px; right: 20px; padding: 10px 20px;
+            background: linear-gradient(135deg, #283593 0%, #1a237e 100%);
+            color: white; border: none; border-radius: 20px; font-size: 14px;
+            font-weight: 600; cursor: pointer; transition: all 0.3s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .btn-imprimir:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(40,53,147,0.4); }
+        @media print {
+            @page { size: portrait; margin: 1cm; }
+            body { background: white; padding: 0; }
+            .botoes, .btn, .btn-imprimir { display: none !important; }
+            .container { box-shadow: none; max-width: 100%; }
+            .info-tecnica { display: none !important; }
+            .resultados { display: none !important; }
+            .header { background: #283593 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .item { page-break-inside: avoid; break-inside: avoid; }
+        }
+        @media (max-width: 768px) {
+            .container { margin: 10px; border-radius: 10px; }
+            .header { padding: 20px; }
+            .header h1 { font-size: 1.6em; }
+            .content { padding: 15px; }
+            .form-row { flex-direction: column; }
+            .opcoes { flex-direction: column; align-items: center; }
+            .botoes { flex-direction: column; }
+            .btn { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+<div style="padding:10px 20px;background:#2e7d32;"><a href="../" style="display:inline-block;background:#fff;color:#2e7d32;text-decoration:none;font-family:Segoe UI,Arial,sans-serif;font-size:14px;font-weight:bold;padding:8px 20px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.15);">⬅ Voltar ao Início</a></div>
+    <div class="container">
+        <div class="header">
+            <h1>🧠 DASS-21</h1>
+            <p>Escala de Depressão, Ansiedade e Estresse</p>
+            <p style="font-size:0.85em; opacity:0.8; margin-top:5px;">Depression, Anxiety and Stress Scale — Short Form (Lovibond & Lovibond, 1995)</p>
+        </div>
+        <div class="content">
+            <div class="info-tecnica">
+                <button class="btn-imprimir" onclick="window.print()">🖨️ Imprimir Formulário</button>
+                <h2>📚 Informações Técnicas</h2>
+                <p>
+                    <strong>Instrumento:</strong> DASS-21 — Depression, Anxiety and Stress Scale (versão curta)<br>
+                    <strong>Autores:</strong> Lovibond &amp; Lovibond (1995); Adaptação brasileira: Vignola &amp; Tucci (2014)<br>
+                    <strong>Base teórica:</strong> Modelo tripartite de Clark &amp; Watson — diferenciação entre depressão, ansiedade e estresse<br>
+                    <strong>Estrutura:</strong> 21 itens (7 por subescala), escala Likert 4 pontos (0-3)<br>
+                    <strong>Subescalas:</strong> Depressão (7 itens), Ansiedade (7 itens), Estresse (7 itens)<br>
+                    <strong>Escore:</strong> Soma × 2 (para equivaler à DASS-42). Classificação: Normal, Leve, Moderado, Grave, Muito Grave<br>
+                    <strong>População:</strong> Adultos e adolescentes (≥17 anos)<br>
+                    <strong>Domínio público:</strong> Sim — uso livre para clínica e pesquisa
+                </p>
+            </div>
+            <div class="dados-pessoais">
+                <h2>📋 Dados Pessoais</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="nome">Nome:</label>
+                        <input type="text" id="nome" placeholder="Nome completo">
+                    </div>
+                    <div class="form-group">
+                        <label for="dataNascimento">Data de Nascimento:</label>
+                        <input type="date" id="dataNascimento" onchange="calcularIdade()">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="idadeCalculada">Idade:</label>
+                        <input type="text" id="idadeCalculada" readonly style="background-color:#f0f0f0;" placeholder="Calculada automaticamente">
+                    </div>
+                    <div class="form-group">
+                        <label for="sexo">Sexo:</label>
+                        <select id="sexo">
+                            <option value="">Selecione</option>
+                            <option value="Masculino">Masculino</option>
+                            <option value="Feminino">Feminino</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="data">Data da Avaliação:</label>
+                        <input type="date" id="data">
+                    </div>
+                    <div class="form-group">
+                        <label for="observacoes">Observações (opcional):</label>
+                        <input type="text" id="observacoes" placeholder="Informações adicionais">
+                    </div>
+                </div>
+            </div>
+            <div class="instrucoes">
+                <h3>📝 Instruções</h3>
+                <p>
+                    Por favor, leia cada afirmação e marque o número (0, 1, 2 ou 3) que indica o quanto ela se aplicou a você
+                    <strong>durante a última semana</strong>. Não há respostas certas ou erradas. Não gaste muito tempo em cada afirmação.
+                </p>
+            </div>
+            <div id="questionario"></div>
+            <div class="botoes">
+                <button class="btn btn-primary" onclick="calcularResultados()">📊 Calcular Resultados</button>
+                <button class="btn btn-secondary" onclick="gerarRelatorioPDF()">📄 Gerar Relatório PDF</button>
+                <button class="btn btn-danger" onclick="limparDados()">🗑️ Limpar Dados</button>
+            </div>
+            <div id="resultados" class="resultados"></div>
+            <div class="info-tecnica" id="referencias" style="margin-top:30px; background:#f8f9fa; border-left-color:#283593;">
+                <h2 style="color:#283593;">📚 Referências</h2>
+                <p style="color:#555; line-height:1.9; font-size:0.88em;">
+                    <strong>LOVIBOND, S. H.; LOVIBOND, P. F.</strong> <em>Manual for the Depression Anxiety Stress Scales</em>. 2nd ed. Sydney: Psychology Foundation, 1995.<br><br>
+                    <strong>VIGNOLA, R. C. B.; TUCCI, A. M.</strong> Adaptation and validation of the Depression, Anxiety and Stress Scale (DASS) to Brazilian Portuguese. <em>Journal of Affective Disorders</em>, v. 155, p. 104-109, 2014.<br><br>
+                    <strong>PATIAS, N. D. et al.</strong> Depression Anxiety and Stress Scale (DASS-21) — Short Form: adaptação e validação para adolescentes brasileiros. <em>Psico-USF</em>, v. 21, n. 3, p. 459-469, 2016.<br><br>
+                    <strong>AMERICAN PSYCHIATRIC ASSOCIATION.</strong> <em>Diagnostic and Statistical Manual of Mental Disorders</em> (DSM-5-TR). 5th ed., text rev. Washington, DC: APA, 2022.
+                </p>
+            </div>
+        </div>
+    </div>
+    <script src="../id-paciente.js"></script>
+    <script>
+// ===== ITENS DASS-21 =====
+// subescala: "D" = Depressão, "A" = Ansiedade, "E" = Estresse
+var ITENS=[
+{texto:"Achei difícil me acalmar.",subescala:"E"},
+{texto:"Percebi que estava com a boca seca.",subescala:"A"},
+{texto:"Não consegui ter nenhum sentimento positivo.",subescala:"D"},
+{texto:"Tive dificuldade em respirar (ex: respiração ofegante, falta de ar sem ter feito esforço físico).",subescala:"A"},
+{texto:"Achei difícil ter iniciativa para fazer as coisas.",subescala:"D"},
+{texto:"Tive tendência a reagir de forma exagerada em determinadas situações.",subescala:"E"},
+{texto:"Senti tremores (ex: nas mãos).",subescala:"A"},
+{texto:"Senti que estava gastando muita energia nervosa.",subescala:"E"},
+{texto:"Preocupei-me com situações em que eu pudesse entrar em pânico e fazer papel de ridículo(a).",subescala:"A"},
+{texto:"Senti que não tinha nada a esperar do futuro.",subescala:"D"},
+{texto:"Percebi que estava ficando agitado(a).",subescala:"E"},
+{texto:"Achei difícil relaxar.",subescala:"E"},
+{texto:"Senti-me deprimido(a) e sem ânimo.",subescala:"D"},
+{texto:"Fui intolerante com as coisas que me impediam de continuar o que eu estava fazendo.",subescala:"E"},
+{texto:"Senti que ia entrar em pânico.",subescala:"A"},
+{texto:"Não consegui me entusiasmar com nada.",subescala:"D"},
+{texto:"Senti que não tinha muito valor como pessoa.",subescala:"D"},
+{texto:"Senti que estava bastante irritável.",subescala:"E"},
+{texto:"Sabia que meu coração estava alterado mesmo não tendo feito nenhum esforço físico (ex: aumento da frequência cardíaca, descompasso cardíaco).",subescala:"A"},
+{texto:"Senti medo sem motivo.",subescala:"A"},
+{texto:"Senti que a vida não tinha sentido.",subescala:"D"}
+];
+var OPCOES_LIKERT=[{valor:0,texto:"Não se\naplicou"},{valor:1,texto:"Aplicou-se\num pouco"},{valor:2,texto:"Aplicou-se\nmuito"},{valor:3,texto:"Aplicou-se\nmuitíssimo"}];
+
+// Pontos de corte (escore x2): Depressão, Ansiedade, Estresse
+var CORTES={
+D:[{max:9,t:"Normal",c:"#4caf50"},{max:13,t:"Leve",c:"#8bc34a"},{max:20,t:"Moderado",c:"#ffc107"},{max:27,t:"Grave",c:"#ff5722"},{max:999,t:"Muito Grave",c:"#d32f2f"}],
+A:[{max:7,t:"Normal",c:"#4caf50"},{max:9,t:"Leve",c:"#8bc34a"},{max:14,t:"Moderado",c:"#ffc107"},{max:19,t:"Grave",c:"#ff5722"},{max:999,t:"Muito Grave",c:"#d32f2f"}],
+E:[{max:14,t:"Normal",c:"#4caf50"},{max:18,t:"Leve",c:"#8bc34a"},{max:25,t:"Moderado",c:"#ffc107"},{max:33,t:"Grave",c:"#ff5722"},{max:999,t:"Muito Grave",c:"#d32f2f"}]
+};
+function classificar(escala,valor){var c=CORTES[escala];for(var i=0;i<c.length;i++){if(valor<=c[i].max)return c[i];}return c[c.length-1];}
+
+// ===== APP =====
+function gerarQuestionario(){var c=document.getElementById('questionario');var h='';ITENS.forEach(function(item,i){h+='<div class="item" id="item'+i+'"><div class="item-texto"><span class="item-numero">'+(i+1)+'.</span> '+item.texto+'</div><div class="opcoes">';OPCOES_LIKERT.forEach(function(op){h+='<div class="opcao"><input type="radio" id="item'+i+'_'+op.valor+'" name="item'+i+'" value="'+op.valor+'"><label for="item'+i+'_'+op.valor+'">'+op.texto.replace(/\n/g,'<br>')+'</label></div>';});h+='</div></div>';});c.innerHTML=h;}
+function calcularIdade(){var d=document.getElementById('dataNascimento').value;if(!d)return;var h=new Date(),n=new Date(d),a=h.getFullYear()-n.getFullYear(),m=h.getMonth()-n.getMonth(),di=h.getDate()-n.getDate();if(di<0){m--;di+=new Date(h.getFullYear(),h.getMonth(),0).getDate();}if(m<0){a--;m+=12;}document.getElementById('idadeCalculada').value=a+' anos, '+m+' meses e '+di+' dias';}
+function obterRespostas(){var r=[];for(var i=0;i<ITENS.length;i++){var s=document.querySelector('input[name="item'+i+'"]:checked');if(!s)return null;r.push(parseInt(s.value));}return r;}
+function calcularResultados(){var n=document.getElementById('nome').value,id=document.getElementById('idadeCalculada').value,s=document.getElementById('sexo').value;if(!n||!id||!s){alert('Por favor, preencha todos os dados pessoais antes de calcular.');return;}var r=obterRespostas();if(!r){alert('Por favor, responda todos os 21 itens antes de calcular.');return;}
+// Calcular subescalas (soma x2)
+var somaD=0,somaA=0,somaE=0;ITENS.forEach(function(it,i){if(it.subescala==='D')somaD+=r[i];else if(it.subescala==='A')somaA+=r[i];else somaE+=r[i];});
+somaD*=2;somaA*=2;somaE*=2;
+var clD=classificar('D',somaD),clA=classificar('A',somaA),clE=classificar('E',somaE);
+var somaTotal=somaD+somaA+somaE;
+// Mostrar resultados
+var el=document.getElementById('resultados');var h='<h2>📊 Resultados DASS-21</h2>';
+h+='<div class="total-geral"><h3>Escore Total (Sofrimento Geral): '+somaTotal+' / 126</h3></div>';
+h+='<h3 style="color:#283593;margin:20px 0 15px;">🧩 Subescalas</h3>';
+// Depressão
+h+='<div class="dominio-card" style="border-left-color:#1565c0;"><h4 style="color:#1565c0;">😔 Depressão</h4><div style="display:flex;align-items:center;gap:15px;flex-wrap:wrap;"><div class="valor">'+somaD+' / 42</div><div class="barra-container"><div class="barra-fill" style="width:'+((somaD/42)*100).toFixed(0)+'%;background:'+clD.c+';"></div></div><span class="badge" style="background:'+clD.c+'22;color:'+clD.c+';">'+clD.t+'</span></div></div>';
+// Ansiedade
+h+='<div class="dominio-card" style="border-left-color:#e65100;"><h4 style="color:#e65100;">😰 Ansiedade</h4><div style="display:flex;align-items:center;gap:15px;flex-wrap:wrap;"><div class="valor">'+somaA+' / 42</div><div class="barra-container"><div class="barra-fill" style="width:'+((somaA/42)*100).toFixed(0)+'%;background:'+clA.c+';"></div></div><span class="badge" style="background:'+clA.c+'22;color:'+clA.c+';">'+clA.t+'</span></div></div>';
+// Estresse
+h+='<div class="dominio-card" style="border-left-color:#6a1b9a;"><h4 style="color:#6a1b9a;">😤 Estresse</h4><div style="display:flex;align-items:center;gap:15px;flex-wrap:wrap;"><div class="valor">'+somaE+' / 42</div><div class="barra-container"><div class="barra-fill" style="width:'+((somaE/42)*100).toFixed(0)+'%;background:'+clE.c+';"></div></div><span class="badge" style="background:'+clE.c+'22;color:'+clE.c+';">'+clE.t+'</span></div></div>';
+// Análise
+h+='<div class="analise-texto"><h3>📝 Análise dos Resultados</h3>';
+h+='<p><strong>📊 Classificação por subescala (Lovibond &amp; Lovibond, 1995):</strong></p>';
+h+='<p>• <strong>Depressão:</strong> '+somaD+' — <strong>'+clD.t+'</strong>';
+if(clD.t==='Grave'||clD.t==='Muito Grave')h+=' ⚠️ Indica sintomas depressivos significativos que merecem atenção clínica imediata.';
+else if(clD.t==='Moderado')h+=' — Sugere presença de sintomas depressivos que podem impactar o funcionamento.';
+else if(clD.t==='Leve')h+=' — Sintomas leves, monitorar evolução.';
+else h+=' — Dentro de parâmetros esperados.';
+h+='</p>';
+h+='<p>• <strong>Ansiedade:</strong> '+somaA+' — <strong>'+clA.t+'</strong>';
+if(clA.t==='Grave'||clA.t==='Muito Grave')h+=' ⚠️ Indica sintomas ansiosos significativos incluindo possíveis sintomas somáticos.';
+else if(clA.t==='Moderado')h+=' — Sugere presença de sintomas ansiosos que podem impactar o funcionamento.';
+else if(clA.t==='Leve')h+=' — Sintomas leves, monitorar evolução.';
+else h+=' — Dentro de parâmetros esperados.';
+h+='</p>';
+h+='<p>• <strong>Estresse:</strong> '+somaE+' — <strong>'+clE.t+'</strong>';
+if(clE.t==='Grave'||clE.t==='Muito Grave')h+=' ⚠️ Indica nível elevado de tensão/irritabilidade que pode comprometer o funcionamento.';
+else if(clE.t==='Moderado')h+=' — Sugere nível de estresse que pode impactar a qualidade de vida.';
+else if(clE.t==='Leve')h+=' — Nível leve de estresse, monitorar evolução.';
+else h+=' — Dentro de parâmetros esperados.';
+h+='</p>';
+if(somaD>=28||somaA>=20){h+='<p style="color:#c62828;"><strong>⚠️ ATENÇÃO:</strong> Escores na faixa Muito Grave foram identificados. Recomenda-se <strong>avaliação clínica imediata</strong>. Se você está em sofrimento intenso, procure ajuda: <strong>CVV 188</strong> (24h) ou <strong>SAMU 192</strong>.</p>';}
+h+='</div>';
+h+='<div class="disclaimer"><strong>⚠️ IMPORTANTE:</strong> A DASS-21 é um instrumento de <strong>rastreio</strong> que avalia a gravidade de sintomas de depressão, ansiedade e estresse. <strong>Não é um instrumento diagnóstico.</strong> Não substitui avaliação clínica profissional. Os resultados devem ser interpretados por profissionais de saúde mental qualificados no contexto de uma avaliação abrangente.</div>';
+el.innerHTML=h;el.style.display='block';el.scrollIntoView({behavior:'smooth'});}
+function gerarRelatorioPDF(){var nome=document.getElementById('nome').value;if(!nome){alert('Preencha pelo menos o nome.');return;}var r=obterRespostas();if(!r){alert('Responda todos os itens antes de gerar o PDF.');return;}
+var somaD=0,somaA=0,somaE=0;ITENS.forEach(function(it,i){if(it.subescala==='D')somaD+=r[i];else if(it.subescala==='A')somaA+=r[i];else somaE+=r[i];});
+somaD*=2;somaA*=2;somaE*=2;
+var clD=classificar('D',somaD),clA=classificar('A',somaA),clE=classificar('E',somaE);
+var somaTotal=somaD+somaA+somaE;
+var idade=document.getElementById('idadeCalculada').value,sexo=document.getElementById('sexo').value,dataAval=document.getElementById('data').value||new Date().toLocaleDateString('pt-BR');
+var jsPDF=window.jspdf.jsPDF;var doc=new jsPDF();
+// Página 1
+doc.setFillColor(40,53,147);doc.rect(0,0,210,40,'F');doc.setTextColor(255,255,255);doc.setFontSize(16);doc.setFont(undefined,'bold');doc.text('DASS-21 — RELATÓRIO DE AVALIAÇÃO',105,18,{align:'center'});doc.setFontSize(10);doc.text('Escala de Depressão, Ansiedade e Estresse',105,27,{align:'center'});doc.setFontSize(8);doc.text('Lovibond & Lovibond (1995) — Adaptação: Vignola & Tucci (2014)',105,34,{align:'center'});
+doc.setFillColor(248,249,250);doc.rect(15,48,180,25,'F');doc.setDrawColor(40,53,147);doc.rect(15,48,180,25);doc.setTextColor(40,53,147);doc.setFontSize(11);doc.setFont(undefined,'bold');doc.text('DADOS PESSOAIS',20,56);doc.setTextColor(0,0,0);doc.setFontSize(9);doc.setFont(undefined,'normal');
+var idPac=document.getElementById('idPaciente')?document.getElementById('idPaciente').value:'';doc.text('Nome: '+nome,20,63);doc.text('Idade: '+idade,120,63);doc.text('Sexo: '+sexo,20,69);doc.text('Data: '+dataAval,120,69);if(idPac)doc.text('ID: '+idPac,20,75);
+var y=82;doc.setFillColor(40,53,147);doc.rect(15,y,180,12,'F');doc.setTextColor(255,255,255);doc.setFontSize(11);doc.setFont(undefined,'bold');doc.text('Escore Total (Sofrimento Geral): '+somaTotal+' / 126',105,y+8,{align:'center'});
+y=100;doc.setTextColor(40,53,147);doc.setFontSize(11);doc.setFont(undefined,'bold');doc.text('SUBESCALAS',20,y);y+=10;
+doc.setTextColor(0,0,0);doc.setFontSize(9);doc.setFont(undefined,'normal');
+doc.text('Depressão: '+somaD+'/42 — '+clD.t,20,y);y+=7;
+doc.text('Ansiedade: '+somaA+'/42 — '+clA.t,20,y);y+=7;
+doc.text('Estresse: '+somaE+'/42 — '+clE.t,20,y);y+=12;
+// Tabela de cortes
+doc.setTextColor(40,53,147);doc.setFontSize(10);doc.setFont(undefined,'bold');doc.text('TABELA DE CLASSIFICAÇÃO (Lovibond & Lovibond, 1995)',20,y);y+=8;
+doc.setFontSize(7);doc.setFillColor(40,53,147);doc.setTextColor(255,255,255);doc.rect(15,y-4,180,7,'F');doc.text('Classificação',20,y);doc.text('Depressão',70,y);doc.text('Ansiedade',110,y);doc.text('Estresse',150,y);y+=7;
+doc.setFont(undefined,'normal');doc.setTextColor(0,0,0);
+var tabela=[['Normal','0-9','0-7','0-14'],['Leve','10-13','8-9','15-18'],['Moderado','14-20','10-14','19-25'],['Grave','21-27','15-19','26-33'],['Muito Grave','28+','20+','34+']];
+tabela.forEach(function(row,i){if(i%2===0){doc.setFillColor(245,245,245);doc.rect(15,y-4,180,7,'F');}doc.text(row[0],20,y);doc.text(row[1],75,y);doc.text(row[2],115,y);doc.text(row[3],155,y);y+=7;});
+y+=10;doc.setTextColor(40,53,147);doc.setFontSize(10);doc.setFont(undefined,'bold');doc.text('ANÁLISE',20,y);y+=8;
+doc.setTextColor(0,0,0);doc.setFontSize(9);doc.setFont(undefined,'normal');
+doc.text('Depressão ('+clD.t+'): '+(clD.t==='Normal'?'Dentro de parâmetros esperados.':clD.t==='Leve'?'Sintomas leves.':'Sintomas significativos — avaliação recomendada.'),20,y);y+=6;
+doc.text('Ansiedade ('+clA.t+'): '+(clA.t==='Normal'?'Dentro de parâmetros esperados.':clA.t==='Leve'?'Sintomas leves.':'Sintomas significativos — avaliação recomendada.'),20,y);y+=6;
+doc.text('Estresse ('+clE.t+'): '+(clE.t==='Normal'?'Dentro de parâmetros esperados.':clE.t==='Leve'?'Nível leve.':'Nível significativo — avaliação recomendada.'),20,y);y+=12;
+doc.setFillColor(255,243,224);doc.rect(15,y-4,180,25,'F');doc.setTextColor(230,81,0);doc.setFontSize(7);doc.setFont(undefined,'bold');doc.text('IMPORTANTE:',20,y+2);doc.setFont(undefined,'normal');doc.text('A DASS-21 é um instrumento de rastreio. Não é instrumento diagnóstico. Não substitui avaliação',20,y+8);doc.text('clínica profissional. Os resultados devem ser interpretados por profissionais de saúde mental',20,y+13);doc.text('qualificados no contexto de uma avaliação abrangente.',20,y+18);
+// Página 2 - Referências
+doc.addPage();doc.setFillColor(40,53,147);doc.rect(0,0,210,15,'F');doc.setTextColor(255,255,255);doc.setFontSize(12);doc.setFont(undefined,'bold');doc.text('REFERÊNCIAS',105,10,{align:'center'});
+var yr=25;doc.setTextColor(0,0,0);doc.setFontSize(7.5);doc.setFont(undefined,'normal');
+['LOVIBOND, S. H.; LOVIBOND, P. F. Manual for the Depression Anxiety Stress Scales.','2nd ed. Sydney: Psychology Foundation, 1995.','','VIGNOLA, R. C. B.; TUCCI, A. M. Adaptation and validation of the Depression, Anxiety and','Stress Scale (DASS) to Brazilian Portuguese. Journal of Affective Disorders, v. 155,','p. 104-109, 2014.','','PATIAS, N. D. et al. Depression Anxiety and Stress Scale (DASS-21) — Short Form:','adaptação e validação para adolescentes brasileiros. Psico-USF, v. 21, n. 3,','p. 459-469, 2016.','','AMERICAN PSYCHIATRIC ASSOCIATION. Diagnostic and Statistical Manual of Mental Disorders','(DSM-5-TR). 5th ed., text rev. Washington, DC: APA, 2022.'].forEach(function(l){if(l===''){yr+=3;}else{doc.text(l,20,yr);yr+=4;}});
+doc.setFillColor(108,117,125);doc.rect(0,280,210,17,'F');doc.setTextColor(255,255,255);doc.setFontSize(8);doc.text('Relatório gerado em: '+new Date().toLocaleString('pt-BR'),105,290,{align:'center'});
+var ts=new Date().toISOString().slice(0,16).replace(/[-:T]/g,'').slice(0,12);doc.save('DASS21_'+nome.replace(/\s+/g,'_')+'_'+ts+'.pdf');}
+function limparDados(){if(!confirm('Tem certeza que deseja limpar todos os dados?'))return;document.getElementById('nome').value='';document.getElementById('dataNascimento').value='';document.getElementById('idadeCalculada').value='';document.getElementById('sexo').value='';document.getElementById('observacoes').value='';document.querySelectorAll('input[type="radio"]').forEach(function(r){r.checked=false;});document.getElementById('resultados').style.display='none';document.getElementById('data').value=new Date().toISOString().split('T')[0];}
+document.addEventListener('DOMContentLoaded',function(){gerarQuestionario();document.getElementById('data').value=new Date().toISOString().split('T')[0];});
+    </script>
+</body>
+</html>
