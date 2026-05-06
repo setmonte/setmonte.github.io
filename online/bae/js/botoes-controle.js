@@ -276,15 +276,57 @@ function voltarTeste() {
     var nomesMap = {testeConcentrada:'concentrada', testeSeletiva:'seletiva', testeDividida:'dividida', paginaTesteAlternado:'alternada', testeSustentada:'sustentada'};
     var testeAnterior = nomesMap[telaAnteriorId];
     if (testeAnterior && window.resultadosBAE[testeAnterior]) {
-        // Salva execução anterior no histórico antes de resetar
         registrarExecucao(testeAnterior, 'SERA_REFEITO', window.resultadosBAE[testeAnterior]);
-        // Marca como refeito para o PDF
         window.resultadosBAE[testeAnterior] = null;
         console.log('🔄 ' + testeAnterior + ' será refeito do zero');
     }
     
+    // Reset visual e flags do teste anterior
+    resetarEstadoVisualTeste(testeAnterior, telaAnteriorId);
+    
     console.log(`⏮️ ${telaAtual.nome} → ${telaAnteriorId}`);
     mostrarBotoesNavegacao();
+}
+
+// ===== RESET VISUAL AO VOLTAR =====
+function resetarEstadoVisualTeste(nomeTeste, telaId) {
+    var btnProx = document.getElementById('proximoTesteDinamico');
+    if (btnProx) btnProx.remove();
+    
+    if (nomeTeste === 'concentrada') {
+        if (typeof testeJaFinalizadoConc !== 'undefined') testeJaFinalizadoConc = false;
+        if (typeof isTestRunningConc !== 'undefined') isTestRunningConc = false;
+        var quadro = document.getElementById('quadroConcentrada');
+        if (quadro) quadro.innerHTML = '';
+        var btn = document.getElementById('startConcentrada');
+        if (btn) btn.style.display = 'block';
+    } else if (nomeTeste === 'seletiva') {
+        if (typeof testeJaFinalizado !== 'undefined') testeJaFinalizado = false;
+        if (typeof isTestRunningSeletiva !== 'undefined') isTestRunningSeletiva = false;
+        var btn = document.getElementById('startSeletiva');
+        if (btn) btn.style.display = 'block';
+        var animal = document.getElementById('animal');
+        if (animal) animal.style.display = 'none';
+    } else if (nomeTeste === 'dividida') {
+        if (typeof testeJaFinalizadoDividida !== 'undefined') testeJaFinalizadoDividida = false;
+        if (typeof isTesteDivididaRunning !== 'undefined') isTesteDivididaRunning = false;
+        var quadro = document.getElementById('quadroDividida');
+        if (quadro) quadro.innerHTML = '<div id="figuraDiv"></div>';
+        var btn = document.getElementById('iniciarDividida');
+        if (btn) btn.style.display = 'block';
+    } else if (nomeTeste === 'alternada') {
+        if (typeof testeAtivoAlternada !== 'undefined') testeAtivoAlternada = false;
+        var quadro = document.getElementById('quadroAlternado');
+        if (quadro) { quadro.innerHTML = '<div id="figuraEsquerda"></div><div id="figuraDireita"></div>'; quadro.style.background = ''; quadro.style.borderRadius = ''; quadro.style.boxShadow = ''; }
+        var btn = document.getElementById('iniciarAlternado');
+        if (btn) btn.style.display = 'block';
+    } else if (nomeTeste === 'sustentada') {
+        if (typeof testeAtivoSustentada !== 'undefined') testeAtivoSustentada = false;
+        var quadro = document.getElementById('quadroSustentada');
+        if (quadro) quadro.innerHTML = '';
+        var btn = document.getElementById('iniciarSustentada');
+        if (btn) btn.style.display = 'block';
+    }
 }
 
 // ===== VISIBILIDADE DOS BOTÕES =====
