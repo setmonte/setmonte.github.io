@@ -1,4 +1,4 @@
-// ===== BAE 2.3 — IA GEMINI =====
+// ===== BAE 2.4.0 — IA GEMINI =====
 // Gera parecer clínico assistido por IA
 // Chave no Rust (Tauri) ou fallback hardcoded para navegador
 
@@ -23,7 +23,7 @@ var BAEAI = (function() {
         var p = paciente || {};
         var r = resultados || {};
         
-        var texto = 'Voce e um neuropsicologo experiente. Analise os resultados da Bateria de Atencao Eletronica (BAE 2.3) e gere um parecer clinico.\n\n';
+        var texto = 'Voce e um neuropsicologo experiente. Analise os resultados da Bateria de Atencao Eletronica (BAE 2.4) e gere um parecer clinico.\n\n';
         
         texto += 'DADOS DO PACIENTE:\n';
         texto += 'Nome: ' + (p.nome || 'N/I') + ' | Idade: ' + (p.idade || 'N/I') + ' | Sexo: ' + (p.sexo || 'N/I') + '\n';
@@ -89,6 +89,27 @@ var BAEAI = (function() {
             texto += 'Diagnostico sugerido: ' + (iaObs.diagnosticoSugerido||'N/I') + ' (' + (iaObs.confianca||0) + '% confianca)\n\n';
         }
         
+        // Informacoes de dispositivo e modo de entrada
+        var dispInfo = window.dispositivoBAE ? window.dispositivoBAE.obterRelatorioCompleto() : null;
+        if (dispInfo) {
+            texto += 'DISPOSITIVO E MODO DE ENTRADA:\n';
+            texto += 'Dispositivo: ' + dispInfo.dispositivo.descricao + '\n';
+            var nomesTestes = ['concentrada','seletiva','dividida','alternada','sustentada'];
+            for (var ti = 0; ti < nomesTestes.length; ti++) {
+                var nt = nomesTestes[ti];
+                var dt = dispInfo.testes[nt];
+                if (dt) {
+                    texto += nt.charAt(0).toUpperCase() + nt.slice(1) + ': ' + dt.modo;
+                    if (dt.mediaTeclado > 0) texto += ' (RT teclado: ' + dt.mediaTeclado + 'ms';
+                    if (dt.mediaTouch > 0) texto += ', RT touch: ' + dt.mediaTouch + 'ms';
+                    if (dt.mediaTeclado > 0 || dt.mediaTouch > 0) texto += ')';
+                    if (dt.alternanciasModo > 0) texto += ' [' + dt.alternanciasModo + ' alternancias de modo]';
+                    texto += '\n';
+                }
+            }
+            texto += '\n';
+        }
+        
         // Indices das redes atencionais
         var tOrient = [r.concentrada, r.seletiva].filter(function(t){return t;});
         var tExec = [r.dividida, r.alternada].filter(function(t){return t;});
@@ -109,7 +130,8 @@ var BAEAI = (function() {
         texto += '   Para cada rede, identifique: potencialidades (preservadas) e fragilidades (comprometidas). Correlacione com as vias neurais (dorsal/ventral) e areas corticais especificas.\n';
         texto += '   Gere hipoteses diagnosticas fundamentadas (DSM-5, Barkley, Lezak, Parasuraman, Corbetta & Shulman). Considere a faixa etaria.\n';
         texto += '2. ESTRATEGIA DO PACIENTE (1 paragrafo): padrao comportamental observado (impulsividade, negligencia espacial, fadiga progressiva, preferencias sensoriais visual/auditiva, dissociacoes entre redes).\n';
-        texto += '3. Use linguagem tecnica mas acessivel. Nao use markdown. Separe PARECER e ESTRATEGIA com uma linha em branco.';
+        texto += '3. Use linguagem tecnica mas acessivel. Nao use markdown. Separe PARECER e ESTRATEGIA com uma linha em branco.\n';
+        texto += '4. DISPOSITIVO: Se o teste foi feito em celular ou tablet (touch), mencione que os tempos de reacao por toque tendem a ser mais lentos que por teclado (diferenca media de 50-150ms). Se houve modo MISTO (teclado+touch), comente sobre a alternancia de modo como possivel indicador de inquietacao motora ou desorganizacao. Se houve alternancias frequentes de modo (>5), destaque como dado clinico relevante.';
         
         return texto;
     }
