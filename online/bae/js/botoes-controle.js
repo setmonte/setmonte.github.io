@@ -351,7 +351,10 @@ function mostrarBotoesFixos() {
     // Não mostra botões na tela inicial - só depois que um teste iniciar
 }
 
-function mostrarBotoesControle() { mostrarBotoesNavegacao(); }
+function mostrarBotoesControle() {
+    if (typeof configurarHoverBotoes === 'function') configurarHoverBotoes();
+    mostrarBotoesNavegacao();
+}
 function esconderBotoesControle() {}
 
 // ===== BOTÃO "PRÓXIMO TESTE" DINÂMICO =====

@@ -143,11 +143,11 @@ function estilizarBotaoHover(botao, cor, icone) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(configurarHoverBotoes, 1500);
+    // Hover so configura depois que iniciar bateria (chamado por mostrarBotoesControle)
 });
 
 if (document.readyState === 'complete' || document.readyState === 'interactive') {
-    setTimeout(configurarHoverBotoes, 1500);
+    // Hover so configura depois que iniciar bateria
 }
 
 window.configurarHoverBotoes = configurarHoverBotoes;
