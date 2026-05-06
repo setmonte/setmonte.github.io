@@ -9,6 +9,7 @@
 </style>
     <script src="../id-paciente.js"></script>\n</head>
 <body>
+<div style="padding:10px 20px;background:#2e7d32;"><a href="../" style="display:inline-block;background:#fff;color:#2e7d32;text-decoration:none;font-family:Segoe UI,Arial,sans-serif;font-size:14px;font-weight:bold;padding:8px 20px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.15);">⬅ Voltar ao Início</a></div>
 <div class="container">
 <header>
 <h1>Questionário de Esquemas de Young – Versão Breve (YSQ-S3)</h1>
@@ -36,7 +37,11 @@
 </div>
 <form id="ysqForm">
 <div id="questionsContainer"></div>
-<button type="submit" class="btn-primary">Calcular Resultados</button>
+<div class="actions" style="margin-top:20px;">
+<button type="submit" class="btn-primary">📊 Calcular Resultados</button>
+<button type="button" id="exportPdfBtn2" class="btn-primary" style="background:#28a745;">📄 Gerar Relatório PDF</button>
+<button type="button" id="resetBtn2" class="btn-secondary" style="background:#dc3545;color:white;">🗑️ Limpar Dados</button>
+</div>
 </form>
 <div id="resultsSection" style="display:none">
 <h2>Resultados</h2>
@@ -56,7 +61,7 @@ const allQuestions=["As pessoas não estiveram disponíveis para atender as minh
 let currentChart=null;
 function initializeApp(){renderQuestions();setupEventListeners();setTodayDate()}
 function setTodayDate(){const d=document.getElementById('testDate');if(d)d.value=new Date().toISOString().split('T')[0]}
-function setupEventListeners(){const f=document.getElementById('ysqForm');if(f)f.addEventListener('submit',handleSubmit);const p=document.getElementById('printBlankBtn');if(p)p.addEventListener('click',()=>window.print());const e=document.getElementById('exportPdfBtn');if(e)e.addEventListener('click',exportToPDF);const n=document.getElementById('newTestBtn');if(n)n.addEventListener('click',resetForm)}
+function setupEventListeners(){const f=document.getElementById('ysqForm');if(f)f.addEventListener('submit',handleSubmit);const p=document.getElementById('printBlankBtn');if(p)p.addEventListener('click',()=>window.print());const e=document.getElementById('exportPdfBtn');if(e)e.addEventListener('click',exportToPDF);const e2=document.getElementById('exportPdfBtn2');if(e2)e2.addEventListener('click',function(){const scores=calculateResults();let hasAnswers=false;scores.forEach(v=>{if(v>0)hasAnswers=true});if(!hasAnswers){alert('Responda os itens antes de gerar o PDF.');return;}displayResults(scores);exportToPDF()});const n=document.getElementById('newTestBtn');if(n)n.addEventListener('click',resetForm);const r2=document.getElementById('resetBtn2');if(r2)r2.addEventListener('click',resetForm)}
 function handleSubmit(e){e.preventDefault();displayResults(calculateResults())}
 function calculateResults(){const scores=new Map();schemas.forEach(s=>{const[start,end]=s.items.split('-').map(Number);let total=0;for(let i=start;i<=end;i++){const sel=document.querySelector(`input[name="q${i}"]:checked`);if(sel)total+=parseInt(sel.value)}scores.set(s.code,total)});return scores}
 function getLevel(p){return p<40?'Baixa':p<70?'Média':'Alta'}

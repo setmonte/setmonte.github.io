@@ -209,8 +209,21 @@ function setupEventListeners() {
     const exportBtn = document.getElementById('exportPdfBtn');
     if (exportBtn) exportBtn.addEventListener('click', exportToPDF);
 
+    const exportBtn2 = document.getElementById('exportPdfBtn2');
+    if (exportBtn2) exportBtn2.addEventListener('click', function() {
+        const scores = calculateResults();
+        let hasAnswers = false;
+        scores.forEach(v => { if (v > 0) hasAnswers = true; });
+        if (!hasAnswers) { alert('Responda os itens antes de gerar o PDF.'); return; }
+        displayResults(scores);
+        exportToPDF();
+    });
+
     const newTestBtn = document.getElementById('newTestBtn');
     if (newTestBtn) newTestBtn.addEventListener('click', resetForm);
+
+    const resetBtn2 = document.getElementById('resetBtn2');
+    if (resetBtn2) resetBtn2.addEventListener('click', resetForm);
 }
 
 function handleSubmit(e) {
