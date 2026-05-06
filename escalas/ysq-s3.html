@@ -32,7 +32,11 @@
 </div>
 <div class="form-header">
 <label>Nome: <input type="text" id="patientName"></label>
-<label>Data: <input type="date" id="testDate"></label>
+<label>Data de Nascimento: <input type="date" id="birthDate"></label>
+<label>Data da Avaliação: <input type="date" id="testDate"></label>
+</div>
+<div class="form-header">
+<label>ID Paciente: <input type="text" id="idPaciente" readonly style="background:#e8f5e8;font-weight:bold;color:#2e7d32;text-align:center;" placeholder="Preencha nome e nascimento"></label>
 </div>
 </div>
 <form id="ysqForm">
@@ -70,7 +74,11 @@ function renderChart(scores){const c=document.getElementById('resultsChart');if(
 function exportToPDF(){const{jsPDF}=window.jspdf,pdf=new jsPDF('p','mm','a4'),name=document.getElementById('patientName').value||'Não informado',date=document.getElementById('testDate').value||new Date().toLocaleDateString('pt-BR');pdf.setFontSize(16);pdf.text('Resultados YSQ-S3',105,20,{align:'center'});pdf.setFontSize(12);pdf.text(`Nome: ${name}`,20,35);pdf.text(`Data: ${date}`,20,42);let y=55;pdf.setFontSize(10);const scores=calculateResults();schemas.forEach(s=>{const score=scores.get(s.code)||0,pct=(score/s.max)*100,lvl=getLevel(pct);pdf.text(`${s.name}: ${score}/${s.max} - ${lvl}`,20,y);y+=7;if(y>270){pdf.addPage();y=20}});pdf.save(`YSQ-S3_${name}_${date}.pdf`)}
 function resetForm(){const f=document.getElementById('ysqForm');f.reset();f.style.display='block';document.getElementById('instructionsSection').style.display='block';document.getElementById('resultsSection').style.display='none';window.scrollTo(0,0)}
 function renderQuestions(){const c=document.getElementById('questionsContainer');if(!c)return;allQuestions.forEach((t,i)=>{const d=document.createElement('div');d.className='question';d.innerHTML=`<div class="question-text">${i+1}. ${t}</div><div class="options">${[1,2,3,4,5,6].map(v=>`<div class="option"><input type="radio" id="q${i+1}_${v}" name="q${i+1}" value="${v}" required><label for="q${i+1}_${v}">${v}</label></div>`).join('')}</div>`;c.appendChild(d)})}
-document.addEventListener('DOMContentLoaded',initializeApp);
+document.addEventListener('DOMContentLoaded',function(){initializeApp();
+// Adaptador ID Paciente para campos Young
+var nomeEl=document.getElementById('patientName'),nascEl=document.getElementById('birthDate'),idEl=document.getElementById('idPaciente');
+if(nomeEl&&nascEl&&idEl){function atualizarId(){var id=gerarIdPaciente(nomeEl.value,nascEl.value);idEl.value=id||'';}nomeEl.addEventListener('input',atualizarId);nascEl.addEventListener('change',atualizarId);}
+});
 </script>
 </body>
 </html>

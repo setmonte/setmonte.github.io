@@ -301,4 +301,18 @@ function renderQuestions() {
     });
 }
 
-document.addEventListener('DOMContentLoaded', initializeApp);
+document.addEventListener('DOMContentLoaded', function() {
+    initializeApp();
+    // Adaptador ID Paciente para campos Young
+    var nomeEl = document.getElementById('patientName');
+    var nascEl = document.getElementById('birthDate');
+    var idEl = document.getElementById('idPaciente');
+    if (nomeEl && nascEl && idEl) {
+        function atualizarId() {
+            var id = gerarIdPaciente(nomeEl.value, nascEl.value);
+            idEl.value = id || '';
+        }
+        nomeEl.addEventListener('input', atualizarId);
+        nascEl.addEventListener('change', atualizarId);
+    }
+});
