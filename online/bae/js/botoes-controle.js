@@ -348,10 +348,10 @@ function mostrarBotoesNavegacao() {
 
 function mostrarBotoesFixos() {
     if (window.dispositivoBAE && window.dispositivoBAE.isTouch) return;
-    mostrarBotoesNavegacao();
+    // Não mostra botões na tela inicial - só depois que um teste iniciar
 }
 
-function mostrarBotoesControle() {}
+function mostrarBotoesControle() { mostrarBotoesNavegacao(); }
 function esconderBotoesControle() {}
 
 // ===== BOTÃO "PRÓXIMO TESTE" DINÂMICO =====
