@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Avaliação Psicossocial - CRMV-MS</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f5f5f5;min-height:100vh;padding-bottom:40px}
+        .topo{background:linear-gradient(135deg,#1a237e,#283593);padding:20px;text-align:center;color:white;position:sticky;top:0;z-index:100;box-shadow:0 2px 10px rgba(0,0,0,0.3)}
+        .topo h1{font-size:1.2em;margin-bottom:4px}
+        .topo p{font-size:0.85em;opacity:0.9}
+        .container{max-width:600px;margin:0 auto;padding:15px}
+        .card{background:white;border-radius:12px;padding:20px;margin-bottom:15px;box-shadow:0 2px 8px rgba(0,0,0,0.08)}
+        .card h3{color:#1a237e;margin-bottom:12px;font-size:1.05em}
+        .campo{margin-bottom:12px}
+        .campo label{display:block;font-weight:bold;color:#333;margin-bottom:4px;font-size:0.9em}
+        .campo input,.campo select{width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:8px;font-size:1em;-webkit-appearance:none}
+        .campo input:focus,.campo select:focus{border-color:#1a237e;outline:none}
+        .campo-cpf input{letter-spacing:1px}
+        /* Seletor de escala */
+        .escala-selector{display:flex;gap:10px;margin-bottom:15px}
+        .escala-btn{flex:1;padding:14px 10px;border:2px solid #e0e0e0;border-radius:10px;text-align:center;cursor:pointer;font-weight:bold;font-size:0.9em;transition:all 0.3s;background:white}
+        .escala-btn.ativo-fiscal{border-color:#1a237e;background:#e8eaf6;color:#1a237e}
+        .escala-btn.ativo-admin{border-color:#004d40;background:#e0f2f1;color:#004d40}
+        .escala-btn:active{transform:scale(0.97)}
+        /* Questões */
+        .questao{background:white;border-radius:12px;padding:16px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,0.06);border-left:4px solid #1a237e}
+        .questao.admin{border-left-color:#004d40}
+        .questao-texto{font-size:0.95em;color:#333;margin-bottom:12px;line-height:1.5}
+        .questao-num{display:inline-block;background:#1a237e;color:white;width:24px;height:24px;border-radius:50%;text-align:center;line-height:24px;font-size:0.8em;font-weight:bold;margin-right:8px}
+        .questao.admin .questao-num{background:#004d40}
+        /* Opções horizontais otimizadas para celular */
+        .opcoes{display:flex;gap:4px;flex-wrap:nowrap}
+        .opcao{flex:1;text-align:center;padding:10px 4px;border:2px solid #e8e8e8;border-radius:8px;cursor:pointer;transition:all 0.2s;font-size:0.78em;line-height:1.2}
+        .opcao:active{transform:scale(0.95)}
+        .opcao.selecionada{border-color:#1a237e;background:#e8eaf6;font-weight:bold;color:#1a237e}
+        .questao.admin .opcao.selecionada{border-color:#004d40;background:#e0f2f1;color:#004d40}
+        .opcao input{display:none}
+        .opcao .valor{display:block;font-size:1.3em;font-weight:bold}
+        .opcao .rotulo{display:block;font-size:0.7em;color:#666;margin-top:2px}
+        /* Progresso */
+        .progresso{background:#e0e0e0;height:6px;border-radius:3px;margin-bottom:15px;overflow:hidden}
+        .progresso-barra{height:100%;background:linear-gradient(90deg,#1a237e,#3949ab);border-radius:3px;transition:width 0.3s}
+        .progresso-texto{text-align:center;font-size:0.8em;color:#666;margin-bottom:8px}
+        /* Botão enviar */
+        .btn-enviar{width:100%;padding:16px;background:linear-gradient(135deg,#1a237e,#3949ab);color:white;border:none;border-radius:12px;font-size:1.1em;font-weight:bold;cursor:pointer;margin-top:15px;box-shadow:0 4px 12px rgba(26,35,126,0.3)}
+        .btn-enviar:active{transform:scale(0.98)}
+        .btn-enviar:disabled{background:#ccc;box-shadow:none}
+        .btn-enviar.admin-btn{background:linear-gradient(135deg,#004d40,#00695c);box-shadow:0 4px 12px rgba(0,77,64,0.3)}
+        /* Status envio */
+        .status-envio{text-align:center;padding:20px;border-radius:12px;margin-top:15px;display:none}
+        .status-envio.sucesso{display:block;background:#e8f5e9;border:2px solid #4caf50;color:#2e7d32}
+        .status-envio.erro{display:block;background:#ffebee;border:2px solid #c62828;color:#c62828}
+        .status-envio.enviando{display:block;background:#e3f2fd;border:2px solid #1976d2;color:#1976d2}
+        .status-envio h4{margin-bottom:5px}
+        /* Tela de conclusão */
+        .tela-fim{display:none;text-align:center;padding:40px 20px}
+        .tela-fim .icone{font-size:4em;margin-bottom:15px}
+        .tela-fim h2{color:#2e7d32;margin-bottom:10px}
+        .tela-fim p{color:#555;line-height:1.6}
+        /* Responsivo */
+        @media(max-width:400px){.opcao{padding:8px 2px;font-size:0.72em}.opcao .valor{font-size:1.1em}}
+    </style>
+</head>
+<body>
+
+<div class="topo">
+    <h1>📋 Avaliação Psicossocial</h1>
+    <p>CRMV-MS • NR-01 • 08/05/2026</p>
+</div>
+
+<div class="container">
+
+    <!-- ETAPA 1: Identificação -->
+    <div id="etapa1">
+        <div class="card">
+            <h3>👤 Identificação</h3>
+            <div class="campo"><label>Nome Completo *</label><input type="text" id="nome" placeholder="Seu nome completo" autocomplete="name"></div>
+            <div class="campo campo-cpf"><label>CPF *</label><input type="tel" id="cpf" placeholder="000.000.000-00" maxlength="14" oninput="mascaraCPF(this)"></div>
+            <div class="campo"><label>Cargo / Função *</label><input type="text" id="cargo" placeholder="Ex: Fiscal, Assistente, Técnico..."></div>
+            <div class="campo"><label>Setor *</label>
+                <select id="setor">
+                    <option value="">Selecione seu setor</option>
+                    <option value="Fiscalização">Fiscalização (trabalho de campo)</option>
+                    <option value="Administrativo">Administrativo (escritório)</option>
+                    <option value="Outro">Outro</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>📝 Qual escala você vai responder?</h3>
+            <p style="font-size:0.85em;color:#666;margin-bottom:12px">Selecione conforme seu setor de atuação:</p>
+            <div class="escala-selector">
+                <div class="escala-btn" id="btnFiscal" onclick="selecionarEscala('fiscal')">🏗️<br>Fiscalização<br><small>(campo)</small></div>
+                <div class="escala-btn" id="btnAdmin" onclick="selecionarEscala('admin')">🖥️<br>Administrativo<br><small>(escritório)</small></div>
+            </div>
+        </div>
+
+        <button class="btn-enviar" id="btnIniciar" onclick="iniciarEscala()" disabled>Iniciar Avaliação →</button>
+    </div>
+
+    <!-- ETAPA 2: Questionário -->
+    <div id="etapa2" style="display:none">
+        <div class="progresso-texto" id="progressoTexto">Questão 1 de 10</div>
+        <div class="progresso"><div class="progresso-barra" id="progressoBarra" style="width:0%"></div></div>
+        <div id="listaQuestoes"></div>
+        <button class="btn-enviar" id="btnCalcular" onclick="calcularEEnviar()">📊 Finalizar e Enviar Resultados</button>
+        <div class="status-envio" id="statusEnvio"></div>
+    </div>
+
+    <!-- ETAPA 3: Conclusão -->
+    <div id="etapa3" class="tela-fim">
+        <div class="icone">✅</div>
+        <h2>Avaliação Concluída!</h2>
+        <p>Seus resultados foram enviados com sucesso.<br>Obrigado pela participação.<br><br>Você já pode fechar esta página.</p>
+    </div>
+
+</div>
+
+<script src="motor.js"></script>
+</body>
+</html>
