@@ -161,62 +161,23 @@ function atualizarProbabilidades(padrao) {
     );
 }
 
-// ===== CÁLCULO DE FATORES DE LIKELIHOOD =====
+// ===== CALCULO DE FATORES DE LIKELIHOOD =====
+// Recalibrado v2.4.1: TDI so sobe com triade (lento+impreciso+inconsistente)
 function calcularFatoresLikelihood(padrao) {
-    const fatores = {
-        TDAH: 1.0,
-        TDI: 1.0,
-        Normal: 1.0,
-        Ansiedade: 1.0
-    };
-    
-    // Velocidade
-    if (padrao.velocidade === 'MUITO_RAPIDA') {
-        fatores.TDAH *= 2.5;  // Impulsividade
-        fatores.Normal *= 0.3;
-    } else if (padrao.velocidade === 'MUITO_LENTA') {
-        fatores.TDI *= 3.0;   // Lentificação cognitiva
-        fatores.Normal *= 0.2;
-    }
-    
-    // Precisão
-    if (padrao.precisao === 'MUITO_BAIXA') {
-        fatores.TDAH *= 2.0;
-        fatores.TDI *= 2.5;
-        fatores.Normal *= 0.1;
-    } else if (padrao.precisao === 'EXCELENTE') {
-        fatores.Normal *= 2.0;
-        fatores.TDAH *= 0.5;
-    }
-    
-    // Impulsividade
-    if (padrao.impulsividade) {
-        fatores.TDAH *= 3.0;
-        fatores.Normal *= 0.3;
-    }
-    
-    // Fadiga
-    if (padrao.fadiga) {
-        fatores.TDAH *= 1.8;
-        fatores.Ansiedade *= 2.0;
-        fatores.Normal *= 0.4;
-    }
-    
-    // Negligência
-    if (padrao.negligencia) {
-        fatores.TDI *= 2.0;
-        fatores.Normal *= 0.3;
-    }
-    
-    // Alternância de modo teclado/touch (indicador de inquietação motora)
-    if (padrao.alternanciasModo > 5) {
-        fatores.TDAH *= 1.5;  // Inquietação motora (Barkley, 1997)
-        fatores.Normal *= 0.7;
-    }
-    
+    const fatores = { TDAH: 1.0, TDI: 1.0, Normal: 1.0, Ansiedade: 1.0 };
+    if (padrao.velocidade === 'MUITO_RAPIDA') { fatores.TDAH *= 2.5; fatores.Normal *= 0.3; }
+    else if (padrao.velocidade === 'MUITO_LENTA') { if (padrao.precisao === 'MUITO_BAIXA' || padrao.precisao === 'BAIXA') { fatores.TDI *= 2.5; } else { fatores.TDI *= 1.2; } fatores.Normal *= 0.4; }
+    else if (padrao.velocidade === 'LENTA') { fatores.Normal *= 0.7; }
+    if (padrao.precisao === 'MUITO_BAIXA') { fatores.TDAH *= 1.8; if (padrao.velocidade === 'MUITO_LENTA' && padrao.consistencia === 'BAIXA') { fatores.TDI *= 2.5; } else { fatores.TDI *= 1.5; } fatores.Normal *= 0.1; }
+    else if (padrao.precisao === 'BAIXA') { fatores.TDAH *= 1.5; fatores.TDI *= 1.3; fatores.Normal *= 0.3; }
+    else if (padrao.precisao === 'EXCELENTE') { fatores.Normal *= 2.0; fatores.TDAH *= 0.5; fatores.TDI *= 0.3; }
+    else if (padrao.precisao === 'BOA') { fatores.Normal *= 1.5; fatores.TDI *= 0.5; }
+    if (padrao.impulsividade) { fatores.TDAH *= 3.0; fatores.Normal *= 0.3; fatores.TDI *= 0.7; }
+    if (padrao.fadiga) { fatores.TDAH *= 1.8; fatores.Ansiedade *= 2.0; fatores.Normal *= 0.4; }
+    if (padrao.negligencia) { fatores.TDI *= 1.5; fatores.Normal *= 0.3; }
+    if (padrao.alternanciasModo > 5) { fatores.TDAH *= 1.5; fatores.Normal *= 0.7; }
     return fatores;
 }
-
 // ===== GERAÇÃO DE ALERTAS PROGRESSIVOS =====
 function gerarAlertaProgressivo() {
     const ia = window.iaObservadora;
