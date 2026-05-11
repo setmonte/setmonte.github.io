@@ -87,7 +87,7 @@
         <div class="tab-bar">
           <button class="tab-btn active" id="tabTecfe" onclick="switchTab('tecfe')">TECFE</button>
           <button class="tab-btn" id="tabBae" onclick="switchTab('bae')">BAE</button>
-          <button class="tab-btn" id="tabTrmv" onclick="switchTab('trmv')">TRMV</button>
+          <button class="tab-btn" id="tabTrmv" onclick="switchTab('trmv')" style="display:none;">TRMV</button>
         </div>
 
         <!-- === ABA TECFE === -->
@@ -1238,18 +1238,11 @@
       doc.save('TRMV_' + nome + '_' + ts + '.pdf');
     }
 
-    async function comprarCreditosTrmv(qtd) {
-      try {
-        var btn = event.target; btn.textContent = 'Aguarde...'; btn.disabled = true;
-        var resp = await fetch(API_URL + '/create-payment', {
-          method: 'POST', headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({email: currentUser, quantidade: qtd, tipo: 'trmv'})
-        });
-        var data = await resp.json();
-        if (data.url) { window.open(data.url, '_blank'); }
-        else { alert('Erro ao gerar link de pagamento'); }
-      } catch(e) { alert('Erro: ' + e.message); }
-      finally { btn.textContent = 'Comprar'; btn.disabled = false; }
+    function comprarCreditosTrmv(qtd) {
+      var links = {1: 'https://mpago.la/2ZEYg7S', 10: 'https://mpago.la/1xy1Kse', 50: 'https://mpago.la/1471St6'};
+      var url = links[qtd];
+      if (url) { window.open(url, '_blank'); }
+      else { alert('Link de pagamento nao encontrado.'); }
     }
   </script>
 </body>
