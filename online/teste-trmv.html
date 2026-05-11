@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TRMV — Teste de Reconhecimento de Memoria Visual</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'Segoe UI',Arial,sans-serif; background:linear-gradient(135deg,#5c6bc0 0%,#7e57c2 50%,#ab47bc 100%); min-height:100vh; padding:20px; line-height:1.6; }
+    .container { max-width:1000px; margin:0 auto; background:#fff; border-radius:16px; box-shadow:0 20px 60px rgba(0,0,0,0.15); overflow:hidden; }
+    header { background:linear-gradient(135deg,#311b92,#4527a0,#5e35b1); color:#fff; padding:30px; text-align:center; }
+    header .logo { font-size:2.8em; font-weight:bold; margin-bottom:10px; letter-spacing:3px; }
+    header h1 { font-size:1.6em; font-weight:300; margin-bottom:8px; }
+    header p { font-size:1em; opacity:0.85; }
+    .page { display:none; }
+    .page.active { display:block; animation:fadeIn 0.4s ease-out; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(15px)} to{opacity:1;transform:translateY(0)} }
+    .secao { padding:35px; }
+    .secao h2 { color:#311b92; margin-bottom:15px; font-size:1.6em; border-bottom:3px solid #7c4dff; padding-bottom:10px; }
+    .descricao-secao { color:#616161; margin-bottom:25px; font-size:1.05em; }
+    .instrucoes-box { background:#f3e5f5; border:2px solid #ce93d8; border-radius:12px; padding:25px; margin:20px 0; line-height:1.8; }
+    .instrucoes-box p { margin-bottom:10px; color:#4a148c; }
+    .botoes { text-align:center; margin-top:30px; display:flex; justify-content:center; gap:15px; flex-wrap:wrap; }
+    .btn-primary { background:linear-gradient(135deg,#5e35b1,#7c4dff); color:#fff; border:none; padding:14px 28px; border-radius:8px; font-size:16px; font-weight:600; cursor:pointer; transition:all 0.3s; min-width:48px; min-height:48px; }
+    .btn-primary:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(94,53,177,0.4); }
+    .btn-primary:disabled { background:#bdbdbd; cursor:not-allowed; transform:none; box-shadow:none; }
+    .btn-danger { background:linear-gradient(135deg,#e53935,#ef5350); color:#fff; border:none; padding:14px 28px; border-radius:8px; font-size:16px; font-weight:600; cursor:pointer; transition:all 0.3s; min-width:48px; min-height:48px; }
+    .btn-danger:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(229,57,53,0.4); }
+    .cronometro-container { text-align:center; margin-bottom:25px; }
+    .cronometro { display:inline-flex; align-items:center; gap:10px; background:linear-gradient(135deg,#311b92,#4527a0); color:#fff; padding:12px 25px; border-radius:30px; font-size:1.1em; box-shadow:0 4px 15px rgba(49,27,146,0.3); }
+    .cronometro-tempo { font-family:'Courier New',monospace; font-size:1.8em; font-weight:bold; min-width:50px; text-align:center; }
+    .cronometro-barra { width:80%; max-width:400px; height:6px; background:#e0d6f0; border-radius:3px; margin:12px auto 0; overflow:hidden; }
+    .cronometro-progresso { height:100%; background:linear-gradient(90deg,#7c4dff,#e040fb); border-radius:3px; width:100%; transition:width 1s linear; }
+    .grid-figuras { display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap:20px; padding:25px; background:#fafafa; border:2px solid #e8e0f0; border-radius:12px; min-height:200px; }
+    .figura-item { display:flex; flex-direction:column; align-items:center; justify-content:center; width:120px; height:120px; background:#fff; border:3px solid #e0e0e0; border-radius:10px; cursor:default; transition:all 0.2s; position:relative; }
+    .figura-numero { position:absolute; top:5px; left:5px; background:#5e35b1; color:#fff; width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.75em; font-weight:bold; }
+    .grid-reconhecimento .figura-item { cursor:pointer; }
+    .grid-reconhecimento .figura-item:hover { border-color:#b388ff; background:#f9f5ff; transform:scale(1.03); }
+    .grid-reconhecimento .figura-item.selecionado { border-color:#43a047; border-width:4px; background:#e8f5e9; box-shadow:0 0 15px rgba(67,160,71,0.3); transform:scale(1.05); }
+    .grid-reconhecimento .figura-item.selecionado .figura-numero { background:#43a047; }
+    .tela-retencao { background:#1a1a2e; min-height:80vh; display:flex; align-items:center; justify-content:center; border-radius:12px; margin:20px; }
+    .retencao-conteudo { text-align:center; color:#fff; }
+    .retencao-cronometro { font-size:5em; font-weight:bold; color:#7c4dff; font-family:monospace; }
+    .retencao-mensagem { font-size:1.5em; opacity:0.7; margin-bottom:20px; }
+    .retencao-submensagem { font-size:1em; opacity:0.5; margin-top:20px; }
+    .concluido { text-align:center; padding:60px 30px; }
+    .concluido h2 { color:#2e7d32; font-size:2em; margin-bottom:15px; }
+    .concluido p { color:#555; font-size:1.2em; }
+    .progresso-container { background:#f5f0ff; padding:15px 25px; border-bottom:1px solid #e8e0f0; }
+    .progresso-barra { width:100%; height:6px; background:#e0d6f0; border-radius:3px; overflow:hidden; margin-bottom:10px; }
+    .progresso-preenchido { height:100%; background:linear-gradient(90deg,#7c4dff,#b388ff); border-radius:3px; width:14%; transition:width 0.5s ease; }
+    @media (max-width:768px) {
+      body { padding:10px; }
+      .secao { padding:20px 15px; }
+      .figura-item { width:90px; height:90px; }
+      .grid-figuras { gap:12px; padding:15px; }
+      .botoes { flex-direction:column; align-items:center; }
+      .btn-primary,.btn-danger { width:100%; max-width:300px; }
+    }
+    @media (max-width:400px) {
+      .figura-item { width:75px; height:75px; }
+      .figura-numero { width:18px; height:18px; font-size:0.65em; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">TRMV</div>
+      <h1>Teste de Reconhecimento de Memoria Visual</h1>
+      <p>Sistema THEDUGA - Avaliacao Neuropsicologica Online</p>
+    </header>
+
+    <div class="progresso-container">
+      <div class="progresso-barra">
+        <div class="progresso-preenchido" id="progresso-preenchido"></div>
+      </div>
+    </div>
+
+    <!-- PAGINA: CONFIGURACAO AUTOMATICA -->
+    <div class="page active" id="pagina-configuracao">
+      <div class="secao">
+        <h2>Configuracao Automatica</h2>
+        <p id="justificativa-config" style="text-align:center;color:#5e35b1;font-weight:600;padding:15px;background:#ede7f6;border-radius:8px;font-size:1.2em;margin:20px 0;"></p>
+        <p class="descricao-secao" style="text-align:center;">A quantidade de figuras foi definida automaticamente com base na idade e escolaridade do paciente.</p>
+        <div class="botoes">
+          <button class="btn-primary" onclick="iniciarTesteNS()">Iniciar Teste</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGINA: INSTRUCOES NS -->
+    <div class="page" id="pagina-instrucoes-ns">
+      <div class="secao">
+        <h2>Instrucoes</h2>
+        <div class="instrucoes-box">
+          <p><strong>Instrucoes:</strong></p>
+          <p>Voce vera algumas figuras abstratas na tela. Observe-as com atencao durante 30 segundos.</p>
+          <p>Depois, essas figuras serao misturadas com outras parecidas, e voce devera clicar nas que reconhece.</p>
+          <p><em>Tente memorizar o maximo de figuras que conseguir.</em></p>
+        </div>
+        <div class="botoes">
+          <button class="btn-primary" onclick="iniciarEstudoNS()">Estou pronto - Iniciar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGINA: ESTUDO NS -->
+    <div class="page" id="pagina-estudo-ns">
+      <div class="secao">
+        <h2>Memorize as Figuras</h2>
+        <div class="cronometro-container">
+          <div class="cronometro">
+            <span>&#9201;</span>
+            <span class="cronometro-tempo" id="tempo-estudo-ns">30</span>
+            <span>segundos</span>
+          </div>
+          <div class="cronometro-barra">
+            <div class="cronometro-progresso" id="progresso-estudo-ns"></div>
+          </div>
+        </div>
+        <div class="grid-figuras" id="grid-estudo-ns"></div>
+      </div>
+    </div>
+
+    <!-- PAGINA: RECONHECIMENTO NS -->
+    <div class="page" id="pagina-reconhecimento-ns">
+      <div class="secao">
+        <h2>Reconhecimento - Figuras Abstratas</h2>
+        <p class="descricao-secao">Clique nas figuras que voce viu na tela anterior.</p>
+        <div class="cronometro-container">
+          <div class="cronometro" style="background:linear-gradient(135deg,#455a64,#607d8b);">
+            <span>&#9201;</span>
+            <span class="cronometro-tempo" id="tempo-reconhecimento-ns">0</span>
+            <span>segundos</span>
+          </div>
+        </div>
+        <div class="grid-figuras grid-reconhecimento" id="grid-reconhecimento-ns"></div>
+        <div class="botoes">
+          <button class="btn-danger" onclick="naoLembroNenhuma('ns')">Nao lembro de nenhuma</button>
+          <button class="btn-primary" onclick="confirmarSelecoes('ns')">Confirmar Selecoes</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGINA: RETENCAO (tela preta 60s) -->
+    <div class="page" id="pagina-retencao">
+      <div class="tela-retencao">
+        <div class="retencao-conteudo">
+          <p class="retencao-mensagem">Aguarde...</p>
+          <div class="retencao-cronometro" id="tempo-retencao">60</div>
+          <p class="retencao-submensagem">Mantenha o olhar na tela</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGINA: 2o RECONHECIMENTO NS -->
+    <div class="page" id="pagina-reconhecimento2-ns">
+      <div class="secao">
+        <h2>Reconhecimento - 2a Tentativa</h2>
+        <p class="descricao-secao">Clique novamente nas figuras que voce lembra da fase de estudo.</p>
+        <div class="cronometro-container">
+          <div class="cronometro" style="background:linear-gradient(135deg,#455a64,#607d8b);">
+            <span>&#9201;</span>
+            <span class="cronometro-tempo" id="tempo-reconhecimento2-ns">0</span>
+            <span>segundos</span>
+          </div>
+        </div>
+        <div class="grid-figuras grid-reconhecimento" id="grid-reconhecimento2-ns"></div>
+        <div class="botoes">
+          <button class="btn-danger" onclick="naoLembroNenhuma('ns2')">Nao lembro de nenhuma</button>
+          <button class="btn-primary" onclick="confirmarSelecoes('ns2')">Confirmar Selecoes</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGINA: CONCLUIDO -->
+    <div class="page" id="pagina-concluido">
+      <div class="concluido">
+        <h2>&#10004; Teste concluido!</h2>
+        <p>Voce pode fechar esta janela.</p>
+        <p style="margin-top:20px;font-size:0.9em;color:#777;">Os resultados foram enviados para o avaliador.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ===== CONFIGURACAO =====
+    var API_URL = 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
+    var sessionData = null;
+
+    // ===== ESTADO GLOBAL =====
+    var estadoTeste = {
+      paciente: { nome:'', dataNascimento:'', idade:{anos:0,meses:0,dias:0}, escolaridade:'', dataTeste:'' },
+      configuracao: { numEstimulos:10, tempoExposicao:30 },
+      faseAtual: 'configuracao',
+      estimulosAlvo: [],
+      distratores: [],
+      painelReconhecimento: [],
+      painelReconhecimento2: [],
+      selecoes: [],
+      selecoes2: [],
+      naoLembra: false,
+      timestampsCliques: [],
+      timestampsCliques2: [],
+      resultados: { naoSemantico: { reconhecimento1:null, reconhecimento2:null, indiceRetencao:null } },
+      tempoInicio: 0,
+      cronometroId: null,
+      sessaoId: ''
+    };
+
+    var cronometroProgressivoId = null;
+
+    // ===== PARSE SESSION DATA FROM URL =====
+    (function() {
+      var params = new URLSearchParams(window.location.search);
+      var d = params.get('d');
+      if (d) {
+        try { sessionData = JSON.parse(atob(decodeURIComponent(d))); } catch(e) { sessionData = null; }
+      }
+      if (!sessionData) {
+        document.querySelector('.container').innerHTML = '<div style="padding:60px;text-align:center;"><h2 style="color:#c62828;">Link invalido</h2><p>Este link nao contem dados validos. Solicite um novo link ao avaliador.</p></div>';
+        return;
+      }
+      // Preencher estado com dados da sessao
+      estadoTeste.sessaoId = sessionData.sessionId || '';
+      estadoTeste.paciente.nome = sessionData.patientName || '';
+      estadoTeste.paciente.dataNascimento = sessionData.birthDate || '';
+      estadoTeste.paciente.escolaridade = sessionData.education || '';
+      estadoTeste.paciente.dataTeste = new Date().toISOString().slice(0,10);
+
+      // Calcular idade
+      if (sessionData.birthDate) {
+        estadoTeste.paciente.idade = calcularIdadeDetalhada(sessionData.birthDate);
+      }
+
+      // Determinar numero de estimulos automaticamente
+      var numAuto = determinarNumEstimulos();
+      estadoTeste.configuracao.numEstimulos = numAuto;
+
+      // Mostrar justificativa
+      var idade = estadoTeste.paciente.idade;
+      var justificativa = '';
+      if (idade.anos <= 12) justificativa = '5 figuras (crianca: ' + idade.anos + ' anos)';
+      else if (idade.anos <= 59) justificativa = '10 figuras (adulto: ' + idade.anos + ' anos)';
+      else if (numAuto === 10) justificativa = '10 figuras (60+ com escolaridade superior)';
+      else justificativa = '5 figuras (60+ — escolaridade ate ensino medio)';
+
+      var el = document.getElementById('justificativa-config');
+      if (el) el.textContent = 'Configuracao: ' + justificativa;
+    })();
+
+    // ===== FUNCOES AUXILIARES =====
+    function calcularIdadeDetalhada(dataNascimento) {
+      var nascimento = new Date(dataNascimento + 'T00:00:00');
+      var hoje = new Date(); hoje.setHours(0,0,0,0);
+      var anos = hoje.getFullYear() - nascimento.getFullYear();
+      var meses = hoje.getMonth() - nascimento.getMonth();
+      var dias = hoje.getDate() - nascimento.getDate();
+      if (dias < 0) { meses--; var mesAnt = new Date(hoje.getFullYear(), hoje.getMonth(), 0); dias += mesAnt.getDate(); }
+      if (meses < 0) { anos--; meses += 12; }
+      return { anos:anos, meses:meses, dias:dias };
+    }
+
+    function determinarNumEstimulos() {
+      var idadeAnos = estadoTeste.paciente.idade.anos;
+      var escolaridade = estadoTeste.paciente.escolaridade;
+      var escolaridadeAlta = ['Superior Incompleto','Superior Completo','Superior incompleto','Superior completo','Pos-graduacao','Mestrado','Doutorado'];
+      if (idadeAnos <= 12) return 5;
+      if (idadeAnos <= 59) return 10;
+      if (escolaridadeAlta.indexOf(escolaridade) !== -1) return 10;
+      return 5;
+    }
+
+    // ===== NAVEGACAO =====
+    function navegarPara(idPagina) {
+      document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
+      var alvo = document.getElementById(idPagina);
+      if (alvo) alvo.classList.add('active');
+      window.scrollTo(0,0);
+      // Atualizar progresso
+      var mapa = {'pagina-configuracao':1,'pagina-instrucoes-ns':2,'pagina-estudo-ns':3,'pagina-reconhecimento-ns':4,'pagina-retencao':5,'pagina-reconhecimento2-ns':6,'pagina-concluido':7};
+      var etapa = mapa[idPagina] || 1;
+      var barra = document.getElementById('progresso-preenchido');
+      if (barra) barra.style.width = (etapa/7*100) + '%';
+    }
+
+    // ===== CRONOMETROS =====
+    function pararCronometro() {
+      if (estadoTeste.cronometroId) { clearInterval(estadoTeste.cronometroId); estadoTeste.cronometroId = null; }
+      if (cronometroProgressivoId) { clearInterval(cronometroProgressivoId); cronometroProgressivoId = null; }
+    }
+
+    function iniciarCronometroProgressivo(idElemento) {
+      var seg = 0;
+      var el = document.getElementById(idElemento);
+      cronometroProgressivoId = setInterval(function() { seg++; if (el) el.textContent = seg; }, 1000);
+    }
+
+    // ===== FLUXO DO TESTE =====
+    function iniciarTesteNS() {
+      estadoTeste.faseAtual = 'instrucoes-ns';
+      navegarPara('pagina-instrucoes-ns');
+    }
+
+    function iniciarEstudoNS() {
+      estadoTeste.faseAtual = 'estudo-ns';
+      navegarPara('pagina-estudo-ns');
+      // Gerar estimulos
+      reiniciarPRNG(Date.now());
+      estadoTeste.estimulosAlvo = gerarConjuntoPoligonos(estadoTeste.configuracao.numEstimulos);
+      // Renderizar
+      var grid = document.getElementById('grid-estudo-ns');
+      grid.innerHTML = '';
+      estadoTeste.estimulosAlvo.forEach(function(est) {
+        var div = document.createElement('div');
+        div.className = 'figura-item';
+        div.innerHTML = est.svgElemento;
+        grid.appendChild(div);
+      });
+      // Cronometro regressivo 30s
+      var tempoRestante = 30;
+      var elTempo = document.getElementById('tempo-estudo-ns');
+      var elProg = document.getElementById('progresso-estudo-ns');
+      if (elTempo) elTempo.textContent = tempoRestante;
+      if (elProg) elProg.style.width = '100%';
+      estadoTeste.cronometroId = setInterval(function() {
+        tempoRestante--;
+        if (elTempo) elTempo.textContent = tempoRestante;
+        if (elProg) elProg.style.width = (tempoRestante/30*100) + '%';
+        if (tempoRestante <= 0) { pararCronometro(); iniciarReconhecimentoNS(); }
+      }, 1000);
+    }
+
+    function iniciarReconhecimentoNS() {
+      pararCronometro();
+      estadoTeste.faseAtual = 'reconhecimento-ns';
+      estadoTeste.selecoes = [];
+      estadoTeste.naoLembra = false;
+      estadoTeste.timestampsCliques = [];
+      estadoTeste.tempoInicio = Date.now();
+      navegarPara('pagina-reconhecimento-ns');
+      montarPainelReconhecimento('grid-reconhecimento-ns', false);
+      iniciarCronometroProgressivo('tempo-reconhecimento-ns');
+    }
+
+    function iniciarTelaRetencao() {
+      estadoTeste.faseAtual = 'retencao';
+      navegarPara('pagina-retencao');
+      var tempoRet = 60;
+      var elTempo = document.getElementById('tempo-retencao');
+      if (elTempo) elTempo.textContent = tempoRet;
+      estadoTeste.cronometroId = setInterval(function() {
+        tempoRet--;
+        if (elTempo) elTempo.textContent = tempoRet;
+        if (tempoRet <= 0) { pararCronometro(); iniciarReconhecimento2NS(); }
+      }, 1000);
+    }
+
+    function iniciarReconhecimento2NS() {
+      estadoTeste.faseAtual = 'reconhecimento2-ns';
+      estadoTeste.selecoes2 = [];
+      estadoTeste.naoLembra = false;
+      estadoTeste.timestampsCliques2 = [];
+      estadoTeste.tempoInicio = Date.now();
+      navegarPara('pagina-reconhecimento2-ns');
+      montarPainelReconhecimento('grid-reconhecimento2-ns', true);
+      iniciarCronometroProgressivo('tempo-reconhecimento2-ns');
+    }
+
+    // ===== PAINEL DE RECONHECIMENTO =====
+    function montarPainelReconhecimento(elementoId, reembaralhar) {
+      var alvos = estadoTeste.estimulosAlvo;
+      var distratores;
+      if (!reembaralhar) {
+        distratores = gerarDistratoresNaoSemanticos(alvos);
+        estadoTeste.distratores = distratores;
+        var painel = alvos.concat(distratores);
+        painel = embaralharArray(painel.slice());
+        estadoTeste.painelReconhecimento = painel;
+      } else {
+        var painel = estadoTeste.painelReconhecimento.slice();
+        painel = embaralharArray(painel);
+        estadoTeste.painelReconhecimento2 = painel;
+      }
+      renderizarPainel(reembaralhar ? estadoTeste.painelReconhecimento2 : estadoTeste.painelReconhecimento, elementoId);
+    }
+
+    function renderizarPainel(painel, elementoId) {
+      var grid = document.getElementById(elementoId);
+      if (!grid) return;
+      grid.innerHTML = '';
+      painel.forEach(function(fig, idx) {
+        var div = document.createElement('div');
+        div.className = 'figura-item';
+        div.setAttribute('data-indice', idx);
+        div.onclick = function() { toggleSelecao(idx); };
+        var badge = document.createElement('span');
+        badge.className = 'figura-numero';
+        badge.textContent = idx + 1;
+        var conteudo = document.createElement('div');
+        conteudo.innerHTML = fig.svgElemento || '<span>&#9650;</span>';
+        div.appendChild(badge);
+        div.appendChild(conteudo);
+        grid.appendChild(div);
+      });
+    }
+
+    function toggleSelecao(indiceFigura) {
+      if (estadoTeste.naoLembra) return;
+      var agora = Date.now();
+      var selecoes, timestamps;
+      if (estadoTeste.faseAtual === 'reconhecimento2-ns') {
+        selecoes = estadoTeste.selecoes2;
+        estadoTeste.timestampsCliques2.push({indice:indiceFigura, tempo:agora});
+      } else {
+        selecoes = estadoTeste.selecoes;
+        estadoTeste.timestampsCliques.push({indice:indiceFigura, tempo:agora});
+      }
+      var el = document.querySelector('.page.active [data-indice="' + indiceFigura + '"]');
+      if (!el) return;
+      var pos = selecoes.indexOf(indiceFigura);
+      if (pos !== -1) { selecoes.splice(pos, 1); el.classList.remove('selecionado'); }
+      else { selecoes.push(indiceFigura); el.classList.add('selecionado'); }
+    }
+
+    function naoLembroNenhuma(subteste) {
+      document.querySelectorAll('.page.active .figura-item.selecionado').forEach(function(el) { el.classList.remove('selecionado'); });
+      if (subteste === 'ns2') estadoTeste.selecoes2 = [];
+      else estadoTeste.selecoes = [];
+      estadoTeste.naoLembra = true;
+      document.querySelectorAll('.page.active .grid-reconhecimento .figura-item').forEach(function(el) { el.style.opacity='0.5'; el.style.pointerEvents='none'; });
+    }
+
+    function confirmarSelecoes(subteste) {
+      var selecoes = (subteste === 'ns2') ? estadoTeste.selecoes2 : estadoTeste.selecoes;
+      if (selecoes.length === 0 && !estadoTeste.naoLembra) { alert('Selecione ao menos uma figura ou clique em "Nao lembro de nenhuma"'); return; }
+      pararCronometro();
+      var tempoResposta = Date.now() - estadoTeste.tempoInicio;
+      var painel, resultadoFase;
+      if (subteste === 'ns') {
+        painel = estadoTeste.painelReconhecimento;
+        resultadoFase = calcularResultadosFase(selecoes, painel, tempoResposta);
+        estadoTeste.resultados.naoSemantico.reconhecimento1 = resultadoFase;
+        iniciarTelaRetencao();
+      } else if (subteste === 'ns2') {
+        painel = estadoTeste.painelReconhecimento2;
+        resultadoFase = calcularResultadosFase(selecoes, painel, tempoResposta);
+        estadoTeste.resultados.naoSemantico.reconhecimento2 = resultadoFase;
+        var acertos1 = estadoTeste.resultados.naoSemantico.reconhecimento1.acertos;
+        var acertos2 = resultadoFase.acertos;
+        estadoTeste.resultados.naoSemantico.indiceRetencao = acertos1 > 0 ? (acertos2/acertos1)*100 : 0;
+        finalizarTeste();
+      }
+    }
+
+    function calcularResultadosFase(selecoes, painel, tempoResposta) {
+      var acertos = 0, alarmesFalsos = 0, omissoes = 0;
+      selecoes.forEach(function(idx) { if (painel[idx] && painel[idx].ehAlvo) acertos++; else alarmesFalsos++; });
+      painel.forEach(function(fig, idx) { if (fig.ehAlvo && selecoes.indexOf(idx) === -1) omissoes++; });
+      return { selecoes:selecoes.slice(), tempoResposta:tempoResposta, acertos:acertos, alarmesFalsos:alarmesFalsos, omissoes:omissoes };
+    }
+
+    // ===== FINALIZAR E ENVIAR RESULTADOS =====
+    async function finalizarTeste() {
+      navegarPara('pagina-concluido');
+      var rec1 = estadoTeste.resultados.naoSemantico.reconhecimento1;
+      var rec2 = estadoTeste.resultados.naoSemantico.reconhecimento2;
+      var resultData = {
+        formData: sessionData,
+        status: 'completo',
+        date: new Date().toISOString(),
+        numEstimulos: estadoTeste.configuracao.numEstimulos,
+        reconhecimento1: { acertos:rec1.acertos, alarmesFalsos:rec1.alarmesFalsos, omissoes:rec1.omissoes, tempoResposta:rec1.tempoResposta },
+        reconhecimento2: { acertos:rec2.acertos, alarmesFalsos:rec2.alarmesFalsos, omissoes:rec2.omissoes, tempoResposta:rec2.tempoResposta },
+        indiceRetencao: estadoTeste.resultados.naoSemantico.indiceRetencao
+      };
+      try {
+        await fetch(API_URL + '/save-result', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ sessionId: sessionData.sessionId, email: sessionData.email, tipo: 'trmv', data: resultData })
+        });
+      } catch(e) { console.error('Erro ao salvar resultado:', e); }
+    }
+
+    // ===== MODULO DE ESTIMULOS (inline) =====
+    var _sementeGlobal = Date.now();
+    var prng = criarPRNG(_sementeGlobal);
+
+    function criarPRNG(semente) {
+      var estado = semente | 0;
+      return function() {
+        estado = (estado + 0x6D2B79F5) | 0;
+        var t = Math.imul(estado ^ (estado >>> 15), 1 | estado);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    function reiniciarPRNG(novaSemente) { _sementeGlobal = novaSemente; prng = criarPRNG(_sementeGlobal); }
+
+    function gerarPoligono(numVertices, raioBase, variacao, seed) {
+      var rng = criarPRNG(seed);
+      var cx = 50, cy = 50;
+      var angulos = [];
+      var anguloBase = (2 * Math.PI) / numVertices;
+      for (var i = 0; i < numVertices; i++) {
+        var perturbacao = (rng() - 0.5) * anguloBase * 0.6;
+        angulos.push(anguloBase * i + perturbacao);
+      }
+      angulos.sort(function(a,b){return a-b;});
+      var vertices = [];
+      for (var i = 0; i < numVertices; i++) {
+        var fator = 1 + (rng() - 0.5) * 2 * variacao;
+        var raio = raioBase * fator;
+        vertices.push({x: cx + raio * Math.cos(angulos[i]), y: cy + raio * Math.sin(angulos[i])});
+      }
+      var area = calcularArea(vertices);
+      var perimetro = calcularPerimetro(vertices);
+      var svgPath = 'M' + vertices[0].x.toFixed(1) + ',' + vertices[0].y.toFixed(1);
+      for (var i = 1; i < vertices.length; i++) svgPath += ' L' + vertices[i].x.toFixed(1) + ',' + vertices[i].y.toFixed(1);
+      svgPath += ' Z';
+      var svgElemento = '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" width="100" height="100"><path d="' + svgPath + '" fill="none" stroke="#37474F" stroke-width="2.5"/></svg>';
+      return { id:'', vertices:vertices, area:area, perimetro:perimetro, svgPath:svgPath, svgElemento:svgElemento, ehAlvo:true };
+    }
+
+    function calcularArea(vertices) {
+      var area = 0, n = vertices.length;
+      for (var i = 0; i < n; i++) { var j = (i+1)%n; area += vertices[i].x*vertices[j].y; area -= vertices[j].x*vertices[i].y; }
+      return Math.abs(area)/2;
+    }
+
+    function calcularPerimetro(vertices) {
+      var p = 0, n = vertices.length;
+      for (var i = 0; i < n; i++) { var j = (i+1)%n; var dx = vertices[j].x-vertices[i].x; var dy = vertices[j].y-vertices[i].y; p += Math.sqrt(dx*dx+dy*dy); }
+      return p;
+    }
+
+    function verificarDistincao(novo, existentes, limiar) {
+      if (typeof limiar === 'undefined') limiar = 0.30;
+      for (var i = 0; i < existentes.length; i++) {
+        var dA = Math.abs(novo.area - existentes[i].area) / Math.max(existentes[i].area, 1);
+        var dP = Math.abs(novo.perimetro - existentes[i].perimetro) / Math.max(existentes[i].perimetro, 1);
+        if (dA < limiar || dP < limiar) return false;
+      }
+      return true;
+    }
+
+    function gerarConjuntoPoligonos(quantidade) {
+      var poligonos = [];
+      var raiosEspacados = [];
+      for (var k = 0; k < quantidade; k++) raiosEspacados.push(15 + (30*k/Math.max(quantidade-1,1)));
+      for (var i = 0; i < quantidade; i++) {
+        var encontrado = false, tentativas = 0, melhorCandidato = null, melhorScore = -1;
+        while (!encontrado && tentativas < 200) {
+          tentativas++;
+          var limiar = tentativas > 100 ? 0.20 : 0.30;
+          var nv = 5 + Math.floor(prng()*5);
+          var rb = tentativas <= 20 ? raiosEspacados[i] + (prng()-0.5)*4 : 15 + prng()*30;
+          var v = 0.3 + prng()*0.4;
+          var s = Math.floor(prng()*2147483647);
+          var novo = gerarPoligono(nv, rb, v, s);
+          var score = calcularScoreDistincao(novo, poligonos);
+          if (score > melhorScore) { melhorScore = score; melhorCandidato = novo; }
+          if (verificarDistincao(novo, poligonos, limiar)) { novo.id = 'ns-' + String(i+1).padStart(3,'0'); poligonos.push(novo); encontrado = true; }
+        }
+        if (!encontrado && melhorCandidato) { melhorCandidato.id = 'ns-' + String(i+1).padStart(3,'0'); poligonos.push(melhorCandidato); }
+      }
+      return poligonos;
+    }
+
+    function calcularScoreDistincao(pol, existentes) {
+      if (existentes.length === 0) return Infinity;
+      var menor = Infinity;
+      for (var i = 0; i < existentes.length; i++) {
+        var dA = Math.abs(pol.area - existentes[i].area) / Math.max(existentes[i].area, 1);
+        var dP = Math.abs(pol.perimetro - existentes[i].perimetro) / Math.max(existentes[i].perimetro, 1);
+        var s = Math.min(dA, dP);
+        if (s < menor) menor = s;
+      }
+      return menor;
+    }
+
+    function gerarDistratoresNaoSemanticos(alvos) {
+      var distratores = [];
+      var todos = alvos.slice();
+      for (var i = 0; i < alvos.length; i++) {
+        var encontrado = false, tentativas = 0;
+        while (!encontrado && tentativas < 200) {
+          tentativas++;
+          var limiar = tentativas > 100 ? 0.20 : 0.30;
+          var nv = 5 + Math.floor(prng()*5);
+          var rb = 25 + prng()*15;
+          var v = 0.3 + prng()*0.4;
+          var s = Math.floor(prng()*2147483647);
+          var novo = gerarPoligono(nv, rb, v, s);
+          if (verificarDistincao(novo, todos, limiar)) {
+            novo.id = 'ns-d-' + String(i+1).padStart(3,'0');
+            novo.ehAlvo = false;
+            distratores.push(novo);
+            todos.push(novo);
+            encontrado = true;
+          }
+        }
+        if (!encontrado) {
+          var fb = gerarPoligono(5+Math.floor(prng()*5), 25+prng()*15, 0.4, Math.floor(prng()*2147483647));
+          fb.id = 'ns-d-' + String(i+1).padStart(3,'0'); fb.ehAlvo = false;
+          distratores.push(fb); todos.push(fb);
+        }
+      }
+      return distratores;
+    }
+
+    function embaralharArray(array) {
+      for (var i = array.length - 1; i > 0; i--) {
+        var j = Math.floor(prng()*(i+1));
+        var temp = array[i]; array[i] = array[j]; array[j] = temp;
+      }
+      return array;
+    }
+  </script>
+</body>
+</html>
