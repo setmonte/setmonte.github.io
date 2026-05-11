@@ -616,9 +616,18 @@ function calcularIndiceFadiga() {
     }
     console.log('\n📉 ÍNDICE DE FADIGA:');
     blocos.forEach(function(bl) { console.log('   Bloco ' + bl.bloco + ': ' + bl.acertos + '/' + bl.total + ' (' + bl.taxa.toFixed(0) + '%) RT=' + bl.rtMedio.toFixed(0) + 'ms'); });
+    console.log('   Queda: ' + indiceFadiga.toFixed(1) + '% - ' + classificacao);
+    if (pontoRuptura) console.log('   Ponto de ruptura: bloco ' + pontoRuptura);
+    // Variabilidade temporal (CV dos RT por bloco)
+    var todosRTsBlocos = blocos.map(function(bl) { return bl.rtMedio; }).filter(function(r) { return r > 0; });
+    var mediaRTG = todosRTsBlocos.length > 0 ? todosRTsBlocos.reduce(function(a,b){return a+b;},0) / todosRTsBlocos.length : 0;
+    var varRT = todosRTsBlocos.length > 1 ? todosRTsBlocos.reduce(function(acc,v){return acc + Math.pow(v - mediaRTG, 2);},0) / todosRTsBlocos.length : 0;
+    var cvRT = mediaRTG > 0 ? (Math.sqrt(varRT) / mediaRTG) * 100 : 0;
+    var classCV = cvRT < 15 ? 'Estavel' : cvRT < 25 ? 'Moderada' : 'Instavel';
+    console.log('   Variabilidade temporal (CV): ' + cvRT.toFixed(1) + '% - ' + classCV);
     console.log('   Queda: ' + indiceFadiga.toFixed(1) + '% → ' + classificacao);
     if (pontoRuptura) console.log('   Ponto de ruptura: bloco ' + pontoRuptura);
-    return { blocos: blocos, indiceFadiga: Math.round(indiceFadiga * 10) / 10, classificacao: classificacao, pontoRuptura: pontoRuptura, numBlocos: numBlocos };
+    return { blocos: blocos, indiceFadiga: Math.round(indiceFadiga * 10) / 10, classificacao: classificacao, pontoRuptura: pontoRuptura, numBlocos: numBlocos, variabilidadeTemporal: Math.round(cvRT * 10) / 10, classificacaoCV: classCV };
 }
 
 // ===== SALVAMENTO NO SISTEMA GLOBAL =====

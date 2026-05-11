@@ -222,7 +222,7 @@ async function gerarRelatorioPDF() {
         const hora = String(agora.getHours()).padStart(2, '0');
         const minuto = String(agora.getMinutes()).padStart(2, '0');
         
-        const nomeArquivo = `BAE2.4_${(paciente.nome || 'PACIENTE').replace(/\\s+/g, '_').toUpperCase()}_${ano}${mes}${dia}${hora}${minuto}.pdf`;
+        const nomeArquivo = `BAE2.3_${(paciente.nome || 'PACIENTE').replace(/\\s+/g, '_').toUpperCase()}_${ano}${mes}${dia}${hora}${minuto}.pdf`;
     
     // Tenta gerar laudo com IA (com aviso visual)
     var laudoIA = null;
@@ -290,7 +290,7 @@ async function gerarRelatorioPDF() {
                 margin: [0, 0, 0, 5]
             },
             {
-                text: 'Bateria de Atenção Eletrônica (BAE 2.4) - Sistema SΨM',
+                text: 'Bateria de Atenção Eletrônica (BAE 2.3) - Sistema SΨM',
                 style: 'subheader',
                 alignment: 'center',
                 margin: [0, 0, 0, 10]
@@ -340,7 +340,7 @@ async function gerarRelatorioPDF() {
                 style: 'sectionHeader'
             },
             {
-                text: 'A Bateria de Atenção Eletrônica (BAE 2.4) é um instrumento neuropsicológico que avalia diferentes domínios atencionais através de cinco testes:',
+                text: 'A Bateria de Atenção Eletrônica (BAE 2.3) é um instrumento neuropsicológico que avalia diferentes domínios atencionais através de cinco testes:',
                 margin: [0, 0, 0, 5]
             },
             {
@@ -356,7 +356,7 @@ async function gerarRelatorioPDF() {
             
             // Resultados
             {
-                text: 'RESULTADOS - PROTOCOLO BAE 2.4',
+                text: 'RESULTADOS - PROTOCOLO BAE 2.3',
                 style: 'sectionHeader'
             },
             {
@@ -479,6 +479,12 @@ async function gerarRelatorioPDF() {
                         `Total de Alvos: ${dados.totalAlvos || 0} | Duração: ${dados.duracaoTeste || 0}s`,
                         `Negligências: ${dados.negligencias || 0} | Impulsividade: ${dados.impulsividade || 0}`
                     ];
+                    if (dados.fadiga) {
+                        detalhes.push(`Índice de Fadiga: ${dados.fadiga.indiceFadiga}% (${dados.fadiga.classificacao})`);
+                        detalhes.push(`Variabilidade Temporal (CV): ${dados.fadiga.variabilidadeTemporal}% (${dados.fadiga.classificacaoCV})`);
+                        if (dados.fadiga.pontoRuptura) detalhes.push(`Ponto de Ruptura: bloco ${dados.fadiga.pontoRuptura} de ${dados.fadiga.numBlocos}`);
+                        if (dados.fadiga.indiceFadiga > 40) detalhes.push(`⚠️ ALERTA: Fadiga acentuada (>${40}%) - considerar déficit na rede de vigilância (Sarter et al., 2001)`);
+                    }
                 }
                 
                 return [
@@ -664,7 +670,7 @@ async function gerarRelatorioPDF() {
         footer: function(currentPage, pageCount) {
             const id = window._idTeste || '';
             return {
-                text: `${id} | Relatório BAE 2.4 - Página ${currentPage} de ${pageCount}`,
+                text: `${id} | Relatório BAE 2.3 - Página ${currentPage} de ${pageCount}`,
                 alignment: 'center',
                 fontSize: 8,
                 color: '#666666'
@@ -790,7 +796,7 @@ function gerarPDFEmergencia() {
     }
     
     const agora = new Date();
-    const nomeArquivo = `BAE2.4_${(paciente.nome || 'PACIENTE').replace(/\s+/g, '_').toUpperCase()}_${agora.getFullYear()}${String(agora.getMonth() + 1).padStart(2, '0')}${String(agora.getDate()).padStart(2, '0')}${String(agora.getHours()).padStart(2, '0')}${String(agora.getMinutes()).padStart(2, '0')}.pdf`;
+    const nomeArquivo = `BAE2.3_${(paciente.nome || 'PACIENTE').replace(/\s+/g, '_').toUpperCase()}_${agora.getFullYear()}${String(agora.getMonth() + 1).padStart(2, '0')}${String(agora.getDate()).padStart(2, '0')}${String(agora.getHours()).padStart(2, '0')}${String(agora.getMinutes()).padStart(2, '0')}.pdf`;
     
     const docDefinition = {
         pageSize: 'A4',
@@ -833,4 +839,4 @@ window.salvarResultadoTeste = salvarResultadoTeste;
 window.gerarRelatorioPDF = gerarRelatorioPDF;
 window.gerarPDFEmergencia = gerarPDFEmergencia;
 
-console.log('✅ Sistema de PDF BAE 2.4 com pdfmake carregado!');
+console.log('✅ Sistema de PDF BAE 2.3 com pdfmake carregado!');

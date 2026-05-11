@@ -78,7 +78,14 @@ var BAEAI = (function() {
             texto += '5. ATENCAO SUSTENTADA (vigilancia prolongada, alvo=quadrado amarelo):\n';
             texto += '   Acertos: ' + (su.acertos||0) + '/' + (su.totalAlvos||0) + ' (' + (su.taxaAcerto||0).toFixed(1) + '%) | RT medio: ' + (su.tempoMedio||0).toFixed(0) + 'ms\n';
             texto += '   Omissoes: ' + (su.omissoes||0) + ' | Negligencias: ' + (su.negligencias||0) + ' | Impulsividade: ' + (su.impulsividade||0) + '\n';
-            texto += '   Faixa: ' + (su.faixaEtaria||'N/I') + ' | Duracao real: ' + (su.duracaoTeste||0) + 's\n\n';
+            texto += '   Faixa: ' + (su.faixaEtaria||'N/I') + ' | Duracao real: ' + (su.duracaoTeste||0) + 's\n';
+            if (su.fadiga) {
+                texto += '   INDICE DE FADIGA: ' + (su.fadiga.indiceFadiga||0) + '% (' + (su.fadiga.classificacao||'N/I') + ')\n';
+                texto += '   Variabilidade temporal (CV): ' + (su.fadiga.variabilidadeTemporal||0) + '% (' + (su.fadiga.classificacaoCV||'N/I') + ')\n';
+                if (su.fadiga.pontoRuptura) texto += '   Ponto de ruptura: bloco ' + su.fadiga.pontoRuptura + ' de ' + su.fadiga.numBlocos + '\n';
+                if (su.fadiga.blocos) { su.fadiga.blocos.forEach(function(bl) { texto += '   Bloco ' + bl.bloco + ': ' + bl.taxa.toFixed(0) + '% (RT ' + bl.rtMedio.toFixed(0) + 'ms)\n'; }); }
+            }
+            texto += '\n';
         } else {
             texto += '5. ATENCAO SUSTENTADA: NAO REALIZADO\n\n';
         }
