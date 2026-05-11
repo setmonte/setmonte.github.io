@@ -265,6 +265,7 @@ function executarLoopEstimulosSustentada() {
                     omissoes++;
                     var sext = posicaoAtual ? posicaoAtual.sextante : null;
                     if (sext && desempenhoPorSextante[sext]) desempenhoPorSextante[sext].omissoes++;
+                    registroAlvosPorTempo.push({tempoRelativo: performance.now() - inicioTeste, acertou: false, rt: null});
                     console.log(`⏰ OMISSÃO! Sem resposta (${sext || ''}). Total: ${omissoes}`);
                 }
             }, CONFIG_SUSTENTADA ? CONFIG_SUSTENTADA.limiarNegligencia : 2000);
@@ -428,6 +429,7 @@ function processarRespostaSustentada(event) {
                 acertos++;
                 temposReacaoSustentada.push(tempoReacao);
                 if (sext && desempenhoPorSextante[sext]) desempenhoPorSextante[sext].acertos++;
+                registroAlvosPorTempo.push({tempoRelativo: performance.now() - inicioTeste, acertou: true, rt: tempoReacao});
                 console.log(`ACERTO! ${tempoReacao.toFixed(0)}ms (${sext || ''}). Total: ${acertos}`);
                 
             } else if (tempoReacao <= limCompr) {
@@ -582,6 +584,43 @@ function exibirResultadosFinais() {
     }, 4000);
 }
 
+// ===== INDICE DE FADIGA (Sarter et al., 2001; Riccio & Reynolds, 2001) =====
+function calcularIndiceFadiga() {
+    if (registroAlvosPorTempo.length < 3) return null;
+    var duracaoMs = CONFIG_SUSTENTADA ? CONFIG_SUSTENTADA.duracaoMs : 600000;
+    var numBlocos = duracaoMs >= 600000 ? 5 : 3; // 5 blocos (adulto 10min) ou 3 (crianca/idoso 6min)
+    var tamBloco = duracaoMs / numBlocos;
+    var blocos = [];
+    for (var b = 0; b < numBlocos; b++) {
+        var inicio = b * tamBloco;
+        var fim = (b + 1) * tamBloco;
+        var alvosBloco = registroAlvosPorTempo.filter(function(r) { return r.tempoRelativo >= inicio && r.tempoRelativo < fim; });
+        var acertosBloco = alvosBloco.filter(function(r) { return r.acertou; }).length;
+        var totalBloco = alvosBloco.length;
+        var taxaBloco = totalBloco > 0 ? (acertosBloco / totalBloco) * 100 : 0;
+        var rtsBloco = alvosBloco.filter(function(r) { return r.rt !== null; }).map(function(r) { return r.rt; });
+        var rtMedioBloco = rtsBloco.length > 0 ? rtsBloco.reduce(function(a,b){return a+b;},0) / rtsBloco.length : 0;
+        blocos.push({ bloco: b+1, acertos: acertosBloco, total: totalBloco, taxa: taxaBloco, rtMedio: rtMedioBloco });
+    }
+    var taxaPrimeiro = blocos[0].taxa;
+    var taxaUltimo = blocos[blocos.length - 1].taxa;
+    var indiceFadiga = taxaPrimeiro > 0 ? ((taxaPrimeiro - taxaUltimo) / taxaPrimeiro) * 100 : 0;
+    var classificacao = 'Ausente';
+    if (indiceFadiga >= 50) classificacao = 'Acentuada';
+    else if (indiceFadiga >= 25) classificacao = 'Moderada';
+    else if (indiceFadiga >= 10) classificacao = 'Leve';
+    // Ponto de ruptura: primeiro bloco com taxa < 70%
+    var pontoRuptura = null;
+    for (var i = 0; i < blocos.length; i++) {
+        if (blocos[i].taxa < 70 && blocos[i].total > 0) { pontoRuptura = i + 1; break; }
+    }
+    console.log('\n📉 ÍNDICE DE FADIGA:');
+    blocos.forEach(function(bl) { console.log('   Bloco ' + bl.bloco + ': ' + bl.acertos + '/' + bl.total + ' (' + bl.taxa.toFixed(0) + '%) RT=' + bl.rtMedio.toFixed(0) + 'ms'); });
+    console.log('   Queda: ' + indiceFadiga.toFixed(1) + '% → ' + classificacao);
+    if (pontoRuptura) console.log('   Ponto de ruptura: bloco ' + pontoRuptura);
+    return { blocos: blocos, indiceFadiga: Math.round(indiceFadiga * 10) / 10, classificacao: classificacao, pontoRuptura: pontoRuptura, numBlocos: numBlocos };
+}
+
 // ===== SALVAMENTO NO SISTEMA GLOBAL =====
 // Linha 532-550: Salvamento dos resultados
 function salvarResultadoTesteSustentada() {
@@ -604,6 +643,7 @@ function salvarResultadoTesteSustentada() {
         negligencias: negligencias,
         impulsividade: respostasImpulsivas,
         sextantes: JSON.parse(JSON.stringify(desempenhoPorSextante)),
+        fadiga: calcularIndiceFadiga(),
         faixaEtaria: (window.idadePaciente || 18) < 13 ? 'crianca' : (window.idadePaciente || 18) >= 60 ? 'idoso' : 'adulto',
         statusTeste: 'CONCLUÍDO',
         dispositivo: window.dispositivoBAE ? window.dispositivoBAE.obterInfoDispositivo() : null,

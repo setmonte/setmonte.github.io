@@ -32,12 +32,15 @@ var omissoes = 0; // >2000ms
 var respostasImpulsivas = 0; // Apertar no distrator
 
 // ===== ARRAYS DE TEMPOS =====
-// Linha 33-37: Arrays para análise temporal
 var temposReacaoSustentada = [];
 let temposAcertosComprometidos = [];
 let temposNegligencias = [];
 let todosTemposReacao = [];
 var respostasOpositorias = 0;
+
+// ===== REGISTRO POR BLOCO TEMPORAL (INDICE DE FADIGA) =====
+// Sarter et al. (2001), Riccio & Reynolds (2001)
+var registroAlvosPorTempo = []; // {tempoRelativo, acertou, rt}
 
 // ===== CONTROLE DE SEXTANTES =====
 let sextantesUsados = [];
@@ -102,6 +105,7 @@ function resetarContadoresSustentada() {
     omissoes = 0;
     respostasImpulsivas = 0;
     respostasOpositorias = 0;
+    registroAlvosPorTempo = [];
     temposReacaoSustentada = [];
     temposAcertosComprometidos = [];
     temposNegligencias = [];
