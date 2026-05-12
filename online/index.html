@@ -1158,24 +1158,19 @@
       if (todos.length === 0) { alert('Nenhum resultado.'); return; }
       var jsPDF = window.jspdf.jsPDF;
       var doc = new jsPDF();
-      doc.setFillColor(46,125,50); doc.rect(0,0,210,28,'F');
-      doc.setTextColor(255,255,255); doc.setFontSize(15); doc.setFont(undefined,'bold');
-      doc.text('RELATORIO DO PACIENTE', 105, 12, {align:'center'});
-      doc.setFontSize(12); doc.setFont(undefined,'normal');
-      doc.text(nome, 105, 20, {align:'center'});
-      doc.setFontSize(8);
-      doc.text('Sistema SYM Online - Centro de Testagem', 105, 25, {align:'center'});
-      doc.setTextColor(0,0,0); var y = 38;
-      doc.setFontSize(10);
-      doc.text('Total de testes/escalas: ' + todos.length, 15, y); y+=7;
-      doc.text('Periodo: ' + new Date(todos[todos.length-1].date).toLocaleDateString('pt-BR') + ' a ' + new Date(todos[0].date).toLocaleDateString('pt-BR'), 15, y); y+=12;
-      doc.setFontSize(9); doc.setFont(undefined,'bold');
-      doc.setFillColor(46,125,50); doc.setTextColor(255,255,255);
-      doc.rect(15,y-4,180,7,'F');
-      doc.text('Data', 17, y); doc.text('Tipo', 52, y); doc.text('Resultado', 75, y);
-      doc.setTextColor(0,0,0); doc.setFont(undefined,'normal'); y+=8;
+      var maxY = 283; // margem inferior 1cm
+      // Cabecalho compacto
+      doc.setFontSize(12); doc.setFont(undefined,'bold'); doc.setTextColor(46,125,50);
+      doc.text('RELATORIO DO PACIENTE - ' + nome, 15, 12);
+      doc.setFontSize(8); doc.setFont(undefined,'normal'); doc.setTextColor(100,100,100);
+      doc.text('Sistema SYM Online | Total: ' + todos.length + ' aplicacoes | Periodo: ' + new Date(todos[todos.length-1].date).toLocaleDateString('pt-BR') + ' a ' + new Date(todos[0].date).toLocaleDateString('pt-BR'), 15, 18);
+      doc.setDrawColor(46,125,50); doc.line(15, 20, 195, 20);
+      // Tabela compacta
+      var y = 24;
+      doc.setFontSize(8); doc.setFont(undefined,'bold'); doc.setTextColor(0,0,0);
+      doc.text('Data', 15, y); doc.text('Tipo', 45, y); doc.text('Resultado', 70, y);
+      doc.setFont(undefined,'normal'); y += 5;
       todos.forEach(function(r) {
-        if (y > 275) { doc.addPage(); y = 20; }
         var d = r.data || {};
         var date = r.date ? new Date(r.date).toLocaleDateString('pt-BR') : '-';
         var tipo = (r.tipo||'tecfe').toUpperCase();
@@ -1183,14 +1178,17 @@
         if (r.tipo==='escala') { det = (d.escala||'') + ' - ' + (d.classificacao||d.escore||''); }
         else if (r.tipo==='bae') { det = 'Status: ' + (d.status||'-'); }
         else if (r.tipo==='trmv') { det = 'Retencao: ' + (d.indiceRetencao ? Math.round(d.indiceRetencao)+'%' : '-'); }
-        else { var s=d.stats||{}; det = 'Categorias: '+(s.completedCategories||0)+' | Erros: '+(s.pctErrors?Number(s.pctErrors).toFixed(1):'0')+'%'; }
-        doc.text(date, 17, y); doc.text(tipo, 52, y);
-        var linhas = doc.splitTextToSize(det, 115);
-        linhas.forEach(function(l,i) { doc.text(l, 75, y+i*4); });
-        y += Math.max(linhas.length*4, 6) + 2;
+        else { var s=d.stats||{}; det = 'Cat: '+(s.completedCategories||0)+' | Erros: '+(s.pctErrors?Number(s.pctErrors).toFixed(1):'0')+'%'; }
+        var linhas = doc.splitTextToSize(det, 120);
+        var alturaBloco = linhas.length * 4;
+        if (y + alturaBloco > maxY) { doc.addPage(); y = 15; }
+        doc.text(date, 15, y); doc.text(tipo, 45, y);
+        linhas.forEach(function(l,i) { doc.text(l, 70, y + i*4); });
+        y += alturaBloco + 1;
       });
-      doc.setFontSize(7); doc.setTextColor(130,130,130);
-      doc.text('Gerado em: ' + new Date().toLocaleString('pt-BR') + ' | Sistema SYM Online', 15, 290);
+      // Rodape na ultima pagina
+      doc.setFontSize(6); doc.setTextColor(150,150,150);
+      doc.text('Gerado: ' + new Date().toLocaleString('pt-BR') + ' | SYM Online', 15, 293);
       doc.save('Relatorio_' + nome.replace(/\s+/g,'_') + '_' + new Date().toISOString().slice(0,10) + '.pdf');
     }
 
@@ -1236,22 +1234,22 @@
       var d = r.data || {};
       var jsPDF = window.jspdf.jsPDF;
       var doc = new jsPDF();
-      doc.setFillColor(46,125,50); doc.rect(0,0,210,25,'F');
-      doc.setTextColor(255,255,255); doc.setFontSize(14); doc.setFont(undefined,'bold');
-      doc.text(d.escala || 'Escala', 105, 15, {align:'center'});
-      doc.setTextColor(0,0,0); doc.setFontSize(11); doc.setFont(undefined,'normal');
-      var y = 35;
-      doc.text('Paciente: ' + (d.paciente||'N/I'), 15, y); y+=7;
-      doc.text('Data: ' + (r.date ? new Date(r.date).toLocaleString('pt-BR') : '-'), 15, y); y+=7;
-      if (d.escore != null) { doc.text('Escore: ' + d.escore + (d.media ? '  |  Media: '+d.media : ''), 15, y); y+=7; }
-      if (d.classificacao) { doc.setFont(undefined,'bold'); doc.text('Classificacao: ' + d.classificacao, 15, y); doc.setFont(undefined,'normal'); y+=10; }
+      var maxY = 283;
+      // Cabecalho compacto
+      doc.setFontSize(12); doc.setFont(undefined,'bold'); doc.setTextColor(46,125,50);
+      doc.text((d.escala || 'Escala') + ' - ' + (d.paciente||'N/I'), 15, 12);
+      doc.setFontSize(8); doc.setFont(undefined,'normal'); doc.setTextColor(100,100,100);
+      doc.text('Data: ' + (r.date ? new Date(r.date).toLocaleString('pt-BR') : '-') + (d.escore != null ? '  |  Escore: '+d.escore : '') + (d.media != null ? '  |  Media: '+d.media : ''), 15, 18);
+      if (d.classificacao) { doc.setFont(undefined,'bold'); doc.setTextColor(0,0,0); doc.text('Classificacao: ' + d.classificacao, 15, 23); }
+      doc.setDrawColor(46,125,50); doc.line(15, 25, 195, 25);
+      var y = 29;
       if (d.resultadoHTML) {
+        doc.setFontSize(8); doc.setFont(undefined,'normal'); doc.setTextColor(0,0,0);
         var linhas = doc.splitTextToSize(d.resultadoHTML, 180);
-        doc.setFontSize(9);
-        linhas.forEach(function(l) { if(y>280){doc.addPage();y=15;} doc.text(l,15,y); y+=4.5; });
+        linhas.forEach(function(l) { if(y>maxY){doc.addPage();y=12;} doc.text(l,15,y); y+=3.8; });
       }
-      doc.setFontSize(7); doc.setTextColor(130,130,130);
-      doc.text('Sistema SYM Online | ' + new Date().toLocaleString('pt-BR'), 15, 290);
+      doc.setFontSize(6); doc.setTextColor(150,150,150);
+      doc.text('SYM Online | ' + new Date().toLocaleString('pt-BR'), 15, 293);
       doc.save((d.escala||'Escala').replace(/\s+/g,'_') + '_' + (d.paciente||'').replace(/\s+/g,'_') + '.pdf');
     }
 
