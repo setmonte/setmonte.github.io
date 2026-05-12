@@ -1229,9 +1229,10 @@
     }
 
     function gerarPDFEscala(idx) {
+      function sanitize(s){if(!s)return '';return s.replace(/[\u2600-\u27BF\uD800-\uDFFF\uFE00-\uFE0F\u200D]/g,'').replace(/[^\x20-\x7E\xA0-\xFF\u0100-\u024F]/g,'').trim();}
       var r = _escalasResultCache[idx];
       if (!r) return;
-      var d = r.data || {};
+      var d = r.data || {}; if(d.classificacao)d.classificacao=sanitize(d.classificacao); if(d.resultadoHTML)d.resultadoHTML=sanitize(d.resultadoHTML); if(d.paciente)d.paciente=sanitize(d.paciente);
       var jsPDF = window.jspdf.jsPDF;
       var doc = new jsPDF();
       var maxY = 280;
@@ -1245,7 +1246,7 @@
       doc.setTextColor(0,0,0); doc.setFontSize(10); doc.setFont(undefined,'bold');
       if (d.escore != null) { doc.text('Escore Total: ' + d.escore, 15, y); y += 6; }
       if (d.media != null) { doc.text('Media: ' + d.media, 15, y); y += 6; }
-      if (d.classificacao) { doc.text('Classificacao: ' + d.classificacao.replace(/[\u2600-\u27BF\uD83C-\uDBFF\uDC00-\uDFFF\uFE0F\u200D]+/g,'').trim(), 15, y); y += 6; }
+      if (d.classificacao) { doc.text('Classificacao: ' + sanitize(d.classificacao), 15, y); y += 6; }
       if (d.sexo) { doc.setFont(undefined,'normal'); doc.text('Sexo: ' + d.sexo, 15, y); y += 6; }
       y += 4;
       if (d.dominios && typeof d.dominios === 'object') {
@@ -1270,7 +1271,7 @@
         });
         y += 4;
       }
-      if (d.resultadoHTML && !d.dominios) {
+      if (d.resultadoHTML && !d.dominios) { d.resultadoHTML = sanitize(d.resultadoHTML);
         doc.setFontSize(7); doc.setFont(undefined,'normal');
         var linhas = doc.splitTextToSize(d.resultadoHTML, 180);
         linhas.forEach(function(l) { if(y>maxY){doc.addPage();y=12;} doc.text(l,15,y); y+=3.5; });
