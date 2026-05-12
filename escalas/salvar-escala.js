@@ -10,8 +10,8 @@
     var form = document.querySelector('form') || document.querySelector('.container') || document.body.firstElementChild;
     if (!form) return;
     var box = document.createElement('div');
-    box.style.cssText = 'margin:10px auto 15px;padding:12px 15px;background:#e8f5e9;border:1px solid #a5d6a7;border-radius:8px;max-width:600px;text-align:center;';
-    box.innerHTML = '<p style="font-size:16px;color:#333;margin:0;">Se quiser salvar os resultados no seu painel, <a href="../online/" target="_blank">inscreva-se aqui</a>.</p>';
+    box.style.cssText = 'margin:10px auto 15px;padding:12px 15px;background:#e8f5e9;border:2px solid #2e7d32;border-radius:8px;max-width:600px;text-align:center;animation:piscar 2s ease-in-out 3;';
+    box.innerHTML = '<style>@keyframes piscar{0%,100%{opacity:1}50%{opacity:0.3}}</style><p style="font-size:16px;color:#2e7d32;margin:0;font-weight:bold;">Se quiser salvar os resultados no seu painel, <a href="../online/" target="_blank">inscreva-se aqui</a>.</p>';
     form.insertBefore(box, form.firstChild);
   }
 
