@@ -20,33 +20,37 @@
     inserirMensagemTopo();
   }
 
-  // Interceptar jsPDF — patch no construtor para capturar save de cada instancia
+  // Interceptar download de PDF — jsPDF cria <a> com blob URL para download
   function instalarInterceptor() {
-    if (!window.jspdf || !window.jspdf.jsPDF) return;
     if (window._interceptorInstalado) return;
     window._interceptorInstalado = true;
-    var _OrigJsPDF = window.jspdf.jsPDF;
-    window.jspdf.jsPDF = function() {
-      var doc = new (Function.prototype.bind.apply(_OrigJsPDF, [null].concat(Array.prototype.slice.call(arguments))))();
-      var _origSave = doc.save.bind(doc);
-      doc.save = function(filename) {
-        try { window._escalaPdfBase64 = doc.output('datauristring'); } catch(e) {}
-        _origSave(filename);
-        setTimeout(function() { mostrarConviteSalvar(); }, 500);
-      };
-      return doc;
+    var _origCreate = document.createElement.bind(document);
+    document.createElement = function(tag) {
+      var el = _origCreate(tag);
+      if (tag.toLowerCase() === 'a') {
+        var _origClick = el.click;
+        Object.defineProperty(el, 'click', {
+          value: function() {
+            if (el.download && el.href && el.href.indexOf('blob:') === 0) {
+              // PDF sendo baixado — capturar via fetch do blob
+              try {
+                fetch(el.href).then(function(r){return r.blob();}).then(function(blob){
+                  var reader = new FileReader();
+                  reader.onload = function() { window._escalaPdfBase64 = reader.result; };
+                  reader.readAsDataURL(blob);
+                });
+              } catch(e) {}
+              setTimeout(function() { mostrarConviteSalvar(); }, 800);
+            }
+            return _origClick.call(el);
+          }
+        });
+      }
+      return el;
     };
-    window.jspdf.jsPDF.API = _OrigJsPDF.API;
-    window.jspdf.jsPDF.prototype = _OrigJsPDF.prototype;
   }
 
-  if (window.jspdf && window.jspdf.jsPDF) {
-    instalarInterceptor();
-  } else {
-    document.addEventListener('DOMContentLoaded', instalarInterceptor);
-    setTimeout(instalarInterceptor, 1000);
-    setTimeout(instalarInterceptor, 3000);
-  }
+  instalarInterceptor();
 
   // Mostrar convite apos gerar PDF
   function mostrarConviteSalvar() {
