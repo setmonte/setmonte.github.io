@@ -279,6 +279,7 @@ function displayResults(scores) {
 
     renderChart(scores);
     window.scrollTo(0, 0);
+    window._escalaDados={escala:'SMI',paciente:document.getElementById('patientName').value,escore:0,classificacao:'Completo',data:new Date().toISOString()};if(window.injetarBotaoSalvar)injetarBotaoSalvar('resultsSection');
 }
 
 function renderChart(scores) {
@@ -370,6 +371,7 @@ function resetForm() {
     document.getElementById('instructionsSection').style.display = 'block';
     document.getElementById('resultsSection').style.display = 'none';
     window.scrollTo(0, 0);
+    window._escalaDados={escala:'SMI',paciente:document.getElementById('patientName').value,escore:0,classificacao:'Completo',data:new Date().toISOString()};if(window.injetarBotaoSalvar)injetarBotaoSalvar('resultsSection');
 }
 
 function renderQuestions() {

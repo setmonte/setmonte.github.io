@@ -140,6 +140,7 @@ function displayResults(scores) {
     
     renderChart(scores);
     window.scrollTo(0, 0);
+    window._escalaDados={escala:'YSQ-L3',paciente:document.getElementById('patientName').value,escore:0,classificacao:'Completo',data:new Date().toISOString()};if(window.injetarBotaoSalvar)injetarBotaoSalvar('resultsSection');
 }
 
 function renderChart(scores) {
@@ -237,6 +238,7 @@ function resetForm() {
     document.getElementById('resultsSection').style.display = 'none';
     
     window.scrollTo(0, 0);
+    window._escalaDados={escala:'YSQ-L3',paciente:document.getElementById('patientName').value,escore:0,classificacao:'Completo',data:new Date().toISOString()};if(window.injetarBotaoSalvar)injetarBotaoSalvar('resultsSection');
 }
 
 const allQuestions = [
