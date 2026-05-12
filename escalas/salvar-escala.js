@@ -124,6 +124,17 @@
     dados.pacienteId = pacId;
     dados.paciente = pacNome;
 
+    msg.textContent = 'Gerando PDF...'; msg.style.color = '#555';
+    try {
+      if (typeof gerarRelatorioPDF === 'function' && window.jspdf) {
+        var _origSave = window.jspdf.jsPDF.prototype.save;
+        var _pdfData = null;
+        window.jspdf.jsPDF.prototype.save = function() { _pdfData = this.output('datauristring'); };
+        gerarRelatorioPDF();
+        window.jspdf.jsPDF.prototype.save = _origSave;
+        if (_pdfData) { dados.pdfBase64 = _pdfData; }
+      }
+    } catch(pdfErr) {}
     msg.textContent = 'Salvando...'; msg.style.color = '#555';
     try {
       var sid = 'esc-' + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
