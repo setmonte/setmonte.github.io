@@ -1,28 +1,10 @@
-// salvar-escala.js — Salvar no Painel com vinculação a paciente
+// salvar-escala.js — Salvar no Painel automaticamente ao gerar PDF
 
 (function() {
   var API = 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
   var jaInjetou = false;
 
-  // Interceptar jsPDF.save para capturar copia do PDF
-  if (window.jspdf && window.jspdf.jsPDF) {
-    var _origSave = window.jspdf.jsPDF.prototype.save;
-    window.jspdf.jsPDF.prototype.save = function(filename) {
-      try { window._escalaPdfBase64 = this.output('datauristring'); } catch(e) {}
-      _origSave.call(this, filename);
-    };
-  } else {
-    document.addEventListener('DOMContentLoaded', function() {
-      if (window.jspdf && window.jspdf.jsPDF) {
-        var _origSave = window.jspdf.jsPDF.prototype.save;
-        window.jspdf.jsPDF.prototype.save = function(filename) {
-          try { window._escalaPdfBase64 = this.output('datauristring'); } catch(e) {}
-          _origSave.call(this, filename);
-        };
-      }
-    });
-  }
-
+  // Mensagem no topo
   function inserirMensagemTopo() {
     var form = document.querySelector('form') || document.querySelector('.container') || document.body.firstElementChild;
     if (!form) return;
@@ -38,13 +20,65 @@
     inserirMensagemTopo();
   }
 
+  // Interceptar jsPDF.save — captura PDF + mostra convite para salvar no painel
+  function instalarInterceptor() {
+    if (!window.jspdf || !window.jspdf.jsPDF) return;
+    var _origSave = window.jspdf.jsPDF.prototype.save;
+    window.jspdf.jsPDF.prototype.save = function(filename) {
+      try { window._escalaPdfBase64 = this.output('datauristring'); } catch(e) {}
+      _origSave.call(this, filename);
+      // Apos gerar PDF, mostrar convite para salvar no painel
+      setTimeout(function() { mostrarConviteSalvar(); }, 500);
+    };
+  }
+
+  if (window.jspdf && window.jspdf.jsPDF) {
+    instalarInterceptor();
+  } else {
+    document.addEventListener('DOMContentLoaded', instalarInterceptor);
+  }
+
+  // Mostrar convite apos gerar PDF
+  function mostrarConviteSalvar() {
+    if (jaInjetou) return;
+    jaInjetou = true;
+    var target = document.getElementById('resultados') || document.getElementById('resultsSection') || document.getElementById('result') || document.getElementById('results');
+    if (!target) {
+      target = document.querySelector('.resultados') || document.querySelector('.container');
+    }
+    if (!target) return;
+
+    var div = document.createElement('div');
+    div.id = 'bloco-salvar-painel';
+    div.style.cssText = 'margin-top:20px;padding:18px;background:#e8f5e9;border:2px solid #2e7d32;border-radius:10px;text-align:center;';
+    div.innerHTML = '<p style="font-size:14px;color:#2e7d32;margin-bottom:10px;font-weight:bold;">Seu resultado tambem pode ser salvo no seu painel profissional.</p>' +
+      '<p style="font-size:12px;color:#555;margin-bottom:12px;">Acesse com sua senha ou <a href="../online/" target="_blank">inscreva-se gratuitamente</a> para acompanhar seus pacientes.</p>' +
+      '<button id="btnSalvarEscala" style="padding:12px 28px;background:#2e7d32;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:bold;cursor:pointer;">Salvar no Painel</button>' +
+      '<div id="painelSalvarEscala" style="display:none;margin-top:12px;"></div>' +
+      '<p id="msgSalvarEscala" style="margin-top:8px;font-size:12px;color:#777;"></p>';
+    target.appendChild(div);
+    document.getElementById('btnSalvarEscala').onclick = iniciarFluxo;
+    div.scrollIntoView({behavior:'smooth'});
+  }
+
+  // Tambem injetar quando calcularResultados é chamado (para escalas que nao geram PDF automatico)
+  window.injetarBotaoSalvar = function(containerId) {
+    if (jaInjetou) return;
+    jaInjetou = true;
+    var container = document.getElementById(containerId || 'resultados');
+    if (container) {
+      setTimeout(function() { mostrarConviteSalvar(); }, 300);
+    }
+  };
+
+  // Observador para escalas que mostram resultados sem chamar injetarBotaoSalvar
   function iniciarObservador() {
     var el = document.getElementById('resultados');
     if (!el) return;
     var observer = new MutationObserver(function() {
       if (el.style.display !== 'none' && el.innerHTML.trim() && !jaInjetou) {
-        jaInjetou = true;
-        setTimeout(function() { injetarBotao(el); }, 300);
+        // Esperar um pouco caso o PDF seja gerado logo em seguida
+        setTimeout(function() { if (!jaInjetou) mostrarConviteSalvar(); }, 1000);
       }
     });
     observer.observe(el, { attributes: true, childList: true, attributeFilter: ['style'] });
@@ -56,27 +90,9 @@
     iniciarObservador();
   }
 
-  function injetarBotao(container) {
-    if (document.getElementById('bloco-salvar-painel')) return;
-    var div = document.createElement('div');
-    div.id = 'bloco-salvar-painel';
-    div.style.cssText = 'margin-top:20px;padding:15px;background:#e8f5e9;border:1px solid #2e7d32;border-radius:8px;text-align:center;';
-    div.innerHTML = '<p style="font-size:13px;color:#555;margin-bottom:8px;">Salve uma copia dos resultados no seu <a href="../online/" target="_blank">Painel SYM</a> para acompanhar seu paciente.</p>' +
-      '<button id="btnSalvarEscala" style="padding:10px 24px;background:#2e7d32;color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:bold;cursor:pointer;">\uD83D\uDCBE Salvar no Painel</button>' +
-      '<div id="painelSalvarEscala" style="display:none;margin-top:12px;"></div>' +
-      '<p id="msgSalvarEscala" style="margin-top:8px;font-size:12px;color:#777;"></p>';
-    container.appendChild(div);
-    document.getElementById('btnSalvarEscala').onclick = iniciarFluxo;
-  }
-
-  window.injetarBotaoSalvar = function(containerId) {
-    jaInjetou = true;
-    var container = document.getElementById(containerId || 'resultados');
-    if (container) injetarBotao(container);
-  };
-
+  // Fluxo de salvar
   async function iniciarFluxo() {
-    var email = prompt('Digite seu email cadastrado no painel S\u03A8M Online:');
+    var email = prompt('Digite seu email cadastrado no Painel SYM Online:');
     if (!email) return;
     var msg = document.getElementById('msgSalvarEscala');
     var painel = document.getElementById('painelSalvarEscala');
@@ -106,14 +122,14 @@
 
       var sel = document.getElementById('selPac');
       if (sel) sel.onchange = function() { document.getElementById('formNovoPac').style.display = (sel.value === '_novo' || !sel.value) ? 'block' : 'none'; };
-      document.getElementById('btnConfSalvar').onclick = function() { confirmar(email, pacs); };
+      document.getElementById('btnConfSalvar').onclick = function() { confirmar(email); };
     } catch(e) {
       if (e.message && e.message.includes('Failed')) { msg.innerHTML = '\u274C Email nao cadastrado. <a href="../online/" target="_blank">Inscreva-se primeiro</a>.'; msg.style.color = '#c62828'; }
       else { msg.textContent = '\u274C Erro: ' + e.message; msg.style.color = '#c62828'; }
     }
   }
 
-  async function confirmar(email, pacs) {
+  async function confirmar(email) {
     var msg = document.getElementById('msgSalvarEscala');
     var sel = document.getElementById('selPac');
     var pacId = sel ? sel.value : '';
@@ -134,34 +150,22 @@
       pacNome = opt.dataset.nome || opt.text;
     }
 
-    var dados = window._escalaDados;
-    if (!dados) {
-      var el = document.getElementById('resultados');
-      if (el) { dados = { escala: document.title.replace(/\s*[-\u2013|].*/,'').trim(), resultadoHTML: el.innerText, data: new Date().toISOString() }; }
+    var dados = window._escalaDados || {};
+    if (!dados.escala) {
+      dados.escala = document.title.replace(/\s*[-\u2013|].*/,'').trim();
+      dados.data = new Date().toISOString();
     }
-    if (!dados) { alert('Calcule os resultados primeiro.'); return; }
     dados.pacienteId = pacId;
     dados.paciente = pacNome;
-
-    if (!window._escalaPdfBase64 && typeof gerarRelatorioPDF === 'function' && window.jspdf) {
-      try {
-        var _realSave = window.jspdf.jsPDF.prototype.save;
-        var _realAlert = window.alert;
-        window.jspdf.jsPDF.prototype.save = function(f) { window._escalaPdfBase64 = this.output('datauristring'); };
-        window.alert = function() {};
-        gerarRelatorioPDF();
-        window.jspdf.jsPDF.prototype.save = _realSave;
-        window.alert = _realAlert;
-      } catch(e) { if(_realSave) window.jspdf.jsPDF.prototype.save = _realSave; if(_realAlert) window.alert = _realAlert; }
-    }
     if (window._escalaPdfBase64) { dados.pdfBase64 = window._escalaPdfBase64; }
+
     msg.textContent = 'Salvando...'; msg.style.color = '#555';
     try {
       var sid = 'esc-' + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
       var resp = await fetch(API + '/save-escala', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({sessionId:sid, email:email, data:dados}) });
       var r2 = await resp.json();
-      if (r2.ok) { msg.textContent = '\u2705 Salvo! Acesse seu painel para ver o historico.'; msg.style.color='#2e7d32'; document.getElementById('painelSalvarEscala').style.display='none'; }
-      else if (resp.status===403) { msg.innerHTML = '\u274C Email nao cadastrado. <a href="../online/" target="_blank">Inscreva-se primeiro</a>.'; msg.style.color='#c62828'; }
+      if (r2.ok) { msg.textContent = '\u2705 Salvo! Acesse seu painel para ver o resultado completo.'; msg.style.color='#2e7d32'; document.getElementById('painelSalvarEscala').style.display='none'; }
+      else if (resp.status===403) { msg.innerHTML = '\u274C Email nao cadastrado. <a href="../online/" target="_blank">Inscreva-se gratuitamente</a>.'; msg.style.color='#c62828'; }
       else { msg.textContent = '\u274C ' + (r2.error||'Erro'); msg.style.color='#c62828'; }
     } catch(e) { msg.textContent = '\u274C Erro: '+e.message; msg.style.color='#c62828'; }
   }
