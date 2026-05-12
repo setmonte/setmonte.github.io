@@ -23,11 +23,12 @@
   // Interceptar jsPDF.save — captura PDF + mostra convite para salvar no painel
   function instalarInterceptor() {
     if (!window.jspdf || !window.jspdf.jsPDF) return;
+    if (window._interceptorInstalado) return;
+    window._interceptorInstalado = true;
     var _origSave = window.jspdf.jsPDF.prototype.save;
     window.jspdf.jsPDF.prototype.save = function(filename) {
       try { window._escalaPdfBase64 = this.output('datauristring'); } catch(e) {}
       _origSave.call(this, filename);
-      // Apos gerar PDF, mostrar convite para salvar no painel
       setTimeout(function() { mostrarConviteSalvar(); }, 500);
     };
   }
@@ -36,6 +37,8 @@
     instalarInterceptor();
   } else {
     document.addEventListener('DOMContentLoaded', instalarInterceptor);
+    setTimeout(instalarInterceptor, 1000);
+    setTimeout(instalarInterceptor, 3000);
   }
 
   // Mostrar convite apos gerar PDF
