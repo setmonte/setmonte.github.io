@@ -728,19 +728,10 @@
                 </div>
             `;
 
-            // Botao salvar no painel
-            html += `
-                <div style="margin-top:20px;padding:15px;background:#e8f5e9;border:1px solid #2e7d32;border-radius:8px;text-align:center;">
-                    <p style="font-size:13px;color:#555;margin-bottom:8px;">Quer guardar este resultado no seu painel? <a href="../online/" target="_blank">Inscreva-se gratuitamente</a></p>
-                    <button onclick="salvarEscalaNoPanel()" style="padding:10px 24px;background:#2e7d32;color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:bold;cursor:pointer;">💾 Salvar no Painel</button>
-                    <p id="msgSalvarEscala" style="margin-top:8px;font-size:12px;color:#777;"></p>
-                </div>
-            `;
-
             container.innerHTML = html;
             container.style.display = 'block';
 
-            // Guardar dados para salvar
+            // Guardar dados e injetar botão salvar
             window._escalaDados = {
                 escala: 'BAPQ',
                 paciente: document.getElementById('nome').value || 'N/I',
@@ -751,6 +742,7 @@
                 sexo: sexo,
                 data: new Date().toISOString()
             };
+            if (window.injetarBotaoSalvar) injetarBotaoSalvar('resultados');
         }
 
         // Obter interpretação baseada na validação brasileira
@@ -958,28 +950,6 @@
             doc.save(nomeArquivo);
         }
 
-        // Salvar escala no painel online
-        async function salvarEscalaNoPanel() {
-            var dados = window._escalaDados;
-            if (!dados) { alert('Calcule os resultados primeiro.'); return; }
-            var email = prompt('Digite seu email cadastrado no painel SΨM Online:');
-            if (!email) return;
-            var msg = document.getElementById('msgSalvarEscala');
-            msg.textContent = 'Salvando...';
-            try {
-                var API = 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
-                var sid = 'esc-' + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
-                var resp = await fetch(API + '/save-escala', {
-                    method: 'POST',
-                    headers: {'Content-Type':'application/json'},
-                    body: JSON.stringify({ sessionId: sid, email: email, data: dados })
-                });
-                var r = await resp.json();
-                if (r.ok) { msg.textContent = '✅ Salvo! Acesse seu painel para ver o historico.'; msg.style.color = '#2e7d32'; }
-                else { msg.textContent = '❌ Erro: ' + (r.error||'tente novamente'); msg.style.color = '#c62828'; }
-            } catch(e) { msg.textContent = '❌ Erro de conexao: ' + e.message; msg.style.color = '#c62828'; }
-        }
-
         // Limpar dados
         function limparDados() {
             if (confirm('Tem certeza que deseja limpar todos os dados? Esta ação não pode ser desfeita.')) {
@@ -1006,5 +976,6 @@
             document.getElementById('data').value = new Date().toISOString().split('T')[0];
         });
     </script>
+    <script src="salvar-escala.js"></script>
 </body>
 </html>
