@@ -20,17 +20,24 @@
     inserirMensagemTopo();
   }
 
-  // Interceptar jsPDF.save — captura PDF + mostra convite para salvar no painel
+  // Interceptar jsPDF — patch no construtor para capturar save de cada instancia
   function instalarInterceptor() {
     if (!window.jspdf || !window.jspdf.jsPDF) return;
     if (window._interceptorInstalado) return;
     window._interceptorInstalado = true;
-    var _origSave = window.jspdf.jsPDF.prototype.save;
-    window.jspdf.jsPDF.prototype.save = function(filename) {
-      try { window._escalaPdfBase64 = this.output('datauristring'); } catch(e) {}
-      _origSave.call(this, filename);
-      setTimeout(function() { mostrarConviteSalvar(); }, 500);
+    var _OrigJsPDF = window.jspdf.jsPDF;
+    window.jspdf.jsPDF = function() {
+      var doc = new (Function.prototype.bind.apply(_OrigJsPDF, [null].concat(Array.prototype.slice.call(arguments))))();
+      var _origSave = doc.save.bind(doc);
+      doc.save = function(filename) {
+        try { window._escalaPdfBase64 = doc.output('datauristring'); } catch(e) {}
+        _origSave(filename);
+        setTimeout(function() { mostrarConviteSalvar(); }, 500);
+      };
+      return doc;
     };
+    window.jspdf.jsPDF.API = _OrigJsPDF.API;
+    window.jspdf.jsPDF.prototype = _OrigJsPDF.prototype;
   }
 
   if (window.jspdf && window.jspdf.jsPDF) {
