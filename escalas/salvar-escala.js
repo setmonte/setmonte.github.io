@@ -4,6 +4,25 @@
   var API = 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
   var jaInjetou = false;
 
+  // Interceptar jsPDF.save para capturar copia do PDF
+  if (window.jspdf && window.jspdf.jsPDF) {
+    var _origSave = window.jspdf.jsPDF.prototype.save;
+    window.jspdf.jsPDF.prototype.save = function(filename) {
+      try { window._escalaPdfBase64 = this.output('datauristring'); } catch(e) {}
+      _origSave.call(this, filename);
+    };
+  } else {
+    document.addEventListener('DOMContentLoaded', function() {
+      if (window.jspdf && window.jspdf.jsPDF) {
+        var _origSave = window.jspdf.jsPDF.prototype.save;
+        window.jspdf.jsPDF.prototype.save = function(filename) {
+          try { window._escalaPdfBase64 = this.output('datauristring'); } catch(e) {}
+          _origSave.call(this, filename);
+        };
+      }
+    });
+  }
+
   function inserirMensagemTopo() {
     var form = document.querySelector('form') || document.querySelector('.container') || document.body.firstElementChild;
     if (!form) return;
@@ -124,17 +143,7 @@
     dados.pacienteId = pacId;
     dados.paciente = pacNome;
 
-    msg.textContent = 'Gerando PDF...'; msg.style.color = '#555';
-    try {
-      if (typeof gerarRelatorioPDF === 'function' && window.jspdf) {
-        var _origSave = window.jspdf.jsPDF.prototype.save;
-        var _pdfData = null;
-        window.jspdf.jsPDF.prototype.save = function() { _pdfData = this.output('datauristring'); };
-        gerarRelatorioPDF();
-        window.jspdf.jsPDF.prototype.save = _origSave;
-        if (_pdfData) { dados.pdfBase64 = _pdfData; }
-      }
-    } catch(pdfErr) {}
+    if (window._escalaPdfBase64) { dados.pdfBase64 = window._escalaPdfBase64; }
     msg.textContent = 'Salvando...'; msg.style.color = '#555';
     try {
       var sid = 'esc-' + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
