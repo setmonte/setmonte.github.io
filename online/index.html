@@ -1234,22 +1234,49 @@
       var d = r.data || {};
       var jsPDF = window.jspdf.jsPDF;
       var doc = new jsPDF();
-      var maxY = 283;
-      // Cabecalho compacto
-      doc.setFontSize(12); doc.setFont(undefined,'bold'); doc.setTextColor(46,125,50);
-      doc.text((d.escala || 'Escala') + ' - ' + (d.paciente||'N/I'), 15, 12);
-      doc.setFontSize(8); doc.setFont(undefined,'normal'); doc.setTextColor(100,100,100);
-      doc.text('Data: ' + (r.date ? new Date(r.date).toLocaleString('pt-BR') : '-') + (d.escore != null ? '  |  Escore: '+d.escore : '') + (d.media != null ? '  |  Media: '+d.media : ''), 15, 18);
-      if (d.classificacao) { doc.setFont(undefined,'bold'); doc.setTextColor(0,0,0); doc.text('Classificacao: ' + d.classificacao, 15, 23); }
-      doc.setDrawColor(46,125,50); doc.line(15, 25, 195, 25);
-      var y = 29;
-      if (d.resultadoHTML) {
-        doc.setFontSize(8); doc.setFont(undefined,'normal'); doc.setTextColor(0,0,0);
+      var maxY = 280;
+      doc.setFillColor(46,125,50); doc.rect(0,0,210,30,'F');
+      doc.setTextColor(255,255,255); doc.setFontSize(14); doc.setFont(undefined,'bold');
+      doc.text((d.escala||'Escala') + ' - RELATORIO', 105, 12, {align:'center'});
+      doc.setFontSize(9); doc.setFont(undefined,'normal');
+      doc.text('Paciente: ' + (d.paciente||'N/I'), 105, 20, {align:'center'});
+      doc.text('Data: ' + (r.date ? new Date(r.date).toLocaleDateString('pt-BR') : '-'), 105, 26, {align:'center'});
+      var y = 38;
+      doc.setTextColor(0,0,0); doc.setFontSize(10); doc.setFont(undefined,'bold');
+      if (d.escore != null) { doc.text('Escore Total: ' + d.escore, 15, y); y += 6; }
+      if (d.media != null) { doc.text('Media: ' + d.media, 15, y); y += 6; }
+      if (d.classificacao) { doc.text('Classificacao: ' + d.classificacao, 15, y); y += 6; }
+      if (d.sexo) { doc.setFont(undefined,'normal'); doc.text('Sexo: ' + d.sexo, 15, y); y += 6; }
+      y += 4;
+      if (d.dominios && typeof d.dominios === 'object') {
+        doc.setFillColor(46,125,50); doc.rect(15, y-3, 180, 8, 'F');
+        doc.setTextColor(255,255,255); doc.setFontSize(9); doc.setFont(undefined,'bold');
+        doc.text('DOMINIOS / SUBESCALAS', 20, y+2); y += 12;
+        doc.setTextColor(0,0,0); doc.setFontSize(8); doc.setFont(undefined,'normal');
+        var keys = Object.keys(d.dominios);
+        keys.forEach(function(k, i) {
+          if (y > maxY) { doc.addPage(); y = 15; }
+          var v = d.dominios[k];
+          var linha = k + ': ';
+          if (typeof v === 'object' && v !== null) {
+            if (v.pontuacao != null) linha += 'Pontuacao=' + v.pontuacao;
+            if (v.media != null) linha += ' | Media=' + v.media;
+            if (v.classificacao) linha += ' | ' + v.classificacao;
+            if (v.itens != null) linha += ' (' + v.itens + ' itens)';
+            if (v.max != null) linha += ' / ' + v.max;
+          } else { linha += v; }
+          if (i % 2 === 0) { doc.setFillColor(245,245,245); doc.rect(15, y-3, 180, 6, 'F'); }
+          doc.text(linha, 18, y); y += 6;
+        });
+        y += 4;
+      }
+      if (d.resultadoHTML && !d.dominios) {
+        doc.setFontSize(7); doc.setFont(undefined,'normal');
         var linhas = doc.splitTextToSize(d.resultadoHTML, 180);
-        linhas.forEach(function(l) { if(y>maxY){doc.addPage();y=12;} doc.text(l,15,y); y+=3.8; });
+        linhas.forEach(function(l) { if(y>maxY){doc.addPage();y=12;} doc.text(l,15,y); y+=3.5; });
       }
       doc.setFontSize(6); doc.setTextColor(150,150,150);
-      doc.text('SYM Online | ' + new Date().toLocaleString('pt-BR'), 15, 293);
+      doc.text('SYM Online | Gerado em ' + new Date().toLocaleString('pt-BR'), 105, 293, {align:'center'});
       doc.save((d.escala||'Escala').replace(/\s+/g,'_') + '_' + (d.paciente||'').replace(/\s+/g,'_') + '.pdf');
     }
 
