@@ -1,4 +1,4 @@
-// salvar-escala.js — Salvar no Painel automaticamente ao gerar PDF
+// salvar-escala.js — Salvar no Painel SYM
 
 (function() {
   var API = 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
@@ -20,47 +20,14 @@
     inserirMensagemTopo();
   }
 
-  // Interceptar download de PDF — jsPDF cria <a> com blob URL para download
-  function instalarInterceptor() {
-    if (window._interceptorInstalado) return;
-    window._interceptorInstalado = true;
-    var _origCreate = document.createElement.bind(document);
-    document.createElement = function(tag) {
-      var el = _origCreate(tag);
-      if (tag.toLowerCase() === 'a') {
-        var _origClick = el.click;
-        Object.defineProperty(el, 'click', {
-          value: function() {
-            if (el.download && el.href && el.href.indexOf('blob:') === 0) {
-              // PDF sendo baixado — capturar via fetch do blob
-              try {
-                fetch(el.href).then(function(r){return r.blob();}).then(function(blob){
-                  var reader = new FileReader();
-                  reader.onload = function() { window._escalaPdfBase64 = reader.result; };
-                  reader.readAsDataURL(blob);
-                });
-              } catch(e) {}
-              setTimeout(function() { mostrarConviteSalvar(); }, 800);
-            }
-            return _origClick.call(el);
-          }
-        });
-      }
-      return el;
-    };
-  }
-
-  instalarInterceptor();
-
-  // Mostrar convite apos gerar PDF
+  // Mostrar convite apos calcular resultados
   function mostrarConviteSalvar() {
     if (jaInjetou) return;
     jaInjetou = true;
     var target = document.getElementById('resultados') || document.getElementById('resultsSection') || document.getElementById('result') || document.getElementById('results');
-    if (!target) {
-      target = document.querySelector('.resultados') || document.querySelector('.container');
-    }
+    if (!target) target = document.querySelector('.resultados') || document.querySelector('.container');
     if (!target) return;
+    if (document.getElementById('bloco-salvar-painel')) return;
 
     var div = document.createElement('div');
     div.id = 'bloco-salvar-painel';
@@ -72,27 +39,20 @@
       '<p id="msgSalvarEscala" style="margin-top:8px;font-size:12px;color:#777;"></p>';
     target.appendChild(div);
     document.getElementById('btnSalvarEscala').onclick = iniciarFluxo;
-    div.scrollIntoView({behavior:'smooth'});
   }
 
-  // Tambem injetar quando calcularResultados é chamado (para escalas que nao geram PDF automatico)
+  // Chamado pelas escalas apos calcular resultados
   window.injetarBotaoSalvar = function(containerId) {
-    if (jaInjetou) return;
-    jaInjetou = true;
-    var container = document.getElementById(containerId || 'resultados');
-    if (container) {
-      setTimeout(function() { mostrarConviteSalvar(); }, 300);
-    }
+    mostrarConviteSalvar();
   };
 
-  // Observador para escalas que mostram resultados sem chamar injetarBotaoSalvar
+  // Observer para escalas que nao chamam injetarBotaoSalvar
   function iniciarObservador() {
-    var el = document.getElementById('resultados');
+    var el = document.getElementById('resultados') || document.getElementById('result');
     if (!el) return;
     var observer = new MutationObserver(function() {
       if (el.style.display !== 'none' && el.innerHTML.trim() && !jaInjetou) {
-        // Esperar um pouco caso o PDF seja gerado logo em seguida
-        setTimeout(function() { if (!jaInjetou) mostrarConviteSalvar(); }, 1000);
+        setTimeout(function() { mostrarConviteSalvar(); }, 500);
       }
     });
     observer.observe(el, { attributes: true, childList: true, attributeFilter: ['style'] });
@@ -102,6 +62,26 @@
     document.addEventListener('DOMContentLoaded', iniciarObservador);
   } else {
     iniciarObservador();
+  }
+
+  // Gerar PDF silenciosamente (sem download) para capturar base64
+  function gerarPdfSilencioso() {
+    if (!window.jspdf || !window.jspdf.jsPDF || typeof gerarRelatorioPDF !== 'function') return null;
+    try {
+      var _orig = window.jspdf.jsPDF;
+      var pdfCapturado = null;
+      // Criar wrapper temporario que captura sem salvar
+      var _origProto = _orig.prototype.save;
+      _orig.prototype.save = function() { pdfCapturado = this.output('datauristring'); };
+      var _origAlert = window.alert;
+      window.alert = function() {};
+      gerarRelatorioPDF();
+      _orig.prototype.save = _origProto;
+      window.alert = _origAlert;
+      return pdfCapturado;
+    } catch(e) {
+      return null;
+    }
   }
 
   // Fluxo de salvar
@@ -171,7 +151,11 @@
     }
     dados.pacienteId = pacId;
     dados.paciente = pacNome;
-    if (window._escalaPdfBase64) { dados.pdfBase64 = window._escalaPdfBase64; }
+
+    // Gerar PDF silenciosamente
+    msg.textContent = 'Gerando PDF...'; msg.style.color = '#555';
+    var pdf = gerarPdfSilencioso();
+    if (pdf) { dados.pdfBase64 = pdf; }
 
     msg.textContent = 'Salvando...'; msg.style.color = '#555';
     try {
