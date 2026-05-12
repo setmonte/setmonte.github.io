@@ -64,24 +64,18 @@
     iniciarObservador();
   }
 
-  // Gerar PDF silenciosamente (sem download) para capturar base64
+  // Gerar PDF usando o gerador central
   function gerarPdfSilencioso() {
-    if (!window.jspdf || !window.jspdf.jsPDF || typeof gerarRelatorioPDF !== 'function') return null;
+    if (!window.jspdf || typeof gerarPDFCompleto !== 'function') return null;
     try {
-      var _orig = window.jspdf.jsPDF;
-      var pdfCapturado = null;
-      // Criar wrapper temporario que captura sem salvar
-      var _origProto = _orig.prototype.save;
-      _orig.prototype.save = function() { pdfCapturado = this.output('datauristring'); };
-      var _origAlert = window.alert;
-      window.alert = function() {};
-      gerarRelatorioPDF();
-      _orig.prototype.save = _origProto;
-      window.alert = _origAlert;
-      return pdfCapturado;
-    } catch(e) {
-      return null;
-    }
+      // Patch temporario para nao abrir download
+      var _orig = window.jspdf.jsPDF.prototype.save;
+      var pdfData = null;
+      window.jspdf.jsPDF.prototype.save = function() { pdfData = this.output('datauristring'); };
+      gerarPDFCompleto(window._escalaDados);
+      window.jspdf.jsPDF.prototype.save = _orig;
+      return pdfData;
+    } catch(e) { return null; }
   }
 
   // Fluxo de salvar
