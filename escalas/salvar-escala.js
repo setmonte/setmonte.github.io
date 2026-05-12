@@ -143,6 +143,14 @@
     dados.pacienteId = pacId;
     dados.paciente = pacNome;
 
+    if (!window._escalaPdfBase64 && typeof gerarRelatorioPDF === 'function' && window.jspdf) {
+      try {
+        var _realSave = window.jspdf.jsPDF.prototype.save;
+        window.jspdf.jsPDF.prototype.save = function(f) { window._escalaPdfBase64 = this.output('datauristring'); };
+        gerarRelatorioPDF();
+        window.jspdf.jsPDF.prototype.save = _realSave;
+      } catch(e) {}
+    }
     if (window._escalaPdfBase64) { dados.pdfBase64 = window._escalaPdfBase64; }
     msg.textContent = 'Salvando...'; msg.style.color = '#555';
     try {
