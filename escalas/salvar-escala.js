@@ -118,7 +118,7 @@
     var dados = window._escalaDados;
     if (!dados) {
       var el = document.getElementById('resultados');
-      if (el) { dados = { escala: document.title.replace(/\s*[-\u2013|].*/,'').trim(), resultadoHTML: el.innerText.substring(0,2000), data: new Date().toISOString() }; }
+      if (el) { dados = { escala: document.title.replace(/\s*[-\u2013|].*/,'').trim(), resultadoHTML: el.innerText, data: new Date().toISOString() }; }
     }
     if (!dados) { alert('Calcule os resultados primeiro.'); return; }
     dados.pacienteId = pacId;
