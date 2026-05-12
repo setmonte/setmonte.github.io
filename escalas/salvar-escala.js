@@ -50,6 +50,7 @@
       });
       var r = await resp.json();
       if (r.ok) { msg.textContent = '\u2705 Salvo! Acesse seu painel para ver o historico.'; msg.style.color = '#2e7d32'; }
+      else if (resp.status === 403) { msg.innerHTML = '\u274C Email nao cadastrado. <a href="../online/" target="_blank">Inscreva-se primeiro no painel</a> e tente novamente.'; msg.style.color = '#c62828'; }
       else { msg.textContent = '\u274C Erro: ' + (r.error || 'tente novamente'); msg.style.color = '#c62828'; }
     } catch (e) { msg.textContent = '\u274C Erro de conexao: ' + e.message; msg.style.color = '#c62828'; }
   }
