@@ -251,6 +251,9 @@
         <h2>Nova Aplicacao BAE</h2>
         <p style="margin-bottom:12px;">Preencha os dados do paciente para a Bateria de Atencao Eletronica.</p>
         <div class="form-row">
+          <label>Paciente cadastrado: <select id="baeSelPac" onchange="preencherPaciente('bae')" style="width:250px;"><option value="">-- Digitar manualmente --</option></select></label>
+        </div>
+        <div class="form-row">
           <label>Nome: <input type="text" id="baePatientName" placeholder="Nome do paciente" style="width:220px;"></label>
           <label>Data Nasc: <input type="date" id="baeBirthDate"></label>
           <label>CPF: <input type="text" id="baeCpf" placeholder="XXX.XXX.XXX-XX" maxlength="14" style="width:150px;" oninput="maskCPF(this)"></label>
@@ -292,6 +295,9 @@
         <h2>Nova Aplicacao TRMV</h2>
         <p style="margin-bottom:12px;">Preencha os dados do paciente para o Teste de Reconhecimento de Memoria Visual.</p>
         <div class="form-row">
+          <label>Paciente cadastrado: <select id="trmvSelPac" onchange="preencherPaciente('trmv')" style="width:250px;"><option value="">-- Digitar manualmente --</option></select></label>
+        </div>
+        <div class="form-row">
           <label>Nome: <input type="text" id="trmvPatientName" placeholder="Nome do paciente" style="width:220px;"></label>
           <label>Data Nasc: <input type="date" id="trmvBirthDate"></label>
           <label>CPF: <input type="text" id="trmvCpf" placeholder="XXX.XXX.XXX-XX" maxlength="14" style="width:150px;" oninput="maskCPF(this)"></label>
@@ -331,6 +337,9 @@
       <div id="newTestSection" class="card hidden">
         <h2>Nova Aplicacao</h2>
         <p style="margin-bottom:12px;">Preencha os dados do paciente e clique em "Iniciar Teste".</p>
+        <div class="form-row">
+          <label>Paciente cadastrado: <select id="tecfeSelPac" onchange="preencherPaciente('tecfe')" style="width:250px;"><option value="">-- Digitar manualmente --</option></select></label>
+        </div>
         <div class="form-row">
           <label>Nome: <input type="text" id="onPatientName" placeholder="Nome do paciente" style="width:220px;"></label>
           <label>Data Nasc: <input type="date" id="onBirthDate"></label>
@@ -519,6 +528,8 @@
         document.getElementById('baeCreditsCount').textContent = '?';
         document.getElementById('trmvCreditsCount').textContent = '?';
       }
+      // Carregar pacientes para os dropdowns
+      loadPacientes();
     }
 
     function showNewTest() {
@@ -610,7 +621,8 @@
           education: document.getElementById('onEducation').value,
           evaluator: document.getElementById('onEvaluator').value,
           crp: document.getElementById('onCrp').value,
-          email: currentUser
+          email: currentUser,
+          pacienteId: document.getElementById('tecfeSelPac').value || ''
         };
         await fetch(API_URL + '/save-result', {
           method: 'POST',
@@ -904,7 +916,8 @@
           education: document.getElementById('baeEducation').value,
           evaluator: document.getElementById('baeEvaluator').value,
           crp: document.getElementById('baeCrp').value,
-          email: currentUser
+          email: currentUser,
+          pacienteId: document.getElementById('baeSelPac').value || ''
         };
         await fetch(API_URL + '/save-result', {
           method: 'POST',
@@ -1038,8 +1051,9 @@
         var resp = await fetch(API_URL + '/get-pacientes?email=' + encodeURIComponent(currentUser));
         var data = await resp.json();
         _pacientesCache = data.pacientes || [];
+        popularDropdownsPacientes();
         if (_pacientesCache.length > 0) {
-          var html = '<table class="results-table"><tr><th>Nome</th><th>Data Nasc.</th><th>CPF</th><th>Testes</th><th>Acao</th></tr>';
+          var html = '<table class="results-table"><tr><th>Nome</th><th>Data Nasc.</th><th>CPF</th><th>Historico</th><th>Acao</th></tr>';
           _pacientesCache.forEach(function(p) {
             html += '<tr>';
             html += '<td>' + p.nome + '</td>';
@@ -1059,6 +1073,35 @@
       }
     }
 
+    function popularDropdownsPacientes() {
+      ['baeSelPac','trmvSelPac','tecfeSelPac'].forEach(function(id) {
+        var sel = document.getElementById(id);
+        if (!sel) return;
+        var val = sel.value;
+        sel.innerHTML = '<option value="">-- Digitar manualmente --</option>';
+        _pacientesCache.forEach(function(p) {
+          sel.innerHTML += '<option value="' + p.id + '" data-nome="' + p.nome + '" data-dn="' + (p.dataNascimento||'') + '" data-cpf="' + (p.cpf||'') + '">' + p.nome + ' (' + (p.dataNascimento||'?') + ')</option>';
+        });
+        sel.value = val;
+      });
+    }
+
+    function preencherPaciente(tipo) {
+      var sel = document.getElementById(tipo + 'SelPac');
+      if (!sel || !sel.value) return;
+      var opt = sel.options[sel.selectedIndex];
+      var prefixo = tipo === 'tecfe' ? 'on' : tipo;
+      var campoNome = document.getElementById(prefixo + 'PatientName') || document.getElementById(prefixo + 'PatientName');
+      var campoDN = document.getElementById(prefixo + 'BirthDate') || document.getElementById(prefixo + 'BirthDate');
+      var campoCPF = document.getElementById(prefixo + 'Cpf') || document.getElementById(prefixo + 'Cpf');
+      if (tipo === 'tecfe') { campoNome = document.getElementById('onPatientName'); campoDN = document.getElementById('onBirthDate'); campoCPF = document.getElementById('onCpf'); }
+      else if (tipo === 'bae') { campoNome = document.getElementById('baePatientName'); campoDN = document.getElementById('baeBirthDate'); campoCPF = document.getElementById('baeCpf'); }
+      else if (tipo === 'trmv') { campoNome = document.getElementById('trmvPatientName'); campoDN = document.getElementById('trmvBirthDate'); campoCPF = document.getElementById('trmvCpf'); }
+      if (campoNome) campoNome.value = opt.dataset.nome || '';
+      if (campoDN) campoDN.value = opt.dataset.dn || '';
+      if (campoCPF) campoCPF.value = opt.dataset.cpf || '';
+    }
+
     async function deletePaciente(id) {
       if (!confirm('Apagar este paciente?')) return;
       try {
@@ -1071,8 +1114,65 @@
       } catch(e) {}
     }
 
-    function verHistoricoPaciente(id, nome) {
-      alert('Historico de ' + nome + ' — funcionalidade em desenvolvimento.');
+    async function verHistoricoPaciente(pacId, nome) {
+      var el = document.getElementById('pacientesList');
+      el.innerHTML = '<p>Carregando historico de <strong>' + nome + '</strong>...</p>';
+      try {
+        var resp = await fetch(API_URL + '/get-results?email=' + encodeURIComponent(currentUser));
+        var data = await resp.json();
+        var resultados = (data.results || []).filter(function(r) {
+          var d = r.data || {};
+          var fd = d.formData || {};
+          return d.pacienteId === pacId || fd.pacienteId === pacId;
+        });
+        // Tambem buscar escalas
+        var resp2 = await fetch(API_URL + '/get-results?email=' + encodeURIComponent(currentUser) + '&tipo=escala');
+        var data2 = await resp2.json();
+        var escalas = (data2.results || []).filter(function(r) {
+          return r.data && r.data.pacienteId === pacId;
+        });
+        resultados = resultados.concat(escalas);
+        resultados.sort(function(a,b) { return (b.date||'').localeCompare(a.date||''); });
+
+        if (resultados.length > 0) {
+          var html = '<h3 style="color:#2e7d32;margin-bottom:10px;">Historico de ' + nome + '</h3>';
+          html += '<button class="btn btn-green" style="padding:5px 12px;font-size:12px;margin-bottom:10px;" onclick="exportarHistoricoPaciente(\'' + pacId + '\',\'' + nome.replace(/'/g,'') + '\')">Exportar Excel</button>';
+          html += ' <button class="btn btn-blue" style="padding:5px 12px;font-size:12px;margin-bottom:10px;" onclick="loadPacientes()">Voltar</button>';
+          html += '<table class="results-table"><tr><th>Data</th><th>Tipo</th><th>Detalhes</th></tr>';
+          resultados.forEach(function(r) {
+            var d = r.data || {};
+            var date = r.date ? new Date(r.date).toLocaleString('pt-BR') : '-';
+            var tipo = r.tipo || 'tecfe';
+            var detalhe = '';
+            if (tipo === 'escala') { detalhe = (d.escala||'Escala') + ' — ' + (d.classificacao||d.escore||''); }
+            else if (tipo === 'bae') { detalhe = 'Status: ' + (d.status||'-'); }
+            else if (tipo === 'trmv') { detalhe = 'Retencao: ' + (d.indiceRetencao ? Math.round(d.indiceRetencao)+'%' : '-'); }
+            else { var s=d.stats||{}; detalhe = 'Cat: '+(s.completedCategories||0)+' Erros: '+(s.pctErrors?s.pctErrors.toFixed(1):'0')+'%'; }
+            html += '<tr><td>'+date+'</td><td style="text-transform:uppercase;font-weight:bold;">'+tipo+'</td><td>'+detalhe+'</td></tr>';
+          });
+          html += '</table>';
+          el.innerHTML = html;
+        } else {
+          el.innerHTML = '<p style="color:#777;">Nenhum resultado encontrado para ' + nome + '.</p><button class="btn btn-blue" style="padding:5px 12px;font-size:12px;margin-top:10px;" onclick="loadPacientes()">Voltar</button>';
+        }
+      } catch(e) { el.innerHTML = '<p style="color:#c62828;">Erro ao carregar historico.</p><button class="btn btn-blue" style="padding:5px 12px;font-size:12px;margin-top:10px;" onclick="loadPacientes()">Voltar</button>'; }
+    }
+
+    function exportarHistoricoPaciente(pacId, nome) {
+      // Pegar dados da tabela visivel
+      var table = document.querySelector('#pacientesList table');
+      if (!table) return;
+      var rows = [];
+      table.querySelectorAll('tr').forEach(function(tr, i) {
+        if (i === 0) return;
+        var cells = tr.querySelectorAll('td');
+        rows.push({ 'Data': cells[0]?.textContent||'', 'Tipo': cells[1]?.textContent||'', 'Detalhes': cells[2]?.textContent||'' });
+      });
+      if (rows.length === 0) { alert('Nenhum dado para exportar.'); return; }
+      var ws = XLSX.utils.json_to_sheet(rows);
+      var wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Historico');
+      XLSX.writeFile(wb, 'Historico_' + nome.replace(/\s+/g,'_') + '_' + new Date().toISOString().slice(0,10) + '.xlsx');
     }
 
     // ===== FUNCOES ESCALAS =====
@@ -1207,7 +1307,8 @@
           education: document.getElementById('trmvEducation').value,
           evaluator: document.getElementById('trmvEvaluator').value,
           crp: document.getElementById('trmvCrp').value,
-          email: currentUser
+          email: currentUser,
+          pacienteId: document.getElementById('trmvSelPac').value || ''
         };
         await fetch(API_URL + '/save-result', {
           method: 'POST',
