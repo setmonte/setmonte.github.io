@@ -28,7 +28,7 @@
     if (!form) return;
     var box = document.createElement('div');
     box.style.cssText = 'margin:10px auto 15px;padding:12px 15px;background:#e8f5e9;border:2px solid #2e7d32;border-radius:8px;max-width:600px;text-align:center;animation:piscar 2s ease-in-out 3;';
-    box.innerHTML = '<style>@keyframes piscar{0%,100%{opacity:1}50%{opacity:0.3}}</style><p style="font-size:16px;color:#2e7d32;margin:0;font-weight:bold;">Se quiser salvar os resultados no seu painel, <a href="../online/" target="_blank">inscreva-se aqui</a>.</p>';
+    box.innerHTML = '<style>@keyframes piscar{0%,100%{opacity:1}50%{opacity:0.3}}</style><p style="font-size:15px;color:#2e7d32;margin:0;font-weight:bold;">Profissional? Acompanhe os resultados dos seus pacientes no <a href="../online/" target="_blank" style="color:#1565c0;">Painel SYM</a> (gratuito).</p>';
     form.insertBefore(box, form.firstChild);
   }
 
@@ -61,7 +61,7 @@
     var div = document.createElement('div');
     div.id = 'bloco-salvar-painel';
     div.style.cssText = 'margin-top:20px;padding:15px;background:#e8f5e9;border:1px solid #2e7d32;border-radius:8px;text-align:center;';
-    div.innerHTML = '<p style="font-size:13px;color:#555;margin-bottom:8px;">Se quiser salvar os resultados no seu painel, <a href="../online/" target="_blank">inscreva-se aqui</a>.</p>' +
+    div.innerHTML = '<p style="font-size:13px;color:#555;margin-bottom:8px;">Salve uma copia dos resultados no seu <a href="../online/" target="_blank">Painel SYM</a> para acompanhar seu paciente.</p>' +
       '<button id="btnSalvarEscala" style="padding:10px 24px;background:#2e7d32;color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:bold;cursor:pointer;">\uD83D\uDCBE Salvar no Painel</button>' +
       '<div id="painelSalvarEscala" style="display:none;margin-top:12px;"></div>' +
       '<p id="msgSalvarEscala" style="margin-top:8px;font-size:12px;color:#777;"></p>';
