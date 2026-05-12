@@ -37,6 +37,7 @@ function gerarPDFCompleto(dados) {
   doc.setFontSize(9);
   doc.setFont(undefined, 'normal');
   var linha1 = 'Paciente: ' + limpar(dados.paciente || 'N/I');
+  if (dados.idPaciente) linha1 += '   |   ID: ' + dados.idPaciente;
   if (dados.sexo) linha1 += '   |   Sexo: ' + dados.sexo;
   doc.text(linha1, M+4, y+12);
   var linha2 = '';
