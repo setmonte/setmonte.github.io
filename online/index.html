@@ -122,13 +122,12 @@
         <div id="escalasTab" class="tab-content">
           <div style="text-align:center;padding:15px 0;">
             <p style="font-size:15px;color:#2e7d32;font-weight:bold;">Historico de Escalas Aplicadas</p>
-            <p style="font-size:13px;color:#555;margin-top:5px;">Resultados salvos das escalas gratuitas (BAPQ, RAADS-R, PHQ-9, etc.)</p>
+            <p style="font-size:13px;color:#555;margin-top:5px;">Resultados salvos das escalas gratuitas</p>
           </div>
           <div class="btn-row" style="justify-content:center;">
-            <button class="btn btn-blue" onclick="loadEscalasResults()">Atualizar</button>
             <button class="btn btn-red" style="padding:10px 20px;font-size:13px;" onclick="deleteEscalasSelected()">Apagar Selecionados</button>
           </div>
-          <div id="escalasResultsList" style="margin-top:15px;"><p style="color:#777;">Clique em "Atualizar" para carregar.</p></div>
+          <div id="escalasResultsList" style="margin-top:15px;"><p style="color:#777;">Carregando...</p></div>
         </div>
 
         <!-- === ABA PACIENTES === -->
@@ -1120,31 +1119,26 @@
       try {
         var resp = await fetch(API_URL + '/get-results?email=' + encodeURIComponent(currentUser));
         var data = await resp.json();
-        var resultados = (data.results || []).filter(function(r) {
+        var todos = (data.results || []).filter(function(r) {
           var d = r.data || {};
           var fd = d.formData || {};
           return d.pacienteId === pacId || fd.pacienteId === pacId;
         });
-        // Tambem buscar escalas
-        var resp2 = await fetch(API_URL + '/get-results?email=' + encodeURIComponent(currentUser) + '&tipo=escala');
-        var data2 = await resp2.json();
-        var escalas = (data2.results || []).filter(function(r) {
-          return r.data && r.data.pacienteId === pacId;
-        });
-        resultados = resultados.concat(escalas);
-        resultados.sort(function(a,b) { return (b.date||'').localeCompare(a.date||''); });
+        todos.sort(function(a,b) { return (b.date||'').localeCompare(a.date||''); });
+        window._historicoCache = todos;
+        window._historicoNome = nome;
 
-        if (resultados.length > 0) {
+        if (todos.length > 0) {
           var html = '<h3 style="color:#2e7d32;margin-bottom:10px;">Historico de ' + nome + '</h3>';
-          html += '<button class="btn btn-green" style="padding:5px 12px;font-size:12px;margin-bottom:10px;" onclick="exportarHistoricoPaciente(\'' + pacId + '\',\'' + nome.replace(/'/g,'') + '\')">Exportar Excel</button>';
-          html += ' <button class="btn btn-blue" style="padding:5px 12px;font-size:12px;margin-bottom:10px;" onclick="loadPacientes()">Voltar</button>';
+          html += '<button class="btn btn-green" style="padding:6px 14px;font-size:12px;margin-bottom:10px;" onclick="gerarRelatorioPacientePDF()">Relatorio PDF</button>';
+          html += ' <button class="btn btn-blue" style="padding:6px 14px;font-size:12px;margin-bottom:10px;" onclick="loadPacientes()">Voltar</button>';
           html += '<table class="results-table"><tr><th>Data</th><th>Tipo</th><th>Detalhes</th></tr>';
-          resultados.forEach(function(r) {
+          todos.forEach(function(r) {
             var d = r.data || {};
             var date = r.date ? new Date(r.date).toLocaleString('pt-BR') : '-';
             var tipo = r.tipo || 'tecfe';
             var detalhe = '';
-            if (tipo === 'escala') { detalhe = (d.escala||'Escala') + ' — ' + (d.classificacao||d.escore||''); }
+            if (tipo === 'escala') { detalhe = (d.escala||'Escala') + ' - ' + (d.classificacao||d.escore||''); }
             else if (tipo === 'bae') { detalhe = 'Status: ' + (d.status||'-'); }
             else if (tipo === 'trmv') { detalhe = 'Retencao: ' + (d.indiceRetencao ? Math.round(d.indiceRetencao)+'%' : '-'); }
             else { var s=d.stats||{}; detalhe = 'Cat: '+(s.completedCategories||0)+' Erros: '+(s.pctErrors?s.pctErrors.toFixed(1):'0')+'%'; }
@@ -1155,24 +1149,49 @@
         } else {
           el.innerHTML = '<p style="color:#777;">Nenhum resultado encontrado para ' + nome + '.</p><button class="btn btn-blue" style="padding:5px 12px;font-size:12px;margin-top:10px;" onclick="loadPacientes()">Voltar</button>';
         }
-      } catch(e) { el.innerHTML = '<p style="color:#c62828;">Erro ao carregar historico.</p><button class="btn btn-blue" style="padding:5px 12px;font-size:12px;margin-top:10px;" onclick="loadPacientes()">Voltar</button>'; }
+      } catch(e) { el.innerHTML = '<p style="color:#c62828;">Erro ao carregar.</p><button class="btn btn-blue" style="padding:5px 12px;font-size:12px;margin-top:10px;" onclick="loadPacientes()">Voltar</button>'; }
     }
 
-    function exportarHistoricoPaciente(pacId, nome) {
-      // Pegar dados da tabela visivel
-      var table = document.querySelector('#pacientesList table');
-      if (!table) return;
-      var rows = [];
-      table.querySelectorAll('tr').forEach(function(tr, i) {
-        if (i === 0) return;
-        var cells = tr.querySelectorAll('td');
-        rows.push({ 'Data': cells[0]?.textContent||'', 'Tipo': cells[1]?.textContent||'', 'Detalhes': cells[2]?.textContent||'' });
+    function gerarRelatorioPacientePDF() {
+      var todos = window._historicoCache || [];
+      var nome = window._historicoNome || 'Paciente';
+      if (todos.length === 0) { alert('Nenhum resultado.'); return; }
+      var jsPDF = window.jspdf.jsPDF;
+      var doc = new jsPDF();
+      doc.setFillColor(46,125,50); doc.rect(0,0,210,28,'F');
+      doc.setTextColor(255,255,255); doc.setFontSize(15); doc.setFont(undefined,'bold');
+      doc.text('RELATORIO DO PACIENTE', 105, 12, {align:'center'});
+      doc.setFontSize(12); doc.setFont(undefined,'normal');
+      doc.text(nome, 105, 20, {align:'center'});
+      doc.setFontSize(8);
+      doc.text('Sistema SYM Online - Centro de Testagem', 105, 25, {align:'center'});
+      doc.setTextColor(0,0,0); var y = 38;
+      doc.setFontSize(10);
+      doc.text('Total de testes/escalas: ' + todos.length, 15, y); y+=7;
+      doc.text('Periodo: ' + new Date(todos[todos.length-1].date).toLocaleDateString('pt-BR') + ' a ' + new Date(todos[0].date).toLocaleDateString('pt-BR'), 15, y); y+=12;
+      doc.setFontSize(9); doc.setFont(undefined,'bold');
+      doc.setFillColor(46,125,50); doc.setTextColor(255,255,255);
+      doc.rect(15,y-4,180,7,'F');
+      doc.text('Data', 17, y); doc.text('Tipo', 52, y); doc.text('Resultado', 75, y);
+      doc.setTextColor(0,0,0); doc.setFont(undefined,'normal'); y+=8;
+      todos.forEach(function(r) {
+        if (y > 275) { doc.addPage(); y = 20; }
+        var d = r.data || {};
+        var date = r.date ? new Date(r.date).toLocaleDateString('pt-BR') : '-';
+        var tipo = (r.tipo||'tecfe').toUpperCase();
+        var det = '';
+        if (r.tipo==='escala') { det = (d.escala||'') + ' - ' + (d.classificacao||d.escore||''); }
+        else if (r.tipo==='bae') { det = 'Status: ' + (d.status||'-'); }
+        else if (r.tipo==='trmv') { det = 'Retencao: ' + (d.indiceRetencao ? Math.round(d.indiceRetencao)+'%' : '-'); }
+        else { var s=d.stats||{}; det = 'Categorias: '+(s.completedCategories||0)+' | Erros: '+(s.pctErrors?Number(s.pctErrors).toFixed(1):'0')+'%'; }
+        doc.text(date, 17, y); doc.text(tipo, 52, y);
+        var linhas = doc.splitTextToSize(det, 115);
+        linhas.forEach(function(l,i) { doc.text(l, 75, y+i*4); });
+        y += Math.max(linhas.length*4, 6) + 2;
       });
-      if (rows.length === 0) { alert('Nenhum dado para exportar.'); return; }
-      var ws = XLSX.utils.json_to_sheet(rows);
-      var wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Historico');
-      XLSX.writeFile(wb, 'Historico_' + nome.replace(/\s+/g,'_') + '_' + new Date().toISOString().slice(0,10) + '.xlsx');
+      doc.setFontSize(7); doc.setTextColor(130,130,130);
+      doc.text('Gerado em: ' + new Date().toLocaleString('pt-BR') + ' | Sistema SYM Online', 15, 290);
+      doc.save('Relatorio_' + nome.replace(/\s+/g,'_') + '_' + new Date().toISOString().slice(0,10) + '.pdf');
     }
 
     // ===== FUNCOES ESCALAS =====
@@ -1184,28 +1203,56 @@
         var data = await resp.json();
         _escalasResultCache = [];
         if (data.results && data.results.length > 0) {
-          var html = '<table class="results-table"><tr><th><input type="checkbox" onclick="toggleEscalasSelectAll(this)"></th><th>Data</th><th>Escala</th><th>Paciente</th><th>Escore</th><th>Classificacao</th></tr>';
+          var html = '<table class="results-table"><tr><th><input type="checkbox" onclick="toggleEscalasSelectAll(this)"></th><th>ID Pac.</th><th>Data</th><th>Escala</th><th>Paciente</th><th>Escore</th><th>Classificacao</th><th>PDF</th></tr>';
           data.results.forEach(function(r) {
             var d = r.data || {};
             var date = r.date ? new Date(r.date).toLocaleString('pt-BR') : '-';
+            var pacId = d.pacienteId || '';
             html += '<tr>';
             html += '<td><input type="checkbox" class="escala-result-check" data-sid="' + r.sessionId + '"></td>';
+            html += '<td style="font-size:9px;font-family:monospace;">' + (pacId ? pacId.slice(0,10) : '-') + '</td>';
             html += '<td>' + date + '</td>';
             html += '<td>' + (d.escala || '-') + '</td>';
             html += '<td>' + (d.paciente || '-') + '</td>';
             html += '<td>' + (d.escore != null ? d.escore : '-') + '</td>';
             html += '<td>' + (d.classificacao || '-') + '</td>';
+            html += '<td><button class="btn btn-green" style="padding:3px 8px;font-size:11px;" onclick="gerarPDFEscala(' + _escalasResultCache.length + ')">PDF</button></td>';
             html += '</tr>';
             _escalasResultCache.push(r);
           });
           html += '</table>';
           document.getElementById('escalasResultsList').innerHTML = html;
         } else {
-          document.getElementById('escalasResultsList').innerHTML = '<p style="color:#777;">Nenhuma escala salva ainda. Aplique uma escala e clique em "Salvar no painel" ao final.</p>';
+          document.getElementById('escalasResultsList').innerHTML = '<p style="color:#777;">Nenhuma escala salva ainda.</p>';
         }
       } catch(e) {
         document.getElementById('escalasResultsList').innerHTML = '<p style="color:#777;">Erro ao carregar.</p>';
       }
+    }
+
+    function gerarPDFEscala(idx) {
+      var r = _escalasResultCache[idx];
+      if (!r) return;
+      var d = r.data || {};
+      var jsPDF = window.jspdf.jsPDF;
+      var doc = new jsPDF();
+      doc.setFillColor(46,125,50); doc.rect(0,0,210,25,'F');
+      doc.setTextColor(255,255,255); doc.setFontSize(14); doc.setFont(undefined,'bold');
+      doc.text(d.escala || 'Escala', 105, 15, {align:'center'});
+      doc.setTextColor(0,0,0); doc.setFontSize(11); doc.setFont(undefined,'normal');
+      var y = 35;
+      doc.text('Paciente: ' + (d.paciente||'N/I'), 15, y); y+=7;
+      doc.text('Data: ' + (r.date ? new Date(r.date).toLocaleString('pt-BR') : '-'), 15, y); y+=7;
+      if (d.escore != null) { doc.text('Escore: ' + d.escore + (d.media ? '  |  Media: '+d.media : ''), 15, y); y+=7; }
+      if (d.classificacao) { doc.setFont(undefined,'bold'); doc.text('Classificacao: ' + d.classificacao, 15, y); doc.setFont(undefined,'normal'); y+=10; }
+      if (d.resultadoHTML) {
+        var linhas = doc.splitTextToSize(d.resultadoHTML, 180);
+        doc.setFontSize(9);
+        linhas.forEach(function(l) { if(y>280){doc.addPage();y=15;} doc.text(l,15,y); y+=4.5; });
+      }
+      doc.setFontSize(7); doc.setTextColor(130,130,130);
+      doc.text('Sistema SYM Online | ' + new Date().toLocaleString('pt-BR'), 15, 290);
+      doc.save((d.escala||'Escala').replace(/\s+/g,'_') + '_' + (d.paciente||'').replace(/\s+/g,'_') + '.pdf');
     }
 
     function toggleEscalasSelectAll(master) {
