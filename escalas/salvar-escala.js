@@ -146,10 +146,13 @@
     if (!window._escalaPdfBase64 && typeof gerarRelatorioPDF === 'function' && window.jspdf) {
       try {
         var _realSave = window.jspdf.jsPDF.prototype.save;
+        var _realAlert = window.alert;
         window.jspdf.jsPDF.prototype.save = function(f) { window._escalaPdfBase64 = this.output('datauristring'); };
+        window.alert = function() {};
         gerarRelatorioPDF();
         window.jspdf.jsPDF.prototype.save = _realSave;
-      } catch(e) {}
+        window.alert = _realAlert;
+      } catch(e) { if(_realSave) window.jspdf.jsPDF.prototype.save = _realSave; if(_realAlert) window.alert = _realAlert; }
     }
     if (window._escalaPdfBase64) { dados.pdfBase64 = window._escalaPdfBase64; }
     msg.textContent = 'Salvando...'; msg.style.color = '#555';
