@@ -88,6 +88,7 @@
           <button class="tab-btn active" id="tabTecfe" onclick="switchTab('tecfe')">TECFE</button>
           <button class="tab-btn" id="tabBae" onclick="switchTab('bae')">BAE</button>
           <button class="tab-btn" id="tabTrmv" onclick="switchTab('trmv')">TRMV</button>
+          <button class="tab-btn" id="tabEscalas" onclick="switchTab('escalas')">Escalas</button>
         </div>
 
         <!-- === ABA TECFE === -->
@@ -114,6 +115,19 @@
             <button class="btn btn-blue" onclick="showBaeResults()">Resultados BAE</button>
             <a href="#" class="btn btn-orange" onclick="document.getElementById('baePlansSection').classList.toggle('hidden');return false;">Comprar Creditos</a>
           </div>
+        </div>
+
+        <!-- === ABA ESCALAS === -->
+        <div id="escalasTab" class="tab-content">
+          <div style="text-align:center;padding:15px 0;">
+            <p style="font-size:15px;color:#2e7d32;font-weight:bold;">📊 Historico de Escalas Aplicadas</p>
+            <p style="font-size:13px;color:#555;margin-top:5px;">Resultados salvos das escalas gratuitas (BAPQ, RAADS-R, PHQ-9, etc.)</p>
+          </div>
+          <div class="btn-row" style="justify-content:center;">
+            <button class="btn btn-blue" onclick="loadEscalasResults()">Atualizar</button>
+            <button class="btn btn-red" style="padding:10px 20px;font-size:13px;" onclick="deleteEscalasSelected()">Apagar Selecionados</button>
+          </div>
+          <div id="escalasResultsList" style="margin-top:15px;"><p style="color:#777;">Clique em "Atualizar" para carregar.</p></div>
         </div>
 
         <!-- === ABA TRMV === -->
@@ -796,9 +810,11 @@
       document.getElementById('tecfeTab').classList.remove('active');
       document.getElementById('baeTab').classList.remove('active');
       document.getElementById('trmvTab').classList.remove('active');
+      document.getElementById('escalasTab').classList.remove('active');
       document.getElementById('tabTecfe').classList.remove('active');
       document.getElementById('tabBae').classList.remove('active');
       document.getElementById('tabTrmv').classList.remove('active');
+      document.getElementById('tabEscalas').classList.remove('active');
       ['plansSection','newTestSection','resultsSection','baePlansSection','newBaeSection','baeResultsSection','trmvPlansSection','newTrmvSection','trmvResultsSection'].forEach(function(id) {
         var el = document.getElementById(id); if (el) el.classList.add('hidden');
       });
@@ -811,6 +827,10 @@
       } else if (tab === 'trmv') {
         document.getElementById('trmvTab').classList.add('active');
         document.getElementById('tabTrmv').classList.add('active');
+      } else if (tab === 'escalas') {
+        document.getElementById('escalasTab').classList.add('active');
+        document.getElementById('tabEscalas').classList.add('active');
+        loadEscalasResults();
       }
     }
 
@@ -961,6 +981,59 @@
       var wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'BAE Resultados');
       XLSX.writeFile(wb, 'BAE_resultados_' + new Date().toISOString().slice(0,10) + '.xlsx');
+    }
+
+    // ===== FUNCOES ESCALAS =====
+    var _escalasResultCache = [];
+
+    async function loadEscalasResults() {
+      try {
+        var resp = await fetch(API_URL + '/get-results?email=' + encodeURIComponent(currentUser) + '&tipo=escala');
+        var data = await resp.json();
+        _escalasResultCache = [];
+        if (data.results && data.results.length > 0) {
+          var html = '<table class="results-table"><tr><th><input type="checkbox" onclick="toggleEscalasSelectAll(this)"></th><th>Data</th><th>Escala</th><th>Paciente</th><th>Escore</th><th>Classificacao</th></tr>';
+          data.results.forEach(function(r) {
+            var d = r.data || {};
+            var date = r.date ? new Date(r.date).toLocaleString('pt-BR') : '-';
+            html += '<tr>';
+            html += '<td><input type="checkbox" class="escala-result-check" data-sid="' + r.sessionId + '"></td>';
+            html += '<td>' + date + '</td>';
+            html += '<td>' + (d.escala || '-') + '</td>';
+            html += '<td>' + (d.paciente || '-') + '</td>';
+            html += '<td>' + (d.escore != null ? d.escore : '-') + '</td>';
+            html += '<td>' + (d.classificacao || '-') + '</td>';
+            html += '</tr>';
+            _escalasResultCache.push(r);
+          });
+          html += '</table>';
+          document.getElementById('escalasResultsList').innerHTML = html;
+        } else {
+          document.getElementById('escalasResultsList').innerHTML = '<p style="color:#777;">Nenhuma escala salva ainda. Aplique uma escala e clique em "Salvar no painel" ao final.</p>';
+        }
+      } catch(e) {
+        document.getElementById('escalasResultsList').innerHTML = '<p style="color:#777;">Erro ao carregar.</p>';
+      }
+    }
+
+    function toggleEscalasSelectAll(master) {
+      document.querySelectorAll('.escala-result-check').forEach(function(cb) { cb.checked = master.checked; });
+    }
+
+    async function deleteEscalasSelected() {
+      var checks = document.querySelectorAll('.escala-result-check:checked');
+      if (checks.length === 0) { alert('Selecione pelo menos um resultado.'); return; }
+      if (!confirm('Apagar ' + checks.length + ' resultado(s)?')) return;
+      for (var i = 0; i < checks.length; i++) {
+        try {
+          await fetch(API_URL + '/delete-result', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId: checks[i].dataset.sid, email: currentUser })
+          });
+        } catch(e) {}
+      }
+      loadEscalasResults();
     }
 
     // generateBAEPDF movido para bae-pdf-online.js
