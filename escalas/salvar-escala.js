@@ -6,17 +6,24 @@
   var jaInjetou = false;
 
   // Mensagem no topo convidando a se inscrever
-  document.addEventListener('DOMContentLoaded', function() {
+  function inserirMensagemTopo() {
     var form = document.querySelector('form') || document.querySelector('.container') || document.body.firstElementChild;
     if (!form) return;
     var box = document.createElement('div');
     box.style.cssText = 'margin:10px auto 15px;padding:10px 15px;background:#e8f5e9;border:1px solid #a5d6a7;border-radius:8px;max-width:600px;text-align:center;';
     box.innerHTML = '<p style="font-size:13px;color:#333;margin:0;">\uD83D\uDCCA Se quiser salvar os resultados no seu painel, <a href="../online/" target="_blank">inscreva-se aqui</a>.</p>';
     form.insertBefore(box, form.firstChild);
-  });
+  }
+
+  // Executar imediatamente (script carrega no final do body)
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', inserirMensagemTopo);
+  } else {
+    inserirMensagemTopo();
+  }
 
   // Observar quando #resultados aparece
-  document.addEventListener('DOMContentLoaded', function() {
+  function iniciarObservador() {
     var el = document.getElementById('resultados');
     if (!el) return;
     var observer = new MutationObserver(function() {
@@ -26,7 +33,13 @@
       }
     });
     observer.observe(el, { attributes: true, childList: true, attributeFilter: ['style'] });
-  });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', iniciarObservador);
+  } else {
+    iniciarObservador();
+  }
 
   function injetarBotao(container) {
     if (document.getElementById('bloco-salvar-painel')) return;
