@@ -338,7 +338,8 @@ function gerarRelatorioPDF() {
     doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont(undefined,'normal');
     doc.text(`Nome: ${nome}`,25,68);
     doc.text(`Idade: ${document.getElementById('idadeCalculada').value||''}`,120,68);
-    doc.text(`Data: ${document.getElementById('data').value||new Date().toLocaleDateString('pt-BR')}`,25,75);
+    var idPac=document.getElementById('idPaciente')?document.getElementById('idPaciente').value:'';
+    doc.text(`Data: ${document.getElementById('data').value||new Date().toLocaleDateString('pt-BR')}`+(idPac?`   |   ID: ${idPac}`:''),25,75);
 
     // Resultados por domínio
     let y = 95;
@@ -404,7 +405,7 @@ function gerarRelatorioPDF() {
     doc.setTextColor(100,100,100); doc.setFontSize(8); doc.setFont(undefined,'normal');
     doc.text('RITVO et al., 2011. Não substitui avaliação profissional.', 25, y);
 
-    const ts = new Date().toISOString().slice(0,16).replace(/[-:T]/g,'');
+    const ts = (function(){var d=new Date();return d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0')+String(d.getHours()).padStart(2,'0')+String(d.getMinutes()).padStart(2,'0');})();
     doc.save(`RAADS-R_${nome.replace(/\s+/g,'')}_${ts}.pdf`);
 }
 

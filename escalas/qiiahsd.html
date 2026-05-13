@@ -960,6 +960,8 @@
             doc.text(`Idade: ${idade} anos`, 120, 75);
             doc.text(`Cidade: ${cidade}`, 25, 80);
             doc.text(`Data: ${data}`, 120, 80);
+            const idPac = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
+            if (idPac) doc.text(`ID: ${idPac}`, 25, 85);
 
             // Calcular resultados para o PDF
             const resultados = {};
@@ -1055,7 +1057,7 @@
             doc.text(`Relatório gerado em: ${new Date().toLocaleString('pt-BR')}`, 105, 290, { align: 'center' });
 
             // Salvar PDF
-            const timestamp = new Date().toISOString().slice(0,16).replace(/[-:T]/g, '').slice(0,12);
+            const timestamp = (function(){var d=new Date();return d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0')+String(d.getHours()).padStart(2,'0')+String(d.getMinutes()).padStart(2,'0');})();
             const nomeArquivo = `QIIAHSD_${nomeFilho.replace(/\s+/g, '')}_${timestamp}.pdf`;
             doc.save(nomeArquivo);
         }

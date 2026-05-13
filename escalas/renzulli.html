@@ -825,7 +825,8 @@
             doc.text(`Sexo: ${sexo}`, 25, 75);
             doc.text(`Série: ${serie}`, 120, 75);
             doc.text(`Escola: ${escola}`, 25, 80);
-            doc.text(`Data: ${data}`, 120, 80);
+            const idPac = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
+            doc.text(`Data: ${data}` + (idPac ? `   |   ID: ${idPac}` : ''), 120, 80);
 
             // Calcular resultados para o PDF
             const resultados = {};
@@ -911,7 +912,7 @@
             doc.text(`Relatório gerado em: ${new Date().toLocaleString('pt-BR')}`, 105, 290, { align: 'center' });
 
             // Salvar PDF
-            const nomeArquivo = `Renzulli-${nome.replace(/\s+/g, '')}-${new Date().toISOString().slice(0,10)}.pdf`;
+            const nomeArquivo = `Renzulli-${nome.replace(/\s+/g, '')}-${(function(){var d=new Date();return d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0')+String(d.getHours()).padStart(2,'0')+String(d.getMinutes()).padStart(2,'0');})()}.pdf`;
             doc.save(nomeArquivo);
         }
 

@@ -322,7 +322,7 @@ somaD*=2;somaA*=2;somaE*=2;
 var clD=classificar('D',somaD),clA=classificar('A',somaA),clE=classificar('E',somaE);
 var somaTotal=somaD+somaA+somaE;
 var idade=document.getElementById('idadeCalculada').value,sexo=document.getElementById('sexo').value,dataAval=document.getElementById('data').value||new Date().toLocaleDateString('pt-BR');
-var jsPDF=window.jspdf.jsPDF;var doc=new jsPDF();
+var jsPDF=window.jspdf.jsPDF;var doc=new jsPDF();var M=15,TW=180,PH=280;function checkPage(need){if(y+need>PH){doc.addPage();y=20;}}
 // Página 1
 doc.setFillColor(40,53,147);doc.rect(0,0,210,40,'F');doc.setTextColor(255,255,255);doc.setFontSize(16);doc.setFont(undefined,'bold');doc.text('DASS-21 — RELATÓRIO DE AVALIAÇÃO',105,18,{align:'center'});doc.setFontSize(10);doc.text('Escala de Depressão, Ansiedade e Estresse',105,27,{align:'center'});doc.setFontSize(8);doc.text('Lovibond & Lovibond (1995) — Adaptação: Vignola & Tucci (2014)',105,34,{align:'center'});
 doc.setFillColor(248,249,250);doc.rect(15,48,180,25,'F');doc.setDrawColor(40,53,147);doc.rect(15,48,180,25);doc.setTextColor(40,53,147);doc.setFontSize(11);doc.setFont(undefined,'bold');doc.text('DADOS PESSOAIS',20,56);doc.setTextColor(0,0,0);doc.setFontSize(9);doc.setFont(undefined,'normal');
@@ -345,12 +345,13 @@ doc.text('Depressão ('+clD.t+'): '+(clD.t==='Normal'?'Dentro de parâmetros esp
 doc.text('Ansiedade ('+clA.t+'): '+(clA.t==='Normal'?'Dentro de parâmetros esperados.':clA.t==='Leve'?'Sintomas leves.':'Sintomas significativos — avaliação recomendada.'),20,y);y+=6;
 doc.text('Estresse ('+clE.t+'): '+(clE.t==='Normal'?'Dentro de parâmetros esperados.':clE.t==='Leve'?'Nível leve.':'Nível significativo — avaliação recomendada.'),20,y);y+=12;
 doc.setFillColor(255,243,224);doc.rect(15,y-4,180,25,'F');doc.setTextColor(230,81,0);doc.setFontSize(7);doc.setFont(undefined,'bold');doc.text('IMPORTANTE:',20,y+2);doc.setFont(undefined,'normal');doc.text('A DASS-21 é um instrumento de rastreio. Não é instrumento diagnóstico. Não substitui avaliação',20,y+8);doc.text('clínica profissional. Os resultados devem ser interpretados por profissionais de saúde mental',20,y+13);doc.text('qualificados no contexto de uma avaliação abrangente.',20,y+18);
+y+=28;
 // Página 2 - Referências
-doc.addPage();doc.setFillColor(40,53,147);doc.rect(0,0,210,15,'F');doc.setTextColor(255,255,255);doc.setFontSize(12);doc.setFont(undefined,'bold');doc.text('REFERÊNCIAS',105,10,{align:'center'});
-var yr=25;doc.setTextColor(0,0,0);doc.setFontSize(7.5);doc.setFont(undefined,'normal');
+checkPage(60);doc.setFillColor(40,53,147);doc.rect(M,y-1,TW,7,'F');doc.setTextColor(255,255,255);doc.setFontSize(9);doc.setFont(undefined,'bold');doc.text('REFERÊNCIAS',M+3,y+4);y+=10;
+var yr=y;doc.setTextColor(0,0,0);doc.setFontSize(7.5);doc.setFont(undefined,'normal');
 ['LOVIBOND, S. H.; LOVIBOND, P. F. Manual for the Depression Anxiety Stress Scales.','2nd ed. Sydney: Psychology Foundation, 1995.','','VIGNOLA, R. C. B.; TUCCI, A. M. Adaptation and validation of the Depression, Anxiety and','Stress Scale (DASS) to Brazilian Portuguese. Journal of Affective Disorders, v. 155,','p. 104-109, 2014.','','PATIAS, N. D. et al. Depression Anxiety and Stress Scale (DASS-21) — Short Form:','adaptação e validação para adolescentes brasileiros. Psico-USF, v. 21, n. 3,','p. 459-469, 2016.','','AMERICAN PSYCHIATRIC ASSOCIATION. Diagnostic and Statistical Manual of Mental Disorders','(DSM-5-TR). 5th ed., text rev. Washington, DC: APA, 2022.'].forEach(function(l){if(l===''){yr+=3;}else{doc.text(l,20,yr);yr+=4;}});
-doc.setFillColor(108,117,125);doc.rect(0,280,210,17,'F');doc.setTextColor(255,255,255);doc.setFontSize(8);doc.text('Relatório gerado em: '+new Date().toLocaleString('pt-BR'),105,290,{align:'center'});
-var ts=new Date().toISOString().slice(0,16).replace(/[-:T]/g,'').slice(0,12);doc.save('DASS21_'+nome.replace(/\s+/g,'_')+'_'+ts+'.pdf');}
+doc.setFillColor(80,80,80);doc.rect(0,PH+5,210,12,'F');doc.setTextColor(255,255,255);doc.setFontSize(8);doc.text('Relatorio gerado em: '+new Date().toLocaleString('pt-BR'),105,PH+12,{align:'center'});
+var ts=(function(){var d=new Date();return d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0')+String(d.getHours()).padStart(2,'0')+String(d.getMinutes()).padStart(2,'0');})();doc.save('DASS21_'+nome.replace(/\s+/g,'_')+'_'+ts+'.pdf');}
 function limparDados(){if(!confirm('Tem certeza que deseja limpar todos os dados?'))return;document.getElementById('nome').value='';document.getElementById('dataNascimento').value='';document.getElementById('idadeCalculada').value='';document.getElementById('sexo').value='';document.getElementById('observacoes').value='';document.querySelectorAll('input[type="radio"]').forEach(function(r){r.checked=false;});document.getElementById('resultados').style.display='none';document.getElementById('data').value=new Date().toISOString().split('T')[0];}
 document.addEventListener('DOMContentLoaded',function(){gerarQuestionario();document.getElementById('data').value=new Date().toISOString().split('T')[0];});
     </script>

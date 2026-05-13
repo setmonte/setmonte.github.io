@@ -1,9 +1,64 @@
 // pdf-escalas.js — Gerador de PDF central para todas as escalas SYM
+// Versão atualizada: captura o PDF completo da escala para salvar no painel
 
+// Variável global que guarda o último PDF gerado (base64)
+var _ultimoPdfBase64 = null;
+
+// Hook: intercepta doc.save() do jsPDF para capturar o base64
+// Isso permite que gerarRelatorioPDF() continue funcionando normalmente
+// mas o base64 fica disponível para o salvar-escala.js enviar ao painel
+(function() {
+  var _hookAtivo = false;
+
+  // Ativa o hook antes de gerar PDF
+  window._ativarCapturaPDF = function() { _hookAtivo = true; _ultimoPdfBase64 = null; };
+  // Desativa após capturar
+  window._desativarCapturaPDF = function() { _hookAtivo = false; };
+
+  // Intercepta jsPDF.save para capturar base64
+  var checkInterval = setInterval(function() {
+    if (window.jspdf && window.jspdf.jsPDF) {
+      clearInterval(checkInterval);
+      var originalSave = window.jspdf.jsPDF.prototype.save;
+      window.jspdf.jsPDF.prototype.save = function(filename) {
+        if (_hookAtivo) {
+          try { _ultimoPdfBase64 = this.output('datauristring'); } catch(e) {}
+        }
+        return originalSave.call(this, filename);
+      };
+    }
+  }, 100);
+})();
+
+// Função principal: tenta gerar o PDF COMPLETO da escala (não o genérico)
+// Chamada pelo salvar-escala.js
 function gerarPDFCompleto(dados) {
+  // Estratégia: chamar gerarRelatorioPDF() da escala (que gera o PDF bonito)
+  // e capturar o base64 via hook no doc.save()
+  
+  // Detectar qual função de PDF a escala usa
+  var fnPDF = null;
+  if (typeof gerarRelatorioPDF === 'function') fnPDF = gerarRelatorioPDF;
+  else if (typeof exportToPDF === 'function') fnPDF = exportToPDF;
+
+  if (fnPDF) {
+    window._ativarCapturaPDF();
+    try {
+      fnPDF();
+      window._desativarCapturaPDF();
+      if (_ultimoPdfBase64) return _ultimoPdfBase64;
+    } catch(e) {
+      window._desativarCapturaPDF();
+      // Se falhar, cai no fallback genérico abaixo
+      console.warn('PDF da escala falhou, usando fallback:', e.message);
+    }
+  }
+
+  // FALLBACK: se não existe gerarRelatorioPDF ou se falhou,
+  // gera o PDF genérico com os dados disponíveis
   if (!dados) dados = window._escalaDados;
-  if (!dados) { alert('Calcule os resultados primeiro.'); return null; }
-  if (!window.jspdf) { alert('Biblioteca PDF nao carregada.'); return null; }
+  if (!dados) { return null; }
+  if (!window.jspdf) { return null; }
 
   var jsPDF = window.jspdf.jsPDF;
   var doc = new jsPDF();

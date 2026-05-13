@@ -858,7 +858,8 @@
             doc.text(`Idade: ${idade}`, 120, 70);
             doc.text(`Sexo: ${sexo}`, 25, 75);
             doc.text(`Data: ${data}`, 120, 75);
-            doc.text('Instrumento: BAPQ-Br (PRATA et al., 2019)', 25, 80);
+            var idPac=document.getElementById('idPaciente')?document.getElementById('idPaciente').value:'';
+            doc.text('Instrumento: BAPQ-Br (PRATA et al., 2019)'+(idPac?' | ID: '+idPac:''), 25, 80);
 
             // Resultados
             let yPos = 95;
@@ -919,33 +920,35 @@
                 doc.text('Pontuação abaixo do ponto de corte.', 25, yPos + 5);
             }
 
-            // Referências - Página 2
-            doc.addPage();
-            yPos = 20;
-            doc.setFillColor(248, 249, 250);
-            doc.rect(20, yPos, 170, 50, 'F');
-            doc.setTextColor(74, 144, 226);
-            doc.setFontSize(10);
+            // Referências - só quebra página se não couber
+            yPos += 10;
+            if (yPos + 55 > 280) { doc.addPage(); yPos = 20; }
+            doc.setFillColor(74, 144, 226);
+            doc.rect(20, yPos, 170, 7, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(9);
             doc.setFont(undefined, 'bold');
-            doc.text('REFERÊNCIAS', 25, yPos + 10);
+            doc.text('REFERENCIAS', 25, yPos + 5);
+            yPos += 12;
             doc.setTextColor(0, 0, 0);
             doc.setFontSize(7);
             doc.setFont(undefined, 'normal');
-            doc.text('HURLEY, R. S. E. et al. The broad autism phenotype questionnaire. Journal of', 25, yPos + 18);
-            doc.text('Autism and Developmental Disorders, v. 37, n. 9, p. 1679-1690, 2007.', 25, yPos + 23);
-            doc.text('PRATA, J. C. et al. Psychometric properties of the Broad Autism Phenotype', 25, yPos + 30);
-            doc.text('Questionnaire - Brazilian version. Psicologia: Reflexão e Crítica, v. 32, n. 1, 2019.', 25, yPos + 35);
-            doc.text('Disponível em: https://doi.org/10.1186/s41155-019-0116-2', 25, yPos + 40);
+            doc.text('HURLEY, R. S. E. et al. The broad autism phenotype questionnaire. Journal of', 25, yPos);
+            doc.text('Autism and Developmental Disorders, v. 37, n. 9, p. 1679-1690, 2007.', 25, yPos + 4);
+            yPos += 10;
+            doc.text('PRATA, J. C. et al. Psychometric properties of the Broad Autism Phenotype', 25, yPos);
+            doc.text('Questionnaire - Brazilian version. Psicologia: Reflexao e Critica, v. 32, n. 1, 2019.', 25, yPos + 4);
+            doc.text('Disponivel em: https://doi.org/10.1186/s41155-019-0116-2', 25, yPos + 8);
 
-            // Rodapé página 2
-            doc.setFillColor(108, 117, 125);
-            doc.rect(0, 280, 210, 17, 'F');
-            doc.setTextColor(255, 255, 255);
-            doc.setFontSize(8);
-            doc.text(`Relatório gerado em: ${new Date().toLocaleString('pt-BR')}`, 105, 290, { align: 'center' });
+            // Rodapé
+            doc.setFillColor(80, 80, 80);
+            doc.rect(0, 285, 210, 12, 'F');
+            doc.setTextColor(200, 200, 200);
+            doc.setFontSize(7);
+            doc.text(`Relatorio gerado em: ${new Date().toLocaleString('pt-BR')}`, 105, 291, { align: 'center' });
 
             // Salvar PDF
-            const timestamp = new Date().toISOString().slice(0,16).replace(/[-:T]/g, '').slice(0,12);
+            const timestamp = (function(){var d=new Date();return d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0')+String(d.getHours()).padStart(2,'0')+String(d.getMinutes()).padStart(2,'0');})();
             const nomeArquivo = `BAPQ_${nome.replace(/\s+/g, '')}_${timestamp}.pdf`;
             doc.save(nomeArquivo);
         }

@@ -128,13 +128,17 @@
     dados.pacienteId = pacId;
     dados.paciente = pacNome;
 
-    // Gerar PDF — baixa pro computador E captura base64
+    // Gerar PDF — chama a funcao da propria escala (PDF completo e bonito)
+    // O pdf-escalas.js intercepta o doc.save() e captura o base64 automaticamente
     msg.textContent = 'Gerando PDF...'; msg.style.color = '#555';
     if (typeof gerarPDFCompleto === 'function') {
       try {
         var pdfBase64 = gerarPDFCompleto(dados);
         if (pdfBase64) dados.pdfBase64 = pdfBase64;
-      } catch(e) {}
+      } catch(e) {
+        console.warn('Erro ao gerar PDF:', e.message);
+        // Continua sem PDF - sera gerado generico no painel se necessario
+      }
     }
 
     // Salvar no banco

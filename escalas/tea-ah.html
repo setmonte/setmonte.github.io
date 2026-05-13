@@ -774,7 +774,8 @@
             doc.setFont(undefined, 'normal');
             doc.text(`Nome: ${nome}`, 25, 70);
             doc.text(`Idade: ${idade} anos`, 120, 70);
-            doc.text(`Sexo: ${sexo}`, 25, 75);
+            const idPac = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
+            doc.text(`Sexo: ${sexo}` + (idPac ? `   |   ID: ${idPac}` : ''), 25, 75);
             doc.text(`Data: ${data}`, 120, 75);
 
             // Calcular resultados para o PDF
@@ -851,7 +852,7 @@
             doc.text(`Relatório gerado em: ${new Date().toLocaleString('pt-BR')}`, 105, 290, { align: 'center' });
 
             // Salvar PDF
-            const nomeArquivo = `TEA-AH-${nome.replace(/\s+/g, '')}-${new Date().toISOString().slice(0,10)}.pdf`;
+            const nomeArquivo = `TEA-AH-${nome.replace(/\s+/g, '')}-${(function(){var d=new Date();return d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0')+String(d.getHours()).padStart(2,'0')+String(d.getMinutes()).padStart(2,'0');})()}.pdf`;
             doc.save(nomeArquivo);
         }
 
