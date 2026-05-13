@@ -96,10 +96,6 @@ function gerarPDFCompleto(dados) {
           doc.rect(M, y-3.5, TW, 6.5, 'F');
         }
         var v = dados.dominios[k];
-        doc.setFont(undefined, 'bold');
-        doc.text(limpar(k), M+3, y);
-        doc.setFont(undefined, 'normal');
-
         var detalhe = '';
         if (typeof v === 'object' && v !== null) {
           var partes = [];
@@ -111,10 +107,11 @@ function gerarPDFCompleto(dados) {
         } else {
           detalhe = String(v);
         }
-        var xOffset = M + 3 + doc.getTextWidth(limpar(k)) + 3;
-        if (xOffset > 90) xOffset = 90;
-        doc.text(detalhe, xOffset, y);
-        y += 6.5;
+        doc.setFont(undefined, 'bold');
+        doc.text(limpar(k) + ':  ', M+3, y);
+        doc.setFont(undefined, 'normal');
+        doc.text(detalhe, M + 3 + doc.getTextWidth(limpar(k) + ':  '), y);
+        y += 7;
       });
       y += 4;
     }
