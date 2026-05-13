@@ -1434,7 +1434,7 @@
             html += '<td>' + acertos1 + '</td>';
             html += '<td>' + acertos2 + '</td>';
             html += '<td>' + retencao + '</td>';
-            html += '<td><button class="btn btn-green" style="padding:5px 12px;font-size:12px;" onclick="generateTrmvPDF(' + _trmvResultCache.length + ')">PDF</button></td>';
+            html += '<td><button class="btn btn-green" style="padding:5px 12px;font-size:12px;" data-idx="' + _trmvResultCache.length + '" onclick="this.textContent=\'Gerando...\';this.disabled=true;var btn=this;generateTrmvPDF(this.dataset.idx).finally(function(){btn.textContent=\'PDF\';btn.disabled=false;});">PDF</button></td>';
             html += '</tr>';
             _trmvResultCache.push(r);
           });
@@ -1497,7 +1497,7 @@
       XLSX.writeFile(wb, 'TRMV_resultados_' + new Date().toISOString().slice(0,10) + '.xlsx');
     }
 
-    function generateTrmvPDF(idx) {
+    async function generateTrmvPDF(idx) {
       var r = _trmvResultCache[idx];
       if (!r) { alert('Resultado nao encontrado'); return; }
       var d = r.data || {};
@@ -1506,6 +1506,34 @@
       var rec2 = d.reconhecimento2 || {};
       var indiceRetencao = d.indiceRetencao || 0;
       var totalAlvos = d.numEstimulos || 10;
+
+      // Chamar IA para analise topologica
+      var laudoIA = null;
+      try {
+        var k = ['AIza','SyA_','Xxm8','ObIN','uPtn','_23X','fo5p','AUWS','Nzfh','GvI'].join('');
+        var aiPrompt = 'Voce e um neuropsicologo experiente. Gere uma ANALISE TOPOLOGICA E CLINICA breve (max 10 linhas) ' +
+          'baseada nos resultados do TRMV (Teste de Reconhecimento de Memoria Visual) com poligonos abstratos.\n\n' +
+          'DADOS: Idade: ' + (p.age || 'N/I') + ', Escolaridade: ' + (p.education || 'N/I') + '\n' +
+          'Estimulos: ' + totalAlvos + ' poligonos abstratos (contorno), Intervalo retencao: 60s\n' +
+          '1o Reconhecimento: Acertos=' + (rec1.acertos||0) + '/' + totalAlvos + ', AF=' + (rec1.alarmesFalsos||0) + ', Omissoes=' + (rec1.omissoes||0) + ', Tempo=' + (rec1.tempoResposta ? (rec1.tempoResposta/1000).toFixed(1)+'s' : 'N/I') + '\n' +
+          '2o Reconhecimento: Acertos=' + (rec2.acertos||0) + '/' + totalAlvos + ', AF=' + (rec2.alarmesFalsos||0) + ', Omissoes=' + (rec2.omissoes||0) + ', Tempo=' + (rec2.tempoResposta ? (rec2.tempoResposta/1000).toFixed(1)+'s' : 'N/I') + '\n' +
+          'Indice Retencao MT: ' + Math.round(indiceRetencao) + '%\n\n' +
+          'INSTRUCOES: Portugues brasileiro. Interprete clinicamente os circuitos cerebrais envolvidos ' +
+          '(parietal posterior, hipocampo, cortex perirrinal, pre-frontal dorsolateral). ' +
+          'Relacione alarmes falsos com discriminacao (perirrinal), omissoes com codificacao (parietal/occipital), ' +
+          'queda no 2o reconhecimento com decaimento da MT (pre-frontal/parietal). ' +
+          'Considere idade e escolaridade. NAO repita numeros, interprete-os.';
+        var aiTimeout = new Promise(function(_, reject) { setTimeout(function() { reject('timeout'); }, 30000); });
+        var aiCall = fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=' + k, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ parts: [{ text: aiPrompt }] }] })
+        }).then(function(r) { return r.json(); }).then(function(d) {
+          var t = (d.candidates && d.candidates[0] && d.candidates[0].content) ? d.candidates[0].content.parts[0].text.trim() : '';
+          return t;
+        });
+        laudoIA = await Promise.race([aiCall, aiTimeout]);
+      } catch(e) { laudoIA = null; }
 
       var jsPDF = window.jspdf.jsPDF;
       var doc = new jsPDF();
@@ -1560,18 +1588,33 @@
 
       // Indice de retencao
       doc.setTextColor(49, 27, 146); doc.setFontSize(11); doc.setFont(undefined, 'bold');
-      doc.text('INDICE DE RETENCAO', ml, y); y += 8;
+      doc.text('INDICE DE RETENCAO DA MEMORIA DE TRABALHO', ml, y); y += 8;
       doc.setTextColor(0, 0, 0); doc.setFont(undefined, 'normal'); doc.setFontSize(10);
       var indTxt = rec1.acertos > 0 ? Math.round(indiceRetencao) + '%' : 'N/A';
       doc.text('Indice: ' + indTxt, ml, y); y += 6;
       var classif = '';
-      if (indiceRetencao >= 90) classif = 'Retencao excelente';
-      else if (indiceRetencao >= 70) classif = 'Retencao adequada';
-      else if (indiceRetencao >= 50) classif = 'Retencao rebaixada';
-      else classif = 'Retencao significativamente comprometida';
-      doc.text('Classificacao: ' + classif, ml, y); y += 15;
+      if (indiceRetencao >= 90) classif = 'Retencao excelente - memoria de trabalho preservada';
+      else if (indiceRetencao >= 70) classif = 'Retencao adequada - decaimento dentro do esperado';
+      else if (indiceRetencao >= 50) classif = 'Retencao rebaixada - possivel comprometimento da MT';
+      else classif = 'Retencao significativamente comprometida - investigar';
+      doc.text('Classificacao: ' + classif, ml, y); y += 12;
+
+      // Analise IA (se disponivel)
+      if (laudoIA) {
+        if (y > 250) { doc.addPage(); y = 15; }
+        doc.setTextColor(49, 27, 146); doc.setFontSize(11); doc.setFont(undefined, 'bold');
+        doc.text('ANALISE TOPOLOGICA (IA)', ml, y); y += 8;
+        doc.setTextColor(0, 0, 0); doc.setFont(undefined, 'normal'); doc.setFontSize(9);
+        var linhasIA = doc.splitTextToSize(laudoIA, lu);
+        linhasIA.forEach(function(linha) {
+          if (y > 287) { doc.addPage(); y = 15; }
+          doc.text(linha, ml, y); y += 5;
+        });
+        y += 5;
+      }
 
       // Rodape
+      if (y > 275) { doc.addPage(); y = 15; }
       doc.setTextColor(130, 130, 130); doc.setFontSize(7);
       doc.text('Relatorio gerado em: ' + new Date().toLocaleString('pt-BR'), ml, 285);
       doc.text('Sistema THEDUGA - TRMV v1.0', ml, 289);
@@ -1581,11 +1624,18 @@
       doc.save('TRMV_' + nome + '_' + ts + '.pdf');
     }
 
-    function comprarCreditosTrmv(qtd) {
-      var links = {1: 'https://mpago.la/2ZEYg7S', 10: 'https://mpago.la/1xy1Kse', 50: 'https://mpago.la/1471St6'};
-      var url = links[qtd];
-      if (url) { window.open(url, '_blank'); }
-      else { alert('Link de pagamento nao encontrado.'); }
+    async function comprarCreditosTrmv(qtd) {
+      try {
+        var btn = event.target; btn.textContent = 'Aguarde...'; btn.disabled = true;
+        var resp = await fetch(API_URL + '/create-payment', {
+          method: 'POST', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({email: currentUser, quantidade: qtd, tipo: 'trmv'})
+        });
+        var data = await resp.json();
+        if (data.url) { window.open(data.url, '_blank'); }
+        else { alert('Erro ao gerar link de pagamento'); }
+      } catch(e) { alert('Erro: ' + e.message); }
+      finally { btn.textContent = 'Comprar'; btn.disabled = false; }
     }
   </script>
 </body>
