@@ -194,6 +194,26 @@
                 font-size: 1.4rem;
             }
         }
+
+        /* Depoimentos */
+        .depoimentos { margin-top: 25px; text-align: left; }
+        .depoimentos-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+        .depoimentos-header h3 { font-size: 0.95rem; color: #2c3e50; }
+        .depoimentos-nota { display: flex; align-items: center; gap: 4px; font-size: 0.85rem; color: #f5a623; font-weight: 700; }
+        .depoimentos-carousel { position: relative; overflow: hidden; border-radius: 12px; }
+        .depoimentos-track { display: flex; transition: transform 0.4s ease; }
+        .depoimento-card { min-width: 100%; padding: 18px; background: #f8fbff; border: 1px solid #e3f2fd; border-radius: 12px; box-sizing: border-box; }
+        .depoimento-stars { color: #f5a623; font-size: 0.9rem; margin-bottom: 8px; }
+        .depoimento-texto { font-size: 0.85rem; color: #444; line-height: 1.6; font-style: italic; margin-bottom: 10px; }
+        .depoimento-autor { display: flex; align-items: center; gap: 8px; }
+        .depoimento-avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #4a9bd9, #6db3e8); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 0.75rem; }
+        .depoimento-info { font-size: 0.75rem; color: #888; }
+        .depoimento-info strong { color: #555; font-size: 0.8rem; }
+        .depoimentos-nav { display: flex; justify-content: center; gap: 6px; margin-top: 12px; }
+        .depoimentos-dot { width: 8px; height: 8px; border-radius: 50%; background: #ddd; cursor: pointer; transition: background 0.3s; }
+        .depoimentos-dot.active { background: #4a9bd9; }
+        .depoimentos-link { display: block; text-align: center; margin-top: 10px; font-size: 0.75rem; color: #4a9bd9; text-decoration: none; }
+        .depoimentos-link:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
@@ -250,15 +270,70 @@
             </p>
         </div>
 
+        <!-- DEPOIMENTOS -->
+        <div class="depoimentos" id="secaoDepoimentos" style="display:none;">
+            <div class="depoimentos-header">
+                <h3>⭐ Avaliações</h3>
+                <span class="depoimentos-nota" id="depNota"></span>
+            </div>
+            <div class="depoimentos-carousel">
+                <div class="depoimentos-track" id="depTrack"></div>
+            </div>
+            <div class="depoimentos-nav" id="depNav"></div>
+            <a href="depoimento/" class="depoimentos-link">Deixe sua avaliação →</a>
+        </div>
+
         <p class="footer">© 2026 — Sérgio Teixeira Monte</p>
     </div>
     <script>
-        fetch('https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws/visit-count')
-            .then(function(r){return r.json();})
-            .then(function(d){
-                var el=document.getElementById('visitCounter');
-                if(el&&d.visits)el.textContent='📊 '+d.visits.toLocaleString('pt-BR')+' profissionais já visitaram este site';
-            }).catch(function(){});
+        var API = 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
+        var depAtual = 0, depTotal = 0, depTimer;
+
+        function irParaDepoimento(idx) {
+            depAtual = idx;
+            document.getElementById('depTrack').style.transform = 'translateX(-' + (idx * 100) + '%)';
+            var dots = document.querySelectorAll('.depoimentos-dot');
+            dots.forEach(function(d, i) { d.classList.toggle('active', i === idx); });
+            clearInterval(depTimer);
+            depTimer = setInterval(function() { if (depTotal > 0) irParaDepoimento((depAtual + 1) % depTotal); }, 5000);
+        }
+
+        function renderDepoimentos(lista) {
+            if (!lista || lista.length === 0) return;
+            depTotal = lista.length;
+            var somaNotas = lista.reduce(function(a, d) { return a + d.nota; }, 0);
+            document.getElementById('depNota').textContent = (somaNotas / lista.length).toFixed(1) + ' ★';
+            var trackHtml = '';
+            lista.forEach(function(d) {
+                var estrelas = '★'.repeat(d.nota) + '☆'.repeat(5 - d.nota);
+                var iniciais = d.nome.split(' ').map(function(p) { return p[0]; }).join('').toUpperCase().slice(0, 2);
+                var texto = d.texto.replace(/\n/g, ' ');
+                trackHtml += '<div class="depoimento-card"><div class="depoimento-stars">' + estrelas + '</div><p class="depoimento-texto">"' + texto + '"</p><div class="depoimento-autor"><div class="depoimento-avatar">' + iniciais + '</div><div class="depoimento-info"><strong>' + d.nome + '</strong><br>' + (d.servico || '') + '</div></div></div>';
+            });
+            document.getElementById('depTrack').innerHTML = trackHtml;
+            var dotsHtml = '';
+            for (var i = 0; i < lista.length; i++) dotsHtml += '<span class="depoimentos-dot' + (i === 0 ? ' active' : '') + '" onclick="irParaDepoimento(' + i + ')"></span>';
+            document.getElementById('depNav').innerHTML = dotsHtml;
+            document.getElementById('secaoDepoimentos').style.display = 'block';
+            depTimer = setInterval(function() { irParaDepoimento((depAtual + 1) % depTotal); }, 5000);
+            var track = document.getElementById('depTrack');
+            var startX = 0;
+            track.addEventListener('touchstart', function(e) { startX = e.touches[0].clientX; });
+            track.addEventListener('touchend', function(e) {
+                var diff = startX - e.changedTouches[0].clientX;
+                if (diff > 50) irParaDepoimento((depAtual + 1) % depTotal);
+                else if (diff < -50) irParaDepoimento((depAtual - 1 + depTotal) % depTotal);
+            });
+        }
+
+        fetch(API + '/get-depoimentos').then(function(r) { return r.json(); }).then(function(data) {
+            if (data.depoimentos && data.depoimentos.length > 0) renderDepoimentos(data.depoimentos);
+        }).catch(function() {});
+
+        fetch(API + '/visit-count').then(function(r){return r.json();}).then(function(d){
+            var el=document.getElementById('visitCounter');
+            if(el&&d.visits)el.textContent='📊 '+d.visits.toLocaleString('pt-BR')+' profissionais já visitaram este site';
+        }).catch(function(){});
     </script>
 </body>
 </html>
