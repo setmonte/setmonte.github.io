@@ -93,6 +93,7 @@
           <button class="tab-btn" id="tabEscalas" onclick="switchTab('escalas')">Escalas</button>
           <button class="tab-btn" id="tabPacientes" onclick="switchTab('pacientes')">Pacientes</button>
           <button class="tab-btn hidden" id="tabDepoimentos" onclick="switchTab('depoimentos')">Depoimentos</button>
+          <button class="tab-btn hidden" id="tabAdmin" onclick="switchTab('admin')">⚙️ Admin</button>
         </div>
 
         <!-- === ABA TECFE === -->
@@ -161,6 +162,81 @@
             <p style="font-size:11px;color:#4a9bd9;margin-top:5px;">Link para enviar: <a href="../depoimento/" target="_blank">setmonte.github.io/depoimento/</a></p>
           </div>
           <div id="depoimentosList" style="margin-top:15px;"><p style="color:#777;">Carregando...</p></div>
+        </div>
+
+        <!-- === ABA ADMIN === -->
+        <div id="adminTab" class="tab-content">
+          <div style="text-align:center;padding:10px 0;">
+            <p style="font-size:15px;color:#c62828;font-weight:bold;">⚙️ Painel Administrativo</p>
+            <p style="font-size:12px;color:#555;margin-top:5px;">Gerenciamento completo do sistema</p>
+          </div>
+
+          <!-- Buscar usuario -->
+          <div style="background:#fff3e0;border:2px solid #ff9800;border-radius:10px;padding:15px;margin:10px 0;">
+            <p style="font-size:13px;font-weight:bold;color:#e65100;margin-bottom:8px;">🔍 Buscar Usuário</p>
+            <div class="form-row">
+              <label>Email: <input type="text" id="adminBuscaEmail" placeholder="email@exemplo.com" style="width:250px;"></label>
+              <button class="btn btn-orange" style="padding:8px 16px;font-size:12px;margin-top:18px;" onclick="adminBuscarUsuario()">Buscar</button>
+            </div>
+            <div id="adminUserResult" style="margin-top:10px;"></div>
+          </div>
+
+          <!-- Adicionar creditos -->
+          <div style="background:#e8f5e9;border:2px solid #2e7d32;border-radius:10px;padding:15px;margin:10px 0;">
+            <p style="font-size:13px;font-weight:bold;color:#2e7d32;margin-bottom:8px;">💰 Adicionar Créditos</p>
+            <div class="form-row">
+              <label>Email: <input type="text" id="adminCreditEmail" placeholder="email@exemplo.com" style="width:200px;"></label>
+              <label>Tipo: <select id="adminCreditTipo" style="width:100px;"><option value="tecfe">TECFE</option><option value="bae">BAE</option><option value="trmv">TRMV</option></select></label>
+              <label>Qtd: <input type="number" id="adminCreditQtd" value="1" min="1" style="width:60px;"></label>
+              <button class="btn btn-green" style="padding:8px 16px;font-size:12px;margin-top:18px;" onclick="adminAddCredits()">Adicionar</button>
+            </div>
+            <p id="adminCreditMsg" style="font-size:11px;color:#555;margin-top:5px;"></p>
+          </div>
+
+          <!-- Listar todos os usuarios -->
+          <div style="background:#e3f2fd;border:2px solid #1565c0;border-radius:10px;padding:15px;margin:10px 0;">
+            <p style="font-size:13px;font-weight:bold;color:#1565c0;margin-bottom:8px;">👥 Todos os Usuários</p>
+            <button class="btn btn-blue" style="padding:8px 16px;font-size:12px;" onclick="adminListarUsuarios()">Carregar Lista</button>
+            <div id="adminUsersList" style="margin-top:10px;max-height:300px;overflow-y:auto;"></div>
+          </div>
+
+          <!-- Buscar resultados de um usuario -->
+          <div style="background:#fce4ec;border:2px solid #c62828;border-radius:10px;padding:15px;margin:10px 0;">
+            <p style="font-size:13px;font-weight:bold;color:#c62828;margin-bottom:8px;">📊 Resultados de um Usuário</p>
+            <div class="form-row">
+              <label>Email: <input type="text" id="adminResultEmail" placeholder="email@exemplo.com" style="width:200px;"></label>
+              <label>Tipo: <select id="adminResultTipo" style="width:100px;"><option value="">Todos</option><option value="tecfe">TECFE</option><option value="bae">BAE</option><option value="trmv">TRMV</option><option value="escala">Escalas</option></select></label>
+              <button class="btn btn-red" style="padding:8px 16px;font-size:12px;margin-top:18px;background:#c62828;" onclick="adminBuscarResultados()">Buscar</button>
+            </div>
+            <div id="adminResultsList" style="margin-top:10px;max-height:400px;overflow-y:auto;"></div>
+          </div>
+
+          <!-- Pacientes de um usuario -->
+          <div style="background:#f3e5f5;border:2px solid #7b1fa2;border-radius:10px;padding:15px;margin:10px 0;">
+            <p style="font-size:13px;font-weight:bold;color:#7b1fa2;margin-bottom:8px;">🧑‍⚕️ Pacientes de um Usuário</p>
+            <div class="form-row">
+              <label>Email: <input type="text" id="adminPacEmail" placeholder="email@exemplo.com" style="width:250px;"></label>
+              <button class="btn btn-blue" style="padding:8px 16px;font-size:12px;margin-top:18px;background:#7b1fa2;" onclick="adminBuscarPacientes()">Buscar</button>
+            </div>
+            <div id="adminPacList" style="margin-top:10px;max-height:300px;overflow-y:auto;"></div>
+          </div>
+
+          <!-- Estatisticas gerais -->
+          <div style="background:#efebe9;border:2px solid #795548;border-radius:10px;padding:15px;margin:10px 0;">
+            <p style="font-size:13px;font-weight:bold;color:#795548;margin-bottom:8px;">📈 Estatísticas do Sistema</p>
+            <button class="btn btn-orange" style="padding:8px 16px;font-size:12px;background:#795548;" onclick="adminEstatisticas()">Carregar Estatísticas</button>
+            <div id="adminStats" style="margin-top:10px;"></div>
+          </div>
+
+          <!-- Deletar resultado especifico -->
+          <div style="background:#ffebee;border:2px solid #b71c1c;border-radius:10px;padding:15px;margin:10px 0;">
+            <p style="font-size:13px;font-weight:bold;color:#b71c1c;margin-bottom:8px;">🗑️ Deletar Resultado (por sessionId)</p>
+            <div class="form-row">
+              <label>Session ID: <input type="text" id="adminDeleteSid" placeholder="ex: esc-abc123" style="width:250px;"></label>
+              <button class="btn btn-red" style="padding:8px 16px;font-size:12px;margin-top:18px;" onclick="adminDeletarResultado()">Deletar</button>
+            </div>
+            <p id="adminDeleteMsg" style="font-size:11px;color:#555;margin-top:5px;"></p>
+          </div>
         </div>
 
         <!-- === ABA TRMV === -->
@@ -519,9 +595,10 @@
       document.getElementById('loadingPage').classList.add('hidden');
       document.getElementById('dashboardPage').classList.remove('hidden');
       document.getElementById('userEmail').textContent = currentUser;
-      // Mostrar aba Depoimentos apenas para admin
+      // Mostrar aba Depoimentos e Admin apenas para admin
       if (currentUser === 'setmonte@gmail.com') {
         document.getElementById('tabDepoimentos').classList.remove('hidden');
+        document.getElementById('tabAdmin').classList.remove('hidden');
       }
       // BAE visivel para todos
       // Buscar creditos
@@ -862,12 +939,14 @@
       document.getElementById('escalasTab').classList.remove('active');
       document.getElementById('pacientesTab').classList.remove('active');
       document.getElementById('depoimentosTab').classList.remove('active');
+      document.getElementById('adminTab').classList.remove('active');
       document.getElementById('tabTecfe').classList.remove('active');
       document.getElementById('tabBae').classList.remove('active');
       document.getElementById('tabTrmv').classList.remove('active');
       document.getElementById('tabEscalas').classList.remove('active');
       document.getElementById('tabPacientes').classList.remove('active');
       document.getElementById('tabDepoimentos').classList.remove('active');
+      document.getElementById('tabAdmin').classList.remove('active');
       ['plansSection','newTestSection','resultsSection','baePlansSection','newBaeSection','baeResultsSection','trmvPlansSection','newTrmvSection','trmvResultsSection'].forEach(function(id) {
         var el = document.getElementById(id); if (el) el.classList.add('hidden');
       });
@@ -892,6 +971,9 @@
         document.getElementById('depoimentosTab').classList.add('active');
         document.getElementById('tabDepoimentos').classList.add('active');
         loadDepoimentos();
+      } else if (tab === 'admin') {
+        document.getElementById('adminTab').classList.add('active');
+        document.getElementById('tabAdmin').classList.add('active');
       }
     }
 
@@ -1093,6 +1175,134 @@
       } catch(e) {
         document.getElementById('pacientesList').innerHTML = '<p style="color:#777;">Erro ao carregar.</p>';
       }
+    }
+
+    // ===== FUNCOES ADMIN =====
+    async function adminBuscarUsuario() {
+      var email = document.getElementById('adminBuscaEmail').value.trim();
+      if (!email) { alert('Digite um email.'); return; }
+      var el = document.getElementById('adminUserResult');
+      el.innerHTML = '<p style="color:#555;">Buscando...</p>';
+      try {
+        var resp = await fetch(API_URL + '/credits?email=' + encodeURIComponent(email));
+        var data = await resp.json();
+        var html = '<div style="background:#fff;padding:10px;border-radius:6px;border:1px solid #ddd;">';
+        html += '<p><strong>Email:</strong> ' + email + '</p>';
+        html += '<p><strong>Nome:</strong> ' + (data.name || 'N/I') + '</p>';
+        html += '<p><strong>Creditos TECFE:</strong> ' + (data.credits || 0) + '</p>';
+        html += '<p><strong>Creditos BAE:</strong> ' + (data.baeCredits || 0) + '</p>';
+        html += '<p><strong>Creditos TRMV:</strong> ' + (data.trmvCredits || 0) + '</p>';
+        html += '</div>';
+        el.innerHTML = html;
+      } catch(e) { el.innerHTML = '<p style="color:red;">Erro: ' + e.message + '</p>'; }
+    }
+
+    async function adminAddCredits() {
+      var email = document.getElementById('adminCreditEmail').value.trim();
+      var tipo = document.getElementById('adminCreditTipo').value;
+      var qtd = parseInt(document.getElementById('adminCreditQtd').value || '0');
+      if (!email || qtd <= 0) { alert('Preencha email e quantidade.'); return; }
+      var msg = document.getElementById('adminCreditMsg');
+      msg.textContent = 'Adicionando...';
+      try {
+        var resp = await fetch(API_URL + '/add-credits', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ targetEmail: email, tipo: tipo, amount: qtd }) });
+        var data = await resp.json();
+        if (data.ok) msg.textContent = 'OK! ' + qtd + ' credito(s) ' + tipo.toUpperCase() + ' adicionados para ' + email;
+        else msg.textContent = 'Erro: ' + JSON.stringify(data);
+      } catch(e) { msg.textContent = 'Erro: ' + e.message; }
+    }
+
+    async function adminListarUsuarios() {
+      var el = document.getElementById('adminUsersList');
+      el.innerHTML = '<p style="color:#555;">Carregando...</p>';
+      try {
+        var resp = await fetch(API_URL + '/admin-list-users');
+        var data = await resp.json();
+        if (data.users && data.users.length > 0) {
+          var html = '<table class="results-table"><tr><th>Email</th><th>TECFE</th><th>BAE</th><th>TRMV</th></tr>';
+          data.users.forEach(function(u) {
+            html += '<tr><td style="font-size:11px;">' + u.email + '</td><td>' + u.credits + '</td><td>' + u.baeCredits + '</td><td>' + u.trmvCredits + '</td></tr>';
+          });
+          html += '</table><p style="font-size:11px;color:#777;margin-top:5px;">Total: ' + data.users.length + ' usuarios</p>';
+          el.innerHTML = html;
+        } else { el.innerHTML = '<p>Nenhum usuario encontrado.</p>'; }
+      } catch(e) { el.innerHTML = '<p style="color:red;">Erro: ' + e.message + '</p>'; }
+    }
+
+    async function adminBuscarResultados() {
+      var email = document.getElementById('adminResultEmail').value.trim();
+      var tipo = document.getElementById('adminResultTipo').value;
+      if (!email) { alert('Digite um email.'); return; }
+      var el = document.getElementById('adminResultsList');
+      el.innerHTML = '<p style="color:#555;">Buscando...</p>';
+      try {
+        var url = API_URL + '/get-results?email=' + encodeURIComponent(email);
+        if (tipo) url += '&tipo=' + tipo;
+        var resp = await fetch(url);
+        var data = await resp.json();
+        if (data.results && data.results.length > 0) {
+          var html = '<table class="results-table"><tr><th>Data</th><th>Tipo</th><th>SessionID</th><th>Resumo</th></tr>';
+          data.results.forEach(function(r) {
+            var d = r.data || {};
+            var resumo = d.status || d.classificacao || d.escala || '-';
+            var dataFmt = r.date ? new Date(r.date).toLocaleString('pt-BR') : '-';
+            html += '<tr><td style="font-size:10px;">' + dataFmt + '</td><td>' + r.tipo + '</td><td style="font-size:9px;font-family:monospace;">' + r.sessionId.slice(0,15) + '</td><td style="font-size:10px;">' + resumo + '</td></tr>';
+          });
+          html += '</table><p style="font-size:11px;color:#777;margin-top:5px;">Total: ' + data.results.length + ' resultados</p>';
+          el.innerHTML = html;
+        } else { el.innerHTML = '<p>Nenhum resultado encontrado.</p>'; }
+      } catch(e) { el.innerHTML = '<p style="color:red;">Erro: ' + e.message + '</p>'; }
+    }
+
+    async function adminBuscarPacientes() {
+      var email = document.getElementById('adminPacEmail').value.trim();
+      if (!email) { alert('Digite um email.'); return; }
+      var el = document.getElementById('adminPacList');
+      el.innerHTML = '<p style="color:#555;">Buscando...</p>';
+      try {
+        var resp = await fetch(API_URL + '/get-pacientes?email=' + encodeURIComponent(email));
+        var data = await resp.json();
+        if (data.pacientes && data.pacientes.length > 0) {
+          var html = '<table class="results-table"><tr><th>Nome</th><th>Data Nasc.</th><th>ID</th></tr>';
+          data.pacientes.forEach(function(p) {
+            html += '<tr><td>' + p.nome + '</td><td>' + (p.dataNascimento || '-') + '</td><td style="font-size:9px;font-family:monospace;">' + p.id + '</td></tr>';
+          });
+          html += '</table><p style="font-size:11px;color:#777;margin-top:5px;">Total: ' + data.pacientes.length + ' pacientes</p>';
+          el.innerHTML = html;
+        } else { el.innerHTML = '<p>Nenhum paciente encontrado.</p>'; }
+      } catch(e) { el.innerHTML = '<p style="color:red;">Erro: ' + e.message + '</p>'; }
+    }
+
+    async function adminEstatisticas() {
+      var el = document.getElementById('adminStats');
+      el.innerHTML = '<p style="color:#555;">Calculando...</p>';
+      try {
+        var resp = await fetch(API_URL + '/admin-stats');
+        var data = await resp.json();
+        var html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">';
+        html += '<div style="background:#e8f5e9;padding:10px;border-radius:6px;text-align:center;"><strong style="font-size:20px;color:#2e7d32;">' + (data.totalUsers || 0) + '</strong><br><span style="font-size:11px;">Usuarios</span></div>';
+        html += '<div style="background:#e3f2fd;padding:10px;border-radius:6px;text-align:center;"><strong style="font-size:20px;color:#1565c0;">' + (data.totalResults || 0) + '</strong><br><span style="font-size:11px;">Resultados</span></div>';
+        html += '<div style="background:#fce4ec;padding:10px;border-radius:6px;text-align:center;"><strong style="font-size:20px;color:#c62828;">' + (data.totalPacientes || 0) + '</strong><br><span style="font-size:11px;">Pacientes</span></div>';
+        html += '<div style="background:#fff3e0;padding:10px;border-radius:6px;text-align:center;"><strong style="font-size:20px;color:#e65100;">' + (data.totalVisits || 0) + '</strong><br><span style="font-size:11px;">Visitas Site</span></div>';
+        html += '</div>';
+        if (data.porTipo) {
+          html += '<p style="margin-top:10px;font-size:12px;font-weight:bold;">Por tipo:</p>';
+          Object.keys(data.porTipo).forEach(function(t) { html += '<p style="font-size:11px;">• ' + t + ': ' + data.porTipo[t] + '</p>'; });
+        }
+        el.innerHTML = html;
+      } catch(e) { el.innerHTML = '<p style="color:red;">Erro: ' + e.message + '</p>'; }
+    }
+
+    async function adminDeletarResultado() {
+      var sid = document.getElementById('adminDeleteSid').value.trim();
+      if (!sid) { alert('Digite o Session ID.'); return; }
+      if (!confirm('Tem certeza que deseja deletar o resultado ' + sid + '?')) return;
+      var msg = document.getElementById('adminDeleteMsg');
+      try {
+        await fetch(API_URL + '/delete-result', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ sessionId: sid }) });
+        msg.textContent = 'Deletado com sucesso!';
+        msg.style.color = '#2e7d32';
+      } catch(e) { msg.textContent = 'Erro: ' + e.message; msg.style.color = '#c62828'; }
     }
 
     // ===== FUNCOES DEPOIMENTOS =====
