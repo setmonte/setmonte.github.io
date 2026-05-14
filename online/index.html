@@ -212,6 +212,10 @@
               <button class="btn btn-red" style="padding:8px 16px;font-size:12px;margin-top:18px;background:#c62828;" onclick="adminBuscarResultados()">Buscar</button>
             </div>
             <div id="adminResultsList" style="margin-top:10px;max-height:400px;overflow-y:auto;"></div>
+            <div id="adminResultsActions" style="display:none;margin-top:8px;">
+              <button class="btn btn-red" style="padding:8px 16px;font-size:12px;" onclick="adminDeletarSelecionados()">🗑️ Deletar Selecionados</button>
+              <label style="font-size:11px;margin-left:10px;cursor:pointer;"><input type="checkbox" onclick="adminToggleAll(this)"> Selecionar todos</label>
+            </div>
           </div>
 
           <!-- Pacientes de um usuario -->
@@ -1263,23 +1267,52 @@
       if (!email) { alert('Digite um email.'); return; }
       var el = document.getElementById('adminResultsList');
       el.innerHTML = '<p style="color:#555;">Buscando...</p>';
+      document.getElementById('adminResultsActions').style.display = 'none';
       try {
         var url = API_URL + '/get-results?email=' + encodeURIComponent(email);
         if (tipo) url += '&tipo=' + tipo;
         var resp = await fetch(url);
         var data = await resp.json();
         if (data.results && data.results.length > 0) {
-          var html = '<table class="results-table"><tr><th>Data</th><th>Tipo</th><th>SessionID</th><th>Resumo</th></tr>';
+          var html = '<table class="results-table"><tr><th><input type="checkbox" onclick="adminToggleAll(this)"></th><th>Data</th><th>Tipo</th><th>Resumo</th><th>ID</th></tr>';
           data.results.forEach(function(r) {
             var d = r.data || {};
-            var resumo = d.status || d.classificacao || d.escala || '-';
+            var resumo = d.escala || d.status || d.classificacao || '-';
+            if (d.formData && d.formData.nome) resumo = d.formData.nome + ' - ' + (d.status || '');
             var dataFmt = r.date ? new Date(r.date).toLocaleString('pt-BR') : '-';
-            html += '<tr><td style="font-size:10px;">' + dataFmt + '</td><td>' + r.tipo + '</td><td style="font-size:9px;font-family:monospace;">' + r.sessionId.slice(0,15) + '</td><td style="font-size:10px;">' + resumo + '</td></tr>';
+            html += '<tr>';
+            html += '<td><input type="checkbox" class="admin-result-check" data-sid="' + r.sessionId + '"></td>';
+            html += '<td style="font-size:10px;">' + dataFmt + '</td>';
+            html += '<td style="font-size:11px;">' + r.tipo + '</td>';
+            html += '<td style="font-size:10px;">' + resumo.substring(0, 40) + '</td>';
+            html += '<td style="font-size:8px;font-family:monospace;">' + r.sessionId.slice(0, 12) + '</td>';
+            html += '</tr>';
           });
           html += '</table><p style="font-size:11px;color:#777;margin-top:5px;">Total: ' + data.results.length + ' resultados</p>';
           el.innerHTML = html;
+          document.getElementById('adminResultsActions').style.display = 'block';
         } else { el.innerHTML = '<p>Nenhum resultado encontrado.</p>'; }
       } catch(e) { el.innerHTML = '<p style="color:red;">Erro: ' + e.message + '</p>'; }
+    }
+
+    function adminToggleAll(master) {
+      var checks = document.querySelectorAll('.admin-result-check');
+      checks.forEach(function(c) { c.checked = master.checked; });
+    }
+
+    async function adminDeletarSelecionados() {
+      var checks = document.querySelectorAll('.admin-result-check:checked');
+      if (checks.length === 0) { alert('Selecione pelo menos um resultado.'); return; }
+      if (!confirm('Deletar ' + checks.length + ' resultado(s) selecionados?')) return;
+      var ok = 0;
+      for (var i = 0; i < checks.length; i++) {
+        try {
+          await fetch(API_URL + '/delete-result', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ sessionId: checks[i].dataset.sid }) });
+          ok++;
+        } catch(e) {}
+      }
+      alert(ok + ' resultado(s) deletados!');
+      adminBuscarResultados();
     }
 
     async function adminBuscarPacientes() {
