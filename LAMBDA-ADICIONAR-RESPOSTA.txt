@@ -1,0 +1,39 @@
+=====================================================
+ADICIONAR NA LAMBDA - ROTA DE RESPONDER DEPOIMENTO
+Colar ANTES da linha: return { statusCode: 404, ...
+(logo depois do POST /delete-depoimento)
+=====================================================
+
+    // POST /responder-depoimento
+    if (path === "/responder-depoimento" && method === "POST") {
+      const depId = body.id;
+      const resposta = (body.resposta || "").trim().slice(0, 300);
+      if (!depId || !resposta) {
+        return { statusCode: 400, headers, body: JSON.stringify({ error: "ID e resposta obrigatorios." }) };
+      }
+      // Buscar depoimento existente
+      const res = await db.send(new GetItemCommand({
+        TableName: "tecfe-results",
+        Key: { sessionId: { S: depId } }
+      }));
+      if (!res.Item) {
+        return { statusCode: 404, headers, body: JSON.stringify({ error: "Depoimento nao encontrado." }) };
+      }
+      // Atualizar com a resposta
+      const dadosAtuais = JSON.parse(res.Item.data?.S || "{}");
+      dadosAtuais.resposta = resposta;
+      await db.send(new UpdateItemCommand({
+        TableName: "tecfe-results",
+        Key: { sessionId: { S: depId } },
+        UpdateExpression: "SET #d = :data",
+        ExpressionAttributeNames: { "#d": "data" },
+        ExpressionAttributeValues: { ":data": { S: JSON.stringify(dadosAtuais) } }
+      }));
+      return { statusCode: 200, headers, body: JSON.stringify({ ok: true }) };
+    }
+
+=====================================================
+TAMBEM: No GET /get-depoimentos, a resposta ja vem
+automaticamente porque esta dentro do campo "data".
+Nao precisa mudar nada no get-depoimentos.
+=====================================================

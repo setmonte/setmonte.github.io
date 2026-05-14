@@ -92,6 +92,7 @@
           <button class="tab-btn" id="tabTrmv" onclick="switchTab('trmv')">TRMV</button>
           <button class="tab-btn" id="tabEscalas" onclick="switchTab('escalas')">Escalas</button>
           <button class="tab-btn" id="tabPacientes" onclick="switchTab('pacientes')">Pacientes</button>
+          <button class="tab-btn" id="tabDepoimentos" onclick="switchTab('depoimentos')">Depoimentos</button>
         </div>
 
         <!-- === ABA TECFE === -->
@@ -150,6 +151,16 @@
           <div style="margin-top:20px;padding:10px;background:#f5f5f5;border-radius:6px;">
             <p style="font-size:11px;color:#888;text-align:center;">&#128274; Seus dados sao protegidos e acessiveis apenas por voce. O administrador do sistema nao acessa informacoes de pacientes.</p>
           </div>
+        </div>
+
+        <!-- === ABA DEPOIMENTOS === -->
+        <div id="depoimentosTab" class="tab-content">
+          <div style="text-align:center;padding:10px 0;">
+            <p style="font-size:15px;color:#2e7d32;font-weight:bold;">Gerenciar Depoimentos</p>
+            <p style="font-size:12px;color:#555;margin-top:5px;">Veja os depoimentos recebidos e responda.</p>
+            <p style="font-size:11px;color:#4a9bd9;margin-top:5px;">Link para enviar: <a href="../depoimento/" target="_blank">setmonte.github.io/depoimento/</a></p>
+          </div>
+          <div id="depoimentosList" style="margin-top:15px;"><p style="color:#777;">Carregando...</p></div>
         </div>
 
         <!-- === ABA TRMV === -->
@@ -846,11 +857,13 @@
       document.getElementById('trmvTab').classList.remove('active');
       document.getElementById('escalasTab').classList.remove('active');
       document.getElementById('pacientesTab').classList.remove('active');
+      document.getElementById('depoimentosTab').classList.remove('active');
       document.getElementById('tabTecfe').classList.remove('active');
       document.getElementById('tabBae').classList.remove('active');
       document.getElementById('tabTrmv').classList.remove('active');
       document.getElementById('tabEscalas').classList.remove('active');
       document.getElementById('tabPacientes').classList.remove('active');
+      document.getElementById('tabDepoimentos').classList.remove('active');
       ['plansSection','newTestSection','resultsSection','baePlansSection','newBaeSection','baeResultsSection','trmvPlansSection','newTrmvSection','trmvResultsSection'].forEach(function(id) {
         var el = document.getElementById(id); if (el) el.classList.add('hidden');
       });
@@ -871,6 +884,10 @@
         document.getElementById('pacientesTab').classList.add('active');
         document.getElementById('tabPacientes').classList.add('active');
         loadPacientes();
+      } else if (tab === 'depoimentos') {
+        document.getElementById('depoimentosTab').classList.add('active');
+        document.getElementById('tabDepoimentos').classList.add('active');
+        loadDepoimentos();
       }
     }
 
@@ -1072,6 +1089,66 @@
       } catch(e) {
         document.getElementById('pacientesList').innerHTML = '<p style="color:#777;">Erro ao carregar.</p>';
       }
+    }
+
+    // ===== FUNCOES DEPOIMENTOS =====
+    async function loadDepoimentos() {
+      try {
+        var resp = await fetch(API_URL + '/get-depoimentos');
+        var data = await resp.json();
+        var deps = data.depoimentos || [];
+        if (deps.length > 0) {
+          var html = '';
+          deps.forEach(function(d) {
+            var estrelas = String.fromCharCode(9733).repeat(d.nota) + String.fromCharCode(9734).repeat(5 - d.nota);
+            var dataFmt = d.data ? new Date(d.data).toLocaleDateString('pt-BR') : '-';
+            html += '<div style="background:#f9f9f9;border:1px solid #ddd;border-radius:10px;padding:15px;margin-bottom:12px;">';
+            html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">';
+            html += '<span style="color:#f5a623;font-size:14px;">' + estrelas + '</span>';
+            html += '<span style="font-size:11px;color:#999;">' + dataFmt + '</span>';
+            html += '</div>';
+            html += '<p style="font-size:13px;color:#444;font-style:italic;line-height:1.5;margin-bottom:8px;">"' + d.texto.replace(/\n/g,' ') + '"</p>';
+            html += '<p style="font-size:12px;color:#555;font-weight:600;">-- ' + d.nome + (d.servico ? ' | ' + d.servico : '') + '</p>';
+            if (d.resposta) {
+              html += '<div style="margin-top:10px;padding:10px;background:#e8f5e9;border-radius:8px;border-left:3px solid #2e7d32;">';
+              html += '<p style="font-size:11px;color:#2e7d32;font-weight:bold;margin-bottom:4px;">Sua resposta:</p>';
+              html += '<p style="font-size:12px;color:#333;">' + d.resposta + '</p>';
+              html += '</div>';
+            } else {
+              html += '<div style="margin-top:10px;">';
+              html += '<textarea id="resp_' + d.id + '" placeholder="Escreva sua resposta..." style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:12px;min-height:50px;font-family:inherit;"></textarea>';
+              html += '<button class="btn btn-green" style="padding:6px 14px;font-size:11px;margin-top:5px;" onclick="responderDepoimento(\'' + d.id + '\')">Responder</button>';
+              html += '</div>';
+            }
+            html += '<button class="btn btn-red" style="padding:4px 10px;font-size:10px;margin-top:8px;" onclick="deletarDepoimento(\'' + d.id + '\')">Remover</button>';
+            html += '</div>';
+          });
+          document.getElementById('depoimentosList').innerHTML = html;
+        } else {
+          document.getElementById('depoimentosList').innerHTML = '<p style="color:#777;">Nenhum depoimento recebido ainda.</p>';
+        }
+      } catch(e) {
+        document.getElementById('depoimentosList').innerHTML = '<p style="color:#777;">Erro ao carregar.</p>';
+      }
+    }
+
+    async function responderDepoimento(id) {
+      var textarea = document.getElementById('resp_' + id);
+      if (!textarea) return;
+      var resposta = textarea.value.trim();
+      if (!resposta) { alert('Escreva uma resposta.'); return; }
+      try {
+        await fetch(API_URL + '/responder-depoimento', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id, resposta: resposta }) });
+        loadDepoimentos();
+      } catch(e) { alert('Erro ao salvar resposta.'); }
+    }
+
+    async function deletarDepoimento(id) {
+      if (!confirm('Remover este depoimento?')) return;
+      try {
+        await fetch(API_URL + '/delete-depoimento', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id }) });
+        loadDepoimentos();
+      } catch(e) { alert('Erro ao remover.'); }
     }
 
     function popularDropdownsPacientes() {
