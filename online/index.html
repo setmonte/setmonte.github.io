@@ -195,8 +195,11 @@
 
           <!-- Listar todos os usuarios -->
           <div style="background:#e3f2fd;border:2px solid #1565c0;border-radius:10px;padding:15px;margin:10px 0;">
-            <p style="font-size:13px;font-weight:bold;color:#1565c0;margin-bottom:8px;">👥 Todos os Usuários</p>
-            <button class="btn btn-blue" style="padding:8px 16px;font-size:12px;" onclick="adminListarUsuarios()">Carregar Lista</button>
+            <p style="font-size:13px;font-weight:bold;color:#1565c0;margin-bottom:8px;">👥 Usuários do Sistema</p>
+            <div class="btn-row">
+              <button class="btn btn-blue" style="padding:8px 16px;font-size:12px;" onclick="adminListarUsuarios()">DynamoDB (creditos)</button>
+              <button class="btn btn-blue" style="padding:8px 16px;font-size:12px;background:#7b1fa2;" onclick="adminListarCognito()">Cognito (login)</button>
+            </div>
             <div id="adminUsersList" style="margin-top:10px;max-height:300px;overflow-y:auto;"></div>
           </div>
 
@@ -1214,16 +1217,35 @@
 
     async function adminListarUsuarios() {
       var el = document.getElementById('adminUsersList');
-      el.innerHTML = '<p style="color:#555;">Carregando...</p>';
+      el.innerHTML = '<p style="color:#555;">Carregando DynamoDB...</p>';
       try {
         var resp = await fetch(API_URL + '/admin-list-users');
         var data = await resp.json();
         if (data.users && data.users.length > 0) {
-          var html = '<table class="results-table"><tr><th>Email</th><th>TECFE</th><th>BAE</th><th>TRMV</th></tr>';
+          var html = '<p style="font-size:11px;color:#1565c0;font-weight:bold;margin-bottom:5px;">DynamoDB (tecfe-users) — quem interagiu com a API:</p>';
+          html += '<table class="results-table"><tr><th>Email</th><th>TECFE</th><th>BAE</th><th>TRMV</th></tr>';
           data.users.forEach(function(u) {
             html += '<tr><td style="font-size:11px;">' + u.email + '</td><td>' + u.credits + '</td><td>' + u.baeCredits + '</td><td>' + u.trmvCredits + '</td></tr>';
           });
-          html += '</table><p style="font-size:11px;color:#777;margin-top:5px;">Total: ' + data.users.length + ' usuarios</p>';
+          html += '</table><p style="font-size:11px;color:#777;margin-top:5px;">Total: ' + data.users.length + ' registros</p>';
+          el.innerHTML = html;
+        } else { el.innerHTML = '<p>Nenhum usuario encontrado.</p>'; }
+      } catch(e) { el.innerHTML = '<p style="color:red;">Erro: ' + e.message + '</p>'; }
+    }
+
+    async function adminListarCognito() {
+      var el = document.getElementById('adminUsersList');
+      el.innerHTML = '<p style="color:#555;">Carregando Cognito...</p>';
+      try {
+        var resp = await fetch(API_URL + '/admin-list-cognito');
+        var data = await resp.json();
+        if (data.users && data.users.length > 0) {
+          var html = '<p style="font-size:11px;color:#7b1fa2;font-weight:bold;margin-bottom:5px;">Cognito — quem pode LOGAR no painel:</p>';
+          html += '<table class="results-table"><tr><th>Email</th><th>Status</th><th>Criado em</th></tr>';
+          data.users.forEach(function(u) {
+            html += '<tr><td style="font-size:11px;">' + u.email + '</td><td>' + u.status + '</td><td style="font-size:10px;">' + u.criado + '</td></tr>';
+          });
+          html += '</table><p style="font-size:11px;color:#777;margin-top:5px;">Total: ' + data.users.length + ' usuarios com login</p>';
           el.innerHTML = html;
         } else { el.innerHTML = '<p>Nenhum usuario encontrado.</p>'; }
       } catch(e) { el.innerHTML = '<p style="color:red;">Erro: ' + e.message + '</p>'; }
