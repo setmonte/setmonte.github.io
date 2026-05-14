@@ -231,12 +231,18 @@
             <div id="adminStats" style="margin-top:10px;"></div>
           </div>
 
-          <!-- Deletar resultado especifico -->
+          <!-- Deletar resultados -->
           <div style="background:#ffebee;border:2px solid #b71c1c;border-radius:10px;padding:15px;margin:10px 0;">
-            <p style="font-size:13px;font-weight:bold;color:#b71c1c;margin-bottom:8px;">🗑️ Deletar Resultado (por sessionId)</p>
-            <div class="form-row">
-              <label>Session ID: <input type="text" id="adminDeleteSid" placeholder="ex: esc-abc123" style="width:250px;"></label>
-              <button class="btn btn-red" style="padding:8px 16px;font-size:12px;margin-top:18px;" onclick="adminDeletarResultado()">Deletar</button>
+            <p style="font-size:13px;font-weight:bold;color:#b71c1c;margin-bottom:8px;">🗑️ Deletar Resultados</p>
+            <p style="font-size:11px;color:#666;margin-bottom:8px;">Deletar por Session ID (um por linha) ou busque resultados acima e copie os IDs.</p>
+            <textarea id="adminDeleteSids" placeholder="Cole os Session IDs aqui (um por linha)&#10;ex:&#10;esc-abc123&#10;bae-xyz456&#10;dep-mmm789" style="width:100%;min-height:80px;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:11px;font-family:monospace;"></textarea>
+            <div class="btn-row" style="margin-top:8px;">
+              <button class="btn btn-red" style="padding:8px 16px;font-size:12px;" onclick="adminDeletarLote()">Deletar Todos da Lista</button>
+              <button class="btn btn-orange" style="padding:8px 16px;font-size:12px;" onclick="adminDeletarPorEmail()">Deletar TODOS de um Email</button>
+            </div>
+            <div class="form-row" style="margin-top:8px;">
+              <label>Email (para deletar tudo): <input type="text" id="adminDeleteEmail" placeholder="email@exemplo.com" style="width:220px;"></label>
+              <label>Tipo: <select id="adminDeleteTipo" style="width:100px;"><option value="">Todos</option><option value="tecfe">TECFE</option><option value="bae">BAE</option><option value="trmv">TRMV</option><option value="escala">Escalas</option></select></label>
             </div>
             <p id="adminDeleteMsg" style="font-size:11px;color:#555;margin-top:5px;"></p>
           </div>
@@ -1316,14 +1322,51 @@
       } catch(e) { el.innerHTML = '<p style="color:red;">Erro: ' + e.message + '</p>'; }
     }
 
-    async function adminDeletarResultado() {
-      var sid = document.getElementById('adminDeleteSid').value.trim();
-      if (!sid) { alert('Digite o Session ID.'); return; }
-      if (!confirm('Tem certeza que deseja deletar o resultado ' + sid + '?')) return;
+    async function adminDeletarLote() {
+      var texto = document.getElementById('adminDeleteSids').value.trim();
+      if (!texto) { alert('Cole os Session IDs na caixa de texto.'); return; }
+      var sids = texto.split('\n').map(function(s) { return s.trim(); }).filter(function(s) { return s.length > 0; });
+      if (sids.length === 0) { alert('Nenhum ID valido encontrado.'); return; }
+      if (!confirm('Tem certeza que deseja deletar ' + sids.length + ' resultado(s)?')) return;
       var msg = document.getElementById('adminDeleteMsg');
+      msg.textContent = 'Deletando ' + sids.length + ' itens...';
+      var ok = 0, erros = 0;
+      for (var i = 0; i < sids.length; i++) {
+        try {
+          await fetch(API_URL + '/delete-result', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ sessionId: sids[i] }) });
+          ok++;
+        } catch(e) { erros++; }
+      }
+      msg.textContent = 'Concluido! ' + ok + ' deletados' + (erros > 0 ? ', ' + erros + ' erros' : '') + '.';
+      msg.style.color = '#2e7d32';
+      document.getElementById('adminDeleteSids').value = '';
+    }
+
+    async function adminDeletarPorEmail() {
+      var email = document.getElementById('adminDeleteEmail').value.trim();
+      var tipo = document.getElementById('adminDeleteTipo').value;
+      if (!email) { alert('Digite o email.'); return; }
+      var tipoTxt = tipo ? tipo.toUpperCase() : 'TODOS os tipos';
+      if (!confirm('ATENCAO! Isso vai deletar TODOS os resultados de ' + email + ' (tipo: ' + tipoTxt + '). Tem certeza?')) return;
+      var msg = document.getElementById('adminDeleteMsg');
+      msg.textContent = 'Buscando resultados...';
       try {
-        await fetch(API_URL + '/delete-result', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ sessionId: sid }) });
-        msg.textContent = 'Deletado com sucesso!';
+        var url = API_URL + '/get-results?email=' + encodeURIComponent(email);
+        if (tipo) url += '&tipo=' + tipo;
+        var resp = await fetch(url);
+        var data = await resp.json();
+        var results = data.results || [];
+        if (results.length === 0) { msg.textContent = 'Nenhum resultado encontrado.'; return; }
+        if (!confirm('Encontrados ' + results.length + ' resultados. Confirma a exclusao de TODOS?')) { msg.textContent = 'Cancelado.'; return; }
+        msg.textContent = 'Deletando ' + results.length + ' itens...';
+        var ok = 0;
+        for (var i = 0; i < results.length; i++) {
+          try {
+            await fetch(API_URL + '/delete-result', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ sessionId: results[i].sessionId }) });
+            ok++;
+          } catch(e) {}
+        }
+        msg.textContent = 'Concluido! ' + ok + '/' + results.length + ' deletados.';
         msg.style.color = '#2e7d32';
       } catch(e) { msg.textContent = 'Erro: ' + e.message; msg.style.color = '#c62828'; }
     }
