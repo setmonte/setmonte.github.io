@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TAAV — Teste de Aprendizagem e Armazenamento Visual</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'Segoe UI',Arial,sans-serif; background:linear-gradient(135deg,#5c6bc0 0%,#7e57c2 50%,#ab47bc 100%); min-height:100vh; padding:20px; line-height:1.6; }
+    .container { max-width:1000px; margin:0 auto; background:#fff; border-radius:16px; box-shadow:0 20px 60px rgba(0,0,0,0.15); overflow:hidden; }
+    header { background:linear-gradient(135deg,#311b92,#4527a0,#5e35b1); color:#fff; padding:30px; text-align:center; }
+    header .logo { font-size:2.8em; font-weight:bold; margin-bottom:10px; letter-spacing:3px; }
+    header h1 { font-size:1.6em; font-weight:300; margin-bottom:8px; }
+    header p { font-size:1em; opacity:0.85; }
+    .page { display:none; }
+    .page.active { display:block; animation:fadeIn 0.4s ease-out; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(15px)} to{opacity:1;transform:translateY(0)} }
+    .secao { padding:35px; }
+    .secao h2 { color:#311b92; margin-bottom:15px; font-size:1.6em; border-bottom:3px solid #7c4dff; padding-bottom:10px; }
+    .descricao-secao { color:#616161; margin-bottom:25px; font-size:1.05em; }
+    .instrucoes-box { background:#f3e5f5; border:2px solid #ce93d8; border-radius:12px; padding:25px; margin:20px 0; line-height:1.8; }
+    .instrucoes-box p { margin-bottom:10px; color:#4a148c; }
+    .botoes { text-align:center; margin-top:30px; display:flex; justify-content:center; gap:15px; flex-wrap:wrap; }
+    .btn-primary { background:linear-gradient(135deg,#5e35b1,#7c4dff); color:#fff; border:none; padding:14px 28px; border-radius:8px; font-size:16px; font-weight:600; cursor:pointer; transition:all 0.3s; min-width:48px; min-height:48px; }
+    .btn-primary:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(94,53,177,0.4); }
+    .btn-primary:disabled { background:#bdbdbd; cursor:not-allowed; transform:none; box-shadow:none; }
+    .btn-danger { background:linear-gradient(135deg,#e53935,#ef5350); color:#fff; border:none; padding:14px 28px; border-radius:8px; font-size:16px; font-weight:600; cursor:pointer; transition:all 0.3s; min-width:48px; min-height:48px; }
+    .btn-danger:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(229,57,53,0.4); }
+    .cronometro-container { text-align:center; margin-bottom:25px; }
+    .cronometro { display:inline-flex; align-items:center; gap:10px; background:linear-gradient(135deg,#311b92,#4527a0); color:#fff; padding:12px 25px; border-radius:30px; font-size:1.1em; box-shadow:0 4px 15px rgba(49,27,146,0.3); }
+    .cronometro-tempo { font-family:'Courier New',monospace; font-size:1.8em; font-weight:bold; min-width:50px; text-align:center; }
+    .cronometro-barra { width:80%; max-width:400px; height:6px; background:#e0d6f0; border-radius:3px; margin:12px auto 0; overflow:hidden; }
+    .cronometro-progresso { height:100%; background:linear-gradient(90deg,#7c4dff,#e040fb); border-radius:3px; width:100%; transition:width 1s linear; }
+    .grid-figuras { display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap:20px; padding:25px; background:#fafafa; border:2px solid #e8e0f0; border-radius:12px; min-height:200px; }
+    .figura-item { display:flex; flex-direction:column; align-items:center; justify-content:center; width:120px; height:120px; background:#fff; border:3px solid #e0e0e0; border-radius:10px; cursor:default; transition:all 0.2s; position:relative; }
+    .figura-numero { position:absolute; top:5px; left:5px; background:#5e35b1; color:#fff; width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.75em; font-weight:bold; }
+    .grid-reconhecimento .figura-item { cursor:pointer; }
+    .grid-reconhecimento .figura-item:hover { border-color:#b388ff; background:#f9f5ff; transform:scale(1.03); }
+    .grid-reconhecimento .figura-item.selecionado { border-color:#43a047; border-width:4px; background:#e8f5e9; box-shadow:0 0 15px rgba(67,160,71,0.3); transform:scale(1.05); }
+    .grid-reconhecimento .figura-item.selecionado .figura-numero { background:#43a047; }
+    .tela-retencao { background:#1a1a2e; min-height:80vh; display:flex; align-items:center; justify-content:center; border-radius:12px; margin:20px; }
+    .retencao-conteudo { text-align:center; color:#fff; }
+    .retencao-cronometro { font-size:5em; font-weight:bold; color:#7c4dff; font-family:monospace; }
+    .retencao-mensagem { font-size:1.5em; opacity:0.7; margin-bottom:20px; }
+    .retencao-submensagem { font-size:1em; opacity:0.5; margin-top:20px; }
+    .concluido { text-align:center; padding:60px 30px; }
+    .concluido h2 { color:#2e7d32; font-size:2em; margin-bottom:15px; }
+    .concluido p { color:#555; font-size:1.2em; }
+    .progresso-container { background:#f5f0ff; padding:15px 25px; border-bottom:1px solid #e8e0f0; }
+    .progresso-barra { width:100%; height:6px; background:#e0d6f0; border-radius:3px; overflow:hidden; margin-bottom:10px; }
+    .progresso-preenchido { height:100%; background:linear-gradient(90deg,#7c4dff,#b388ff); border-radius:3px; width:7%; transition:width 0.5s ease; }
+    @media (max-width:768px) {
+      body { padding:10px; }
+      .secao { padding:20px 15px; }
+      .figura-item { width:90px; height:90px; }
+      .grid-figuras { gap:12px; padding:15px; }
+      .botoes { flex-direction:column; align-items:center; }
+      .btn-primary,.btn-danger { width:100%; max-width:300px; }
+    }
+    @media (max-width:400px) {
+      .figura-item { width:75px; height:75px; }
+      .figura-numero { width:18px; height:18px; font-size:0.65em; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">TAAV</div>
+      <h1>Teste de Aprendizagem e Armazenamento Visual</h1>
+      <p>Sistema THEDUGA - Avaliacao Neuropsicologica Online</p>
+    </header>
+
+    <div class="progresso-container">
+      <div class="progresso-barra">
+        <div class="progresso-preenchido" id="progresso-preenchido"></div>
+      </div>
+    </div>
+
+    <!-- PAGINA: CONFIGURACAO AUTOMATICA -->
+    <div class="page active" id="pagina-configuracao">
+      <div class="secao">
+        <h2>Configuracao Automatica</h2>
+        <p id="justificativa-config" style="text-align:center;color:#5e35b1;font-weight:600;padding:15px;background:#ede7f6;border-radius:8px;font-size:1.2em;margin:20px 0;"></p>
+        <p class="descricao-secao" style="text-align:center;">15 figuras — 5 tentativas (padrao RAVLT visual)</p>
+        <div class="botoes">
+          <button class="btn-primary" onclick="iniciarTrial1()">Iniciar Teste</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGINA: INSTRUCOES T1 -->
+    <div class="page" id="pagina-instrucoes-t1">
+      <div class="secao">
+        <h2>Instrucoes - Tentativa 1</h2>
+        <div class="instrucoes-box">
+          <p><strong>Instrucoes:</strong></p>
+          <p>Voce vera 15 figuras coloridas na tela. Observe-as com atencao durante 30 segundos.</p>
+          <p>Depois, essas figuras serao misturadas com outras parecidas, e voce devera clicar nas que reconhece.</p>
+          <p>Este processo se repetira 5 vezes com as mesmas figuras-alvo.</p>
+          <p><em>Tente memorizar o maximo de figuras que conseguir.</em></p>
+        </div>
+        <div class="botoes">
+          <button class="btn-primary" onclick="iniciarEstudoT1()">Estou pronto - Iniciar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGINA: ESTUDO T1 -->
+    <div class="page" id="pagina-estudo-t1">
+      <div class="secao">
+        <h2>Memorize as Figuras - Tentativa 1</h2>
+        <div class="cronometro-container">
+          <div class="cronometro">
+            <span>&#9201;</span>
+            <span class="cronometro-tempo" id="tempo-estudo-t1">30</span>
+            <span>segundos</span>
+          </div>
+          <div class="cronometro-barra">
+            <div class="cronometro-progresso" id="progresso-estudo-t1"></div>
+          </div>
+        </div>
+        <div class="grid-figuras" id="grid-estudo-t1"></div>
+      </div>
+    </div>
+
+    <!-- PAGINA: RECONHECIMENTO T1 -->
+    <div class="page" id="pagina-reconhecimento-t1">
+      <div class="secao">
+        <h2>Reconhecimento - Tentativa 1</h2>
+        <p class="descricao-secao">Clique nas figuras que voce viu na tela anterior.</p>
+        <div class="cronometro-container">
+          <div class="cronometro" style="background:linear-gradient(135deg,#455a64,#607d8b);">
+            <span>&#9201;</span>
+            <span class="cronometro-tempo" id="tempo-reconhecimento-t1">0</span>
+            <span>segundos</span>
+          </div>
+        </div>
+        <div class="grid-figuras grid-reconhecimento" id="grid-reconhecimento-t1"></div>
+        <div class="botoes">
+          <button class="btn-danger" onclick="naoLembroNenhuma('t1')">Nao lembro de nenhuma</button>
+          <button class="btn-primary" onclick="confirmarSelecoes('t1')">Confirmar Selecoes</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGINA: ESTUDO T2 -->
+    <div class="page" id="pagina-estudo-t2">
+      <div class="secao">
+        <h2>Memorize as Figuras - Tentativa 2</h2>
+        <div class="cronometro-container">
+          <div class="cronometro">
+            <span>&#9201;</span>
+            <span class="cronometro-tempo" id="tempo-estudo-t2">30</span>
+            <span>segundos</span>
+          </div>
+          <div class="cronometro-barra">
+            <div class="cronometro-progresso" id="progresso-estudo-t2"></div>
+          </div>
+        </div>
+        <div class="grid-figuras" id="grid-estudo-t2"></div>
+      </div>
+    </div>
+
+    <!-- PAGINA: RECONHECIMENTO T2 -->
+    <div class="page" id="pagina-reconhecimento-t2">
+      <div class="secao">
+        <h2>Reconhecimento - Tentativa 2</h2>
+        <p class="descricao-secao">Clique nas figuras que voce viu na tela anterior.</p>
+        <div class="cronometro-container">
+          <div class="cronometro" style="background:linear-gradient(135deg,#455a64,#607d8b);">
+            <span>&#9201;</span>
+            <span class="cronometro-tempo" id="tempo-reconhecimento-t2">0</span>
+            <span>segundos</span>
+          </div>
+        </div>
+        <div class="grid-figuras grid-reconhecimento" id="grid-reconhecimento-t2"></div>
+        <div class="botoes">
+          <button class="btn-danger" onclick="naoLembroNenhuma('t2')">Nao lembro de nenhuma</button>
+          <button class="btn-primary" onclick="confirmarSelecoes('t2')">Confirmar Selecoes</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGINA: ESTUDO T3 -->
+    <div class="page" id="pagina-estudo-t3">
+      <div class="secao">
+        <h2>Memorize as Figuras - Tentativa 3</h2>
+        <div class="cronometro-container">
+          <div class="cronometro">
+            <span>&#9201;</span>
+            <span class="cronometro-tempo" id="tempo-estudo-t3">30</span>
+            <span>segundos</span>
+          </div>
+          <div class="cronometro-barra">
+            <div class="cronometro-progresso" id="progresso-estudo-t3"></div>
+          </div>
+        </div>
+        <div class="grid-figuras" id="grid-estudo-t3"></div>
+      </div>
+    </div>
+
+    <!-- PAGINA: RECONHECIMENTO T3 -->
+    <div class="page" id="pagina-reconhecimento-t3">
+      <div class="secao">
+        <h2>Reconhecimento - Tentativa 3</h2>
+        <p class="descricao-secao">Clique nas figuras que voce viu na tela anterior.</p>
+        <div class="cronometro-container">
+          <div class="cronometro" style="background:linear-gradient(135deg,#455a64,#607d8b);">
+            <span>&#9201;</span>
+            <span class="cronometro-tempo" id="tempo-reconhecimento-t3">0</span>
+            <span>segundos</span>
+          </div>
+        </div>
+        <div class="grid-figuras grid-reconhecimento" id="grid-reconhecimento-t3"></div>
+        <div class="botoes">
+          <button class="btn-danger" onclick="naoLembroNenhuma('t3')">Nao lembro de nenhuma</button>
+          <button class="btn-primary" onclick="confirmarSelecoes('t3')">Confirmar Selecoes</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGINA: ESTUDO T4 -->
+    <div class="page" id="pagina-estudo-t4">
+      <div class="secao">
+        <h2>Memorize as Figuras - Tentativa 4</h2>
+        <div class="cronometro-container">
+          <div class="cronometro">
+            <span>&#9201;</span>
+            <span class="cronometro-tempo" id="tempo-estudo-t4">30</span>
+            <span>segundos</span>
+          </div>
+          <div class="cronometro-barra">
+            <div class="cronometro-progresso" id="progresso-estudo-t4"></div>
+          </div>
+        </div>
+        <div class="grid-figuras" id="grid-estudo-t4"></div>
+      </div>
+    </div>
+
+    <!-- PAGINA: RECONHECIMENTO T4 -->
+    <div class="page" id="pagina-reconhecimento-t4">
+      <div class="secao">
+        <h2>Reconhecimento - Tentativa 4</h2>
+        <p class="descricao-secao">Clique nas figuras que voce viu na tela anterior.</p>
+        <div class="cronometro-container">
+          <div class="cronometro" style="background:linear-gradient(135deg,#455a64,#607d8b);">
+            <span>&#9201;</span>
+            <span class="cronometro-tempo" id="tempo-reconhecimento-t4">0</span>
+            <span>segundos</span>
+          </div>
+        </div>
+        <div class="grid-figuras grid-reconhecimento" id="grid-reconhecimento-t4"></div>
+        <div class="botoes">
+          <button class="btn-danger" onclick="naoLembroNenhuma('t4')">Nao lembro de nenhuma</button>
+          <button class="btn-primary" onclick="confirmarSelecoes('t4')">Confirmar Selecoes</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGINA: ESTUDO T5 -->
+    <div class="page" id="pagina-estudo-t5">
+      <div class="secao">
+        <h2>Memorize as Figuras - Tentativa 5</h2>
+        <div class="cronometro-container">
+          <div class="cronometro">
+            <span>&#9201;</span>
+            <span class="cronometro-tempo" id="tempo-estudo-t5">30</span>
+            <span>segundos</span>
+          </div>
+          <div class="cronometro-barra">
+            <div class="cronometro-progresso" id="progresso-estudo-t5"></div>
+          </div>
+        </div>
+        <div class="grid-figuras" id="grid-estudo-t5"></div>
+      </div>
+    </div>
+
+    <!-- PAGINA: RECONHECIMENTO T5 -->
+    <div class="page" id="pagina-reconhecimento-t5">
+      <div class="secao">
+        <h2>Reconhecimento - Tentativa 5</h2>
+        <p class="descricao-secao">Clique nas figuras que voce viu na tela anterior.</p>
+        <div class="cronometro-container">
+          <div class="cronometro" style="background:linear-gradient(135deg,#455a64,#607d8b);">
+            <span>&#9201;</span>
+            <span class="cronometro-tempo" id="tempo-reconhecimento-t5">0</span>
+            <span>segundos</span>
+          </div>
+        </div>
+        <div class="grid-figuras grid-reconhecimento" id="grid-reconhecimento-t5"></div>
+        <div class="botoes">
+          <button class="btn-danger" onclick="naoLembroNenhuma('t5')">Nao lembro de nenhuma</button>
+          <button class="btn-primary" onclick="confirmarSelecoes('t5')">Confirmar Selecoes</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGINA: INSTRUCOES INTERFERENCIA -->
+    <div class="page" id="pagina-instrucoes-interf">
+      <div class="secao">
+        <h2>Interferencia</h2>
+        <div class="instrucoes-box">
+          <p><strong>Nova lista de figuras!</strong></p>
+          <p>Agora voce vera um conjunto DIFERENTE de figuras. Memorize estas novas figuras.</p>
+          <p>Depois, voce devera reconhecer apenas as figuras DESTA nova lista.</p>
+        </div>
+        <div class="botoes">
+          <button class="btn-primary" onclick="iniciarEstudoInterf()">Estou pronto - Iniciar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGINA: ESTUDO INTERFERENCIA -->
+    <div class="page" id="pagina-estudo-interf">
+      <div class="secao">
+        <h2>Memorize as Novas Figuras</h2>
+        <div class="cronometro-container">
+          <div class="cronometro">
+            <span>&#9201;</span>
+            <span class="cronometro-tempo" id="tempo-estudo-interf">30</span>
+            <span>segundos</span>
+          </div>
+          <div class="cronometro-barra">
+            <div class="cronometro-progresso" id="progresso-estudo-interf"></div>
+          </div>
+        </div>
+        <div class="grid-figuras" id="grid-estudo-interf"></div>
+      </div>
+    </div>
+
+    <!-- PAGINA: RECONHECIMENTO INTERFERENCIA -->
+    <div class="page" id="pagina-reconhecimento-interf">
+      <div class="secao">
+        <h2>Reconhecimento - Interferencia</h2>
+        <p class="descricao-secao">Clique nas figuras da NOVA lista que voce acabou de ver.</p>
+        <div class="cronometro-container">
+          <div class="cronometro" style="background:linear-gradient(135deg,#455a64,#607d8b);">
+            <span>&#9201;</span>
+            <span class="cronometro-tempo" id="tempo-reconhecimento-interf">0</span>
+            <span>segundos</span>
+          </div>
+        </div>
+        <div class="grid-figuras grid-reconhecimento" id="grid-reconhecimento-interf"></div>
+        <div class="botoes">
+          <button class="btn-danger" onclick="naoLembroNenhuma('interf')">Nao lembro de nenhuma</button>
+          <button class="btn-primary" onclick="confirmarSelecoes('interf')">Confirmar Selecoes</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGINA: EVOCACAO IMEDIATA -->
+    <div class="page" id="pagina-evocacao-imediata">
+      <div class="secao">
+        <h2>Evocacao Imediata</h2>
+        <p class="descricao-secao">Agora, SEM ver as figuras novamente, clique nas figuras da PRIMEIRA lista (a que voce viu 5 vezes).</p>
+        <div class="cronometro-container">
+          <div class="cronometro" style="background:linear-gradient(135deg,#455a64,#607d8b);">
+            <span>&#9201;</span>
+            <span class="cronometro-tempo" id="tempo-evocacao-imediata">0</span>
+            <span>segundos</span>
+          </div>
+        </div>
+        <div class="grid-figuras grid-reconhecimento" id="grid-evocacao-imediata"></div>
+        <div class="botoes">
+          <button class="btn-danger" onclick="naoLembroNenhuma('evoc-imediata')">Nao lembro de nenhuma</button>
+          <button class="btn-primary" onclick="confirmarSelecoes('evoc-imediata')">Confirmar Selecoes</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGINA: ESPERA 20 MINUTOS -->
+    <div class="page" id="pagina-espera">
+      <div class="tela-retencao">
+        <div class="retencao-conteudo">
+          <p class="retencao-mensagem">Intervalo de Espera</p>
+          <div class="retencao-cronometro" id="tempo-espera">20:00</div>
+          <p class="retencao-submensagem">Aguarde o tempo terminar. Um alarme sonoro avisara quando estiver pronto.</p>
+          <div style="margin-top:30px;">
+            <button class="btn-primary" id="btn-evoc-tardia" onclick="iniciarEvocacaoTardia()" style="display:none;">Iniciar Evocacao Tardia</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGINA: EVOCACAO TARDIA -->
+    <div class="page" id="pagina-evocacao-tardia">
+      <div class="secao">
+        <h2>Evocacao Tardia</h2>
+        <p class="descricao-secao">Apos o intervalo, clique nas figuras da PRIMEIRA lista (a que voce viu 5 vezes).</p>
+        <div class="cronometro-container">
+          <div class="cronometro" style="background:linear-gradient(135deg,#455a64,#607d8b);">
+            <span>&#9201;</span>
+            <span class="cronometro-tempo" id="tempo-evocacao-tardia">0</span>
+            <span>segundos</span>
+          </div>
+        </div>
+        <div class="grid-figuras grid-reconhecimento" id="grid-evocacao-tardia"></div>
+        <div class="botoes">
+          <button class="btn-danger" onclick="naoLembroNenhuma('evoc-tardia')">Nao lembro de nenhuma</button>
+          <button class="btn-primary" onclick="confirmarSelecoes('evoc-tardia')">Confirmar Selecoes</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGINA: RECONHECIMENTO FINAL -->
+    <div class="page" id="pagina-reconhecimento-final">
+      <div class="secao">
+        <h2>Reconhecimento Final</h2>
+        <p class="descricao-secao">Clique em TODAS as figuras da PRIMEIRA lista (a que voce viu 5 vezes). Atencao: ha 50 figuras misturadas.</p>
+        <div class="cronometro-container">
+          <div class="cronometro" style="background:linear-gradient(135deg,#455a64,#607d8b);">
+            <span>&#9201;</span>
+            <span class="cronometro-tempo" id="tempo-reconhecimento-final">0</span>
+            <span>segundos</span>
+          </div>
+        </div>
+        <div class="grid-figuras grid-reconhecimento" id="grid-reconhecimento-final"></div>
+        <div class="botoes">
+          <button class="btn-danger" onclick="naoLembroNenhuma('rec-final')">Nao lembro de nenhuma</button>
+          <button class="btn-primary" onclick="confirmarSelecoes('rec-final')">Confirmar Selecoes</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGINA: CONCLUIDO -->
+    <div class="page" id="pagina-concluido">
+      <div class="concluido">
+        <h2>&#10004; Teste concluido!</h2>
+        <p>Voce pode fechar esta janela.</p>
+        <p style="margin-top:20px;font-size:0.9em;color:#777;">Os resultados foram enviados para o avaliador.</p>
+      </div>
+    </div>
+  </div>
+
+
+  <script>
+    // ===== CONFIGURACAO =====
+    var API_URL = 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
+    var sessionData = null;
+
+    // ===== ESTIMULOS: LISTA A (15 figuras-alvo) =====
+    var LISTA_A = [
+      { id:'a01', nome:'celular', svgElemento:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect x="30" y="10" width="40" height="80" rx="5" fill="#2D2D2D"/><rect x="34" y="18" width="32" height="55" rx="2" fill="#81D4FA"/><circle cx="50" cy="82" r="4" fill="#555"/><rect x="43" y="12" width="14" height="3" rx="1" fill="#555"/></svg>' },
+      { id:'a02', nome:'carro', svgElemento:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><path d="M20 55 L28 35 L72 35 L80 55 Z" fill="#E53935"/><rect x="15" y="55" width="70" height="20" rx="5" fill="#C62828"/><circle cx="30" cy="78" r="9" fill="#333"/><circle cx="30" cy="78" r="4" fill="#999"/><circle cx="70" cy="78" r="9" fill="#333"/><circle cx="70" cy="78" r="4" fill="#999"/><rect x="33" y="39" width="14" height="12" rx="2" fill="#BBDEFB"/><rect x="53" y="39" width="14" height="12" rx="2" fill="#BBDEFB"/><rect x="18" y="58" width="12" height="5" rx="2" fill="#FFF176"/><rect x="70" y="58" width="12" height="5" rx="2" fill="#FFF176"/></svg>' },
+      { id:'a03', nome:'aviao', svgElemento:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><ellipse cx="50" cy="50" rx="8" ry="30" fill="#ECEFF1"/><path d="M50 38 L15 53 L15 48 L42 40 Z" fill="#90CAF9"/><path d="M50 38 L85 53 L85 48 L58 40 Z" fill="#90CAF9"/><path d="M50 75 L38 82 L38 78 L47 75 Z" fill="#64B5F6"/><path d="M50 75 L62 82 L62 78 L53 75 Z" fill="#64B5F6"/><rect x="47" y="20" width="6" height="5" rx="2" fill="#42A5F5"/><circle cx="50" cy="35" r="3" fill="#BBDEFB"/></svg>' },
+      { id:'a04', nome:'arvore', svgElemento:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect x="44" y="62" width="12" height="28" fill="#795548"/><ellipse cx="50" cy="38" rx="26" ry="30" fill="#4CAF50"/><ellipse cx="38" cy="45" rx="12" ry="14" fill="#388E3C"/><ellipse cx="62" cy="42" rx="10" ry="12" fill="#66BB6A"/><circle cx="40" cy="35" r="3" fill="#F44336"/><circle cx="58" cy="50" r="2.5" fill="#F44336"/></svg>' },
+      { id:'a05', nome:'homem', svgElemento:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="22" r="12" fill="#FFCC80"/><path d="M38 36 L62 36 L60 68 L55 68 L55 92 L45 92 L45 68 L40 68 Z" fill="#1976D2"/><rect x="30" y="38" width="7" height="24" rx="3" fill="#FFCC80"/><rect x="63" y="38" width="7" height="24" rx="3" fill="#FFCC80"/><rect x="44" y="92" width="5" height="4" rx="1" fill="#5D4037"/><rect x="51" y="92" width="5" height="4" rx="1" fill="#5D4037"/><path d="M40 12 Q50 6 60 12 L60 18 Q55 14 45 14 L40 18 Z" fill="#5D4037"/></svg>' },
+      { id:'a06', nome:'loja', svgElemento:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect x="15" y="35" width="70" height="55" fill="#FFF9C4"/><polygon points="10,35 50,12 90,35" fill="#E53935"/><rect x="38" y="60" width="24" height="30" fill="#795548"/><circle cx="56" cy="76" r="2" fill="#FDD835"/><rect x="18" y="42" width="18" height="14" fill="#BBDEFB"/><rect x="64" y="42" width="18" height="14" fill="#BBDEFB"/><line x1="27" y1="42" x2="27" y2="56" stroke="#90CAF9" stroke-width="1"/><line x1="73" y1="42" x2="73" y2="56" stroke="#90CAF9" stroke-width="1"/></svg>' },
+      { id:'a07', nome:'prato', svgElemento:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><ellipse cx="50" cy="58" rx="36" ry="14" fill="#E0E0E0"/><ellipse cx="50" cy="55" rx="36" ry="16" fill="none" stroke="#BDBDBD" stroke-width="2"/><ellipse cx="50" cy="53" rx="36" ry="16" fill="#FAFAFA"/><ellipse cx="50" cy="52" rx="28" ry="11" fill="none" stroke="#42A5F5" stroke-width="2.5"/><ellipse cx="50" cy="52" rx="20" ry="7" fill="none" stroke="#90CAF9" stroke-width="1"/></svg>' },
+      { id:'a08', nome:'cachorro', svgElemento:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><ellipse cx="50" cy="55" rx="22" ry="15" fill="#A1887F"/><circle cx="34" cy="42" r="11" fill="#8D6E63"/><polygon points="26,38 22,24 30,34" fill="#6D4C41"/><polygon points="40,36 44,24 36,33" fill="#6D4C41"/><circle cx="30" cy="40" r="2.5" fill="#333"/><circle cx="38" cy="40" r="2.5" fill="#333"/><ellipse cx="34" cy="46" rx="4" ry="3" fill="#4E342E"/><rect x="68" y="50" width="16" height="4" rx="2" fill="#8D6E63"/><rect x="32" y="68" width="5" height="14" rx="2" fill="#8D6E63"/><rect x="43" y="68" width="5" height="14" rx="2" fill="#8D6E63"/><rect x="54" y="68" width="5" height="14" rx="2" fill="#8D6E63"/><rect x="64" y="68" width="5" height="14" rx="2" fill="#8D6E63"/></svg>' },
+      { id:'a09', nome:'flor', svgElemento:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect x="48" y="52" width="4" height="38" fill="#4CAF50"/><path d="M44 70 Q36 62 30 66" stroke="#4CAF50" stroke-width="2.5" fill="none"/><path d="M54 75 Q62 67 68 70" stroke="#4CAF50" stroke-width="2.5" fill="none"/><circle cx="50" cy="36" r="8" fill="#FDD835"/><circle cx="40" cy="28" r="8" fill="#EC407A"/><circle cx="60" cy="28" r="8" fill="#EC407A"/><circle cx="37" cy="40" r="8" fill="#F06292"/><circle cx="63" cy="40" r="8" fill="#F06292"/><circle cx="43" cy="50" r="8" fill="#EC407A"/><circle cx="57" cy="50" r="8" fill="#EC407A"/></svg>' },
+      { id:'a10', nome:'peixe', svgElemento:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><ellipse cx="45" cy="50" rx="28" ry="16" fill="#FF8A65"/><polygon points="73,50 90,35 90,65" fill="#FF7043"/><circle cx="30" cy="46" r="5" fill="#FFF"/><circle cx="30" cy="46" r="2.5" fill="#333"/><path d="M35 55 Q45 60 55 55" fill="none" stroke="#E64A19" stroke-width="1.5"/><ellipse cx="50" cy="45" rx="8" ry="3" fill="#FFAB91"/><line x1="60" y1="42" x2="65" y2="38" stroke="#E64A19" stroke-width="1.5"/><line x1="60" y1="50" x2="66" y2="50" stroke="#E64A19" stroke-width="1.5"/><line x1="60" y1="56" x2="65" y2="60" stroke="#E64A19" stroke-width="1.5"/></svg>' },
+      { id:'a11', nome:'roupa', svgElemento:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><path d="M35 15 L45 15 L50 25 L55 15 L65 15 L75 30 L65 35 L62 25 L62 88 L38 88 L38 25 L35 35 L25 30 Z" fill="#1E88E5"/><path d="M45 15 L50 25 L55 15" fill="none" stroke="#1565C0" stroke-width="2"/><rect x="42" y="50" width="16" height="3" rx="1" fill="#BBDEFB"/></svg>' },
+      { id:'a12', nome:'sol', svgElemento:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="18" fill="#FDD835"/><line x1="50" y1="10" x2="50" y2="25" stroke="#FF8F00" stroke-width="4" stroke-linecap="round"/><line x1="50" y1="75" x2="50" y2="90" stroke="#FF8F00" stroke-width="4" stroke-linecap="round"/><line x1="10" y1="50" x2="25" y2="50" stroke="#FF8F00" stroke-width="4" stroke-linecap="round"/><line x1="75" y1="50" x2="90" y2="50" stroke="#FF8F00" stroke-width="4" stroke-linecap="round"/><line x1="22" y1="22" x2="33" y2="33" stroke="#FF8F00" stroke-width="4" stroke-linecap="round"/><line x1="67" y1="67" x2="78" y2="78" stroke="#FF8F00" stroke-width="4" stroke-linecap="round"/><line x1="78" y1="22" x2="67" y2="33" stroke="#FF8F00" stroke-width="4" stroke-linecap="round"/><line x1="22" y1="78" x2="33" y2="67" stroke="#FF8F00" stroke-width="4" stroke-linecap="round"/><circle cx="44" cy="45" r="2" fill="#F57F17"/><circle cx="56" cy="45" r="2" fill="#F57F17"/><path d="M44 55 Q50 60 56 55" fill="none" stroke="#F57F17" stroke-width="2"/></svg>' },
+      { id:'a13', nome:'sofa', svgElemento:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect x="15" y="45" width="70" height="25" rx="5" fill="#8D6E63"/><rect x="10" y="40" width="12" height="35" rx="5" fill="#6D4C41"/><rect x="78" y="40" width="12" height="35" rx="5" fill="#6D4C41"/><rect x="20" y="35" width="60" height="12" rx="4" fill="#A1887F"/><rect x="25" y="48" width="22" height="15" rx="3" fill="#BCAAA4"/><rect x="53" y="48" width="22" height="15" rx="3" fill="#BCAAA4"/><rect x="20" y="75" width="8" height="10" rx="2" fill="#5D4037"/><rect x="72" y="75" width="8" height="10" rx="2" fill="#5D4037"/></svg>' },
+      { id:'a14', nome:'vaso', svgElemento:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect x="38" y="20" width="24" height="40" rx="3" fill="#FAFAFA"/><rect x="35" y="15" width="30" height="8" rx="4" fill="#E0E0E0"/><ellipse cx="50" cy="65" rx="20" ry="18" fill="#FAFAFA"/><ellipse cx="50" cy="65" rx="14" ry="12" fill="#E3F2FD"/><rect x="47" y="12" width="6" height="5" rx="2" fill="#BDBDBD"/><path d="M38 58 L38 80 Q38 85 50 85 Q62 85 62 80 L62 58" fill="none" stroke="#BDBDBD" stroke-width="2"/></svg>' },
+      { id:'a15', nome:'televisao', svgElemento:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect x="15" y="25" width="70" height="45" rx="4" fill="#212121"/><rect x="20" y="30" width="60" height="35" rx="2" fill="#42A5F5"/><rect x="40" y="72" width="20" height="5" fill="#333"/><rect x="30" y="77" width="40" height="5" rx="2" fill="#424242"/><circle cx="35" cy="47" r="8" fill="#66BB6A"/><rect x="48" y="38" width="25" height="3" rx="1" fill="#FFF"/><rect x="48" y="45" width="20" height="3" rx="1" fill="#FFF"/><rect x="48" y="52" width="22" height="3" rx="1" fill="#FFF"/></svg>' }
+    ];
+
+    // ===== ESTIMULOS: LISTA B (15 figuras de interferencia) =====
+    var LISTA_B = [
+      { id:'b01', nome:'chave', svgElemento:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="30" cy="35" r="14" fill="none" stroke="#FBC02D" stroke-width="6"/><circle cx="30" cy="35" r="7" fill="none" stroke="#F9A825" stroke-width="3"/><rect x="40" y="32" width="45" height="6" rx="2" fill="#FDD835"/><rect x="75" y="38" width="6" height="12" rx="1" fill="#FBC02D"/><rect x="65" y="38" width="6" height="10" rx="1" fill="#FBC02D"/></svg>' },
+      { id:'b02', nome:'bicicleta', svgElemento:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="25" cy="65" r="15" fill="none" stroke="#333" stroke-width="4"/><circle cx="75" cy="65" r="15" fill="none" stroke="#333" stroke-width="4"/><line x1="25" y1="65" x2="45" y2="40" stroke="#E53935" stroke-width="3"/><line x1="45" y1="40" x2="55" y2="40" stroke="#E53935" stroke-width="3"/><line x1="55" y1="40" x2="75" y2="65" stroke="#E53935" stroke-width="3"/><line x1="45" y1="40" x2="25" y2="65" stroke="#E53935" stroke-width="3"/><line x1="55" y1="40" x2="50" y2="30" stroke="#E53935" stroke-width="3"/><line x1="43" y1="30" x2="57" y2="30" stroke="#333" stroke-width="3"/><circle cx="50" cy="40" r="3" fill="#E53935"/></svg>' },
+      { id:'b03', nome:'relogio', svgElemento:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="36" fill="#FDD835"/><circle cx="50" cy="50" r="31" fill="#FFFDE7"/><line x1="50" y1="50" x2="50" y2="28" stroke="#333" stroke-width="3" stroke-linecap="round"/><line x1="50" y1="50" x2="65" y2="50" stroke="#333" stroke-width="3" stroke-linecap="round"/><circle cx="50" cy="50" r="3" fill="#333"/><circle cx="50" cy="22" r="2" fill="#333"/><circle cx="50" cy="78" r="2" fill="#333"/><circle cx="22" cy="50" r="2" fill="#333"/><circle cx="78" cy="50" r="2" fill="#333"/><line x1="50" y1="50" x2="55" y2="62" stroke="#E53935" stroke-width="1.5"/></svg>' },
+      { id:'b04', nome:'guarda-chuva', svgElemento:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><path d="M15 50 Q50 10 85 50 Z" fill="#E53935"/><path d="M15 50 Q32 30 50 50 Z" fill="#C62828"/><path d="M50 50 Q68 30 85 50 Z" fill="#C62828"/><line x1="50" y1="50" x2="50" y2="85" stroke="#795548" stroke-width="4" stroke-linecap="round"/><path d="M50 85 Q50 92 44 88" fill="none" stroke="#795548" stroke-width="4" stroke-linecap="round"/></svg>' },
+      { id:'b05', nome:'bola', svgElemento:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="32" fill="#FAFAFA"/><path d="M50 18 L38 35 L22 35 L18 50 L25 65 L38 72 L50 82 L62 72 L75 65 L82 50 L78 35 L62 35 Z" fill="none" stroke="#333" stroke-width="2.5"/><line x1="50" y1="18" x2="50" y2="35" stroke="#333" stroke-width="2.5"/><line x1="38" y1="35" x2="38" y2="50" stroke="#333" stroke-width="2.5"/><line x1="62" y1="35" x2="62" y2="50" stroke="#333" stroke-width="2.5"/><polygon points="38,35 50,35 50,18" fill="#333"/><polygon points="62,35 78,35 75,50" fill="#333"/><polygon points="22,35 38,35 30,50" fill="#333"/></svg>' },
+      { id:'b06', nome:'oculos', svgElemento:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="50" r="16" fill="#E3F2FD" stroke="#333" stroke-width="4"/><circle cx="68" cy="50" r="16" fill="#E3F2FD" stroke="#333" stroke-width="4"/><path d="M48 50 Q50 46 52 50" fill="none" stroke="#333" stroke-width="3"/><line x1="16" y1="45" x2="8" y2="42" stroke="#333" stroke-width="3"/><line x1="84" y1="45" x2="92" y2="42" stroke="#333" stroke-width="3"/></svg>' },
+      { id:'b07', nome:'livro', svgElemento:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><path d="M50 20 L50 85 Q35 80 15 82 L15 18 Q35 15 50 20 Z" fill="#1E88E5"/><path d="M50 20 L50 85 Q65 80 85 82 L85 18 Q65 15 50 20 Z" fill="#1565C0"/><line x1="25" y1="35" x2="45" y2="33" stroke="#FFF" stroke-width="2"/><line x1="25" y1="45" x2="45" y2="43" stroke="#FFF" stroke-width="2"/><line x1="25" y1="55" x2="45" y2="53" stroke="#FFF" stroke-width="2"/><line x1="55" y1="33" x2="75" y2="35" stroke="#BBDEFB" stroke-width="2"/><line x1="55" y1="43" x2="75" y2="45" stroke="#BBDEFB" stroke-width="2"/></svg>' },
+      { id:'b08', nome:'garrafa', svgElemento:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect x="43" y="10" width="14" height="15" rx="3" fill="#2E7D32"/><path d="M43 25 L38 40 L38 85 Q38 90 43 90 L57 90 Q62 90 62 85 L62 40 L57 25 Z" fill="#388E3C"/><rect x="36" y="50" width="28" height="18" rx="2" fill="#FFFDE7"/><rect x="40" y="54" width="20" height="4" rx="1" fill="#C62828"/><ellipse cx="50" cy="15" rx="5" ry="2" fill="#1B5E20"/></svg>' },
+      { id:'b09', nome:'escada', svgElemento:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><line x1="30" y1="10" x2="30" y2="90" stroke="#8D6E63" stroke-width="6"/><line x1="70" y1="10" x2="70" y2="90" stroke="#8D6E63" stroke-width="6"/><line x1="30" y1="25" x2="70" y2="25" stroke="#A1887F" stroke-width="5"/><line x1="30" y1="42" x2="70" y2="42" stroke="#A1887F" stroke-width="5"/><line x1="30" y1="59" x2="70" y2="59" stroke="#A1887F" stroke-width="5"/><line x1="30" y1="76" x2="70" y2="76" stroke="#A1887F" stroke-width="5"/></svg>' },
+      { id:'b10', nome:'lua', svgElemento:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><path d="M60 15 A30 30 0 1 0 60 85 A22 22 0 1 1 60 15 Z" fill="#FDD835"/><circle cx="35" cy="40" r="2" fill="#FBC02D"/><circle cx="42" cy="60" r="1.5" fill="#FBC02D"/><circle cx="30" cy="55" r="1" fill="#FBC02D"/></svg>' },
+      { id:'b11', nome:'tesoura', svgElemento:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="30" cy="75" r="10" fill="none" stroke="#FF7043" stroke-width="4"/><circle cx="70" cy="75" r="10" fill="none" stroke="#FF7043" stroke-width="4"/><line x1="35" y1="67" x2="65" y2="20" stroke="#9E9E9E" stroke-width="4"/><line x1="65" y1="67" x2="35" y2="20" stroke="#9E9E9E" stroke-width="4"/><circle cx="30" cy="75" r="4" fill="#FF7043"/><circle cx="70" cy="75" r="4" fill="#FF7043"/></svg>' },
+      { id:'b12', nome:'sapato', svgElemento:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><path d="M20 45 L20 65 Q20 72 30 72 L85 72 Q90 72 90 67 L90 60 Q90 55 80 55 L45 55 L40 45 Z" fill="#5D4037"/><path d="M20 45 Q22 35 30 38 L40 45 Z" fill="#4E342E"/><rect x="25" y="58" width="50" height="3" rx="1" fill="#795548"/><ellipse cx="88" cy="68" rx="4" ry="5" fill="#4E342E"/></svg>' },
+      { id:'b13', nome:'violao', svgElemento:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><ellipse cx="50" cy="70" rx="18" ry="20" fill="#8D6E63"/><ellipse cx="50" cy="42" rx="12" ry="14" fill="#A1887F"/><rect x="47" y="10" width="6" height="30" fill="#5D4037"/><line x1="42" y1="10" x2="58" y2="10" stroke="#333" stroke-width="3"/><ellipse cx="50" cy="70" rx="6" ry="7" fill="#4E342E"/><line x1="48" y1="28" x2="48" y2="82" stroke="#FDD835" stroke-width="0.8"/><line x1="50" y1="28" x2="50" y2="82" stroke="#FDD835" stroke-width="0.8"/><line x1="52" y1="28" x2="52" y2="82" stroke="#FDD835" stroke-width="0.8"/><circle cx="44" cy="10" r="2" fill="#FDD835"/><circle cx="56" cy="10" r="2" fill="#FDD835"/></svg>' },
+      { id:'b14', nome:'panela', svgElemento:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><ellipse cx="50" cy="45" rx="28" ry="8" fill="#9E9E9E"/><path d="M22 45 L22 70 Q22 80 50 80 Q78 80 78 70 L78 45" fill="#BDBDBD"/><rect x="78" y="50" width="15" height="6" rx="3" fill="#333"/><ellipse cx="50" cy="45" rx="22" ry="5" fill="#E0E0E0"/><path d="M40 30 Q42 22 44 30" fill="none" stroke="#90A4AE" stroke-width="2"/><path d="M50 28 Q52 20 54 28" fill="none" stroke="#90A4AE" stroke-width="2"/><path d="M58 30 Q60 22 62 30" fill="none" stroke="#90A4AE" stroke-width="2"/></svg>' },
+      { id:'b15', nome:'porta', svgElemento:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect x="25" y="10" width="50" height="80" rx="2" fill="#5D4037"/><rect x="30" y="15" width="40" height="70" fill="#795548"/><circle cx="62" cy="52" r="3.5" fill="#FDD835"/><rect x="35" y="20" width="15" height="25" rx="1" fill="#6D4C41"/><rect x="55" y="20" width="10" height="25" rx="1" fill="#6D4C41"/><rect x="35" y="50" width="15" height="25" rx="1" fill="#6D4C41"/><rect x="55" y="50" width="10" height="25" rx="1" fill="#6D4C41"/></svg>' }
+    ];
+
+    // ===== ESTIMULOS: DISTRATORES (20 figuras para reconhecimento final) =====
+    var DISTRATORES = [
+      { id:'d01', nome:'moto', svgElemento:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="25" cy="65" r="14" fill="none" stroke="#333" stroke-width="4"/><circle cx="75" cy="65" r="14" fill="none" stroke="#333" stroke-width="4"/><path d="M25 65 L40 45 L65 45 L75 65" fill="none" stroke="#E53935" stroke-width="4"/><rect x="38" y="38" width="20" height="8" rx="3" fill="#C62828"/><line x1="60" y1="42" x2="70" y2="32" stroke="#333" stroke-width="3"/><rect x="66" y="28" width="10" height="5" rx="2" fill="#FFF176"/></svg>' },
+      { id:'d02', nome:'gato', svgElemento:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><ellipse cx="50" cy="58" rx="18" ry="14" fill="#FF8A65"/><circle cx="50" cy="36" r="13" fill="#FF7043"/><polygon points="39,28 36,14 44,24" fill="#FF7043"/><polygon points="61,28 64,14 56,24" fill="#FF7043"/><circle cx="44" cy="34" r="2.5" fill="#333"/><circle cx="56" cy="34" r="2.5" fill="#333"/><ellipse cx="50" cy="40" rx="3" ry="2" fill="#F48FB1"/><path d="M72 52 Q85 47 88 57" stroke="#FF8A65" stroke-width="3" fill="none"/><rect x="38" y="70" width="4" height="12" rx="2" fill="#FF8A65"/><rect x="48" y="70" width="4" height="12" rx="2" fill="#FF8A65"/><rect x="58" y="70" width="4" height="12" rx="2" fill="#FF8A65"/><line x1="35" y1="36" x2="25" y2="33" stroke="#FF7043" stroke-width="1.5"/><line x1="35" y1="39" x2="25" y2="39" stroke="#FF7043" stroke-width="1.5"/><line x1="65" y1="36" x2="75" y2="33" stroke="#FF7043" stroke-width="1.5"/><line x1="65" y1="39" x2="75" y2="39" stroke="#FF7043" stroke-width="1.5"/></svg>' },
+      { id:'d03', nome:'helicoptero', svgElemento:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><ellipse cx="45" cy="55" rx="22" ry="12" fill="#42A5F5"/><line x1="15" y1="35" x2="80" y2="35" stroke="#333" stroke-width="3"/><line x1="45" y1="43" x2="45" y2="35" stroke="#333" stroke-width="3"/><path d="M67 55 L85 45 L88 48 L70 58 Z" fill="#1E88E5"/><line x1="85" y1="42" x2="85" y2="52" stroke="#333" stroke-width="2"/><rect x="35" y="67" width="5" height="10" fill="#333"/><rect x="52" y="67" width="5" height="10" fill="#333"/><line x1="28" y1="77" x2="65" y2="77" stroke="#333" stroke-width="3"/><rect x="32" y="50" width="12" height="8" rx="2" fill="#BBDEFB"/></svg>' },
+      { id:'d04', nome:'mulher', svgElemento:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="20" r="11" fill="#FFCC80"/><path d="M40 34 L60 34 L58 50 L60 90 L54 90 L50 60 L46 90 L40 90 L42 50 Z" fill="#EC407A"/><path d="M42 50 L58 50 L60 68 L40 68 Z" fill="#AD1457"/><rect x="32" y="36" width="6" height="20" rx="3" fill="#FFCC80"/><rect x="62" y="36" width="6" height="20" rx="3" fill="#FFCC80"/><path d="M40 10 Q50 5 60 10 L62 20 Q58 25 55 22 L50 28 L45 22 Q42 25 38 20 Z" fill="#5D4037"/><rect x="44" y="90" width="5" height="4" rx="1" fill="#E53935"/><rect x="51" y="90" width="5" height="4" rx="1" fill="#E53935"/></svg>' },
+      { id:'d05', nome:'copo', svgElemento:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><path d="M32 20 L35 75 Q35 82 50 82 Q65 82 65 75 L68 20 Z" fill="#E3F2FD" stroke="#90CAF9" stroke-width="2"/><path d="M35 20 L65 20 L63 30 L37 30 Z" fill="#BBDEFB"/><rect x="38" y="82" width="24" height="5" rx="2" fill="#90CAF9"/><ellipse cx="50" cy="50" rx="10" ry="15" fill="#E1F5FE" opacity="0.5"/></svg>' },
+      { id:'d06', nome:'estrela', svgElemento:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><polygon points="50,10 61,38 92,38 67,56 76,85 50,68 24,85 33,56 8,38 39,38" fill="#FDD835"/><polygon points="50,22 57,40 76,40 61,52 67,70 50,58 33,70 39,52 24,40 43,40" fill="#FFF176"/></svg>' },
+      { id:'d07', nome:'violino', svgElemento:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><ellipse cx="50" cy="72" rx="14" ry="16" fill="#8D6E63"/><ellipse cx="50" cy="40" rx="10" ry="12" fill="#A1887F"/><path d="M40 52 Q50 58 60 52" fill="#5D4037"/><rect x="48" y="12" width="4" height="55" fill="#6D4C41"/><line x1="42" y1="12" x2="58" y2="12" stroke="#333" stroke-width="2"/><circle cx="42" cy="12" r="2" fill="#333"/><circle cx="58" cy="12" r="2" fill="#333"/><rect x="62" y="55" width="20" height="3" rx="1" fill="#795548"/><line x1="49" y1="28" x2="49" y2="82" stroke="#FDD835" stroke-width="0.7"/><line x1="51" y1="28" x2="51" y2="82" stroke="#FDD835" stroke-width="0.7"/></svg>' },
+      { id:'d08', nome:'sandalia', svgElemento:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><path d="M20 55 Q20 45 30 45 L80 45 Q90 45 90 55 L90 62 Q90 68 80 68 L30 68 Q20 68 20 62 Z" fill="#42A5F5"/><line x1="45" y1="45" x2="50" y2="30" stroke="#1E88E5" stroke-width="4"/><line x1="55" y1="45" x2="50" y2="30" stroke="#1E88E5" stroke-width="4"/><circle cx="50" cy="28" r="4" fill="#1565C0"/><ellipse cx="55" cy="56" rx="20" ry="8" fill="#1E88E5" opacity="0.3"/></svg>' },
+      { id:'d09', nome:'rosa', svgElemento:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect x="48" y="50" width="4" height="40" fill="#4CAF50"/><path d="M40 35 Q45 20 50 30 Q55 20 60 35 Q65 30 60 42 Q55 48 50 45 Q45 48 40 42 Q35 30 40 35 Z" fill="#E53935"/><circle cx="50" cy="35" r="5" fill="#C62828"/><path d="M42 65 Q32 58 28 62" stroke="#4CAF50" stroke-width="3" fill="none"/><path d="M56 72 Q65 65 70 68" stroke="#4CAF50" stroke-width="3" fill="none"/><path d="M30 62 L34 58 L32 64 Z" fill="#388E3C"/><path d="M68 68 L72 64 L70 72 Z" fill="#388E3C"/></svg>' },
+      { id:'d10', nome:'caderno', svgElemento:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect x="25" y="12" width="55" height="76" rx="3" fill="#1E88E5"/><rect x="32" y="17" width="45" height="66" fill="#FAFAFA"/><line x1="37" y1="30" x2="72" y2="30" stroke="#90CAF9" stroke-width="1.5"/><line x1="37" y1="40" x2="72" y2="40" stroke="#90CAF9" stroke-width="1.5"/><line x1="37" y1="50" x2="72" y2="50" stroke="#90CAF9" stroke-width="1.5"/><line x1="37" y1="60" x2="72" y2="60" stroke="#90CAF9" stroke-width="1.5"/><circle cx="25" cy="25" r="3" fill="#BDBDBD"/><circle cx="25" cy="40" r="3" fill="#BDBDBD"/><circle cx="25" cy="55" r="3" fill="#BDBDBD"/><circle cx="25" cy="70" r="3" fill="#BDBDBD"/><line x1="25" y1="22" x2="18" y2="22" stroke="#BDBDBD" stroke-width="2"/><line x1="25" y1="37" x2="18" y2="37" stroke="#BDBDBD" stroke-width="2"/><line x1="25" y1="52" x2="18" y2="52" stroke="#BDBDBD" stroke-width="2"/><line x1="25" y1="67" x2="18" y2="67" stroke="#BDBDBD" stroke-width="2"/></svg>' },
+      { id:'d11', nome:'foguete', svgElemento:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><path d="M50 8 Q60 25 60 55 L40 55 Q40 25 50 8 Z" fill="#ECEFF1"/><rect x="42" y="55" width="16" height="15" fill="#E53935"/><polygon points="40,55 30,70 40,65" fill="#1E88E5"/><polygon points="60,55 70,70 60,65" fill="#1E88E5"/><ellipse cx="50" cy="35" rx="5" ry="7" fill="#42A5F5"/><path d="M42 70 L45 88 L50 80 L55 88 L58 70 Z" fill="#FF8F00"/><path d="M45 70 L48 82 L50 76 L52 82 L55 70 Z" fill="#FDD835"/></svg>' },
+      { id:'d12', nome:'martelo', svgElemento:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect x="46" y="40" width="8" height="50" rx="2" fill="#8D6E63"/><rect x="28" y="20" width="44" height="22" rx="4" fill="#757575"/><rect x="30" y="22" width="15" height="18" rx="2" fill="#9E9E9E"/><rect x="28" y="18" width="44" height="5" rx="2" fill="#616161"/></svg>' },
+      { id:'d13', nome:'coroa', svgElemento:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><path d="M15 70 L15 40 L30 55 L50 30 L70 55 L85 40 L85 70 Z" fill="#FDD835"/><rect x="15" y="70" width="70" height="10" rx="3" fill="#F9A825"/><circle cx="15" cy="40" r="4" fill="#E53935"/><circle cx="50" cy="30" r="4" fill="#42A5F5"/><circle cx="85" cy="40" r="4" fill="#4CAF50"/><circle cx="30" cy="74" r="3" fill="#E53935"/><circle cx="50" cy="74" r="3" fill="#42A5F5"/><circle cx="70" cy="74" r="3" fill="#4CAF50"/></svg>' },
+      { id:'d14', nome:'abacaxi', svgElemento:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><ellipse cx="50" cy="60" rx="20" ry="28" fill="#FDD835"/><path d="M42 32 L38 12 L45 25 L50 8 L55 25 L62 12 L58 32" fill="#4CAF50"/><path d="M35 50 L65 50" stroke="#F9A825" stroke-width="1.5"/><path d="M33 60 L67 60" stroke="#F9A825" stroke-width="1.5"/><path d="M35 70 L65 70" stroke="#F9A825" stroke-width="1.5"/><path d="M40 40 L40 82" stroke="#F9A825" stroke-width="1.5"/><path d="M50 35 L50 88" stroke="#F9A825" stroke-width="1.5"/><path d="M60 40 L60 82" stroke="#F9A825" stroke-width="1.5"/></svg>' },
+      { id:'d15', nome:'sino', svgElemento:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><path d="M30 65 Q30 30 50 25 Q70 30 70 65 Z" fill="#FDD835"/><rect x="25" y="65" width="50" height="8" rx="4" fill="#F9A825"/><circle cx="50" cy="80" r="6" fill="#F57F17"/><rect x="47" y="15" width="6" height="12" rx="3" fill="#FBC02D"/><path d="M35 40 Q40 35 45 40" fill="none" stroke="#FFF176" stroke-width="2" opacity="0.6"/></svg>' },
+      { id:'d16', nome:'ancora', svgElemento:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="18" r="8" fill="none" stroke="#37474F" stroke-width="4"/><line x1="50" y1="26" x2="50" y2="85" stroke="#455A64" stroke-width="5"/><line x1="30" y1="45" x2="70" y2="45" stroke="#455A64" stroke-width="4"/><path d="M20 70 Q20 85 50 85" fill="none" stroke="#455A64" stroke-width="5" stroke-linecap="round"/><path d="M80 70 Q80 85 50 85" fill="none" stroke="#455A64" stroke-width="5" stroke-linecap="round"/><circle cx="20" cy="70" r="4" fill="#37474F"/><circle cx="80" cy="70" r="4" fill="#37474F"/></svg>' },
+      { id:'d17', nome:'dado', svgElemento:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect x="20" y="20" width="60" height="60" rx="10" fill="#FAFAFA" stroke="#E0E0E0" stroke-width="2"/><circle cx="35" cy="35" r="5" fill="#333"/><circle cx="65" cy="35" r="5" fill="#333"/><circle cx="35" cy="65" r="5" fill="#333"/><circle cx="65" cy="65" r="5" fill="#333"/><circle cx="50" cy="50" r="5" fill="#333"/></svg>' },
+      { id:'d18', nome:'pipa', svgElemento:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><polygon points="50,10 75,45 50,80 25,45" fill="#E53935"/><polygon points="50,10 50,80 25,45" fill="#1E88E5"/><line x1="25" y1="45" x2="75" y2="45" stroke="#FDD835" stroke-width="2"/><line x1="50" y1="10" x2="50" y2="80" stroke="#FDD835" stroke-width="2"/><path d="M50 80 Q55 85 52 90 Q48 95 53 98" fill="none" stroke="#4CAF50" stroke-width="2"/><circle cx="52" cy="90" r="2" fill="#FDD835"/><circle cx="48" cy="95" r="2" fill="#FF7043"/></svg>' },
+      { id:'d19', nome:'vela', svgElemento:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect x="42" y="38" width="16" height="47" rx="2" fill="#FFFDE7"/><rect x="42" y="38" width="16" height="47" rx="2" fill="none" stroke="#FFF9C4" stroke-width="1"/><ellipse cx="50" cy="85" rx="22" ry="6" fill="#BDBDBD"/><rect x="48" y="32" width="4" height="8" fill="#333"/><path d="M50 32 Q56 20 50 10 Q44 20 50 32 Z" fill="#FF8F00"/><path d="M50 32 Q54 22 50 14 Q46 22 50 32 Z" fill="#FDD835"/><path d="M44 50 L44 75" stroke="#E0E0E0" stroke-width="0.8" opacity="0.5"/><path d="M56 50 L56 75" stroke="#E0E0E0" stroke-width="0.8" opacity="0.5"/></svg>' },
+      { id:'d20', nome:'bandeira', svgElemento:'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><line x1="20" y1="10" x2="20" y2="90" stroke="#795548" stroke-width="4"/><rect x="20" y="15" width="60" height="40" fill="#009688"/><polygon points="50,35 35,25 35,45" fill="#FDD835"/><polygon points="50,35 65,25 65,45" fill="#FDD835"/><circle cx="50" cy="35" r="6" fill="#1565C0"/><rect x="20" y="15" width="60" height="8" fill="#4CAF50"/><rect x="20" y="47" width="60" height="8" fill="#4CAF50"/></svg>' }
+    ];
+
+    // ===== ESTADO GLOBAL =====
+    var estadoTeste = {
+      paciente: { nome:'', dataNascimento:'', idade:{anos:0,meses:0,dias:0}, escolaridade:'', dataTeste:'' },
+      configuracao: { numEstimulos:15, tempoExposicao:30, tempoEspera:20 },
+      faseAtual: 'configuracao',
+      listaA: [],
+      listaB: [],
+      paineis: { t1:[], t2:[], t3:[], t4:[], t5:[], interf:[], evocImediata:[], evocTardia:[], recFinal:[] },
+      selecoes: { t1:[], t2:[], t3:[], t4:[], t5:[], interf:[], evocImediata:[], evocTardia:[], recFinal:[] },
+      timestamps: { t1:[], t2:[], t3:[], t4:[], t5:[], interf:[], evocImediata:[], evocTardia:[], recFinal:[] },
+      naoLembra: false,
+      resultados: { t1:null, t2:null, t3:null, t4:null, t5:null, interf:null, evocImediata:null, evocTardia:null, recFinal:null },
+      tempoInicio: 0,
+      cronometroId: null,
+      cronometroProgressivoId: null,
+      sessaoId: ''
+    };
+
+    var alarmeInterval = null;
+    var audioCtx = null;
+
+    // ===== PARSE SESSION DATA FROM URL =====
+    (function() {
+      var params = new URLSearchParams(window.location.search);
+      var d = params.get('d');
+      if (d) {
+        try { sessionData = JSON.parse(atob(decodeURIComponent(d))); } catch(e) { sessionData = null; }
+      }
+      if (!sessionData) {
+        document.querySelector('.container').innerHTML = '<div style="padding:60px;text-align:center;"><h2 style="color:#c62828;">Link invalido</h2><p>Este link nao contem dados validos. Solicite um novo link ao avaliador.</p></div>';
+        return;
+      }
+      // Preencher estado com dados da sessao
+      estadoTeste.sessaoId = sessionData.sessionId || '';
+      estadoTeste.paciente.nome = sessionData.patientName || '';
+      estadoTeste.paciente.dataNascimento = sessionData.birthDate || '';
+      estadoTeste.paciente.escolaridade = sessionData.education || '';
+      estadoTeste.paciente.dataTeste = new Date().toISOString().slice(0,10);
+
+      if (sessionData.birthDate) {
+        estadoTeste.paciente.idade = calcularIdadeDetalhada(sessionData.birthDate);
+      }
+
+      // Sempre 15 figuras
+      estadoTeste.configuracao.numEstimulos = 15;
+      estadoTeste.listaA = LISTA_A.slice(0, 15);
+      estadoTeste.listaB = LISTA_B.slice(0, 15);
+
+      var el = document.getElementById('justificativa-config');
+      if (el) el.textContent = 'Configuracao: 15 figuras - 5 tentativas (padrao RAVLT visual)';
+    })();
+
+    // ===== FUNCOES AUXILIARES =====
+    function calcularIdadeDetalhada(dataNascimento) {
+      var nascimento = new Date(dataNascimento + 'T00:00:00');
+      var hoje = new Date(); hoje.setHours(0,0,0,0);
+      var anos = hoje.getFullYear() - nascimento.getFullYear();
+      var meses = hoje.getMonth() - nascimento.getMonth();
+      var dias = hoje.getDate() - nascimento.getDate();
+      if (dias < 0) { meses--; var mesAnt = new Date(hoje.getFullYear(), hoje.getMonth(), 0); dias += mesAnt.getDate(); }
+      if (meses < 0) { anos--; meses += 12; }
+      return { anos:anos, meses:meses, dias:dias };
+    }
+
+    function embaralharArray(array) {
+      var copia = array.slice();
+      for (var i = copia.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var temp = copia[i];
+        copia[i] = copia[j];
+        copia[j] = temp;
+      }
+      return copia;
+    }
+
+    function montarPainel(alvos, distratores) {
+      var alvosComFlag = alvos.map(function(item) { return Object.assign({}, item, { ehAlvo: true }); });
+      var distratoresComFlag = distratores.map(function(item) { return Object.assign({}, item, { ehAlvo: false }); });
+      var painel = alvosComFlag.concat(distratoresComFlag);
+      return embaralharArray(painel);
+    }
+
+    function montarPainelFinal(numEstimulos) {
+      var listaA = LISTA_A.slice(0, numEstimulos).map(function(item) { return Object.assign({}, item, { ehAlvo: true, origem: 'A' }); });
+      var listaB = LISTA_B.slice(0, numEstimulos).map(function(item) { return Object.assign({}, item, { ehAlvo: false, origem: 'B' }); });
+      var distratores = DISTRATORES.slice(0, 20).map(function(item) { return Object.assign({}, item, { ehAlvo: false, origem: 'D' }); });
+      var painel = listaA.concat(listaB).concat(distratores);
+      return embaralharArray(painel);
+    }
+
+    // ===== NAVEGACAO =====
+    function navegarPara(idPagina) {
+      document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
+      var alvo = document.getElementById(idPagina);
+      if (alvo) alvo.classList.add('active');
+      window.scrollTo(0,0);
+      atualizarProgresso(idPagina);
+    }
+
+    function atualizarProgresso(idPagina) {
+      var mapaEtapas = {
+        'pagina-configuracao':1,
+        'pagina-instrucoes-t1':2, 'pagina-estudo-t1':2, 'pagina-reconhecimento-t1':2,
+        'pagina-estudo-t2':3, 'pagina-reconhecimento-t2':3,
+        'pagina-estudo-t3':4, 'pagina-reconhecimento-t3':4,
+        'pagina-estudo-t4':5, 'pagina-reconhecimento-t4':5,
+        'pagina-estudo-t5':6, 'pagina-reconhecimento-t5':6,
+        'pagina-instrucoes-interf':7, 'pagina-estudo-interf':7, 'pagina-reconhecimento-interf':7,
+        'pagina-evocacao-imediata':8,
+        'pagina-espera':9,
+        'pagina-evocacao-tardia':10,
+        'pagina-reconhecimento-final':11,
+        'pagina-concluido':12
+      };
+      var etapa = mapaEtapas[idPagina] || 1;
+      var barra = document.getElementById('progresso-preenchido');
+      if (barra) barra.style.width = (etapa / 12 * 100) + '%';
+    }
+
+    // ===== CRONOMETROS =====
+    function pararCronometro() {
+      if (estadoTeste.cronometroId) { clearInterval(estadoTeste.cronometroId); estadoTeste.cronometroId = null; }
+      if (estadoTeste.cronometroProgressivoId) { clearInterval(estadoTeste.cronometroProgressivoId); estadoTeste.cronometroProgressivoId = null; }
+    }
+
+    function iniciarCronometroRegressivo(segundos, idTempo, idProgresso, callback) {
+      pararCronometro();
+      var tempoRestante = segundos;
+      var elTempo = document.getElementById(idTempo);
+      var elProg = document.getElementById(idProgresso);
+      if (elTempo) elTempo.textContent = tempoRestante;
+      if (elProg) elProg.style.width = '100%';
+      estadoTeste.cronometroId = setInterval(function() {
+        tempoRestante--;
+        if (elTempo) elTempo.textContent = tempoRestante;
+        if (elProg) elProg.style.width = (tempoRestante / segundos * 100) + '%';
+        if (tempoRestante <= 0) { pararCronometro(); if (callback) callback(); }
+      }, 1000);
+    }
+
+    function iniciarCronometroProgressivo(idElemento) {
+      var seg = 0;
+      var el = document.getElementById(idElemento);
+      estadoTeste.cronometroProgressivoId = setInterval(function() { seg++; if (el) el.textContent = seg; }, 1000);
+    }
+
+    // ===== RENDERIZACAO =====
+    function renderizarEstudo(figuras, gridId) {
+      var grid = document.getElementById(gridId);
+      if (!grid) return;
+      grid.innerHTML = '';
+      figuras.forEach(function(figura) {
+        var div = document.createElement('div');
+        div.className = 'figura-item';
+        div.innerHTML = figura.svgElemento;
+        grid.appendChild(div);
+      });
+    }
+
+    function renderizarPainelReconhecimento(painel, gridId, fase) {
+      var grid = document.getElementById(gridId);
+      if (!grid) return;
+      grid.innerHTML = '';
+      painel.forEach(function(figura, indice) {
+        var div = document.createElement('div');
+        div.className = 'figura-item';
+        div.setAttribute('data-indice', indice);
+        div.onclick = function() { toggleSelecao(indice, fase); };
+        var badge = document.createElement('span');
+        badge.className = 'figura-numero';
+        badge.textContent = indice + 1;
+        var conteudo = document.createElement('div');
+        conteudo.innerHTML = figura.svgElemento;
+        div.appendChild(badge);
+        div.appendChild(conteudo);
+        grid.appendChild(div);
+      });
+    }
+
+    // ===== INTERACAO =====
+    function toggleSelecao(indiceFigura, fase) {
+      if (estadoTeste.naoLembra) return;
+      var agora = Date.now();
+      estadoTeste.timestamps[fase].push({ indice: indiceFigura, tempo: agora });
+      var el = document.querySelector('.page.active [data-indice="' + indiceFigura + '"]');
+      if (!el) return;
+      var selecoes = estadoTeste.selecoes[fase];
+      var pos = selecoes.indexOf(indiceFigura);
+      if (pos !== -1) { selecoes.splice(pos, 1); el.classList.remove('selecionado'); }
+      else { selecoes.push(indiceFigura); el.classList.add('selecionado'); }
+    }
+
+    function mapearFaseParaChave(fase) {
+      var mapa = { 't1':'t1', 't2':'t2', 't3':'t3', 't4':'t4', 't5':'t5', 'interf':'interf', 'evoc-imediata':'evocImediata', 'evoc-tardia':'evocTardia', 'rec-final':'recFinal' };
+      return mapa[fase] || fase;
+    }
+
+    function naoLembroNenhuma(fase) {
+      var chave = mapearFaseParaChave(fase);
+      document.querySelectorAll('.page.active .figura-item.selecionado').forEach(function(el) { el.classList.remove('selecionado'); });
+      estadoTeste.selecoes[chave] = [];
+      estadoTeste.naoLembra = true;
+      document.querySelectorAll('.page.active .grid-reconhecimento .figura-item').forEach(function(el) { el.style.opacity='0.5'; el.style.pointerEvents='none'; });
+    }
+
+    function confirmarSelecoes(fase) {
+      var chave = mapearFaseParaChave(fase);
+      var selecoes = estadoTeste.selecoes[chave];
+      if (selecoes.length === 0 && !estadoTeste.naoLembra) { alert('Selecione ao menos uma figura ou clique em "Nao lembro de nenhuma"'); return; }
+      pararCronometro();
+      var tempoResposta = Date.now() - estadoTeste.tempoInicio;
+      var painel = estadoTeste.paineis[chave];
+      var resultado = calcularResultadosFase(selecoes, painel, tempoResposta);
+      estadoTeste.resultados[chave] = resultado;
+      estadoTeste.naoLembra = false;
+
+      switch (fase) {
+        case 't1': iniciarEstudoT2(); break;
+        case 't2': iniciarEstudoT3(); break;
+        case 't3': iniciarEstudoT4(); break;
+        case 't4': iniciarEstudoT5(); break;
+        case 't5': iniciarInstrucoesInterf(); break;
+        case 'interf': iniciarEvocacaoImediata(); break;
+        case 'evoc-imediata': iniciarEspera(); break;
+        case 'evoc-tardia': iniciarReconhecimentoFinal(); break;
+        case 'rec-final': finalizarTeste(); break;
+      }
+    }
+
+    function calcularResultadosFase(selecoes, painel, tempoResposta) {
+      var acertos = 0, alarmesFalsos = 0, omissoes = 0;
+      selecoes.forEach(function(indice) { if (painel[indice] && painel[indice].ehAlvo) acertos++; else alarmesFalsos++; });
+      painel.forEach(function(figura, indice) { if (figura.ehAlvo && selecoes.indexOf(indice) === -1) omissoes++; });
+      return { selecoes:selecoes.slice(), tempoResposta:tempoResposta, acertos:acertos, alarmesFalsos:alarmesFalsos, omissoes:omissoes };
+    }
+
+    // ===== FLUXO DO TESTE =====
+
+    // --- TRIAL 1 ---
+    function iniciarTrial1() {
+      estadoTeste.faseAtual = 'instrucoes-t1';
+      navegarPara('pagina-instrucoes-t1');
+    }
+
+    function iniciarEstudoT1() {
+      estadoTeste.faseAtual = 'estudo-t1';
+      navegarPara('pagina-estudo-t1');
+      renderizarEstudo(estadoTeste.listaA, 'grid-estudo-t1');
+      iniciarCronometroRegressivo(30, 'tempo-estudo-t1', 'progresso-estudo-t1', function() { iniciarReconhecimentoT1(); });
+    }
+
+    function iniciarReconhecimentoT1() {
+      pararCronometro();
+      estadoTeste.faseAtual = 'reconhecimento-t1';
+      estadoTeste.selecoes.t1 = [];
+      estadoTeste.timestamps.t1 = [];
+      estadoTeste.naoLembra = false;
+      estadoTeste.tempoInicio = Date.now();
+      var distratores = embaralharArray(estadoTeste.listaB.slice(0, 15));
+      estadoTeste.paineis.t1 = montarPainel(estadoTeste.listaA, distratores);
+      navegarPara('pagina-reconhecimento-t1');
+      renderizarPainelReconhecimento(estadoTeste.paineis.t1, 'grid-reconhecimento-t1', 't1');
+      iniciarCronometroProgressivo('tempo-reconhecimento-t1');
+    }
+
+    // --- TRIAL 2 ---
+    function iniciarEstudoT2() {
+      estadoTeste.faseAtual = 'estudo-t2';
+      navegarPara('pagina-estudo-t2');
+      renderizarEstudo(estadoTeste.listaA, 'grid-estudo-t2');
+      iniciarCronometroRegressivo(30, 'tempo-estudo-t2', 'progresso-estudo-t2', function() { iniciarReconhecimentoT2(); });
+    }
+
+    function iniciarReconhecimentoT2() {
+      pararCronometro();
+      estadoTeste.faseAtual = 'reconhecimento-t2';
+      estadoTeste.selecoes.t2 = [];
+      estadoTeste.timestamps.t2 = [];
+      estadoTeste.naoLembra = false;
+      estadoTeste.tempoInicio = Date.now();
+      var distratores = embaralharArray(estadoTeste.listaB.slice(0, 15));
+      estadoTeste.paineis.t2 = montarPainel(estadoTeste.listaA, distratores);
+      navegarPara('pagina-reconhecimento-t2');
+      renderizarPainelReconhecimento(estadoTeste.paineis.t2, 'grid-reconhecimento-t2', 't2');
+      iniciarCronometroProgressivo('tempo-reconhecimento-t2');
+    }
+
+    // --- TRIAL 3 ---
+    function iniciarEstudoT3() {
+      estadoTeste.faseAtual = 'estudo-t3';
+      navegarPara('pagina-estudo-t3');
+      renderizarEstudo(estadoTeste.listaA, 'grid-estudo-t3');
+      iniciarCronometroRegressivo(30, 'tempo-estudo-t3', 'progresso-estudo-t3', function() { iniciarReconhecimentoT3(); });
+    }
+
+    function iniciarReconhecimentoT3() {
+      pararCronometro();
+      estadoTeste.faseAtual = 'reconhecimento-t3';
+      estadoTeste.selecoes.t3 = [];
+      estadoTeste.timestamps.t3 = [];
+      estadoTeste.naoLembra = false;
+      estadoTeste.tempoInicio = Date.now();
+      var distratores = embaralharArray(estadoTeste.listaB.slice(0, 15));
+      estadoTeste.paineis.t3 = montarPainel(estadoTeste.listaA, distratores);
+      navegarPara('pagina-reconhecimento-t3');
+      renderizarPainelReconhecimento(estadoTeste.paineis.t3, 'grid-reconhecimento-t3', 't3');
+      iniciarCronometroProgressivo('tempo-reconhecimento-t3');
+    }
+
+    // --- TRIAL 4 ---
+    function iniciarEstudoT4() {
+      estadoTeste.faseAtual = 'estudo-t4';
+      navegarPara('pagina-estudo-t4');
+      renderizarEstudo(estadoTeste.listaA, 'grid-estudo-t4');
+      iniciarCronometroRegressivo(30, 'tempo-estudo-t4', 'progresso-estudo-t4', function() { iniciarReconhecimentoT4(); });
+    }
+
+    function iniciarReconhecimentoT4() {
+      pararCronometro();
+      estadoTeste.faseAtual = 'reconhecimento-t4';
+      estadoTeste.selecoes.t4 = [];
+      estadoTeste.timestamps.t4 = [];
+      estadoTeste.naoLembra = false;
+      estadoTeste.tempoInicio = Date.now();
+      var distratores = embaralharArray(estadoTeste.listaB.slice(0, 15));
+      estadoTeste.paineis.t4 = montarPainel(estadoTeste.listaA, distratores);
+      navegarPara('pagina-reconhecimento-t4');
+      renderizarPainelReconhecimento(estadoTeste.paineis.t4, 'grid-reconhecimento-t4', 't4');
+      iniciarCronometroProgressivo('tempo-reconhecimento-t4');
+    }
+
+    // --- TRIAL 5 ---
+    function iniciarEstudoT5() {
+      estadoTeste.faseAtual = 'estudo-t5';
+      navegarPara('pagina-estudo-t5');
+      renderizarEstudo(estadoTeste.listaA, 'grid-estudo-t5');
+      iniciarCronometroRegressivo(30, 'tempo-estudo-t5', 'progresso-estudo-t5', function() { iniciarReconhecimentoT5(); });
+    }
+
+    function iniciarReconhecimentoT5() {
+      pararCronometro();
+      estadoTeste.faseAtual = 'reconhecimento-t5';
+      estadoTeste.selecoes.t5 = [];
+      estadoTeste.timestamps.t5 = [];
+      estadoTeste.naoLembra = false;
+      estadoTeste.tempoInicio = Date.now();
+      var distratores = embaralharArray(estadoTeste.listaB.slice(0, 15));
+      estadoTeste.paineis.t5 = montarPainel(estadoTeste.listaA, distratores);
+      navegarPara('pagina-reconhecimento-t5');
+      renderizarPainelReconhecimento(estadoTeste.paineis.t5, 'grid-reconhecimento-t5', 't5');
+      iniciarCronometroProgressivo('tempo-reconhecimento-t5');
+    }
+
+    // --- INTERFERENCIA ---
+    function iniciarInstrucoesInterf() {
+      estadoTeste.faseAtual = 'instrucoes-interf';
+      navegarPara('pagina-instrucoes-interf');
+    }
+
+    function iniciarEstudoInterf() {
+      estadoTeste.faseAtual = 'estudo-interf';
+      navegarPara('pagina-estudo-interf');
+      renderizarEstudo(estadoTeste.listaB, 'grid-estudo-interf');
+      iniciarCronometroRegressivo(30, 'tempo-estudo-interf', 'progresso-estudo-interf', function() { iniciarReconhecimentoInterf(); });
+    }
+
+    function iniciarReconhecimentoInterf() {
+      pararCronometro();
+      estadoTeste.faseAtual = 'reconhecimento-interf';
+      estadoTeste.selecoes.interf = [];
+      estadoTeste.timestamps.interf = [];
+      estadoTeste.naoLembra = false;
+      estadoTeste.tempoInicio = Date.now();
+      // Painel: Lista B (alvos) + Lista A (distratores neste contexto)
+      estadoTeste.paineis.interf = montarPainel(estadoTeste.listaB, estadoTeste.listaA);
+      navegarPara('pagina-reconhecimento-interf');
+      renderizarPainelReconhecimento(estadoTeste.paineis.interf, 'grid-reconhecimento-interf', 'interf');
+      iniciarCronometroProgressivo('tempo-reconhecimento-interf');
+    }
+
+    // --- EVOCACAO IMEDIATA ---
+    function iniciarEvocacaoImediata() {
+      estadoTeste.faseAtual = 'evocacao-imediata';
+      estadoTeste.selecoes.evocImediata = [];
+      estadoTeste.timestamps.evocImediata = [];
+      estadoTeste.naoLembra = false;
+      estadoTeste.tempoInicio = Date.now();
+      // Painel: Lista A (alvos) + Lista B (distratores) - SEM re-exibicao
+      estadoTeste.paineis.evocImediata = montarPainel(estadoTeste.listaA, estadoTeste.listaB);
+      navegarPara('pagina-evocacao-imediata');
+      renderizarPainelReconhecimento(estadoTeste.paineis.evocImediata, 'grid-evocacao-imediata', 'evocImediata');
+      iniciarCronometroProgressivo('tempo-evocacao-imediata');
+    }
+
+    // --- ESPERA (20 minutos) ---
+    function iniciarEspera() {
+      estadoTeste.faseAtual = 'espera';
+      navegarPara('pagina-espera');
+      var tempoEsperaSegundos = estadoTeste.configuracao.tempoEspera * 60;
+      var elementoTempo = document.getElementById('tempo-espera');
+      var btnEvoc = document.getElementById('btn-evoc-tardia');
+
+      estadoTeste.cronometroId = setInterval(function() {
+        tempoEsperaSegundos--;
+        if (tempoEsperaSegundos <= 0) {
+          pararCronometro();
+          if (elementoTempo) elementoTempo.textContent = '00:00';
+          if (btnEvoc) btnEvoc.style.display = 'inline-block';
+          tocarAvisoSonoro();
+          return;
+        }
+        var min = Math.floor(tempoEsperaSegundos / 60);
+        var seg = tempoEsperaSegundos % 60;
+        if (elementoTempo) elementoTempo.textContent = String(min).padStart(2, '0') + ':' + String(seg).padStart(2, '0');
+      }, 1000);
+    }
+
+    // --- ALARME SONORO (Web Audio API) ---
+    function tocarAvisoSonoro() {
+      try {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function beepSuave() {
+          if (!audioCtx) return;
+          var oscillator = audioCtx.createOscillator();
+          var gainNode = audioCtx.createGain();
+          oscillator.connect(gainNode);
+          gainNode.connect(audioCtx.destination);
+          oscillator.type = 'sine';
+          oscillator.frequency.value = 660;
+          gainNode.gain.value = 0.25;
+          gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+          gainNode.gain.linearRampToValueAtTime(0.25, audioCtx.currentTime + 0.05);
+          gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.4);
+          oscillator.start(audioCtx.currentTime);
+          oscillator.stop(audioCtx.currentTime + 0.4);
+        }
+        beepSuave();
+        alarmeInterval = setInterval(beepSuave, 1500);
+      } catch (e) {
+        console.log('[TAAV] Aviso sonoro nao disponivel:', e.message);
+      }
+    }
+
+    function pararAvisoSonoro() {
+      if (alarmeInterval) { clearInterval(alarmeInterval); alarmeInterval = null; }
+      if (audioCtx) { audioCtx.close(); audioCtx = null; }
+    }
+
+    // --- EVOCACAO TARDIA ---
+    function iniciarEvocacaoTardia() {
+      pararCronometro();
+      pararAvisoSonoro();
+      estadoTeste.faseAtual = 'evocacao-tardia';
+      estadoTeste.selecoes.evocTardia = [];
+      estadoTeste.timestamps.evocTardia = [];
+      estadoTeste.naoLembra = false;
+      estadoTeste.tempoInicio = Date.now();
+      // Painel: Lista A (alvos) + Lista B (distratores) - SEM re-exibicao
+      estadoTeste.paineis.evocTardia = montarPainel(estadoTeste.listaA, estadoTeste.listaB);
+      navegarPara('pagina-evocacao-tardia');
+      renderizarPainelReconhecimento(estadoTeste.paineis.evocTardia, 'grid-evocacao-tardia', 'evocTardia');
+      iniciarCronometroProgressivo('tempo-evocacao-tardia');
+    }
+
+    // --- RECONHECIMENTO FINAL ---
+    function iniciarReconhecimentoFinal() {
+      estadoTeste.faseAtual = 'reconhecimento-final';
+      estadoTeste.selecoes.recFinal = [];
+      estadoTeste.timestamps.recFinal = [];
+      estadoTeste.naoLembra = false;
+      estadoTeste.tempoInicio = Date.now();
+      // Painel final: 15A + 15B + 20 distratores = 50 figuras
+      estadoTeste.paineis.recFinal = montarPainelFinal(estadoTeste.configuracao.numEstimulos);
+      navegarPara('pagina-reconhecimento-final');
+      renderizarPainelReconhecimento(estadoTeste.paineis.recFinal, 'grid-reconhecimento-final', 'recFinal');
+      iniciarCronometroProgressivo('tempo-reconhecimento-final');
+    }
+
+    // ===== FINALIZAR E ENVIAR RESULTADOS =====
+    async function finalizarTeste() {
+      navegarPara('pagina-concluido');
+
+      var t1 = estadoTeste.resultados.t1 || { acertos:0, alarmesFalsos:0, omissoes:0, tempoResposta:0 };
+      var t2 = estadoTeste.resultados.t2 || { acertos:0, alarmesFalsos:0, omissoes:0, tempoResposta:0 };
+      var t3 = estadoTeste.resultados.t3 || { acertos:0, alarmesFalsos:0, omissoes:0, tempoResposta:0 };
+      var t4 = estadoTeste.resultados.t4 || { acertos:0, alarmesFalsos:0, omissoes:0, tempoResposta:0 };
+      var t5 = estadoTeste.resultados.t5 || { acertos:0, alarmesFalsos:0, omissoes:0, tempoResposta:0 };
+      var interf = estadoTeste.resultados.interf || { acertos:0, alarmesFalsos:0, omissoes:0, tempoResposta:0 };
+      var evocImediata = estadoTeste.resultados.evocImediata || { acertos:0, alarmesFalsos:0, omissoes:0, tempoResposta:0 };
+      var evocTardia = estadoTeste.resultados.evocTardia || { acertos:0, alarmesFalsos:0, omissoes:0, tempoResposta:0 };
+      var recFinal = estadoTeste.resultados.recFinal || { acertos:0, alarmesFalsos:0, omissoes:0, tempoResposta:0 };
+
+      var indiceRetencao = t5.acertos > 0 ? (evocTardia.acertos / t5.acertos) * 100 : 0;
+
+      var resultData = {
+        formData: sessionData,
+        status: 'completo',
+        date: new Date().toISOString(),
+        numEstimulos: 15,
+        t1: { acertos: t1.acertos, alarmesFalsos: t1.alarmesFalsos, omissoes: t1.omissoes, tempoResposta: t1.tempoResposta },
+        t2: { acertos: t2.acertos, alarmesFalsos: t2.alarmesFalsos, omissoes: t2.omissoes, tempoResposta: t2.tempoResposta },
+        t3: { acertos: t3.acertos, alarmesFalsos: t3.alarmesFalsos, omissoes: t3.omissoes, tempoResposta: t3.tempoResposta },
+        t4: { acertos: t4.acertos, alarmesFalsos: t4.alarmesFalsos, omissoes: t4.omissoes, tempoResposta: t4.tempoResposta },
+        t5: { acertos: t5.acertos, alarmesFalsos: t5.alarmesFalsos, omissoes: t5.omissoes, tempoResposta: t5.tempoResposta },
+        interf: { acertos: interf.acertos, alarmesFalsos: interf.alarmesFalsos, omissoes: interf.omissoes, tempoResposta: interf.tempoResposta },
+        evocImediata: { acertos: evocImediata.acertos, alarmesFalsos: evocImediata.alarmesFalsos, omissoes: evocImediata.omissoes, tempoResposta: evocImediata.tempoResposta },
+        evocTardia: { acertos: evocTardia.acertos, alarmesFalsos: evocTardia.alarmesFalsos, omissoes: evocTardia.omissoes, tempoResposta: evocTardia.tempoResposta },
+        recFinal: { acertos: recFinal.acertos, alarmesFalsos: recFinal.alarmesFalsos, omissoes: recFinal.omissoes, tempoResposta: recFinal.tempoResposta },
+        indiceRetencao: indiceRetencao
+      };
+
+      try {
+        await fetch(API_URL + '/save-result', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId: sessionData.sessionId, email: sessionData.email, tipo: 'taav', data: resultData })
+        });
+      } catch(e) {
+        console.error('Erro ao salvar resultado:', e);
+      }
+    }
+  </script>
+</body>
+</html>
