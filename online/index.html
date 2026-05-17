@@ -923,8 +923,7 @@
         var laudoIA = null;
         try {
           if (stats.trialsPerformed > 0) {
-            // Chamar Gemini direto com timeout de 10s
-            var k = ['AIza','SyA_','Xxm8','ObIN','uPtn','_23X','fo5p','AUWS','Nzfh','GvI'].join('');
+            // Chamar IA via Lambda proxy (chave segura no servidor)
             var aiPrompt = 'Voce e um neuropsicologo experiente. Gere um LAUDO CLINICO breve (max 8 linhas) do TECFE.\n' +
               'Idade: ' + fd.idade + ', Escolaridade: ' + fd.escolaridade + ', Sexo: ' + (fd.sexo || 'N/I') + '\n' +
               'Tentativas: ' + stats.trialsPerformed + '/128, Categorias: ' + stats.completedCategories + '/6\n' +
@@ -935,13 +934,12 @@
               'OBRIGATORIO na ULTIMA LINHA: ESTRATEGIA: [tipo] - [descricao]\n' +
               'Tipos: Sistematica, Sistematica por eliminacao, Parcialmente sistematica, Tentativa e erro, Perseverativa, Aleatoria, Impulsiva';
             var aiTimeout = new Promise(function(_, reject) { setTimeout(function() { reject('timeout'); }, 30000); });
-            var aiCall = fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=' + k, {
+            var aiCall = fetch(API_URL + '/generate-ai', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ contents: [{ parts: [{ text: aiPrompt }] }] })
+              body: JSON.stringify({ prompt: aiPrompt })
             }).then(function(r) { return r.json(); }).then(function(d) {
-              var t = (d.candidates && d.candidates[0] && d.candidates[0].content) ? d.candidates[0].content.parts[0].text.trim() : '';
-              return t;
+              return (d.text || '').trim();
             });
             var aiText = await Promise.race([aiCall, aiTimeout]);
             console.log('IA respondeu:', aiText ? aiText.substring(0,50) + '...' : 'vazio');
@@ -2042,7 +2040,6 @@
       // Chamar IA para analise topologica
       var laudoIA = null;
       try {
-        var k = ['AIza','SyA_','Xxm8','ObIN','uPtn','_23X','fo5p','AUWS','Nzfh','GvI'].join('');
         var aiPrompt = 'Voce e um neuropsicologo experiente. Gere uma ANALISE TOPOLOGICA E CLINICA breve (max 10 linhas) ' +
           'baseada nos resultados do TRMV (Teste de Reconhecimento de Memoria Visual) com poligonos abstratos.\n\n' +
           'DADOS: Idade: ' + (p.age || 'N/I') + ', Escolaridade: ' + (p.education || 'N/I') + '\n' +
@@ -2056,13 +2053,12 @@
           'queda no 2o reconhecimento com decaimento da MT (pre-frontal/parietal). ' +
           'Considere idade e escolaridade. NAO repita numeros, interprete-os.';
         var aiTimeout = new Promise(function(_, reject) { setTimeout(function() { reject('timeout'); }, 30000); });
-        var aiCall = fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=' + k, {
+        var aiCall = fetch(API_URL + '/generate-ai', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents: [{ parts: [{ text: aiPrompt }] }] })
+          body: JSON.stringify({ prompt: aiPrompt })
         }).then(function(r) { return r.json(); }).then(function(d) {
-          var t = (d.candidates && d.candidates[0] && d.candidates[0].content) ? d.candidates[0].content.parts[0].text.trim() : '';
-          return t;
+          return (d.text || '').trim();
         });
         laudoIA = await Promise.race([aiCall, aiTimeout]);
       } catch(e) { laudoIA = null; }
