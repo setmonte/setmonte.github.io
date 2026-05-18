@@ -212,6 +212,7 @@ const users = (res.Items || []).filter(item => item.email?.S && !item.email.S.st
   trmvCredits: parseInt(item.trmvCredits?.N || "0"),
   trefCredits: parseInt(item.trefCredits?.N || "0"),
   taavCredits: parseInt(item.taavCredits?.N || "0"),
+  tflodCredits: parseInt(item.tflodCredits?.N || "0"),
   name: item.name?.S || ""
 }));
 users.sort((a, b) => a.email.localeCompare(b.email));
