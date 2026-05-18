@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-QY1N9587DG"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-QY1N9587DG');</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TFLOD - Teste de Fluencia Leitora Oral Digital</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',sans-serif;background:#f5f5f5;min-height:100vh}
+.tela{display:none;width:100%;min-height:100vh;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+.tela.ativa{display:flex}
+#tela-inicio{background:linear-gradient(135deg,#1565c0 0%,#0d47a1 100%)}
+#tela-inicio h1{color:#fff;font-size:2.2em;margin-bottom:5px}
+#tela-inicio .subtitulo{color:#90caf9;font-size:0.9em;margin-bottom:20px}
+.form-container{background:#fff;border-radius:12px;padding:25px;width:100%;max-width:500px;box-shadow:0 4px 20px rgba(0,0,0,0.3)}
+.form-container label{display:block;font-size:0.8em;color:#555;margin:8px 0 3px;font-weight:600}
+.form-container input,.form-container select{width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:0.9em}
+.form-container input:focus,.form-container select:focus{outline:none;border-color:#1565c0}
+.btn{padding:12px 30px;border:none;border-radius:8px;font-size:1em;font-weight:700;cursor:pointer;margin:5px}
+.btn-primary{background:#1565c0;color:#fff}
+.btn-primary:hover{background:#0d47a1}
+.info-tecnica{background:#e3f2fd;border-left:4px solid #1565c0;padding:12px;border-radius:0 8px 8px 0;margin-bottom:15px;font-size:0.75em;color:#555}
+</style>
+</head>
+<body>
+<style>
+#tela-teste{background:#fff;padding:0;align-items:stretch;justify-content:flex-start}
+.teste-header{background:#0d47a1;color:#fff;padding:15px 20px;display:flex;justify-content:space-between;align-items:center;width:100%}
+.teste-header .timer{font-size:2em;font-weight:bold;font-family:monospace}
+.teste-header .mic-status{font-size:0.85em;opacity:0.8}
+.texto-leitura{padding:30px;font-size:1.4em;line-height:2;color:#222;max-width:800px;margin:0 auto;text-align:justify}
+.texto-leitura .palavra{display:inline;transition:background 0.2s}
+.texto-leitura .palavra.lida{background:#c8e6c9;border-radius:3px}
+.texto-leitura .palavra.erro{background:#ffcdd2;border-radius:3px}
+#tela-fim{background:linear-gradient(135deg,#e8f5e9,#c8e6c9)}
+.instrucao-box{background:#e3f2fd;border:2px solid #1565c0;border-radius:12px;padding:20px;margin:15px 0;text-align:left}
+.instrucao-box p{margin-bottom:8px;color:#0d47a1;font-size:0.95em;line-height:1.6}
+</style>
+
+<!-- TELA INICIO -->
+<div id="tela-inicio" class="tela ativa">
+    <h1>&#128214; TFLOD</h1>
+    <p class="subtitulo">Teste de Fluencia Leitora Oral Digital</p>
+    <div class="form-container">
+        <div class="info-tecnica">
+            <strong>Instrumento:</strong> TFLOD — rastreio de fluencia leitora oral<br>
+            <strong>Base teorica:</strong> CBM (Curriculum-Based Measurement), Hasbrouck &amp; Tindal (2017)<br>
+            <strong>Publico:</strong> A partir de 6 anos | <strong>Duracao:</strong> ~2 min
+        </div>
+        <label>ID do Paciente:</label>
+        <input type="text" id="idPaciente" placeholder="Gerado automaticamente" readonly style="background:#e3f2fd;font-weight:700;color:#1565c0">
+        <label>Nome do Avaliando:</label>
+        <input type="text" id="nome" placeholder="Nome completo">
+        <label>Data de Nascimento:</label>
+        <input type="date" id="dataNasc" onchange="calcularIdade()">
+        <label>Idade:</label>
+        <input type="text" id="idade" readonly placeholder="Calculada automaticamente">
+        <label>Escolaridade:</label>
+        <select id="escolaridade">
+            <option value="">Selecione...</option>
+            <option value="Analfabeto">Analfabeto</option>
+            <option value="1o ano">1o ano (Fundamental)</option>
+            <option value="2o ano">2o ano (Fundamental)</option>
+            <option value="3o ano">3o ano (Fundamental)</option>
+            <option value="4o ano">4o ano (Fundamental)</option>
+            <option value="5o ano">5o ano (Fundamental)</option>
+            <option value="6o ano">6o ano (Fundamental)</option>
+            <option value="7o ano">7o ano (Fundamental)</option>
+            <option value="8o ano">8o ano (Fundamental)</option>
+            <option value="9o ano">9o ano (Fundamental)</option>
+            <option value="Ensino Medio">Ensino Medio</option>
+            <option value="Superior Incompleto">Superior Incompleto</option>
+            <option value="Superior Completo">Superior Completo</option>
+            <option value="Pos-graduacao">Pos-graduacao</option>
+        </select>
+        <label>Data da Avaliacao:</label>
+        <input type="date" id="dataAval">
+        <label>Observacoes:</label>
+        <input type="text" id="obs" placeholder="Opcional">
+        <div style="text-align:center;margin-top:15px">
+            <button class="btn btn-primary" onclick="mostrarInstrucoes()">Continuar</button>
+        </div>
+    </div>
+</div>
+
+<!-- TELA INSTRUCOES -->
+<div id="tela-instrucoes" class="tela">
+    <div class="form-container" style="max-width:600px">
+        <h2 style="color:#1565c0;margin-bottom:15px;text-align:center">&#128220; Instrucoes</h2>
+        <div class="instrucao-box">
+            <p><strong>Como funciona:</strong></p>
+            <p>Voce vera um texto na tela. Quando estiver pronto, clique em "Iniciar Leitura".</p>
+            <p>Leia o texto <strong>em voz alta</strong>, no seu ritmo normal, como se estivesse lendo para alguem.</p>
+            <p>O sistema vai escutar sua leitura por <strong>1 minuto</strong>.</p>
+            <p>Quando o tempo acabar, o teste para automaticamente.</p>
+            <p><strong>Importante:</strong> Fique em um ambiente silencioso e fale com clareza.</p>
+        </div>
+        <div style="text-align:center;margin-top:15px">
+            <button class="btn btn-primary" onclick="iniciarTeste()">Iniciar Leitura</button>
+        </div>
+    </div>
+</div>
+<!-- TELA TESTE -->
+<div id="tela-teste" class="tela">
+    <div class="teste-header">
+        <div class="mic-status" id="micStatus">&#127908; Aguardando...</div>
+        <div class="timer" id="timer">60</div>
+    </div>
+    <div class="texto-leitura" id="textoLeitura"></div>
+</div>
+
+<!-- TELA FIM -->
+<div id="tela-fim" class="tela">
+    <div style="text-align:center;padding:60px 30px;">
+        <h2 style="color:#2e7d32;font-size:2em;margin-bottom:15px;">&#10004; Teste concluido!</h2>
+        <p style="color:#555;font-size:1.2em;">Voce pode fechar esta janela.</p>
+        <p style="margin-top:20px;font-size:0.9em;color:#777;">Os resultados foram enviados para o avaliador.</p>
+    </div>
+</div>
+
+<script>
+// ===== TFLOD - Teste de Fluencia Leitora Oral Digital =====
+// Motor THEDUGA adaptado para leitura de texto
+
+// ===== TEXTOS =====
+var TEXTO_INFANTIL = "Pedro acordou cedo naquela manha de sol. Ele olhou pela janela e viu que o ceu estava muito azul. Seu cachorro Pipoca ja esperava na porta com o rabo balancando. Os dois sairam juntos para o parque que ficava perto de casa. No caminho Pedro encontrou sua amiga Laura que tambem passeava com seu gato. Eles andaram ate o lago grande que tinha no meio do parque. Pipoca correu muito rapido e pulou dentro da agua. A agua estava fria mas o cachorro nao se importou. Ele nadou feliz enquanto Pedro e Laura sentavam na grama verde. Depois de um tempo Pipoca saiu do lago e se sacudiu todo molhando as criancas. Todos riram muito. Foi uma manha divertida no parque.";
+
+var TEXTO_ADULTO = "Marina nunca tinha viajado de trem antes daquele dia. Quando chegou na estacao ficou impressionada com o tamanho do lugar. As pessoas andavam apressadas carregando malas e mochilas de todos os tamanhos. Ela conferiu o numero da plataforma no painel eletronico e caminhou ate o local indicado. O trem ja estava parado esperando os passageiros. Marina encontrou seu vagao e se acomodou na poltrona ao lado da janela. Poucos minutos depois o trem comecou a se mover lentamente. A cidade foi ficando para tras e logo apareceram campos verdes com algumas vacas pastando. O movimento do trem era suave como um balanco. Marina abriu o livro que tinha trazido mas nao conseguiu ler porque a paisagem era bonita demais. Montanhas apareceram no horizonte cobertas por uma nevoa fina. Um senhor sentado na poltrona da frente puxou conversa e contou que fazia aquela viagem toda semana para visitar os netos. Ele conhecia cada curva do caminho e apontava os lugares mais bonitos. Depois de duas horas o trem parou numa cidade pequena cercada por montanhas. Marina desceu na plataforma e respirou o ar fresco da manha. Sua avo ja esperava com um sorriso largo e os bracos abertos. Naquele momento Marina entendeu porque sua mae sempre falava com tanto carinho daquela cidade.";
+// ===== ESTADO GLOBAL =====
+var dadosForm = {};
+var sessionInfo = {};
+var textoEscolhido = '';
+var palavrasTexto = [];
+var transcricaoCompleta = '';
+var palavrasReconhecidas = [];
+var timerInterval = null;
+var tempoRestante = 60;
+var recognition = null;
+var isListening = false;
+
+// ===== UTILIDADES =====
+function calcularIdade() {
+    var dn = document.getElementById('dataNasc').value;
+    if (!dn) return;
+    var nasc = new Date(dn + 'T00:00:00');
+    var hoje = new Date();
+    var anos = hoje.getFullYear() - nasc.getFullYear();
+    var meses = hoje.getMonth() - nasc.getMonth();
+    var dias = hoje.getDate() - nasc.getDate();
+    if (dias < 0) { meses--; var mesAnt = new Date(hoje.getFullYear(), hoje.getMonth(), 0); dias += mesAnt.getDate(); }
+    if (meses < 0) { anos--; meses += 12; }
+    document.getElementById('idade').value = anos + ' anos, ' + meses + ' meses e ' + dias + ' dias';
+    dadosForm.idadeAnos = anos;
+    gerarID();
+}
+
+function gerarID() {
+    var nome = document.getElementById('nome').value.trim();
+    var dn = document.getElementById('dataNasc').value;
+    if (!nome || !dn || nome.length < 1) { document.getElementById('idPaciente').value = ''; return; }
+    var n = nome.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z]/g,'').toLowerCase();
+    var prefixo = n.substring(0, 3);
+    var raw = dn + '+' + prefixo;
+    var hash = 5381;
+    for (var i = 0; i < raw.length; i++) hash = ((hash << 5) + hash) + raw.charCodeAt(i);
+    document.getElementById('idPaciente').value = 'P' + Math.abs(hash).toString(36).toUpperCase();
+}
+
+function trocarTela(mostrar) {
+    var telas = document.querySelectorAll('.tela');
+    for (var i = 0; i < telas.length; i++) telas[i].classList.remove('ativa');
+    document.getElementById(mostrar).classList.add('ativa');
+}
+
+function escolherTexto() {
+    var idade = dadosForm.idadeAnos || 0;
+    var escolaridade = document.getElementById('escolaridade').value;
+    // Criancas (6-12) e analfabetos usam texto infantil
+    var escolaridadesBaixas = ['Analfabeto','1o ano','2o ano','3o ano','4o ano','5o ano','6o ano','7o ano'];
+    if (idade <= 12 || escolaridadesBaixas.indexOf(escolaridade) !== -1) {
+        return TEXTO_INFANTIL;
+    }
+    return TEXTO_ADULTO;
+}
+// ===== FLUXO DO TESTE =====
+function mostrarInstrucoes() {
+    var nome = document.getElementById('nome').value.trim();
+    var dataNasc = document.getElementById('dataNasc').value;
+    var escolaridade = document.getElementById('escolaridade').value;
+    if (!nome || !dataNasc || !escolaridade) { alert('Preencha Nome, Data de Nascimento e Escolaridade!'); return; }
+    calcularIdade();
+    gerarID();
+    dadosForm = {
+        nome: nome,
+        dataNasc: dataNasc,
+        idade: document.getElementById('idade').value,
+        idadeAnos: dadosForm.idadeAnos || 0,
+        escolaridade: escolaridade,
+        dataAval: document.getElementById('dataAval').value || new Date().toISOString().split('T')[0],
+        obs: document.getElementById('obs').value,
+        id: document.getElementById('idPaciente').value
+    };
+    trocarTela('tela-instrucoes');
+}
+
+function iniciarTeste() {
+    // Fullscreen
+    var el = document.documentElement;
+    if (el.requestFullscreen) el.requestFullscreen();
+    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    else if (el.msRequestFullscreen) el.msRequestFullscreen();
+
+    // Escolher texto baseado na idade/escolaridade
+    textoEscolhido = escolherTexto();
+    palavrasTexto = textoEscolhido.split(/\s+/);
+
+    // Renderizar texto na tela
+    var html = '';
+    for (var i = 0; i < palavrasTexto.length; i++) {
+        html += '<span class="palavra" id="p' + i + '">' + palavrasTexto[i] + ' </span>';
+    }
+    document.getElementById('textoLeitura').innerHTML = html;
+
+    trocarTela('tela-teste');
+    transcricaoCompleta = '';
+    palavrasReconhecidas = [];
+
+    // Iniciar cronometro
+    tempoRestante = 60;
+    document.getElementById('timer').textContent = '60';
+    timerInterval = setInterval(function() {
+        tempoRestante--;
+        document.getElementById('timer').textContent = tempoRestante;
+        if (tempoRestante <= 0) {
+            finalizarTeste();
+        }
+    }, 1000);
+
+    // Iniciar reconhecimento de voz (THEDUGA)
+    iniciarReconhecimento();
+}
+// ===== SISTEMA THEDUGA - RECONHECIMENTO DE VOZ =====
+function iniciarReconhecimento() {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        document.getElementById('micStatus').textContent = '⚠ Navegador nao suporta voz';
+        return;
+    }
+    var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'pt-BR';
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = function() {
+        isListening = true;
+        document.getElementById('micStatus').textContent = '🎤 Escutando...';
+    };
+
+    recognition.onresult = function(event) {
+        var textoCompleto = '';
+        for (var i = 0; i < event.results.length; i++) {
+            textoCompleto += event.results[i][0].transcript;
+        }
+        transcricaoCompleta = textoCompleto.trim();
+        // Atualizar palavras reconhecidas e destacar no texto
+        atualizarDestaque();
+    };
+
+    recognition.onerror = function(event) {
+        if (event.error === 'no-speech') return;
+        if (event.error === 'aborted') return;
+        console.log('Erro reconhecimento:', event.error);
+        document.getElementById('micStatus').textContent = '⚠ Erro: ' + event.error;
+    };
+
+    recognition.onend = function() {
+        // Reiniciar se ainda estiver no tempo
+        if (isListening && tempoRestante > 0) {
+            try { recognition.start(); } catch(e) {}
+        }
+    };
+
+    try { recognition.start(); } catch(e) { console.log('Erro ao iniciar mic:', e); }
+}
+
+function atualizarDestaque() {
+    // Compara transcricao com texto original palavra a palavra
+    var palavrasFaladas = transcricaoCompleta.toLowerCase().replace(/[.,!?;:]/g,'').split(/\s+/).filter(function(p){return p.length > 0;});
+    palavrasReconhecidas = palavrasFaladas;
+    var totalPalavras = Math.min(palavrasFaladas.length, palavrasTexto.length);
+    for (var i = 0; i < palavrasTexto.length; i++) {
+        var el = document.getElementById('p' + i);
+        if (!el) continue;
+        if (i < totalPalavras) {
+            var original = palavrasTexto[i].toLowerCase().replace(/[.,!?;:]/g,'');
+            var falada = palavrasFaladas[i] || '';
+            if (original === falada) {
+                el.classList.add('lida');
+                el.classList.remove('erro');
+            } else {
+                el.classList.add('erro');
+                el.classList.remove('lida');
+            }
+        } else {
+            el.classList.remove('lida');
+            el.classList.remove('erro');
+        }
+    }
+}
+// ===== FINALIZAR TESTE =====
+function finalizarTeste() {
+    // Parar cronometro
+    if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+    // Parar reconhecimento
+    isListening = false;
+    if (recognition) { try { recognition.stop(); } catch(e) {} }
+    // Sair fullscreen
+    if (document.exitFullscreen) document.exitFullscreen();
+    else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+    else if (document.msExitFullscreen) document.msExitFullscreen();
+
+    // Calcular resultados
+    var resultado = calcularResultados();
+
+    // Mostrar tela final
+    trocarTela('tela-fim');
+
+    // Enviar para Lambda
+    salvarResultado(resultado);
+}
+
+function calcularResultados() {
+    var palavrasFaladas = transcricaoCompleta.toLowerCase().replace(/[.,!?;:]/g,'').split(/\s+/).filter(function(p){return p.length > 0;});
+    var totalLidas = palavrasFaladas.length;
+    var acertos = 0;
+    var erros = [];
+    var tempoUsado = 60 - tempoRestante;
+    if (tempoUsado <= 0) tempoUsado = 60;
+
+    for (var i = 0; i < Math.min(totalLidas, palavrasTexto.length); i++) {
+        var original = palavrasTexto[i].toLowerCase().replace(/[.,!?;:]/g,'');
+        var falada = palavrasFaladas[i] || '';
+        if (original === falada) {
+            acertos++;
+        } else {
+            erros.push({ posicao: i+1, esperada: palavrasTexto[i], lida: palavrasFaladas[i] || '(omitida)' });
+        }
+    }
+
+    // Palavras corretas por minuto (PCPM)
+    var pcpm = Math.round(acertos * (60 / tempoUsado));
+
+    // Classificacao baseada na faixa
+    var categoria = (textoEscolhido === TEXTO_INFANTIL) ? 'infantil' : 'adulto';
+    var classificacao = classificarDesempenho(pcpm, categoria);
+
+    return {
+        textoUsado: textoEscolhido,
+        categoria: categoria,
+        transcricao: transcricaoCompleta,
+        totalPalavrasTexto: palavrasTexto.length,
+        totalPalavrasLidas: totalLidas,
+        acertos: acertos,
+        erros: erros,
+        pcpm: pcpm,
+        tempoUsado: tempoUsado,
+        classificacao: classificacao
+    };
+}
+
+function classificarDesempenho(pcpm, categoria) {
+    if (categoria === 'infantil') {
+        if (pcpm >= 90) return 'Otimo';
+        if (pcpm >= 60) return 'Bom';
+        if (pcpm >= 40) return 'Medio';
+        if (pcpm >= 20) return 'Abaixo do esperado';
+        return 'Risco de dificuldade de leitura';
+    } else {
+        if (pcpm >= 150) return 'Otimo';
+        if (pcpm >= 120) return 'Bom';
+        if (pcpm >= 90) return 'Medio';
+        if (pcpm >= 60) return 'Abaixo do esperado';
+        return 'Risco de dificuldade de leitura';
+    }
+}
+// ===== ENVIAR RESULTADOS =====
+function salvarResultado() {
+    if (!sessionInfo.email || !sessionInfo.sessionId) return;
+    var resultado = calcularResultados();
+    var dados = {
+        email: sessionInfo.email,
+        tipo: 'tflod',
+        sessionId: sessionInfo.sessionId,
+        data: {
+            status: 'finalizado',
+            date: new Date().toISOString(),
+            formData: {
+                nome: dadosForm.nome,
+                idade: dadosForm.idade,
+                idadeAnos: dadosForm.idadeAnos,
+                escolaridade: dadosForm.escolaridade,
+                dataNasc: dadosForm.dataNasc,
+                dataAval: dadosForm.dataAval,
+                obs: dadosForm.obs,
+                id: dadosForm.id
+            },
+            resultados: resultado
+        }
+    };
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws/save-result', true);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.send(JSON.stringify(dados));
+}
+
+// ===== DADOS DA URL (versao online) =====
+function decodificarURL() {
+    var params = new URLSearchParams(window.location.search);
+    var d = params.get('d');
+    if (d) {
+        try { sessionInfo = JSON.parse(atob(decodeURIComponent(d))); } catch(e) {}
+        if (sessionInfo.patientName) document.getElementById('nome').value = sessionInfo.patientName;
+        if (sessionInfo.birthDate) document.getElementById('dataNasc').value = sessionInfo.birthDate;
+        if (sessionInfo.education) document.getElementById('escolaridade').value = sessionInfo.education;
+        if (sessionInfo.obs) document.getElementById('obs').value = sessionInfo.obs;
+        calcularIdade();
+        gerarID();
+    }
+}
+
+// ===== INIT =====
+window.addEventListener('load', function() {
+    document.getElementById('dataAval').value = new Date().toISOString().split('T')[0];
+    document.getElementById('nome').addEventListener('input', gerarID);
+    document.getElementById('dataNasc').addEventListener('change', function() { calcularIdade(); gerarID(); });
+    decodificarURL();
+});
+
+// Se paciente fechar a janela no meio, envia o que tem
+window.addEventListener('beforeunload', function() {
+    if (isListening && sessionInfo.email) {
+        var resultado = calcularResultados();
+        navigator.sendBeacon(
+            'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws/save-result',
+            JSON.stringify({
+                email: sessionInfo.email,
+                tipo: 'tflod',
+                sessionId: sessionInfo.sessionId,
+                data: { status: 'abandonado', date: new Date().toISOString(), formData: dadosForm, resultados: resultado }
+            })
+        );
+    }
+});
+</script>
+</body>
+</html>
