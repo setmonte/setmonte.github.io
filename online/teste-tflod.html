@@ -30,7 +30,7 @@ body{font-family:'Segoe UI',sans-serif;background:#f5f5f5;min-height:100vh}
 .teste-header{background:#0d47a1;color:#fff;padding:15px 20px;display:flex;justify-content:space-between;align-items:center;width:100%}
 .teste-header .timer{font-size:2em;font-weight:bold;font-family:monospace}
 .teste-header .mic-status{font-size:0.85em;opacity:0.8}
-.texto-leitura{padding:30px;font-size:1.4em;line-height:2;color:#222;max-width:800px;margin:0 auto;text-align:justify}
+.texto-leitura{padding:30px;font-size:1.2em;line-height:1.9;color:#222;max-width:900px;margin:0 auto;text-align:justify;overflow-y:auto;max-height:calc(100vh - 80px)}
 .texto-leitura .palavra{display:inline;transition:background 0.2s}
 .texto-leitura .palavra.lida{background:#c8e6c9;border-radius:3px}
 .texto-leitura .palavra.erro{background:#ffcdd2;border-radius:3px}
@@ -125,9 +125,9 @@ body{font-family:'Segoe UI',sans-serif;background:#f5f5f5;min-height:100vh}
 // Motor THEDUGA adaptado para leitura de texto
 
 // ===== TEXTOS =====
-var TEXTO_INFANTIL = "Pedro acordou cedo naquela manha de sol. Ele olhou pela janela e viu que o ceu estava muito azul. Seu cachorro Pipoca ja esperava na porta com o rabo balancando. Os dois sairam juntos para o parque que ficava perto de casa. No caminho Pedro encontrou sua amiga Laura que tambem passeava com seu gato. Eles andaram ate o lago grande que tinha no meio do parque. Pipoca correu muito rapido e pulou dentro da agua. A agua estava fria mas o cachorro nao se importou. Ele nadou feliz enquanto Pedro e Laura sentavam na grama verde. Depois de um tempo Pipoca saiu do lago e se sacudiu todo molhando as criancas. Todos riram muito. Foi uma manha divertida no parque.";
+var TEXTO_INFANTIL = "Pedro acordou cedo naquela manh\u00e3 de sol. Ele olhou pela janela e viu que o c\u00e9u estava muito azul. Seu cachorro Pipoca j\u00e1 esperava na porta, com o rabo balan\u00e7ando. Os dois sa\u00edram juntos para o parque que ficava perto de casa. No caminho, Pedro encontrou sua amiga Laura, que tamb\u00e9m passeava com seu gato. Eles andaram at\u00e9 o lago grande que tinha no meio do parque. Pipoca correu muito r\u00e1pido e pulou dentro da \u00e1gua. A \u00e1gua estava fria, mas o cachorro n\u00e3o se importou. Ele nadou feliz enquanto Pedro e Laura sentavam na grama verde. Depois de um tempo, Pipoca saiu do lago e se sacudiu todo, molhando as crian\u00e7as. Todos riram muito. Foi uma manh\u00e3 divertida no parque.";
 
-var TEXTO_ADULTO = "Marina nunca tinha viajado de trem antes daquele dia. Quando chegou na estacao ficou impressionada com o tamanho do lugar. As pessoas andavam apressadas carregando malas e mochilas de todos os tamanhos. Ela conferiu o numero da plataforma no painel eletronico e caminhou ate o local indicado. O trem ja estava parado esperando os passageiros. Marina encontrou seu vagao e se acomodou na poltrona ao lado da janela. Poucos minutos depois o trem comecou a se mover lentamente. A cidade foi ficando para tras e logo apareceram campos verdes com algumas vacas pastando. O movimento do trem era suave como um balanco. Marina abriu o livro que tinha trazido mas nao conseguiu ler porque a paisagem era bonita demais. Montanhas apareceram no horizonte cobertas por uma nevoa fina. Um senhor sentado na poltrona da frente puxou conversa e contou que fazia aquela viagem toda semana para visitar os netos. Ele conhecia cada curva do caminho e apontava os lugares mais bonitos. Depois de duas horas o trem parou numa cidade pequena cercada por montanhas. Marina desceu na plataforma e respirou o ar fresco da manha. Sua avo ja esperava com um sorriso largo e os bracos abertos. Naquele momento Marina entendeu porque sua mae sempre falava com tanto carinho daquela cidade.";
+var TEXTO_ADULTO = "Marina nunca tinha viajado de trem antes daquele dia. Quando chegou na esta\u00e7\u00e3o, ficou impressionada com o tamanho do lugar. As pessoas andavam apressadas, carregando malas e mochilas de todos os tamanhos. Ela conferiu o n\u00famero da plataforma no painel eletr\u00f4nico e caminhou at\u00e9 o local indicado. O trem j\u00e1 estava parado, esperando os passageiros. Marina encontrou seu vag\u00e3o e se acomodou na poltrona ao lado da janela. Poucos minutos depois, o trem come\u00e7ou a se mover lentamente. A cidade foi ficando para tr\u00e1s e logo apareceram campos verdes, com algumas vacas pastando. O movimento do trem era suave como um balan\u00e7o. Marina abriu o livro que tinha trazido, mas n\u00e3o conseguiu ler porque a paisagem era bonita demais. Montanhas apareceram no horizonte, cobertas por uma n\u00e9voa fina. Um senhor sentado na poltrona da frente puxou conversa e contou que fazia aquela viagem toda semana para visitar os netos. Ele conhecia cada curva do caminho e apontava os lugares mais bonitos. Depois de duas horas, o trem parou numa cidade pequena, cercada por montanhas. Marina desceu na plataforma e respirou o ar fresco da manh\u00e3. Sua av\u00f3 j\u00e1 esperava, com um sorriso largo e os bra\u00e7os abertos. Naquele momento, Marina entendeu por que sua m\u00e3e sempre falava com tanto carinho daquela cidade.";
 // ===== ESTADO GLOBAL =====
 var dadosForm = {};
 var sessionInfo = {};
@@ -307,6 +307,18 @@ function atualizarDestaque() {
         } else {
             el.classList.remove('lida');
             el.classList.remove('erro');
+        }
+    }
+    // Auto-scroll: manter a ultima palavra lida visivel
+    if (totalPalavras > 0) {
+        var ultimaEl = document.getElementById('p' + (totalPalavras - 1));
+        if (ultimaEl) {
+            var container = document.getElementById('textoLeitura');
+            var elTop = ultimaEl.offsetTop - container.offsetTop;
+            var containerHeight = container.clientHeight;
+            if (elTop > container.scrollTop + containerHeight - 80) {
+                container.scrollTo({ top: elTop - containerHeight + 120, behavior: 'smooth' });
+            }
         }
     }
 }
