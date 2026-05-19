@@ -378,8 +378,16 @@ async function finalizarGravacao() {
         document.getElementById('progressFill').style.width = '100%';
         document.getElementById('progressText').textContent = 'Enviando resultados...';
 
-        // Enviar para Lambda
-        await salvarResultado(resultadoFinal);
+        // Converter áudio para base64 para salvar no banco
+        var audioBase64 = await blobToBase64(audioBlob);
+        // Proteção: se áudio > 300KB em base64, não envia (limite DynamoDB)
+        if (audioBase64 && audioBase64.length > 300000) {
+            console.warn('Audio muito grande (' + Math.round(audioBase64.length/1024) + 'KB), nao sera salvo.');
+            audioBase64 = null;
+        }
+
+        // Enviar para Lambda (com áudio)
+        await salvarResultado(resultadoFinal, audioBase64);
 
         // Mostrar tela final
         trocarTela('tela-fim');
@@ -489,7 +497,20 @@ function classificarDesempenho(pcpm, categoria) {
 }
 
 // ===== ENVIAR RESULTADOS PARA LAMBDA =====
-async function salvarResultado(resultado) {
+// Converte Blob em base64
+function blobToBase64(blob) {
+    return new Promise(function(resolve) {
+        var reader = new FileReader();
+        reader.onloadend = function() {
+            // Remove o prefixo "data:audio/webm;codecs=opus;base64,"
+            var base64 = reader.result.split(',')[1] || '';
+            resolve(base64);
+        };
+        reader.readAsDataURL(blob);
+    });
+}
+
+async function salvarResultado(resultado, audioBase64) {
     if (!sessionInfo.email || !sessionInfo.sessionId) return;
     var dados = {
         email: sessionInfo.email,
@@ -508,7 +529,8 @@ async function salvarResultado(resultado) {
                 obs: dadosForm.obs,
                 id: dadosForm.id
             },
-            resultados: resultado
+            resultados: resultado,
+            audioBase64: audioBase64 || null
         }
     };
     try {

@@ -2610,19 +2610,27 @@
         var data = await resp.json();
         _tflodResultCache = data.results || [];
         if (_tflodResultCache.length === 0) { el.innerHTML = '<p>Nenhum resultado TFLOD encontrado.</p>'; return; }
-        var html = '<h3>Resultados TFLOD</h3><table style="width:100%;border-collapse:collapse;font-size:0.85em;"><tr><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Data</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Paciente</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">PCPM</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Classificacao</th><th style="padding:6px;border-bottom:2px solid #1565c0;">PDF</th></tr>';
+        var html = '<h3>Resultados TFLOD</h3><table style="width:100%;border-collapse:collapse;font-size:0.85em;"><tr><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Data</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Paciente</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">PCPM</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Classificacao</th><th style="padding:6px;border-bottom:2px solid #1565c0;">Acoes</th></tr>';
         for (var i = 0; i < _tflodResultCache.length; i++) {
           var r = _tflodResultCache[i];
           var d = r.data || {};
           var res = d.resultados || {};
           var fd = d.formData || {};
+          var temAudio = d.audioBase64 ? true : false;
           html += '<tr><td style="padding:5px;border-bottom:1px solid #eee;">' + (d.date ? new Date(d.date).toLocaleString('pt-BR') : '') + '</td>';
           html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (fd.nome || '') + '</td>';
           html += '<td style="padding:5px;border-bottom:1px solid #eee;font-weight:bold;">' + (res.pcpm || '-') + '</td>';
           html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (res.classificacao || '-') + '</td>';
-          html += '<td style="padding:5px;border-bottom:1px solid #eee;text-align:center;"><button onclick="gerarPdfTflod(' + i + ')" class="btn btn-blue" style="padding:4px 10px;font-size:0.8em;">PDF</button></td></tr>';
+          html += '<td style="padding:5px;border-bottom:1px solid #eee;text-align:center;">';
+          html += '<button onclick="gerarPdfTflod(' + i + ')" class="btn btn-blue" style="padding:4px 10px;font-size:0.8em;">PDF</button> ';
+          if (temAudio) {
+            html += '<button onclick="ouvirAudioTflod(' + i + ')" class="btn btn-green" style="padding:4px 10px;font-size:0.8em;">&#9654; Ouvir</button>';
+          }
+          html += '</td></tr>';
         }
         html += '</table>';
+        // Player de audio oculto (aparece ao clicar Ouvir)
+        html += '<div id="tflodAudioPlayer" style="display:none;margin-top:10px;padding:10px;background:#e3f2fd;border-radius:8px;text-align:center;"><audio id="tflodAudio" controls style="width:100%;max-width:400px;"></audio><br><button onclick="document.getElementById(\'tflodAudioPlayer\').style.display=\'none\'" style="margin-top:5px;font-size:0.8em;cursor:pointer;border:none;background:none;color:#1565c0;">Fechar player</button></div>';
         el.innerHTML = html;
       } catch(e) { el.innerHTML = '<p>Erro ao carregar resultados.</p>'; }
     }
@@ -2659,6 +2667,22 @@
     function whatsappTflodLink() {
       var link = document.getElementById('tflodSessionLink').textContent;
       window.open('https://wa.me/?text=' + encodeURIComponent('Acesse o teste TFLOD: ' + link), '_blank');
+    }
+
+    // ===== OUVIR AUDIO TFLOD =====
+    function ouvirAudioTflod(idx) {
+      var r = _tflodResultCache[idx];
+      if (!r) return;
+      var d = r.data || {};
+      var audioB64 = d.audioBase64;
+      if (!audioB64) { alert('Audio nao disponivel para este resultado.'); return; }
+      // Montar data URL do audio WebM
+      var audioSrc = 'data:audio/webm;codecs=opus;base64,' + audioB64;
+      var playerDiv = document.getElementById('tflodAudioPlayer');
+      var audioEl = document.getElementById('tflodAudio');
+      audioEl.src = audioSrc;
+      playerDiv.style.display = 'block';
+      audioEl.play();
     }
 
     // ===== PDF TFLOD =====
