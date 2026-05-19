@@ -21,12 +21,7 @@ body{font-family:'Segoe UI',sans-serif;background:#f5f5f5;min-height:100vh}
 .btn{padding:12px 30px;border:none;border-radius:8px;font-size:1em;font-weight:700;cursor:pointer;margin:5px}
 .btn-primary{background:#1565c0;color:#fff}
 .btn-primary:hover{background:#0d47a1}
-.btn-disabled{background:#999;color:#fff;cursor:not-allowed}
 .info-tecnica{background:#e3f2fd;border-left:4px solid #1565c0;padding:12px;border-radius:0 8px 8px 0;margin-bottom:15px;font-size:0.75em;color:#555}
-</style>
-</head>
-<body>
-<style>
 #tela-teste{background:#fff;padding:0;align-items:stretch;justify-content:flex-start}
 .teste-header{background:#0d47a1;color:#fff;padding:15px 20px;display:flex;justify-content:space-between;align-items:center;width:100%}
 .teste-header .timer{font-size:2em;font-weight:bold;font-family:monospace}
@@ -42,11 +37,9 @@ body{font-family:'Segoe UI',sans-serif;background:#f5f5f5;min-height:100vh}
 .progress-bar{height:8px;background:#e0e0e0;border-radius:4px;overflow:hidden}
 .progress-fill{height:100%;background:#1565c0;border-radius:4px;transition:width 0.3s;width:0%}
 .progress-text{text-align:center;margin-top:8px;color:#555;font-size:0.9em}
-.modelo-status{position:fixed;bottom:10px;right:10px;background:#e8f5e9;border:1px solid #a5d6a7;border-radius:8px;padding:8px 12px;font-size:0.75em;color:#2e7d32;display:none;z-index:999}
 </style>
-
-<!-- STATUS DO MODELO (canto inferior direito, discreto) -->
-<div class="modelo-status" id="modeloStatus">⏳ Preparando motor de voz...</div>
+</head>
+<body>
 
 <!-- TELA INICIO -->
 <div id="tela-inicio" class="tela ativa">
@@ -121,14 +114,14 @@ body{font-family:'Segoe UI',sans-serif;background:#f5f5f5;min-height:100vh}
     <div class="texto-leitura" id="textoLeitura"></div>
 </div>
 
-<!-- TELA PROCESSANDO (Whisper trabalhando) -->
+<!-- TELA PROCESSANDO -->
 <div id="tela-processando" class="tela">
     <div style="text-align:center;padding:60px 30px;">
         <h2 style="color:#1565c0;font-size:1.8em;margin-bottom:15px;">⏳ Processando sua leitura...</h2>
         <p style="color:#555;font-size:1.1em;margin-bottom:20px;">Aguarde enquanto analisamos o áudio.</p>
         <div class="progress-container">
             <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
-            <div class="progress-text" id="progressText">Iniciando transcrição...</div>
+            <div class="progress-text" id="progressText">Enviando áudio...</div>
         </div>
     </div>
 </div>
@@ -142,12 +135,12 @@ body{font-family:'Segoe UI',sans-serif;background:#f5f5f5;min-height:100vh}
     </div>
 </div>
 
-<script type="module">
-// ===== TFLOD v2 - Com Whisper (transcrição literal, sem correção) =====
-// Usa Transformers.js para rodar Whisper-base no navegador do paciente
-// O modelo é baixado uma vez e fica em cache (75MB)
+<script>
+// ===== TFLOD v3 - Transcrição via API (OpenAI Whisper large) =====
+// Áudio gravado no navegador → enviado para Lambda → Lambda transcreve via OpenAI
+// Sem download de modelo, sem travamento, precisão máxima
 
-import { pipeline } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.4.1/dist/transformers.min.js';
+var API_URL = 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
 
 // ===== TEXTOS =====
 var TEXTO_INFANTIL = "Pedro acordou cedo naquela manhã de sol. Ele olhou pela janela e viu que o céu estava muito azul. Seu cachorro Pipoca já esperava na porta, com o rabo balançando. Os dois saíram juntos para o parque que ficava perto de casa. No caminho, Pedro encontrou sua amiga Laura, que também passeava com seu gato. Eles andaram até o lago grande que tinha no meio do parque. Pipoca correu muito rápido e pulou dentro da água. A água estava fria, mas o cachorro não se importou. Ele nadou feliz enquanto Pedro e Laura sentavam na grama verde. Depois de um tempo, Pipoca saiu do lago e se sacudiu todo, molhando as crianças. Todos riram muito. Foi uma manhã divertida no parque.";
@@ -163,39 +156,9 @@ var timerInterval = null;
 var tempoRestante = 60;
 var mediaRecorder = null;
 var audioChunks = [];
-var whisperPipeline = null;
-var modeloCarregado = false;
-
-// ===== CARREGAR MODELO WHISPER EM SEGUNDO PLANO =====
-// Começa a baixar assim que a página abre (paciente nem percebe)
-async function carregarModelo() {
-    var statusEl = document.getElementById('modeloStatus');
-    statusEl.style.display = 'block';
-    statusEl.textContent = '⏳ Preparando motor de voz...';
-    try {
-        // Carrega o pipeline de reconhecimento de fala com whisper-small
-        whisperPipeline = await pipeline(
-            'automatic-speech-recognition',
-            'onnx-community/whisper-small',
-            {
-                dtype: 'q8',  // quantizado para ser mais leve
-                device: 'wasm'
-            }
-        );
-        modeloCarregado = true;
-        statusEl.textContent = '✅ Motor de voz pronto!';
-        setTimeout(function() { statusEl.style.display = 'none'; }, 3000);
-    } catch (erro) {
-        console.error('Erro ao carregar Whisper:', erro);
-        statusEl.textContent = '⚠️ Erro ao carregar motor de voz';
-        statusEl.style.background = '#ffebee';
-        statusEl.style.color = '#c62828';
-        statusEl.style.borderColor = '#ef9a9a';
-    }
-}
 
 // ===== UTILIDADES =====
-window.calcularIdade = function() {
+function calcularIdade() {
     var dn = document.getElementById('dataNasc').value;
     if (!dn) return;
     var nasc = new Date(dn + 'T00:00:00');
@@ -238,8 +201,18 @@ function escolherTexto() {
     return TEXTO_ADULTO;
 }
 
+function blobToBase64(blob) {
+    return new Promise(function(resolve) {
+        var reader = new FileReader();
+        reader.onloadend = function() {
+            resolve(reader.result.split(',')[1] || '');
+        };
+        reader.readAsDataURL(blob);
+    });
+}
+
 // ===== FLUXO DO TESTE =====
-window.mostrarInstrucoes = function() {
+function mostrarInstrucoes() {
     var nome = document.getElementById('nome').value.trim();
     var dataNasc = document.getElementById('dataNasc').value;
     var escolaridade = document.getElementById('escolaridade').value;
@@ -257,43 +230,24 @@ window.mostrarInstrucoes = function() {
         id: document.getElementById('idPaciente').value
     };
     trocarTela('tela-instrucoes');
-    // Se modelo ainda nao carregou, desabilita botao e mostra aviso
-    if (!modeloCarregado) {
-        var btn = document.getElementById('btnIniciar');
-        btn.classList.add('btn-disabled');
-        btn.textContent = 'Preparando... aguarde';
-        btn.disabled = true;
-        // Verifica a cada 500ms se o modelo carregou
-        var checkInterval = setInterval(function() {
-            if (modeloCarregado) {
-                btn.classList.remove('btn-disabled');
-                btn.textContent = 'Iniciar Leitura';
-                btn.disabled = false;
-                clearInterval(checkInterval);
-            }
-        }, 500);
-    }
 }
 
-window.iniciarTeste = async function() {
-    if (!modeloCarregado) { alert('Aguarde o motor de voz carregar...'); return; }
-
+async function iniciarTeste() {
     // Fullscreen
     var el = document.documentElement;
     if (el.requestFullscreen) el.requestFullscreen();
     else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
     else if (el.msRequestFullscreen) el.msRequestFullscreen();
 
-    // Escolher texto baseado na idade/escolaridade
+    // Escolher texto
     textoEscolhido = escolherTexto();
     palavrasTexto = textoEscolhido.split(/\s+/);
 
-    // Renderizar texto na tela (sem destaque — apenas texto limpo)
+    // Mostrar texto na tela
     document.getElementById('textoLeitura').textContent = textoEscolhido;
-
     trocarTela('tela-teste');
 
-    // Iniciar gravacao de audio
+    // Iniciar gravação de áudio
     try {
         var stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         audioChunks = [];
@@ -301,34 +255,31 @@ window.iniciarTeste = async function() {
         mediaRecorder.ondataavailable = function(e) {
             if (e.data.size > 0) audioChunks.push(e.data);
         };
-        mediaRecorder.start(1000); // coleta chunks a cada 1 segundo
+        mediaRecorder.start(1000);
     } catch (erro) {
         alert('Não foi possível acessar o microfone. Verifique as permissões do navegador.');
         trocarTela('tela-instrucoes');
         return;
     }
 
-    // Iniciar cronometro
+    // Cronômetro
     tempoRestante = 60;
     document.getElementById('timer').textContent = '60';
     timerInterval = setInterval(function() {
         tempoRestante--;
         document.getElementById('timer').textContent = tempoRestante;
-        if (tempoRestante <= 0) {
-            finalizarGravacao();
-        }
+        if (tempoRestante <= 0) finalizarGravacao();
     }, 1000);
 }
 
-// ===== FINALIZAR GRAVACAO E PROCESSAR =====
+// ===== FINALIZAR E ENVIAR PARA API =====
 async function finalizarGravacao() {
-    // Parar cronometro
+    // Parar cronômetro
     if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
 
-    // Parar gravacao
+    // Parar gravação
     if (mediaRecorder && mediaRecorder.state !== 'inactive') {
         mediaRecorder.stop();
-        // Parar todas as tracks do microfone
         mediaRecorder.stream.getTracks().forEach(function(t) { t.stop(); });
     }
 
@@ -337,73 +288,57 @@ async function finalizarGravacao() {
     else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
     else if (document.msExitFullscreen) document.msExitFullscreen();
 
-    // Mostrar tela de processamento
+    // Tela de processamento
     trocarTela('tela-processando');
     document.getElementById('progressFill').style.width = '10%';
     document.getElementById('progressText').textContent = 'Preparando áudio...';
 
-    // Aguardar um momento para o mediaRecorder finalizar
+    // Esperar mediaRecorder finalizar
     await new Promise(function(resolve) { setTimeout(resolve, 500); });
 
-    // Converter chunks em blob de audio
+    // Converter áudio para base64
     var audioBlob = new Blob(audioChunks, { type: 'audio/webm;codecs=opus' });
+    var audioBase64 = await blobToBase64(audioBlob);
 
     document.getElementById('progressFill').style.width = '30%';
-    document.getElementById('progressText').textContent = 'Transcrevendo com IA (pode levar 10-20s)...';
+    document.getElementById('progressText').textContent = 'Transcrevendo com IA (5-10 segundos)...';
 
     try {
-        // Converter blob para URL para o Whisper processar
-        var audioUrl = URL.createObjectURL(audioBlob);
-
-        // Transcrever com Whisper (transcrição literal, sem correção!)
-        var resultado = await whisperPipeline(audioUrl, {
-            language: 'portuguese',
-            task: 'transcribe',
-            chunk_length_s: 30,
-            stride_length_s: 5,
-            return_timestamps: false
+        // Enviar áudio para Lambda que transcreve via OpenAI Whisper
+        var resp = await fetch(API_URL + '/transcribe-audio', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ audioBase64: audioBase64 })
         });
-
-        URL.revokeObjectURL(audioUrl);
+        var data = await resp.json();
+        var transcricao = data.text || '';
 
         document.getElementById('progressFill').style.width = '80%';
         document.getElementById('progressText').textContent = 'Calculando resultados...';
 
-        // Pegar a transcrição
-        var transcricao = resultado.text || '';
-
         // Calcular resultados
-        var resultadoFinal = calcularResultados(transcricao);
+        var resultado = calcularResultados(transcricao);
 
         document.getElementById('progressFill').style.width = '100%';
         document.getElementById('progressText').textContent = 'Enviando resultados...';
 
-        // Converter áudio para base64 para salvar no banco
-        var audioBase64 = await blobToBase64(audioBlob);
-        // Proteção: se áudio > 390KB em base64, não envia (limite DynamoDB 400KB total)
-        if (audioBase64 && audioBase64.length > 390000) {
-            console.warn('Audio muito grande (' + Math.round(audioBase64.length/1024) + 'KB), nao sera salvo.');
-            audioBase64 = null;
-        }
+        // Salvar resultados + áudio no banco
+        await salvarResultado(resultado, audioBase64);
 
-        // Enviar para Lambda (com áudio)
-        await salvarResultado(resultadoFinal, audioBase64);
-
-        // Mostrar tela final
+        // Tela final
         trocarTela('tela-fim');
 
     } catch (erro) {
         console.error('Erro na transcrição:', erro);
-        document.getElementById('progressText').textContent = '⚠️ Erro ao processar. Enviando áudio bruto...';
-        // Em caso de erro, envia o que tem
+        document.getElementById('progressText').textContent = '⚠️ Erro ao processar. Tente novamente.';
+        // Tenta salvar o que tem
         await salvarResultadoErro(erro.message);
-        trocarTela('tela-fim');
+        setTimeout(function() { trocarTela('tela-fim'); }, 3000);
     }
 }
 
 // ===== CALCULAR RESULTADOS =====
 function calcularResultados(transcricao) {
-    // Normaliza a transcrição (minúsculas, remove pontuação)
     var palavrasFaladas = transcricao.toLowerCase()
         .replace(/[.,!?;:"""''()\-]/g, '')
         .split(/\s+/)
@@ -415,7 +350,6 @@ function calcularResultados(transcricao) {
     var tempoUsado = 60 - tempoRestante;
     if (tempoUsado <= 0) tempoUsado = 60;
 
-    // Compara palavra a palavra (sem correção — preserva trocas fonológicas)
     for (var i = 0; i < Math.min(totalLidas, palavrasTexto.length); i++) {
         var original = palavrasTexto[i].toLowerCase().replace(/[.,!?;:"""''()\-]/g, '');
         var falada = palavrasFaladas[i] || '';
@@ -426,16 +360,12 @@ function calcularResultados(transcricao) {
                 posicao: i + 1,
                 esperada: palavrasTexto[i],
                 lida: palavrasFaladas[i] || '(omitida)',
-                // Detecta tipo de erro para análise de dislexia
                 tipo: classificarErro(original, falada)
             });
         }
     }
 
-    // Palavras corretas por minuto (PCPM)
     var pcpm = Math.round(acertos * (60 / tempoUsado));
-
-    // Classificação
     var categoria = (textoEscolhido === TEXTO_INFANTIL) ? 'infantil' : 'adulto';
     var classificacao = classificarDesempenho(pcpm, categoria);
 
@@ -453,10 +383,9 @@ function calcularResultados(transcricao) {
     };
 }
 
-// ===== CLASSIFICAR TIPO DE ERRO (importante para dislexia) =====
+// ===== CLASSIFICAR TIPO DE ERRO (dislexia) =====
 function classificarErro(original, falada) {
     if (!falada || falada === '(omitida)') return 'omissao';
-    // Trocas fonológicas clássicas da dislexia
     var trocas = [
         ['p','b'], ['t','d'], ['f','v'], ['c','g'], ['k','g'],
         ['s','z'], ['x','j'], ['ch','j'], ['lh','li'], ['nh','ni']
@@ -467,7 +396,6 @@ function classificarErro(original, falada) {
             return 'troca_fonologica';
         }
     }
-    // Inversão de letras (ex: "prato" -> "parto")
     if (original.length === falada.length && original.length > 2) {
         var diffs = 0;
         for (var j = 0; j < original.length; j++) {
@@ -475,7 +403,6 @@ function classificarErro(original, falada) {
         }
         if (diffs === 2) return 'inversao';
     }
-    // Adição ou omissão de sílaba
     if (Math.abs(original.length - falada.length) >= 2) return 'silaba';
     return 'substituicao';
 }
@@ -496,22 +423,15 @@ function classificarDesempenho(pcpm, categoria) {
     }
 }
 
-// ===== ENVIAR RESULTADOS PARA LAMBDA =====
-// Converte Blob em base64
-function blobToBase64(blob) {
-    return new Promise(function(resolve) {
-        var reader = new FileReader();
-        reader.onloadend = function() {
-            // Remove o prefixo "data:audio/webm;codecs=opus;base64,"
-            var base64 = reader.result.split(',')[1] || '';
-            resolve(base64);
-        };
-        reader.readAsDataURL(blob);
-    });
-}
-
+// ===== ENVIAR RESULTADOS =====
 async function salvarResultado(resultado, audioBase64) {
     if (!sessionInfo.email || !sessionInfo.sessionId) return;
+    // Limitar áudio a 390KB para caber no DynamoDB (400KB max por item)
+    var audioParaSalvar = audioBase64;
+    if (audioParaSalvar && audioParaSalvar.length > 390000) {
+        console.warn('Audio grande (' + Math.round(audioParaSalvar.length/1024) + 'KB), nao salvo.');
+        audioParaSalvar = null;
+    }
     var dados = {
         email: sessionInfo.email,
         tipo: 'tflod',
@@ -530,11 +450,11 @@ async function salvarResultado(resultado, audioBase64) {
                 id: dadosForm.id
             },
             resultados: resultado,
-            audioBase64: audioBase64 || null
+            audioBase64: audioParaSalvar
         }
     };
     try {
-        await fetch('https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws/save-result', {
+        await fetch(API_URL + '/save-result', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(dados)
@@ -544,27 +464,21 @@ async function salvarResultado(resultado, audioBase64) {
 
 async function salvarResultadoErro(mensagemErro) {
     if (!sessionInfo.email || !sessionInfo.sessionId) return;
-    var dados = {
-        email: sessionInfo.email,
-        tipo: 'tflod',
-        sessionId: sessionInfo.sessionId,
-        data: {
-            status: 'erro_transcricao',
-            date: new Date().toISOString(),
-            formData: dadosForm,
-            erro: mensagemErro
-        }
-    };
     try {
-        await fetch('https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws/save-result', {
+        await fetch(API_URL + '/save-result', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(dados)
+            body: JSON.stringify({
+                email: sessionInfo.email,
+                tipo: 'tflod',
+                sessionId: sessionInfo.sessionId,
+                data: { status: 'erro_transcricao', date: new Date().toISOString(), formData: dadosForm, erro: mensagemErro }
+            })
         });
     } catch (e) { console.error('Erro ao enviar:', e); }
 }
 
-// ===== DADOS DA URL (versão online — recebe dados do painel do avaliador) =====
+// ===== DADOS DA URL =====
 function decodificarURL() {
     var params = new URLSearchParams(window.location.search);
     var d = params.get('d');
@@ -585,22 +499,15 @@ window.addEventListener('load', function() {
     document.getElementById('nome').addEventListener('input', gerarID);
     document.getElementById('dataNasc').addEventListener('change', function() { calcularIdade(); gerarID(); });
     decodificarURL();
-    // Começa a baixar o modelo Whisper imediatamente (em segundo plano)
-    carregarModelo();
 });
 
-// Se paciente fechar a janela no meio da gravação, avisa o avaliador
+// Se paciente fechar no meio da gravação
 window.addEventListener('beforeunload', function() {
     if (mediaRecorder && mediaRecorder.state === 'recording' && sessionInfo.email) {
-        navigator.sendBeacon(
-            'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws/save-result',
-            JSON.stringify({
-                email: sessionInfo.email,
-                tipo: 'tflod',
-                sessionId: sessionInfo.sessionId,
-                data: { status: 'abandonado', date: new Date().toISOString(), formData: dadosForm }
-            })
-        );
+        navigator.sendBeacon(API_URL + '/save-result', JSON.stringify({
+            email: sessionInfo.email, tipo: 'tflod', sessionId: sessionInfo.sessionId,
+            data: { status: 'abandonado', date: new Date().toISOString(), formData: dadosForm }
+        }));
     }
 });
 </script>
