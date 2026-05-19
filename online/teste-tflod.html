@@ -171,12 +171,12 @@ var modeloCarregado = false;
 async function carregarModelo() {
     var statusEl = document.getElementById('modeloStatus');
     statusEl.style.display = 'block';
-    statusEl.textContent = '⏳ Baixando motor de voz...';
+    statusEl.textContent = '⏳ Baixando motor de voz (~244MB, apenas na 1ª vez)...';
     try {
-        // Carrega o pipeline de reconhecimento de fala com whisper-base
+        // Carrega o pipeline de reconhecimento de fala com whisper-small
         whisperPipeline = await pipeline(
             'automatic-speech-recognition',
-            'onnx-community/whisper-base',
+            'onnx-community/whisper-small',
             {
                 dtype: 'q8',  // quantizado para ser mais leve
                 device: 'wasm'
@@ -380,8 +380,8 @@ async function finalizarGravacao() {
 
         // Converter áudio para base64 para salvar no banco
         var audioBase64 = await blobToBase64(audioBlob);
-        // Proteção: se áudio > 300KB em base64, não envia (limite DynamoDB)
-        if (audioBase64 && audioBase64.length > 300000) {
+        // Proteção: se áudio > 390KB em base64, não envia (limite DynamoDB 400KB total)
+        if (audioBase64 && audioBase64.length > 390000) {
             console.warn('Audio muito grande (' + Math.round(audioBase64.length/1024) + 'KB), nao sera salvo.');
             audioBase64 = null;
         }
