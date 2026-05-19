@@ -2494,8 +2494,244 @@
     async function generateTaavPDF(idx) {
       var r = _taavResultCache[idx];
       if (!r) { alert('Resultado nao encontrado'); return; }
-      // TODO: implementar PDF completo com grafico de linha
-      alert('PDF do TAAV sera implementado em breve.');
+      var d = r.data || {};
+      var p = d.formData || {};
+      var numAlvos = d.numEstimulos || 15;
+
+      // Chamar IA para analise clinica
+      var laudoIA = null;
+      try {
+        var t1 = d.t1 || {acertos:0,alarmesFalsos:0,omissoes:0,tempoResposta:0};
+        var t2 = d.t2 || {acertos:0,alarmesFalsos:0,omissoes:0,tempoResposta:0};
+        var t3 = d.t3 || {acertos:0,alarmesFalsos:0,omissoes:0,tempoResposta:0};
+        var t4 = d.t4 || {acertos:0,alarmesFalsos:0,omissoes:0,tempoResposta:0};
+        var t5 = d.t5 || {acertos:0,alarmesFalsos:0,omissoes:0,tempoResposta:0};
+        var interf = d.interf || {acertos:0,alarmesFalsos:0,omissoes:0,tempoResposta:0};
+        var evocImediata = d.evocImediata || {acertos:0,alarmesFalsos:0,omissoes:0,tempoResposta:0};
+        var evocTardia = d.evocTardia || {acertos:0,alarmesFalsos:0,omissoes:0,tempoResposta:0};
+        var recFinal = d.recFinal || {acertos:0,alarmesFalsos:0,omissoes:0,tempoResposta:0};
+        var ganho = t5.acertos - t1.acertos;
+        var interfP = interf.acertos - t1.acertos;
+        var interfR = evocImediata.acertos - t5.acertos;
+        var retencao = t5.acertos > 0 ? Math.round((evocTardia.acertos / t5.acertos) * 100) : 0;
+        var recuperacao = recFinal.acertos - evocTardia.acertos;
+
+        var aiPrompt = 'Voce e um neuropsicologo experiente. Gere uma ANALISE CLINICA breve (maximo 12 linhas) ' +
+          'baseada nos resultados abaixo do TAAV (Teste de Aprendizagem e Armazenamento Visual), ' +
+          'que avalia aprendizagem e memoria visual semantica usando paradigma tipo RAVLT adaptado para modalidade visual.\n\n' +
+          'DADOS DO PACIENTE:\n' +
+          '- Idade: ' + (p.age || p.idade || 'N/I') + '\n' +
+          '- Escolaridade: ' + (p.education || p.escolaridade || 'N/I') + '\n\n' +
+          'CONFIGURACAO: 15 figuras de objetos comuns em 5 tentativas consecutivas\n\n' +
+          'RESULTADOS (acertos/' + numAlvos + '):\n' +
+          '- T1: ' + t1.acertos + ' | T2: ' + t2.acertos + ' | T3: ' + t3.acertos + ' | T4: ' + t4.acertos + ' | T5: ' + t5.acertos + '\n' +
+          '- B (Interferencia): ' + interf.acertos + '\n' +
+          '- A6 (Evocacao Imediata): ' + evocImediata.acertos + '\n' +
+          '- A7 (Evocacao Tardia): ' + evocTardia.acertos + '\n' +
+          '- Rec (Reconhecimento Final): ' + recFinal.acertos + ' (AF: ' + recFinal.alarmesFalsos + ')\n\n' +
+          'METRICAS DERIVADAS:\n' +
+          '- Ganho (T5-T1): ' + ganho + ' | Interf. Proativa (B-T1): ' + interfP + ' | Interf. Retroativa (A6-T5): ' + interfR + '\n' +
+          '- Retencao (A7/T5x100): ' + retencao + '% | Recuperacao (Rec-A7): ' + recuperacao + '\n\n' +
+          'INSTRUCOES:\n' +
+          '- Portugues brasileiro, linguagem tecnica mas acessivel\n' +
+          '- Interprete o PADRAO DA CURVA: plana=problema codificacao, ascendente=normal, plato precoce=teto/fadiga\n' +
+          '- Analise INTERFERENCIA: proativa alta=dificuldade inibicao (frontal), retroativa alta=vulnerabilidade esquecimento\n' +
+          '- Analise RETENCAO: baixa=falha consolidacao (hipocampal), preservada=armazenamento adequado\n' +
+          '- Analise REC vs EVOCACAO: Rec>A7=problema recuperacao (frontal), Rec=A7=problema armazenamento (hipocampal)\n' +
+          '- Considere idade e escolaridade. NAO repita numeros, interprete-os clinicamente.';
+
+        var aiTimeout = new Promise(function(_, reject) { setTimeout(function() { reject('timeout'); }, 30000); });
+        var aiCall = fetch(API_URL + '/generate-ai', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: aiPrompt })
+        }).then(function(r) { return r.json(); }).then(function(d) { return (d.text || '').trim(); });
+        laudoIA = await Promise.race([aiCall, aiTimeout]);
+      } catch(e) { laudoIA = null; }
+
+      // Gerar PDF
+      var jsPDF = window.jspdf.jsPDF;
+      var doc = new jsPDF();
+      var ml = 15; var lu = 180; var y = 15;
+
+      function verificarQuebra(espaco) { if (y + espaco > 287) { doc.addPage(); y = 15; } }
+
+      // Cabecalho roxo
+      doc.setFillColor(94, 53, 177);
+      doc.rect(0, 0, 210, 28, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(15); doc.setFont(undefined, 'bold');
+      doc.text('LAUDO NEUROPSICOLOGICO', 105, 12, {align:'center'});
+      doc.setFontSize(10); doc.setFont(undefined, 'normal');
+      doc.text('TAAV - Teste de Aprendizagem e Armazenamento Visual', 105, 20, {align:'center'});
+      doc.setFontSize(8);
+      doc.text('Sistema THEDUGA - Avaliacao Neuropsicologica', 105, 25, {align:'center'});
+      y = 38;
+
+      // Dados do paciente
+      doc.setFillColor(248, 245, 255);
+      doc.rect(ml - 3, y - 5, lu + 6, 30, 'F');
+      doc.setTextColor(94, 53, 177); doc.setFontSize(12); doc.setFont(undefined, 'bold');
+      doc.text('DADOS DO PACIENTE', ml, y); y += 8;
+      doc.setTextColor(0, 0, 0); doc.setFont(undefined, 'normal'); doc.setFontSize(10);
+      doc.text('Nome: ' + (p.patientName || p.nome || '-'), ml, y); y += 6;
+      doc.text('Idade: ' + (p.age || p.idade || '-') + ' | Sexo: ' + (p.sex || p.sexo || '-') + ' | Escolaridade: ' + (p.education || p.escolaridade || '-'), ml, y); y += 6;
+      doc.text('Data: ' + (d.date ? new Date(d.date).toLocaleDateString('pt-BR') : '-'), ml, y); y += 15;
+
+      // Descricao do instrumento
+      doc.setTextColor(94, 53, 177); doc.setFontSize(12); doc.setFont(undefined, 'bold');
+      doc.text('DESCRICAO DO INSTRUMENTO', ml, y); y += 8;
+      doc.setTextColor(0, 0, 0); doc.setFont(undefined, 'normal'); doc.setFontSize(9);
+      var desc = 'O TAAV avalia aprendizagem e armazenamento de memoria visual semantica utilizando paradigma tipo RAVLT adaptado para modalidade visual. Apresenta 15 figuras de objetos comuns em 5 tentativas consecutivas, seguidas de lista de interferencia, evocacao imediata, evocacao tardia (20 min) e reconhecimento final.';
+      var descL = doc.splitTextToSize(desc, lu);
+      descL.forEach(function(l) { doc.text(l, ml, y); y += 5; });
+      y += 8;
+
+      // Grafico de linha - Curva de aprendizagem
+      verificarQuebra(80);
+      doc.setTextColor(94, 53, 177); doc.setFontSize(12); doc.setFont(undefined, 'bold');
+      doc.text('CURVA DE APRENDIZAGEM', ml, y); y += 8;
+
+      var t1 = d.t1 || {acertos:0}; var t2 = d.t2 || {acertos:0}; var t3 = d.t3 || {acertos:0};
+      var t4 = d.t4 || {acertos:0}; var t5 = d.t5 || {acertos:0};
+      var interf = d.interf || {acertos:0}; var evocImediata = d.evocImediata || {acertos:0};
+      var evocTardia = d.evocTardia || {acertos:0}; var recFinal = d.recFinal || {acertos:0};
+
+      var labels = ['A1','A2','A3','A4','A5','B','A6','A7','Rec'];
+      var valores = [t1.acertos,t2.acertos,t3.acertos,t4.acertos,t5.acertos,interf.acertos,evocImediata.acertos,evocTardia.acertos,recFinal.acertos];
+      var chartX = ml + 10; var chartY = y; var chartW = 155; var chartH = 60; var maxY = 15;
+
+      doc.setFillColor(250, 250, 255);
+      doc.rect(chartX, chartY, chartW, chartH, 'F');
+      doc.setDrawColor(220, 220, 220); doc.setLineWidth(0.2);
+      for (var g = 5; g <= 15; g += 5) {
+        var gy = chartY + chartH - (g / maxY) * chartH;
+        doc.line(chartX, gy, chartX + chartW, gy);
+        doc.setFontSize(7); doc.setTextColor(100, 100, 100);
+        doc.text(String(g), chartX - 6, gy + 1);
+      }
+      doc.text('0', chartX - 5, chartY + chartH + 1);
+      doc.setDrawColor(100, 100, 100); doc.setLineWidth(0.4);
+      doc.line(chartX, chartY, chartX, chartY + chartH);
+      doc.line(chartX, chartY + chartH, chartX + chartW, chartY + chartH);
+
+      var espacoX = chartW / (labels.length - 1);
+      var pontosXY = [];
+      for (var i = 0; i < labels.length; i++) {
+        pontosXY.push({ x: chartX + i * espacoX, y: chartY + chartH - (valores[i] / maxY) * chartH });
+      }
+      doc.setDrawColor(94, 53, 177); doc.setLineWidth(0.8);
+      for (var i = 0; i < pontosXY.length - 1; i++) {
+        doc.line(pontosXY[i].x, pontosXY[i].y, pontosXY[i+1].x, pontosXY[i+1].y);
+      }
+      for (var i = 0; i < pontosXY.length; i++) {
+        doc.setFillColor(94, 53, 177);
+        doc.circle(pontosXY[i].x, pontosXY[i].y, 1.5, 'F');
+        doc.setFontSize(7); doc.setTextColor(94, 53, 177); doc.setFont(undefined, 'bold');
+        doc.text(String(valores[i]), pontosXY[i].x, pontosXY[i].y - 3, {align:'center'});
+        doc.setTextColor(0, 0, 0); doc.setFont(undefined, 'normal'); doc.setFontSize(7);
+        doc.text(labels[i], pontosXY[i].x, chartY + chartH + 5, {align:'center'});
+      }
+      y = chartY + chartH + 12;
+
+      // Tabela de resultados
+      verificarQuebra(70);
+      doc.setTextColor(94, 53, 177); doc.setFontSize(12); doc.setFont(undefined, 'bold');
+      doc.text('RESULTADOS POR FASE', ml, y); y += 8;
+      doc.setFillColor(230, 225, 245);
+      doc.rect(ml - 2, y - 4, lu + 4, 8, 'F');
+      doc.setTextColor(94, 53, 177); doc.setFontSize(8); doc.setFont(undefined, 'bold');
+      doc.text('Fase', ml, y); doc.text('Acertos', ml+30, y); doc.text('AF', ml+65, y); doc.text('Omissoes', ml+85, y); doc.text('Tempo', ml+120, y);
+      y += 8;
+
+      var fases = [
+        {label:'T1 (A1)',dados:d.t1},{label:'T2 (A2)',dados:d.t2},{label:'T3 (A3)',dados:d.t3},
+        {label:'T4 (A4)',dados:d.t4},{label:'T5 (A5)',dados:d.t5},{label:'B (Interf.)',dados:d.interf},
+        {label:'A6 (Evoc. Imed.)',dados:d.evocImediata},{label:'A7 (Evoc. Tard.)',dados:d.evocTardia},
+        {label:'Rec (Final)',dados:d.recFinal}
+      ];
+      doc.setTextColor(0, 0, 0); doc.setFont(undefined, 'normal'); doc.setFontSize(8);
+      fases.forEach(function(fase, idx) {
+        if (idx % 2 === 0) { doc.setFillColor(248, 248, 255); doc.rect(ml - 2, y - 3.5, lu + 4, 6, 'F'); }
+        var dd = fase.dados;
+        doc.setTextColor(0, 0, 0);
+        doc.text(fase.label, ml, y);
+        doc.text(dd ? dd.acertos + '/' + numAlvos : '-', ml+30, y);
+        doc.text(dd ? String(dd.alarmesFalsos||0) : '-', ml+65, y);
+        doc.text(dd ? String(dd.omissoes||0) : '-', ml+85, y);
+        doc.text(dd ? ((dd.tempoResposta||0)/1000).toFixed(1)+'s' : '-', ml+120, y);
+        y += 6;
+      });
+      y += 8;
+
+      // Metricas derivadas
+      verificarQuebra(50);
+      doc.setTextColor(94, 53, 177); doc.setFontSize(11); doc.setFont(undefined, 'bold');
+      doc.text('METRICAS DERIVADAS', ml, y); y += 8;
+      doc.setTextColor(0, 0, 0); doc.setFont(undefined, 'normal'); doc.setFontSize(9);
+      var ganhoV = (d.t1 && d.t5) ? (d.t5.acertos - d.t1.acertos) : null;
+      var interfPV = (d.interf && d.t1) ? (d.interf.acertos - d.t1.acertos) : null;
+      var interfRV = (d.evocImediata && d.t5) ? (d.evocImediata.acertos - d.t5.acertos) : null;
+      var retencaoV = (d.evocTardia && d.t5 && d.t5.acertos > 0) ? Math.round((d.evocTardia.acertos / d.t5.acertos) * 100) : null;
+      var recuperacaoV = (d.recFinal && d.evocTardia) ? (d.recFinal.acertos - d.evocTardia.acertos) : null;
+      doc.text('- Ganho de Aprendizagem (T5-T1): ' + (ganhoV !== null ? ganhoV + ' pontos' : 'N/A'), ml, y); y += 6;
+      doc.text('- Interferencia Proativa (B-T1): ' + (interfPV !== null ? interfPV + ' pontos' : 'N/A'), ml, y); y += 6;
+      doc.text('- Interferencia Retroativa (A6-T5): ' + (interfRV !== null ? interfRV + ' pontos' : 'N/A'), ml, y); y += 6;
+      doc.text('- Indice de Retencao (A7/T5 x 100): ' + (retencaoV !== null ? retencaoV + '%' : 'N/A'), ml, y); y += 6;
+      doc.text('- Indice de Recuperacao (Rec-A7): ' + (recuperacaoV !== null ? recuperacaoV + ' pontos' : 'N/A'), ml, y); y += 6;
+      doc.text('- Alarmes Falsos Reconhecimento Final: ' + (d.recFinal ? d.recFinal.alarmesFalsos : 'N/A'), ml, y); y += 12;
+
+      // Analise IA
+      if (laudoIA) {
+        verificarQuebra(30);
+        doc.setTextColor(94, 53, 177); doc.setFontSize(11); doc.setFont(undefined, 'bold');
+        doc.text('ANALISE CLINICA (IA)', ml, y); y += 8;
+        doc.setTextColor(0, 0, 0); doc.setFont(undefined, 'normal'); doc.setFontSize(9);
+        var linhasIA = doc.splitTextToSize(laudoIA, lu);
+        linhasIA.forEach(function(linha) { if (y > 287) { doc.addPage(); y = 15; } doc.text(linha, ml, y); y += 5; });
+        y += 8;
+      }
+
+      // Disclaimer
+      verificarQuebra(25);
+      doc.setFillColor(255, 248, 225);
+      doc.rect(ml - 3, y - 4, lu + 6, 18, 'F');
+      doc.setTextColor(183, 110, 0); doc.setFontSize(8); doc.setFont(undefined, 'bold');
+      doc.text('AVISO IMPORTANTE:', ml, y); y += 5;
+      doc.setFont(undefined, 'normal');
+      var aviso = 'Este instrumento e de rastreio e nao possui validacao empirica formal nem normas padronizadas. Os resultados devem ser interpretados no contexto clinico mais amplo, considerando a historia do paciente, observacoes comportamentais e outros instrumentos.';
+      var avisoL = doc.splitTextToSize(aviso, lu);
+      avisoL.forEach(function(l) { doc.text(l, ml, y); y += 4; });
+      y += 12;
+
+      // Referencias
+      verificarQuebra(40);
+      doc.setTextColor(94, 53, 177); doc.setFontSize(11); doc.setFont(undefined, 'bold');
+      doc.text('REFERENCIAS BIBLIOGRAFICAS', ml, y); y += 8;
+      doc.setTextColor(0, 0, 0); doc.setFont(undefined, 'normal'); doc.setFontSize(8);
+      var refs = [
+        'MALLOY-DINIZ, L. F. et al. Teste de Aprendizagem Auditivo-Verbal de Rey (RAVLT): manual. Sao Paulo: Vetor, 2018.',
+        'PAULA, J. J.; MALLOY-DINIZ, L. F. The Rey Auditory Verbal Learning Test: normative data for the Brazilian population. Psychology & Neuroscience, v. 11, n. 1, p. 78-86, 2018.',
+        'MAGALHAES, S. S.; HAMDAN, A. C. The Rey Auditory Verbal Learning Test: normative data. Psychology & Neuroscience, v. 3, n. 1, p. 85-91, 2010.',
+        'LEZAK, M. D.; HOWIESON, D. B.; LORING, D. W. Neuropsychological Assessment. 5. ed. New York: Oxford University Press, 2012.',
+        'REY, A. L\'examen clinique en psychologie. Paris: Presses Universitaires de France, 1941.'
+      ];
+      refs.forEach(function(ref) {
+        if (y > 287) { doc.addPage(); y = 15; }
+        var refL = doc.splitTextToSize(ref, lu);
+        refL.forEach(function(l) { doc.text(l, ml, y); y += 4; });
+        y += 2;
+      });
+
+      // Rodape
+      doc.setTextColor(130, 130, 130); doc.setFontSize(7);
+      doc.text('Relatorio gerado em: ' + new Date().toLocaleString('pt-BR'), ml, 285);
+      doc.text('Sistema THEDUGA - TAAV v1.0', ml, 289);
+
+      // Salvar
+      var nome = (p.patientName || p.nome || 'paciente').replace(/\s+/g, '_');
+      var ts = new Date().toISOString().replace(/[-:T]/g,'').slice(0,12);
+      doc.save('TAAV_' + nome + '_' + ts + '.pdf');
     }
 
     async function comprarCreditosTaav(qtd) {
