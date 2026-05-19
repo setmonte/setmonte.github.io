@@ -143,33 +143,27 @@ var BAEAI = (function() {
         return texto;
     }
 
-    // Chama Gemini API
+    // Chama Lambda /generate-ai (proxy seguro para Gemini)
     async function gerarLaudo(paciente, resultados) {
         try {
-            var key = await obterChave();
-            if (!key) throw new Error('Chave nao disponivel');
-            
             var iaObs = typeof obterRelatorioIA === 'function' ? obterRelatorioIA() : null;
             var prompt = montarPrompt(paciente, resultados, iaObs);
             
-            console.log('🤖 Chamando Gemini...');
+            console.log('🤖 Chamando IA via Lambda...');
             
             var response = await fetch(
-                'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=' + key,
+                'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws/generate-ai',
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ role: "user", parts: [{ text: prompt }] }],
-                        generationConfig: { temperature: 0.3, maxOutputTokens: 2000, thinkingConfig: { thinkingBudget: 0 } }
-                    })
+                    body: JSON.stringify({ prompt: prompt })
                 }
             );
             
             if (!response.ok) throw new Error('HTTP ' + response.status);
             
             var data = await response.json();
-            var texto = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+            var texto = (data.text || '').trim();
             
             if (!texto) throw new Error('Resposta vazia');
             
