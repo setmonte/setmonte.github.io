@@ -160,8 +160,8 @@ var BAEAI = (function() {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        contents: [{ parts: [{ text: prompt }] }],
-                        generationConfig: { temperature: 0.3, maxOutputTokens: 2000 }
+                        contents: [{ role: "user", parts: [{ text: prompt }] }],
+                        generationConfig: { temperature: 0.3, maxOutputTokens: 2000, thinkingConfig: { thinkingBudget: 0 } }
                     })
                 }
             );
