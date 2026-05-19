@@ -5,7 +5,7 @@
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-QY1N9587DG');</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TFLOD - Teste de Fluencia Leitora Oral Digital</title>
+<title>TFLOD - Teste de Fluência Leitora Oral Digital</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Segoe UI',sans-serif;background:#f5f5f5;min-height:100vh}
@@ -21,6 +21,7 @@ body{font-family:'Segoe UI',sans-serif;background:#f5f5f5;min-height:100vh}
 .btn{padding:12px 30px;border:none;border-radius:8px;font-size:1em;font-weight:700;cursor:pointer;margin:5px}
 .btn-primary{background:#1565c0;color:#fff}
 .btn-primary:hover{background:#0d47a1}
+.btn-disabled{background:#999;color:#fff;cursor:not-allowed}
 .info-tecnica{background:#e3f2fd;border-left:4px solid #1565c0;padding:12px;border-radius:0 8px 8px 0;margin-bottom:15px;font-size:0.75em;color:#555}
 </style>
 </head>
@@ -29,25 +30,33 @@ body{font-family:'Segoe UI',sans-serif;background:#f5f5f5;min-height:100vh}
 #tela-teste{background:#fff;padding:0;align-items:stretch;justify-content:flex-start}
 .teste-header{background:#0d47a1;color:#fff;padding:15px 20px;display:flex;justify-content:space-between;align-items:center;width:100%}
 .teste-header .timer{font-size:2em;font-weight:bold;font-family:monospace}
-.teste-header .mic-status{font-size:0.85em;opacity:0.8}
-.texto-leitura{padding:30px;font-size:1.2em;line-height:1.9;color:#222;max-width:900px;margin:0 auto;text-align:justify;overflow-y:auto;max-height:calc(100vh - 80px)}
-.texto-leitura .palavra{display:inline;transition:background 0.2s}
-.texto-leitura .palavra.lida{background:#c8e6c9;border-radius:3px}
-.texto-leitura .palavra.erro{background:#ffcdd2;border-radius:3px}
+.teste-header .mic-status{font-size:1em;display:flex;align-items:center;gap:8px}
+.rec-dot{width:14px;height:14px;background:#f44336;border-radius:50%;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+.texto-leitura{padding:30px;font-size:1.3em;line-height:2;color:#222;max-width:900px;margin:0 auto;text-align:justify;overflow-y:auto;max-height:calc(100vh - 80px)}
 #tela-fim{background:linear-gradient(135deg,#e8f5e9,#c8e6c9)}
+#tela-processando{background:linear-gradient(135deg,#e3f2fd,#bbdefb)}
 .instrucao-box{background:#e3f2fd;border:2px solid #1565c0;border-radius:12px;padding:20px;margin:15px 0;text-align:left}
 .instrucao-box p{margin-bottom:8px;color:#0d47a1;font-size:0.95em;line-height:1.6}
+.progress-container{width:80%;max-width:400px;margin:20px auto}
+.progress-bar{height:8px;background:#e0e0e0;border-radius:4px;overflow:hidden}
+.progress-fill{height:100%;background:#1565c0;border-radius:4px;transition:width 0.3s;width:0%}
+.progress-text{text-align:center;margin-top:8px;color:#555;font-size:0.9em}
+.modelo-status{position:fixed;bottom:10px;right:10px;background:#e8f5e9;border:1px solid #a5d6a7;border-radius:8px;padding:8px 12px;font-size:0.75em;color:#2e7d32;display:none;z-index:999}
 </style>
+
+<!-- STATUS DO MODELO (canto inferior direito, discreto) -->
+<div class="modelo-status" id="modeloStatus">⏳ Preparando motor de voz...</div>
 
 <!-- TELA INICIO -->
 <div id="tela-inicio" class="tela ativa">
     <h1>&#128214; TFLOD</h1>
-    <p class="subtitulo">Teste de Fluencia Leitora Oral Digital</p>
+    <p class="subtitulo">Teste de Fluência Leitora Oral Digital</p>
     <div class="form-container">
         <div class="info-tecnica">
-            <strong>Instrumento:</strong> TFLOD — rastreio de fluencia leitora oral<br>
-            <strong>Base teorica:</strong> CBM (Curriculum-Based Measurement), Hasbrouck &amp; Tindal (2017)<br>
-            <strong>Publico:</strong> A partir de 6 anos | <strong>Duracao:</strong> ~2 min
+            <strong>Instrumento:</strong> TFLOD — rastreio de fluência leitora oral<br>
+            <strong>Base teórica:</strong> CBM (Curriculum-Based Measurement), Hasbrouck &amp; Tindal (2017)<br>
+            <strong>Público:</strong> A partir de 6 anos | <strong>Duração:</strong> ~2 min
         </div>
         <label>ID do Paciente:</label>
         <input type="text" id="idPaciente" placeholder="Gerado automaticamente" readonly style="background:#e3f2fd;font-weight:700;color:#1565c0">
@@ -61,23 +70,23 @@ body{font-family:'Segoe UI',sans-serif;background:#f5f5f5;min-height:100vh}
         <select id="escolaridade">
             <option value="">Selecione...</option>
             <option value="Analfabeto">Analfabeto</option>
-            <option value="1o ano">1o ano (Fundamental)</option>
-            <option value="2o ano">2o ano (Fundamental)</option>
-            <option value="3o ano">3o ano (Fundamental)</option>
-            <option value="4o ano">4o ano (Fundamental)</option>
-            <option value="5o ano">5o ano (Fundamental)</option>
-            <option value="6o ano">6o ano (Fundamental)</option>
-            <option value="7o ano">7o ano (Fundamental)</option>
-            <option value="8o ano">8o ano (Fundamental)</option>
-            <option value="9o ano">9o ano (Fundamental)</option>
-            <option value="Ensino Medio">Ensino Medio</option>
+            <option value="1o ano">1º ano (Fundamental)</option>
+            <option value="2o ano">2º ano (Fundamental)</option>
+            <option value="3o ano">3º ano (Fundamental)</option>
+            <option value="4o ano">4º ano (Fundamental)</option>
+            <option value="5o ano">5º ano (Fundamental)</option>
+            <option value="6o ano">6º ano (Fundamental)</option>
+            <option value="7o ano">7º ano (Fundamental)</option>
+            <option value="8o ano">8º ano (Fundamental)</option>
+            <option value="9o ano">9º ano (Fundamental)</option>
+            <option value="Ensino Medio">Ensino Médio</option>
             <option value="Superior Incompleto">Superior Incompleto</option>
             <option value="Superior Completo">Superior Completo</option>
-            <option value="Pos-graduacao">Pos-graduacao</option>
+            <option value="Pos-graduacao">Pós-graduação</option>
         </select>
-        <label>Data da Avaliacao:</label>
+        <label>Data da Avaliação:</label>
         <input type="date" id="dataAval">
-        <label>Observacoes:</label>
+        <label>Observações:</label>
         <input type="text" id="obs" placeholder="Opcional">
         <div style="text-align:center;margin-top:15px">
             <button class="btn btn-primary" onclick="mostrarInstrucoes()">Continuar</button>
@@ -88,60 +97,105 @@ body{font-family:'Segoe UI',sans-serif;background:#f5f5f5;min-height:100vh}
 <!-- TELA INSTRUCOES -->
 <div id="tela-instrucoes" class="tela">
     <div class="form-container" style="max-width:600px">
-        <h2 style="color:#1565c0;margin-bottom:15px;text-align:center">&#128220; Instrucoes</h2>
+        <h2 style="color:#1565c0;margin-bottom:15px;text-align:center">&#128220; Instruções</h2>
         <div class="instrucao-box">
             <p><strong>Como funciona:</strong></p>
-            <p>Voce vera um texto na tela. Quando estiver pronto, clique em "Iniciar Leitura".</p>
-            <p>Leia o texto <strong>em voz alta</strong>, no seu ritmo normal, como se estivesse lendo para alguem.</p>
-            <p>O sistema vai escutar sua leitura por <strong>1 minuto</strong>.</p>
-            <p>Quando o tempo acabar, o teste para automaticamente.</p>
+            <p>Você verá um texto na tela. Quando estiver pronto, clique em "Iniciar Leitura".</p>
+            <p>Leia o texto <strong>em voz alta</strong>, no seu ritmo normal, como se estivesse lendo para alguém.</p>
+            <p>O sistema vai gravar sua leitura por <strong>1 minuto</strong>.</p>
+            <p>Quando o tempo acabar, o teste para automaticamente e sua leitura será analisada.</p>
             <p><strong>Importante:</strong> Fique em um ambiente silencioso e fale com clareza.</p>
         </div>
         <div style="text-align:center;margin-top:15px">
-            <button class="btn btn-primary" onclick="iniciarTeste()">Iniciar Leitura</button>
+            <button class="btn btn-primary" id="btnIniciar" onclick="iniciarTeste()">Iniciar Leitura</button>
         </div>
     </div>
 </div>
-<!-- TELA TESTE -->
+
+<!-- TELA TESTE (leitura em andamento) -->
 <div id="tela-teste" class="tela">
     <div class="teste-header">
-        <div class="mic-status" id="micStatus">&#127908; Aguardando...</div>
+        <div class="mic-status"><span class="rec-dot"></span> Gravando</div>
         <div class="timer" id="timer">60</div>
     </div>
     <div class="texto-leitura" id="textoLeitura"></div>
 </div>
 
+<!-- TELA PROCESSANDO (Whisper trabalhando) -->
+<div id="tela-processando" class="tela">
+    <div style="text-align:center;padding:60px 30px;">
+        <h2 style="color:#1565c0;font-size:1.8em;margin-bottom:15px;">⏳ Processando sua leitura...</h2>
+        <p style="color:#555;font-size:1.1em;margin-bottom:20px;">Aguarde enquanto analisamos o áudio.</p>
+        <div class="progress-container">
+            <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+            <div class="progress-text" id="progressText">Iniciando transcrição...</div>
+        </div>
+    </div>
+</div>
+
 <!-- TELA FIM -->
 <div id="tela-fim" class="tela">
     <div style="text-align:center;padding:60px 30px;">
-        <h2 style="color:#2e7d32;font-size:2em;margin-bottom:15px;">&#10004; Teste concluido!</h2>
-        <p style="color:#555;font-size:1.2em;">Voce pode fechar esta janela.</p>
+        <h2 style="color:#2e7d32;font-size:2em;margin-bottom:15px;">&#10004; Teste concluído!</h2>
+        <p style="color:#555;font-size:1.2em;">Você pode fechar esta janela.</p>
         <p style="margin-top:20px;font-size:0.9em;color:#777;">Os resultados foram enviados para o avaliador.</p>
     </div>
 </div>
 
-<script>
-// ===== TFLOD - Teste de Fluencia Leitora Oral Digital =====
-// Motor THEDUGA adaptado para leitura de texto
+<script type="module">
+// ===== TFLOD v2 - Com Whisper (transcrição literal, sem correção) =====
+// Usa Transformers.js para rodar Whisper-base no navegador do paciente
+// O modelo é baixado uma vez e fica em cache (75MB)
+
+import { pipeline } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.4.1/dist/transformers.min.js';
 
 // ===== TEXTOS =====
-var TEXTO_INFANTIL = "Pedro acordou cedo naquela manh\u00e3 de sol. Ele olhou pela janela e viu que o c\u00e9u estava muito azul. Seu cachorro Pipoca j\u00e1 esperava na porta, com o rabo balan\u00e7ando. Os dois sa\u00edram juntos para o parque que ficava perto de casa. No caminho, Pedro encontrou sua amiga Laura, que tamb\u00e9m passeava com seu gato. Eles andaram at\u00e9 o lago grande que tinha no meio do parque. Pipoca correu muito r\u00e1pido e pulou dentro da \u00e1gua. A \u00e1gua estava fria, mas o cachorro n\u00e3o se importou. Ele nadou feliz enquanto Pedro e Laura sentavam na grama verde. Depois de um tempo, Pipoca saiu do lago e se sacudiu todo, molhando as crian\u00e7as. Todos riram muito. Foi uma manh\u00e3 divertida no parque.";
+var TEXTO_INFANTIL = "Pedro acordou cedo naquela manhã de sol. Ele olhou pela janela e viu que o céu estava muito azul. Seu cachorro Pipoca já esperava na porta, com o rabo balançando. Os dois saíram juntos para o parque que ficava perto de casa. No caminho, Pedro encontrou sua amiga Laura, que também passeava com seu gato. Eles andaram até o lago grande que tinha no meio do parque. Pipoca correu muito rápido e pulou dentro da água. A água estava fria, mas o cachorro não se importou. Ele nadou feliz enquanto Pedro e Laura sentavam na grama verde. Depois de um tempo, Pipoca saiu do lago e se sacudiu todo, molhando as crianças. Todos riram muito. Foi uma manhã divertida no parque.";
 
-var TEXTO_ADULTO = "Marina nunca tinha viajado de trem antes daquele dia. Quando chegou na esta\u00e7\u00e3o, ficou impressionada com o tamanho do lugar. As pessoas andavam apressadas, carregando malas e mochilas de todos os tamanhos. Ela conferiu o n\u00famero da plataforma no painel eletr\u00f4nico e caminhou at\u00e9 o local indicado. O trem j\u00e1 estava parado, esperando os passageiros. Marina encontrou seu vag\u00e3o e se acomodou na poltrona ao lado da janela. Poucos minutos depois, o trem come\u00e7ou a se mover lentamente. A cidade foi ficando para tr\u00e1s e logo apareceram campos verdes, com algumas vacas pastando. O movimento do trem era suave como um balan\u00e7o. Marina abriu o livro que tinha trazido, mas n\u00e3o conseguiu ler porque a paisagem era bonita demais. Montanhas apareceram no horizonte, cobertas por uma n\u00e9voa fina. Um senhor sentado na poltrona da frente puxou conversa e contou que fazia aquela viagem toda semana para visitar os netos. Ele conhecia cada curva do caminho e apontava os lugares mais bonitos. Depois de duas horas, o trem parou numa cidade pequena, cercada por montanhas. Marina desceu na plataforma e respirou o ar fresco da manh\u00e3. Sua av\u00f3 j\u00e1 esperava, com um sorriso largo e os bra\u00e7os abertos. Naquele momento, Marina entendeu por que sua m\u00e3e sempre falava com tanto carinho daquela cidade.";
+var TEXTO_ADULTO = "Marina nunca tinha viajado de trem antes daquele dia. Quando chegou na estação, ficou impressionada com o tamanho do lugar. As pessoas andavam apressadas, carregando malas e mochilas de todos os tamanhos. Ela conferiu o número da plataforma no painel eletrônico e caminhou até o local indicado. O trem já estava parado, esperando os passageiros. Marina encontrou seu vagão e se acomodou na poltrona ao lado da janela. Poucos minutos depois, o trem começou a se mover lentamente. A cidade foi ficando para trás e logo apareceram campos verdes, com algumas vacas pastando. O movimento do trem era suave como um balanço. Marina abriu o livro que tinha trazido, mas não conseguiu ler porque a paisagem era bonita demais. Montanhas apareceram no horizonte, cobertas por uma névoa fina. Um senhor sentado na poltrona da frente puxou conversa e contou que fazia aquela viagem toda semana para visitar os netos. Ele conhecia cada curva do caminho e apontava os lugares mais bonitos. Depois de duas horas, o trem parou numa cidade pequena, cercada por montanhas. Marina desceu na plataforma e respirou o ar fresco da manhã. Sua avó já esperava, com um sorriso largo e os braços abertos. Naquele momento, Marina entendeu por que sua mãe sempre falava com tanto carinho daquela cidade.";
+
 // ===== ESTADO GLOBAL =====
 var dadosForm = {};
 var sessionInfo = {};
 var textoEscolhido = '';
 var palavrasTexto = [];
-var transcricaoCompleta = '';
-var palavrasReconhecidas = [];
 var timerInterval = null;
 var tempoRestante = 60;
-var recognition = null;
-var isListening = false;
+var mediaRecorder = null;
+var audioChunks = [];
+var whisperPipeline = null;
+var modeloCarregado = false;
+
+// ===== CARREGAR MODELO WHISPER EM SEGUNDO PLANO =====
+// Começa a baixar assim que a página abre (paciente nem percebe)
+async function carregarModelo() {
+    var statusEl = document.getElementById('modeloStatus');
+    statusEl.style.display = 'block';
+    statusEl.textContent = '⏳ Baixando motor de voz...';
+    try {
+        // Carrega o pipeline de reconhecimento de fala com whisper-base
+        whisperPipeline = await pipeline(
+            'automatic-speech-recognition',
+            'onnx-community/whisper-base',
+            {
+                dtype: 'q8',  // quantizado para ser mais leve
+                device: 'wasm'
+            }
+        );
+        modeloCarregado = true;
+        statusEl.textContent = '✅ Motor de voz pronto!';
+        setTimeout(function() { statusEl.style.display = 'none'; }, 3000);
+    } catch (erro) {
+        console.error('Erro ao carregar Whisper:', erro);
+        statusEl.textContent = '⚠️ Erro ao carregar motor de voz';
+        statusEl.style.background = '#ffebee';
+        statusEl.style.color = '#c62828';
+        statusEl.style.borderColor = '#ef9a9a';
+    }
+}
 
 // ===== UTILIDADES =====
-function calcularIdade() {
+window.calcularIdade = function() {
     var dn = document.getElementById('dataNasc').value;
     if (!dn) return;
     var nasc = new Date(dn + 'T00:00:00');
@@ -177,15 +231,15 @@ function trocarTela(mostrar) {
 function escolherTexto() {
     var idade = dadosForm.idadeAnos || 0;
     var escolaridade = document.getElementById('escolaridade').value;
-    // Criancas (6-12) e analfabetos usam texto infantil
     var escolaridadesBaixas = ['Analfabeto','1o ano','2o ano','3o ano','4o ano','5o ano','6o ano','7o ano'];
     if (idade <= 12 || escolaridadesBaixas.indexOf(escolaridade) !== -1) {
         return TEXTO_INFANTIL;
     }
     return TEXTO_ADULTO;
 }
+
 // ===== FLUXO DO TESTE =====
-function mostrarInstrucoes() {
+window.mostrarInstrucoes = function() {
     var nome = document.getElementById('nome').value.trim();
     var dataNasc = document.getElementById('dataNasc').value;
     var escolaridade = document.getElementById('escolaridade').value;
@@ -203,9 +257,27 @@ function mostrarInstrucoes() {
         id: document.getElementById('idPaciente').value
     };
     trocarTela('tela-instrucoes');
+    // Se modelo ainda nao carregou, desabilita botao e mostra aviso
+    if (!modeloCarregado) {
+        var btn = document.getElementById('btnIniciar');
+        btn.classList.add('btn-disabled');
+        btn.textContent = 'Preparando... aguarde';
+        btn.disabled = true;
+        // Verifica a cada 500ms se o modelo carregou
+        var checkInterval = setInterval(function() {
+            if (modeloCarregado) {
+                btn.classList.remove('btn-disabled');
+                btn.textContent = 'Iniciar Leitura';
+                btn.disabled = false;
+                clearInterval(checkInterval);
+            }
+        }, 500);
+    }
 }
 
-function iniciarTeste() {
+window.iniciarTeste = async function() {
+    if (!modeloCarregado) { alert('Aguarde o motor de voz carregar...'); return; }
+
     // Fullscreen
     var el = document.documentElement;
     if (el.requestFullscreen) el.requestFullscreen();
@@ -216,16 +288,25 @@ function iniciarTeste() {
     textoEscolhido = escolherTexto();
     palavrasTexto = textoEscolhido.split(/\s+/);
 
-    // Renderizar texto na tela
-    var html = '';
-    for (var i = 0; i < palavrasTexto.length; i++) {
-        html += '<span class="palavra" id="p' + i + '">' + palavrasTexto[i] + ' </span>';
-    }
-    document.getElementById('textoLeitura').innerHTML = html;
+    // Renderizar texto na tela (sem destaque — apenas texto limpo)
+    document.getElementById('textoLeitura').textContent = textoEscolhido;
 
     trocarTela('tela-teste');
-    transcricaoCompleta = '';
-    palavrasReconhecidas = [];
+
+    // Iniciar gravacao de audio
+    try {
+        var stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioChunks = [];
+        mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
+        mediaRecorder.ondataavailable = function(e) {
+            if (e.data.size > 0) audioChunks.push(e.data);
+        };
+        mediaRecorder.start(1000); // coleta chunks a cada 1 segundo
+    } catch (erro) {
+        alert('Não foi possível acessar o microfone. Verifique as permissões do navegador.');
+        trocarTela('tela-instrucoes');
+        return;
+    }
 
     // Iniciar cronometro
     tempoRestante = 60;
@@ -234,145 +315,126 @@ function iniciarTeste() {
         tempoRestante--;
         document.getElementById('timer').textContent = tempoRestante;
         if (tempoRestante <= 0) {
-            finalizarTeste();
+            finalizarGravacao();
         }
     }, 1000);
-
-    // Iniciar reconhecimento de voz (THEDUGA)
-    iniciarReconhecimento();
-}
-// ===== SISTEMA THEDUGA - RECONHECIMENTO DE VOZ =====
-function iniciarReconhecimento() {
-    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-        document.getElementById('micStatus').textContent = '⚠ Navegador nao suporta voz';
-        return;
-    }
-    var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    recognition = new SpeechRecognition();
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = 'pt-BR';
-    recognition.maxAlternatives = 1;
-
-    recognition.onstart = function() {
-        isListening = true;
-        document.getElementById('micStatus').textContent = '🎤 Escutando...';
-    };
-
-    recognition.onresult = function(event) {
-        var textoCompleto = '';
-        for (var i = 0; i < event.results.length; i++) {
-            textoCompleto += event.results[i][0].transcript;
-        }
-        transcricaoCompleta = textoCompleto.trim();
-        // Atualizar palavras reconhecidas e destacar no texto
-        atualizarDestaque();
-    };
-
-    recognition.onerror = function(event) {
-        if (event.error === 'no-speech') return;
-        if (event.error === 'aborted') return;
-        console.log('Erro reconhecimento:', event.error);
-        document.getElementById('micStatus').textContent = '⚠ Erro: ' + event.error;
-    };
-
-    recognition.onend = function() {
-        // Reiniciar se ainda estiver no tempo
-        if (isListening && tempoRestante > 0) {
-            try { recognition.start(); } catch(e) {}
-        }
-    };
-
-    try { recognition.start(); } catch(e) { console.log('Erro ao iniciar mic:', e); }
 }
 
-function atualizarDestaque() {
-    // Compara transcricao com texto original palavra a palavra
-    var palavrasFaladas = transcricaoCompleta.toLowerCase().replace(/[.,!?;:]/g,'').split(/\s+/).filter(function(p){return p.length > 0;});
-    palavrasReconhecidas = palavrasFaladas;
-    var totalPalavras = Math.min(palavrasFaladas.length, palavrasTexto.length);
-    for (var i = 0; i < palavrasTexto.length; i++) {
-        var el = document.getElementById('p' + i);
-        if (!el) continue;
-        if (i < totalPalavras) {
-            var original = palavrasTexto[i].toLowerCase().replace(/[.,!?;:]/g,'');
-            var falada = palavrasFaladas[i] || '';
-            if (original === falada) {
-                el.classList.add('lida');
-                el.classList.remove('erro');
-            } else {
-                el.classList.add('erro');
-                el.classList.remove('lida');
-            }
-        } else {
-            el.classList.remove('lida');
-            el.classList.remove('erro');
-        }
-    }
-    // Auto-scroll: manter a ultima palavra lida visivel
-    if (totalPalavras > 0) {
-        var ultimaEl = document.getElementById('p' + (totalPalavras - 1));
-        if (ultimaEl) {
-            var container = document.getElementById('textoLeitura');
-            var elTop = ultimaEl.offsetTop - container.offsetTop;
-            var containerHeight = container.clientHeight;
-            if (elTop > container.scrollTop + containerHeight - 80) {
-                container.scrollTo({ top: elTop - containerHeight + 120, behavior: 'smooth' });
-            }
-        }
-    }
-}
-// ===== FINALIZAR TESTE =====
-function finalizarTeste() {
+// ===== FINALIZAR GRAVACAO E PROCESSAR =====
+async function finalizarGravacao() {
     // Parar cronometro
     if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
-    // Parar reconhecimento
-    isListening = false;
-    if (recognition) { try { recognition.stop(); } catch(e) {} }
+
+    // Parar gravacao
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+        // Parar todas as tracks do microfone
+        mediaRecorder.stream.getTracks().forEach(function(t) { t.stop(); });
+    }
+
     // Sair fullscreen
     if (document.exitFullscreen) document.exitFullscreen();
     else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
     else if (document.msExitFullscreen) document.msExitFullscreen();
 
-    // Calcular resultados
-    var resultado = calcularResultados();
+    // Mostrar tela de processamento
+    trocarTela('tela-processando');
+    document.getElementById('progressFill').style.width = '10%';
+    document.getElementById('progressText').textContent = 'Preparando áudio...';
 
-    // Mostrar tela final
-    trocarTela('tela-fim');
+    // Aguardar um momento para o mediaRecorder finalizar
+    await new Promise(function(resolve) { setTimeout(resolve, 500); });
 
-    // Enviar para Lambda
-    salvarResultado(resultado);
+    // Converter chunks em blob de audio
+    var audioBlob = new Blob(audioChunks, { type: 'audio/webm;codecs=opus' });
+
+    document.getElementById('progressFill').style.width = '30%';
+    document.getElementById('progressText').textContent = 'Transcrevendo com IA (pode levar 10-20s)...';
+
+    try {
+        // Converter blob para URL para o Whisper processar
+        var audioUrl = URL.createObjectURL(audioBlob);
+
+        // Transcrever com Whisper (transcrição literal, sem correção!)
+        var resultado = await whisperPipeline(audioUrl, {
+            language: 'portuguese',
+            task: 'transcribe',
+            chunk_length_s: 30,
+            stride_length_s: 5,
+            return_timestamps: false
+        });
+
+        URL.revokeObjectURL(audioUrl);
+
+        document.getElementById('progressFill').style.width = '80%';
+        document.getElementById('progressText').textContent = 'Calculando resultados...';
+
+        // Pegar a transcrição
+        var transcricao = resultado.text || '';
+
+        // Calcular resultados
+        var resultadoFinal = calcularResultados(transcricao);
+
+        document.getElementById('progressFill').style.width = '100%';
+        document.getElementById('progressText').textContent = 'Enviando resultados...';
+
+        // Enviar para Lambda
+        await salvarResultado(resultadoFinal);
+
+        // Mostrar tela final
+        trocarTela('tela-fim');
+
+    } catch (erro) {
+        console.error('Erro na transcrição:', erro);
+        document.getElementById('progressText').textContent = '⚠️ Erro ao processar. Enviando áudio bruto...';
+        // Em caso de erro, envia o que tem
+        await salvarResultadoErro(erro.message);
+        trocarTela('tela-fim');
+    }
 }
 
-function calcularResultados() {
-    var palavrasFaladas = transcricaoCompleta.toLowerCase().replace(/[.,!?;:]/g,'').split(/\s+/).filter(function(p){return p.length > 0;});
+// ===== CALCULAR RESULTADOS =====
+function calcularResultados(transcricao) {
+    // Normaliza a transcrição (minúsculas, remove pontuação)
+    var palavrasFaladas = transcricao.toLowerCase()
+        .replace(/[.,!?;:"""''()\-]/g, '')
+        .split(/\s+/)
+        .filter(function(p) { return p.length > 0; });
+
     var totalLidas = palavrasFaladas.length;
     var acertos = 0;
     var erros = [];
     var tempoUsado = 60 - tempoRestante;
     if (tempoUsado <= 0) tempoUsado = 60;
 
+    // Compara palavra a palavra (sem correção — preserva trocas fonológicas)
     for (var i = 0; i < Math.min(totalLidas, palavrasTexto.length); i++) {
-        var original = palavrasTexto[i].toLowerCase().replace(/[.,!?;:]/g,'');
+        var original = palavrasTexto[i].toLowerCase().replace(/[.,!?;:"""''()\-]/g, '');
         var falada = palavrasFaladas[i] || '';
         if (original === falada) {
             acertos++;
         } else {
-            erros.push({ posicao: i+1, esperada: palavrasTexto[i], lida: palavrasFaladas[i] || '(omitida)' });
+            erros.push({
+                posicao: i + 1,
+                esperada: palavrasTexto[i],
+                lida: palavrasFaladas[i] || '(omitida)',
+                // Detecta tipo de erro para análise de dislexia
+                tipo: classificarErro(original, falada)
+            });
         }
     }
 
     // Palavras corretas por minuto (PCPM)
     var pcpm = Math.round(acertos * (60 / tempoUsado));
 
-    // Classificacao baseada na faixa
+    // Classificação
     var categoria = (textoEscolhido === TEXTO_INFANTIL) ? 'infantil' : 'adulto';
     var classificacao = classificarDesempenho(pcpm, categoria);
 
     return {
         textoUsado: textoEscolhido,
         categoria: categoria,
-        transcricao: transcricaoCompleta,
+        transcricao: transcricao,
         totalPalavrasTexto: palavrasTexto.length,
         totalPalavrasLidas: totalLidas,
         acertos: acertos,
@@ -383,25 +445,52 @@ function calcularResultados() {
     };
 }
 
+// ===== CLASSIFICAR TIPO DE ERRO (importante para dislexia) =====
+function classificarErro(original, falada) {
+    if (!falada || falada === '(omitida)') return 'omissao';
+    // Trocas fonológicas clássicas da dislexia
+    var trocas = [
+        ['p','b'], ['t','d'], ['f','v'], ['c','g'], ['k','g'],
+        ['s','z'], ['x','j'], ['ch','j'], ['lh','li'], ['nh','ni']
+    ];
+    for (var i = 0; i < trocas.length; i++) {
+        var a = trocas[i][0], b = trocas[i][1];
+        if (original.replace(a, b) === falada || original.replace(b, a) === falada) {
+            return 'troca_fonologica';
+        }
+    }
+    // Inversão de letras (ex: "prato" -> "parto")
+    if (original.length === falada.length && original.length > 2) {
+        var diffs = 0;
+        for (var j = 0; j < original.length; j++) {
+            if (original[j] !== falada[j]) diffs++;
+        }
+        if (diffs === 2) return 'inversao';
+    }
+    // Adição ou omissão de sílaba
+    if (Math.abs(original.length - falada.length) >= 2) return 'silaba';
+    return 'substituicao';
+}
+
 function classificarDesempenho(pcpm, categoria) {
     if (categoria === 'infantil') {
-        if (pcpm >= 90) return 'Otimo';
+        if (pcpm >= 90) return 'Ótimo';
         if (pcpm >= 60) return 'Bom';
-        if (pcpm >= 40) return 'Medio';
+        if (pcpm >= 40) return 'Médio';
         if (pcpm >= 20) return 'Abaixo do esperado';
         return 'Risco de dificuldade de leitura';
     } else {
-        if (pcpm >= 150) return 'Otimo';
+        if (pcpm >= 150) return 'Ótimo';
         if (pcpm >= 120) return 'Bom';
-        if (pcpm >= 90) return 'Medio';
+        if (pcpm >= 90) return 'Médio';
         if (pcpm >= 60) return 'Abaixo do esperado';
         return 'Risco de dificuldade de leitura';
     }
 }
-// ===== ENVIAR RESULTADOS =====
-function salvarResultado() {
+
+// ===== ENVIAR RESULTADOS PARA LAMBDA =====
+async function salvarResultado(resultado) {
     if (!sessionInfo.email || !sessionInfo.sessionId) return;
-    var resultado = calcularResultados();
     var dados = {
         email: sessionInfo.email,
         tipo: 'tflod',
@@ -422,13 +511,38 @@ function salvarResultado() {
             resultados: resultado
         }
     };
-    var xhr = new XMLHttpRequest();
-    xhr.open('POST', 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws/save-result', true);
-    xhr.setRequestHeader('Content-Type', 'application/json');
-    xhr.send(JSON.stringify(dados));
+    try {
+        await fetch('https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws/save-result', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(dados)
+        });
+    } catch (e) { console.error('Erro ao enviar:', e); }
 }
 
-// ===== DADOS DA URL (versao online) =====
+async function salvarResultadoErro(mensagemErro) {
+    if (!sessionInfo.email || !sessionInfo.sessionId) return;
+    var dados = {
+        email: sessionInfo.email,
+        tipo: 'tflod',
+        sessionId: sessionInfo.sessionId,
+        data: {
+            status: 'erro_transcricao',
+            date: new Date().toISOString(),
+            formData: dadosForm,
+            erro: mensagemErro
+        }
+    };
+    try {
+        await fetch('https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws/save-result', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(dados)
+        });
+    } catch (e) { console.error('Erro ao enviar:', e); }
+}
+
+// ===== DADOS DA URL (versão online — recebe dados do painel do avaliador) =====
 function decodificarURL() {
     var params = new URLSearchParams(window.location.search);
     var d = params.get('d');
@@ -449,19 +563,20 @@ window.addEventListener('load', function() {
     document.getElementById('nome').addEventListener('input', gerarID);
     document.getElementById('dataNasc').addEventListener('change', function() { calcularIdade(); gerarID(); });
     decodificarURL();
+    // Começa a baixar o modelo Whisper imediatamente (em segundo plano)
+    carregarModelo();
 });
 
-// Se paciente fechar a janela no meio, envia o que tem
+// Se paciente fechar a janela no meio da gravação, avisa o avaliador
 window.addEventListener('beforeunload', function() {
-    if (isListening && sessionInfo.email) {
-        var resultado = calcularResultados();
+    if (mediaRecorder && mediaRecorder.state === 'recording' && sessionInfo.email) {
         navigator.sendBeacon(
             'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws/save-result',
             JSON.stringify({
                 email: sessionInfo.email,
                 tipo: 'tflod',
                 sessionId: sessionInfo.sessionId,
-                data: { status: 'abandonado', date: new Date().toISOString(), formData: dadosForm, resultados: resultado }
+                data: { status: 'abandonado', date: new Date().toISOString(), formData: dadosForm }
             })
         );
     }
