@@ -528,7 +528,17 @@
           <option value="Pos-graduacao">Pos-graduacao</option>
         </select>
         <label style="font-size:0.85em;color:#555;">Observacoes:</label>
-        <input type="text" id="tflodObs" placeholder="Opcional" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:12px;">
+        <input type="text" id="tflodObs" placeholder="Opcional" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+        <label style="font-size:0.85em;color:#555;">Correcao visual:</label>
+        <select id="tflodCorrecao" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:12px;">
+          <option value="">Selecione...</option>
+          <option value="Sem correção">Nao usa oculos/lentes</option>
+          <option value="Óculos para longe (miopia)">Oculos para longe (miopia)</option>
+          <option value="Óculos para perto (hipermetropia/presbiopia)">Oculos para perto (hipermetropia/presbiopia)</option>
+          <option value="Óculos multifocal">Oculos multifocal</option>
+          <option value="Lentes de contato">Lentes de contato</option>
+          <option value="Não estava usando no teste">Tem, mas nao estava usando no teste</option>
+        </select>
         <button onclick="startTflodOnlineTest()" class="btn btn-green" style="width:100%;">Gerar Link do Paciente</button>
         <div id="tflodLinkResult" class="hidden" style="margin-top:15px;padding:12px;background:#e8f5e9;border-radius:8px;">
           <p style="font-size:0.8em;color:#555;margin-bottom:5px;">Link gerado:</p>
@@ -3123,7 +3133,8 @@
       var nome = document.getElementById('tflodNome').value.trim();
       var dn = document.getElementById('tflodDn').value;
       var escolaridade = document.getElementById('tflodEscolaridade').value;
-      if (!nome || !dn || !escolaridade) { alert('Preencha nome, data de nascimento e escolaridade.'); return; }
+      var correcao = document.getElementById('tflodCorrecao').value;
+      if (!nome || !dn || !escolaridade || !correcao) { alert('Preencha todos os campos obrigatorios (nome, data de nascimento, escolaridade e correcao visual).'); return; }
       // TFLOD e gratuito - nao consome creditos, gera sessionId direto
       var sessionId = 'tflod-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
       var sessionData = {
@@ -3133,6 +3144,7 @@
         patientName: nome,
         birthDate: dn,
         education: escolaridade,
+        correcaoVisual: correcao,
         obs: document.getElementById('tflodObs').value || '',
         pacienteId: document.getElementById('tflodSelPac').value || ''
       };
@@ -3232,47 +3244,45 @@
 
       // === GERAR PDF ===
       var doc = new jspdf.jsPDF();
-      var ml = 15; var lu = 180; var y = 15;
+      var ml = 15; var lu = 180; var ymax = 275; var y = 15;
 
       // Cabecalho azul
       doc.setFillColor(21, 101, 192);
-      doc.rect(0, 0, 210, 28, 'F');
+      doc.rect(0, 0, 210, 26, 'F');
       doc.setTextColor(255, 255, 255);
-      doc.setFontSize(15); doc.setFont(undefined, 'bold');
-      doc.text('LAUDO NEUROPSICOLOGICO', 105, 12, {align:'center'});
-      doc.setFontSize(10); doc.setFont(undefined, 'normal');
-      doc.text('TFLOD - Teste de Fluencia Leitora Oral Digital', 105, 20, {align:'center'});
-      doc.setFontSize(8);
-      doc.text('Sistema THEDUGA - Avaliacao Neuropsicologica', 105, 25, {align:'center'});
-      y = 38;
+      doc.setFontSize(14); doc.setFont(undefined, 'bold');
+      doc.text('LAUDO NEUROPSICOLOGICO', 105, 11, {align:'center'});
+      doc.setFontSize(9); doc.setFont(undefined, 'normal');
+      doc.text('TFLOD - Teste de Fluencia Leitora Oral Digital', 105, 18, {align:'center'});
+      doc.setFontSize(7);
+      doc.text('Sistema THEDUGA - Avaliacao Neuropsicologica Online', 105, 23, {align:'center'});
+      y = 34;
 
       // Dados do paciente
       doc.setFillColor(227, 242, 253);
-      doc.rect(ml - 3, y - 5, lu + 6, 32, 'F');
-      doc.setTextColor(21, 101, 192); doc.setFontSize(12); doc.setFont(undefined, 'bold');
-      doc.text('DADOS DO PACIENTE', ml, y); y += 8;
-      doc.setTextColor(0); doc.setFont(undefined, 'normal'); doc.setFontSize(10);
-      doc.text('Nome: ' + (fd.nome || '-'), ml, y); y += 6;
-      doc.text('Idade: ' + (fd.idade || '-') + '    Escolaridade: ' + (fd.escolaridade || '-'), ml, y); y += 6;
-      doc.text('Data da Avaliacao: ' + (fd.dataAval || '-') + '    ID: ' + (fd.id || '-'), ml, y); y += 6;
-      doc.text('Correcao visual: ' + (fd.correcaoVisual || 'Nao informado'), ml, y); y += 6;
-      if (fd.obs) { doc.text('Obs: ' + fd.obs, ml, y); y += 6; }
-      y += 10;
+      doc.rect(ml - 3, y - 4, lu + 6, 34, 'F');
+      doc.setTextColor(21, 101, 192); doc.setFontSize(11); doc.setFont(undefined, 'bold');
+      doc.text('DADOS DO PACIENTE', ml, y); y += 7;
+      doc.setTextColor(0); doc.setFont(undefined, 'normal'); doc.setFontSize(9);
+      doc.text('Nome: ' + (fd.nome || '-') + '    ID: ' + (fd.id || '-'), ml, y); y += 5;
+      doc.text('Idade: ' + (fd.idade || '-') + '    Escolaridade: ' + (fd.escolaridade || '-'), ml, y); y += 5;
+      doc.text('Data da Avaliacao: ' + (fd.dataAval || '-') + '    Correcao visual: ' + (fd.correcaoVisual || 'Nao informado'), ml, y); y += 5;
+      if (fd.obs) { doc.text('Obs: ' + fd.obs, ml, y); y += 5; }
+      y += 8;
 
       // Resultados principais
-      doc.setTextColor(21, 101, 192); doc.setFontSize(12); doc.setFont(undefined, 'bold');
-      doc.text('RESULTADOS', ml, y); y += 8;
-      doc.setTextColor(0); doc.setFont(undefined, 'normal'); doc.setFontSize(10);
-      doc.text('Palavras Corretas por Minuto (PCPM): ' + (res.pcpm || 0), ml, y); y += 6;
-      doc.text('Classificacao: ' + (res.classificacao || '-'), ml, y); y += 6;
-      doc.text('Palavras alcancadas: ' + (res.palavrasAlcancadas || res.totalPalavrasLidas || 0) + '/' + (res.totalPalavrasTexto || 0) + '    Acertos: ' + (res.acertos || 0) + '    Erros: ' + ((res.erros || []).length), ml, y); y += 6;
-      if (res.naoAlcancadas) { doc.text('Palavras nao alcancadas (tempo): ' + res.naoAlcancadas + ' (nao contabilizadas como erro)', ml, y); y += 6; }
-      doc.text('Categoria do texto: ' + (res.categoria || '') + '    Tempo: ' + (res.tempoUsado || 60) + 's', ml, y); y += 10;
+      doc.setTextColor(21, 101, 192); doc.setFontSize(11); doc.setFont(undefined, 'bold');
+      doc.text('RESULTADOS', ml, y); y += 6;
+      doc.setTextColor(0); doc.setFont(undefined, 'normal'); doc.setFontSize(9);
+      doc.text('PCPM (Palavras Corretas por Minuto): ' + (res.pcpm || 0) + '    Classificacao: ' + (res.classificacao || '-'), ml, y); y += 5;
+      doc.text('Palavras alcancadas: ' + (res.palavrasAlcancadas || res.totalPalavrasLidas || 0) + '/' + (res.totalPalavrasTexto || 0) + '    Acertos: ' + (res.acertos || 0) + '    Erros: ' + ((res.erros || []).length), ml, y); y += 5;
+      if (res.naoAlcancadas) { doc.text('Palavras nao alcancadas (tempo): ' + res.naoAlcancadas + ' (nao contabilizadas como erro)', ml, y); y += 5; }
+      doc.text('Texto: ' + (res.categoria || '') + ' (' + (res.totalPalavrasTexto || 0) + ' palavras)    Tempo: ' + (res.tempoUsado || 60) + 's', ml, y); y += 7;
 
       // Analise de erros por tipo
       if (res.erros && res.erros.length > 0) {
-        doc.setTextColor(192, 40, 40); doc.setFontSize(11); doc.setFont(undefined, 'bold');
-        doc.text('ANALISE DE ERROS', ml, y); y += 7;
+        doc.setTextColor(192, 40, 40); doc.setFontSize(10); doc.setFont(undefined, 'bold');
+        doc.text('ANALISE DE ERROS', ml, y); y += 6;
         doc.setTextColor(0); doc.setFont(undefined, 'normal'); doc.setFontSize(9);
         var tiposErro = {};
         for (var i = 0; i < res.erros.length; i++) {
@@ -3280,102 +3290,104 @@
           if (!tiposErro[tp]) tiposErro[tp] = 0;
           tiposErro[tp]++;
         }
-        var nomesTipo = {troca_fonologica:'Trocas fonologicas (p/b, t/d, f/v...)', inversao:'Inversoes de letras', omissao:'Omissoes', silaba:'Erros silabicos', substituicao:'Substituicoes diversas'};
+        var nomesTipo = {troca_fonologica:'Trocas fonologicas (p/b, t/d, f/v)', inversao:'Inversoes de letras', omissao:'Omissoes', insercao:'Insercoes/repeticoes', silaba:'Erros silabicos', substituicao:'Substituicoes diversas'};
         for (var tp in tiposErro) {
-          doc.text('• ' + (nomesTipo[tp] || tp) + ': ' + tiposErro[tp], ml, y); y += 5;
+          if (y > ymax) { doc.addPage(); y = 15; }
+          doc.text('  ' + (nomesTipo[tp] || tp) + ': ' + tiposErro[tp], ml, y); y += 4;
         }
-        y += 3;
-        // Lista detalhada (max 20)
+        y += 2;
         doc.setFontSize(8); doc.setTextColor(80);
-        for (var i = 0; i < Math.min(res.erros.length, 20); i++) {
-          if (y > 270) { doc.addPage(); y = 15; }
+        for (var i = 0; i < Math.min(res.erros.length, 25); i++) {
+          if (y > ymax) { doc.addPage(); y = 15; }
           var err = res.erros[i];
           doc.text('  #' + err.posicao + ': "' + err.esperada + '" -> "' + err.lida + '" [' + (err.tipo || '') + ']', ml, y); y += 4;
         }
-        if (res.erros.length > 20) { doc.text('  ... e mais ' + (res.erros.length - 20) + ' erros', ml, y); y += 4; }
-        y += 5;
+        if (res.erros.length > 25) { doc.text('  ... e mais ' + (res.erros.length - 25) + ' erros', ml, y); y += 4; }
+        y += 4;
       }
 
-      // Parecer da IA (pagina 2)
-      doc.addPage(); y = 15;
-      doc.setTextColor(21, 101, 192); doc.setFontSize(12); doc.setFont(undefined, 'bold');
-      doc.text('PARECER CLINICO (IA)', ml, y); y += 8;
+      // Parecer da IA
+      if (y > ymax - 30) { doc.addPage(); y = 15; }
+      doc.setTextColor(21, 101, 192); doc.setFontSize(11); doc.setFont(undefined, 'bold');
+      doc.text('PARECER CLINICO (IA - Multidisciplinar)', ml, y); y += 6;
       doc.setTextColor(0); doc.setFont(undefined, 'normal'); doc.setFontSize(9);
       if (laudoIA) {
         var linhasIA = doc.splitTextToSize(laudoIA, lu);
         for (var i = 0; i < linhasIA.length; i++) {
-          if (y > 270) { doc.addPage(); y = 15; }
-          doc.text(linhasIA[i], ml, y); y += 5;
+          if (y > ymax) { doc.addPage(); y = 15; }
+          doc.text(linhasIA[i], ml, y); y += 4;
         }
       } else {
-        doc.text('(Parecer nao disponivel - timeout ou erro na geracao)', ml, y); y += 5;
+        doc.text('(Parecer nao disponivel - timeout ou erro na geracao)', ml, y); y += 4;
       }
-      y += 10;
+      y += 5;
 
       // Transcricao
-      if (y > 220) { doc.addPage(); y = 15; }
-      doc.setTextColor(21, 101, 192); doc.setFontSize(11); doc.setFont(undefined, 'bold');
-      doc.text('TRANSCRICAO (literal, sem correcao)', ml, y); y += 7;
+      if (y > ymax - 20) { doc.addPage(); y = 15; }
+      doc.setTextColor(21, 101, 192); doc.setFontSize(10); doc.setFont(undefined, 'bold');
+      doc.text('TRANSCRICAO (literal, sem correcao)', ml, y); y += 6;
       doc.setTextColor(60); doc.setFont(undefined, 'normal'); doc.setFontSize(8);
       var transcricao = res.transcricao || '(nenhuma transcricao captada)';
       var linhas = doc.splitTextToSize(transcricao, lu);
       for (var i = 0; i < linhas.length; i++) {
-        if (y > 270) { doc.addPage(); y = 15; }
+        if (y > ymax) { doc.addPage(); y = 15; }
         doc.text(linhas[i], ml, y); y += 4;
       }
-      y += 8;
+      y += 4;
 
       // Texto original
-      if (y > 220) { doc.addPage(); y = 15; }
-      doc.setTextColor(21, 101, 192); doc.setFontSize(11); doc.setFont(undefined, 'bold');
-      doc.text('TEXTO ORIGINAL', ml, y); y += 7;
+      if (y > ymax - 20) { doc.addPage(); y = 15; }
+      doc.setTextColor(21, 101, 192); doc.setFontSize(10); doc.setFont(undefined, 'bold');
+      doc.text('TEXTO ORIGINAL', ml, y); y += 6;
       doc.setTextColor(0); doc.setFont(undefined, 'normal'); doc.setFontSize(8);
       var textoOrig = res.textoUsado || '';
       var linhasOrig = doc.splitTextToSize(textoOrig, lu);
       for (var i = 0; i < linhasOrig.length; i++) {
-        if (y > 270) { doc.addPage(); y = 15; }
+        if (y > ymax) { doc.addPage(); y = 15; }
         doc.text(linhasOrig[i], ml, y); y += 4;
       }
+      y += 5;
 
-      // Pagina final: disclaimer + referencias
-      doc.addPage(); y = 15;
-      doc.setTextColor(21, 101, 192); doc.setFontSize(11); doc.setFont(undefined, 'bold');
-      doc.text('INFORMACOES TECNICAS', ml, y); y += 8;
+      // Informacoes tecnicas + referencias (mesma pagina se couber)
+      if (y > ymax - 60) { doc.addPage(); y = 15; }
+      doc.setTextColor(21, 101, 192); doc.setFontSize(10); doc.setFont(undefined, 'bold');
+      doc.text('INFORMACOES TECNICAS', ml, y); y += 6;
       doc.setTextColor(80); doc.setFont(undefined, 'normal'); doc.setFontSize(8);
       var disclaimer = [
         'O TFLOD e um instrumento de rastreio de fluencia leitora oral, sem validacao empirica formal.',
         'Os resultados devem ser interpretados por profissional qualificado, em conjunto com outros dados clinicos.',
-        'A transcricao foi gerada por IA (Whisper) localmente no navegador, sem correcao ortografica,',
+        'A transcricao foi gerada por IA (OpenAI Whisper large-v2) via API, sem correcao ortografica,',
         'preservando trocas fonologicas e outros erros relevantes para analise de dislexia.',
         'O parecer clinico foi gerado por IA (Gemini) e deve ser revisado pelo profissional.',
-        '',
-        'Base teorica: CBM (Curriculum-Based Measurement) - Hasbrouck & Tindal (2017)',
-        'Motor de transcricao: OpenAI Whisper-base via Transformers.js',
-        'Classificacao de erros: trocas fonologicas, inversoes, omissoes, erros silabicos'
+        'Algoritmo de comparacao: LCS (Longest Common Subsequence) — tolerante a insercoes e omissoes.',
+        'Faixas de classificacao: baseadas em Hasbrouck & Tindal (2017) e Lucio et al. (2012).'
       ];
-      for (var i = 0; i < disclaimer.length; i++) { doc.text(disclaimer[i], ml, y); y += 5; }
-      y += 10;
-      doc.setTextColor(21, 101, 192); doc.setFontSize(11); doc.setFont(undefined, 'bold');
-      doc.text('REFERENCIAS', ml, y); y += 8;
+      for (var i = 0; i < disclaimer.length; i++) { doc.text(disclaimer[i], ml, y); y += 4; }
+      y += 4;
+      doc.setTextColor(21, 101, 192); doc.setFontSize(10); doc.setFont(undefined, 'bold');
+      doc.text('REFERENCIAS', ml, y); y += 6;
       doc.setTextColor(0); doc.setFont(undefined, 'normal'); doc.setFontSize(8);
       var refs = [
-        'HASBROUCK, J.; TINDAL, G. An update to compiled ORF norms. Behavioral Research',
-        '  and Teaching, University of Oregon, 2017.',
-        '',
-        'CAPELLINI, S. A.; OLIVEIRA, A. M.; CUETOS, F. PROLEC: Provas de Avaliacao dos',
-        '  Processos de Leitura. Sao Paulo: Casa do Psicologo, 2014.',
-        '',
-        'AMERICAN PSYCHIATRIC ASSOCIATION. DSM-5-TR: Manual Diagnostico e Estatistico',
-        '  de Transtornos Mentais. 5. ed. rev. Porto Alegre: Artmed, 2023.'
+        'HASBROUCK, J.; TINDAL, G. An update to compiled ORF norms. Behavioral Research and Teaching,',
+        '  University of Oregon, 2017.',
+        'CAPELLINI, S. A.; OLIVEIRA, A. M.; CUETOS, F. PROLEC: Provas de Avaliacao dos Processos de',
+        '  Leitura. Sao Paulo: Casa do Psicologo, 2014.',
+        'LUCIO, P. S.; PINHEIRO, A. M. V.; NASCIMENTO, E. Influencia de fatores sociais, individuais e',
+        '  linguisticos no desempenho em leitura de adultos. Paideia, v. 22, n. 51, p. 119-126, 2012.',
+        'AMERICAN PSYCHIATRIC ASSOCIATION. DSM-5-TR: Manual Diagnostico e Estatistico de Transtornos',
+        '  Mentais. 5. ed. rev. Porto Alegre: Artmed, 2023.'
       ];
-      for (var i = 0; i < refs.length; i++) { doc.text(refs[i], ml, y); y += 5; }
+      for (var i = 0; i < refs.length; i++) {
+        if (y > ymax) { doc.addPage(); y = 15; }
+        doc.text(refs[i], ml, y); y += 4;
+      }
 
       // Rodape em todas as paginas
       var totalPages = doc.internal.getNumberOfPages();
       for (var p = 1; p <= totalPages; p++) {
         doc.setPage(p);
         doc.setFontSize(7); doc.setTextColor(150);
-        doc.text('Gerado em: ' + new Date().toLocaleString('pt-BR') + ' | TFLOD - setmonte.github.io | Pag ' + p + '/' + totalPages, 105, 290, {align:'center'});
+        doc.text('Gerado em: ' + new Date().toLocaleString('pt-BR') + ' | TFLOD - setmonte.github.io | Pag ' + p + '/' + totalPages, 105, 287, {align:'center'});
       }
 
       // Salvar
