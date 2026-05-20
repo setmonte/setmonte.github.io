@@ -3106,7 +3106,7 @@
           html += '<td style="padding:5px;border-bottom:1px solid #eee;font-weight:bold;">' + (res.pcpm || '-') + '</td>';
           html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (res.classificacao || '-') + '</td>';
           html += '<td style="padding:5px;border-bottom:1px solid #eee;text-align:center;">';
-          html += '<button onclick="gerarPdfTflod(' + i + ')" class="btn btn-blue" style="padding:4px 10px;font-size:0.8em;">PDF</button> ';
+          html += '<button id="btnPdfTflod' + i + '" onclick="gerarPdfTflod(' + i + ')" class="btn btn-blue" style="padding:4px 10px;font-size:0.8em;">PDF</button> ';
           if (temAudio) {
             html += '<button onclick="ouvirAudioTflod(' + i + ')" class="btn btn-green" style="padding:4px 10px;font-size:0.8em;">&#9654; Ouvir</button>';
           }
@@ -3173,6 +3173,9 @@
     async function gerarPdfTflod(idx) {
       var r = _tflodResultCache[idx];
       if (!r) return;
+      // Mostrar loading no botão
+      var btnEl = document.getElementById('btnPdfTflod' + idx);
+      if (btnEl) { btnEl.disabled = true; btnEl.innerHTML = '⏳'; }
       var d = r.data || {};
       var fd = d.formData || {};
       var res = d.resultados || {};
@@ -3383,6 +3386,8 @@
       var timestamp = agora.getFullYear() + String(agora.getMonth()+1).padStart(2,'0') + String(agora.getDate()).padStart(2,'0') + String(agora.getHours()).padStart(2,'0') + String(agora.getMinutes()).padStart(2,'0');
       var nomeArq = 'TFLOD_' + (fd.nome || 'paciente').replace(/\s+/g,'_') + '_' + timestamp + '.pdf';
       doc.save(nomeArq);
+      // Restaurar botão
+      if (btnEl) { btnEl.disabled = false; btnEl.innerHTML = 'PDF'; }
     }
   </script>
 </body>
