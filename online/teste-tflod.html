@@ -532,20 +532,50 @@ function classificarErro(original, falada) {
 
 function classificarDesempenho(pcpm, categoria) {
     if (categoria === 'infantil') {
-        // Faixas para crianças (baseado em Capellini et al., PROLEC adaptado)
-        if (pcpm >= 110) return 'Superior';
-        if (pcpm >= 90) return 'Média Superior';
-        if (pcpm >= 70) return 'Média';
-        if (pcpm >= 50) return 'Média Inferior';
-        if (pcpm >= 30) return 'Limítrofe';
+        // Faixas para crianças por escolaridade (baseado em Hasbrouck & Tindal, 2017; Capellini et al., PROLEC)
+        // Usa a escolaridade do formulário para faixas mais precisas
+        var esc = (dadosForm.escolaridade || '').toLowerCase();
+        var faixas;
+        if (esc.indexOf('1o') >= 0 || esc.indexOf('1º') >= 0) {
+            // 1º ano: mediana ~53 PCPM
+            faixas = [80, 65, 53, 35, 20];
+        } else if (esc.indexOf('2o') >= 0 || esc.indexOf('2º') >= 0) {
+            // 2º ano: mediana ~72 PCPM
+            faixas = [100, 85, 72, 50, 30];
+        } else if (esc.indexOf('3o') >= 0 || esc.indexOf('3º') >= 0) {
+            // 3º ano: mediana ~92 PCPM
+            faixas = [120, 107, 92, 70, 45];
+        } else if (esc.indexOf('4o') >= 0 || esc.indexOf('4º') >= 0) {
+            // 4º ano: mediana ~112 PCPM
+            faixas = [140, 125, 112, 85, 60];
+        } else if (esc.indexOf('5o') >= 0 || esc.indexOf('5º') >= 0) {
+            // 5º ano: mediana ~127 PCPM
+            faixas = [155, 140, 127, 100, 70];
+        } else if (esc.indexOf('6o') >= 0 || esc.indexOf('6º') >= 0) {
+            // 6º ano: mediana ~140 PCPM
+            faixas = [165, 150, 140, 110, 80];
+        } else if (esc.indexOf('7o') >= 0 || esc.indexOf('7º') >= 0) {
+            // 7º ano: mediana ~145 PCPM
+            faixas = [170, 155, 145, 115, 85];
+        } else {
+            // Genérico infantil (analfabeto ou não especificado)
+            faixas = [90, 70, 50, 30, 15];
+        }
+        // faixas = [superior, med_superior, media, med_inferior, limitrofe]
+        if (pcpm >= faixas[0]) return 'Superior';
+        if (pcpm >= faixas[1]) return 'Média Superior';
+        if (pcpm >= faixas[2]) return 'Média';
+        if (pcpm >= faixas[3]) return 'Média Inferior';
+        if (pcpm >= faixas[4]) return 'Limítrofe';
         return 'Insuficiente';
     } else {
-        // Faixas para adultos escolarizados (Lúcio et al., 2012; Hasbrouck & Tindal, 2017 adaptado)
+        // Adultos e adolescentes (8º ano em diante): base ~150 PCPM (Hasbrouck & Tindal 8th grade)
+        // Quem está abaixo disso pode ter dificuldades — reteste mostra evolução/involução
         if (pcpm >= 180) return 'Superior';
-        if (pcpm >= 150) return 'Média Superior';
-        if (pcpm >= 120) return 'Média';
-        if (pcpm >= 90) return 'Média Inferior';
-        if (pcpm >= 60) return 'Limítrofe';
+        if (pcpm >= 160) return 'Média Superior';
+        if (pcpm >= 140) return 'Média';
+        if (pcpm >= 110) return 'Média Inferior';
+        if (pcpm >= 80) return 'Limítrofe';
         return 'Insuficiente';
     }
 }
