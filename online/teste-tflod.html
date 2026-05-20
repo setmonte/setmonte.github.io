@@ -355,27 +355,118 @@ function calcularResultados(transcricao) {
         .split(/\s+/)
         .filter(function(p) { return p.length > 0; });
 
+    var palavrasOriginal = palavrasTexto.map(function(p) {
+        return p.toLowerCase().replace(/[.,!?;:"""''()\-]/g, '');
+    });
+
     var totalLidas = palavrasFaladas.length;
-    var acertos = 0;
-    var erros = [];
     var tempoUsado = 60 - tempoRestante;
     if (tempoUsado <= 0) tempoUsado = 60;
 
-    for (var i = 0; i < Math.min(totalLidas, palavrasTexto.length); i++) {
-        var original = palavrasTexto[i].toLowerCase().replace(/[.,!?;:"""''()\-]/g, '');
-        var falada = palavrasFaladas[i] || '';
-        if (original === falada) {
-            acertos++;
+    // Algoritmo LCS (Longest Common Subsequence) para alinhar as sequências
+    // Encontra as palavras corretas mesmo com inserções/omissões/repetições
+    var m = palavrasOriginal.length;
+    var n = palavrasFaladas.length;
+
+    // Matriz LCS (otimizada: só precisa de 2 linhas)
+    var prev = new Array(n + 1).fill(0);
+    var curr = new Array(n + 1).fill(0);
+
+    // Preencher matriz LCS
+    for (var i = 1; i <= m; i++) {
+        for (var j = 1; j <= n; j++) {
+            if (palavrasOriginal[i-1] === palavrasFaladas[j-1]) {
+                curr[j] = prev[j-1] + 1;
+            } else {
+                curr[j] = Math.max(prev[j], curr[j-1]);
+            }
+        }
+        prev = curr.slice();
+        curr = new Array(n + 1).fill(0);
+    }
+
+    var acertos = prev[n]; // Tamanho da LCS = palavras corretas
+
+    // Reconstruir o alinhamento para identificar erros específicos
+    // Recalcular com matriz completa para backtracking
+    var dp = [];
+    for (var i = 0; i <= m; i++) {
+        dp[i] = new Array(n + 1).fill(0);
+    }
+    for (var i = 1; i <= m; i++) {
+        for (var j = 1; j <= n; j++) {
+            if (palavrasOriginal[i-1] === palavrasFaladas[j-1]) {
+                dp[i][j] = dp[i-1][j-1] + 1;
+            } else {
+                dp[i][j] = Math.max(dp[i-1][j], dp[i][j-1]);
+            }
+        }
+    }
+
+    // Backtracking para encontrar erros
+    var erros = [];
+    var i = m, j = n;
+    var alinhamento = []; // lista de {tipo, posOriginal, posFalada}
+    while (i > 0 && j > 0) {
+        if (palavrasOriginal[i-1] === palavrasFaladas[j-1]) {
+            alinhamento.unshift({tipo: 'match', posO: i, posF: j});
+            i--; j--;
+        } else if (dp[i-1][j] >= dp[i][j-1]) {
+            // Palavra do original foi omitida (não lida)
+            alinhamento.unshift({tipo: 'omissao', posO: i, posF: null});
+            i--;
         } else {
+            // Palavra extra na fala (inserção/substituição)
+            alinhamento.unshift({tipo: 'insercao', posO: null, posF: j});
+            j--;
+        }
+    }
+    // Palavras restantes do original não lidas
+    while (i > 0) {
+        alinhamento.unshift({tipo: 'omissao', posO: i, posF: null});
+        i--;
+    }
+    // Palavras extras na fala
+    while (j > 0) {
+        alinhamento.unshift({tipo: 'insercao', posO: null, posF: j});
+        j--;
+    }
+
+    // Identificar erros significativos (omissões e substituições próximas)
+    for (var k = 0; k < alinhamento.length; k++) {
+        var al = alinhamento[k];
+        if (al.tipo === 'omissao') {
+            // Verificar se a próxima é uma inserção (= substituição)
+            if (k + 1 < alinhamento.length && alinhamento[k+1].tipo === 'insercao') {
+                var palavraEsperada = palavrasTexto[al.posO - 1];
+                var palavraLida = palavrasFaladas[alinhamento[k+1].posF - 1];
+                erros.push({
+                    posicao: al.posO,
+                    esperada: palavraEsperada,
+                    lida: palavraLida,
+                    tipo: classificarErro(palavrasOriginal[al.posO - 1], palavrasFaladas[alinhamento[k+1].posF - 1])
+                });
+                k++; // pular a inserção já tratada
+            } else {
+                erros.push({
+                    posicao: al.posO,
+                    esperada: palavrasTexto[al.posO - 1],
+                    lida: '(omitida)',
+                    tipo: 'omissao'
+                });
+            }
+        } else if (al.tipo === 'insercao') {
+            // Palavra extra (repetição, hesitação) — registrar mas como inserção
             erros.push({
-                posicao: i + 1,
-                esperada: palavrasTexto[i],
-                lida: palavrasFaladas[i] || '(omitida)',
-                tipo: classificarErro(original, falada)
+                posicao: al.posF,
+                esperada: '—',
+                lida: palavrasFaladas[al.posF - 1],
+                tipo: 'insercao'
             });
         }
     }
 
+    // PCPM = palavras corretas por minuto
     var pcpm = Math.round(acertos * (60 / tempoUsado));
     var categoria = (textoEscolhido === TEXTO_INFANTIL) ? 'infantil' : 'adulto';
     var classificacao = classificarDesempenho(pcpm, categoria);
