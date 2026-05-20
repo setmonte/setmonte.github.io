@@ -3192,8 +3192,8 @@
           resumoErros += tipo + ': ' + errosPorTipo[tipo].slice(0, 5).join(', ') + ' (' + errosPorTipo[tipo].length + ' total)\n';
         }
 
-        var aiPrompt = 'Voce e um neuropsicologo especialista em dislexia e fluencia leitora. ' +
-          'Gere um PARECER CLINICO breve (max 12 linhas) sobre a leitura oral deste paciente.\n\n' +
+        var aiPrompt = 'Voce e uma equipe multidisciplinar composta por neuropsicologo, fonoaudiologo e psicopedagogo. ' +
+          'Gere um PARECER CLINICO breve (max 15 linhas) sobre a leitura oral deste paciente.\n\n' +
           'DADOS: Idade: ' + (fd.idadeAnos || 'N/I') + ' anos, Escolaridade: ' + (fd.escolaridade || 'N/I') + '\n' +
           'Texto: ' + (res.categoria || '') + ' (' + (res.totalPalavrasTexto || 0) + ' palavras)\n' +
           'PCPM (palavras corretas por minuto): ' + (res.pcpm || 0) + '\n' +
@@ -3201,15 +3201,24 @@
           'Total lidas: ' + (res.totalPalavrasLidas || 0) + ', Acertos: ' + (res.acertos || 0) + ', Erros: ' + ((res.erros || []).length) + '\n' +
           'Tempo: ' + (res.tempoUsado || 60) + 's\n\n' +
           'ERROS POR TIPO:\n' + (resumoErros || 'Nenhum erro detectado') + '\n\n' +
+          'LISTA DE ERROS DETALHADA:\n' + (res.erros || []).slice(0, 20).map(function(e) { return e.esperada + ' -> ' + e.lida; }).join(', ') + '\n\n' +
           'TRANSCRICAO (literal, sem correcao):\n' + (res.transcricao || '(vazia)').substring(0, 500) + '\n\n' +
-          'INSTRUCOES: Portugues brasileiro. Interprete clinicamente.\n' +
-          '- Se houver trocas_fonologicas (p/b, t/d, f/v), discuta hipotese de dislexia fonologica.\n' +
-          '- Se houver inversoes, discuta hipotese de dislexia visual/atencional.\n' +
-          '- Relacione PCPM com a faixa etaria e escolaridade.\n' +
-          '- Sugira encaminhamentos se necessario.\n' +
-          '- NAO repita numeros brutos, interprete-os clinicamente.';
+          'INSTRUCOES CRITICAS para interpretacao:\n' +
+          '1. SUBSTITUICOES SEMANTICAS (trocar por sinonimo ou palavra do mesmo campo semantico, ex: "andavam"->"estavam") NAO indicam dislexia. Indicam leitura madura pela rota lexical/semantica. Isso e NORMAL em leitores fluentes.\n' +
+          '2. ERROS DE ALINHAMENTO: se a transcricao termina antes do texto (cortada), os erros finais sao FALSOS POSITIVOS causados pelo desalinhamento palavra-a-palavra. Desconsidere-os.\n' +
+          '3. FATORES VISUAIS: em pacientes acima de 40 anos, considerar presbiopia, hipermetropia, fadiga ocular. Palavras pequenas ou com grafemas similares (n/m, u/v) podem gerar erros visuais, nao fonologicos.\n' +
+          '4. TROCAS FONOLOGICAS REAIS (p/b, t/d, f/v): SOMENTE estas indicam hipotese de dislexia fonologica.\n' +
+          '5. INVERSOES (prato->parto): indicam hipotese de dislexia visual/atencional.\n' +
+          '6. PARAMETROS BRASILEIROS para adultos: 120-180 PCPM e faixa tipica (Lucio et al., 2012). Abaixo de 90 PCPM em adulto escolarizado e preocupante.\n\n' +
+          'FORMATO DO PARECER:\n' +
+          '- Visao do NEUROPSICOLOGO: interprete cognitivamente (atencao, memoria de trabalho, rota lexical vs fonologica)\n' +
+          '- Visao do FONOAUDIOLOGO: analise os padroes de erro (fonologicos, visuais, semanticos)\n' +
+          '- Visao do PSICOPEDAGOGO: implicacoes para aprendizagem e recomendacoes\n' +
+          '- Se idade > 40: mencione avaliacao oftalmologica como fator a considerar\n' +
+          '- NAO repita numeros brutos, interprete-os clinicamente.\n' +
+          '- NAO diagnostique dislexia apenas por substituicoes semanticas.';
 
-        var aiTimeout = new Promise(function(_, reject) { setTimeout(function() { reject('timeout'); }, 30000); });
+        var aiTimeout = new Promise(function(_, reject) { setTimeout(function() { reject('timeout'); }, 45000); });
         var aiCall = fetch(API_URL + '/generate-ai', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
