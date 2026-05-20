@@ -466,6 +466,25 @@ function calcularResultados(transcricao) {
         }
     }
 
+    // Separar erros reais de "palavras não alcançadas" (fim do texto não lido)
+    // Encontrar a última posição do original que foi pareada (match ou substituição)
+    var ultimaPosAlcancada = 0;
+    for (var k = 0; k < alinhamento.length; k++) {
+        if (alinhamento[k].posO && (alinhamento[k].tipo === 'match' || alinhamento[k].posF)) {
+            ultimaPosAlcancada = Math.max(ultimaPosAlcancada, alinhamento[k].posO);
+        }
+    }
+    // Palavras após a última alcançada são "não lidas por tempo"
+    var errosReais = [];
+    var naoAlcancadas = 0;
+    for (var k = 0; k < erros.length; k++) {
+        if (erros[k].tipo === 'omissao' && erros[k].posicao > ultimaPosAlcancada) {
+            naoAlcancadas++;
+        } else {
+            errosReais.push(erros[k]);
+        }
+    }
+
     // PCPM = palavras corretas por minuto
     var pcpm = Math.round(acertos * (60 / tempoUsado));
     var categoria = (textoEscolhido === TEXTO_INFANTIL) ? 'infantil' : 'adulto';
@@ -477,8 +496,10 @@ function calcularResultados(transcricao) {
         transcricao: transcricao,
         totalPalavrasTexto: palavrasTexto.length,
         totalPalavrasLidas: totalLidas,
+        palavrasAlcancadas: ultimaPosAlcancada,
+        naoAlcancadas: naoAlcancadas,
         acertos: acertos,
-        erros: erros,
+        erros: errosReais,
         pcpm: pcpm,
         tempoUsado: tempoUsado,
         classificacao: classificacao
@@ -511,17 +532,21 @@ function classificarErro(original, falada) {
 
 function classificarDesempenho(pcpm, categoria) {
     if (categoria === 'infantil') {
-        if (pcpm >= 90) return 'Ótimo';
-        if (pcpm >= 60) return 'Bom';
-        if (pcpm >= 40) return 'Médio';
-        if (pcpm >= 20) return 'Abaixo do esperado';
-        return 'Risco de dificuldade de leitura';
+        // Faixas para crianças (baseado em Capellini et al., PROLEC adaptado)
+        if (pcpm >= 110) return 'Superior';
+        if (pcpm >= 90) return 'Média Superior';
+        if (pcpm >= 70) return 'Média';
+        if (pcpm >= 50) return 'Média Inferior';
+        if (pcpm >= 30) return 'Limítrofe';
+        return 'Insuficiente';
     } else {
-        if (pcpm >= 150) return 'Ótimo';
-        if (pcpm >= 120) return 'Bom';
-        if (pcpm >= 90) return 'Médio';
-        if (pcpm >= 60) return 'Abaixo do esperado';
-        return 'Risco de dificuldade de leitura';
+        // Faixas para adultos escolarizados (Lúcio et al., 2012; Hasbrouck & Tindal, 2017 adaptado)
+        if (pcpm >= 180) return 'Superior';
+        if (pcpm >= 150) return 'Média Superior';
+        if (pcpm >= 120) return 'Média';
+        if (pcpm >= 90) return 'Média Inferior';
+        if (pcpm >= 60) return 'Limítrofe';
+        return 'Insuficiente';
     }
 }
 
