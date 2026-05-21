@@ -233,6 +233,11 @@ function decodificarURL() {
         if (_sessionInfo.sex) document.getElementById('sexo').value = _sessionInfo.sex;
         if (_sessionInfo.respondente) document.getElementById('respondente').value = _sessionInfo.respondente;
         calcularIdade();
+        // Recalcular ID do paciente (id-paciente.js escuta 'input' e 'change')
+        var nomeEl = document.getElementById('nome');
+        var nascEl = document.getElementById('dataNascimento');
+        if (nomeEl) nomeEl.dispatchEvent(new Event('input'));
+        if (nascEl) nascEl.dispatchEvent(new Event('change'));
         // Trocar botoes: esconder PDF e Limpar, mudar "Calcular" para "Enviar Resultados"
         var botoes = document.querySelector('.botoes');
         botoes.innerHTML = '<button class="btn btn-primary" onclick="enviarResultadosPainel()">📤 Enviar Resultados ao Profissional</button>';
@@ -262,6 +267,7 @@ async function enviarResultadosPainel() {
     else classificacao='Rastreio negativo';
     if(posTOD) classificacao += ' + TOD Positivo';
     // Montar dados para salvar
+    var idPaciente = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
     var dados = {
         email: _sessionInfo.email,
         tipo: 'escala',
@@ -270,6 +276,7 @@ async function enviarResultadosPainel() {
             escala: 'SNAP-IV',
             paciente: nome,
             pacienteId: _sessionInfo.pacienteId || '',
+            idPaciente: idPaciente,
             idade: idade,
             sexo: sexo,
             respondente: resp,
