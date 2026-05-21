@@ -141,8 +141,10 @@
           <!-- FORMULARIO ENVIAR ESCALA -->
           <div id="enviarEscalaSection" class="card hidden" style="margin-top:15px;">
             <h2 style="font-size:16px;color:#2e7d32;margin-bottom:12px;">📤 Enviar Escala ao Paciente</h2>
+            <style>@keyframes piscarEscala{0%,100%{opacity:1}50%{opacity:0.2}}</style>
+            <p style="font-size:14px;font-weight:bold;color:#ff4444;margin-bottom:6px;animation:piscarEscala 1.5s ease-in-out infinite;">👇 Escolha a escala aqui</p>
             <label style="font-size:0.85em;color:#555;">Escala:</label>
-            <select id="escalaSelect" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:10px;">
+            <select id="escalaSelect" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:6px;">
               <option value="">-- Selecione a escala --</option>
               <option value="snap-iv">SNAP-IV (TDAH/TOD)</option>
               <option value="dass-21">DASS-21 (Depressao/Ansiedade/Estresse)</option>
@@ -172,6 +174,7 @@
               <option value="ert-pet">ERT-PEt (Personalidade Esquizotipica)</option>
               <option value="ert-tb">ERT-TB (Transtorno Bipolar)</option>
             </select>
+            <button onclick="imprimirEscala()" class="btn btn-blue" style="width:100%;margin-bottom:10px;padding:8px;font-size:13px;">🖨️ Imprimir Formulario em Branco</button>
             <label style="font-size:0.85em;color:#555;">Paciente cadastrado:</label>
             <select id="escalaSelPac" onchange="preencherPaciente('escala')" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:10px;">
               <option value="">-- Selecione ou preencha abaixo --</option>
@@ -1973,6 +1976,13 @@
     function toggleEnviarEscala() {
       var el = document.getElementById('enviarEscalaSection');
       el.classList.toggle('hidden');
+    }
+
+    function imprimirEscala() {
+      var escala = document.getElementById('escalaSelect').value;
+      if (!escala) { alert('Selecione uma escala primeiro.'); return; }
+      // Abre a escala em nova aba (sem parametro ?d=) para imprimir formulario em branco
+      window.open('https://setmonte.github.io/escalas/' + escala + '.html', '_blank');
     }
 
     function gerarLinkEscala() {
