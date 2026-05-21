@@ -2119,6 +2119,64 @@
         var linhas = doc.splitTextToSize(d.resultadoHTML, 180);
         linhas.forEach(function(l) { if(y>maxY){doc.addPage();y=12;} doc.text(l,15,y); y+=3.5; });
       }
+      // GRAFICO DE BARRAS — para escalas com dominios que tem media (ex: SNAP-IV)
+      if (d.dominios && typeof d.dominios === 'object') {
+        var domKeys = Object.keys(d.dominios);
+        var temMedia = domKeys.some(function(k) { return d.dominios[k] && d.dominios[k].media != null; });
+        if (temMedia) {
+          if (y + 70 > maxY) { doc.addPage(); y = 20; }
+          y += 5;
+          doc.setFillColor(46,125,50); doc.rect(15, y-3, 180, 8, 'F');
+          doc.setTextColor(255,255,255); doc.setFontSize(9); doc.setFont(undefined,'bold');
+          doc.text('GRAFICO DE DOMINIOS', 20, y+2); y += 14;
+          // Configuracao do grafico
+          var barX = 60; // inicio das barras (apos labels)
+          var barMaxW = 120; // largura maxima da barra
+          var barH = 10; // altura de cada barra
+          var gap = 5; // espaco entre barras
+          var maxVal = 3; // escala SNAP-IV vai de 0 a 3
+          // Detectar escala maxima
+          domKeys.forEach(function(k) { var v = d.dominios[k]; if (v && v.media != null && v.media > maxVal) maxVal = Math.ceil(v.media); });
+          // Desenhar barras
+          domKeys.forEach(function(k) {
+            var v = d.dominios[k];
+            if (!v || v.media == null) return;
+            var media = parseFloat(v.media);
+            var barW = (media / maxVal) * barMaxW;
+            // Cor da barra: verde se < 1.5, amarelo se < 2, laranja se < 2.5, vermelho se >= 2.5
+            if (media < 1.5) { doc.setFillColor(76, 175, 80); }
+            else if (media < 2.0) { doc.setFillColor(255, 193, 7); }
+            else if (media < 2.5) { doc.setFillColor(255, 152, 0); }
+            else { doc.setFillColor(244, 67, 54); }
+            // Label
+            doc.setTextColor(0,0,0); doc.setFontSize(8); doc.setFont(undefined,'bold');
+            doc.text(k, 17, y + barH/2 + 1);
+            // Barra de fundo (cinza claro)
+            doc.setFillColor(230,230,230); doc.rect(barX, y, barMaxW, barH, 'F');
+            // Barra de valor
+            if (media < 1.5) { doc.setFillColor(76, 175, 80); }
+            else if (media < 2.0) { doc.setFillColor(255, 193, 7); }
+            else if (media < 2.5) { doc.setFillColor(255, 152, 0); }
+            else { doc.setFillColor(244, 67, 54); }
+            if (barW > 0) doc.rect(barX, y, barW, barH, 'F');
+            // Valor na ponta da barra
+            doc.setTextColor(0,0,0); doc.setFontSize(8); doc.setFont(undefined,'bold');
+            doc.text(String(media), barX + barW + 3, y + barH/2 + 1);
+            y += barH + gap;
+          });
+          // Linha de corte (1.5 para SNAP-IV)
+          var corte = 1.5;
+          var corteX = barX + (corte / maxVal) * barMaxW;
+          doc.setDrawColor(200, 0, 0); doc.setLineWidth(0.5);
+          doc.setLineDashPattern([2, 1], 0);
+          doc.line(corteX, y - (domKeys.length * (barH + gap)), corteX, y - gap);
+          doc.setLineDashPattern([], 0);
+          // Legenda da linha de corte
+          doc.setTextColor(200, 0, 0); doc.setFontSize(7); doc.setFont(undefined,'normal');
+          doc.text('Ponto de corte: 1,5', corteX - 10, y + 2);
+          y += 10;
+        }
+      }
       doc.setFontSize(6); doc.setTextColor(150,150,150);
       doc.text('SYM Online | Gerado em ' + new Date().toLocaleString('pt-BR'), 105, 293, {align:'center'});
       doc.save((d.escala||'Escala').replace(/\s+/g,'_') + '_' + (d.paciente||'').replace(/\s+/g,'_') + '.pdf');
