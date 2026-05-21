@@ -193,7 +193,7 @@ h+='<p style="margin-top:10px;"><strong>Nota:</strong> O ponto de corte de 1,5 �
 h+='</div>';
 h+='<div class="disclaimer"><strong>⚠️ IMPORTANTE:</strong> O SNAP-IV é um instrumento de <strong>rastreio</strong>. Não substitui avaliação clínica profissional. O diagnóstico de TDAH e TOD requer avaliação abrangente por profissional qualificado.</div>';
 el.innerHTML=h;el.style.display='block';el.scrollIntoView({behavior:'smooth'});
-window._escalaDados={escala:'SNAP-IV',paciente:document.getElementById('nome').value,escore:somaTotal,dominios:{Desatencao:{pontuacao:somaD,media:parseFloat(mediaD)},Hiperatividade:{pontuacao:somaHI,media:parseFloat(mediaHI)},TOD:{pontuacao:somaTOD,media:parseFloat(mediaTOD)}},classificacao:'D:'+classif(mediaD).t+' / HI:'+classif(mediaHI).t+' / TOD:'+classif(mediaTOD).t,sexo:document.getElementById('sexo').value,idPaciente:(document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''),data:new Date().toISOString()};
+window._escalaDados={escala:'SNAP-IV',paciente:document.getElementById('nome').value,escore:somaD+somaHI+somaTOD,dominios:{Desatencao:{pontuacao:somaD,media:parseFloat(mediaD)},Hiperatividade:{pontuacao:somaHI,media:parseFloat(mediaHI)},TOD:{pontuacao:somaTOD,media:parseFloat(mediaTOD)}},classificacao:'D:'+(posD?'Positivo':'Negativo')+' / HI:'+(posHI?'Positivo':'Negativo')+' / TOD:'+(posTOD?'Positivo':'Negativo'),sexo:document.getElementById('sexo').value,idPaciente:(document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''),data:new Date().toISOString()};
 if(window.injetarBotaoSalvar)injetarBotaoSalvar('resultados');}
 function gerarRelatorioPDF(){var nome=document.getElementById('nome').value;if(!nome){alert('Preencha pelo menos o nome.');return;}var r=obterRespostas();if(!r){alert('Responda todos os itens.');return;}
 var somaD=0,somaHI=0,somaTOD=0,nD=0,nHI=0,nTOD=0;ITENS.forEach(function(it,i){if(it.dominio==='D'){somaD+=r[i];nD++;}else if(it.dominio==='HI'){somaHI+=r[i];nHI++;}else{somaTOD+=r[i];nTOD++;}});
@@ -218,8 +218,103 @@ var yr=y;doc.setTextColor(0,0,0);doc.setFontSize(7.5);doc.setFont(undefined,'nor
 doc.setFillColor(80,80,80);doc.rect(0,PH+5,210,12,'F');doc.setTextColor(255,255,255);doc.setFontSize(8);doc.text('Relatorio gerado em: '+new Date().toLocaleString('pt-BR'),105,PH+12,{align:'center'});
 var ts=(function(){var d=new Date();return d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0')+String(d.getHours()).padStart(2,'0')+String(d.getMinutes()).padStart(2,'0');})();doc.save('SNAPIV_'+nome.replace(/\s+/g,'_')+'_'+ts+'.pdf');}
 function limparDados(){if(!confirm('Limpar todos os dados?'))return;document.getElementById('nome').value='';document.getElementById('dataNascimento').value='';document.getElementById('idadeCalculada').value='';document.getElementById('sexo').value='';document.getElementById('respondente').value='';document.getElementById('observacoes').value='';document.querySelectorAll('input[type="radio"]').forEach(function(r){r.checked=false;});document.getElementById('resultados').style.display='none';document.getElementById('data').value=new Date().toISOString().split('T')[0];}
-document.addEventListener('DOMContentLoaded',function(){gerarQuestionario();document.getElementById('data').value=new Date().toISOString().split('T')[0];});
+// ===== MODO PAINEL (via link) =====
+var _sessionInfo = null;
+var API_URL = 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
+
+function decodificarURL() {
+    var params = new URLSearchParams(window.location.search);
+    var d = params.get('d');
+    if (d) {
+        try { _sessionInfo = JSON.parse(atob(decodeURIComponent(d))); } catch(e) { return; }
+        // Preencher dados do paciente vindos do painel
+        if (_sessionInfo.patientName) document.getElementById('nome').value = _sessionInfo.patientName;
+        if (_sessionInfo.birthDate) document.getElementById('dataNascimento').value = _sessionInfo.birthDate;
+        if (_sessionInfo.sex) document.getElementById('sexo').value = _sessionInfo.sex;
+        if (_sessionInfo.respondente) document.getElementById('respondente').value = _sessionInfo.respondente;
+        calcularIdade();
+        // Trocar botoes: esconder PDF e Limpar, mudar "Calcular" para "Enviar Resultados"
+        var botoes = document.querySelector('.botoes');
+        botoes.innerHTML = '<button class="btn btn-primary" onclick="enviarResultadosPainel()">📤 Enviar Resultados ao Profissional</button>';
+        // Esconder salvar-escala e info tecnica
+        var infoTec = document.querySelector('.info-tecnica');
+        if (infoTec) infoTec.style.display = 'none';
+    }
+}
+
+async function enviarResultadosPainel() {
+    var nome = document.getElementById('nome').value;
+    var idade = document.getElementById('idadeCalculada').value;
+    var sexo = document.getElementById('sexo').value;
+    var resp = document.getElementById('respondente').value;
+    if (!nome || !idade || !sexo || !resp) { alert('Preencha todos os dados.'); return; }
+    var r = obterRespostas();
+    if (!r) { alert('Responda todos os 26 itens.'); return; }
+    // Calcular escores
+    var somaD=0,somaHI=0,somaTOD=0,nD=0,nHI=0,nTOD=0;
+    ITENS.forEach(function(it,i){if(it.dominio==='D'){somaD+=r[i];nD++;}else if(it.dominio==='HI'){somaHI+=r[i];nHI++;}else{somaTOD+=r[i];nTOD++;}});
+    var mediaD=(somaD/nD).toFixed(2),mediaHI=(somaHI/nHI).toFixed(2),mediaTOD=(somaTOD/nTOD).toFixed(2);
+    var posD=parseFloat(mediaD)>=1.5,posHI=parseFloat(mediaHI)>=1.5,posTOD=parseFloat(mediaTOD)>=1.5;
+    var classificacao = '';
+    if(posD&&posHI) classificacao='TDAH Combinada';
+    else if(posD) classificacao='TDAH Predominantemente Desatenta';
+    else if(posHI) classificacao='TDAH Predominantemente Hiperativa/Impulsiva';
+    else classificacao='Rastreio negativo';
+    if(posTOD) classificacao += ' + TOD Positivo';
+    // Montar dados para salvar
+    var dados = {
+        email: _sessionInfo.email,
+        tipo: 'escala',
+        sessionId: _sessionInfo.sessionId,
+        data: {
+            escala: 'SNAP-IV',
+            paciente: nome,
+            pacienteId: _sessionInfo.pacienteId || '',
+            idade: idade,
+            sexo: sexo,
+            respondente: resp,
+            data: new Date().toISOString(),
+            escore: somaD + somaHI + somaTOD,
+            classificacao: classificacao,
+            dominios: {
+                Desatencao: { pontuacao: somaD, media: parseFloat(mediaD), max: nD*3, itens: nD, positivo: posD },
+                Hiperatividade: { pontuacao: somaHI, media: parseFloat(mediaHI), max: nHI*3, itens: nHI, positivo: posHI },
+                TOD: { pontuacao: somaTOD, media: parseFloat(mediaTOD), max: nTOD*3, itens: nTOD, positivo: posTOD }
+            },
+            respostas: r,
+            observacoes: document.getElementById('observacoes').value || ''
+        }
+    };
+    // Enviar
+    var btn = document.querySelector('.botoes button');
+    btn.disabled = true; btn.textContent = 'Enviando...';
+    try {
+        var resp2 = await fetch(API_URL + '/save-escala', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId: _sessionInfo.sessionId, email: _sessionInfo.email, data: dados.data })
+        });
+        var result = await resp2.json();
+        if (result.ok || resp2.ok) {
+            document.querySelector('.botoes').innerHTML = '<div style="background:#c8e6c9;border:2px solid #2e7d32;border-radius:10px;padding:20px;text-align:center;"><p style="font-size:1.3em;color:#2e7d32;font-weight:bold;">✅ Resultados enviados com sucesso!</p><p style="color:#555;margin-top:8px;">O profissional já pode visualizar seus resultados no painel.</p><p style="color:#777;margin-top:5px;font-size:0.85em;">Você pode fechar esta página.</p></div>';
+        } else {
+            btn.disabled = false; btn.textContent = '📤 Enviar Resultados ao Profissional';
+            alert('Erro ao enviar. Tente novamente.');
+        }
+    } catch(e) {
+        btn.disabled = false; btn.textContent = '📤 Enviar Resultados ao Profissional';
+        alert('Erro de conexão. Verifique sua internet e tente novamente.');
+    }
+}
+
+document.addEventListener('DOMContentLoaded',function(){gerarQuestionario();document.getElementById('data').value=new Date().toISOString().split('T')[0];decodificarURL();});
     </script>
-<script src="pdf-escalas.js"></script><script src="salvar-escala.js"></script>
+<script>
+// Nao carregar scripts de salvar/pdf se estiver em modo painel (via link)
+if (!new URLSearchParams(window.location.search).get('d')) {
+  var s1 = document.createElement('script'); s1.src = 'pdf-escalas.js'; document.body.appendChild(s1);
+  var s2 = document.createElement('script'); s2.src = 'salvar-escala.js'; document.body.appendChild(s2);
+}
+</script>
 </body>
 </html>

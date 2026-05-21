@@ -130,11 +130,78 @@
         <!-- === ABA ESCALAS === -->
         <div id="escalasTab" class="tab-content">
           <div style="text-align:center;padding:15px 0;">
-            <p style="font-size:15px;color:#2e7d32;font-weight:bold;">Historico de Escalas Aplicadas</p>
-            <p style="font-size:13px;color:#555;margin-top:5px;">Resultados salvos das escalas gratuitas</p>
+            <p style="font-size:15px;color:#2e7d32;font-weight:bold;">Escalas — Enviar e Receber Resultados</p>
+            <p style="font-size:13px;color:#555;margin-top:5px;">Envie escalas ao paciente e receba os resultados aqui</p>
           </div>
-          <div class="btn-row" style="justify-content:center;">
-            <button class="btn btn-red" style="padding:10px 20px;font-size:13px;" onclick="deleteEscalasSelected()">Apagar Selecionados</button>
+          <div class="btn-row" style="justify-content:center;flex-wrap:wrap;">
+            <button class="btn btn-green hidden" id="btnEnviarEscala" style="padding:10px 20px;font-size:13px;" onclick="toggleEnviarEscala()">📤 Enviar Escala ao Paciente</button>
+            <button class="btn btn-blue" style="padding:10px 20px;font-size:13px;" onclick="exportarExcelEscalas()">📊 Exportar Excel</button>
+            <button class="btn btn-red" style="padding:10px 20px;font-size:13px;" onclick="deleteEscalasSelected()">🗑 Apagar Selecionados</button>
+          </div>
+          <!-- FORMULARIO ENVIAR ESCALA -->
+          <div id="enviarEscalaSection" class="card hidden" style="margin-top:15px;">
+            <h2 style="font-size:16px;color:#2e7d32;margin-bottom:12px;">📤 Enviar Escala ao Paciente</h2>
+            <label style="font-size:0.85em;color:#555;">Escala:</label>
+            <select id="escalaSelect" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:10px;">
+              <option value="">-- Selecione a escala --</option>
+              <option value="snap-iv">SNAP-IV (TDAH/TOD)</option>
+              <option value="dass-21">DASS-21 (Depressao/Ansiedade/Estresse)</option>
+              <option value="asrs-18">ASRS-18 (TDAH Adulto)</option>
+              <option value="bapq">BAPQ (Fenotipo Ampliado Autismo)</option>
+              <option value="raads">RAADS-R (Autismo Adulto)</option>
+              <option value="cat-q">CAT-Q (Camuflagem Autismo)</option>
+              <option value="aq-10">AQ-10 (Rastreio Autismo)</option>
+              <option value="escasi">ESCASI (Ansiedade Social Infantil)</option>
+              <option value="sasc-r">SASC-R (Ansiedade Social Crianca)</option>
+              <option value="qiiahsd">QIIAHSD (Altas Habilidades)</option>
+              <option value="renzulli">Renzulli (Superdotacao)</option>
+              <option value="sobrexcitabilidade">Sobrexcitabilidade (Dabrowski)</option>
+              <option value="tea-ah">TEA+AH (Dupla Excepcionalidade)</option>
+              <option value="dislexia">Dislexia (Rastreio)</option>
+              <option value="tdi">TDI (Deficiencia Intelectual)</option>
+              <option value="ysq-s3">YSQ-S3 (Esquemas - Curta)</option>
+              <option value="ert-pb">ERT-PB (Personalidade Borderline)</option>
+              <option value="ert-pn">ERT-PN (Personalidade Narcisista)</option>
+              <option value="ert-pa">ERT-PA (Personalidade Antissocial)</option>
+              <option value="ert-ph">ERT-PH (Personalidade Histrionica)</option>
+              <option value="ert-pd">ERT-PD (Personalidade Dependente)</option>
+              <option value="ert-pev">ERT-PEv (Personalidade Evitativa)</option>
+              <option value="ert-poc">ERT-POC (Personalidade Obsessiva)</option>
+              <option value="ert-pp">ERT-PP (Personalidade Paranoide)</option>
+              <option value="ert-pes">ERT-PEs (Personalidade Esquizoide)</option>
+              <option value="ert-pet">ERT-PEt (Personalidade Esquizotipica)</option>
+              <option value="ert-tb">ERT-TB (Transtorno Bipolar)</option>
+            </select>
+            <label style="font-size:0.85em;color:#555;">Paciente cadastrado:</label>
+            <select id="escalaSelPac" onchange="preencherPaciente('escala')" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:10px;">
+              <option value="">-- Selecione ou preencha abaixo --</option>
+            </select>
+            <label style="font-size:0.85em;color:#555;">Nome:</label>
+            <input type="text" id="escalaNome" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+            <label style="font-size:0.85em;color:#555;">Data de Nascimento:</label>
+            <input type="date" id="escalaDn" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+            <label style="font-size:0.85em;color:#555;">Sexo:</label>
+            <select id="escalaSexo" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+              <option value="">Selecione...</option>
+              <option value="Masculino">Masculino</option>
+              <option value="Feminino">Feminino</option>
+            </select>
+            <label style="font-size:0.85em;color:#555;">Respondente (se aplicavel):</label>
+            <select id="escalaRespondente" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:12px;">
+              <option value="">N/A (proprio paciente)</option>
+              <option value="Pai/Mae">Pai/Mae</option>
+              <option value="Professor(a)">Professor(a)</option>
+              <option value="Outro responsavel">Outro responsavel</option>
+            </select>
+            <button onclick="gerarLinkEscala()" class="btn btn-green" style="width:100%;">Gerar Link do Paciente</button>
+            <div id="escalaLinkResult" class="hidden" style="margin-top:15px;padding:12px;background:#e8f5e9;border-radius:8px;">
+              <p style="font-size:0.8em;color:#555;margin-bottom:5px;">Link gerado:</p>
+              <p id="escalaSessionLink" style="word-break:break-all;font-size:0.75em;color:#1565c0;"></p>
+              <div style="margin-top:10px;display:flex;gap:8px;">
+                <button onclick="copyEscalaLink()" class="btn btn-blue" style="font-size:0.85em;">Copiar</button>
+                <button onclick="whatsappEscalaLink()" class="btn btn-green" style="font-size:0.85em;">WhatsApp</button>
+              </div>
+            </div>
           </div>
           <div id="escalasResultsList" style="margin-top:15px;"><p style="color:#777;">Carregando...</p></div>
         </div>
@@ -899,6 +966,7 @@
       if (currentUser === 'setmonte@gmail.com') {
         document.getElementById('tabDepoimentos').classList.remove('hidden');
         document.getElementById('tabAdmin').classList.remove('hidden');
+        document.getElementById('btnEnviarEscala').classList.remove('hidden');
       }
       // BAE visivel para todos
       // Buscar creditos
@@ -1777,7 +1845,7 @@
     }
 
     function popularDropdownsPacientes() {
-      ['baeSelPac','trmvSelPac','tecfeSelPac'].forEach(function(id) {
+      ['baeSelPac','trmvSelPac','tecfeSelPac','tflodSelPac','escalaSelPac'].forEach(function(id) {
         var sel = document.getElementById(id);
         if (!sel) return;
         var val = sel.value;
@@ -1800,6 +1868,8 @@
       if (tipo === 'tecfe') { campoNome = document.getElementById('onPatientName'); campoDN = document.getElementById('onBirthDate'); campoCPF = document.getElementById('onCpf'); }
       else if (tipo === 'bae') { campoNome = document.getElementById('baePatientName'); campoDN = document.getElementById('baeBirthDate'); campoCPF = document.getElementById('baeCpf'); }
       else if (tipo === 'trmv') { campoNome = document.getElementById('trmvPatientName'); campoDN = document.getElementById('trmvBirthDate'); campoCPF = document.getElementById('trmvCpf'); }
+      else if (tipo === 'escala') { campoNome = document.getElementById('escalaNome'); campoDN = document.getElementById('escalaDn'); campoCPF = null; }
+      else if (tipo === 'tflod') { campoNome = document.getElementById('tflodNome'); campoDN = document.getElementById('tflodDn'); campoCPF = null; }
       if (campoNome) campoNome.value = opt.dataset.nome || '';
       if (campoDN) campoDN.value = opt.dataset.dn || '';
       if (campoCPF) campoCPF.value = opt.dataset.cpf || '';
@@ -1900,22 +1970,62 @@
     // ===== FUNCOES ESCALAS =====
     var _escalasResultCache = [];
 
+    function toggleEnviarEscala() {
+      var el = document.getElementById('enviarEscalaSection');
+      el.classList.toggle('hidden');
+    }
+
+    function gerarLinkEscala() {
+      var escala = document.getElementById('escalaSelect').value;
+      var nome = document.getElementById('escalaNome').value.trim();
+      var dn = document.getElementById('escalaDn').value;
+      if (!escala) { alert('Selecione uma escala.'); return; }
+      if (!nome) { alert('Preencha o nome do paciente.'); return; }
+      var sessionId = 'esc-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+      var sessionData = {
+        email: currentUser,
+        sessionId: sessionId,
+        tipo: 'escala',
+        escala: escala,
+        patientName: nome,
+        birthDate: dn || '',
+        sex: document.getElementById('escalaSexo').value || '',
+        respondente: document.getElementById('escalaRespondente').value || '',
+        pacienteId: document.getElementById('escalaSelPac').value || ''
+      };
+      var params = btoa(JSON.stringify(sessionData));
+      var link = 'https://setmonte.github.io/escalas/' + escala + '.html?d=' + encodeURIComponent(params);
+      document.getElementById('escalaSessionLink').textContent = link;
+      document.getElementById('escalaLinkResult').classList.remove('hidden');
+    }
+
+    function copyEscalaLink() {
+      var link = document.getElementById('escalaSessionLink').textContent;
+      navigator.clipboard.writeText(link);
+      alert('Link copiado!');
+    }
+
+    function whatsappEscalaLink() {
+      var link = document.getElementById('escalaSessionLink').textContent;
+      var escala = document.getElementById('escalaSelect');
+      var nomeEscala = escala.options[escala.selectedIndex].text || 'escala';
+      window.open('https://wa.me/?text=' + encodeURIComponent('Por favor, preencha esta escala: ' + nomeEscala + '\n\n' + link), '_blank');
+    }
+
     async function loadEscalasResults() {
       try {
         var resp = await fetch(API_URL + '/get-results?email=' + encodeURIComponent(currentUser) + '&tipo=escala');
         var data = await resp.json();
         _escalasResultCache = [];
         if (data.results && data.results.length > 0) {
-          var html = '<table class="results-table"><tr><th><input type="checkbox" onclick="toggleEscalasSelectAll(this)"></th><th>ID Pac.</th><th>Data</th><th>Escala</th><th>Paciente</th><th>Escore</th><th>Classificacao</th><th>PDF</th></tr>';
+          var html = '<table class="results-table"><tr><th><input type="checkbox" onclick="toggleEscalasSelectAll(this)"></th><th>Data</th><th>Escala</th><th>Paciente</th><th>Escore</th><th>Classificacao</th><th>PDF</th></tr>';
           data.results.forEach(function(r) {
             var d = r.data || {};
-            var date = r.date ? new Date(r.date).toLocaleString('pt-BR') : '-';
-            var pacId = d.pacienteId || '';
+            var date = r.date ? new Date(r.date).toLocaleString('pt-BR') : (d.data ? new Date(d.data).toLocaleString('pt-BR') : '-');
             html += '<tr>';
             html += '<td><input type="checkbox" class="escala-result-check" data-sid="' + r.sessionId + '"></td>';
-            html += '<td style="font-size:9px;font-family:monospace;">' + (pacId ? pacId.slice(0,10) : '-') + '</td>';
-            html += '<td>' + date + '</td>';
-            html += '<td>' + (d.escala || '-') + '</td>';
+            html += '<td style="font-size:11px;">' + date + '</td>';
+            html += '<td style="font-weight:bold;">' + (d.escala || '-') + '</td>';
             html += '<td>' + (d.paciente || '-') + '</td>';
             html += '<td>' + (d.escore != null ? d.escore : '-') + '</td>';
             html += '<td>' + (d.classificacao || '-') + '</td>';
@@ -1926,11 +2036,36 @@
           html += '</table>';
           document.getElementById('escalasResultsList').innerHTML = html;
         } else {
-          document.getElementById('escalasResultsList').innerHTML = '<p style="color:#777;">Nenhuma escala salva ainda.</p>';
+          document.getElementById('escalasResultsList').innerHTML = '<p style="color:#777;">Nenhuma escala recebida ainda. Envie uma escala ao paciente usando o botao acima.</p>';
         }
       } catch(e) {
         document.getElementById('escalasResultsList').innerHTML = '<p style="color:#777;">Erro ao carregar.</p>';
       }
+    }
+
+    function exportarExcelEscalas() {
+      if (_escalasResultCache.length === 0) { alert('Nenhum resultado para exportar.'); return; }
+      var csv = 'Data;Escala;Paciente;Sexo;Idade;Respondente;Escore;Classificacao;Observacoes\n';
+      for (var i = 0; i < _escalasResultCache.length; i++) {
+        var r = _escalasResultCache[i];
+        var d = r.data || {};
+        var date = r.date ? new Date(r.date).toLocaleString('pt-BR') : (d.data ? new Date(d.data).toLocaleString('pt-BR') : '');
+        csv += date + ';';
+        csv += (d.escala || '') + ';';
+        csv += (d.paciente || '') + ';';
+        csv += (d.sexo || '') + ';';
+        csv += (d.idade || '') + ';';
+        csv += (d.respondente || '') + ';';
+        csv += (d.escore != null ? d.escore : '') + ';';
+        csv += (d.classificacao || '').replace(/;/g,',') + ';';
+        csv += (d.observacoes || '').replace(/;/g,',') + '\n';
+      }
+      // Adicionar BOM para Excel reconhecer UTF-8
+      var blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'Escalas_SYM_' + new Date().toISOString().slice(0,10) + '.csv';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
     }
 
     function gerarPDFEscala(idx) {
