@@ -395,7 +395,21 @@ function renderQuestions() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    initializeApp();
+    // === MODO PAINEL ===
+    var params = new URLSearchParams(window.location.search);
+    if (params.get('d')) {
+        initializeApp();
+        _decodificarURLSmi();
+    } else if (params.get('print')) {
+        initializeApp();
+        var actions = document.querySelectorAll('.actions');
+        actions.forEach(function(a) { a.style.display = 'none'; });
+        document.getElementById('resultsSection').style.display = 'none';
+        setTimeout(function(){ window.print(); }, 500);
+    } else {
+        window.location.href = 'https://setmonte.github.io/online/';
+        return;
+    }
     // Adaptador ID Paciente para campos Young
     var nomeEl = document.getElementById('patientName');
     var nascEl = document.getElementById('birthDate');
@@ -409,3 +423,58 @@ document.addEventListener('DOMContentLoaded', function() {
         nascEl.addEventListener('change', atualizarId);
     }
 });
+
+// ===== MODO PAINEL SMI =====
+var _sessionInfoSmi = null;
+var _API_URL_SMI = 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
+
+function _decodificarURLSmi() {
+    var params = new URLSearchParams(window.location.search);
+    var d = params.get('d');
+    if (!d) return;
+    try { _sessionInfoSmi = JSON.parse(atob(decodeURIComponent(d))); } catch(e) { return; }
+    var nomeEl = document.getElementById('patientName');
+    var nascEl = document.getElementById('birthDate');
+    var sexoEl = document.getElementById('patientSex');
+    if (nomeEl && _sessionInfoSmi.patientName) nomeEl.value = _sessionInfoSmi.patientName;
+    if (nascEl && _sessionInfoSmi.birthDate) nascEl.value = _sessionInfoSmi.birthDate;
+    if (sexoEl && _sessionInfoSmi.sex) sexoEl.value = _sessionInfoSmi.sex;
+    if (nomeEl) nomeEl.dispatchEvent(new Event('input'));
+    if (nascEl) nascEl.dispatchEvent(new Event('change'));
+    // Trocar botoes
+    var actions = document.querySelectorAll('.actions');
+    actions.forEach(function(a) {
+        a.innerHTML = '<button type="button" class="btn-primary" style="padding:15px 30px;font-size:16px;background:#2e7d32;" onclick="_enviarSmi()">📤 Enviar Resultados ao Profissional</button>';
+    });
+}
+
+async function _enviarSmi() {
+    var scores = calculateResults();
+    var dados = { escala: 'SMI', paciente: document.getElementById('patientName').value, data: new Date().toISOString() };
+    var dominios = {};
+    modes.forEach(function(mode) {
+        var score = scores.get(mode.code) || 0;
+        var pct = (score / mode.max) * 100;
+        dominios[mode.name] = { pontuacao: score, max: mode.max, media: parseFloat(pct.toFixed(1)), classificacao: getLevel(pct) };
+    });
+    dados.dominios = dominios;
+    dados.idPaciente = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
+    var btn = document.querySelector('.actions button');
+    if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
+    try {
+        var resp = await fetch(_API_URL_SMI + '/save-escala', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId: _sessionInfoSmi.sessionId, email: _sessionInfoSmi.email, data: dados })
+        });
+        var result = await resp.json();
+        if (result.ok || resp.ok) {
+            document.querySelectorAll('.actions').forEach(function(a) { a.innerHTML = '<div style="background:#c8e6c9;border:2px solid #2e7d32;border-radius:10px;padding:20px;text-align:center;"><p style="font-size:1.3em;color:#2e7d32;font-weight:bold;">✅ Resultados enviados com sucesso!</p><p style="color:#555;margin-top:8px;">Pode fechar esta página.</p></div>'; });
+        } else {
+            if (btn) { btn.disabled = false; btn.textContent = '📤 Enviar Resultados ao Profissional'; }
+            alert('Erro ao enviar.');
+        }
+    } catch(e) {
+        if (btn) { btn.disabled = false; btn.textContent = '📤 Enviar Resultados ao Profissional'; }
+        alert('Erro de conexão.');
+    }
+}

@@ -318,3 +318,76 @@ document.addEventListener('DOMContentLoaded', function() {
         nascEl.addEventListener('change', atualizarId);
     }
 });
+
+
+// ===== MODO PAINEL YSQ-L3 =====
+var _sessionInfoYsq = null;
+var _API_URL_YSQ = 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
+
+function _decodificarURLYsq() {
+    var params = new URLSearchParams(window.location.search);
+    var d = params.get('d');
+    if (!d) return;
+    try { _sessionInfoYsq = JSON.parse(atob(decodeURIComponent(d))); } catch(e) { return; }
+    var nomeEl = document.getElementById('patientName');
+    var nascEl = document.getElementById('birthDate');
+    var sexoEl = document.getElementById('patientSex');
+    if (nomeEl && _sessionInfoYsq.patientName) nomeEl.value = _sessionInfoYsq.patientName;
+    if (nascEl && _sessionInfoYsq.birthDate) nascEl.value = _sessionInfoYsq.birthDate;
+    if (sexoEl && _sessionInfoYsq.sex) sexoEl.value = _sessionInfoYsq.sex;
+    if (nomeEl) nomeEl.dispatchEvent(new Event('input'));
+    if (nascEl) nascEl.dispatchEvent(new Event('change'));
+    var actions = document.querySelectorAll('.actions');
+    actions.forEach(function(a) {
+        a.innerHTML = '<button type="button" class="btn-primary" style="padding:15px 30px;font-size:16px;background:#2e7d32;" onclick="_enviarYsq()">📤 Enviar Resultados ao Profissional</button>';
+    });
+}
+
+async function _enviarYsq() {
+    var scores = calculateResults();
+    var dados = { escala: 'YSQ-L3', paciente: document.getElementById('patientName').value, data: new Date().toISOString() };
+    var dominios = {};
+    schemas.forEach(function(schema) {
+        var score = scores.get(schema.code) || 0;
+        var pct = (score / schema.max) * 100;
+        dominios[schema.name] = { pontuacao: score, max: schema.max, media: parseFloat(pct.toFixed(1)), classificacao: getLevel(pct) };
+    });
+    dados.dominios = dominios;
+    dados.idPaciente = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
+    var btn = document.querySelector('.actions button');
+    if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
+    try {
+        var resp = await fetch(_API_URL_YSQ + '/save-escala', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId: _sessionInfoYsq.sessionId, email: _sessionInfoYsq.email, data: dados })
+        });
+        var result = await resp.json();
+        if (result.ok || resp.ok) {
+            document.querySelectorAll('.actions').forEach(function(a) { a.innerHTML = '<div style="background:#c8e6c9;border:2px solid #2e7d32;border-radius:10px;padding:20px;text-align:center;"><p style="font-size:1.3em;color:#2e7d32;font-weight:bold;">✅ Resultados enviados com sucesso!</p><p style="color:#555;margin-top:8px;">Pode fechar esta página.</p></div>'; });
+        } else {
+            if (btn) { btn.disabled = false; btn.textContent = '📤 Enviar Resultados ao Profissional'; }
+            alert('Erro ao enviar.');
+        }
+    } catch(e) {
+        if (btn) { btn.disabled = false; btn.textContent = '📤 Enviar Resultados ao Profissional'; }
+        alert('Erro de conexão.');
+    }
+}
+
+// Override DOMContentLoaded para controle de acesso
+(function() {
+    var origInit = initializeApp;
+    window.addEventListener('load', function() {
+        var params = new URLSearchParams(window.location.search);
+        if (params.get('d')) {
+            _decodificarURLYsq();
+        } else if (params.get('print')) {
+            var actions = document.querySelectorAll('.actions');
+            actions.forEach(function(a) { a.style.display = 'none'; });
+            document.getElementById('resultsSection').style.display = 'none';
+            setTimeout(function(){ window.print(); }, 500);
+        } else {
+            window.location.href = 'https://setmonte.github.io/online/';
+        }
+    });
+})();
