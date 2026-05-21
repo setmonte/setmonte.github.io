@@ -2046,11 +2046,28 @@
 
     function exportarExcelEscalas() {
       if (_escalasResultCache.length === 0) { alert('Nenhum resultado para exportar.'); return; }
-      var csv = 'Data;Escala;Paciente;Sexo;Idade;Respondente;Escore;Classificacao;Observacoes\n';
+      var csv = 'ID Paciente;Data;Escala;Paciente;Sexo;Idade;Respondente;Escore Total;Classificacao';
+      // Detectar dominios presentes nos resultados para criar colunas dinamicas
+      var todosDominios = [];
+      _escalasResultCache.forEach(function(r) {
+        var d = r.data || {};
+        if (d.dominios && typeof d.dominios === 'object') {
+          Object.keys(d.dominios).forEach(function(k) {
+            if (todosDominios.indexOf(k) === -1) todosDominios.push(k);
+          });
+        }
+      });
+      // Adicionar colunas de dominios no header
+      todosDominios.forEach(function(k) {
+        csv += ';' + k + ' (pts);' + k + ' (media);' + k + ' (resultado)';
+      });
+      csv += ';Observacoes\n';
+      // Linhas de dados
       for (var i = 0; i < _escalasResultCache.length; i++) {
         var r = _escalasResultCache[i];
         var d = r.data || {};
         var date = r.date ? new Date(r.date).toLocaleString('pt-BR') : (d.data ? new Date(d.data).toLocaleString('pt-BR') : '');
+        csv += (d.idPaciente || '') + ';';
         csv += date + ';';
         csv += (d.escala || '') + ';';
         csv += (d.paciente || '') + ';';
@@ -2058,8 +2075,15 @@
         csv += (d.idade || '') + ';';
         csv += (d.respondente || '') + ';';
         csv += (d.escore != null ? d.escore : '') + ';';
-        csv += (d.classificacao || '').replace(/;/g,',') + ';';
-        csv += (d.observacoes || '').replace(/;/g,',') + '\n';
+        csv += (d.classificacao || '').replace(/;/g,',') + '';
+        // Colunas de dominios
+        todosDominios.forEach(function(k) {
+          var v = (d.dominios && d.dominios[k]) ? d.dominios[k] : {};
+          csv += ';' + (v.pontuacao != null ? v.pontuacao : '');
+          csv += ';' + (v.media != null ? v.media : '');
+          csv += ';' + (v.positivo === true ? 'POSITIVO' : v.positivo === false ? 'Negativo' : '');
+        });
+        csv += ';' + (d.observacoes || '').replace(/;/g,',') + '\n';
       }
       // Adicionar BOM para Excel reconhecer UTF-8
       var blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
