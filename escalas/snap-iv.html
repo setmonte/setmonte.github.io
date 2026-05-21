@@ -314,7 +314,19 @@ async function enviarResultadosPainel() {
     }
 }
 
-document.addEventListener('DOMContentLoaded',function(){gerarQuestionario();document.getElementById('data').value=new Date().toISOString().split('T')[0];decodificarURL();});
+document.addEventListener('DOMContentLoaded',function(){gerarQuestionario();document.getElementById('data').value=new Date().toISOString().split('T')[0];
+    var params = new URLSearchParams(window.location.search);
+    if (params.get('d')) {
+        // Modo painel: paciente responde e envia
+        decodificarURL();
+    } else if (params.get('print')) {
+        // Modo impressao: formulario em branco para imprimir (vindo do painel)
+        // Nao faz nada especial, escala funciona normal para imprimir
+    } else {
+        // Acesso direto sem parametro: redireciona para o painel
+        window.location.href = 'https://setmonte.github.io/online/';
+    }
+});
     </script>
 <script>
 // Nao carregar scripts de salvar/pdf se estiver em modo painel (via link)
