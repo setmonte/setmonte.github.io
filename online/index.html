@@ -2089,7 +2089,9 @@
       var blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
       var a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = 'Escalas_SYM_' + new Date().toISOString().slice(0,10) + '.csv';
+      var tsNow = new Date();
+      var tsStr = tsNow.getFullYear()+String(tsNow.getMonth()+1).padStart(2,'0')+String(tsNow.getDate()).padStart(2,'0')+String(tsNow.getHours()).padStart(2,'0')+String(tsNow.getMinutes()).padStart(2,'0');
+      a.download = 'Escalas_' + tsStr + '.csv';
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
     }
 
@@ -2097,7 +2099,7 @@
       function sanitize(s){if(!s)return '';return s.replace(/[\u2600-\u27BF\uD800-\uDFFF\uFE00-\uFE0F\u200D]/g,'').replace(/[^\x20-\x7E\xA0-\xFF\u0100-\u024F]/g,'').trim();}
       var r = _escalasResultCache[idx];
       if (!r) return;
-      var dd=(r.data||{}); if(dd.pdfBase64){var a=document.createElement('a');a.href=dd.pdfBase64;a.download=(dd.escala||'Escala').replace(/\s+/g,'_')+'_'+(dd.paciente||'').replace(/\s+/g,'_')+'.pdf';document.body.appendChild(a);a.click();document.body.removeChild(a);return;}
+      var dd=(r.data||{}); if(dd.pdfBase64){var ts=new Date();var tsStr=ts.getFullYear()+String(ts.getMonth()+1).padStart(2,'0')+String(ts.getDate()).padStart(2,'0')+String(ts.getHours()).padStart(2,'0')+String(ts.getMinutes()).padStart(2,'0');var a=document.createElement('a');a.href=dd.pdfBase64;a.download=(dd.escala||'Escala').replace(/[\s\/]+/g,'_')+'_'+(dd.paciente||'').replace(/\s+/g,'_')+'_'+tsStr+'.pdf';document.body.appendChild(a);a.click();document.body.removeChild(a);return;}
       var d = r.data || {}; if(d.classificacao)d.classificacao=sanitize(d.classificacao); if(d.resultadoHTML)d.resultadoHTML=sanitize(d.resultadoHTML); if(d.paciente)d.paciente=sanitize(d.paciente);
       var jsPDF = window.jspdf.jsPDF;
       var doc = new jsPDF();
@@ -2203,7 +2205,8 @@
       }
       doc.setFontSize(6); doc.setTextColor(150,150,150);
       doc.text('SYM Online | Gerado em ' + new Date().toLocaleString('pt-BR'), 105, 293, {align:'center'});
-      doc.save((d.escala||'Escala').replace(/\s+/g,'_') + '_' + (d.paciente||'').replace(/\s+/g,'_') + '.pdf');
+      var tsNow=new Date();var tsStr=tsNow.getFullYear()+String(tsNow.getMonth()+1).padStart(2,'0')+String(tsNow.getDate()).padStart(2,'0')+String(tsNow.getHours()).padStart(2,'0')+String(tsNow.getMinutes()).padStart(2,'0');
+      doc.save((d.escala||'Escala').replace(/[\s\/]+/g,'_') + '_' + (d.paciente||'').replace(/\s+/g,'_') + '_' + tsStr + '.pdf');
     }
 
     function toggleEscalasSelectAll(master) {
