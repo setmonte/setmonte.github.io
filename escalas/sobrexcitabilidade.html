@@ -334,11 +334,7 @@
             transform: translateY(-2px);
         }
 
-        @media print {
-            @page {
-                size: A4 portrait;
-                margin: 8mm;
-            }
+        @media print { @page { size: portrait; margin: 1cm; } body { background: white !important; padding: 0 !important; } .botoes, .btn, .btn-imprimir, .actions { display: none !important; } .container { box-shadow: none !important; max-width: 100% !important; } .info-tecnica { display: none !important; } .resultados { display: none !important; } .header { -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 15px !important; } .header h1 { font-size: 1.5em !important; } .item { padding: 6px 10px !important; page-break-inside: avoid; break-inside: avoid; } .item-texto { margin-bottom: 5px !important; font-size: 0.9em !important; } .opcoes { display: inline-flex !important; flex-direction: row !important; flex-wrap: nowrap !important; justify-content: flex-start !important; gap: 15px !important; width: 100% !important; } .opcao { flex-direction: row !important; padding: 2px 5px !important; min-height: auto !important; min-width: auto !important; gap: 3px !important; } .opcao label { min-height: auto !important; font-size: 0.75em !important; } .opcao input[type="radio"] { width: 14px !important; height: 14px !important; } .parte-header { padding: 6px 12px !important; margin: 8px 0 4px !important; page-break-after: avoid; font-size: 0.95em !important; } .dados-pessoais { padding: 12px !important; margin-bottom: 10px !important; } .instrucoes { padding: 10px !important; margin-bottom: 10px !important; } .content { padding: 15px !important; } .form-row { margin-bottom: 5px !important; } }
             
             body {
                 background: white !important;
@@ -1377,7 +1373,85 @@
                 }
             }, 30000);
         });
+    
+// ===== MODO PAINEL (via link) =====
+var _sessionInfo = null;
+var _API_URL = 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
+
+function _decodificarURL() {
+    var params = new URLSearchParams(window.location.search);
+    var d = params.get('d');
+    if (d) {
+        try { _sessionInfo = JSON.parse(atob(decodeURIComponent(d))); } catch(e) { return false; }
+        // Preencher dados do paciente vindos do painel
+        var nomeEl = document.getElementById('nome');
+        var nascEl = document.getElementById('dataNascimento') || document.getElementById('dn');
+        var sexoEl = document.getElementById('sexo');
+        if (nomeEl && _sessionInfo.patientName) nomeEl.value = _sessionInfo.patientName;
+        if (nascEl && _sessionInfo.birthDate) nascEl.value = _sessionInfo.birthDate;
+        if (sexoEl && _sessionInfo.sex) sexoEl.value = _sessionInfo.sex;
+        // Calcular idade se funcao existir
+        if (typeof calcularIdade === 'function') calcularIdade();
+        // Disparar eventos para id-paciente.js recalcular
+        if (nomeEl) nomeEl.dispatchEvent(new Event('input'));
+        if (nascEl) nascEl.dispatchEvent(new Event('change'));
+        // Trocar botoes
+        var botoes = document.querySelector('.botoes') || document.querySelector('.actions');
+        if (botoes) botoes.innerHTML = '<button class="btn btn-primary" style="padding:15px 30px;border:none;border-radius:25px;font-size:16px;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#2e7d32,#43a047);color:white;" onclick="_enviarResultadosPainel()">\u{1F4E4} Enviar Resultados ao Profissional</button>';
+        // Esconder info tecnica
+        var infoTec = document.querySelector('.info-tecnica');
+        if (infoTec) infoTec.style.display = 'none';
+        return true;
+    }
+    return false;
+}
+
+async function _enviarResultadosPainel() {
+    // Coletar dados da escala (usa window._escalaDados se disponivel)
+    var calcFn = window.calcularResultados || window.calcular;
+    if (calcFn && !window._escalaDados) {
+        try { calcFn(); } catch(e) {}
+    }
+    var dados = window._escalaDados || {};
+    if (!dados.escala) dados.escala = document.title.replace(/[\s\u2014\u2013|].*/,'').trim();
+    var idPaciente = '';
+    var idEl = document.getElementById('idPaciente');
+    if (idEl) idPaciente = idEl.value || '';
+    dados.idPaciente = idPaciente;
+    dados.data = new Date().toISOString();
+    // Enviar
+    var btn = document.querySelector('.botoes button') || document.querySelector('.actions button');
+    if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
+    try {
+        var resp = await fetch(_API_URL + '/save-escala', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId: _sessionInfo.sessionId, email: _sessionInfo.email, data: dados })
+        });
+        var result = await resp.json();
+        if (result.ok || resp.ok) {
+            var container = document.querySelector('.botoes') || document.querySelector('.actions');
+            if (container) container.innerHTML = '<div style="background:#c8e6c9;border:2px solid #2e7d32;border-radius:10px;padding:20px;text-align:center;"><p style="font-size:1.3em;color:#2e7d32;font-weight:bold;">\u2705 Resultados enviados com sucesso!</p><p style="color:#555;margin-top:8px;">O profissional ja pode visualizar seus resultados no painel.</p><p style="color:#777;margin-top:5px;font-size:0.85em;">Voce pode fechar esta pagina.</p></div>';
+            // Esconder resultados visuais
+            var res = document.getElementById('resultados') || document.querySelector('.resultados');
+            if (res) res.style.display = 'none';
+        } else {
+            if (btn) { btn.disabled = false; btn.textContent = '\u{1F4E4} Enviar Resultados ao Profissional'; }
+            alert('Erro ao enviar. Tente novamente.');
+        }
+    } catch(e) {
+        if (btn) { btn.disabled = false; btn.textContent = '\u{1F4E4} Enviar Resultados ao Profissional'; }
+        alert('Erro de conexao. Verifique sua internet e tente novamente.');
+    }
+}
+
     </script>
-<script src="pdf-escalas.js"></script><script src="salvar-escala.js"></script>
+<script>
+// Nao carregar scripts de salvar/pdf se estiver em modo painel
+if (!new URLSearchParams(window.location.search).get('d')) {
+  var s1 = document.createElement('script'); s1.src = 'pdf-escalas.js'; document.body.appendChild(s1);
+  var s2 = document.createElement('script'); s2.src = 'salvar-escala.js'; document.body.appendChild(s2);
+}
+</script>
 </body>
 </html>
