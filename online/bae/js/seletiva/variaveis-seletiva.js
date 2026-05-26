@@ -15,8 +15,9 @@ let firstCall = true;
 let respondeuAnimalAnterior = false;
 let testeJaFinalizado = false;
 let CONFIG_SELETIVA = null;
-let quadrantesSeletiva = { S1: 0, S2: 0, S3: 0, S4: 0, S5: 0, S6: 0 };
-let acertosPorQuadranteSeletiva = { S1: 0, S2: 0, S3: 0, S4: 0, S5: 0, S6: 0 };
+let quadrantesSeletiva = { Q1: 0, Q2: 0, Q3: 0, Q4: 0, Q5: 0, Q6: 0, Q7: 0, Q8: 0, Q9: 0 };
+let acertosPorQuadranteSeletiva = { Q1: 0, Q2: 0, Q3: 0, Q4: 0, Q5: 0, Q6: 0, Q7: 0, Q8: 0, Q9: 0 };
+let omissoesPorSextanteSeletiva = { Q1: 0, Q2: 0, Q3: 0, Q4: 0, Q5: 0, Q6: 0, Q7: 0, Q8: 0, Q9: 0 };
 let quadranteAtualSeletiva = '';
 
 // ===== CONFIGURAÇÃO POR FAIXA ETÁRIA =====
@@ -80,7 +81,8 @@ function resetarContadoresSeletiva() {
     testeJaFinalizado = false;
     previousAnimal = undefined;
     currentAnimal = undefined;
-    quadrantesSeletiva = { S1: 0, S2: 0, S3: 0, S4: 0, S5: 0, S6: 0 };
-    acertosPorQuadranteSeletiva = { S1: 0, S2: 0, S3: 0, S4: 0, S5: 0, S6: 0 };
+    quadrantesSeletiva = { Q1: 0, Q2: 0, Q3: 0, Q4: 0, Q5: 0, Q6: 0, Q7: 0, Q8: 0, Q9: 0 };
+    acertosPorQuadranteSeletiva = { Q1: 0, Q2: 0, Q3: 0, Q4: 0, Q5: 0, Q6: 0, Q7: 0, Q8: 0, Q9: 0 };
+    omissoesPorSextanteSeletiva = { Q1: 0, Q2: 0, Q3: 0, Q4: 0, Q5: 0, Q6: 0, Q7: 0, Q8: 0, Q9: 0 };
     quadranteAtualSeletiva = '';
 }

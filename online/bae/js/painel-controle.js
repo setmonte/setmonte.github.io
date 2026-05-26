@@ -233,14 +233,42 @@ async function exportarExcel() {
         });
     }
 
-    // Gera e baixa
-    wb.xlsx.writeBuffer().then(function(buffer) {
-        var blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-        var a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = 'BAE_Resultados_' + new Date().toISOString().slice(0, 10) + '.xlsx';
-        a.click();
-        console.log('📥 Excel exportado: ' + hist.length + ' registros');
+    // Gera e salva
+    wb.xlsx.writeBuffer().then(async function(buffer) {
+        var nomeArquivo = 'BAE_Resultados_' + new Date().toISOString().slice(0, 10) + '.xlsx';
+        
+        if (window.__TAURI__) {
+            try {
+                // Tauri: usa diálogo Salvar Como
+                var path = await window.__TAURI__.dialog.save({
+                    defaultPath: nomeArquivo,
+                    filters: [{ name: 'Excel', extensions: ['xlsx'] }]
+                });
+                if (path) {
+                    // Converte buffer para array de bytes e salva via Rust
+                    var bytes = Array.from(new Uint8Array(buffer));
+                    await window.__TAURI__.core.invoke('salvar_bytes', { path: path, bytes: bytes });
+                    alert('Excel salvo em: ' + path);
+                    console.log('📥 Excel exportado: ' + hist.length + ' registros');
+                }
+            } catch(e) {
+                console.error('Erro ao salvar Excel:', e);
+                // Fallback: download normal
+                var blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                var a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = nomeArquivo;
+                a.click();
+            }
+        } else {
+            // Navegador: download normal
+            var blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            var a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = nomeArquivo;
+            a.click();
+            console.log('📥 Excel exportado: ' + hist.length + ' registros');
+        }
     });
 }
 

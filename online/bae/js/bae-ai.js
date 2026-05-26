@@ -14,7 +14,7 @@ var BAEAI = (function() {
             }
         }
         // Fallback navegador (desenvolvimento local - não sobe para o site)
-        var k = ['AIza','SyA_','Xxm8','ObIN','uPtn','_23X','fo5p','AUWS','Nzfh','GvI'];
+        var k = ['AIza','SyCh','DJXo','8L-_','s2zO','jIVZ','30V8','RDs7','bfjh','5aQ'];
         return k.join('');
     }
 
@@ -143,27 +143,33 @@ var BAEAI = (function() {
         return texto;
     }
 
-    // Chama Lambda /generate-ai (proxy seguro para Gemini)
+    // Chama Gemini API
     async function gerarLaudo(paciente, resultados) {
         try {
+            var key = await obterChave();
+            if (!key) throw new Error('Chave nao disponivel');
+            
             var iaObs = typeof obterRelatorioIA === 'function' ? obterRelatorioIA() : null;
             var prompt = montarPrompt(paciente, resultados, iaObs);
             
-            console.log('🤖 Chamando IA via Lambda...');
+            console.log('🤖 Chamando Gemini...');
             
             var response = await fetch(
-                'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws/generate-ai',
+                'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=' + key,
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt: prompt })
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }],
+                        generationConfig: { temperature: 0.3, maxOutputTokens: 2000 }
+                    })
                 }
             );
             
             if (!response.ok) throw new Error('HTTP ' + response.status);
             
             var data = await response.json();
-            var texto = (data.text || '').trim();
+            var texto = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
             
             if (!texto) throw new Error('Resposta vazia');
             

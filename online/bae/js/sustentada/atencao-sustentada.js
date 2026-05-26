@@ -50,17 +50,18 @@ function prepararQuadroEstimulosSustentada() {
         quadro.style.display = 'flex';
         quadro.style.justifyContent = 'center';
         quadro.style.alignItems = 'center';
-        quadro.style.width = '20cm';
-        quadro.style.height = '15cm';
         quadro.style.backgroundColor = 'black';
-        quadro.style.margin = '20px auto';
         quadro.style.border = '2px solid #333';
         quadro.style.position = 'relative';
+        // Ativa modo tela inteira (CSS + F11) para medir lateralidade do campo visual
+        ativarFullscreenTeste('quadroSustentada');
     }
 }
 
 // ===== INSTRUÇÕES DO TESTE =====
 function mostrarInstrucoesSustentada(callback) {
+    // Entra em F11 quando as instruções aparecem
+    if (typeof ativarFullscreenNavegador === 'function') ativarFullscreenNavegador();
     const quadro = document.getElementById('quadroSustentada');
     if (!quadro) {
         callback();
@@ -333,7 +334,7 @@ function exibirEstimulo(tipo) {
 }
 
 // ===== GERAÇÃO DE POSIÇÃO COM CONTROLE DE QUADRANTES =====
-// Linha 252-280: Geração de posições aleatórias
+// Grade 18x18 para posicionamento, análise em 9 quadrantes (3x3)
 function gerarPosicaoAleatoria(tipoEstimulo) {
     const colunas = 18;
     const linhas = 18;
@@ -363,20 +364,21 @@ function gerarPosicaoAleatoria(tipoEstimulo) {
 }
 
 // ===== ESCOLHA DE POSIÇÃO UNIFORME NO QUADRANTE =====
-// Linha 282-320: Escolha uniforme de posições
+// Grid: 6 colunas x 6 linhas por quadrante (18col/3=6, 18lin/3=6)
 function escolherPosicaoUniforme(sextante) {
     const posicoesUsadasSext = posicoesUsadas[sextante];
-    if (posicoesUsadasSext.length >= 54) posicoesUsadas[sextante] = [];
+    if (posicoesUsadasSext.length >= 36) posicoesUsadas[sextante] = [];
     
     let coluna, linha, chave;
-    // Grid: 6 colunas x 9 linhas por sextante (18col/3=6, 18lin/2=9)
+    // 9 quadrantes: 3 colunas x 3 linhas na grade 18x18
+    // Cada quadrante = 6 colunas x 6 linhas
     do {
         const localColuna = Math.floor(Math.random() * 6);
-        const localLinha = Math.floor(Math.random() * 9);
-        const sextIdx = { S1:[0,0], S2:[1,0], S3:[2,0], S4:[0,1], S5:[1,1], S6:[2,1] };
-        const [ci, li] = sextIdx[sextante];
+        const localLinha = Math.floor(Math.random() * 6);
+        const quadIdx = { Q1:[0,0], Q2:[1,0], Q3:[2,0], Q4:[0,1], Q5:[1,1], Q6:[2,1], Q7:[0,2], Q8:[1,2], Q9:[2,2] };
+        const [ci, li] = quadIdx[sextante];
         coluna = localColuna + ci * 6;
-        linha = localLinha + li * 9;
+        linha = localLinha + li * 6;
         chave = `${linha}-${coluna}`;
     } while (posicoesUsadas[sextante].includes(chave));
     
@@ -386,12 +388,12 @@ function escolherPosicaoUniforme(sextante) {
 }
 
 // ===== ESCOLHA DE QUADRANTE EQUILIBRADA =====
-// Linha 322-340: Escolha equilibrada de quadrantes
+// Distribui alvos igualmente entre os 9 quadrantes
 function escolherSextanteEquilibrado() {
-    const sextantes = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6'];
+    const quadrantes = ['Q1', 'Q2', 'Q3', 'Q4', 'Q5', 'Q6', 'Q7', 'Q8', 'Q9'];
     const contadores = Object.values(contadorSextantes);
     const minCount = Math.min(...contadores);
-    const disponiveis = sextantes.filter(s => contadorSextantes[s] === minCount);
+    const disponiveis = quadrantes.filter(q => contadorSextantes[q] === minCount);
     const escolhido = disponiveis[Math.floor(Math.random() * disponiveis.length)];
     sextantesUsados.push(escolhido);
     contadorSextantes[escolhido]++;
@@ -477,6 +479,9 @@ function finalizarTesteSustentada() {
     testeAtivoSustentada = false;
     fimTeste = performance.now();
     
+    // Remove modo tela inteira
+    desativarFullscreenTeste('quadroSustentada');
+    
     document.removeEventListener('keydown', processarRespostaSustentada, true);
     document.removeEventListener('keydown', processarRespostaSustentada, false);
     
@@ -491,14 +496,17 @@ function pararTesteSustentada() {
     
     testeAtivoSustentada = false;
     
+    // Remove modo tela inteira
+    desativarFullscreenTeste('quadroSustentada');
+    
     // Remove listeners
     document.removeEventListener('keydown', processarRespostaSustentada, true);
     document.removeEventListener('keydown', processarRespostaSustentada, false);
     
     // Limpa quadro
-    const quadro = document.getElementById('quadroSustentada');
-    if (quadro) {
-        const estimulos = quadro.querySelectorAll('.estimulo');
+    const quadroEl = document.getElementById('quadroSustentada');
+    if (quadroEl) {
+        const estimulos = quadroEl.querySelectorAll('.estimulo');
         estimulos.forEach(el => el.remove());
     }
     
@@ -521,6 +529,9 @@ function calcularEstatisticasFinais() {
 function exibirResultadosFinais() {
     const quadro = document.getElementById('quadroSustentada');
     
+    // Sai do F11 — bateria finalizada
+    if (typeof desativarFullscreenNavegador === 'function') desativarFullscreenNavegador();
+    
     const taxaAcerto = estimulosAlvo > 0 ? (acertos / estimulosAlvo) * 100 : 0;
     const tempoMedioReacao = temposReacaoSustentada.length > 0 ? 
         temposReacaoSustentada.reduce((a, b) => a + b, 0) / temposReacaoSustentada.length : 0;
@@ -542,6 +553,19 @@ function exibirResultadosFinais() {
     container.appendChild(p1);
     quadro.appendChild(container);
     
+    // Botão "Próximo Teste" ou "Finalizar" após 2s
+    setTimeout(function() {
+      var btn = document.createElement('button');
+      btn.className = 'botao-iniciar';
+      btn.textContent = (window.filaTestes && window.testeAtualIndex < window.filaTestes.length - 1) ? 'Próximo Teste' : 'Finalizar';
+      btn.style.cssText = 'margin:20px auto;display:block;';
+      btn.onclick = function() {
+        if (typeof avancarParaProximoTeste === 'function') avancarParaProximoTeste();
+        else if (typeof window.avancarParaProximoTeste === 'function') window.avancarParaProximoTeste();
+      };
+      container.appendChild(btn);
+    }, 2000);
+    
     console.log('🏁 TESTE SUSTENTADA FINALIZADO');
     
     // Verificação de totais
@@ -552,7 +576,7 @@ function exibirResultadosFinais() {
         if (omissoes < 0) omissoes = 0;
     }
     console.log(`✅ ${acertos}/${estimulosAlvo} (${taxaAcerto.toFixed(1)}%) | ⚠️ ${omissoes} omissões | 🟠 ${negligencias} negligências | ⚡ ${respostasImpulsivas} impulsivas`);
-    console.log(`📍 SEXTANTES: S1=${desempenhoPorSextante.S1.alvos}/${desempenhoPorSextante.S1.acertos} S2=${desempenhoPorSextante.S2.alvos}/${desempenhoPorSextante.S2.acertos} S3=${desempenhoPorSextante.S3.alvos}/${desempenhoPorSextante.S3.acertos} | S4=${desempenhoPorSextante.S4.alvos}/${desempenhoPorSextante.S4.acertos} S5=${desempenhoPorSextante.S5.alvos}/${desempenhoPorSextante.S5.acertos} S6=${desempenhoPorSextante.S6.alvos}/${desempenhoPorSextante.S6.acertos}`);
+    console.log(`📍 QUADRANTES (alvos/acertos): Q1=${desempenhoPorSextante.Q1.alvos}/${desempenhoPorSextante.Q1.acertos} Q2=${desempenhoPorSextante.Q2.alvos}/${desempenhoPorSextante.Q2.acertos} Q3=${desempenhoPorSextante.Q3.alvos}/${desempenhoPorSextante.Q3.acertos} | Q4=${desempenhoPorSextante.Q4.alvos}/${desempenhoPorSextante.Q4.acertos} Q5=${desempenhoPorSextante.Q5.alvos}/${desempenhoPorSextante.Q5.acertos} Q6=${desempenhoPorSextante.Q6.alvos}/${desempenhoPorSextante.Q6.acertos} | Q7=${desempenhoPorSextante.Q7.alvos}/${desempenhoPorSextante.Q7.acertos} Q8=${desempenhoPorSextante.Q8.alvos}/${desempenhoPorSextante.Q8.acertos} Q9=${desempenhoPorSextante.Q9.alvos}/${desempenhoPorSextante.Q9.acertos}`);
     
     // Análise clínica por faixa
     var faixa = CONFIG_SUSTENTADA ? CONFIG_SUSTENTADA.faixa : 'adulto';

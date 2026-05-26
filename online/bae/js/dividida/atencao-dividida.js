@@ -1,5 +1,7 @@
 // ===== INSTRUÇÕES TESTE DIVIDIDA =====
 function mostrarInstrucoesDividida() {
+    // Entra em F11 quando as instruções aparecem
+    if (typeof ativarFullscreenNavegador === 'function') ativarFullscreenNavegador();
     const quadro = document.getElementById('quadroDividida');
     const instrucoesDiv = document.createElement('div');
     instrucoesDiv.className = 'instrucoes-dividida';
@@ -77,6 +79,9 @@ function iniciarTesteDividida() {
 
     document.getElementById('iniciarDividida').style.display = 'none';
     document.getElementById('quadroDividida').style.display = 'block';
+
+    // Ativa modo tela inteira (CSS + F11) para medir lateralidade do campo visual
+    ativarFullscreenTeste('quadroDividida');
 
     resetarContadoresDividida();
     testeJaFinalizadoDividida = false;
@@ -160,7 +165,8 @@ function apresentarEstimulo() {
         if (estAnterior) {
             if (estAnterior.figura === alvoVisual && !respostaVisualDetectada) {
                 omissoesVisuaisDividida++;
-                console.log('⏰ OMISSÃO VISUAL: triângulo não respondido. Total: ' + omissoesVisuaisDividida);
+                omissoesPorSextanteDividida[sextanteAtualDividida]++;
+                console.log('⏰ OMISSÃO VISUAL: triângulo não respondido (' + sextanteAtualDividida + '). Total: ' + omissoesVisuaisDividida);
             }
             if (estAnterior.som === alvoAuditivo && !respostaAuditivaDetectada) {
                 omissoesAuditivasDividida++;
@@ -207,14 +213,14 @@ function exibirFigura() {
     container.style.left = (Math.random() * maxX) + 'px';
     container.style.top = (Math.random() * maxY) + 'px';
     
-    // Determina sextante (3 colunas x 2 linhas)
+    // Determina quadrante (3 colunas x 3 linhas = 9 zonas)
     var posXval = parseFloat(container.style.left);
     var posYval = parseFloat(container.style.top);
     var terco = (quadroEl ? quadroEl.clientWidth : 20 * 37.8) / 3;
-    var metade = (quadroEl ? quadroEl.clientHeight : 15 * 37.8) / 2;
+    var tercoV = (quadroEl ? quadroEl.clientHeight : 15 * 37.8) / 3;
     var col = posXval < terco ? 0 : posXval < terco * 2 ? 1 : 2;
-    var lin = posYval < metade ? 0 : 1;
-    var sextMap = [['S1','S2','S3'],['S4','S5','S6']];
+    var lin = posYval < tercoV ? 0 : posYval < tercoV * 2 ? 1 : 2;
+    var sextMap = [['Q1','Q2','Q3'],['Q4','Q5','Q6'],['Q7','Q8','Q9']];
     sextanteAtualDividida = sextMap[lin][col];
     if (figuraAtualDividida === alvoVisual) sextantesDividida[sextanteAtualDividida]++;
     container.innerHTML = criarFormaCSS(figuraAtualDividida, 'white');
@@ -299,6 +305,9 @@ function pararTesteDividida() {
     document.removeEventListener('keydown', processarRespostaDividida);
     if (intervalDividida) { clearInterval(intervalDividida); intervalDividida = null; }
     
+    // Remove modo tela inteira
+    desativarFullscreenTeste('quadroDividida');
+    
     // Limpa a tela
     var figuraDiv = document.getElementById('figuraDiv');
     if (figuraDiv) figuraDiv.innerHTML = '';
@@ -313,6 +322,10 @@ function finalizarTesteDividida() {
     }
     testeJaFinalizadoDividida = true;
     console.log('🏁 Finalizando Teste de Atenção Dividida');
+
+    // Remove modo tela inteira
+    desativarFullscreenTeste('quadroDividida');
+
     if (window._dividMonitor) { clearInterval(window._dividMonitor); window._dividMonitor = null; }
     pararTesteDividida();
 
@@ -320,7 +333,10 @@ function finalizarTesteDividida() {
     if (currentEstimulo > 0) {
         var ultimo = sequenciaEstimulosDividida[currentEstimulo - 1];
         if (ultimo) {
-            if (ultimo.figura === alvoVisual && !respostaVisualDetectada) omissoesVisuaisDividida++;
+            if (ultimo.figura === alvoVisual && !respostaVisualDetectada) {
+                omissoesVisuaisDividida++;
+                omissoesPorSextanteDividida[sextanteAtualDividida]++;
+            }
             if (ultimo.som === alvoAuditivo && !respostaAuditivaDetectada) omissoesAuditivasDividida++;
         }
     }
@@ -355,6 +371,7 @@ function finalizarTesteDividida() {
         duracaoTeste: duracaoReal,
         sextantesDividida: JSON.parse(JSON.stringify(sextantesDividida)),
         acertosPorSextante: JSON.parse(JSON.stringify(acertosPorSextanteDividida)),
+        omissoesPorSextante: JSON.parse(JSON.stringify(omissoesPorSextanteDividida)),
         faixaEtaria: CONFIG_DIVIDIDA.faixa,
         intervaloEstimulo: CONFIG_DIVIDIDA.intervaloEstimulo,
         statusTeste: 'CONCLUÍDO',
@@ -365,7 +382,34 @@ function finalizarTesteDividida() {
     if (typeof salvarResultadoTeste === 'function') salvarResultadoTeste('dividida', resultados);
 
     mostrarParabensDividida();
-    setTimeout(function() { criarBotaoProximoTeste('testeDividida', 'paginaTesteAlternado'); }, 4000);
+    // Botão "Próximo Teste" ou "Finalizar" após 2s
+    setTimeout(function() {
+      var quadro = document.getElementById('quadroDividida');
+      var parabens = quadro ? quadro.querySelector('.parabens-dividida') : null;
+      var target = parabens || quadro;
+      if (target) {
+        var btn = document.createElement('button');
+        btn.className = 'botao-iniciar';
+        btn.textContent = (window.filaTestes && window.testeAtualIndex < window.filaTestes.length - 1) ? 'Próximo Teste' : 'Finalizar';
+        btn.style.cssText = 'margin:20px auto;display:block;';
+        btn.onclick = function() {
+          console.log('🔴 BOTÃO FINALIZAR CLICADO!');
+          console.log('filaTestes:', window.filaTestes, 'index:', window.testeAtualIndex);
+          if (typeof avancarParaProximoTeste === 'function') {
+            console.log('✅ avancarParaProximoTeste existe, chamando...');
+            avancarParaProximoTeste();
+          } else {
+            console.log('❌ avancarParaProximoTeste NÃO EXISTE!');
+            // Fallback: tenta window.
+            if (typeof window.avancarParaProximoTeste === 'function') {
+              console.log('✅ window.avancarParaProximoTeste existe, chamando...');
+              window.avancarParaProximoTeste();
+            }
+          }
+        };
+        target.appendChild(btn);
+      }
+    }, 2000);
 }
 
 // ===== ANÁLISE CLÍNICA POR FAIXA =====
@@ -398,10 +442,11 @@ function gerarAnaliseDividida(taxaVisual, taxaAuditiva, geral, tempoMedio) {
 
     console.log('\n🏥 INDICADORES CLÍNICOS:');
     
-    // Análise por sextante
-    console.log('\n📍 DISTRIBUIÇÃO VISUAL POR SEXTANTE:');
-    console.log('   Alvos:   S1=' + sextantesDividida.S1 + ' S2=' + sextantesDividida.S2 + ' S3=' + sextantesDividida.S3 + ' | S4=' + sextantesDividida.S4 + ' S5=' + sextantesDividida.S5 + ' S6=' + sextantesDividida.S6);
-    console.log('   Acertos: S1=' + acertosPorSextanteDividida.S1 + ' S2=' + acertosPorSextanteDividida.S2 + ' S3=' + acertosPorSextanteDividida.S3 + ' | S4=' + acertosPorSextanteDividida.S4 + ' S5=' + acertosPorSextanteDividida.S5 + ' S6=' + acertosPorSextanteDividida.S6);
+    // Análise por quadrante (3x3 = 9 zonas)
+    console.log('\n📍 DISTRIBUIÇÃO VISUAL POR QUADRANTE (3x3):');
+    console.log('   Alvos:    Q1=' + sextantesDividida.Q1 + ' Q2=' + sextantesDividida.Q2 + ' Q3=' + sextantesDividida.Q3 + ' | Q4=' + sextantesDividida.Q4 + ' Q5=' + sextantesDividida.Q5 + ' Q6=' + sextantesDividida.Q6 + ' | Q7=' + sextantesDividida.Q7 + ' Q8=' + sextantesDividida.Q8 + ' Q9=' + sextantesDividida.Q9);
+    console.log('   Acertos:  Q1=' + acertosPorSextanteDividida.Q1 + ' Q2=' + acertosPorSextanteDividida.Q2 + ' Q3=' + acertosPorSextanteDividida.Q3 + ' | Q4=' + acertosPorSextanteDividida.Q4 + ' Q5=' + acertosPorSextanteDividida.Q5 + ' Q6=' + acertosPorSextanteDividida.Q6 + ' | Q7=' + acertosPorSextanteDividida.Q7 + ' Q8=' + acertosPorSextanteDividida.Q8 + ' Q9=' + acertosPorSextanteDividida.Q9);
+    console.log('   Omissões: Q1=' + omissoesPorSextanteDividida.Q1 + ' Q2=' + omissoesPorSextanteDividida.Q2 + ' Q3=' + omissoesPorSextanteDividida.Q3 + ' | Q4=' + omissoesPorSextanteDividida.Q4 + ' Q5=' + omissoesPorSextanteDividida.Q5 + ' Q6=' + omissoesPorSextanteDividida.Q6 + ' | Q7=' + omissoesPorSextanteDividida.Q7 + ' Q8=' + omissoesPorSextanteDividida.Q8 + ' Q9=' + omissoesPorSextanteDividida.Q9);
 
     if (geral < 50 && diferenca > 20) console.log('📋 Déficit de processamento dual com assimetria intermodal significativa');
     else if (geral < 60) console.log('📋 Possível sobrecarga do executivo central (Baddeley, 1986)');
@@ -410,13 +455,14 @@ function gerarAnaliseDividida(taxaVisual, taxaAuditiva, geral, tempoMedio) {
 
 // ===== PARABÉNS (sem resultados) =====
 function mostrarParabensDividida() {
+    // Sai do F11 no parabéns
+    if (typeof desativarFullscreenNavegador === 'function') desativarFullscreenNavegador();
     var quadro = document.getElementById('quadroDividida');
     var telaParabens = document.createElement('div');
     telaParabens.className = 'parabens-dividida';
-    telaParabens.innerHTML = '<div style="font-size:48px;margin-bottom:20px;">🎉</div><h2 style="margin:0 0 15px 0;font-size:28px;">Parabéns!</h2><p style="font-size:18px;margin:15px 0;">Você completou o teste!</p><p style="font-size:16px;margin:15px 0;opacity:0.9;">Agora vamos para o próximo desafio!</p><div style="font-size:32px;margin-top:20px;">🤹 ➡️ 🔄</div>';
+    telaParabens.innerHTML = '<div style="font-size:48px;margin-bottom:20px;">🎉</div><h2 style="margin:0 0 15px 0;font-size:28px;">Parabéns!</h2><p style="font-size:18px;margin:15px 0;">Você completou o teste!</p>';
     quadro.innerHTML = '';
     quadro.appendChild(telaParabens);
-    setTimeout(function() { if (quadro.contains(telaParabens)) quadro.removeChild(telaParabens); }, 4000);
 }
 
 // ===== GERA SEQUÊNCIA COM ESPAÇAMENTO MÍNIMO =====

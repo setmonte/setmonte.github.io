@@ -1,5 +1,7 @@
 // ===== FUNÇÃO DE INSTRUÇÕES =====
 function mostrarInstrucoesSeletiva() {
+  // Entra em F11 quando as instruções aparecem
+  if (typeof ativarFullscreenNavegador === 'function') ativarFullscreenNavegador();
   return new Promise(resolve => {
     const telaInstrucoes = document.createElement('div');
     telaInstrucoes.style.cssText = `
@@ -93,6 +95,9 @@ async function startTesteSeletiva() {
   
   const quadro = document.getElementById("quadroSeletiva");
   
+  // Ativa modo tela inteira (CSS + F11) para medir lateralidade do campo visual
+  ativarFullscreenTeste('quadroSeletiva');
+  
   // Criar elemento animal se não existir
   let img = document.getElementById('animal');
   if (!img) {
@@ -107,7 +112,7 @@ async function startTesteSeletiva() {
 
   
   const contagemDiv = document.createElement('div');
-  contagemDiv.style.cssText = 'display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%; height: 400px; font-size: 96px; font-weight: bold; color: #2c3e50;';
+  contagemDiv.style.cssText = 'display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%; height: 100%; font-size: 96px; font-weight: bold; color: #2c3e50;';
   
   const numeroDiv = document.createElement('div');
   numeroDiv.textContent = '5';
@@ -145,7 +150,7 @@ async function startTesteSeletiva() {
         contagemDiv.remove();
         
         const fraseDiv = document.createElement('div');
-        fraseDiv.style.cssText = 'display: flex; justify-content: center; align-items: center; width: 100%; height: 400px; font-size: 64px; font-weight: bold; color: #f1c40f; text-shadow: 3px 3px 6px rgba(0,0,0,0.6); font-family: "Comic Sans MS", cursive, sans-serif; animation: pulse 1s infinite;';
+        fraseDiv.style.cssText = 'display: flex; justify-content: center; align-items: center; width: 100%; height: 100%; font-size: 64px; font-weight: bold; color: #f1c40f; text-shadow: 3px 3px 6px rgba(0,0,0,0.6); font-family: "Comic Sans MS", cursive, sans-serif; animation: pulse 1s infinite;';
         fraseDiv.innerHTML = '🦁 Olhe os leões! 🦁';
         
         const style = document.createElement('style');
@@ -239,13 +244,17 @@ function showNextAnimal(forceCall = false) {
   img.style.left = `${posX}px`;
   img.style.top = `${posY}px`;
   
-  // Determina sextante (quadro real, 3 colunas x 2 linhas)
+  // Determina quadrante (3 colunas x 3 linhas = 9 zonas)
+  // Padrão varredura ocidental: Q1-Q9, esquerda→direita, cima→baixo
   const terco = quadroWidth / 3;
-  const metade = quadroHeight / 2;
+  const tercoV = quadroHeight / 3;
   let col = posX < terco ? 0 : posX < terco * 2 ? 1 : 2;
-  let lin = posY < metade ? 0 : 1;
-  const sextantes = [['S1','S2','S3'],['S4','S5','S6']];
-  quadranteAtualSeletiva = sextantes[lin][col];
+  let lin = posY < tercoV ? 0 : posY < tercoV * 2 ? 1 : 2;
+  const quadrantes = [['Q1','Q2','Q3'],['Q4','Q5','Q6'],['Q7','Q8','Q9']];
+  
+  // Guarda quadrante anterior antes de atualizar (para registrar omissão no quadrante correto)
+  var sextanteAnterior = quadranteAtualSeletiva;
+  quadranteAtualSeletiva = quadrantes[lin][col];
   
   if (currentAnimal === "leao") quadrantesSeletiva[quadranteAtualSeletiva]++;
   
@@ -254,7 +263,8 @@ function showNextAnimal(forceCall = false) {
   // Detecta omissão: se o animal anterior era leão e não houve resposta dentro do tempo de exposição
   if (!firstCall && previousAnimal === "leao" && !respondeuAnimalAnterior) {
     omissoesSeletiva++;
-    console.log(`⏰ OMISSÃO: Leão não respondido no tempo de exposição (${CONFIG_SELETIVA.intervaloAnimal}ms). Total: ${omissoesSeletiva}`);
+    if (sextanteAnterior) omissoesPorSextanteSeletiva[sextanteAnterior]++;
+    console.log(`⏰ OMISSÃO: Leão não respondido (${sextanteAnterior}). Total: ${omissoesSeletiva}`);
   }
   
   previousAnimal = currentAnimal;
@@ -292,6 +302,9 @@ function checkResponse(event) {
 function endTesteSeletiva(abandonado = false) {
   if (window.touchControls) window.touchControls.limpar();
   console.log(`🎯 ENDTEST SELETIVA CHAMADO!`);
+  
+  // Remove modo tela inteira
+  desativarFullscreenTeste('quadroSeletiva');
   
   if (testeJaFinalizado) {
     console.log(`⚠️ SELETIVA: endTest já foi chamado, ignorando...`);
@@ -337,7 +350,8 @@ function endTesteSeletiva(abandonado = false) {
   // Verifica omissão do último animal antes de encerrar
   if (previousAnimal === "leao" && !respondeuAnimalAnterior) {
     omissoesSeletiva++;
-    console.log(`⏰ OMISSÃO FINAL: Último leão não respondido. Total: ${omissoesSeletiva}`);
+    if (quadranteAtualSeletiva) omissoesPorSextanteSeletiva[quadranteAtualSeletiva]++;
+    console.log(`⏰ OMISSÃO FINAL: Último leão não respondido (${quadranteAtualSeletiva}). Total: ${omissoesSeletiva}`);
   }
   
   // Validação: omissões não pode ser maior que totalLeoes - acertos
@@ -366,6 +380,7 @@ function endTesteSeletiva(abandonado = false) {
     duracaoTeste: duracaoReal,
     quadrantesLeoes: {...quadrantesSeletiva},
     acertosPorQuadrante: {...acertosPorQuadranteSeletiva},
+    omissoesPorSextante: {...omissoesPorSextanteSeletiva},
     faixaEtaria: CONFIG_SELETIVA ? CONFIG_SELETIVA.faixa : 'adulto',
     intervaloAnimal: CONFIG_SELETIVA ? CONFIG_SELETIVA.intervaloAnimal : 1000,
     abandonado: abandonado,
@@ -380,9 +395,20 @@ function endTesteSeletiva(abandonado = false) {
   
   mostrarTelaParabens();
   
+  // Botão "Próximo Teste" ou "Finalizar" após 2s dentro do parabéns
   setTimeout(() => {
-    criarBotaoProximoTeste('testeSeletiva', 'testeDividida');
-  }, 4000);
+    var telaP = document.getElementById('telaParabens');
+    if (telaP) {
+      var btn = document.createElement('button');
+      btn.className = 'botao-iniciar';
+      btn.textContent = (window.filaTestes && window.testeAtualIndex < window.filaTestes.length - 1) ? 'Próximo Teste' : 'Finalizar';
+      btn.style.cssText = 'margin:20px auto;display:block;';
+      btn.onclick = function() {
+        if (typeof avancarParaProximoTeste === 'function') avancarParaProximoTeste();
+      };
+      telaP.appendChild(btn);
+    }
+  }, 2000);
 }
 
 function gerarAnaliseCognitivaSeletiva() {
@@ -446,19 +472,31 @@ function gerarAnaliseCognitivaSeletiva() {
   
   console.log(`\n🏥 INDICADORES CLÍNICOS:`);
   
-  // Análise por quadrante
-  console.log(`\n📍 DISTRIBUIÇÃO POR SEXTANTE:`);
-  console.log(`   Leões:   S1=${quadrantesSeletiva.S1} S2=${quadrantesSeletiva.S2} S3=${quadrantesSeletiva.S3} | S4=${quadrantesSeletiva.S4} S5=${quadrantesSeletiva.S5} S6=${quadrantesSeletiva.S6}`);
-  console.log(`   Acertos: S1=${acertosPorQuadranteSeletiva.S1} S2=${acertosPorQuadranteSeletiva.S2} S3=${acertosPorQuadranteSeletiva.S3} | S4=${acertosPorQuadranteSeletiva.S4} S5=${acertosPorQuadranteSeletiva.S5} S6=${acertosPorQuadranteSeletiva.S6}`);
+  // Análise por quadrante (3x3 = 9 zonas)
+  console.log(`\n📍 DISTRIBUIÇÃO POR QUADRANTE (3x3):`);
+  console.log(`   Alvos:    Q1=${quadrantesSeletiva.Q1} Q2=${quadrantesSeletiva.Q2} Q3=${quadrantesSeletiva.Q3} | Q4=${quadrantesSeletiva.Q4} Q5=${quadrantesSeletiva.Q5} Q6=${quadrantesSeletiva.Q6} | Q7=${quadrantesSeletiva.Q7} Q8=${quadrantesSeletiva.Q8} Q9=${quadrantesSeletiva.Q9}`);
+  console.log(`   Acertos:  Q1=${acertosPorQuadranteSeletiva.Q1} Q2=${acertosPorQuadranteSeletiva.Q2} Q3=${acertosPorQuadranteSeletiva.Q3} | Q4=${acertosPorQuadranteSeletiva.Q4} Q5=${acertosPorQuadranteSeletiva.Q5} Q6=${acertosPorQuadranteSeletiva.Q6} | Q7=${acertosPorQuadranteSeletiva.Q7} Q8=${acertosPorQuadranteSeletiva.Q8} Q9=${acertosPorQuadranteSeletiva.Q9}`);
+  console.log(`   Omissões: Q1=${omissoesPorSextanteSeletiva.Q1} Q2=${omissoesPorSextanteSeletiva.Q2} Q3=${omissoesPorSextanteSeletiva.Q3} | Q4=${omissoesPorSextanteSeletiva.Q4} Q5=${omissoesPorSextanteSeletiva.Q5} Q6=${omissoesPorSextanteSeletiva.Q6} | Q7=${omissoesPorSextanteSeletiva.Q7} Q8=${omissoesPorSextanteSeletiva.Q8} Q9=${omissoesPorSextanteSeletiva.Q9}`);
   
-  // Detecta negligência espacial
-  const sextantes = ['S1','S2','S3','S4','S5','S6'];
-  const taxasSextante = sextantes.map(s => quadrantesSeletiva[s] > 0 ? (acertosPorQuadranteSeletiva[s] / quadrantesSeletiva[s]) * 100 : -1).filter(t => t >= 0);
-  if (taxasSextante.length >= 2) {
-    const maxS = Math.max(...taxasSextante);
-    const minS = Math.min(...taxasSextante);
-    if (maxS - minS > 30) {
-      console.log(`   ⚠️ Assimetria espacial detectada (diferença ${(maxS-minS).toFixed(0)}%) - investigar negligência`);
+  // Detecta negligência espacial (hemisférica e vertical)
+  const quadrantesArr = ['Q1','Q2','Q3','Q4','Q5','Q6','Q7','Q8','Q9'];
+  const taxasQuadrante = quadrantesArr.map(q => quadrantesSeletiva[q] > 0 ? (acertosPorQuadranteSeletiva[q] / quadrantesSeletiva[q]) * 100 : -1).filter(t => t >= 0);
+  // Análise hemisférica (esquerda vs direita)
+  const alvosEsq = quadrantesSeletiva.Q1 + quadrantesSeletiva.Q4 + quadrantesSeletiva.Q7;
+  const alvosDir = quadrantesSeletiva.Q3 + quadrantesSeletiva.Q6 + quadrantesSeletiva.Q9;
+  const acertosEsq = acertosPorQuadranteSeletiva.Q1 + acertosPorQuadranteSeletiva.Q4 + acertosPorQuadranteSeletiva.Q7;
+  const acertosDir = acertosPorQuadranteSeletiva.Q3 + acertosPorQuadranteSeletiva.Q6 + acertosPorQuadranteSeletiva.Q9;
+  const taxaEsq = alvosEsq > 0 ? (acertosEsq / alvosEsq) * 100 : 0;
+  const taxaDir = alvosDir > 0 ? (acertosDir / alvosDir) * 100 : 0;
+  console.log(`   Hemisfério: Esq=${taxaEsq.toFixed(0)}% | Dir=${taxaDir.toFixed(0)}%`);
+  if (Math.abs(taxaEsq - taxaDir) > 25) {
+    console.log(`   ⚠️ Assimetria hemisférica detectada (${Math.abs(taxaEsq-taxaDir).toFixed(0)}%) - investigar negligência unilateral`);
+  }
+  if (taxasQuadrante.length >= 2) {
+    const maxQ = Math.max(...taxasQuadrante);
+    const minQ = Math.min(...taxasQuadrante);
+    if (maxQ - minQ > 30) {
+      console.log(`   ⚠️ Assimetria espacial detectada (diferença ${(maxQ-minQ).toFixed(0)}%) - investigar negligência`);
     } else {
       console.log(`   ✅ Distribuição espacial equilibrada`);
     }
@@ -486,6 +524,8 @@ function calcularDesvioPadraoSeletiva(array) {
 
 function mostrarTelaParabens() {
   console.log("Exibindo tela de parabéns...");
+  // Sai do F11 no parabéns
+  if (typeof desativarFullscreenNavegador === 'function') desativarFullscreenNavegador();
 
   const telaParabens = document.getElementById('telaParabens') || document.createElement('div');
   telaParabens.id = 'telaParabens';
@@ -506,17 +546,6 @@ function mostrarTelaParabens() {
     telaParabens.style.transition = 'opacity 0.5s ease';
     telaParabens.style.opacity = '1';
   }, 100);
-  
-  // Remove após 4 segundos
-  setTimeout(() => {
-        const quadroSeletivaEl = document.getElementById('quadroSeletiva');
-        if (quadroSeletivaEl && quadroSeletivaEl.contains(telaParabens)) {
-            quadroSeletivaEl.removeChild(telaParabens);
-        }
-       
-        mostrarBotoesNavegacao();
-        
-    }, 4000);
 }
 // Função para parar teste seletiva
 function pararTesteSeletiva() {

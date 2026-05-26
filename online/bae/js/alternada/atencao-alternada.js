@@ -160,6 +160,8 @@ function gerarSequenciaLimpa() {
 
 // ===== INSTRUÇÕES DO TESTE =====
 function mostrarInstrucoesAlternada(callback) {
+  // Entra em F11 quando as instruções aparecem
+  if (typeof ativarFullscreenNavegador === 'function') ativarFullscreenNavegador();
   const quadro = document.getElementById('quadroAlternado');
   if (!quadro) {
     callback();
@@ -516,7 +518,7 @@ function exibirPar() {
 
 // ===== CRIAÇÃO DE FIGURAS SVG REFINADAS =====
 function criarFiguraSVG(forma, cor) {
-  const tamanho = 110;  // Tamanho aumentado para melhor impacto visual
+  const tamanho = 200;  // Tamanho intermediário
   let path = '';        // Caminho SVG da forma
   let gradientId = `gradient-${forma}-${cor}-${Math.random().toString(36).substr(2, 9)}`;
   
@@ -564,6 +566,7 @@ function criarFiguraSVG(forma, cor) {
 function finalizarTesteAlternada() {
   if (window.touchControls) window.touchControls.limpar();
   testeAtivoAlternada = false;
+  
   document.removeEventListener('keydown', processarTecla, { capture: true });
   document.removeEventListener('keydown', processarTecla, true);
   window.removeEventListener('keydown', processarTecla, true);
@@ -702,12 +705,17 @@ function finalizarTesteAlternada() {
   
   console.log(mensagemParabens);
   
+  // Sai do F11 no parabéns
+  if (typeof desativarFullscreenNavegador === 'function') desativarFullscreenNavegador();
+  
   // TELA DE PARABÉNS ELEGANTE
   const quadro = document.getElementById('quadroAlternado');
   quadro.style.transition = 'all 0.5s ease-in-out';
   quadro.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
   quadro.style.borderRadius = '15px';
   quadro.style.boxShadow = '0 10px 30px rgba(0,0,0,0.3)';
+  quadro.style.flexDirection = 'column';
+  quadro.style.gap = '0';
   
   quadro.innerHTML = `
     <div style="
@@ -715,13 +723,13 @@ function finalizarTesteAlternada() {
       text-align: center; 
       padding: 10px;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      height: 100%;
       display: flex;
       flex-direction: column;
       justify-content: center;
+      align-items: center;
     ">
-      <div style="font-size: 24px; margin-bottom: 8px;">🎉 Parabéns!</div>
-      <div style="font-size: 14px;">Você completou o teste!</div>
+      <div style="font-size: 36px; margin-bottom: 15px;">🎉 Parabéns!</div>
+      <div style="font-size: 18px;">Você completou o teste!</div>
     </div>
   `;
   
@@ -746,8 +754,20 @@ function finalizarTesteAlternada() {
   
   salvarResultadosAlternada();
   
-  // Cria botão próximo teste para sustentada
-  criarBotaoProximoTeste('paginaTesteAlternado', 'testeSustentada');
+  // Botão "Próximo Teste" ou "Finalizar" após 2s
+  setTimeout(function() {
+    var quadro = document.getElementById('quadroAlternado');
+    if (quadro) {
+      var btn = document.createElement('button');
+      btn.className = 'botao-iniciar';
+      btn.textContent = (window.filaTestes && window.testeAtualIndex < window.filaTestes.length - 1) ? 'Próximo Teste' : 'Finalizar';
+      btn.style.cssText = 'margin:20px auto;display:block;';
+      btn.onclick = function() {
+        if (typeof avancarParaProximoTeste === 'function') avancarParaProximoTeste();
+      };
+      quadro.appendChild(btn);
+    }
+  }, 2000);
 }
 
 // ===== SALVAR RESULTADOS COM FAIXA =====

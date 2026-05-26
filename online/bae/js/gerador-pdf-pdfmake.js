@@ -222,7 +222,7 @@ async function gerarRelatorioPDF() {
         const hora = String(agora.getHours()).padStart(2, '0');
         const minuto = String(agora.getMinutes()).padStart(2, '0');
         
-        const nomeArquivo = `BAE2.3_${(paciente.nome || 'PACIENTE').replace(/\\s+/g, '_').toUpperCase()}_${ano}${mes}${dia}${hora}${minuto}.pdf`;
+        const nomeArquivo = `BAE2.4_${(paciente.nome || 'PACIENTE').replace(/\\s+/g, '_').toUpperCase()}_${ano}${mes}${dia}${hora}${minuto}.pdf`;
     
     // Tenta gerar laudo com IA (com aviso visual)
     var laudoIA = null;
@@ -290,7 +290,7 @@ async function gerarRelatorioPDF() {
                 margin: [0, 0, 0, 5]
             },
             {
-                text: 'Bateria de Atenção Eletrônica (BAE 2.3) - Sistema SΨM',
+                text: 'Bateria de Atenção Eletrônica (BAE 2.4) - Sistema SΨM',
                 style: 'subheader',
                 alignment: 'center',
                 margin: [0, 0, 0, 10]
@@ -340,7 +340,7 @@ async function gerarRelatorioPDF() {
                 style: 'sectionHeader'
             },
             {
-                text: 'A Bateria de Atenção Eletrônica (BAE 2.3) é um instrumento neuropsicológico que avalia diferentes domínios atencionais através de cinco testes:',
+                text: 'A Bateria de Atenção Eletrônica (BAE 2.4) é um instrumento neuropsicológico que avalia diferentes domínios atencionais através de cinco testes:',
                 margin: [0, 0, 0, 5]
             },
             {
@@ -356,7 +356,7 @@ async function gerarRelatorioPDF() {
             
             // Resultados
             {
-                text: 'RESULTADOS - PROTOCOLO BAE 2.3',
+                text: 'RESULTADOS - PROTOCOLO BAE 2.4',
                 style: 'sectionHeader'
             },
             {
@@ -670,7 +670,7 @@ async function gerarRelatorioPDF() {
         footer: function(currentPage, pageCount) {
             const id = window._idTeste || '';
             return {
-                text: `${id} | Relatório BAE 2.3 - Página ${currentPage} de ${pageCount}`,
+                text: `${id} | Relatório BAE 2.4 - Página ${currentPage} de ${pageCount}`,
                 alignment: 'center',
                 fontSize: 8,
                 color: '#666666'
@@ -738,6 +738,9 @@ async function gerarRelatorioPDF() {
         );
     }
     
+    // Registra no histórico para exportação Excel
+    if (typeof registrarPacienteHistorico === 'function') registrarPacienteHistorico();
+    
     // Gera e salva o PDF
     var pdfDoc = pdfMake.createPdf(docDefinition);
     
@@ -796,14 +799,14 @@ function gerarPDFEmergencia() {
     }
     
     const agora = new Date();
-    const nomeArquivo = `BAE2.3_${(paciente.nome || 'PACIENTE').replace(/\s+/g, '_').toUpperCase()}_${agora.getFullYear()}${String(agora.getMonth() + 1).padStart(2, '0')}${String(agora.getDate()).padStart(2, '0')}${String(agora.getHours()).padStart(2, '0')}${String(agora.getMinutes()).padStart(2, '0')}.pdf`;
+    const nomeArquivo = `BAE2.4_${(paciente.nome || 'PACIENTE').replace(/\s+/g, '_').toUpperCase()}_${agora.getFullYear()}${String(agora.getMonth() + 1).padStart(2, '0')}${String(agora.getDate()).padStart(2, '0')}${String(agora.getHours()).padStart(2, '0')}${String(agora.getMinutes()).padStart(2, '0')}.pdf`;
     
     const docDefinition = {
         pageSize: 'A4',
         pageMargins: [40, 60, 40, 60],
         content: [
             { text: 'LAUDO NEUROPSICOLÓGICO', fontSize: 18, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-            { text: 'Bateria de Atenção Eletrônica (BAE 2.3)', fontSize: 12, alignment: 'center', margin: [0, 0, 0, 20] },
+            { text: 'Bateria de Atenção Eletrônica (BAE 2.4)', fontSize: 12, alignment: 'center', margin: [0, 0, 0, 20] },
             { text: 'DADOS DO PACIENTE', fontSize: 14, bold: true, margin: [0, 15, 0, 10] },
             { text: `Nome: ${paciente.nome || 'Não informado'}`, margin: [0, 5, 0, 5] },
             { text: `Data: ${new Date().toLocaleDateString('pt-BR')}`, margin: [0, 5, 0, 20] },
@@ -839,4 +842,4 @@ window.salvarResultadoTeste = salvarResultadoTeste;
 window.gerarRelatorioPDF = gerarRelatorioPDF;
 window.gerarPDFEmergencia = gerarPDFEmergencia;
 
-console.log('✅ Sistema de PDF BAE 2.3 com pdfmake carregado!');
+console.log('✅ Sistema de PDF BAE 2.4 com pdfmake carregado!');

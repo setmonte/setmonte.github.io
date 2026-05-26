@@ -113,6 +113,8 @@ function drawLinesConc(trial) {
 }
 
 function showInstructionsConc() {
+  // Entra em F11 quando as instruções aparecem
+  if (typeof ativarFullscreenNavegador === 'function') ativarFullscreenNavegador();
   clearScreenConc();
   ctxConc.fillStyle = 'black';
   ctxConc.textAlign = 'center';
@@ -292,9 +294,18 @@ function endTesteConcentrada(abandonado = false) {
 
   mostrarTelaParabensConc();
 
+  // Botão "Próximo Teste" ou "Finalizar" após 2s
   setTimeout(() => {
-    criarBotaoProximoTeste('testeConcentrada', 'testeSeletiva');
-  }, 4000);
+    var container = document.getElementById('testeConcentrada');
+    var btn = document.createElement('button');
+    btn.className = 'botao-iniciar';
+    btn.textContent = (window.filaTestes && window.testeAtualIndex < window.filaTestes.length - 1) ? 'Próximo Teste' : 'Finalizar';
+    btn.style.cssText = 'margin:20px auto;display:block;';
+    btn.onclick = function() {
+      if (typeof avancarParaProximoTeste === 'function') avancarParaProximoTeste();
+    };
+    container.appendChild(btn);
+  }, 2000);
 }
 
 function gerarAnaliseCognitivaConcentrada(accuracy, meanRT, variabilityRT) {
@@ -343,6 +354,8 @@ function pararTesteConcentrada() {
 }
 
 function mostrarTelaParabensConc() {
+  // Sai do F11 no parabéns
+  if (typeof desativarFullscreenNavegador === 'function') desativarFullscreenNavegador();
   clearScreenConc();
   ctxConc.fillStyle = 'black';
   ctxConc.font = 'bold 32px Arial';

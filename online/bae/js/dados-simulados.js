@@ -53,8 +53,9 @@ function gerarDadosSimulados() {
         duracaoTeste: 268,
         faixaEtaria: 'adulto',
         intervaloAnimal: 1000,
-        quadrantesLeoes: {S1: 5, S2: 6, S3: 5, S4: 5, S5: 5, S6: 5},
-        acertosPorQuadrante: {S1: 5, S2: 5, S3: 4, S4: 5, S5: 4, S6: 5},
+        quadrantesLeoes: {Q1: 4, Q2: 3, Q3: 4, Q4: 3, Q5: 4, Q6: 3, Q7: 3, Q8: 4, Q9: 3},
+        acertosPorQuadrante: {Q1: 4, Q2: 3, Q3: 3, Q4: 3, Q5: 4, Q6: 3, Q7: 3, Q8: 3, Q9: 2},
+        omissoesPorSextante: {Q1: 0, Q2: 0, Q3: 1, Q4: 0, Q5: 0, Q6: 0, Q7: 0, Q8: 1, Q9: 1},
         abandonado: false,
         statusTeste: 'CONCLUÍDO'
     };
@@ -73,8 +74,9 @@ function gerarDadosSimulados() {
         duracaoTeste: 298,
         faixaEtaria: 'adulto',
         intervaloEstimulo: 2000,
-        sextantesDividida: {S1: 3, S2: 2, S3: 3, S4: 2, S5: 3, S6: 2},
-        acertosPorSextante: {S1: 2, S2: 2, S3: 3, S4: 2, S5: 2, S6: 1},
+        sextantesDividida: {Q1: 2, Q2: 2, Q3: 1, Q4: 2, Q5: 1, Q6: 2, Q7: 1, Q8: 2, Q9: 2},
+        acertosPorSextante: {Q1: 2, Q2: 2, Q3: 1, Q4: 2, Q5: 1, Q6: 1, Q7: 1, Q8: 1, Q9: 1},
+        omissoesPorSextante: {Q1: 0, Q2: 0, Q3: 0, Q4: 0, Q5: 0, Q6: 1, Q7: 0, Q8: 1, Q9: 1},
         abandonado: false,
         statusTeste: 'CONCLUÍDO'
     };
@@ -112,12 +114,15 @@ function gerarDadosSimulados() {
         impulsividade: 7,
         faixaEtaria: 'adulto',
         sextantes: {
-            S1: {acertos: 15, omissoes: 2, negligencias: 1, alvos: 17},
-            S2: {acertos: 14, omissoes: 2, negligencias: 0, alvos: 16},
-            S3: {acertos: 14, omissoes: 2, negligencias: 1, alvos: 16},
-            S4: {acertos: 14, omissoes: 2, negligencias: 0, alvos: 16},
-            S5: {acertos: 14, omissoes: 2, negligencias: 1, alvos: 16},
-            S6: {acertos: 14, omissoes: 2, negligencias: 0, alvos: 16}
+            Q1: {acertos: 10, omissoes: 1, negligencias: 0, alvos: 11},
+            Q2: {acertos: 9, omissoes: 1, negligencias: 1, alvos: 11},
+            Q3: {acertos: 10, omissoes: 1, negligencias: 0, alvos: 11},
+            Q4: {acertos: 9, omissoes: 2, negligencias: 0, alvos: 11},
+            Q5: {acertos: 10, omissoes: 1, negligencias: 0, alvos: 11},
+            Q6: {acertos: 9, omissoes: 2, negligencias: 1, alvos: 11},
+            Q7: {acertos: 10, omissoes: 1, negligencias: 0, alvos: 10},
+            Q8: {acertos: 9, omissoes: 2, negligencias: 0, alvos: 10},
+            Q9: {acertos: 9, omissoes: 1, negligencias: 1, alvos: 10}
         },
         abandonado: false,
         statusTeste: 'CONCLUÍDO'

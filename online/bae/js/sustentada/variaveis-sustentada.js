@@ -42,17 +42,21 @@ var respostasOpositorias = 0;
 // Sarter et al. (2001), Riccio & Reynolds (2001)
 var registroAlvosPorTempo = []; // {tempoRelativo, acertou, rt}
 
-// ===== CONTROLE DE SEXTANTES =====
+// ===== CONTROLE DE QUADRANTES (3x3 = 9 zonas) =====
+// Padrão de varredura ocidental: esquerda→direita, cima→baixo (Q1-Q9)
 let sextantesUsados = [];
-let contadorSextantes = { S1: 0, S2: 0, S3: 0, S4: 0, S5: 0, S6: 0 };
-let posicoesUsadas = { S1: [], S2: [], S3: [], S4: [], S5: [], S6: [] };
+let contadorSextantes = { Q1: 0, Q2: 0, Q3: 0, Q4: 0, Q5: 0, Q6: 0, Q7: 0, Q8: 0, Q9: 0 };
+let posicoesUsadas = { Q1: [], Q2: [], Q3: [], Q4: [], Q5: [], Q6: [], Q7: [], Q8: [], Q9: [] };
 let desempenhoPorSextante = {
-    S1: { acertos: 0, omissoes: 0, negligencias: 0, alvos: 0 },
-    S2: { acertos: 0, omissoes: 0, negligencias: 0, alvos: 0 },
-    S3: { acertos: 0, omissoes: 0, negligencias: 0, alvos: 0 },
-    S4: { acertos: 0, omissoes: 0, negligencias: 0, alvos: 0 },
-    S5: { acertos: 0, omissoes: 0, negligencias: 0, alvos: 0 },
-    S6: { acertos: 0, omissoes: 0, negligencias: 0, alvos: 0 }
+    Q1: { acertos: 0, omissoes: 0, negligencias: 0, alvos: 0 },
+    Q2: { acertos: 0, omissoes: 0, negligencias: 0, alvos: 0 },
+    Q3: { acertos: 0, omissoes: 0, negligencias: 0, alvos: 0 },
+    Q4: { acertos: 0, omissoes: 0, negligencias: 0, alvos: 0 },
+    Q5: { acertos: 0, omissoes: 0, negligencias: 0, alvos: 0 },
+    Q6: { acertos: 0, omissoes: 0, negligencias: 0, alvos: 0 },
+    Q7: { acertos: 0, omissoes: 0, negligencias: 0, alvos: 0 },
+    Q8: { acertos: 0, omissoes: 0, negligencias: 0, alvos: 0 },
+    Q9: { acertos: 0, omissoes: 0, negligencias: 0, alvos: 0 }
 };
 
 // ===== SEQUÊNCIA E CONTROLE =====
@@ -113,15 +117,18 @@ function resetarContadoresSustentada() {
     sequenciaEstimulosSustentada = [];
     intervalosAleatoriosSustentada = [];
     sextantesUsados = [];
-    contadorSextantes = { S1: 0, S2: 0, S3: 0, S4: 0, S5: 0, S6: 0 };
-    posicoesUsadas = { S1: [], S2: [], S3: [], S4: [], S5: [], S6: [] };
+    contadorSextantes = { Q1: 0, Q2: 0, Q3: 0, Q4: 0, Q5: 0, Q6: 0, Q7: 0, Q8: 0, Q9: 0 };
+    posicoesUsadas = { Q1: [], Q2: [], Q3: [], Q4: [], Q5: [], Q6: [], Q7: [], Q8: [], Q9: [] };
     desempenhoPorSextante = {
-        S1: { acertos: 0, omissoes: 0, negligencias: 0, alvos: 0 },
-        S2: { acertos: 0, omissoes: 0, negligencias: 0, alvos: 0 },
-        S3: { acertos: 0, omissoes: 0, negligencias: 0, alvos: 0 },
-        S4: { acertos: 0, omissoes: 0, negligencias: 0, alvos: 0 },
-        S5: { acertos: 0, omissoes: 0, negligencias: 0, alvos: 0 },
-        S6: { acertos: 0, omissoes: 0, negligencias: 0, alvos: 0 }
+        Q1: { acertos: 0, omissoes: 0, negligencias: 0, alvos: 0 },
+        Q2: { acertos: 0, omissoes: 0, negligencias: 0, alvos: 0 },
+        Q3: { acertos: 0, omissoes: 0, negligencias: 0, alvos: 0 },
+        Q4: { acertos: 0, omissoes: 0, negligencias: 0, alvos: 0 },
+        Q5: { acertos: 0, omissoes: 0, negligencias: 0, alvos: 0 },
+        Q6: { acertos: 0, omissoes: 0, negligencias: 0, alvos: 0 },
+        Q7: { acertos: 0, omissoes: 0, negligencias: 0, alvos: 0 },
+        Q8: { acertos: 0, omissoes: 0, negligencias: 0, alvos: 0 },
+        Q9: { acertos: 0, omissoes: 0, negligencias: 0, alvos: 0 }
     };
     ultimoAlvoTempo = 0;
     respostasVazioConsecutivas = 0;

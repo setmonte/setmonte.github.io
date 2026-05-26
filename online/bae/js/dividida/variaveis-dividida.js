@@ -27,8 +27,9 @@ let respostaVisualDetectada = false;
 let respostaAuditivaDetectada = false;
 let sequenciaEstimulosDividida = [];
 let CONFIG_DIVIDIDA = null;
-let sextantesDividida = { S1: 0, S2: 0, S3: 0, S4: 0, S5: 0, S6: 0 };
-let acertosPorSextanteDividida = { S1: 0, S2: 0, S3: 0, S4: 0, S5: 0, S6: 0 };
+let sextantesDividida = { Q1: 0, Q2: 0, Q3: 0, Q4: 0, Q5: 0, Q6: 0, Q7: 0, Q8: 0, Q9: 0 };
+let acertosPorSextanteDividida = { Q1: 0, Q2: 0, Q3: 0, Q4: 0, Q5: 0, Q6: 0, Q7: 0, Q8: 0, Q9: 0 };
+let omissoesPorSextanteDividida = { Q1: 0, Q2: 0, Q3: 0, Q4: 0, Q5: 0, Q6: 0, Q7: 0, Q8: 0, Q9: 0 };
 let sextanteAtualDividida = '';
 
 // ===== CONFIGURAÇÃO POR FAIXA ETÁRIA =====
@@ -91,8 +92,9 @@ function resetarContadoresDividida() {
     sequenciaEstimulosDividida = [];
     respostaVisualDetectada = false;
     respostaAuditivaDetectada = false;
-    sextantesDividida = { S1: 0, S2: 0, S3: 0, S4: 0, S5: 0, S6: 0 };
-    acertosPorSextanteDividida = { S1: 0, S2: 0, S3: 0, S4: 0, S5: 0, S6: 0 };
+    sextantesDividida = { Q1: 0, Q2: 0, Q3: 0, Q4: 0, Q5: 0, Q6: 0, Q7: 0, Q8: 0, Q9: 0 };
+    acertosPorSextanteDividida = { Q1: 0, Q2: 0, Q3: 0, Q4: 0, Q5: 0, Q6: 0, Q7: 0, Q8: 0, Q9: 0 };
+    omissoesPorSextanteDividida = { Q1: 0, Q2: 0, Q3: 0, Q4: 0, Q5: 0, Q6: 0, Q7: 0, Q8: 0, Q9: 0 };
     sextanteAtualDividida = '';
     currentEstimulo = 0;
 }

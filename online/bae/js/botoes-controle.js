@@ -3,6 +3,76 @@
 // Botão azul (⏭️): avança para próximo teste
 // Botão laranja (⏮️): volta para teste anterior
 
+// ===== FULLSCREEN API — MODO F11 PARA TESTES =====
+// Ativa fullscreen real do navegador (esconde barra de endereço, abas, tudo)
+function ativarFullscreenNavegador() {
+    var elem = document.documentElement;
+    if (elem.requestFullscreen) elem.requestFullscreen().catch(function(){});
+    else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen();
+    else if (elem.msRequestFullscreen) elem.msRequestFullscreen();
+    // Ativa auto-hide do cursor
+    ativarCursorAutoHide();
+}
+
+function desativarFullscreenNavegador() {
+    if (document.fullscreenElement || document.webkitFullscreenElement) {
+        if (document.exitFullscreen) document.exitFullscreen().catch(function(){});
+        else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+    }
+    // Desativa auto-hide do cursor
+    desativarCursorAutoHide();
+}
+
+// ===== CURSOR AUTO-HIDE (some após 2s parado) =====
+var _cursorTimer = null;
+var _cursorAtivo = false;
+
+function ativarCursorAutoHide() {
+    _cursorAtivo = true;
+    document.addEventListener('mousemove', _mostrarCursorTemporario);
+    // Esconde após 2s iniciais
+    _cursorTimer = setTimeout(function() {
+        document.body.classList.add('cursor-hidden');
+    }, 2000);
+}
+
+function desativarCursorAutoHide() {
+    _cursorAtivo = false;
+    document.removeEventListener('mousemove', _mostrarCursorTemporario);
+    if (_cursorTimer) { clearTimeout(_cursorTimer); _cursorTimer = null; }
+    document.body.classList.remove('cursor-hidden');
+}
+
+function _mostrarCursorTemporario() {
+    if (!_cursorAtivo) return;
+    document.body.classList.remove('cursor-hidden');
+    if (_cursorTimer) clearTimeout(_cursorTimer);
+    _cursorTimer = setTimeout(function() {
+        if (_cursorAtivo) document.body.classList.add('cursor-hidden');
+    }, 2000);
+}
+
+// Ativa fullscreen completo: CSS (quadro ocupa tela)
+function ativarFullscreenTeste(quadroId) {
+    var quadro = document.getElementById(quadroId);
+    if (quadro) {
+        quadro.classList.add('fullscreen-teste');
+        quadro.style.display = 'flex';
+        var containerPai = quadro.closest('.container') || quadro.parentElement;
+        if (containerPai) containerPai.classList.add('container-fullscreen');
+    }
+}
+
+// Remove fullscreen completo: CSS
+function desativarFullscreenTeste(quadroId) {
+    var quadro = document.getElementById(quadroId);
+    if (quadro) {
+        quadro.classList.remove('fullscreen-teste');
+        var containerPai = quadro.closest('.container-fullscreen') || quadro.closest('.container');
+        if (containerPai) containerPai.classList.remove('container-fullscreen');
+    }
+}
+
 // ===== HISTÓRICO DE EXECUÇÕES POR TESTE =====
 // Guarda todas as execuções (parado, bypassado, refeito) para o PDF
 window.historicoExecucoes = window.historicoExecucoes || {};
@@ -204,7 +274,9 @@ function detectarTelaAtual() {
     ];
     for (const tela of telas) {
         const el = document.getElementById(tela.id);
-        if (el && el.offsetParent !== null) return tela;
+        if (!el) continue;
+        var display = el.style.display || window.getComputedStyle(el).display;
+        if (display !== 'none') return tela;
     }
     return null;
 }
@@ -374,55 +446,26 @@ function criarBotaoProximoTeste(telaAtual, proximaTela) {
         const proximaTelaEl = document.getElementById(proximaTela);
         if (telaAtualEl) telaAtualEl.style.display = 'none';
         if (proximaTelaEl) proximaTelaEl.style.display = 'block';
-        mostrarBotoesNavegacao();
         this.remove();
+        // Esconde botões "Iniciar Teste" originais
+        var botoesOriginais = ['startConcentrada','startSeletiva','iniciarDividida','iniciarAlternado','iniciarSustentada'];
+        botoesOriginais.forEach(function(id) { var b = document.getElementById(id); if (b) b.style.display = 'none'; });
+        // Inicia o próximo teste direto (pula a tela com botão "Iniciar Teste")
+        switch(proximaTela) {
+            case 'testeConcentrada': if (typeof startTesteConcentrada === 'function') startTesteConcentrada(); break;
+            case 'testeSeletiva': if (typeof startTesteSeletiva === 'function') startTesteSeletiva(); break;
+            case 'testeDividida': if (typeof iniciarTesteDividida === 'function') iniciarTesteDividida(); break;
+            case 'paginaTesteAlternado': if (typeof iniciarTesteAlternado === 'function') iniciarTesteAlternado(); break;
+            case 'testeSustentada': if (typeof iniciarTesteSustentada === 'function') iniciarTesteSustentada(); break;
+        }
+        mostrarBotoesNavegacao();
     };
 
     document.getElementById(telaAtual).appendChild(botaoProximo);
 }
 
 // ===== CRIAÇÃO DOS BOTÕES NO DOM =====
-function criarBotoesSeNaoExistirem() {
-    if (window.dispositivoBAE && window.dispositivoBAE.isTouch) return;
-    if (!document.querySelector('.botao-parar')) {
-        const btn = document.createElement('button');
-        btn.className = 'botao-parar';
-        btn.onclick = pararTeste;
-        document.body.appendChild(btn);
-    }
-
-    if (!document.querySelector('.botao-bypassar')) {
-        const btn = document.createElement('button');
-        btn.className = 'botao-bypassar';
-        btn.onclick = bypassarTestes;
-        document.body.appendChild(btn);
-    }
-
-    if (!document.querySelector('.botao-voltar')) {
-        const btn = document.createElement('button');
-        btn.className = 'botao-voltar';
-        btn.onclick = voltarTeste;
-        document.body.appendChild(btn);
-    }
-}
-
-// ===== INICIALIZAÇÃO =====
-function inicializarBotoes() {
-    criarBotoesSeNaoExistirem();
-    setInterval(function() {
-        const botaoVoltar = document.querySelector('.botao-voltar');
-        if (botaoVoltar) {
-            const telaAtual = detectarTelaAtual();
-            const indice = telaAtual ? ordemTelas.indexOf(telaAtual.id) : -1;
-            botaoVoltar.style.display = indice > 0 ? 'block' : 'none';
-        }
-    }, 1000);
-}
-
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', inicializarBotoes);
-} else {
-    inicializarBotoes();
-}
-
+// Botões antigos removidos — sistema usa apenas botões hover (🛑⏭️⏮️📄)
+function criarBotoesSeNaoExistirem() {}
+function inicializarBotoes() {}
 console.log('✅ Sistema de botões de navegação carregado!');

@@ -182,15 +182,52 @@
 
     // Inicia a bateria
     function iniciarBateria() {
-      // Entra em tela cheia (fullscreen) para evitar distrações durante o teste
-      var el = document.documentElement;
-      if (el.requestFullscreen) el.requestFullscreen();
-      else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-      else if (el.msRequestFullscreen) el.msRequestFullscreen();
+      // Lê testes selecionados do sessionData (ou todos se não especificado)
+      window.filaTestes = sessionData.testes || ['concentrada', 'seletiva', 'dividida', 'alternada', 'sustentada'];
+      window.testeAtualIndex = 0;
+
+      // Mapa de IDs e funções
+      var mapaTelaId = {
+        concentrada: 'testeConcentrada', seletiva: 'testeSeletiva',
+        dividida: 'testeDividida', alternada: 'paginaTesteAlternado', sustentada: 'testeSustentada'
+      };
+      var mapaFuncaoInicio = {
+        concentrada: function() { if (typeof startTesteConcentrada === 'function') startTesteConcentrada(); },
+        seletiva: function() { if (typeof startTesteSeletiva === 'function') startTesteSeletiva(); },
+        dividida: function() { if (typeof iniciarTesteDividida === 'function') iniciarTesteDividida(); },
+        alternada: function() { if (typeof iniciarTesteAlternado === 'function') iniciarTesteAlternado(); },
+        sustentada: function() { if (typeof iniciarTesteSustentada === 'function') iniciarTesteSustentada(); }
+      };
 
       document.getElementById('coverPage').style.display = 'none';
-      document.getElementById('testeConcentrada').style.display = 'block';
-      mostrarBotoesFixos();
+
+      // Função para iniciar próximo teste da fila
+      window.iniciarProximoTesteDaFila = function() {
+        if (window.testeAtualIndex >= window.filaTestes.length) {
+          enviarResultados('completo').then(function() { mostrarTelaFinal(); });
+          return;
+        }
+        var teste = window.filaTestes[window.testeAtualIndex];
+        var telaId = mapaTelaId[teste];
+        var el = document.getElementById(telaId);
+        if (el) el.style.display = 'block';
+        var botoesOriginais = ['startConcentrada','startSeletiva','iniciarDividida','iniciarAlternado','iniciarSustentada'];
+        botoesOriginais.forEach(function(id) { var b = document.getElementById(id); if (b) b.style.display = 'none'; });
+        mapaFuncaoInicio[teste]();
+      };
+
+      // Função para avançar (chamada pelo parabéns de cada teste)
+      window.avancarParaProximoTeste = function() {
+        var testeAtual = window.filaTestes[window.testeAtualIndex];
+        var telaId = mapaTelaId[testeAtual];
+        var el = document.getElementById(telaId);
+        if (el) el.style.display = 'none';
+        window.testeAtualIndex++;
+        window.iniciarProximoTesteDaFila();
+      };
+
+      // Inicia o primeiro teste
+      window.iniciarProximoTesteDaFila();
     }
 
     // Desabilitar botoes de bypass/voltar para o paciente (so admin controla)
@@ -224,11 +261,12 @@
       }
     }, 2000);
 
-    // Observar quando todos os testes terminam
+    // Observar quando todos os testes selecionados terminam
     var testesObserver = setInterval(function() {
       var r = window.resultadosBAE || {};
-      var realizados = ['concentrada','seletiva','dividida','alternada','sustentada'].filter(function(t) { return r[t]; });
-      if (realizados.length >= 5) {
+      var testesEsperados = window.filaTestes || ['concentrada','seletiva','dividida','alternada','sustentada'];
+      var realizados = testesEsperados.filter(function(t) { return r[t]; });
+      if (realizados.length >= testesEsperados.length) {
         clearInterval(testesObserver);
         setTimeout(async function() {
           await enviarResultados('completo');

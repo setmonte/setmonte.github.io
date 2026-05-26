@@ -430,25 +430,19 @@
       <!-- PLANOS BAE -->
       <div id="baePlansSection" class="card hidden">
         <h2>Comprar Creditos BAE</h2>
-        <p style="margin-bottom:15px;">Escolha o plano para a Bateria de Atencao Eletronica:</p>
+        <p style="margin-bottom:15px;">Cada credito = 1 teste individual. Bateria completa (5 testes) = 5 creditos.</p>
         <div style="display:flex;gap:15px;flex-wrap:wrap;">
           <div style="flex:1;min-width:200px;border:2px solid #2e7d32;border-radius:10px;padding:20px;text-align:center;">
-            <div style="font-size:14px;color:#555;">Avulso</div>
-            <div style="font-size:36px;font-weight:bold;color:#2e7d32;">R$25</div>
-            <div style="font-size:13px;color:#777;margin-bottom:12px;">1 aplicacao</div>
-            <button onclick="comprarCreditosBae(1)" class="btn btn-green" style="padding:10px 20px;font-size:14px;">Comprar</button>
+            <div style="font-size:14px;color:#555;">2 creditos</div>
+            <div style="font-size:36px;font-weight:bold;color:#2e7d32;">R$50</div>
+            <div style="font-size:13px;color:#777;margin-bottom:12px;">R$25 por teste</div>
+            <button onclick="comprarCreditosBae(2)" class="btn btn-green" style="padding:10px 20px;font-size:14px;">Comprar</button>
           </div>
           <div style="flex:1;min-width:200px;border:2px solid #ff9800;border-radius:10px;padding:20px;text-align:center;background:#fff8e1;">
-            <div style="font-size:14px;color:#555;">Pacote 10</div>
+            <div style="font-size:14px;color:#555;">8 creditos</div>
             <div style="font-size:36px;font-weight:bold;color:#ff9800;">R$200</div>
-            <div style="font-size:13px;color:#777;margin-bottom:12px;">R$20 por aplicacao</div>
-            <button onclick="comprarCreditosBae(10)" class="btn btn-orange" style="padding:10px 20px;font-size:14px;">Comprar</button>
-          </div>
-          <div style="flex:1;min-width:200px;border:2px solid #1565c0;border-radius:10px;padding:20px;text-align:center;background:#e3f2fd;">
-            <div style="font-size:14px;color:#555;">Pacote 50</div>
-            <div style="font-size:36px;font-weight:bold;color:#1565c0;">R$750</div>
-            <div style="font-size:13px;color:#777;margin-bottom:12px;">R$15 por aplicacao</div>
-            <button onclick="comprarCreditosBae(50)" class="btn btn-blue" style="padding:10px 20px;font-size:14px;">Comprar</button>
+            <div style="font-size:13px;color:#777;margin-bottom:12px;">R$25 por teste</div>
+            <button onclick="comprarCreditosBae(8)" class="btn btn-orange" style="padding:10px 20px;font-size:14px;">Comprar</button>
           </div>
         </div>
         <p style="margin-top:15px;font-size:12px;color:#777;">Apos o pagamento, os creditos serao adicionados automaticamente a sua conta.</p>
@@ -634,6 +628,17 @@
           <label>Avaliador: <input type="text" id="baeEvaluator" placeholder="Seu nome" style="width:220px;"></label>
           <label>CRP: <input type="text" id="baeCrp" placeholder="XX/XXXXX-X" maxlength="10" style="width:120px;" oninput="maskCRP(this)"></label>
           <label>Observacoes: <input type="text" id="baeObs" placeholder="Observacoes" style="width:220px;"></label>
+        </div>
+        <div style="background:#f0f7ff;border:1px solid #90caf9;border-radius:8px;padding:12px;margin-top:12px;">
+          <p style="font-size:13px;font-weight:bold;color:#1565c0;margin-bottom:8px;">Selecione o(s) teste(s):</p>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;">
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;"><input type="checkbox" value="concentrada" class="baeChkTeste" checked> TEAC - Concentrada</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;"><input type="checkbox" value="seletiva" class="baeChkTeste" checked> TEAS - Seletiva</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;"><input type="checkbox" value="dividida" class="baeChkTeste" checked> TEAD - Dividida</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;"><input type="checkbox" value="alternada" class="baeChkTeste" checked> TEAL - Alternada</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;"><input type="checkbox" value="sustentada" class="baeChkTeste" checked> TEASU - Sustentada</label>
+          </div>
+          <p style="font-size:11px;color:#666;margin-top:6px;">Bateria completa = 5 creditos | Teste individual = 1 credito</p>
         </div>
         <button class="btn btn-green" style="margin-top:10px;" onclick="startBaeOnlineTest()">Gerar Link do Paciente</button>
         <div id="baeLinkResult" class="hidden" style="margin-top:15px;">
@@ -1388,20 +1393,37 @@
       var name = document.getElementById('baePatientName').value.trim();
       var birth = document.getElementById('baeBirthDate').value;
       if (!name || !birth) { alert('Preencha pelo menos o nome e a data de nascimento.'); return; }
+      // Coleta testes selecionados
+      var testesSelecionados = [];
+      document.querySelectorAll('.baeChkTeste:checked').forEach(function(c) { testesSelecionados.push(c.value); });
+      if (testesSelecionados.length === 0) { alert('Selecione pelo menos um teste.'); return; }
+      // Calcula créditos necessários
+      var creditosNecessarios = testesSelecionados.length;
       try {
         var isAdmin = (currentUser === 'setmonte@gmail.com');
         var sessionId = '';
         if (isAdmin) {
           sessionId = 'bae-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
         } else {
-          var resp = await fetch(API_URL + '/use-credit', {
-            method: 'POST', headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({email: currentUser, tipo: 'bae'})
-          });
-          var data = await resp.json();
-          if (data.error) { alert('Erro: ' + data.error); return; }
-          sessionId = data.sessionId;
-          document.getElementById('baeCreditsCount').textContent = data.credits;
+          // Verifica se tem créditos suficientes
+          var respCheck = await fetch(API_URL + '/credits?email=' + encodeURIComponent(currentUser));
+          var dataCheck = await respCheck.json();
+          var creditosDisponiveis = dataCheck.baeCredits || 0;
+          if (creditosDisponiveis < creditosNecessarios) {
+            alert('Creditos insuficientes. Necessario: ' + creditosNecessarios + ' | Disponivel: ' + creditosDisponiveis);
+            return;
+          }
+          // Consome créditos (1 por teste)
+          for (var i = 0; i < creditosNecessarios; i++) {
+            var resp = await fetch(API_URL + '/use-credit', {
+              method: 'POST', headers: {'Content-Type':'application/json'},
+              body: JSON.stringify({email: currentUser, tipo: 'bae'})
+            });
+            var data = await resp.json();
+            if (data.error) { alert('Erro: ' + data.error); return; }
+            sessionId = data.sessionId;
+          }
+          document.getElementById('baeCreditsCount').textContent = (creditosDisponiveis - creditosNecessarios);
         }
         var sessionData = {
           sessionId: sessionId,
@@ -1414,7 +1436,8 @@
           evaluator: document.getElementById('baeEvaluator').value,
           crp: document.getElementById('baeCrp').value,
           email: currentUser,
-          pacienteId: document.getElementById('baeSelPac').value || ''
+          pacienteId: document.getElementById('baeSelPac').value || '',
+          testes: testesSelecionados
         };
         await fetch(API_URL + '/save-result', {
           method: 'POST',
@@ -1425,6 +1448,9 @@
         generatedBaeLink = 'https://setmonte.github.io/online/teste-bae.html?d=' + encodeURIComponent(params);
         document.getElementById('baeSessionLink').textContent = generatedBaeLink;
         document.getElementById('baeLinkResult').classList.remove('hidden');
+        var nomesTestes = {concentrada:'TEAC',seletiva:'TEAS',dividida:'TEAD',alternada:'TEAL',sustentada:'TEASU'};
+        var listaStr = testesSelecionados.map(function(t){return nomesTestes[t];}).join(', ');
+        document.querySelector('#baeLinkResult p:last-child').textContent = 'Testes: ' + listaStr + ' (' + creditosNecessarios + ' credito' + (creditosNecessarios>1?'s':'') + ')';
       } catch(e) { alert('Erro: ' + e.message); }
     }
 

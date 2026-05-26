@@ -309,12 +309,12 @@ input:focus, select:focus, textarea:focus {
 }
 
 #quadroSeletiva {
-  width: 20cm;
-  height: 15cm;
+  width: 100%;
+  height: 100%;
   background-color: black;
-  border: 3px solid #ccc;
-  border-radius: 8px;
-  margin: 0 auto;
+  border: none;
+  border-radius: 0;
+  margin: 0;
   position: relative;
   z-index: 1;
   display: block;
@@ -357,7 +357,7 @@ margin: 0 10px;
     justify-content: center;
     align-items: center;
     width: 100%;
-    height: 500px;
+    height: 100%;
     padding: 40px;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     border-radius: 15px;
@@ -512,17 +512,17 @@ margin: 0 10px;
     color: white;
     box-shadow: 0 10px 30px rgba(0,0,0,0.3);
 }
-/* Quadro principal do teste dividida - 20x15cm preto centralizado */
+/* Quadro principal do teste dividida - fullscreen quando ativo */
 #quadroDividida {
-    width: 20cm;                  /* Largura fixa de 20cm */
-    height: 15cm;                 /* Altura fixa de 15cm */
-    background-color: black;      /* Fundo preto para contraste */
-    border: 3px solid #ccc;       /* Borda cinza clara */
-    border-radius: 8px;           /* Bordas arredondadas */
-    margin: 20px auto;            /* Centraliza horizontalmente */
-    position: relative;           /* Permite filhos com position absolute */
-    z-index: 1;                   /* Camada base */
-    display: inline-block;        /* Permite centralização por text-align */
+    width: 100%;
+    height: 100%;
+    background-color: black;
+    border: none;
+    border-radius: 0;
+    margin: 0;
+    position: relative;
+    z-index: 1;
+    display: block;
 }
 
 /* Container das figuras que aparecem no teste */
@@ -562,71 +562,41 @@ margin: 0 10px;
 
 /*botões especiais*/
 
-/* Estilo do botão de parar o teste */
-.botao-parar {
-    position: fixed;
-    left: 5px;
-    bottom: 20px;
-    width: 5mm;
-    height: 5mm;
-    background: #dc3545;
-    border: none;
-    border-radius: 0;
-    font-size: 8px;
-    cursor: pointer;
-    z-index: 1000;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-    display: none;
-}
-
-.botao-bypassar {
-    position: fixed;
-    left: 5px;
-    bottom: 45px;
-    width: 5mm;
-    height: 5mm;
-    background: #87ceeb;
-    border: none;
-    border-radius: 0;
-    font-size: 8px;
-    cursor: pointer;
-    z-index: 1000;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-    display: none;
-}
-
-.botao-voltar {
-    position: fixed;
-    left: 5px;
-    bottom: 70px;
-    width: 5mm;
-    height: 5mm;
-    background: #ffa500;
-    border: none;
-    border-radius: 0;
-    font-size: 8px;
-    cursor: pointer;
-    z-index: 1000;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-    display: none;
+/* Esconde botões de navegação do psicólogo (só para desktop presencial) */
+.botao-parar, .botao-bypassar, .botao-voltar {
+    display: none !important;
 }
 
 /* ===== ESTILOS DO TESTE DE ATENÇÃO ALTERNADA (LAYOUT ANTIGO) ===== */
 
 #paginaTesteAlternado {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: #ccffcc;
+    margin: 0;
+    padding: 0;
+    z-index: 100;
     display: none;
     text-align: center;
+    overflow-y: auto;
 }
 
-/* Quadro alternada - layout antigo 7x3cm sem fundo */
+/* Quadro alternada - centralizado na tela */
 #quadroAlternado {
-    width: 7cm;
-    height: 3cm;
+    width: 50vw;
+    height: 60vh;
     margin: auto;
-    position: relative;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     display: flex;
-    justify-content: space-around;
+    justify-content: center;
     align-items: center;
+    gap: 5vw;
 }
 
 #figuraEsquerda, #figuraDireita {
@@ -643,14 +613,14 @@ margin: 0 10px;
     text-align: center;
 }
 
-/* Quadro sustentada - 20x15cm preto centralizado */
+/* Quadro sustentada - fullscreen quando ativo */
 #quadroSustentada {
-    width: 20cm;
-    height: 15cm;
+    width: 100%;
+    height: 100%;
     background-color: black;
-    border: 3px solid #ccc;
-    border-radius: 8px;
-    margin: 20px auto;
+    border: none;
+    border-radius: 0;
+    margin: 0;
     position: relative;
     z-index: 1;
     display: flex;
@@ -697,6 +667,92 @@ margin: 0 10px;
     /* Espaço para botões touch fixos no bottom */
     #testeConcentrada, #testeSeletiva, #testeDividida,
     #paginaTesteAlternado, #testeSustentada { padding-bottom: 120px; }
+}
+
+/* ===== CURSOR AUTO-HIDE DURANTE TESTES ===== */
+/* Cursor some após 2s parado, reaparece ao mexer */
+body.cursor-hidden, body.cursor-hidden * {
+    cursor: none !important;
+}
+
+/* ===== MODO TELA INTEIRA PARA TESTES (seletiva, dividida, sustentada) ===== */
+/* Ativado via JS quando o teste inicia — mede lateralidade do campo visual */
+.fullscreen-teste {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: none !important;
+    max-height: none !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    border: none !important;
+    z-index: 500;
+}
+
+/* Esconde título e botão iniciar quando o quadro está fullscreen */
+.fullscreen-teste ~ h1,
+.fullscreen-teste ~ .botao-iniciar,
+.teste-fullscreen-ativo h1,
+.teste-fullscreen-ativo .botao-iniciar,
+.teste-fullscreen-ativo .subtitulo,
+.teste-fullscreen-ativo .logo {
+    display: none !important;
+}
+
+/* Container pai também precisa ocupar tela toda */
+.container-fullscreen {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background-color: black !important;
+    z-index: 499;
+    display: block !important;
+}
+
+/* Containers dos testes com quadro preto — ocupam tela toda */
+#testeSeletiva, #testeDividida, #testeSustentada {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: #ccffcc;
+    margin: 0;
+    padding: 0;
+    z-index: 100;
+}
+
+/* Concentrada — centraliza conteúdo na tela */
+#testeConcentrada {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: #ccffcc;
+    margin: 0;
+    padding: 0;
+    z-index: 100;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+#testeConcentrada h1 {
+    color: #333;
+    margin-bottom: 20px;
+}
+
+#testeSeletiva h1, #testeDividida h1, #testeSustentada .subtitulo,
+#testeSeletiva .logo, #testeDividida .logo {
+    display: none;
 }
 
 /* Touch controls container */
