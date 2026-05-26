@@ -89,47 +89,33 @@ function _decodificarURL() {
     var d = params.get('d');
     if (d) {
         try { _sessionInfo = JSON.parse(atob(decodeURIComponent(d))); } catch(e) { return false; }
-        // Preencher dados do paciente vindos do painel
-        var nomeEl = document.getElementById('nome');
-        var nascEl = document.getElementById('dataNascimento') || document.getElementById('dn');
-        var sexoEl = document.getElementById('sexo');
+        var nomeEl = document.getElementById('patientName');
+        var nascEl = document.getElementById('birthDate');
         if (nomeEl && _sessionInfo.patientName) nomeEl.value = _sessionInfo.patientName;
         if (nascEl && _sessionInfo.birthDate) nascEl.value = _sessionInfo.birthDate;
-        if (sexoEl && _sessionInfo.sex) sexoEl.value = _sessionInfo.sex;
-        // Calcular idade se funcao existir
-        if (typeof calcularIdade === 'function') calcularIdade();
-        // Disparar eventos para id-paciente.js recalcular
         if (nomeEl) nomeEl.dispatchEvent(new Event('input'));
         if (nascEl) nascEl.dispatchEvent(new Event('change'));
-        // Trocar botoes
-        var botoes = document.querySelector('.botoes') || document.querySelector('.actions');
+        var botoes = document.querySelector('.actions');
         if (botoes) botoes.innerHTML = '<button class="btn btn-primary" style="padding:15px 30px;border:none;border-radius:25px;font-size:16px;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#2e7d32,#43a047);color:white;" onclick="_enviarResultadosPainel()">Enviar Resultados ao Profissional</button>';
-        // Esconder info tecnica
-        var infoTec = document.querySelector('.info-tecnica');
-        if (infoTec) infoTec.style.display = 'none';
         return true;
     }
     return false;
 }
 
 async function _enviarResultadosPainel() {
-    // Validar nome preenchido
-    var nomeEl = document.getElementById('nome') || document.getElementById('patientName') || document.getElementById('nomeFilho') || document.getElementById('crianca');
+    var nomeEl = document.getElementById('patientName');
     if (nomeEl && !nomeEl.value.trim()) { alert('Preencha o nome antes de enviar.'); return; }
-    // Coletar dados da escala (usa window._escalaDados se disponivel)
-    var calcFn = window.calcularResultados || window.calcular;
-    if (calcFn && !window._escalaDados) {
-        try { calcFn(); } catch(e) {}
-    }
-    var dados = window._escalaDados || {};
-    if (!dados.escala) dados.escala = document.title.replace(/[\s\u2014\u2013|].*/,'').trim();
-    var idPaciente = '';
+    var scores = calculateResults();
+    var hasAnswers = false;
+    scores.forEach(function(v){if(v>0)hasAnswers=true;});
+    if (!hasAnswers) { alert('Responda os itens antes de enviar.'); return; }
+    displayResults(scores);
+    var dados = window._escalaDados || {escala:'YSQ-S3'};
+    dados.paciente = nomeEl ? nomeEl.value : '';
     var idEl = document.getElementById('idPaciente');
-    if (idEl) idPaciente = idEl.value || '';
-    dados.idPaciente = idPaciente;
+    if (idEl) dados.idPaciente = idEl.value || '';
     dados.data = new Date().toISOString();
-    // Enviar
-    var btn = document.querySelector('.botoes button') || document.querySelector('.actions button');
+    var btn = document.querySelector('.actions button');
     if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
     try {
         var resp = await fetch(_API_URL + '/save-escala', {
@@ -139,18 +125,15 @@ async function _enviarResultadosPainel() {
         });
         var result = await resp.json();
         if (result.ok || resp.ok) {
-            var container = document.querySelector('.botoes') || document.querySelector('.actions');
-            if (container) container.innerHTML = '<div style="background:#c8e6c9;border:2px solid #2e7d32;border-radius:10px;padding:20px;text-align:center;"><p style="font-size:1.3em;color:#2e7d32;font-weight:bold;">\u2705 Resultados enviados com sucesso!</p><p style="color:#555;margin-top:8px;">O profissional ja pode visualizar seus resultados no painel.</p><p style="color:#777;margin-top:5px;font-size:0.85em;">Voce pode fechar esta pagina.</p></div>';
-            // Esconder resultados visuais
-            var res = document.getElementById('resultados') || document.querySelector('.resultados');
-            if (res) res.style.display = 'none';
+            var container = document.querySelector('.actions');
+            if (container) container.innerHTML = '<div style="background:#c8e6c9;border:2px solid #2e7d32;border-radius:10px;padding:20px;text-align:center;"><p style="font-size:1.3em;color:#2e7d32;font-weight:bold;">Resultados enviados com sucesso!</p><p style="color:#555;margin-top:8px;">O profissional ja pode visualizar seus resultados no painel.</p></div>';
         } else {
             if (btn) { btn.disabled = false; btn.textContent = 'Enviar Resultados ao Profissional'; }
             alert('Erro ao enviar. Tente novamente.');
         }
     } catch(e) {
         if (btn) { btn.disabled = false; btn.textContent = 'Enviar Resultados ao Profissional'; }
-        alert('Erro de conexao. Verifique sua internet e tente novamente.');
+        alert('Erro de conexao. Verifique sua internet.');
     }
 }
 
