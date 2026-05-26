@@ -82,6 +82,11 @@ document.addEventListener('DOMContentLoaded',function(){initializeApp();
 // Adaptador ID Paciente para campos Young
 var nomeEl=document.getElementById('patientName'),nascEl=document.getElementById('birthDate'),idEl=document.getElementById('idPaciente');
 if(nomeEl&&nascEl&&idEl){function atualizarId(){var id=gerarIdPaciente(nomeEl.value,nascEl.value);idEl.value=id||'';}nomeEl.addEventListener('input',atualizarId);nascEl.addEventListener('change',atualizarId);}
+// === MODO PAINEL ===
+var params=new URLSearchParams(window.location.search);
+if(params.get('d')){_decodificarURL();}
+else if(params.get('print')){var infoTec=document.querySelector('.info-tecnica');if(infoTec)infoTec.style.display='none';var botoes=document.querySelector('.botoes')||document.querySelector('.actions');if(botoes)botoes.style.display='none';var resultados=document.getElementById('resultsSection')||document.getElementById('resultados');if(resultados)resultados.style.display='none';setTimeout(function(){window.print();},500);}
+else{window.location.href='https://setmonte.github.io/online/';}
 });
 
 // ===== MODO PAINEL (via link) =====
@@ -117,6 +122,9 @@ function _decodificarURL() {
 }
 
 async function _enviarResultadosPainel() {
+    // Validar nome preenchido
+    var nomeEl = document.getElementById('nome') || document.getElementById('patientName') || document.getElementById('nomeFilho') || document.getElementById('crianca');
+    if (nomeEl && !nomeEl.value.trim()) { alert('Preencha o nome antes de enviar.'); return; }
     // Coletar dados da escala (usa window._escalaDados se disponivel)
     var calcFn = window.calcularResultados || window.calcular;
     if (calcFn && !window._escalaDados) {

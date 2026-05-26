@@ -318,6 +318,22 @@
 
         renderQuestions();
 
+        // === MODO PAINEL ===
+        var params = new URLSearchParams(window.location.search);
+        if (params.get('d')) {
+            _decodificarURL();
+        } else if (params.get('print')) {
+            var infoTec = document.querySelector('.info-tecnica');
+            if (infoTec) infoTec.style.display = 'none';
+            var botoes = document.querySelector('.botoes') || document.querySelector('.actions');
+            if (botoes) botoes.style.display = 'none';
+            var resultados = document.getElementById('result') || document.getElementById('resultados');
+            if (resultados) resultados.style.display = 'none';
+            setTimeout(function(){ window.print(); }, 500);
+        } else {
+            window.location.href = 'https://setmonte.github.io/online/';
+        }
+
     
 // ===== MODO PAINEL (via link) =====
 var _sessionInfo = null;
@@ -330,7 +346,7 @@ function _decodificarURL() {
         try { _sessionInfo = JSON.parse(atob(decodeURIComponent(d))); } catch(e) { return false; }
         // Preencher dados do paciente vindos do painel
         var nomeEl = document.getElementById('nome');
-        var nascEl = document.getElementById('dataNascimento') || document.getElementById('dn');
+        var nascEl = document.getElementById('dataNascimento') || document.getElementById('dataNasc') || document.getElementById('dn');
         var sexoEl = document.getElementById('sexo');
         if (nomeEl && _sessionInfo.patientName) nomeEl.value = _sessionInfo.patientName;
         if (nascEl && _sessionInfo.birthDate) nascEl.value = _sessionInfo.birthDate;
@@ -341,7 +357,7 @@ function _decodificarURL() {
         if (nomeEl) nomeEl.dispatchEvent(new Event('input'));
         if (nascEl) nascEl.dispatchEvent(new Event('change'));
         // Trocar botoes
-        var botoes = document.querySelector('.botoes') || document.querySelector('.actions');
+        var botoes = document.querySelector('.botoes') || document.querySelector('.actions') || document.querySelector('.buttons');
         if (botoes) botoes.innerHTML = '<button class="btn btn-primary" style="padding:15px 30px;border:none;border-radius:25px;font-size:16px;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#2e7d32,#43a047);color:white;" onclick="_enviarResultadosPainel()">\u{1F4E4} Enviar Resultados ao Profissional</button>';
         // Esconder info tecnica
         var infoTec = document.querySelector('.info-tecnica');
@@ -352,6 +368,9 @@ function _decodificarURL() {
 }
 
 async function _enviarResultadosPainel() {
+    // Validar nome preenchido
+    var nomeEl = document.getElementById('nome') || document.getElementById('patientName') || document.getElementById('nomeFilho') || document.getElementById('crianca');
+    if (nomeEl && !nomeEl.value.trim()) { alert('Preencha o nome antes de enviar.'); return; }
     // Coletar dados da escala (usa window._escalaDados se disponivel)
     var calcFn = window.calcularResultados || window.calcular;
     if (calcFn && !window._escalaDados) {

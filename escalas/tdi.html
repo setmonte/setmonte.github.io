@@ -247,6 +247,22 @@
 
         renderPerguntas();
         document.getElementById('data').valueAsDate = new Date();
+
+        // === MODO PAINEL ===
+        var params = new URLSearchParams(window.location.search);
+        if (params.get('d')) {
+            _decodificarURL();
+        } else if (params.get('print')) {
+            var infoTec = document.querySelector('.info-tecnica');
+            if (infoTec) infoTec.style.display = 'none';
+            var btns = document.querySelectorAll('.btn-calcular, .btn-exportar, .btn-whatsapp, .btn-limpar');
+            btns.forEach(function(b){ b.style.display = 'none'; });
+            var resultados = document.getElementById('results') || document.getElementById('resultados');
+            if (resultados) resultados.style.display = 'none';
+            setTimeout(function(){ window.print(); }, 500);
+        } else {
+            window.location.href = 'https://setmonte.github.io/online/';
+        }
     
 // ===== MODO PAINEL (via link) =====
 var _sessionInfo = null;
@@ -269,9 +285,19 @@ function _decodificarURL() {
         // Disparar eventos para id-paciente.js recalcular
         if (nomeEl) nomeEl.dispatchEvent(new Event('input'));
         if (nascEl) nascEl.dispatchEvent(new Event('change'));
-        // Trocar botoes
-        var botoes = document.querySelector('.botoes') || document.querySelector('.actions');
-        if (botoes) botoes.innerHTML = '<button class="btn btn-primary" style="padding:15px 30px;border:none;border-radius:25px;font-size:16px;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#2e7d32,#43a047);color:white;" onclick="_enviarResultadosPainel()">\u{1F4E4} Enviar Resultados ao Profissional</button>';
+        // Trocar botoes — TDI nao tem div container, esconder botoes individuais
+        var btns = document.querySelectorAll('.btn-calcular, .btn-exportar, .btn-whatsapp, .btn-limpar');
+        btns.forEach(function(b){ b.style.display = 'none'; });
+        // Inserir botao de envio
+        var calcBtn = document.querySelector('.btn-calcular');
+        if (calcBtn) {
+            var enviarBtn = document.createElement('button');
+            enviarBtn.className = 'btn-calcular';
+            enviarBtn.style.cssText = 'background:linear-gradient(135deg,#2e7d32,#43a047);margin-top:20px;';
+            enviarBtn.textContent = '\u{1F4E4} Enviar Resultados ao Profissional';
+            enviarBtn.onclick = _enviarResultadosPainel;
+            calcBtn.parentNode.insertBefore(enviarBtn, calcBtn);
+        }
         // Esconder info tecnica
         var infoTec = document.querySelector('.info-tecnica');
         if (infoTec) infoTec.style.display = 'none';
@@ -281,6 +307,9 @@ function _decodificarURL() {
 }
 
 async function _enviarResultadosPainel() {
+    // Validar nome preenchido
+    var nomeEl = document.getElementById('nome') || document.getElementById('patientName') || document.getElementById('nomeFilho') || document.getElementById('crianca');
+    if (nomeEl && !nomeEl.value.trim()) { alert('Preencha o nome antes de enviar.'); return; }
     // Coletar dados da escala (usa window._escalaDados se disponivel)
     var calcFn = window.calcularResultados || window.calcular;
     if (calcFn && !window._escalaDados) {
