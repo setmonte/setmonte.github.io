@@ -248,21 +248,6 @@
         renderPerguntas();
         document.getElementById('data').valueAsDate = new Date();
 
-        // === MODO PAINEL ===
-        var params = new URLSearchParams(window.location.search);
-        if (params.get('d')) {
-            _decodificarURL();
-        } else if (params.get('print')) {
-            var infoTec = document.querySelector('.info-tecnica');
-            if (infoTec) infoTec.style.display = 'none';
-            var btns = document.querySelectorAll('.btn-calcular, .btn-exportar, .btn-whatsapp, .btn-limpar');
-            btns.forEach(function(b){ b.style.display = 'none'; });
-            var resultados = document.getElementById('results') || document.getElementById('resultados');
-            if (resultados) resultados.style.display = 'none';
-            setTimeout(function(){ window.print(); }, 500);
-        } else {
-            window.location.href = 'https://setmonte.github.io/online/';
-        }
     
 // ===== MODO PAINEL (via link) =====
 var _sessionInfo = null;
@@ -343,10 +328,26 @@ async function _enviarResultadosPainel() {
             alert('Erro ao enviar. Tente novamente.');
         }
     } catch(e) {
-        if (btn) { btn.disabled = false; btn.textContent = '\u{1F4E4} Enviar Resultados ao Profissional'; }
+        if (btn) { btn.disabled = false; btn.textContent = 'Enviar Resultados ao Profissional'; }
         alert('Erro de conexao. Verifique sua internet e tente novamente.');
     }
 }
+
+// === INICIALIZACAO ===
+(function(){
+    var params = new URLSearchParams(window.location.search);
+    if (params.get('d')) {
+        _decodificarURL();
+    } else if (params.get('print')) {
+        var btns = document.querySelectorAll('.btn-calcular, .btn-exportar, .btn-whatsapp, .btn-limpar');
+        btns.forEach(function(b){ b.style.display = 'none'; });
+        var resultados = document.getElementById('results') || document.getElementById('resultados');
+        if (resultados) resultados.style.display = 'none';
+        setTimeout(function(){ window.print(); }, 500);
+    } else {
+        window.location.href = 'https://setmonte.github.io/online/';
+    }
+})();
 
     </script>
 <script>

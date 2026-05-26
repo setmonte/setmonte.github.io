@@ -361,23 +361,7 @@ var yr=y+8;doc.setTextColor(0,0,0);doc.setFontSize(7.5);doc.setFont(undefined,'n
 doc.setFillColor(108,117,125);doc.rect(0,280,210,17,'F');doc.setTextColor(255,255,255);doc.setFontSize(8);doc.text('Relatório gerado em: '+new Date().toLocaleString('pt-BR'),105,290,{align:'center'});
 var ts=(function(){var d=new Date();return d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0')+String(d.getHours()).padStart(2,'0')+String(d.getMinutes()).padStart(2,'0');})();doc.save('ASRS18_'+nome.replace(/\s+/g,'_')+'_'+ts+'.pdf');}
 function limparDados(){if(!confirm('Tem certeza que deseja limpar todos os dados?'))return;document.getElementById('nome').value='';document.getElementById('dataNascimento').value='';document.getElementById('idadeCalculada').value='';document.getElementById('sexo').value='';document.getElementById('observacoes').value='';document.querySelectorAll('input[type="radio"]').forEach(function(r){r.checked=false;});document.getElementById('resultados').style.display='none';document.getElementById('data').value=new Date().toISOString().split('T')[0];}
-document.addEventListener('DOMContentLoaded',function(){gerarQuestionario();document.getElementById('data').value=new Date().toISOString().split('T')[0];
-    // === MODO PAINEL ===
-    var params = new URLSearchParams(window.location.search);
-    if (params.get('d')) {
-        _decodificarURL();
-    } else if (params.get('print')) {
-        var infoTec = document.querySelector('.info-tecnica');
-        if (infoTec) infoTec.style.display = 'none';
-        var botoes = document.querySelector('.botoes') || document.querySelector('.actions');
-        if (botoes) botoes.style.display = 'none';
-        var resultados = document.getElementById('resultados') || document.querySelector('.resultados');
-        if (resultados) resultados.style.display = 'none';
-        setTimeout(function(){ window.print(); }, 500);
-    } else {
-        window.location.href = 'https://setmonte.github.io/online/';
-    }
-});
+
     
 // ===== MODO PAINEL (via link) =====
 var _sessionInfo = null;
@@ -452,6 +436,25 @@ async function _enviarResultadosPainel() {
         alert('Erro de conexao. Verifique sua internet e tente novamente.');
     }
 }
+
+document.addEventListener('DOMContentLoaded',function(){gerarQuestionario();document.getElementById('data').value=new Date().toISOString().split('T')[0];
+    // === MODO PAINEL ===
+    var params = new URLSearchParams(window.location.search);
+    if (params.get('d')) {
+        _decodificarURL();
+    } else if (params.get('print')) {
+        var infoTec = document.querySelector('.info-tecnica');
+        if (infoTec) infoTec.style.display = 'none';
+        var botoes = document.querySelector('.botoes') || document.querySelector('.actions');
+        if (botoes) botoes.style.display = 'none';
+        var resultados = document.getElementById('resultados') || document.querySelector('.resultados');
+        if (resultados) resultados.style.display = 'none';
+        setTimeout(function(){ window.print(); }, 500);
+    } else {
+        window.location.href = 'https://setmonte.github.io/online/';
+    }
+});
+
 
     </script>
 <script>

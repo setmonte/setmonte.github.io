@@ -460,20 +460,6 @@
         }
 
         window.onload = () => {
-            // === MODO PAINEL ===
-            var params = new URLSearchParams(window.location.search);
-            if (params.get('d')) {
-                _decodificarURL();
-            } else if (params.get('print')) {
-                var botoes = document.querySelector('.actions');
-                if (botoes) botoes.style.display = 'none';
-                var resultados = document.getElementById('resultados');
-                if (resultados) resultados.style.display = 'none';
-                setTimeout(function(){ window.print(); }, 500);
-            } else if (!window.location.protocol.startsWith('file')) {
-                window.location.href = 'https://setmonte.github.io/online/';
-                return;
-            }
             const salvo = localStorage.getItem('checklistDislexia');
             if(salvo) {
                 const dados = JSON.parse(salvo);
@@ -561,10 +547,26 @@ async function _enviarResultadosPainel() {
             alert('Erro ao enviar. Tente novamente.');
         }
     } catch(e) {
-        if (btn) { btn.disabled = false; btn.textContent = '\u{1F4E4} Enviar Resultados ao Profissional'; }
+        if (btn) { btn.disabled = false; btn.textContent = 'Enviar Resultados ao Profissional'; }
         alert('Erro de conexao. Verifique sua internet e tente novamente.');
     }
 }
+
+// === INICIALIZACAO ===
+(function(){
+    var params = new URLSearchParams(window.location.search);
+    if (params.get('d')) {
+        _decodificarURL();
+    } else if (params.get('print')) {
+        var botoes = document.querySelector('.actions');
+        if (botoes) botoes.style.display = 'none';
+        var resultados = document.getElementById('resultados');
+        if (resultados) resultados.style.display = 'none';
+        setTimeout(function(){ window.print(); }, 500);
+    } else if (!window.location.protocol.startsWith('file')) {
+        window.location.href = 'https://setmonte.github.io/online/';
+    }
+})();
 
     </script>
 <script>

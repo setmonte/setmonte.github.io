@@ -78,16 +78,7 @@ function renderChart(scores){const c=document.getElementById('resultsChart');if(
 function exportToPDF(){const{jsPDF}=window.jspdf,pdf=new jsPDF('p','mm','a4'),name=document.getElementById('patientName').value||'Não informado',date=document.getElementById('testDate').value||new Date().toLocaleDateString('pt-BR'),idPac=document.getElementById('idPaciente')?document.getElementById('idPaciente').value:'';pdf.setFontSize(16);pdf.text('Resultados YSQ-S3',105,20,{align:'center'});pdf.setFontSize(12);pdf.text(`Nome: ${name}`,20,35);pdf.text(`Data: ${date}`+(idPac?`   |   ID: ${idPac}`:''),20,42);let y=55;pdf.setFontSize(10);const scores=calculateResults();schemas.forEach(s=>{const score=scores.get(s.code)||0,pct=(score/s.max)*100,lvl=getLevel(pct);pdf.text(`${s.name}: ${score}/${s.max} - ${lvl}`,20,y);y+=7;if(y>270){pdf.addPage();y=20}});var ts=(function(){var d=new Date();return d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0')+String(d.getHours()).padStart(2,'0')+String(d.getMinutes()).padStart(2,'0');})();pdf.save(`YSQ-S3_${name}_${ts}.pdf`)}
 function resetForm(){const f=document.getElementById('ysqForm');f.reset();f.style.display='block';document.getElementById('instructionsSection').style.display='block';document.getElementById('resultsSection').style.display='none';window.scrollTo(0,0)}
 function renderQuestions(){const c=document.getElementById('questionsContainer');if(!c)return;allQuestions.forEach((t,i)=>{const d=document.createElement('div');d.className='question';d.innerHTML=`<div class="question-text">${i+1}. ${t}</div><div class="options">${[1,2,3,4,5,6].map(v=>`<div class="option"><input type="radio" id="q${i+1}_${v}" name="q${i+1}" value="${v}" required><label for="q${i+1}_${v}">${v}</label></div>`).join('')}</div>`;c.appendChild(d)})}
-document.addEventListener('DOMContentLoaded',function(){initializeApp();
-// Adaptador ID Paciente para campos Young
-var nomeEl=document.getElementById('patientName'),nascEl=document.getElementById('birthDate'),idEl=document.getElementById('idPaciente');
-if(nomeEl&&nascEl&&idEl){function atualizarId(){var id=gerarIdPaciente(nomeEl.value,nascEl.value);idEl.value=id||'';}nomeEl.addEventListener('input',atualizarId);nascEl.addEventListener('change',atualizarId);}
-// === MODO PAINEL ===
-var params=new URLSearchParams(window.location.search);
-if(params.get('d')){_decodificarURL();}
-else if(params.get('print')){var infoTec=document.querySelector('.info-tecnica');if(infoTec)infoTec.style.display='none';var botoes=document.querySelector('.botoes')||document.querySelector('.actions');if(botoes)botoes.style.display='none';var resultados=document.getElementById('resultsSection')||document.getElementById('resultados');if(resultados)resultados.style.display='none';setTimeout(function(){window.print();},500);}
-else{window.location.href='https://setmonte.github.io/online/';}
-});
+
 
 // ===== MODO PAINEL (via link) =====
 var _sessionInfo = null;
@@ -162,6 +153,18 @@ async function _enviarResultadosPainel() {
         alert('Erro de conexao. Verifique sua internet e tente novamente.');
     }
 }
+
+document.addEventListener('DOMContentLoaded',function(){initializeApp();
+// Adaptador ID Paciente para campos Young
+var nomeEl=document.getElementById('patientName'),nascEl=document.getElementById('birthDate'),idEl=document.getElementById('idPaciente');
+if(nomeEl&&nascEl&&idEl){function atualizarId(){var id=gerarIdPaciente(nomeEl.value,nascEl.value);idEl.value=id||'';}nomeEl.addEventListener('input',atualizarId);nascEl.addEventListener('change',atualizarId);}
+// === MODO PAINEL ===
+var params=new URLSearchParams(window.location.search);
+if(params.get('d')){_decodificarURL();}
+else if(params.get('print')){var infoTec=document.querySelector('.info-tecnica');if(infoTec)infoTec.style.display='none';var botoes=document.querySelector('.botoes')||document.querySelector('.actions');if(botoes)botoes.style.display='none';var resultados=document.getElementById('resultsSection')||document.getElementById('resultados');if(resultados)resultados.style.display='none';setTimeout(function(){window.print();},500);}
+else{window.location.href='https://setmonte.github.io/online/';}
+});
+
 
     </script>
 <script>
