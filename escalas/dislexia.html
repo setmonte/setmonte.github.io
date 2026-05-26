@@ -7,540 +7,348 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Checklist Dislexia</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; background: #f5f5f5; padding: 20px; }
-        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 30px; }
-        h1 { text-align: center; font-size: 18px; margin-bottom: 20px; }
-        .info { margin-bottom: 20px; }
-        .info label { display: inline-block; width: 80px; font-weight: bold; }
-        .info input { width: 200px; padding: 5px; margin: 5px; border: 1px solid #ccc; }
-        #idadeCalculada { display: inline-block; margin-left: 10px; color: #2196F3; font-weight: bold; }
-        .instrucoes { background: #f9f9f9; padding: 15px; margin-bottom: 20px; font-size: 13px; border-left: 4px solid #4CAF50; }
-        .secao { margin-bottom: 25px; }
-        .secao-titulo { background: #4CAF50; color: white; padding: 8px; font-weight: bold; margin-bottom: 10px; }
-        .item { display: flex; padding: 8px; border-bottom: 1px solid #eee; align-items: center; transition: background 0.3s; }
-        .item.pulado { background: #ff9800; }
-        .item-num { width: 30px; font-weight: bold; }
-        .item-texto { flex: 1; font-size: 13px; }
-        .escala { display: flex; gap: 5px; }
-        .escala label { cursor: pointer; }
-        .resultados { background: #e3f2fd; padding: 20px; margin-top: 20px; border-radius: 8px; display: none; }
-        .pontuacao { font-size: 36px; font-weight: bold; text-align: center; color: #1976d2; margin: 15px 0; }
-        .contador-desatencao { position: fixed; top: 20px; right: 20px; background: #ff5722; color: white; padding: 15px 20px; border-radius: 8px; font-weight: bold; box-shadow: 0 4px 8px rgba(0,0,0,0.3); display: none; }
-        .contador-desatencao span { font-size: 24px; }
-        .btn { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin: 5px; font-weight: bold; }
-        .btn-calc { background: #4CAF50; color: white; }
-        .btn-pdf { background: #2196F3; color: white; }
-        .btn-limpar { background: #f44336; color: white; }
-        .actions { text-align: center; margin-top: 20px; }
-        .emergency { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; border-radius: 50%; background: #ff9800; color: white; border: none; font-size: 20px; cursor: pointer; box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
-        @media print { @page { size: portrait; margin: 1cm; } body { background: white !important; padding: 0 !important; } .botoes, .btn, .btn-imprimir, .actions { display: none !important; } .container { box-shadow: none !important; max-width: 100% !important; } .info-tecnica { display: none !important; } .resultados { display: none !important; } .header { -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 15px !important; } .header h1 { font-size: 1.5em !important; } .item { padding: 6px 10px !important; page-break-inside: avoid; break-inside: avoid; } .item-texto { margin-bottom: 5px !important; font-size: 0.9em !important; } .opcoes { display: inline-flex !important; flex-direction: row !important; flex-wrap: nowrap !important; justify-content: flex-start !important; gap: 15px !important; width: 100% !important; } .opcao { flex-direction: row !important; padding: 2px 5px !important; min-height: auto !important; min-width: auto !important; gap: 3px !important; } .opcao label { min-height: auto !important; font-size: 0.75em !important; } .opcao input[type="radio"] { width: 14px !important; height: 14px !important; } .parte-header { padding: 6px 12px !important; margin: 8px 0 4px !important; page-break-after: avoid; font-size: 0.95em !important; } .dados-pessoais { padding: 12px !important; margin-bottom: 10px !important; } .instrucoes { padding: 10px !important; margin-bottom: 10px !important; } .content { padding: 15px !important; } .form-row { margin-bottom: 5px !important; } } .escala { display: flex !important; flex-direction: row !important; flex-wrap: wrap !important; justify-content: center !important; } }
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:Arial,sans-serif;background:#f5f5f5;padding:20px}
+        .container{max-width:1000px;margin:0 auto;background:white;padding:30px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.1)}
+        h1{text-align:center;font-size:18px;margin-bottom:20px;color:#2e7d32}
+        .info{margin-bottom:20px}
+        .info label{display:inline-block;width:80px;font-weight:bold}
+        .info input,.info select{padding:5px;margin:5px;border:1px solid #ccc;border-radius:4px}
+        #idadeCalculada{display:inline-block;margin-left:10px;color:#2196F3;font-weight:bold}
+        .instrucoes{background:#f9f9f9;padding:15px;margin-bottom:20px;font-size:13px;border-left:4px solid #4CAF50;border-radius:4px}
+        .secao{margin-bottom:25px}
+        .secao-titulo{background:#4CAF50;color:white;padding:8px 12px;font-weight:bold;margin-bottom:10px;border-radius:4px}
+        .item{display:flex;padding:8px;border-bottom:1px solid #eee;align-items:center;transition:background 0.3s}
+        .item:hover{background:#f5f5f5}
+        .item-num{width:30px;font-weight:bold;color:#666}
+        .item-texto{flex:1;font-size:13px}
+        .escala{display:flex;gap:5px;flex-wrap:wrap}
+        .escala label{cursor:pointer;font-size:12px;padding:2px 6px;border-radius:3px}
+        .escala label:hover{background:#e8f5e9}
+        .resultados{background:#e3f2fd;padding:20px;margin-top:20px;border-radius:8px;display:none}
+        .pontuacao{font-size:36px;font-weight:bold;text-align:center;color:#1976d2;margin:15px 0}
+        .actions{text-align:center;margin-top:20px}
+        .btn{padding:10px 20px;border:none;border-radius:4px;cursor:pointer;margin:5px;font-weight:bold;font-size:14px}
+        .btn-calc{background:#4CAF50;color:white}
+        .btn-pdf{background:#2196F3;color:white}
+        .btn-limpar{background:#f44336;color:white}
+        .btn:hover{opacity:0.9;transform:translateY(-1px)}
+        @media print{.actions,.info-tecnica,.resultados{display:none!important}body{background:white!important;padding:0!important}.container{box-shadow:none!important}}
+        @media(max-width:768px){.escala{gap:3px}.item{flex-direction:column;align-items:flex-start}.escala{margin-top:5px}}
     </style>
     <script src="../id-paciente.js"></script>
 </head>
 <body>
-<div style="padding:10px 20px;background:#2e7d32;"><a href="../" style="display:inline-block;background:#fff;color:#2e7d32;text-decoration:none;font-family:Segoe UI,Arial,sans-serif;font-size:14px;font-weight:bold;padding:8px 20px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.15);transition:background 0.2s;">&#11013; Voltar ao In&#237;cio</a></div>
-    <div class="container">
-        <h1>CHECKLIST PARA IDENTIFICAÇÃO PRECOCE DOS SINAIS DE RISCO PARA A DISLEXIA</h1>
-        
-        <div class="info">
-            <label>Nome:</label><input type="text" id="nome"><br>
-            <label>D. N.:</label><input type="date" id="dn" onchange="calcularIdade()">
-            <label>Idade:</label><input type="number" id="idade" style="width:80px;"><span id="idadeCalculada"></span><br>
-            <label>Escola:</label><input type="text" id="escola" style="width:400px;"><br>
-            <label>Ano:</label><input type="text" id="ano" style="width:100px;">
-            <label>Data Aval.:</label><input type="date" id="dataAval">
-        </div>
-
-        <div class="instrucoes">
-            <strong>Instruções:</strong> Este questionário é composto por 78 afirmativas. Leia cuidadosamente cada uma delas. Utilizando como critério "0" para "Nunca" e "10" para "Sempre", assinale um número em cada escala considerando a intensidade com que o comportamento é observado no escolar. Algumas afirmativas podem ser semelhantes, mas não são iguais. Não deixe nenhuma em branco.
-        </div>
-
-        <div id="questoes"></div>
-
-        <div id="resultados" class="resultados">
-            <h2>RESULTADOS</h2>
-            <div class="pontuacao" id="pontuacao">0</div>
-            <div id="interpretacao"></div>
-        </div>
-
-        <div class="actions">
-            <button class="btn btn-calc" onclick="calcular()">Calcular Resultados</button>
-            <button class="btn btn-pdf" onclick="gerarPDF()">Gerar PDF</button>
-            <button class="btn btn-pdf" onclick="window.print()">Imprimir</button>
-            <button class="btn btn-limpar" onclick="limpar()">Limpar Dados</button>
-        </div>
+<div style="padding:10px 20px;background:#2e7d32;"><a href="../" style="display:inline-block;background:#fff;color:#2e7d32;text-decoration:none;font-family:Segoe UI,Arial,sans-serif;font-size:14px;font-weight:bold;padding:8px 20px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.15);">&#11013; Voltar ao In&#237;cio</a></div>
+<div class="container">
+    <h1>CHECKLIST PARA IDENTIFICA&#199;&#195;O PRECOCE DOS SINAIS DE RISCO PARA A DISLEXIA</h1>
+    <div class="info">
+        <label>Nome:</label><input type="text" id="nome" style="width:250px"><br>
+        <label>D. N.:</label><input type="date" id="dn" onchange="calcularIdade()">
+        <span id="idadeCalculada"></span><br>
+        <label>Escola:</label><input type="text" id="escola" style="width:400px"><br>
+        <label>Ano:</label><input type="text" id="ano" style="width:100px">
+        <label>Data Aval.:</label><input type="date" id="dataAval">
     </div>
-
-    <button class="emergency" onclick="salvar()">💾</button>
-    <div class="contador-desatencao" id="contadorDesatencao">
-        ⚠️ Pulos: <span id="numPulos">0</span>
+    <div class="instrucoes">
+        <strong>Instru&#231;&#245;es:</strong> Este question&#225;rio &#233; composto por 78 afirmativas. Leia cuidadosamente cada uma delas. Utilizando como crit&#233;rio "0" para "Nunca" e "10" para "Sempre", assinale um n&#250;mero em cada escala considerando a intensidade com que o comportamento &#233; observado no escolar. Algumas afirmativas podem ser semelhantes, mas n&#227;o s&#227;o iguais. N&#227;o deixe nenhuma em branco.
     </div>
+    <div id="questionario"></div>
+    <div id="resultados" class="resultados">
+        <h2 style="text-align:center">RESULTADOS</h2>
+        <div class="pontuacao" id="pontuacao">0</div>
+        <div id="interpretacao" style="text-align:center;font-size:16px;margin-top:10px"></div>
+        <div id="areas" style="margin-top:20px"></div>
+    </div>
+    <div class="actions">
+        <button class="btn btn-calc" onclick="calcular()">Calcular Resultados</button>
+        <button class="btn btn-pdf" onclick="gerarPDF()">Gerar PDF</button>
+        <button class="btn btn-pdf" onclick="window.print()">Imprimir</button>
+        <button class="btn btn-limpar" onclick="limpar()">Limpar Dados</button>
+    </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+var SECOES = [
+{nome:"LINGUAGEM ORAL",itens:[
+"Inicia e mant\u00e9m um di\u00e1logo?",
+"Apresenta troca de sons na fala?",
+"Apresenta vocabul\u00e1rio restrito para a idade?",
+"Compreende as instru\u00e7\u00f5es dadas pelo professor?",
+"Tem facilidade para dar nome a objetos e/ou pessoas?",
+"Identifica e produz rima nas palavras (por ex.: p\u00e3o rima com...)?",
+"Identifica e produz palavras que se iniciam com o mesmo som (Ex.: Casa come\u00e7a com o mesmo som que...)?",
+"Consegue expressar claramente seus pensamentos?",
+"Reconta uma hist\u00f3ria ou situa\u00e7\u00e3o de vida di\u00e1ria respeitando a sequ\u00eancia dos fatos?"
+]},
+{nome:"HABILIDADES PREDITORAS DA ALFABETIZA\u00c7\u00c3O",itens:[
+"Nomeia cores e formas geom\u00e9tricas simples?",
+"Tem no\u00e7\u00e3o espacial (em cima/embaixo, direita/esquerda)?",
+"Tem no\u00e7\u00e3o temporal (antes/depois, manh\u00e3/tarde/noite, ontem/amanh\u00e3)?",
+"Consegue dizer todos os dias da semana e os meses do ano?",
+"Diferencia letras de n\u00fameros?",
+"Nomeia todas as letras do alfabeto em ordem aleat\u00f3ria?",
+"Escreve seu nome completo corretamente?",
+"Demora para finalizar as atividades propostas pelo professor?",
+"Apresenta dificuldade para realizar atividades que envolvem escrita?",
+"Consegue soletrar palavras compostas por s\u00edlabas simples (Ex.: bola, caneta, telefone)?"
+]},
+{nome:"LEITURA",itens:[
+"Consegue ler palavras compostas por s\u00edlabas simples sem dificuldade (Ex.: gato, comida, telefone)?",
+"Apresenta lentid\u00e3o na leitura de palavras?",
+"Apresenta lentid\u00e3o na leitura de frases?",
+"Apresenta dificuldade para associar letras ao som?",
+"Tenta adivinhar a palavra quando l\u00ea o in\u00edcio dela?",
+"Troca o som das letras p/b, t/d, f/v durante a leitura?",
+"Confunde letras/s\u00edlabas visualmente semelhantes (Ex.: m/n, a/e, u/n, p/q, em/me)?",
+"Omite letras ou palavras ao ler?",
+"Gosta de ler em voz alta na sala de aula?",
+"Compreende o texto ao fazer a leitura oral?",
+"Compreende o texto ao fazer leitura silenciosa?",
+"\u00c9 um dos \u00faltimos a terminar as tarefas que envolvem leitura?",
+"N\u00e3o consegue terminar as tarefas devido a dificuldades de leitura?"
+]},
+{nome:"ESCRITA",itens:[
+"Se recusa ou evita escrever?",
+"\u00c9 organizado no uso da folha (respeita linhas, usa margens)?",
+"Sua escrita \u00e9 incompleta, com muitas rasuras no papel?",
+"Apresenta dificuldade para copiar da lousa ou do livro?",
+"Apresenta escrita espelhada?",
+"Apresenta lentid\u00e3o para copiar e/ou escrever?",
+"Omite, adiciona ou substitui palavras inteiras ao copiar frases?",
+"Escreve corretamente palavras compostas por s\u00edlabas simples (Ex.: fogo, panela, canivete)?",
+"No ditado, confunde letras audivelmente similares (Ex.: p/b, t/d, f/v, c/g, s/z)?",
+"Na c\u00f3pia ou na escrita espont\u00e2nea, confunde letras visualmente semelhantes (Ex.: p/q, p/d, b/d, n/u, o/a, i/e)?",
+"Na c\u00f3pia ou na escrita espont\u00e2nea, confunde a sequ\u00eancia de s\u00edlabas nas palavras (Ex.: sapato - pasato)?",
+"Apresenta escrita com erros significativos quando comparado aos demais colegas de sala?"
+]},
+{nome:"MATEM\u00c1TICA",itens:[
+"Identifica semelhan\u00e7as e diferen\u00e7as em formas geom\u00e9tricas?",
+"\u00c9 capaz de fazer compara\u00e7\u00f5es envolvendo quantidade e tamanho (Ex.: mais/menos, maior/menor)?",
+"Conta oralmente at\u00e9 20 respeitando a sequ\u00eancia num\u00e9rica?",
+"Escreve e l\u00ea numerais na ordem de unidades?",
+"Faz correspond\u00eancia de n\u00famero \u00e0 quantidade (de 1 a 9)?",
+"Faz c\u00e1lculos de adi\u00e7\u00e3o e subtra\u00e7\u00e3o de unidades mentalmente?",
+"Escreve e l\u00ea numerais na ordem de dezenas?",
+"Compreende o conceito de antecessor e sucessor em dezenas?",
+"Resolve contas de dezenas sem reserva?",
+"Resolve contas de dezenas com reserva?",
+"Escreve e l\u00ea numerais na ordem de centenas?",
+"Resolve contas de centenas sem reserva?"
+]},
+{nome:"ASPECTOS MOTORES",itens:[
+"N\u00e3o gosta ou evita desenhar?",
+"Respeita o limite da figura ao pintar?",
+"Apresenta coordena\u00e7\u00e3o motora global preservada (Ex.: pula, corre, agarra)?",
+"Apresenta coordena\u00e7\u00e3o motora fina preservada (Ex.: recorta, abotoa, amarra)?",
+"Apresenta dificuldades na preens\u00e3o do l\u00e1pis?",
+"Pressiona adequadamente (nem forte nem fraco) o l\u00e1pis no papel?",
+"As letras t\u00eam tamanho desproporcional (grandes ou pequenas)?",
+"A caligrafia \u00e9 leg\u00edvel (independente do tipo de letra utilizada)?",
+"Apresenta dificuldade para fazer o tra\u00e7ado da letra cursiva?"
+]},
+{nome:"ASPECTOS COMPORTAMENTAIS E ATENCIONAIS",itens:[
+"Aceita e segue regras?",
+"Distrai-se com facilidade?",
+"Interage com os colegas?",
+"\u00c9 organizado com a carteira e com os materiais?",
+"Esquece tarefas, letras de m\u00fasicas e/ou materiais escolares?",
+"Demonstra interesse pelas atividades propostas?",
+"Apresenta comportamento agitado durante a aula?",
+"Caminha pela sala durante as explica\u00e7\u00f5es?",
+"Apresenta dificuldade em manter a aten\u00e7\u00e3o durante as explica\u00e7\u00f5es?",
+"Solicita repeti\u00e7\u00e3o da instru\u00e7\u00e3o dada pelo professor?",
+"Compreende as instru\u00e7\u00f5es dadas pelo professor?",
+"Conclui as atividades iniciadas?",
+"Frequentemente termina as atividades com atraso?"
+]}
+];
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script>
-        const questoes = [
-            {secao: "LINGUAGEM ORAL", itens: [
-                "Inicia e mant\u00e9m um di\u00e1logo?",
-                "Apresenta troca de sons na fala?",
-                "Apresenta vocabul\u00e1rio restrito para a idade?",
-                "Compreende as instru\u00e7\u00f5es dadas pelo professor?",
-                "Tem facilidade para dar nome a objetos e/ou pessoas?",
-                "Identifica e produz rima nas palavras (por ex.: p\u00e3o rima com...)?",
-                "Identifica e produz palavras que se iniciam com o mesmo som (Ex.: Casa come\u00e7a com o mesmo som que...)?",
-                "Consegue expressar claramente seus pensamentos?",
-                "Reconta uma hist\u00f3ria ou situa\u00e7\u00e3o de vida di\u00e1ria respeitando a sequ\u00eancia dos fatos?"
-            ]},
-            {secao: "HABILIDADES PREDITORAS DA ALFABETIZA\u00c7\u00c3O", itens: [
-                "Nomeia cores e formas geom\u00e9tricas simples?",
-                "Tem no\u00e7\u00e3o espacial (em cima/embaixo, direita/esquerda)?",
-                "Tem no\u00e7\u00e3o temporal (antes/depois, manh\u00e3/tarde/noite, ontem/amanh\u00e3)?",
-                "Consegue dizer todos os dias da semana e os meses do ano?",
-                "Diferencia letras de n\u00fameros?",
-                "Nomeia todas as letras do alfabeto em ordem aleat\u00f3ria?",
-                "Escreve seu nome completo corretamente?",
-                "Demora para finalizar as atividades propostas pelo professor?",
-                "Apresenta dificuldade para realizar atividades que envolvem escrita?",
-                "Consegue soletrar palavras compostas por s\u00edlabas simples (Ex.: bola, caneta, telefone)?"
-            ]},
-            {secao: "LEITURA", itens: [
-                "Consegue ler palavras compostas por s\u00edlabas simples sem dificuldade (Ex.: gato, comida, telefone)?",
-                "Apresenta lentid\u00e3o na leitura de palavras?",
-                "Apresenta lentid\u00e3o na leitura de frases?",
-                "Apresenta dificuldade para associar letras ao som?",
-                "Tenta adivinhar a palavra quando l\u00ea o in\u00edcio dela?",
-                "Troca o som das letras p/b, t/d, f/v durante a leitura?",
-                "Confunde letras/s\u00edlabas visualmente semelhantes (Ex.: m/n, a/e, u/n, p/q, em/me)?",
-                "Omite letras ou palavras ao ler?",
-                "Gosta de ler em voz alta na sala de aula?",
-                "Compreende o texto ao fazer a leitura oral?",
-                "Compreende o texto ao fazer leitura silenciosa?",
-                "\u00c9 um dos \u00faltimos a terminar as tarefas que envolvem leitura?",
-                "N\u00e3o consegue terminar as tarefas devido a dificuldades de leitura?"
-            ]},
-            {secao: "ESCRITA", itens: [
-                "Se recusa ou evita escrever?",
-                "\u00c9 organizado no uso da folha (respeita linhas, usa margens)?",
-                "Sua escrita \u00e9 incompleta, com muitas rasuras no papel?",
-                "Apresenta dificuldade para copiar da lousa ou do livro?",
-                "Apresenta escrita \"espelhada\"?",
-                "Apresenta lentid\u00e3o para copiar e/ou escrever?",
-                "Omite, adiciona ou substitui palavras inteiras ao copiar frases?",
-                "Escreve corretamente palavras compostas por s\u00edlabas simples (Ex.: fogo, panela, canivete)?",
-                "No ditado, confunde letras audivelmente similares (Ex.: p/b, t/d, f/v, c/g, s/z)?",
-                "Na c\u00f3pia ou na escrita espont\u00e2nea, confunde letras visualmente semelhantes (Ex.: p/q, p/d, b/d, n/u, o/a, i/e)?",
-                "Na c\u00f3pia ou na escrita espont\u00e2nea, confunde a sequ\u00eancia de s\u00edlabas nas palavras (Ex.: \"sapato\" \u2013 \"pasato\")?",
-                "Apresenta escrita com erros significativos quando comparado aos demais colegas de sala?"
-            ]},
-            {secao: "MATEM\u00c1TICA", itens: [
-                "Identifica semelhan\u00e7as e diferen\u00e7as em formas geom\u00e9tricas?",
-                "\u00c9 capaz de fazer compara\u00e7\u00f5es envolvendo quantidade e tamanho (Ex.: mais/menos, maior/menor)?",
-                "Conta oralmente at\u00e9 20 respeitando a sequ\u00eancia num\u00e9rica?",
-                "Escreve e l\u00ea numerais na ordem de unidades?",
-                "Faz correspond\u00eancia de n\u00famero \u00e0 quantidade (de 1 a 9)?",
-                "Faz c\u00e1lculos de adi\u00e7\u00e3o e subtra\u00e7\u00e3o de unidades mentalmente?",
-                "Escreve e l\u00ea numerais na ordem de dezenas?",
-                "Compreende o conceito de antecessor e sucessor em dezenas?",
-                "Resolve contas de dezenas sem reserva?",
-                "Resolve contas de dezenas com reserva?",
-                "Escreve e l\u00ea numerais na ordem de centenas?",
-                "Resolve contas de centenas sem reserva?"
-            ]},
-            {secao: "ASPECTOS MOTORES", itens: [
-                "N\u00e3o gosta ou evita desenhar?",
-                "Respeita o limite da figura ao pintar?",
-                "Apresenta coordena\u00e7\u00e3o motora global preservada (Ex.: pula, corre, agarra)?",
-                "Apresenta coordena\u00e7\u00e3o motora fina preservada (Ex.: recorta, abotoa, amarra)?",
-                "Apresenta dificuldades na preens\u00e3o do l\u00e1pis?",
-                "Pressiona adequadamente (nem forte nem fraco) o l\u00e1pis no papel?",
-                "As letras t\u00eam tamanho desproporcional (grandes ou pequenas)?",
-                "A caligrafia \u00e9 leg\u00edvel (independente do tipo de letra utilizada)?",
-                "Apresenta dificuldade para fazer o tra\u00e7ado da letra cursiva?"
-            ]},
-            {secao: "ASPECTOS COMPORTAMENTAIS E ATENCIONAIS", itens: [
-                "Aceita e segue regras?",
-                "Distrai-se com facilidade?",
-                "Interage com os colegas?",
-                "\u00c9 organizado com a carteira e com os materiais?",
-                "Esquece tarefas, letras de m\u00fasicas e/ou materiais escolares?",
-                "Demonstra interesse pelas atividades propostas?",
-                "Apresenta comportamento agitado durante a aula?",
-                "Caminha pela sala durante as explica\u00e7\u00f5es?",
-                "Apresenta dificuldade em manter a aten\u00e7\u00e3o durante as explica\u00e7\u00f5es?",
-                "Solicita repeti\u00e7\u00e3o da instru\u00e7\u00e3o dada pelo professor?",
-                "Compreende as instru\u00e7\u00f5es dadas pelo professor?",
-                "Conclui as atividades iniciadas?",
-                "Frequentemente termina as atividades com atraso?"
-            ]}
-        ];
-
-        let numQ = 1;
-        const container = document.getElementById('questoes');
-        questoes.forEach(sec => {
-            const div = document.createElement('div');
-            div.className = 'secao';
-            div.innerHTML = `<div class="secao-titulo">${sec.secao}</div>`;
-            sec.itens.forEach(texto => {
-                const item = document.createElement('div');
-                item.className = 'item';
-                let escalaHTML = '<div class="escala">';
-                for(let i = 0; i <= 10; i++) {
-                    escalaHTML += `<label><input type="radio" name="q${numQ}" value="${i}" onchange="verificarPulos()">${i}</label>`;
-                }
-                escalaHTML += '</div>';
-                item.innerHTML = `<div class="item-num">${numQ}</div><div class="item-texto">${texto}</div>${escalaHTML}`;
-                div.appendChild(item);
-                numQ++;
-            });
-            container.appendChild(div);
-        });
-
-        document.getElementById('dataAval').valueAsDate = new Date();
-        
-        function calcularIdade() {
-            const dn = document.getElementById('dn').value;
-            if(!dn) {
-                document.getElementById('idadeCalculada').textContent = '';
-                return;
+function gerarQuestionario() {
+    var container = document.getElementById('questionario');
+    var html = '';
+    var numQ = 1;
+    for (var s = 0; s < SECOES.length; s++) {
+        html += '<div class="secao"><div class="secao-titulo">' + SECOES[s].nome + '</div>';
+        for (var i = 0; i < SECOES[s].itens.length; i++) {
+            html += '<div class="item"><div class="item-num">' + numQ + '</div>';
+            html += '<div class="item-texto">' + SECOES[s].itens[i] + '</div>';
+            html += '<div class="escala">';
+            for (var v = 0; v <= 10; v++) {
+                html += '<label><input type="radio" name="q' + numQ + '" value="' + v + '">' + v + '</label>';
             }
-            const nascimento = new Date(dn + 'T00:00:00');
-            const hoje = new Date();
-            
-            let anos = hoje.getFullYear() - nascimento.getFullYear();
-            let meses = hoje.getMonth() - nascimento.getMonth();
-            let dias = hoje.getDate() - nascimento.getDate();
-            
-            if(dias < 0) {
-                meses--;
-                const ultimoDiaMesAnterior = new Date(hoje.getFullYear(), hoje.getMonth(), 0).getDate();
-                dias += ultimoDiaMesAnterior;
-            }
-            
-            if(meses < 0) {
-                anos--;
-                meses += 12;
-            }
-            
-            document.getElementById('idade').value = anos;
-            document.getElementById('idadeCalculada').textContent = `(${anos} anos ${meses} meses ${dias} dias)`;
+            html += '</div></div>';
+            numQ++;
         }
-        
-        let totalPulos = 0;
-        
-        function verificarPulos() {
-            for(let i = 1; i <= 78; i++) {
-                const item = document.querySelector(`input[name="q${i}"]`).closest('.item');
-                const respondida = document.querySelector(`input[name="q${i}"]:checked`);
-                
-                if(respondida) {
-                    const estavaPulado = item.classList.contains('pulado');
-                    item.classList.remove('pulado');
-                } else {
-                    const temAntes = document.querySelector(`input[name="q${i-1}"]:checked`);
-                    const temDepois = document.querySelector(`input[name="q${i+1}"]:checked`);
-                    
-                    if(temAntes && temDepois && !item.classList.contains('pulado')) {
-                        item.classList.add('pulado');
-                        totalPulos++;
-                        document.getElementById('numPulos').textContent = totalPulos;
-                        document.getElementById('contadorDesatencao').style.display = 'block';
-                    } else if(!temAntes || !temDepois) {
-                        item.classList.remove('pulado');
-                    }
-                }
-            }
-        }
+        html += '</div>';
+    }
+    container.innerHTML = html;
+}
 
-        function calcular() {
-            let total = 0;
-            let puladas = [];
-            for(let i = 1; i <= 78; i++) {
-                const val = document.querySelector(`input[name="q${i}"]:checked`);
-                const item = document.querySelector(`input[name="q${i}"]`).closest('.item');
-                if(val) {
-                    total += parseInt(val.value);
-                    item.classList.remove('pulado');
-                } else {
-                    item.classList.add('pulado');
-                    puladas.push(i);
-                }
-            }
-            if(puladas.length > 0) {
-                document.getElementById('resultados').scrollIntoView({behavior: 'smooth'});
-                return;
-            }
-            document.getElementById('pontuacao').textContent = total;
-            
-            let interp = '';
-            if(total <= 78) {
-                interp = '<strong style="color:#4CAF50;">Resultado negativo para dislexia.</strong>';
-            } else if(total <= 312) {
-                interp = '<strong style="color:#FFC107;">Resultado improv\u00e1vel para dislexia, mas deve-se estar atento ao n\u00edvel de aprendizagem da crian\u00e7a.</strong>';
-            } else if(total <= 429) {
-                interp = '<strong style="color:#FF9800;">Resultados indicadores de dislexia, cabendo avaliar se cansa\u00e7o, press\u00e3o ou estresse influenciaram o desempenho no teste.</strong>';
-            } else if(total <= 623) {
-                interp = '<strong style="color:#F44336;">Ind\u00edcios significativos para dislexia.</strong>';
-            } else {
-                interp = '<strong style="color:#D32F2F;">Altamente prov\u00e1vel que o avaliando tenha dislexia.</strong>';
-            }
-            
-            document.getElementById('interpretacao').innerHTML = interp;
-            document.getElementById('resultados').style.display = 'block';
-            document.getElementById('resultados').scrollIntoView({behavior: 'smooth'});
-            window._escalaDados={escala:'Dislexia',paciente:document.getElementById('nome').value,escore:total,classificacao:interp.replace(/<[^>]*>/g,'').trim(),idPaciente:(document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''),data:new Date().toISOString()};
-            if(window.injetarBotaoSalvar)injetarBotaoSalvar('resultados');
-        }
+function calcularIdade() {
+    var dn = document.getElementById('dn').value;
+    if (!dn) { document.getElementById('idadeCalculada').textContent = ''; return; }
+    var nascimento = new Date(dn + 'T00:00:00');
+    var hoje = new Date();
+    var anos = hoje.getFullYear() - nascimento.getFullYear();
+    var meses = hoje.getMonth() - nascimento.getMonth();
+    var dias = hoje.getDate() - nascimento.getDate();
+    if (dias < 0) { meses--; dias += new Date(hoje.getFullYear(), hoje.getMonth(), 0).getDate(); }
+    if (meses < 0) { anos--; meses += 12; }
+    document.getElementById('idadeCalculada').textContent = '(' + anos + ' anos ' + meses + ' meses ' + dias + ' dias)';
+}
 
-        function gerarPDF() {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            
-            // Cabe\u00e7alho colorido
-            doc.setFillColor(76, 175, 80);
-            doc.rect(0, 0, 210, 25, 'F');
-            doc.setTextColor(255, 255, 255);
-            doc.setFontSize(16);
-            doc.setFont(undefined, 'bold');
-            doc.text('CHECKLIST DE DISLEXIA', 105, 12, {align: 'center'});
-            doc.setFontSize(10);
-            doc.text('Identifica\u00e7\u00e3o Precoce dos Sinais de Risco', 105, 18, {align: 'center'});
-            
-            // Dados do paciente
-            doc.setTextColor(0, 0, 0);
-            doc.setFont(undefined, 'normal');
-            doc.setFontSize(10);
-            let y = 35;
-            doc.text(`Nome: ${document.getElementById('nome').value}`, 20, y);
-            doc.text(`Idade: ${document.getElementById('idade').value}`, 20, y+6);
-            doc.text(`Escola: ${document.getElementById('escola').value}`, 20, y+12);
-            doc.text(`Ano: ${document.getElementById('ano').value}`, 20, y+18);
-            doc.text(`Data: ${document.getElementById('dataAval').value}`, 20, y+24);
-            const idPac = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
-            if (idPac) doc.text(`ID: ${idPac}`, 120, y+12);
-            
-            // Pontua\u00e7\u00e3o total
-            y = 75;
-            const total = parseInt(document.getElementById('pontuacao').textContent);
-            doc.setFillColor(227, 242, 253);
-            doc.rect(15, y-5, 180, 20, 'F');
-            doc.setFontSize(14);
-            doc.setFont(undefined, 'bold');
-            doc.text('PONTUA\u00c7\u00c3O TOTAL:', 20, y+5);
-            doc.setFontSize(18);
-            doc.setTextColor(25, 118, 210);
-            doc.text(`${total} pontos`, 90, y+5);
-            
-            // An\u00e1lise por \u00e1rea
-            y = 105;
-            doc.setTextColor(0, 0, 0);
-            doc.setFontSize(12);
-            doc.setFont(undefined, 'bold');
-            doc.text('AN\u00c1LISE POR \u00c1REA:', 20, y);
-            
-            const pontuacoesPorArea = calcularPorArea();
-            let maxArea = {nome: '', pontos: 0};
-            
-            y += 8;
-            doc.setFontSize(9);
-            pontuacoesPorArea.forEach((area, idx) => {
-                if(area.pontos > maxArea.pontos) {
-                    maxArea = area;
-                }
-                const cores = [[76,175,80], [33,150,243], [255,152,0], [244,67,54], [156,39,176], [121,85,72], [96,125,139]];
-                doc.setFillColor(...cores[idx]);
-                doc.rect(20, y, 5, 5, 'F');
-                doc.setFont(undefined, 'normal');
-                doc.text(`${area.nome}: ${area.pontos} pts (${area.percentual}%)`, 28, y+4);
-                y += 8;
-            });
-            
-            // \u00c1rea com maior pontua\u00e7\u00e3o
-            y += 5;
-            doc.setFillColor(255, 235, 59);
-            doc.rect(15, y-3, 180, 12, 'F');
-            doc.setFont(undefined, 'bold');
-            doc.setFontSize(10);
-            doc.setTextColor(213, 0, 0);
-            doc.text(`\u26a0 \u00c1REA COM MAIOR DIFICULDADE: ${maxArea.nome.toUpperCase()}`, 20, y+4);
-            
-            // Interpreta\u00e7\u00e3o
-            y += 20;
-            doc.setTextColor(0, 0, 0);
-            doc.setFontSize(12);
-            doc.setFont(undefined, 'bold');
-            doc.text('INTERPRETA\u00c7\u00c3O:', 20, y);
-            
-            y += 8;
-            doc.setFontSize(9);
-            doc.setFont(undefined, 'normal');
-            let interpTexto = '';
-            let corInterp = [0, 0, 0];
-            if(total <= 78) {
-                interpTexto = 'Resultado negativo para dislexia.';
-                corInterp = [76, 175, 80];
-            } else if(total <= 312) {
-                interpTexto = 'Resultado improv\u00e1vel para dislexia, mas deve-se estar atento ao\nn\u00edvel de aprendizagem da crian\u00e7a.';
-                corInterp = [255, 193, 7];
-            } else if(total <= 429) {
-                interpTexto = 'Resultados indicadores de dislexia, cabendo avaliar se cansa\u00e7o,\npress\u00e3o ou estresse influenciaram o desempenho no teste.';
-                corInterp = [255, 152, 0];
-            } else if(total <= 623) {
-                interpTexto = 'Ind\u00edcios significativos para dislexia.';
-                corInterp = [244, 67, 54];
-            } else {
-                interpTexto = 'Altamente prov\u00e1vel que o avaliando tenha dislexia.';
-                corInterp = [211, 47, 47];
-            }
-            
-            doc.setTextColor(...corInterp);
-            doc.setFont(undefined, 'bold');
-            const linhas = doc.splitTextToSize(interpTexto, 170);
-            linhas.forEach(linha => {
-                doc.text(linha, 20, y);
-                y += 6;
-            });
-            
-            // Rodap\u00e9
-            doc.setTextColor(150, 150, 150);
-            doc.setFontSize(8);
-            doc.setFont(undefined, 'italic');
-            doc.text('Documento gerado automaticamente - ' + new Date().toLocaleDateString(), 105, 285, {align: 'center'});
-            
-            const agora = new Date();
-            const ano = agora.getFullYear();
-            const mes = String(agora.getMonth() + 1).padStart(2, '0');
-            const dia = String(agora.getDate()).padStart(2, '0');
-            const hora = String(agora.getHours()).padStart(2, '0');
-            const min = String(agora.getMinutes()).padStart(2, '0');
-            const timestamp = `${ano}${mes}${dia}${hora}${min}`;
-            const nome = document.getElementById('nome').value || 'Paciente';
-            const nomeArquivo = `chekdislex_${nome}_${timestamp}.pdf`;
-            doc.save(nomeArquivo);
+function calcularPorArea() {
+    var areas = [];
+    var inicio = 1;
+    for (var s = 0; s < SECOES.length; s++) {
+        var pontos = 0;
+        for (var i = 0; i < SECOES[s].itens.length; i++) {
+            var val = document.querySelector('input[name="q' + (inicio + i) + '"]:checked');
+            if (val) pontos += parseInt(val.value);
         }
-        
-        function calcularPorArea() {
-            const areas = [];
-            let inicio = 1;
-            questoes.forEach(sec => {
-                let pontos = 0;
-                for(let i = 0; i < sec.itens.length; i++) {
-                    const val = document.querySelector(`input[name="q${inicio + i}"]:checked`);
-                    if(val) pontos += parseInt(val.value);
-                }
-                const maxPontos = sec.itens.length * 10;
-                const percentual = Math.round((pontos / maxPontos) * 100);
-                areas.push({nome: sec.secao, pontos: pontos, percentual: percentual});
-                inicio += sec.itens.length;
-            });
-            return areas;
-        }
+        var maxPontos = SECOES[s].itens.length * 10;
+        var percentual = Math.round((pontos / maxPontos) * 100);
+        areas.push({nome: SECOES[s].nome, pontos: pontos, percentual: percentual, max: maxPontos});
+        inicio += SECOES[s].itens.length;
+    }
+    return areas;
+}
 
-        function salvar() {
-            const dados = {nome: document.getElementById('nome').value, dn: document.getElementById('dn').value, idade: document.getElementById('idade').value, escola: document.getElementById('escola').value, ano: document.getElementById('ano').value, dataAval: document.getElementById('dataAval').value};
-            for(let i = 1; i <= 78; i++) {
-                const val = document.querySelector(`input[name="q${i}"]:checked`);
-                if(val) dados[`q${i}`] = val.value;
-            }
-            localStorage.setItem('checklistDislexia', JSON.stringify(dados));
-            alert('Dados salvos!');
-        }
+function calcular() {
+    var nome = document.getElementById('nome').value.trim();
+    if (!nome) { alert('Preencha o nome antes de calcular.'); return; }
+    var total = 0;
+    var naoResp = [];
+    for (var i = 1; i <= 78; i++) {
+        var val = document.querySelector('input[name="q' + i + '"]:checked');
+        if (val) { total += parseInt(val.value); }
+        else { naoResp.push(i); }
+    }
+    if (naoResp.length > 0) {
+        alert('Responda todos os itens. Faltam: ' + naoResp.length + ' itens (' + naoResp.slice(0, 5).join(', ') + (naoResp.length > 5 ? '...' : '') + ')');
+        return;
+    }
+    document.getElementById('pontuacao').textContent = total;
+    var interp = '';
+    var cor = '';
+    if (total <= 78) { interp = 'Resultado negativo para dislexia.'; cor = '#4CAF50'; }
+    else if (total <= 312) { interp = 'Resultado improv\u00e1vel para dislexia, mas deve-se estar atento ao n\u00edvel de aprendizagem da crian\u00e7a.'; cor = '#FFC107'; }
+    else if (total <= 429) { interp = 'Resultados indicadores de dislexia, cabendo avaliar se cansa\u00e7o, press\u00e3o ou estresse influenciaram o desempenho.'; cor = '#FF9800'; }
+    else if (total <= 623) { interp = 'Ind\u00edcios significativos para dislexia.'; cor = '#F44336'; }
+    else { interp = 'Altamente prov\u00e1vel que o avaliando tenha dislexia.'; cor = '#D32F2F'; }
+    document.getElementById('interpretacao').innerHTML = '<strong style="color:' + cor + '">' + interp + '</strong>';
+    // Areas
+    var areas = calcularPorArea();
+    var areaHTML = '<h3 style="margin-bottom:10px">An\u00e1lise por \u00c1rea:</h3>';
+    var maxArea = {nome:'', pontos:0};
+    for (var a = 0; a < areas.length; a++) {
+        if (areas[a].pontos > maxArea.pontos) maxArea = areas[a];
+        areaHTML += '<div style="margin:5px 0;padding:8px;background:white;border-radius:4px">';
+        areaHTML += '<strong>' + areas[a].nome + ':</strong> ' + areas[a].pontos + '/' + areas[a].max + ' (' + areas[a].percentual + '%)';
+        areaHTML += '<div style="background:#e0e0e0;height:8px;border-radius:4px;margin-top:4px"><div style="background:#4CAF50;height:8px;border-radius:4px;width:' + areas[a].percentual + '%"></div></div>';
+        areaHTML += '</div>';
+    }
+    areaHTML += '<div style="margin-top:15px;padding:10px;background:#fff3e0;border-radius:4px;border-left:4px solid #ff9800"><strong>\u00c1rea com maior dificuldade:</strong> ' + maxArea.nome + ' (' + maxArea.percentual + '%)</div>';
+    document.getElementById('areas').innerHTML = areaHTML;
+    document.getElementById('resultados').style.display = 'block';
+    document.getElementById('resultados').scrollIntoView({behavior:'smooth'});
+    window._escalaDados = {escala:'Dislexia', paciente:nome, escore:total, classificacao:interp, idPaciente:(document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''), data:new Date().toISOString()};
+    if (window.injetarBotaoSalvar) injetarBotaoSalvar('resultados');
+}
 
-        function limpar() {
-            if(confirm('Limpar todos os dados?')) {
-                document.querySelectorAll('input').forEach(el => {
-                    if(el.type === 'radio') el.checked = false;
-                    else if(el.id !== 'dataAval') el.value = '';
-                });
-                document.getElementById('resultados').style.display = 'none';
-                document.getElementById('contadorDesatencao').style.display = 'none';
-                totalPulos = 0;
-                document.getElementById('numPulos').textContent = '0';
-                localStorage.removeItem('checklistDislexia');
-            }
-        }
+function gerarPDF() {
+    if (!window._escalaDados) { calcular(); if (!window._escalaDados) return; }
+    var jsPDF = window.jspdf.jsPDF;
+    var doc = new jsPDF();
+    doc.setFillColor(76,175,80); doc.rect(0,0,210,25,'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(16); doc.setFont(undefined,'bold');
+    doc.text('CHECKLIST DE DISLEXIA', 105, 12, {align:'center'});
+    doc.setFontSize(10); doc.text('Identifica\u00e7\u00e3o Precoce dos Sinais de Risco', 105, 18, {align:'center'});
+    doc.setTextColor(0,0,0); doc.setFont(undefined,'normal'); doc.setFontSize(10);
+    var y = 35;
+    doc.text('Nome: ' + document.getElementById('nome').value, 20, y);
+    var idEl = document.getElementById('idPaciente');
+    if (idEl && idEl.value) doc.text('ID: ' + idEl.value, 140, y);
+    y += 6; doc.text('Data Nasc.: ' + (document.getElementById('dn').value || ''), 20, y);
+    doc.text('Idade: ' + (document.getElementById('idadeCalculada').textContent || ''), 100, y);
+    y += 6; doc.text('Escola: ' + document.getElementById('escola').value, 20, y);
+    doc.text('Ano: ' + document.getElementById('ano').value, 140, y);
+    y += 6; doc.text('Data Aval.: ' + document.getElementById('dataAval').value, 20, y);
+    y += 12;
+    var total = parseInt(document.getElementById('pontuacao').textContent);
+    doc.setFillColor(227,242,253); doc.rect(15,y-5,180,15,'F');
+    doc.setFontSize(14); doc.setFont(undefined,'bold');
+    doc.text('PONTUACAO TOTAL: ' + total + ' pontos', 105, y+4, {align:'center'});
+    y += 18;
+    doc.setFontSize(11); doc.text('ANALISE POR AREA:', 20, y); y += 8;
+    var areas = calcularPorArea();
+    doc.setFontSize(9); doc.setFont(undefined,'normal');
+    for (var a = 0; a < areas.length; a++) {
+        doc.text(areas[a].nome + ': ' + areas[a].pontos + '/' + areas[a].max + ' (' + areas[a].percentual + '%)', 25, y);
+        y += 6;
+    }
+    y += 5;
+    doc.setFont(undefined,'bold'); doc.setFontSize(10);
+    var interpText = window._escalaDados.classificacao;
+    var linhas = doc.splitTextToSize(interpText, 170);
+    for (var l = 0; l < linhas.length; l++) { doc.text(linhas[l], 20, y); y += 6; }
+    doc.setTextColor(150,150,150); doc.setFontSize(8); doc.setFont(undefined,'italic');
+    doc.text('Documento gerado em ' + new Date().toLocaleString(), 105, 285, {align:'center'});
+    var agora = new Date();
+    var ts = agora.getFullYear() + String(agora.getMonth()+1).padStart(2,'0') + String(agora.getDate()).padStart(2,'0') + String(agora.getHours()).padStart(2,'0') + String(agora.getMinutes()).padStart(2,'0');
+    doc.save('Dislexia_' + (document.getElementById('nome').value||'Paciente') + '_' + ts + '.pdf');
+}
 
-        window.onload = () => {
-            const salvo = localStorage.getItem('checklistDislexia');
-            if(salvo) {
-                const dados = JSON.parse(salvo);
-                document.getElementById('nome').value = dados.nome || '';
-                document.getElementById('dn').value = dados.dn || '';
-                document.getElementById('idade').value = dados.idade || '';
-                document.getElementById('escola').value = dados.escola || '';
-                document.getElementById('ano').value = dados.ano || '';
-                document.getElementById('dataAval').value = dados.dataAval || '';
-                for(let i = 1; i <= 78; i++) {
-                    if(dados[`q${i}`]) {
-                        const radio = document.querySelector(`input[name="q${i}"][value="${dados[`q${i}`]}"]`);
-                        if(radio) radio.checked = true;
-                    }
-                }
-            }
-        };
-    
-// ===== MODO PAINEL (via link) =====
+function limpar() {
+    if (!confirm('Limpar todos os dados?')) return;
+    document.querySelectorAll('input[type=radio]').forEach(function(el){el.checked=false;});
+    document.querySelectorAll('input[type=text],input[type=date],input[type=number]').forEach(function(el){if(el.id!=='dataAval')el.value='';});
+    document.getElementById('resultados').style.display = 'none';
+    document.getElementById('idadeCalculada').textContent = '';
+    window._escalaDados = null;
+}
+
+// ===== MODO PAINEL =====
 var _sessionInfo = null;
 var _API_URL = 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
 
 function _decodificarURL() {
     var params = new URLSearchParams(window.location.search);
     var d = params.get('d');
-    if (d) {
-        try { _sessionInfo = JSON.parse(atob(decodeURIComponent(d))); } catch(e) { return false; }
-        // Preencher dados do paciente vindos do painel
-        var nomeEl = document.getElementById('nome');
-        var nascEl = document.getElementById('dataNascimento') || document.getElementById('dn');
-        var sexoEl = document.getElementById('sexo');
-        if (nomeEl && _sessionInfo.patientName) nomeEl.value = _sessionInfo.patientName;
-        if (nascEl && _sessionInfo.birthDate) nascEl.value = _sessionInfo.birthDate;
-        if (sexoEl && _sessionInfo.sex) sexoEl.value = _sessionInfo.sex;
-        // Calcular idade se funcao existir
-        if (typeof calcularIdade === 'function') calcularIdade();
-        // Disparar eventos para id-paciente.js recalcular
-        if (nomeEl) nomeEl.dispatchEvent(new Event('input'));
-        if (nascEl) nascEl.dispatchEvent(new Event('change'));
-        // Trocar botoes
-        var botoes = document.querySelector('.botoes') || document.querySelector('.actions');
-        if (botoes) botoes.innerHTML = '<button class="btn btn-primary" style="padding:15px 30px;border:none;border-radius:25px;font-size:16px;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#2e7d32,#43a047);color:white;" onclick="_enviarResultadosPainel()">Enviar Resultados ao Profissional</button>';
-        // Esconder info tecnica
-        var infoTec = document.querySelector('.info-tecnica');
-        if (infoTec) infoTec.style.display = 'none';
-        return true;
-    }
-    return false;
+    if (!d) return false;
+    try { _sessionInfo = JSON.parse(atob(decodeURIComponent(d))); } catch(e) { return false; }
+    var nomeEl = document.getElementById('nome');
+    var nascEl = document.getElementById('dn');
+    if (nomeEl && _sessionInfo.patientName) nomeEl.value = _sessionInfo.patientName;
+    if (nascEl && _sessionInfo.birthDate) { nascEl.value = _sessionInfo.birthDate; calcularIdade(); }
+    if (nomeEl) nomeEl.dispatchEvent(new Event('input'));
+    if (nascEl) nascEl.dispatchEvent(new Event('change'));
+    var botoes = document.querySelector('.actions');
+    if (botoes) botoes.innerHTML = '<button class="btn" style="padding:15px 30px;border:none;border-radius:25px;font-size:16px;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#2e7d32,#43a047);color:white;" onclick="_enviarResultadosPainel()">Enviar Resultados ao Profissional</button>';
+    return true;
 }
 
 async function _enviarResultadosPainel() {
-    // Validar nome preenchido
-    var nomeEl = document.getElementById('nome') || document.getElementById('patientName') || document.getElementById('nomeFilho') || document.getElementById('crianca');
+    var nomeEl = document.getElementById('nome');
     if (nomeEl && !nomeEl.value.trim()) { alert('Preencha o nome antes de enviar.'); return; }
-    // Coletar dados da escala (usa window._escalaDados se disponivel)
-    var calcFn = window.calcularResultados || window.calcular;
-    if (calcFn && !window._escalaDados) {
-        try { calcFn(); } catch(e) {}
-    }
-    var dados = window._escalaDados || {};
-    if (!dados.escala) dados.escala = document.title.replace(/[\s\u2014\u2013|].*/,'').trim();
-    var idPaciente = '';
+    if (!window._escalaDados) { calcular(); if (!window._escalaDados) return; }
+    var dados = window._escalaDados;
     var idEl = document.getElementById('idPaciente');
-    if (idEl) idPaciente = idEl.value || '';
-    dados.idPaciente = idPaciente;
+    if (idEl) dados.idPaciente = idEl.value || '';
     dados.data = new Date().toISOString();
-    // Enviar
-    var btn = document.querySelector('.botoes button') || document.querySelector('.actions button');
+    var btn = document.querySelector('.actions button');
     if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
     try {
         var resp = await fetch(_API_URL + '/save-escala', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sessionId: _sessionInfo.sessionId, email: _sessionInfo.email, data: dados })
+            method: 'POST', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({sessionId:_sessionInfo.sessionId, email:_sessionInfo.email, data:dados})
         });
         var result = await resp.json();
         if (result.ok || resp.ok) {
-            var container = document.querySelector('.botoes') || document.querySelector('.actions');
-            if (container) container.innerHTML = '<div style="background:#c8e6c9;border:2px solid #2e7d32;border-radius:10px;padding:20px;text-align:center;"><p style="font-size:1.3em;color:#2e7d32;font-weight:bold;">\u2705 Resultados enviados com sucesso!</p><p style="color:#555;margin-top:8px;">O profissional ja pode visualizar seus resultados no painel.</p><p style="color:#777;margin-top:5px;font-size:0.85em;">Voce pode fechar esta pagina.</p></div>';
-            // Esconder resultados visuais
-            var res = document.getElementById('resultados') || document.querySelector('.resultados');
+            var container = document.querySelector('.actions');
+            if (container) container.innerHTML = '<div style="background:#c8e6c9;border:2px solid #2e7d32;border-radius:10px;padding:20px;text-align:center;"><p style="font-size:1.3em;color:#2e7d32;font-weight:bold;">Resultados enviados com sucesso!</p><p style="color:#555;margin-top:8px;">O profissional ja pode visualizar seus resultados no painel.</p></div>';
+            var res = document.getElementById('resultados');
             if (res) res.style.display = 'none';
         } else {
             if (btn) { btn.disabled = false; btn.textContent = 'Enviar Resultados ao Profissional'; }
@@ -553,27 +361,23 @@ async function _enviarResultadosPainel() {
 }
 
 // === INICIALIZACAO ===
-(function(){
-    var params = new URLSearchParams(window.location.search);
-    if (params.get('d')) {
-        _decodificarURL();
-    } else if (params.get('print')) {
-        var botoes = document.querySelector('.actions');
-        if (botoes) botoes.style.display = 'none';
-        var resultados = document.getElementById('resultados');
-        if (resultados) resultados.style.display = 'none';
-        setTimeout(function(){ window.print(); }, 500);
-    } else if (!window.location.protocol.startsWith('file')) {
-        window.location.href = 'https://setmonte.github.io/online/';
-    }
-})();
-
-    </script>
+gerarQuestionario();
+document.getElementById('dataAval').value = new Date().toISOString().split('T')[0];
+var _params = new URLSearchParams(window.location.search);
+if (_params.get('d')) {
+    _decodificarURL();
+} else if (_params.get('print')) {
+    var _botoes = document.querySelector('.actions');
+    if (_botoes) _botoes.style.display = 'none';
+    setTimeout(function(){ window.print(); }, 500);
+} else if (!window.location.protocol.startsWith('file')) {
+    window.location.href = 'https://setmonte.github.io/online/';
+}
+</script>
 <script>
-// Nao carregar scripts de salvar/pdf se estiver em modo painel
 if (!new URLSearchParams(window.location.search).get('d')) {
-  var s1 = document.createElement('script'); s1.src = 'pdf-escalas.js'; document.body.appendChild(s1);
-  var s2 = document.createElement('script'); s2.src = 'salvar-escala.js'; document.body.appendChild(s2);
+    var s1=document.createElement('script');s1.src='pdf-escalas.js';document.body.appendChild(s1);
+    var s2=document.createElement('script');s2.src='salvar-escala.js';document.body.appendChild(s2);
 }
 </script>
 </body>
