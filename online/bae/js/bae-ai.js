@@ -98,9 +98,12 @@ var BAEAI = (function() {
         
         // Informacoes de dispositivo e modo de entrada
         var dispInfo = window.dispositivoBAE ? window.dispositivoBAE.obterRelatorioCompleto() : null;
+        if (!dispInfo && window.resultadosBAE && window.resultadosBAE._dispositivo) {
+            dispInfo = window.resultadosBAE._dispositivo;
+        }
         if (dispInfo) {
             texto += 'DISPOSITIVO E MODO DE ENTRADA:\n';
-            texto += 'Dispositivo: ' + dispInfo.dispositivo.descricao + '\n';
+            texto += 'Dispositivo: ' + (dispInfo.dispositivo ? dispInfo.dispositivo.descricao : 'N/I') + '\n';
             var nomesTestes = ['concentrada','seletiva','dividida','alternada','sustentada'];
             for (var ti = 0; ti < nomesTestes.length; ti++) {
                 var nt = nomesTestes[ti];

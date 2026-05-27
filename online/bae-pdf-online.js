@@ -44,6 +44,7 @@ async function generateBAEPDF(idx) {
     // Restaurar informações do dispositivo do paciente (salvas no servidor)
     if (d.dispositivo) {
       window._dispositivoPaciente = d.dispositivo;
+      window.resultadosBAE._dispositivo = d.dispositivo;
       // Criar um mock de dispositivoBAE com os dados do paciente para a IA usar
       window.dispositivoBAE = {
         isTouch: d.dispositivo.dispositivo ? d.dispositivo.dispositivo.touch : false,
@@ -62,17 +63,20 @@ async function generateBAEPDF(idx) {
       else if (/iPad|Android(?!.*Mobile)/i.test(ua)) tipoDetectado = 'Tablet';
       else if (/Windows|Mac|Linux/i.test(ua)) tipoDetectado = 'Desktop';
       var descFallback = tipoDetectado + ' (informado: ' + informado + ')';
+      var fallbackData = { dispositivo: { tipo: tipoDetectado, descricao: descFallback, touch: informado !== 'computador' }, testes: {} };
+      window.resultadosBAE._dispositivo = fallbackData;
       window.dispositivoBAE = {
         isTouch: informado === 'celular' || informado === 'tablet',
         tipo: tipoDetectado,
-        obterRelatorioCompleto: function() { return { dispositivo: { tipo: tipoDetectado, descricao: descFallback, touch: informado !== 'computador' }, testes: {} }; },
-        obterInfoDispositivo: function() { return { tipo: tipoDetectado, descricao: descFallback, touch: informado !== 'computador' }; },
+        obterRelatorioCompleto: function() { return fallbackData; },
+        obterInfoDispositivo: function() { return fallbackData.dispositivo; },
         obterResumo: function() { return {modo:'N/A'}; }
       };
       console.log('📱 Dispositivo (fallback): ' + descFallback);
     } else {
       console.log('⚠️ Sem dados de dispositivo do paciente nos resultados salvos');
       window.dispositivoBAE = null;
+      window.resultadosBAE._dispositivo = null;
     }
 
     window.resultadosBAE.testesCompletos = {
