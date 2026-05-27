@@ -171,10 +171,16 @@ function mostrarInstrucoesAlternada(callback) {
   var isTouchDevice = window.dispositivoBAE && window.dispositivoBAE.isTouch;
   var isMobile = window.innerWidth <= 768;
   
+  // Centraliza o quadro para as instruções (ocupa tela toda)
+  quadro.style.width = '100vw';
+  quadro.style.height = '100vh';
+  quadro.style.top = '0';
+  quadro.style.left = '0';
+  quadro.style.transform = 'none';
+  quadro.style.flexDirection = 'column';
+  
   // Expande quadro temporariamente para caber instruções no mobile
   if (isMobile) {
-    quadro.style.height = 'auto';
-    quadro.style.minHeight = '200px';
     quadro.style.overflow = 'auto';
   }
   
@@ -219,12 +225,15 @@ function mostrarInstrucoesAlternada(callback) {
   const botao = quadro.querySelector('button');
   botao.onclick = () => {
     quadro.innerHTML = '';
-    // Restaura tamanho original no mobile
-    if (isMobile) {
-      quadro.style.height = '';
-      quadro.style.minHeight = '';
-      quadro.style.overflow = '';
-    }
+    // Restaura tamanho e posição original
+    quadro.style.width = '';
+    quadro.style.height = '';
+    quadro.style.top = '';
+    quadro.style.left = '';
+    quadro.style.transform = '';
+    quadro.style.flexDirection = '';
+    quadro.style.overflow = '';
+    quadro.style.minHeight = '';
     callback();
   };
 }
