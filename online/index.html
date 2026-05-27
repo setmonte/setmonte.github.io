@@ -162,6 +162,8 @@
               <option value="dislexia">Dislexia (Rastreio)</option>
               <option value="tdi">TDI (Deficiencia Intelectual)</option>
               <option value="ysq-s3">YSQ-S3 (Esquemas - Curta)</option>
+              <option value="ysq-l3">YSQ-L3 (Esquemas - Longa 232 itens)</option>
+              <option value="smi">SMI (Modos Esquematicos)</option>
               <option value="ert-pb">ERT-PB (Personalidade Borderline)</option>
               <option value="ert-pn">ERT-PN (Personalidade Narcisista)</option>
               <option value="ert-pa">ERT-PA (Personalidade Antissocial)</option>
@@ -1611,6 +1613,9 @@
         html += '<p><strong>Creditos TECFE:</strong> ' + (data.credits || 0) + '</p>';
         html += '<p><strong>Creditos BAE:</strong> ' + (data.baeCredits || 0) + '</p>';
         html += '<p><strong>Creditos TRMV:</strong> ' + (data.trmvCredits || 0) + '</p>';
+        html += '<p><strong>Creditos TAAV:</strong> ' + (data.taavCredits || 0) + '</p>';
+        html += '<p><strong>Creditos TREF:</strong> ' + (data.trefCredits || 0) + '</p>';
+        html += '<p><strong>Creditos TFLOD:</strong> ' + (data.tflodCredits || 0) + '</p>';
         html += '</div>';
         el.innerHTML = html;
       } catch(e) { el.innerHTML = '<p style="color:red;">Erro: ' + e.message + '</p>'; }
@@ -2013,7 +2018,9 @@
       var escala = document.getElementById('escalaSelect').value;
       if (!escala) { alert('Selecione uma escala primeiro.'); return; }
       // Abre a escala com parametro print=1 para imprimir formulario em branco
-      window.open('https://setmonte.github.io/escalas/' + escala + '.html?print=1', '_blank');
+      var escalasSubpasta = ['smi', 'ysq-l3'];
+      var caminho = escalasSubpasta.indexOf(escala) >= 0 ? escala + '/' : escala + '.html';
+      window.open('https://setmonte.github.io/escalas/' + caminho + '?print=1', '_blank');
     }
 
     function gerarLinkEscala() {
@@ -2036,7 +2043,9 @@
         pacienteId: document.getElementById('escalaSelPac').value || ''
       };
       var params = btoa(JSON.stringify(sessionData));
-      var link = 'https://setmonte.github.io/escalas/' + escala + '.html?d=' + encodeURIComponent(params);
+      var escalasSubpasta = ['smi', 'ysq-l3'];
+      var caminho = escalasSubpasta.indexOf(escala) >= 0 ? escala + '/' : escala + '.html';
+      var link = 'https://setmonte.github.io/escalas/' + caminho + '?d=' + encodeURIComponent(params);
       document.getElementById('escalaSessionLink').textContent = link;
       document.getElementById('escalaLinkResult').classList.remove('hidden');
     }
