@@ -41,6 +41,19 @@ async function generateBAEPDF(idx) {
     window.resultadosBAE.alternada = d.alternada || null;
     window.resultadosBAE.sustentada = d.sustentada || null;
 
+    // Restaurar informações do dispositivo do paciente (salvas no servidor)
+    if (d.dispositivo) {
+      window._dispositivoPaciente = d.dispositivo;
+      // Criar um mock de dispositivoBAE com os dados do paciente para a IA usar
+      window.dispositivoBAE = {
+        isTouch: d.dispositivo.dispositivo ? d.dispositivo.dispositivo.touch : false,
+        tipo: d.dispositivo.dispositivo ? d.dispositivo.dispositivo.tipo : 'Desconhecido',
+        obterRelatorioCompleto: function() { return d.dispositivo; },
+        obterInfoDispositivo: function() { return d.dispositivo.dispositivo || {}; },
+        obterResumo: function(t) { return d.dispositivo.testes ? (d.dispositivo.testes[t] || {modo:'N/A'}) : {modo:'N/A'}; }
+      };
+    }
+
     window.resultadosBAE.testesCompletos = {
       concentrada: !!d.concentrada,
       seletiva: !!d.seletiva,

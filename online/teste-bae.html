@@ -278,6 +278,7 @@
     async function enviarResultados(status) {
       try {
         var r = window.resultadosBAE || {};
+        var dispInfo = window.dispositivoBAE ? window.dispositivoBAE.obterRelatorioCompleto() : null;
         await fetch(API_URL + '/save-result', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -292,11 +293,13 @@
               dividida: r.dividida || null,
               alternada: r.alternada || null,
               sustentada: r.sustentada || null,
+              dispositivo: dispInfo,
               status: status,
               date: new Date().toISOString()
             }
           })
         });
+        if (status === 'completo') _resultadosEnviados = true;
         console.log('✅ Resultados BAE enviados ao servidor');
       } catch(e) {
         console.error('❌ Erro ao enviar resultados:', e);
@@ -323,11 +326,16 @@
       document.getElementById('endPage').style.display = 'block';
     }
 
-    // Se paciente fechar a janela no meio, envia o que tem
+    // Flag para saber se já enviou como completo
+    var _resultadosEnviados = false;
+
+    // Se paciente fechar a janela no meio, envia o que tem (só se não enviou como completo)
     window.addEventListener('beforeunload', function() {
+      if (_resultadosEnviados) return; // já enviou como completo, não sobrescrever
       var r = window.resultadosBAE || {};
       var realizados = ['concentrada','seletiva','dividida','alternada','sustentada'].filter(function(t) { return r[t]; });
       if (realizados.length > 0) {
+        var dispInfo = window.dispositivoBAE ? window.dispositivoBAE.obterRelatorioCompleto() : null;
         navigator.sendBeacon(API_URL + '/save-result', JSON.stringify({
           sessionId: sessionData.sessionId,
           email: sessionData.email,
@@ -339,6 +347,7 @@
             dividida: r.dividida || null,
             alternada: r.alternada || null,
             sustentada: r.sustentada || null,
+            dispositivo: dispInfo,
             status: 'abandonado',
             date: new Date().toISOString()
           }
