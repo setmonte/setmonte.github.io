@@ -316,10 +316,12 @@
     }
 
     function mostrarTelaFinal() {
-      // Sai da tela cheia ao finalizar
-      if (document.exitFullscreen) document.exitFullscreen();
-      else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
-      else if (document.msExitFullscreen) document.msExitFullscreen();
+      // Sai da tela cheia ao finalizar (com try/catch pois pode já ter saído)
+      try {
+        if (document.fullscreenElement) document.exitFullscreen();
+        else if (document.webkitFullscreenElement) document.webkitExitFullscreen();
+        else if (document.msFullscreenElement) document.msExitFullscreen();
+      } catch(e) {}
 
       // Esconde tudo
       ['coverPage','testeConcentrada','testeSeletiva','testeDividida','paginaTesteAlternado','testeSustentada'].forEach(function(id) {

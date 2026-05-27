@@ -154,17 +154,27 @@ var BAEAI = (function() {
             
             console.log('🤖 Chamando Gemini...');
             
-            var response = await fetch(
-                'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=' + key,
-                {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: prompt }] }],
-                        generationConfig: { temperature: 0.3, maxOutputTokens: 2000 }
-                    })
+            var response = null;
+            var tentativas = 2;
+            for (var tent = 0; tent < tentativas; tent++) {
+                response = await fetch(
+                    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=' + key,
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: prompt }] }],
+                            generationConfig: { temperature: 0.3, maxOutputTokens: 2000 }
+                        })
+                    }
+                );
+                if (response.ok || response.status < 500) break;
+                // Erro 5xx - espera 3s e tenta de novo
+                if (tent < tentativas - 1) {
+                    console.log('⚠️ Gemini retornou ' + response.status + ', tentando novamente em 3s...');
+                    await new Promise(function(r){setTimeout(r,3000);});
                 }
-            );
+            }
             
             if (!response.ok) throw new Error('HTTP ' + response.status);
             
