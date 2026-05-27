@@ -29,6 +29,20 @@
     <p id="pacienteNome" style="text-align:center; font-size:16px; color:#2e7d32; font-weight:bold; margin:15px 0;"></p>
     <div style="background:#f8f9fa; padding:20px; border-radius:10px; margin:20px 0; text-align:left; max-width:600px; margin:20px auto;">
       <p id="infoTestes" style="font-size:14px; line-height:1.6; color:#555;"></p>
+      <div style="margin-top:15px; padding-top:15px; border-top:1px solid #ddd;">
+        <p style="font-size:14px; color:#555; margin-bottom:8px;"><strong>Qual dispositivo você está usando?</strong></p>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <label style="display:flex;align-items:center;gap:5px;cursor:pointer;padding:8px 12px;border:2px solid #ddd;border-radius:8px;">
+            <input type="radio" name="dispositivo" value="computador" checked> Computador
+          </label>
+          <label style="display:flex;align-items:center;gap:5px;cursor:pointer;padding:8px 12px;border:2px solid #ddd;border-radius:8px;">
+            <input type="radio" name="dispositivo" value="celular"> Celular
+          </label>
+          <label style="display:flex;align-items:center;gap:5px;cursor:pointer;padding:8px 12px;border:2px solid #ddd;border-radius:8px;">
+            <input type="radio" name="dispositivo" value="tablet"> Tablet
+          </label>
+        </div>
+      </div>
     </div>
     <button id="startButton" class="botao-iniciar" style="font-size:18px; padding:15px 40px;" onclick="iniciarBateria()">
       ▶ Iniciar
@@ -288,6 +302,9 @@
       try {
         var r = window.resultadosBAE || {};
         var dispInfo = window.dispositivoBAE ? window.dispositivoBAE.obterRelatorioCompleto() : null;
+        // Resposta do paciente sobre qual dispositivo usa
+        var dispRadio = document.querySelector('input[name="dispositivo"]:checked');
+        var dispPaciente = dispRadio ? dispRadio.value : 'nao informado';
         await fetch(API_URL + '/save-result', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -303,6 +320,8 @@
               alternada: r.alternada || null,
               sustentada: r.sustentada || null,
               dispositivo: dispInfo,
+              dispositivoInformado: dispPaciente,
+              userAgent: navigator.userAgent,
               status: status,
               date: new Date().toISOString()
             }
@@ -359,6 +378,8 @@
             alternada: r.alternada || null,
             sustentada: r.sustentada || null,
             dispositivo: dispInfo,
+            dispositivoInformado: (document.querySelector('input[name="dispositivo"]:checked') || {}).value || 'nao informado',
+            userAgent: navigator.userAgent,
             status: 'abandonado',
             date: new Date().toISOString()
           }

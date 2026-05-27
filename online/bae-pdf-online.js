@@ -52,6 +52,27 @@ async function generateBAEPDF(idx) {
         obterInfoDispositivo: function() { return d.dispositivo.dispositivo || {}; },
         obterResumo: function(t) { return d.dispositivo.testes ? (d.dispositivo.testes[t] || {modo:'N/A'}) : {modo:'N/A'}; }
       };
+      console.log('📱 Dispositivo do paciente restaurado:', JSON.stringify(d.dispositivo));
+    } else if (d.userAgent || d.dispositivoInformado) {
+      // Fallback: usa userAgent e resposta do paciente para montar info básica
+      var ua = d.userAgent || '';
+      var informado = d.dispositivoInformado || 'nao informado';
+      var tipoDetectado = 'Desconhecido';
+      if (/iPhone|Android.*Mobile/i.test(ua)) tipoDetectado = 'Mobile';
+      else if (/iPad|Android(?!.*Mobile)/i.test(ua)) tipoDetectado = 'Tablet';
+      else if (/Windows|Mac|Linux/i.test(ua)) tipoDetectado = 'Desktop';
+      var descFallback = tipoDetectado + ' (informado: ' + informado + ')';
+      window.dispositivoBAE = {
+        isTouch: informado === 'celular' || informado === 'tablet',
+        tipo: tipoDetectado,
+        obterRelatorioCompleto: function() { return { dispositivo: { tipo: tipoDetectado, descricao: descFallback, touch: informado !== 'computador' }, testes: {} }; },
+        obterInfoDispositivo: function() { return { tipo: tipoDetectado, descricao: descFallback, touch: informado !== 'computador' }; },
+        obterResumo: function() { return {modo:'N/A'}; }
+      };
+      console.log('📱 Dispositivo (fallback): ' + descFallback);
+    } else {
+      console.log('⚠️ Sem dados de dispositivo do paciente nos resultados salvos');
+      window.dispositivoBAE = null;
     }
 
     window.resultadosBAE.testesCompletos = {
