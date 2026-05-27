@@ -28,17 +28,10 @@
     <p style="text-align:center; color:#888; font-size:12px;">BAE 2.4.0 Online</p>
     <p id="pacienteNome" style="text-align:center; font-size:16px; color:#2e7d32; font-weight:bold; margin:15px 0;"></p>
     <div style="background:#f8f9fa; padding:20px; border-radius:10px; margin:20px 0; text-align:left; max-width:600px; margin:20px auto;">
-      <p style="font-size:14px; line-height:1.6; color:#555;">
-        Você realizará <strong>5 testes de atenção</strong>. Cada teste tem instruções próprias que aparecerão antes de iniciar.<br><br>
-        <strong>Importante:</strong><br>
-        • Fique em um ambiente silencioso<br>
-        • Não feche esta janela durante o teste<br>
-        • Siga as instruções de cada teste<br>
-        • O teste dura aproximadamente 30-40 minutos
-      </p>
+      <p id="infoTestes" style="font-size:14px; line-height:1.6; color:#555;"></p>
     </div>
     <button id="startButton" class="botao-iniciar" style="font-size:18px; padding:15px 40px;" onclick="iniciarBateria()">
-      ▶ Iniciar Bateria
+      ▶ Iniciar
     </button>
   </div>
 
@@ -156,6 +149,22 @@
       // Mostra tela de capa
       document.getElementById('pacienteNome').textContent = sessionData.patientName || '';
       document.getElementById('coverPage').style.display = 'block';
+
+      // Preenche informações dinâmicas baseadas nos testes selecionados
+      var testes = sessionData.testes || ['concentrada','seletiva','dividida','alternada','sustentada'];
+      var nomes = {concentrada:'Concentrada',seletiva:'Seletiva',dividida:'Dividida',alternada:'Alternada',sustentada:'Sustentada'};
+      var qtd = testes.length;
+      var listaHtml = testes.map(function(t){return '• Atenção ' + (nomes[t]||t);}).join('<br>');
+      var tempo = qtd === 1 ? '5-8 minutos' : qtd <= 3 ? '15-20 minutos' : '30-40 minutos';
+      var infoEl = document.getElementById('infoTestes');
+      if (infoEl) {
+        infoEl.innerHTML = (qtd === 1 ? 'Você realizará <strong>1 teste</strong>:' : 'Você realizará <strong>' + qtd + ' testes</strong>:') +
+          '<br>' + listaHtml + '<br><br>' +
+          '<strong>Importante:</strong><br>' +
+          '• Fique em um ambiente silencioso<br>' +
+          '• Não feche esta janela durante o teste<br>' +
+          '• Duração aproximada: ' + tempo;
+      }
 
       // Captura dados do paciente para o sistema BAE
       window.resultadosBAE = window.resultadosBAE || {};
