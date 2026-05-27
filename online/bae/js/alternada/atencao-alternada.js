@@ -240,33 +240,65 @@ function mostrarInstrucoesAlternada(callback) {
 
 // ===== CONTAGEM REGRESSIVA MOTIVACIONAL =====
 function iniciarContagemRegressiva(callback) {
-  let contador = configTeste.contagemRegressiva;
   const quadro = document.getElementById('quadroAlternado');
   if (!quadro) {
     callback();
     return;
   }
   
-  function atualizarDisplay(numero) {
-    quadro.innerHTML = `<div style="font-size: 72px; font-weight: bold; color: white; text-align: center; line-height: 5cm; transition: transform 0.2s ease;">${numero}</div>`;
-  }
+  // Garante centralização do quadro durante contagem e teste
+  quadro.style.width = '100vw';
+  quadro.style.height = '100vh';
+  quadro.style.top = '0';
+  quadro.style.left = '0';
+  quadro.style.transform = 'none';
+  quadro.style.flexDirection = 'row';
+  quadro.style.background = '#1a1a2e';
   
-  atualizarDisplay(contador);
-  contador--;
+  const contagemDiv = document.createElement('div');
+  contagemDiv.style.display = 'flex';
+  contagemDiv.style.justifyContent = 'center';
+  contagemDiv.style.alignItems = 'center';
+  contagemDiv.style.width = '100%';
+  contagemDiv.style.height = '100%';
+  contagemDiv.style.fontSize = '120px';
+  contagemDiv.style.fontWeight = 'bold';
+  contagemDiv.style.color = 'white';
+  contagemDiv.style.textShadow = '3px 3px 6px rgba(0,0,0,0.8)';
   
-  const interval = setInterval(() => {
-    if (contador >= 0) {
-      if (contador > 0) {
-        atualizarDisplay(contador);
-      } else {
-        quadro.innerHTML = `<div style="font-size: 60px; font-weight: bold; color: #27ae60; text-align: center; line-height: 5cm; transition: all 0.3s ease;">INICIAR!</div>`;
-      }
-      contador--;
-    } else {
-      clearInterval(interval);
+  const numeroDiv = document.createElement('div');
+  numeroDiv.style.transition = 'transform 0.3s ease-in-out, color 0.3s ease';
+  numeroDiv.textContent = '3';
+  
+  contagemDiv.appendChild(numeroDiv);
+  quadro.innerHTML = '';
+  quadro.appendChild(contagemDiv);
+  
+  let countdown = 3;
+  const countdownInterval = setInterval(() => {
+    numeroDiv.textContent = countdown;
+    numeroDiv.style.transform = 'scale(1.3)';
+    numeroDiv.style.color = countdown === 1 ? '#27ae60' : '#ffffff';
+    
+    setTimeout(() => {
+      numeroDiv.style.transform = 'scale(1)';
+    }, 300);
+    
+    countdown--;
+    
+    if (countdown < 0) {
+      clearInterval(countdownInterval);
+      
+      numeroDiv.textContent = 'INICIAR!';
+      numeroDiv.style.color = '#27ae60';
+      numeroDiv.style.transform = 'scale(1.4)';
+      
       setTimeout(() => {
+        contagemDiv.remove();
+        // Mantém quadro fullscreen para o teste (figuras centralizadas)
+        quadro.style.background = '';
         callback();
-      }, 500);
+      }, 1000);
     }
   }, 1000);
 }
