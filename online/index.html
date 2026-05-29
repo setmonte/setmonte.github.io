@@ -984,6 +984,19 @@
       try {
         var resp = await fetch(API_URL + '/credits?email=' + encodeURIComponent(currentUser));
         var data = await resp.json();
+
+        // Bonus de primeiro acesso: se todos os creditos sao 0, dar 1 de cada
+        var totalCreditos = (data.credits||0) + (data.baeCredits||0) + (data.trmvCredits||0) + (data.trefCredits||0) + (data.taavCredits||0);
+        if (totalCreditos === 0 && !localStorage.getItem('bonus_dado_' + currentUser)) {
+          localStorage.setItem('bonus_dado_' + currentUser, '1');
+          var tipos = ['tecfe','bae','trmv','tref','taav'];
+          for (var bi = 0; bi < tipos.length; bi++) {
+            await fetch(API_URL + '/add-credits', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({targetEmail:currentUser,tipo:tipos[bi],amount:1})});
+          }
+          data.credits = 1; data.baeCredits = 1; data.trmvCredits = 1; data.trefCredits = 1; data.taavCredits = 1;
+          alert('Bem-vindo! Voce ganhou 1 credito gratuito de cada teste para experimentar.');
+        }
+
         document.getElementById('tecfeCreditsCount').textContent = data.credits || 0;
         document.getElementById('baeCreditsCount').textContent = data.baeCredits || 0;
         document.getElementById('trmvCreditsCount').textContent = data.trmvCredits || 0;
