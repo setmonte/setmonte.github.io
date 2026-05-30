@@ -272,7 +272,12 @@ function calcularResultados() {
     container.innerHTML = html;
     container.style.display = 'block';
     container.scrollIntoView({behavior:'smooth'});
-    window._escalaDados = {escala:'YSQ-S3', paciente:nome, escore:0, classificacao:'Completo', esquemas:resultados, idPaciente:(document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''), data:new Date().toISOString()};
+    var escoreTotal = 0;
+    for (var ri = 0; ri < resultados.length; ri++) escoreTotal += resultados[ri].total;
+    var mediaGeral = escoreTotal / resultados.length;
+    var classGeral = mediaGeral < 12 ? 'Baixa' : mediaGeral < 21 ? 'Media' : 'Alta';
+    var esquemasMaisAltos = resultados.filter(function(r){return r.nivel==='Alta';}).map(function(r){return r.nome;});
+    window._escalaDados = {escala:'YSQ-S3', paciente:nome, escore:escoreTotal, media:Math.round(mediaGeral*10)/10, classificacao:classGeral, esquemasMaisAltos:esquemasMaisAltos, esquemas:resultados, idPaciente:(document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''), data:new Date().toISOString()};
     if (window.injetarBotaoSalvar) injetarBotaoSalvar('resultados');
 }
 
