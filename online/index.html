@@ -2186,7 +2186,7 @@
       if (d.classificacao) { doc.text('Classificacao: ' + sanitize(d.classificacao), 15, y); y += 6; }
       if (d.sexo) { doc.setFont(undefined,'normal'); doc.text('Sexo: ' + d.sexo, 15, y); y += 6; }
       y += 4;
-      if (d.dominios && typeof d.dominios === 'object') {
+      if (d.dominios && typeof d.dominios === 'object' && !Array.isArray(d.dominios)) {
         doc.setFillColor(46,125,50); doc.rect(15, y-3, 180, 8, 'F');
         doc.setTextColor(255,255,255); doc.setFontSize(9); doc.setFont(undefined,'bold');
         doc.text('DOMINIOS / SUBESCALAS', 20, y+2); y += 12;
@@ -2204,12 +2204,32 @@
             if (v.max != null) linha += ' / ' + v.max;
           } else { linha += v; }
           if (i % 2 === 0) { doc.setFillColor(245,245,245); doc.rect(15, y-3, 180, 6, 'F'); }
-          doc.text(linha, 18, y); y += 6;
+          doc.text(sanitize(linha), 18, y); y += 6;
         });
         y += 4;
       }
-      // ESQUEMAS (array) — usado por YSQ-S3, YSQ-L3, SMI e outras escalas com array de resultados
-      if (d.esquemas && Array.isArray(d.esquemas) && d.esquemas.length > 0 && !d.dominios) {
+      // DOMINIOS como ARRAY — usado por SMI e escalas que salvam dominios como array de objetos
+      if (d.dominios && Array.isArray(d.dominios) && d.dominios.length > 0) {
+        doc.setFillColor(46,125,50); doc.rect(15, y-3, 180, 8, 'F');
+        doc.setTextColor(255,255,255); doc.setFontSize(9); doc.setFont(undefined,'bold');
+        doc.text('DOMINIOS / SUBESCALAS', 20, y+2); y += 12;
+        doc.setTextColor(0,0,0); doc.setFontSize(8); doc.setFont(undefined,'normal');
+        d.dominios.forEach(function(item, i) {
+          if (y > maxY) { doc.addPage(); y = 15; }
+          var linha = (item.nome || item.name || ('Dominio '+(i+1))) + ': ';
+          if (item.total != null) linha += item.total;
+          if (item.max != null) linha += '/' + item.max;
+          if (item.pct != null) linha += ' (' + item.pct + '%)';
+          if (item.nivel) linha += ' - ' + item.nivel;
+          if (item.classificacao) linha += ' - ' + item.classificacao;
+          if (item.media != null && item.pct == null) linha += ' | Media=' + item.media;
+          if (i % 2 === 0) { doc.setFillColor(245,245,245); doc.rect(15, y-3, 180, 6, 'F'); }
+          doc.text(sanitize(linha), 18, y); y += 6;
+        });
+        y += 4;
+      }
+      // ESQUEMAS (array) — usado por YSQ-S3, YSQ-L3 e outras escalas com array de resultados
+      if (d.esquemas && Array.isArray(d.esquemas) && d.esquemas.length > 0) {
         doc.setFillColor(46,125,50); doc.rect(15, y-3, 180, 8, 'F');
         doc.setTextColor(255,255,255); doc.setFontSize(9); doc.setFont(undefined,'bold');
         doc.text('ESQUEMAS / SUBESCALAS', 20, y+2); y += 12;
@@ -2232,8 +2252,8 @@
         var linhas = doc.splitTextToSize(d.resultadoHTML, 180);
         linhas.forEach(function(l) { if(y>maxY){doc.addPage();y=12;} doc.text(l,15,y); y+=3.5; });
       }
-      // GRAFICO DE BARRAS — para escalas com dominios que tem media (ex: SNAP-IV)
-      if (d.dominios && typeof d.dominios === 'object') {
+      // GRAFICO DE BARRAS — para escalas com dominios (objeto) que tem media (ex: SNAP-IV)
+      if (d.dominios && typeof d.dominios === 'object' && !Array.isArray(d.dominios)) {
         var domKeys = Object.keys(d.dominios);
         var temMedia = domKeys.some(function(k) { return d.dominios[k] && d.dominios[k].media != null; });
         if (temMedia) {
@@ -2273,8 +2293,38 @@
           y += 10;
         }
       }
-      // GRAFICO DE BARRAS — para escalas com esquemas (array) como YSQ-S3, YSQ-L3, SMI
-      if (d.esquemas && Array.isArray(d.esquemas) && d.esquemas.length > 0 && !d.dominios) {
+      // GRAFICO DE BARRAS — para dominios como array (ex: SMI) com pct
+      if (d.dominios && Array.isArray(d.dominios) && d.dominios.length > 0) {
+        var temPct = d.dominios.some(function(item) { return item.pct != null; });
+        if (temPct) {
+          if (y + 70 > maxY) { doc.addPage(); y = 20; }
+          y += 5;
+          doc.setFillColor(46,125,50); doc.rect(15, y-3, 180, 8, 'F');
+          doc.setTextColor(255,255,255); doc.setFontSize(9); doc.setFont(undefined,'bold');
+          doc.text('GRAFICO DE DOMINIOS', 20, y+2); y += 14;
+          var barX = 60; var barMaxW = 120; var barH = 8; var gap = 4;
+          d.dominios.forEach(function(item) {
+            if (y > maxY) { doc.addPage(); y = 15; }
+            var pct = item.pct != null ? item.pct : (item.total && item.max ? Math.round((item.total/item.max)*100) : 0);
+            var barW = (pct / 100) * barMaxW;
+            var nome = sanitize(item.nome || item.name || '');
+            if (nome.length > 20) nome = nome.substring(0, 20) + '..';
+            doc.setTextColor(0,0,0); doc.setFontSize(7); doc.setFont(undefined,'bold');
+            doc.text(nome, 17, y + barH/2 + 1);
+            doc.setFillColor(230,230,230); doc.rect(barX, y, barMaxW, barH, 'F');
+            if (pct < 40) { doc.setFillColor(76, 175, 80); }
+            else if (pct < 70) { doc.setFillColor(255, 193, 7); }
+            else { doc.setFillColor(244, 67, 54); }
+            if (barW > 0) doc.rect(barX, y, barW, barH, 'F');
+            doc.setTextColor(0,0,0); doc.setFontSize(7); doc.setFont(undefined,'bold');
+            doc.text(pct + '%', barX + barW + 3, y + barH/2 + 1);
+            y += barH + gap;
+          });
+          y += 6;
+        }
+      }
+      // GRAFICO DE BARRAS — para escalas com esquemas (array) como YSQ-S3, YSQ-L3
+      if (d.esquemas && Array.isArray(d.esquemas) && d.esquemas.length > 0) {
         if (y + 70 > maxY) { doc.addPage(); y = 20; }
         y += 5;
         doc.setFillColor(46,125,50); doc.rect(15, y-3, 180, 8, 'F');
@@ -2300,15 +2350,16 @@
         });
         y += 6;
       }
-      // ESQUEMAS MAIS ALTOS (ativados) — destaque para o clinico
-      if (d.esquemasMaisAltos && Array.isArray(d.esquemasMaisAltos) && d.esquemasMaisAltos.length > 0) {
+      // ESQUEMAS/MODOS MAIS ALTOS (ativados) — destaque para o clinico
+      var itensAltos = d.esquemasMaisAltos || d.modosMaisAltos || null;
+      if (itensAltos && Array.isArray(itensAltos) && itensAltos.length > 0) {
         if (y + 20 > maxY) { doc.addPage(); y = 15; }
         y += 4;
         doc.setFillColor(244,67,54); doc.rect(15, y-3, 180, 8, 'F');
         doc.setTextColor(255,255,255); doc.setFontSize(9); doc.setFont(undefined,'bold');
-        doc.text('ESQUEMAS ATIVADOS (NIVEL ALTO)', 20, y+2); y += 12;
+        doc.text('ATIVADOS (NIVEL ALTO)', 20, y+2); y += 12;
         doc.setTextColor(200,0,0); doc.setFontSize(9); doc.setFont(undefined,'bold');
-        d.esquemasMaisAltos.forEach(function(nome) {
+        itensAltos.forEach(function(nome) {
           if (y > maxY) { doc.addPage(); y = 15; }
           doc.text('- ' + sanitize(nome), 20, y); y += 6;
         });
