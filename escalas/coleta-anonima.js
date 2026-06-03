@@ -1,9 +1,8 @@
 // ============================================================
-// COLETA ANONIMA DE DADOS NORMATIVOS - v3
+// COLETA ANONIMA DE DADOS NORMATIVOS - v4 (UNIVERSAL)
 // ============================================================
-// Intercepta AMBOS os fluxos:
-// - Modo profissional: calcularResultados()
-// - Modo painel (link): _enviarResultadosPainel()
+// Funciona em ESCALAS e TESTES ONLINE
+// Detecta conclusao por multiplas estrategias
 // ============================================================
 
 (function() {
@@ -18,16 +17,38 @@
             var num = parseInt(campo.value);
             if (!isNaN(num)) return num;
         }
+        // resultadosBAE (BAE online)
         if (window.resultadosBAE && window.resultadosBAE.paciente) {
             if (window.resultadosBAE.paciente.idadeAnos) return window.resultadosBAE.paciente.idadeAnos;
+            if (window.resultadosBAE.paciente.idade) {
+                var m2 = window.resultadosBAE.paciente.idade.match(/(\d+)\s*ano/);
+                if (m2) return parseInt(m2[1]);
+            }
         }
-        var dnCampo = document.getElementById('dataNascimento');
-        if (dnCampo && dnCampo.value) {
-            var nasc = new Date(dnCampo.value);
+        // sessionData (testes online via link)
+        if (window.sessionData && window.sessionData.birthDate) {
+            var nasc = new Date(window.sessionData.birthDate);
             var hoje = new Date();
             var id = hoje.getFullYear() - nasc.getFullYear();
             if (hoje.getMonth() < nasc.getMonth() || (hoje.getMonth() === nasc.getMonth() && hoje.getDate() < nasc.getDate())) id--;
             if (id > 0 && id < 120) return id;
+        }
+        // sessionInfo (TREF, TFLOD)
+        if (window.sessionInfo && window.sessionInfo.birthDate) {
+            var nasc2 = new Date(window.sessionInfo.birthDate);
+            var hoje2 = new Date();
+            var id2 = hoje2.getFullYear() - nasc2.getFullYear();
+            if (hoje2.getMonth() < nasc2.getMonth() || (hoje2.getMonth() === nasc2.getMonth() && hoje2.getDate() < nasc2.getDate())) id2--;
+            if (id2 > 0 && id2 < 120) return id2;
+        }
+        // Campo oculto dataNascimento
+        var dnCampo = document.getElementById('dataNascimento');
+        if (dnCampo && dnCampo.value) {
+            var nasc3 = new Date(dnCampo.value);
+            var hoje3 = new Date();
+            var id3 = hoje3.getFullYear() - nasc3.getFullYear();
+            if (hoje3.getMonth() < nasc3.getMonth() || (hoje3.getMonth() === nasc3.getMonth() && hoje3.getDate() < nasc3.getDate())) id3--;
+            if (id3 > 0 && id3 < 120) return id3;
         }
         return null;
     }
@@ -36,6 +57,8 @@
         var campo = document.getElementById('sexo');
         if (campo && campo.value) return campo.value;
         if (window.resultadosBAE && window.resultadosBAE.paciente) return window.resultadosBAE.paciente.sexo || '';
+        if (window.sessionData && window.sessionData.sex) return window.sessionData.sex;
+        if (window.sessionInfo && window.sessionInfo.sex) return window.sessionInfo.sex;
         return '';
     }
 
@@ -43,6 +66,8 @@
         var campo = document.getElementById('escolaridade');
         if (campo && campo.value) return campo.value;
         if (window.resultadosBAE && window.resultadosBAE.paciente) return window.resultadosBAE.paciente.escolaridade || '';
+        if (window.sessionData && window.sessionData.education) return window.sessionData.education;
+        if (window.sessionInfo && window.sessionInfo.education) return window.sessionInfo.education;
         return '';
     }
 
@@ -50,6 +75,7 @@
         if (window._escalaDados && window._escalaDados.escala) return window._escalaDados.escala;
         if (window.resultadosBAE && window.resultadosBAE.concentrada) return 'BAE';
         var titulo = document.title || '';
+        // Tenta extrair sigla do titulo (ex: "TREF - Teste de...")
         var match = titulo.match(/^([A-Z0-9\-]+)/);
         if (match) return match[1];
         return titulo.substring(0, 30);
@@ -60,8 +86,23 @@
         var partes = [];
         Object.keys(dominios).forEach(function(nome) {
             var d = dominios[nome];
-            var media = typeof d === 'object' ? (d.media || d.score || '') : d;
+            var media = typeof d === 'object' ? (d.media || d.score || d.acertos || '') : d;
             partes.push(nome + ':' + media);
+        });
+        return partes.join('; ');
+    }
+
+    function _formatarResultadosBAE() {
+        var r = window.resultadosBAE || {};
+        var partes = [];
+        var testes = ['concentrada', 'seletiva', 'dividida', 'alternada', 'sustentada'];
+        testes.forEach(function(t) {
+            if (r[t]) {
+                var ac = r[t].acertos !== undefined ? r[t].acertos : (r[t].corretas !== undefined ? r[t].corretas : '');
+                var er = r[t].erros !== undefined ? r[t].erros : '';
+                var om = r[t].omissoes !== undefined ? r[t].omissoes : '';
+                partes.push(t + '(ac:' + ac + ' er:' + er + ' om:' + om + ')');
+            }
         });
         return partes.join('; ');
     }
@@ -74,10 +115,7 @@
             var escolaridade = _extrairEscolaridade();
             var instrumento = _identificarInstrumento();
 
-            if (!instrumento || !idade) {
-                console.log('[Coleta] Dados insuficientes: instrumento=' + instrumento + ', idade=' + idade);
-                return;
-            }
+            if (!instrumento || !idade) return;
 
             var pontuacao = '';
             var dominios = '';
@@ -87,6 +125,9 @@
                 pontuacao = window._escalaDados.escore ? parseFloat(window._escalaDados.escore).toFixed(2) : '';
                 dominios = _formatarDominios(window._escalaDados.dominios);
                 classificacao = window._escalaDados.classificacao || '';
+            } else if (window.resultadosBAE && window.resultadosBAE.concentrada) {
+                dominios = _formatarResultadosBAE();
+                classificacao = 'BAE completa';
             }
 
             var pacote = {
@@ -99,60 +140,139 @@
                 classificacao: classificacao
             };
 
-            console.log('[Coleta] Enviando:', JSON.stringify(pacote));
-
             fetch(_COLETA_URL, {
                 method: 'POST',
                 mode: 'no-cors',
                 headers: { 'Content-Type': 'text/plain' },
                 body: JSON.stringify(pacote)
-            }).then(function() {
-                console.log('[Coleta] Enviado com sucesso');
-            }).catch(function(e) {
-                console.log('[Coleta] Erro no fetch:', e);
-            });
+            }).catch(function() {});
 
             _jaEnviou = true;
-        } catch(e) {
-            console.log('[Coleta] Erro geral:', e);
-        }
+        } catch(e) {}
     }
 
     // ============================================================
-    // INTERCEPTACAO DE FUNCOES
+    // ESTRATEGIAS DE DETECCAO
     // ============================================================
 
     function _interceptar() {
-        // Intercepta calcularResultados (modo profissional)
+        // 1. calcularResultados (escalas modo profissional)
         if (typeof window.calcularResultados === 'function' && !window._cr_interceptado) {
-            var _original_cr = window.calcularResultados;
+            var _orig_cr = window.calcularResultados;
             window.calcularResultados = function() {
-                _original_cr();
+                _orig_cr.apply(this, arguments);
                 setTimeout(_enviarDadosAnonimos, 500);
             };
             window._cr_interceptado = true;
-            console.log('[Coleta] calcularResultados interceptado');
         }
 
-        // Intercepta _enviarResultadosPainel (modo painel/link)
+        // 2. _enviarResultadosPainel (escalas modo painel)
         if (typeof window._enviarResultadosPainel === 'function' && !window._erp_interceptado) {
-            var _original_erp = window._enviarResultadosPainel;
+            var _orig_erp = window._enviarResultadosPainel;
             window._enviarResultadosPainel = function() {
-                // Envia coleta anonima ANTES de enviar ao painel
                 setTimeout(_enviarDadosAnonimos, 500);
-                // Chama a funcao original
-                return _original_erp.apply(this, arguments);
+                return _orig_erp.apply(this, arguments);
             };
             window._erp_interceptado = true;
-            console.log('[Coleta] _enviarResultadosPainel interceptado');
+        }
+
+        // 3. salvarResultadoLambda (TREF)
+        if (typeof window.salvarResultadoLambda === 'function' && !window._srl_interceptado) {
+            var _orig_srl = window.salvarResultadoLambda;
+            window.salvarResultadoLambda = function() {
+                setTimeout(_enviarDadosAnonimos, 500);
+                return _orig_srl.apply(this, arguments);
+            };
+            window._srl_interceptado = true;
+        }
+
+        // 4. finalizarTeste (TRMV)
+        if (typeof window.finalizarTeste === 'function' && !window._ft_interceptado) {
+            var _orig_ft = window.finalizarTeste;
+            window.finalizarTeste = function() {
+                setTimeout(_enviarDadosAnonimos, 500);
+                return _orig_ft.apply(this, arguments);
+            };
+            window._ft_interceptado = true;
+        }
+
+        // 5. finalizarGravacao (TFLOD)
+        if (typeof window.finalizarGravacao === 'function' && !window._fg_interceptado) {
+            var _orig_fg = window.finalizarGravacao;
+            window.finalizarGravacao = function() {
+                setTimeout(_enviarDadosAnonimos, 1000);
+                return _orig_fg.apply(this, arguments);
+            };
+            window._fg_interceptado = true;
+        }
+
+        // 6. mostrarResultados (TREF alternativo)
+        if (typeof window.mostrarResultados === 'function' && !window._mr_interceptado) {
+            var _orig_mr = window.mostrarResultados;
+            window.mostrarResultados = function() {
+                _orig_mr.apply(this, arguments);
+                setTimeout(_enviarDadosAnonimos, 500);
+            };
+            window._mr_interceptado = true;
+        }
+
+        // 7. showEndScreen (TECFE)
+        if (typeof window.showEndScreen === 'function' && !window._ses_interceptado) {
+            var _orig_ses = window.showEndScreen;
+            window.showEndScreen = function() {
+                _orig_ses.apply(this, arguments);
+                setTimeout(_enviarDadosAnonimos, 500);
+            };
+            window._ses_interceptado = true;
         }
     }
 
-    // Tenta interceptar em varios momentos (o script carrega async)
+    // Tenta interceptar varias vezes (scripts carregam async)
     _interceptar();
     setTimeout(_interceptar, 500);
     setTimeout(_interceptar, 1500);
     setTimeout(_interceptar, 3000);
     setTimeout(_interceptar, 5000);
+    setTimeout(_interceptar, 8000);
+    setTimeout(_interceptar, 12000);
+
+    // Estrategia extra: observar navegacao para pagina-concluido (TAAV, TRMV)
+    function _observarNavegacao() {
+        if (typeof window.navegarPara === 'function' && !window._nav_interceptado) {
+            var _orig_nav = window.navegarPara;
+            window.navegarPara = function(id) {
+                _orig_nav.apply(this, arguments);
+                if (id === 'pagina-concluido') {
+                    setTimeout(_enviarDadosAnonimos, 2000);
+                }
+            };
+            window._nav_interceptado = true;
+        }
+    }
+    setTimeout(_observarNavegacao, 500);
+    setTimeout(_observarNavegacao, 2000);
+    setTimeout(_observarNavegacao, 5000);
+
+    // Fallback: observa #resultados (escalas), #endPage (BAE)
+    setTimeout(function() {
+        var resultados = document.getElementById('resultados');
+        if (resultados) {
+            var obs = new MutationObserver(function() {
+                if (resultados.style.display === 'block' && !_jaEnviou) {
+                    setTimeout(_enviarDadosAnonimos, 1000);
+                }
+            });
+            obs.observe(resultados, { attributes: true, childList: true });
+        }
+        var endPage = document.getElementById('endPage');
+        if (endPage) {
+            var obs2 = new MutationObserver(function() {
+                if (endPage.style.display === 'block' || endPage.style.display === 'flex') {
+                    setTimeout(_enviarDadosAnonimos, 2000);
+                }
+            });
+            obs2.observe(endPage, { attributes: true });
+        }
+    }, 2000);
 
 })();
