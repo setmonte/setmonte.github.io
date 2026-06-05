@@ -199,9 +199,9 @@ async function gerarRelatorioPDF() {
         const paciente = window.resultadosBAE.paciente || {};
         const resultados = window.resultadosBAE || {};
         
-        // Filtra apenas os testes (exclui 'paciente' e 'testesCompletos')
+        // Filtra apenas os testes (exclui 'paciente', 'testesCompletos' e '_dispositivo')
         const testesRealizados = Object.keys(resultados).filter(key => 
-            key !== 'paciente' && key !== 'testesCompletos' && resultados[key] !== null
+            key !== 'paciente' && key !== 'testesCompletos' && key !== '_dispositivo' && resultados[key] !== null
         );
         
         if (testesRealizados.length === 0) {

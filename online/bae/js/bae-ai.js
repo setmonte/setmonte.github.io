@@ -1,22 +1,11 @@
-// ===== BAE 2.4.0 — IA GEMINI =====
-// Gera parecer clínico assistido por IA
-// Chave no Rust (Tauri) ou fallback hardcoded para navegador
+// ===== BAE 2.4.0 — IA GEMINI (via Lambda proxy) =====
+// Gera parecer clinico assistido por IA
+// Usa o endpoint /generate-ai da Lambda (mesmo do TECFE/TRMV/TAAV)
 
 var BAEAI = (function() {
 
-    // Obtém chave: Tauri (seguro) ou fallback navegador
-    async function obterChave() {
-        if (window.__TAURI__) {
-            try {
-                return await window.__TAURI__.core.invoke('get_ai_key');
-            } catch(e) {
-                console.log('⚠️ Falha ao obter chave do Tauri');
-            }
-        }
-        // Fallback navegador (desenvolvimento local - não sobe para o site)
-        var k = ['AIza','SyCh','DJXo','8L-_','s2zO','jIVZ','30V8','RDs7','bfjh','5aQ'];
-        return k.join('');
-    }
+    // URL da Lambda para analise por IA (chave fica segura no servidor)
+    var LAMBDA_AI_URL = 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws/generate-ai';
 
     // Monta o prompt com dados dos testes
     function montarPrompt(paciente, resultados, iaObs) {
@@ -146,47 +135,28 @@ var BAEAI = (function() {
         return texto;
     }
 
-    // Chama Gemini API
+    // Chama IA via Lambda proxy (mesmo endpoint do TECFE)
     async function gerarLaudo(paciente, resultados) {
         try {
-            var key = await obterChave();
-            if (!key) throw new Error('Chave nao disponivel');
-            
             var iaObs = typeof obterRelatorioIA === 'function' ? obterRelatorioIA() : null;
             var prompt = montarPrompt(paciente, resultados, iaObs);
             
-            console.log('🤖 Chamando Gemini...');
+            console.log('🤖 Chamando IA via Lambda...');
             
-            var response = null;
-            var tentativas = 2;
-            for (var tent = 0; tent < tentativas; tent++) {
-                response = await fetch(
-                    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=' + key,
-                    {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            contents: [{ parts: [{ text: prompt }] }],
-                            generationConfig: { temperature: 0.3, maxOutputTokens: 2000 }
-                        })
-                    }
-                );
-                if (response.ok || response.status < 500) break;
-                // Erro 5xx - espera 3s e tenta de novo
-                if (tent < tentativas - 1) {
-                    console.log('⚠️ Gemini retornou ' + response.status + ', tentando novamente em 3s...');
-                    await new Promise(function(r){setTimeout(r,3000);});
-                }
-            }
+            var response = await fetch(LAMBDA_AI_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: prompt })
+            });
             
             if (!response.ok) throw new Error('HTTP ' + response.status);
             
             var data = await response.json();
-            var texto = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+            var texto = (data.text || '').trim();
             
             if (!texto) throw new Error('Resposta vazia');
             
-            // Separa parecer e estratégia
+            // Separa parecer e estrategia
             var partes = texto.split(/\n\s*\n/);
             var parecer = '';
             var estrategia = '';
@@ -194,7 +164,7 @@ var BAEAI = (function() {
             
             for (var i = 0; i < partes.length; i++) {
                 var p = partes[i].trim();
-                if (p.toLowerCase().indexOf('estrategia') >= 0 || p.toLowerCase().indexOf('estratégia') >= 0 || encontrouEstrategia) {
+                if (p.toLowerCase().indexOf('estrategia') >= 0 || p.toLowerCase().indexOf('estrat\u00e9gia') >= 0 || encontrouEstrategia) {
                     encontrouEstrategia = true;
                     estrategia += (estrategia ? '\n\n' : '') + p;
                 } else {
@@ -202,18 +172,18 @@ var BAEAI = (function() {
                 }
             }
             
-            // Remove headers tipo "PARECER CLÍNICO:" ou "1."
-            parecer = parecer.replace(/^(PARECER\s*(CL[IÍ]NICO)?:?\s*\n?)/i, '').trim();
+            // Remove headers tipo "PARECER CLINICO:" ou "1."
+            parecer = parecer.replace(/^(PARECER\s*(CL[I\u00cd]NICO)?:?\s*\n?)/i, '').trim();
             parecer = parecer.replace(/^1\.\s*/m, '').trim();
-            estrategia = estrategia.replace(/^(ESTRAT[EÉ]GIA\s*(DO\s*PACIENTE)?:?\s*\n?)/i, '').trim();
+            estrategia = estrategia.replace(/^(ESTRAT[\u00c9E]GIA\s*(DO\s*PACIENTE)?:?\s*\n?)/i, '').trim();
             estrategia = estrategia.replace(/^2\.\s*/m, '').trim();
             
-            console.log('✅ Laudo gerado: ' + parecer.length + ' chars parecer, ' + estrategia.length + ' chars estrategia');
+            console.log('\u2705 Laudo gerado: ' + parecer.length + ' chars parecer, ' + estrategia.length + ' chars estrategia');
             
             return { parecer: parecer, estrategia: estrategia };
             
         } catch(e) {
-            console.error('❌ Erro IA Gemini:', e.message);
+            console.error('\u274c Erro IA Lambda:', e.message);
             return null;
         }
     }
@@ -222,4 +192,4 @@ var BAEAI = (function() {
 })();
 
 window.BAEAI = BAEAI;
-console.log('🤖 BAE AI (Gemini) carregado');
+console.log('\uD83E\uDD16 BAE AI (via Lambda) carregado');
