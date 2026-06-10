@@ -37,12 +37,21 @@ function startTesteConcentrada() {
   const quadro = document.getElementById("quadroConcentrada");
   if (!quadro) return;
 
+  // Ativa fullscreen no quadro (igual aos outros testes)
+  if (typeof ativarFullscreenTeste === 'function') ativarFullscreenTeste('quadroConcentrada');
+
+  // Atualiza dimensões do canvas para ocupar a tela inteira
+  WIDTH_CONC = window.innerWidth;
+  HEIGHT_CONC = window.innerHeight;
+
   canvasConc = document.createElement('canvas');
   ctxConc = canvasConc.getContext('2d');
   canvasConc.width = WIDTH_CONC;
   canvasConc.height = HEIGHT_CONC;
-  canvasConc.style.border = '2px solid #333';
-  canvasConc.style.borderRadius = '8px';
+  canvasConc.style.display = 'block';
+  canvasConc.style.width = '100%';
+  canvasConc.style.height = '100%';
+  quadro.innerHTML = '';
   quadro.appendChild(canvasConc);
 
   showInstructionsConc();
@@ -68,10 +77,10 @@ function drawFixationConc() {
   const cx = WIDTH_CONC / 2;
   const cy = HEIGHT_CONC / 2;
   ctxConc.beginPath();
-  ctxConc.moveTo(cx - 12, cy);
-  ctxConc.lineTo(cx + 12, cy);
-  ctxConc.moveTo(cx, cy - 12);
-  ctxConc.lineTo(cx, cy + 12);
+  ctxConc.moveTo(cx - 15, cy);
+  ctxConc.lineTo(cx + 15, cy);
+  ctxConc.moveTo(cx, cy - 15);
+  ctxConc.lineTo(cx, cy + 15);
   ctxConc.stroke();
 }
 
@@ -80,7 +89,8 @@ function drawLinesConc(trial) {
   const difference = CONFIG_CONC.difference;
   const cx = WIDTH_CONC / 2;
   const cy = HEIGHT_CONC / 2;
-  const spacing = 90;
+  // Espaçamento proporcional à tela (mínimo 90px, máximo ~20% da menor dimensão)
+  const spacing = Math.max(90, Math.min(WIDTH_CONC, HEIGHT_CONC) * 0.15);
 
   ctxConc.strokeStyle = COR_LINHA_CONC;
   ctxConc.lineWidth = ESPESSURA_LINHA_CONC;
@@ -116,7 +126,7 @@ function showInstructionsConc() {
   // Entra em F11 quando as instruções aparecem
   if (typeof ativarFullscreenNavegador === 'function') ativarFullscreenNavegador();
   clearScreenConc();
-  ctxConc.fillStyle = 'black';
+  ctxConc.fillStyle = 'white';
   ctxConc.textAlign = 'center';
   const centerX = WIDTH_CONC / 2;
 
@@ -141,18 +151,22 @@ function showInstructionsConc() {
     isTouchDevice ? "TOQUE EM COMEÇAR" : "PRESSIONE ESPAÇO PARA COMEÇAR"
   ];
 
-  const startY = 80;
+  // Calcula tamanho da fonte proporcional à tela
+  const fontBase = Math.max(16, Math.min(22, HEIGHT_CONC / 35));
+  const lineHeight = fontBase * 1.7;
+  const startY = HEIGHT_CONC / 2 - (lines.length * lineHeight) / 2;
+
   lines.forEach((line, i) => {
-    const y = startY + i * 30;
+    const y = startY + i * lineHeight;
     if (i === 0) {
-      ctxConc.font = 'bold 24px Arial';
-      ctxConc.fillStyle = 'black';
+      ctxConc.font = 'bold ' + Math.round(fontBase * 1.4) + 'px Arial';
+      ctxConc.fillStyle = '#FFD700';
     } else if (i === lines.length - 1) {
-      ctxConc.font = 'bold 20px Arial';
-      ctxConc.fillStyle = '#007BFF';
+      ctxConc.font = 'bold ' + Math.round(fontBase * 1.1) + 'px Arial';
+      ctxConc.fillStyle = '#00BFFF';
     } else {
-      ctxConc.font = '18px Arial';
-      ctxConc.fillStyle = 'black';
+      ctxConc.font = fontBase + 'px Arial';
+      ctxConc.fillStyle = 'white';
     }
     ctxConc.fillText(line, centerX, y);
   });
@@ -162,12 +176,57 @@ function showInstructionsConc() {
       e.preventDefault();
       document.removeEventListener('keydown', startListener);
       if (window.touchControls) window.touchControls.limpar();
-      window._concStartTime = performance.now();
-      runTrialConc();
+      // Inicia contagem regressiva antes do teste (igual aos outros)
+      iniciarContagemRegressivaConc();
     }
   };
   document.addEventListener('keydown', startListener);
   if (window.touchControls) window.touchControls.mostrarBotaoEspaco('COMEÇAR');
+}
+
+// ===== CONTAGEM REGRESSIVA (padrão dos outros testes) =====
+function iniciarContagemRegressivaConc() {
+  let countdown = 3;
+  const fontSizeNum = Math.max(80, Math.min(150, HEIGHT_CONC / 5));
+
+  function desenharContagem(num) {
+    clearScreenConc();
+    ctxConc.textAlign = 'center';
+    ctxConc.textBaseline = 'middle';
+    ctxConc.font = 'bold ' + fontSizeNum + 'px Arial';
+    ctxConc.fillStyle = num === 1 ? '#27ae60' : '#ffffff';
+    ctxConc.fillText(num.toString(), WIDTH_CONC / 2, HEIGHT_CONC / 2);
+
+    // Texto abaixo
+    ctxConc.font = '24px Arial';
+    ctxConc.fillStyle = '#aaaaaa';
+    ctxConc.fillText('Preparando...', WIDTH_CONC / 2, HEIGHT_CONC / 2 + fontSizeNum * 0.7);
+    ctxConc.textBaseline = 'alphabetic';
+  }
+
+  desenharContagem(countdown);
+
+  const countdownInterval = setInterval(() => {
+    countdown--;
+    if (countdown > 0) {
+      desenharContagem(countdown);
+    } else {
+      clearInterval(countdownInterval);
+      // Mostra "INICIAR!"
+      clearScreenConc();
+      ctxConc.textAlign = 'center';
+      ctxConc.textBaseline = 'middle';
+      ctxConc.font = 'bold ' + Math.round(fontSizeNum * 0.7) + 'px Arial';
+      ctxConc.fillStyle = '#27ae60';
+      ctxConc.fillText('INICIAR!', WIDTH_CONC / 2, HEIGHT_CONC / 2);
+      ctxConc.textBaseline = 'alphabetic';
+
+      setTimeout(() => {
+        window._concStartTime = performance.now();
+        runTrialConc();
+      }, 800);
+    }
+  }, 1000);
 }
 
 function runTrialConc() {
@@ -293,19 +352,6 @@ function endTesteConcentrada(abandonado = false) {
   }
 
   mostrarTelaParabensConc();
-
-  // Botão "Próximo Teste" ou "Finalizar" após 2s
-  setTimeout(() => {
-    var container = document.getElementById('testeConcentrada');
-    var btn = document.createElement('button');
-    btn.className = 'botao-iniciar';
-    btn.textContent = (window.filaTestes && window.testeAtualIndex < window.filaTestes.length - 1) ? 'Próximo Teste' : 'Finalizar';
-    btn.style.cssText = 'margin:20px auto;display:block;';
-    btn.onclick = function() {
-      if (typeof avancarParaProximoTeste === 'function') avancarParaProximoTeste();
-    };
-    container.appendChild(btn);
-  }, 2000);
 }
 
 function gerarAnaliseCognitivaConcentrada(accuracy, meanRT, variabilityRT) {
@@ -356,11 +402,45 @@ function pararTesteConcentrada() {
 function mostrarTelaParabensConc() {
   // Sai do F11 no parabéns
   if (typeof desativarFullscreenNavegador === 'function') desativarFullscreenNavegador();
-  clearScreenConc();
-  ctxConc.fillStyle = 'black';
-  ctxConc.font = 'bold 32px Arial';
-  ctxConc.textAlign = 'center';
-  ctxConc.fillText('Parabéns!', WIDTH_CONC/2, HEIGHT_CONC/2 - 40);
-  ctxConc.font = '20px Arial';
-  ctxConc.fillText('Você terminou este teste!', WIDTH_CONC/2, HEIGHT_CONC/2 + 20);
+  // Desativa fullscreen do quadro para o botão ficar acessível
+  if (typeof desativarFullscreenTeste === 'function') desativarFullscreenTeste('quadroConcentrada');
+
+  // Remove o canvas e mostra tela de parabéns como HTML (dentro do container visível)
+  var quadro = document.getElementById('quadroConcentrada');
+  if (quadro) {
+    quadro.innerHTML = '';
+    quadro.style.display = 'flex';
+    quadro.style.flexDirection = 'column';
+    quadro.style.justifyContent = 'center';
+    quadro.style.alignItems = 'center';
+    quadro.style.minHeight = '300px';
+    quadro.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+    quadro.style.borderRadius = '15px';
+    quadro.style.padding = '40px';
+
+    var parabenDiv = document.createElement('div');
+    parabenDiv.style.cssText = 'color: white; text-align: center; font-family: Arial, sans-serif;';
+    parabenDiv.innerHTML = '<div style="font-size: 48px; margin-bottom: 20px;">🎉</div>' +
+      '<h2 style="font-size: 32px; margin: 0 0 15px 0;">Parabéns!</h2>' +
+      '<p style="font-size: 20px; margin: 0;">Você terminou este teste!</p>';
+    quadro.appendChild(parabenDiv);
+  }
+
+  // Botão "Próximo Teste" ou "Finalizar" após 2s (dentro do quadro, sempre visível)
+  setTimeout(function() {
+    var container = document.getElementById('quadroConcentrada');
+    if (!container) container = document.getElementById('testeConcentrada');
+    if (container) {
+      var btn = document.createElement('button');
+      btn.className = 'botao-iniciar';
+      btn.textContent = (window.filaTestes && window.testeAtualIndex < window.filaTestes.length - 1) ? 'Próximo Teste' : 'Finalizar';
+      btn.style.cssText = 'margin:20px auto;display:block;font-size:18px;padding:15px 30px;';
+      btn.onclick = function() {
+        if (typeof avancarParaProximoTeste === 'function') avancarParaProximoTeste();
+      };
+      container.appendChild(btn);
+      // Garante que o botão fique visível (scroll até ele)
+      btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, 2000);
 }

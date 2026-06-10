@@ -8,11 +8,12 @@ var isTestRunningConc = false;
 let testeJaFinalizadoConc = false;
 
 // Configuração fixa (canvas, cores)
-const WIDTH_CONC = 800;
-const HEIGHT_CONC = 600;
-const COR_FUNDO_CONC = '#f0f0f0';
-const COR_LINHA_CONC = 'black';
-const ESPESSURA_LINHA_CONC = 3;
+// WIDTH e HEIGHT agora são variáveis — serão atualizadas ao iniciar para ocupar a tela toda
+var WIDTH_CONC = 800;
+var HEIGHT_CONC = 600;
+var COR_FUNDO_CONC = '#1a1a2e';
+var COR_LINHA_CONC = 'white';
+var ESPESSURA_LINHA_CONC = 4;
 
 // Configuração dinâmica por idade (será definida em obterConfigConcentrada)
 let CONFIG_CONC = null;
