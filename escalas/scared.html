@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-QY1N9587DG"></script>
+    <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-QY1N9587DG');</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SCARED &#8212; Escala de Transtornos Relacionados &#224; Ansiedade Infantil</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background: linear-gradient(135deg, #e65100 0%, #f57f17 100%); min-height: 100vh; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; border-radius: 15px; box-shadow: 0 20px 40px rgba(0,0,0,0.15); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #e65100 0%, #f57f17 100%); color: white; padding: 30px; text-align: center; }
+        .header h1 { font-size: 2.2em; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        .header p { font-size: 1.1em; opacity: 0.9; }
+        .content { padding: 30px; }
+        .info-tecnica { background: #fff3e0; padding: 25px; border-radius: 10px; margin-bottom: 30px; border-left: 5px solid #e65100; position: relative; }
+        .info-tecnica h2 { color: #e65100; margin-bottom: 15px; font-size: 1.4em; }
+        .info-tecnica p { color: #555; line-height: 1.7; font-size: 0.95em; }
+        .dados-pessoais { background: #f8f9fa; padding: 25px; border-radius: 10px; margin-bottom: 30px; border-left: 5px solid #e65100; }
+        .dados-pessoais h2 { color: #e65100; margin-bottom: 20px; font-size: 1.5em; }
+        .form-row { display: flex; gap: 20px; margin-bottom: 15px; flex-wrap: wrap; }
+        .form-group { flex: 1; min-width: 200px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; color: #555; }
+        .form-group input, .form-group select { width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 16px; transition: border-color 0.3s; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: #e65100; }
+        .instrucoes { background: #fbe9e7; padding: 20px; border-radius: 10px; margin-bottom: 30px; border-left: 5px solid #bf360c; }
+        .instrucoes h3 { color: #bf360c; margin-bottom: 10px; }
+        .instrucoes p { color: #555; font-size: 0.95em; line-height: 1.7; }
+        .item { padding: 20px; border-bottom: 1px solid #f0f0f0; transition: background-color 0.3s; }
+        .item:hover { background-color: #fff3e0; }
+        .item:last-child { border-bottom: none; }
+        .item-texto { font-size: 1.05em; margin-bottom: 15px; color: #444; line-height: 1.5; }
+        .item-numero { font-weight: bold; color: #e65100; margin-right: 8px; }
+        .opcoes { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+        .opcao { display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; padding: 8px; border-radius: 8px; transition: all 0.3s; border: 2px solid transparent; min-width: 90px; min-height: 70px; }
+        .opcao:hover { background-color: #fff3e0; border-color: #e65100; }
+        .opcao input[type="radio"] { width: 18px; height: 18px; cursor: pointer; accent-color: #e65100; }
+        .opcao label { cursor: pointer; font-weight: 500; color: #555; text-align: center; font-size: 0.8em; line-height: 1.2; min-height: 30px; display: flex; align-items: center; }
+        .botoes { display: flex; gap: 15px; justify-content: center; margin: 30px 0; flex-wrap: wrap; }
+        .btn { padding: 15px 30px; border: none; border-radius: 25px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s; text-align: center; }
+        .btn-primary { background: linear-gradient(135deg, #e65100 0%, #f57f17 100%); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(230,81,0,0.3); }
+        .btn-secondary { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; }
+        .btn-secondary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(40,167,69,0.3); }
+        .btn-danger { background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%); color: white; }
+        .btn-danger:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(220,53,69,0.3); }
+        .resultados { background: #f8f9fa; padding: 30px; border-radius: 10px; margin-top: 30px; border-left: 5px solid #e65100; display: none; }
+        .resultados h2 { color: #e65100; margin-bottom: 20px; text-align: center; }
+        .total-geral { background: linear-gradient(135deg, #e65100 0%, #f57f17 100%); color: white; padding: 25px; border-radius: 10px; text-align: center; margin: 20px 0; }
+        .rastreio-box { padding: 20px; border-radius: 10px; text-align: center; margin: 20px 0; font-size: 1.2em; font-weight: 700; }
+        .rastreio-positivo { background: #ffcdd2; border: 3px solid #c62828; color: #b71c1c; }
+        .rastreio-negativo { background: #c8e6c9; border: 3px solid #2e7d32; color: #1b5e20; }
+        .dominio-card { background: white; padding: 15px 20px; border-radius: 10px; margin-bottom: 12px; box-shadow: 0 3px 10px rgba(0,0,0,0.08); border-left: 4px solid #e65100; }
+        .dominio-card h4 { color: #e65100; margin-bottom: 8px; }
+        .dominio-card .barra-container { height: 20px; background: #e0e0e0; border-radius: 10px; overflow: hidden; margin: 8px 0; }
+        .dominio-card .barra-inner { height: 100%; border-radius: 10px; transition: width 0.5s; }
+        .dominio-card .info-dom { display: flex; justify-content: space-between; align-items: center; font-size: 0.9em; }
+        .badge-positivo { background: #ffcdd2; color: #c62828; padding: 3px 10px; border-radius: 12px; font-weight: 700; font-size: 0.8em; }
+        .badge-negativo { background: #c8e6c9; color: #2e7d32; padding: 3px 10px; border-radius: 12px; font-weight: 700; font-size: 0.8em; }
+        .analise-texto { background: white; padding: 25px; border-radius: 10px; margin-top: 20px; border: 2px solid #e65100; line-height: 1.8; }
+        .analise-texto h3 { color: #e65100; margin-bottom: 15px; }
+        .analise-texto p { margin-bottom: 10px; color: #444; font-size: 0.95em; }
+        .disclaimer { background: #fff3e0; padding: 15px; border-radius: 8px; margin-top: 20px; border-left: 4px solid #ff9800; font-size: 0.85em; color: #e65100; line-height: 1.6; }
+        .btn-imprimir { position: absolute; top: 20px; right: 20px; padding: 10px 20px; background: linear-gradient(135deg, #e65100 0%, #bf360c 100%); color: white; border: none; border-radius: 20px; font-size: 14px; font-weight: 600; cursor: pointer; }
+        @media print { body { background: white !important; padding: 0 !important; } .botoes, .btn, .btn-imprimir { display: none !important; } .container { box-shadow: none !important; max-width: 100% !important; } .info-tecnica { display: none !important; } .resultados { display: none !important; } .item { page-break-inside: avoid; } }
+        @media (max-width: 768px) { .container { margin: 10px; border-radius: 10px; } .header { padding: 20px; } .header h1 { font-size: 1.6em; } .content { padding: 15px; } .form-row { flex-direction: column; } .opcoes { flex-direction: column; align-items: center; } .botoes { flex-direction: column; } .btn { width: 100%; } }
+    </style>
+</head>
+<body>
+<div style="padding:10px 20px;background:#2e7d32;"><a href="../" style="display:inline-block;background:#fff;color:#2e7d32;text-decoration:none;font-family:Segoe UI,Arial,sans-serif;font-size:14px;font-weight:bold;padding:8px 20px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.15);">&#11013; Voltar ao In&#237;cio</a></div>
+    <div class="container">
+        <div class="header">
+            <h1>&#129504; SCARED</h1>
+            <p>Escala de Transtornos Relacionados &#224; Ansiedade Infantil</p>
+            <p style="font-size:0.85em; opacity:0.8; margin-top:5px;">Birmaher et al. (1997) &#8212; Vers&#227;o para crian&#231;as</p>
+        </div>
+        <div class="content">
+            <div class="info-tecnica">
+                <button class="btn-imprimir" onclick="window.print()">&#128424; Imprimir Formul&#225;rio</button>
+                <h2>&#128218; Informa&#231;&#245;es T&#233;cnicas</h2>
+                <p>
+                    <strong>Instrumento:</strong> SCARED &#8212; Screen for Child Anxiety Related Emotional Disorders<br>
+                    <strong>Base te&#243;rica:</strong> Rastreio de transtornos de ansiedade em crian&#231;as e adolescentes (DSM-IV/DSM-5)<br>
+                    <strong>Estrutura:</strong> 41 itens, escala de 3 pontos (0&#8211;2), 5 subescalas<br>
+                    <strong>Resultado:</strong> Escore Total (0&#8211;82) + Escores por subescala<br>
+                    <strong>Subescalas:</strong> P&#226;nico/Somat., Ansiedade Generalizada, Ansiedade de Separa&#231;&#227;o, Ansiedade Social, Evita&#231;&#227;o Escolar<br>
+                    <strong>Aplica&#231;&#227;o:</strong> Autoaplicado pela crian&#231;a/adolescente (8&#8211;18 anos)<br>
+                    <strong>Pontos de corte:</strong> &#8805;25 (sens&#237;vel) ou &#8805;30 (espec&#237;fico) para transtorno de ansiedade
+                </p>
+            </div>
+            <div class="dados-pessoais">
+                <h2>&#128203; Dados Pessoais</h2>
+                <div class="form-row">
+                    <div class="form-group"><label for="nome">Nome:</label><input type="text" id="nome" placeholder="Nome completo"></div>
+                    <div class="form-group"><label for="dataNascimento">Data de Nascimento:</label><input type="date" id="dataNascimento" onchange="calcularIdade()"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label for="idadeCalculada">Idade:</label><input type="text" id="idadeCalculada" readonly style="background-color:#f0f0f0;" placeholder="Calculada automaticamente"></div>
+                    <div class="form-group"><label for="sexo">Sexo:</label><select id="sexo"><option value="">Selecione</option><option value="Masculino">Masculino</option><option value="Feminino">Feminino</option></select></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label for="escolaridade">Escolaridade:</label><input type="text" id="escolaridade" placeholder="Ex: 5&#186; ano do Ensino Fundamental"></div>
+                    <div class="form-group"><label for="data">Data da Avalia&#231;&#227;o:</label><input type="date" id="data"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label for="observacoes">Observa&#231;&#245;es (opcional):</label><input type="text" id="observacoes" placeholder="Informa&#231;&#245;es adicionais"></div>
+                </div>
+            </div>
+            <div class="instrucoes">
+                <h3>&#128221; Instru&#231;&#245;es</h3>
+                <p>Abaixo h&#225; uma lista de afirmativas que descrevem como as pessoas se sentem. Leia cada uma delas e decida se ela &#233; <strong>"n&#227;o verdadeira"</strong>, <strong>"&#224;s vezes verdadeira"</strong> ou <strong>"verdadeira"</strong> em rela&#231;&#227;o a voc&#234;. Para cada afirmativa, marque a resposta que parece descrever voc&#234; <strong>nos &#250;ltimos 3 meses</strong>.</p>
+            </div>
+            <div id="questionario"></div>
+            <div class="botoes">
+                <button class="btn btn-primary" onclick="calcularResultados()">Calcular Resultados</button>
+                <button class="btn btn-secondary" onclick="gerarRelatorioPDF()">Gerar Relat&#243;rio PDF</button>
+                <button class="btn btn-danger" onclick="limparDados()">Limpar Dados</button>
+            </div>
+            <div id="resultados" class="resultados"></div>
+            <div class="info-tecnica" id="referencias" style="margin-top:30px; background:#f8f9fa; border-left-color:#e65100;">
+                <h2 style="color:#e65100;">Refer&#234;ncias</h2>
+                <p style="color:#555; line-height:1.9; font-size:0.88em;">
+                    <strong>BIRMAHER, B.; KHETARPAL, S.; BRENT, D.; CULLY, M.; BALACH, L.; KAUFMAN, J.; NEER, S. M.</strong> The Screen for Child Anxiety Related Emotional Disorders (SCARED): scale construction and psychometric characteristics. <em>Journal of the American Academy of Child and Adolescent Psychiatry</em>, v. 36, n. 4, p. 545-553, 1997.<br><br>
+                    <strong>BIRMAHER, B.; BRENT, D. A.; CHIAPPETTA, L.; BRIDGE, J.; MONGA, S.; BAUGHER, M.</strong> Psychometric properties of the Screen for Child Anxiety Related Emotional Disorders (SCARED): a replication study. <em>Journal of the American Academy of Child and Adolescent Psychiatry</em>, v. 38, n. 10, p. 1230-1236, 1999.<br><br>
+                    <strong>DESOUSA, D. A.; SALUM, G. A.; ISOLAN, L. R.; MANFRO, G. G.</strong> Sensitivity and specificity of the Screen for Child Anxiety Related Emotional Disorders (SCARED): a community-based study. <em>Child Psychiatry and Human Development</em>, v. 44, n. 3, p. 391-399, 2013.
+                </p>
+            </div>
+        </div>
+    </div>
+    <script src="../id-paciente.js"></script>
+    <script>
+var ITENS=[
+{num:1,texto:"Quando estou com medo \u00e9 dif\u00edcil respirar."},
+{num:2,texto:"Tenho dor de cabe\u00e7a quando estou na escola."},
+{num:3,texto:"Eu n\u00e3o gosto de estar com pessoas que n\u00e3o conhe\u00e7o direito."},
+{num:4,texto:"Fico com medo se durmo fora de casa."},
+{num:5,texto:"Preocupo-me em rela\u00e7\u00e3o aos outros gostarem de mim."},
+{num:6,texto:"Quando estou assustado/a parece que vou desmaiar."},
+{num:7,texto:"Eu sou nervoso/a."},
+{num:8,texto:"Sigo meu pai ou minha m\u00e3e aonde quer que eles v\u00e3o."},
+{num:9,texto:"As pessoas me dizem que eu pare\u00e7o nervoso/a."},
+{num:10,texto:"Sinto-me nervoso/a com pessoas que n\u00e3o conhe\u00e7o direito."},
+{num:11,texto:"Tenho dor de est\u00f4mago na escola."},
+{num:12,texto:"Quando me assusto, parece que vou enlouquecer."},
+{num:13,texto:"Preocupo-me em ter que dormir sozinho/a."},
+{num:14,texto:"Preocupo-me em ser t\u00e3o bom/a quanto as outras crian\u00e7as."},
+{num:15,texto:"Quando me assusto, parece que as coisas n\u00e3o s\u00e3o reais."},
+{num:16,texto:"Tenho pesadelos de que algo ruim aconte\u00e7a com meus pais."},
+{num:17,texto:"Preocupo-me sobre ir \u00e0 escola."},
+{num:18,texto:"Quando me assusto, meu cora\u00e7\u00e3o bate r\u00e1pido."},
+{num:19,texto:"Fico tr\u00eamulo/a."},
+{num:20,texto:"Tenho pesadelos de que algo ruim possa me acontecer."},
+{num:21,texto:"Eu me preocupo sobre as coisas darem certo para mim."},
+{num:22,texto:"Quando me assusto, suo bastante."},
+{num:23,texto:"Eu vivo preocupado/a."},
+{num:24,texto:"Eu fico muito assustado/a sem motivo algum."},
+{num:25,texto:"Fico com medo de ficar em casa sozinho/a."},
+{num:26,texto:"Tenho dificuldade para falar com pessoas que n\u00e3o conhe\u00e7o."},
+{num:27,texto:"Quando me assusto, parece que vou sufocar."},
+{num:28,texto:"As pessoas me dizem que eu me preocupo demais."},
+{num:29,texto:"N\u00e3o gosto de estar longe da fam\u00edlia."},
+{num:30,texto:"Tenho medo de ter crises de ansiedade (ou de p\u00e2nico)."},
+{num:31,texto:"Preocupo-me que algo ruim possa acontecer com meus pais."},
+{num:32,texto:"Sinto-me t\u00edmido/a com pessoas que n\u00e3o conhe\u00e7o direito."},
+{num:33,texto:"Preocupo-me com o que vai acontecer no futuro."},
+{num:34,texto:"Quando fico assustado/a, parece que vou vomitar."},
+{num:35,texto:"Preocupo-me com qu\u00e3o bem fa\u00e7o as coisas."},
+{num:36,texto:"Tenho medo de ir a escola."},
+{num:37,texto:"Preocupo-me com coisas que j\u00e1 aconteceram."},
+{num:38,texto:"Quando me assusto, fico tonto."},
+{num:39,texto:"Fico nervoso/a quando estou com outras crian\u00e7as ou adultos e tenho que fazer alguma coisa com eles me olhando (ex. falar, ler, jogar, praticar esporte)."},
+{num:40,texto:"Fico nervoso/a quando vou a festas, bailes ou qualquer lugar onde vai haver pessoas que n\u00e3o conhe\u00e7o."},
+{num:41,texto:"Sou t\u00edmido/a."}
+];
+
+var SUBESCALAS={
+"Panico/Somatico":{itens:[1,6,9,12,15,18,19,22,24,27,30,34,38],corte:7,cor:"#c62828"},
+"Ansiedade Generalizada":{itens:[5,7,14,21,23,28,33,35,37],corte:9,cor:"#e65100"},
+"Ansiedade de Separacao":{itens:[4,8,13,16,20,25,29,31],corte:5,cor:"#f57f17"},
+"Ansiedade Social":{itens:[3,10,26,32,39,40,41],corte:8,cor:"#6a1b9a"},
+"Evitacao Escolar":{itens:[2,11,17,36],corte:3,cor:"#37474f"}
+};
+
+var OPCOES=[
+{valor:0,texto:"N\u00e3o<br>verdadeiro"},
+{valor:1,texto:"\u00c0s vezes<br>verdadeiro"},
+{valor:2,texto:"Verdadeiro"}
+];
+
+function gerarQuestionario(){
+var c=document.getElementById('questionario');
+var h='';
+ITENS.forEach(function(item,i){
+h+='<div class="item"><div class="item-texto"><span class="item-numero">'+item.num+'.</span> '+item.texto+'</div><div class="opcoes">';
+OPCOES.forEach(function(op){
+h+='<div class="opcao"><input type="radio" id="q'+i+'_'+op.valor+'" name="q'+i+'" value="'+op.valor+'"><label for="q'+i+'_'+op.valor+'">'+op.texto+'</label></div>';
+});
+h+='</div></div>';
+});
+c.innerHTML=h;
+}
+
+function calcularIdade(){
+var d=document.getElementById('dataNascimento').value;
+if(!d)return;
+var h=new Date(),n=new Date(d);
+var a=h.getFullYear()-n.getFullYear(),m=h.getMonth()-n.getMonth(),di=h.getDate()-n.getDate();
+if(di<0){m--;di+=new Date(h.getFullYear(),h.getMonth(),0).getDate();}
+if(m<0){a--;m+=12;}
+document.getElementById('idadeCalculada').value=a+' anos, '+m+' meses e '+di+' dias';
+}
+
+function obterRespostas(){
+var r=[];
+var faltam=0;
+for(var i=0;i<ITENS.length;i++){
+var s=document.querySelector('input[name="q'+i+'"]:checked');
+if(!s){faltam++;r.push(null);}
+else{r.push(parseInt(s.value));}
+}
+if(faltam>0)return{erro:faltam};
+return{respostas:r};
+}
+
+function calcularSubescalas(respostas){
+var resultado={};
+Object.keys(SUBESCALAS).forEach(function(nome){
+var sub=SUBESCALAS[nome];
+var soma=0;
+sub.itens.forEach(function(numItem){
+soma+=respostas[numItem-1];
+});
+var max=sub.itens.length*2;
+var positivo=soma>=sub.corte;
+resultado[nome]={escore:soma,max:max,corte:sub.corte,positivo:positivo,cor:sub.cor};
+});
+return resultado;
+}
+
+function calcularResultados(){
+var n=document.getElementById('nome').value;
+if(!n){alert('Preencha o nome.');return;}
+var r=obterRespostas();
+if(r.erro){alert('Faltam '+r.erro+' itens sem resposta. Responda todos os 41 itens.');return;}
+var subescalas=calcularSubescalas(r.respostas);
+var total=r.respostas.reduce(function(a,b){return a+b;},0);
+var el=document.getElementById('resultados');
+var h='<h2>Resultados SCARED</h2>';
+
+// Total
+h+='<div class="total-geral"><h3>Escore Total: '+total+' / 82</h3></div>';
+
+// Rastreio
+if(total>=30){
+h+='<div class="rastreio-box rastreio-positivo">RASTREIO POSITIVO (ponto de corte espec\u00edfico) \u2014 Escore '+total+' \u2265 30</div>';
+}else if(total>=25){
+h+='<div class="rastreio-box rastreio-positivo" style="background:#fff9c4;border-color:#f57f17;color:#e65100;">RASTREIO POSITIVO (ponto de corte sens\u00edvel) \u2014 Escore '+total+' \u2265 25</div>';
+}else{
+h+='<div class="rastreio-box rastreio-negativo">RASTREIO NEGATIVO \u2014 Escore '+total+' < 25</div>';
+}
+
+// Subescalas
+h+='<h3 style="color:#e65100;margin:20px 0 15px;">Subescalas</h3>';
+Object.keys(SUBESCALAS).forEach(function(nome){
+var s=subescalas[nome];
+var pct=Math.min(100,(s.escore/s.max)*100);
+h+='<div class="dominio-card" style="border-left-color:'+s.cor+';">';
+h+='<h4 style="color:'+s.cor+';">'+nome+'</h4>';
+h+='<div class="barra-container"><div class="barra-inner" style="width:'+pct+'%;background:'+s.cor+';"></div></div>';
+h+='<div class="info-dom"><span>Escore: <strong>'+s.escore+'</strong> / '+s.max+' (corte: \u2265'+s.corte+')</span>';
+if(s.positivo)h+='<span class="badge-positivo">POSITIVO</span>';
+else h+='<span class="badge-negativo">Negativo</span>';
+h+='</div></div>';
+});
+
+// Analise
+var positivos=[];
+Object.keys(subescalas).forEach(function(nome){if(subescalas[nome].positivo)positivos.push(nome);});
+h+='<div class="analise-texto"><h3>Interpreta\u00e7\u00e3o</h3>';
+if(total>=30){
+h+='<p>O escore total de <strong>'+total+'</strong> est\u00e1 acima do ponto de corte espec\u00edfico (\u226530), indicando <strong>alta probabilidade de transtorno de ansiedade</strong>. Avalia\u00e7\u00e3o cl\u00ednica aprofundada \u00e9 recomendada.</p>';
+}else if(total>=25){
+h+='<p>O escore total de <strong>'+total+'</strong> est\u00e1 acima do ponto de corte sens\u00edvel (\u226525), sugerindo <strong>poss\u00edvel presen\u00e7a de transtorno de ansiedade</strong>. Investiga\u00e7\u00e3o cl\u00ednica complementar \u00e9 indicada.</p>';
+}else{
+h+='<p>O escore total de <strong>'+total+'</strong> est\u00e1 abaixo dos pontos de corte, n\u00e3o sugerindo transtorno de ansiedade clinicamente significativo neste momento.</p>';
+}
+if(positivos.length>0){
+h+='<p><strong>Subescalas com pontua\u00e7\u00e3o significativa:</strong></p><ul style="margin-left:20px;">';
+var descSub={"Panico/Somatico":"Pode indicar Transtorno do P\u00e2nico ou sintomas som\u00e1ticos significativos.","Ansiedade Generalizada":"Pode indicar Transtorno de Ansiedade Generalizada.","Ansiedade de Separacao":"Pode indicar Transtorno de Ansiedade de Separa\u00e7\u00e3o.","Ansiedade Social":"Pode indicar Transtorno de Ansiedade Social.","Evitacao Escolar":"Pode indicar Evita\u00e7\u00e3o Escolar significativa."};
+positivos.forEach(function(n){h+='<li><strong>'+n+'</strong>: '+descSub[n]+'</li>';});
+h+='</ul>';
+}
+h+='</div>';
+h+='<div class="disclaimer"><strong>IMPORTANTE:</strong> O SCARED \u00e9 um instrumento de rastreio e n\u00e3o substitui avalia\u00e7\u00e3o cl\u00ednica profissional. Resultados devem ser interpretados no contexto da avalia\u00e7\u00e3o cl\u00ednica completa.</div>';
+el.innerHTML=h;
+el.style.display='block';
+el.scrollIntoView({behavior:'smooth'});
+
+window._escalaDados={escala:'SCARED',paciente:n,total:total,subescalas:subescalas,positivos:positivos,idPaciente:(document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''),idade:document.getElementById('idadeCalculada').value,sexo:document.getElementById('sexo').value,data:new Date().toISOString()};
+if(window.injetarBotaoSalvar)injetarBotaoSalvar('resultados');
+}
+
+function gerarRelatorioPDF(){
+var nome=document.getElementById('nome').value;
+if(!nome){alert('Preencha o nome.');return;}
+var r=obterRespostas();
+if(r.erro){alert('Responda todos os 41 itens antes de gerar o PDF.');return;}
+var subescalas=calcularSubescalas(r.respostas);
+var total=r.respostas.reduce(function(a,b){return a+b;},0);
+var idade=document.getElementById('idadeCalculada').value||'';
+var sexo=document.getElementById('sexo').value||'';
+var dataAval=document.getElementById('data').value||new Date().toLocaleDateString('pt-BR');
+var idPac=document.getElementById('idPaciente')?document.getElementById('idPaciente').value:'';
+var escol=document.getElementById('escolaridade').value||'';
+
+var jsPDF=window.jspdf.jsPDF;
+var doc=new jsPDF();
+
+// === PAGINA 1 ===
+doc.setFillColor(230,81,0);doc.rect(0,0,210,35,'F');
+doc.setTextColor(255,255,255);doc.setFontSize(14);doc.setFont(undefined,'bold');
+doc.text('SCARED - RELATORIO DE AVALIACAO',105,15,{align:'center'});
+doc.setFontSize(9);doc.setFont(undefined,'normal');
+doc.text('Escala de Transtornos Relacionados a Ansiedade Infantil',105,23,{align:'center'});
+doc.setFontSize(7);
+doc.text('Birmaher et al. (1997) | Versao para criancas',105,29,{align:'center'});
+
+var y=42;
+doc.setFillColor(248,249,250);doc.rect(15,y,180,22,'F');
+doc.setTextColor(230,81,0);doc.setFontSize(10);doc.setFont(undefined,'bold');
+doc.text('DADOS DO PACIENTE',20,y+6);
+doc.setTextColor(0,0,0);doc.setFontSize(9);doc.setFont(undefined,'normal');
+doc.text('Nome: '+nome,20,y+12);
+doc.text('Idade: '+idade+'   |   Sexo: '+sexo+(escol?'   |   Escolaridade: '+escol:''),20,y+17);
+doc.text('Data: '+dataAval+(idPac?'   |   ID: '+idPac:''),20,y+22);
+
+y=70;
+// Escore total
+doc.setFillColor(230,81,0);doc.rect(15,y,180,12,'F');
+doc.setTextColor(255,255,255);doc.setFontSize(11);doc.setFont(undefined,'bold');
+doc.text('ESCORE TOTAL: '+total+' / 82',105,y+8,{align:'center'});
+y+=18;
+
+// Rastreio
+if(total>=30){
+doc.setFillColor(255,205,210);doc.rect(15,y,180,10,'F');
+doc.setTextColor(198,40,40);doc.setFontSize(9);doc.setFont(undefined,'bold');
+doc.text('RASTREIO POSITIVO (ponto de corte especifico) - Escore '+total+' >= 30',105,y+7,{align:'center'});
+}else if(total>=25){
+doc.setFillColor(255,249,196);doc.rect(15,y,180,10,'F');
+doc.setTextColor(230,81,0);doc.setFontSize(9);doc.setFont(undefined,'bold');
+doc.text('RASTREIO POSITIVO (ponto de corte sensivel) - Escore '+total+' >= 25',105,y+7,{align:'center'});
+}else{
+doc.setFillColor(200,230,201);doc.rect(15,y,180,10,'F');
+doc.setTextColor(46,125,50);doc.setFontSize(9);doc.setFont(undefined,'bold');
+doc.text('RASTREIO NEGATIVO - Escore '+total+' < 25',105,y+7,{align:'center'});
+}
+y+=16;
+
+// Subescalas
+doc.setTextColor(230,81,0);doc.setFontSize(10);doc.setFont(undefined,'bold');
+doc.text('SUBESCALAS',20,y);
+y+=8;
+
+doc.setFillColor(230,81,0);doc.rect(15,y,180,7,'F');
+doc.setTextColor(255,255,255);doc.setFontSize(8);doc.setFont(undefined,'bold');
+doc.text('Subescala',20,y+5);
+doc.text('Escore',100,y+5);
+doc.text('Corte',120,y+5);
+doc.text('Status',145,y+5);
+doc.text('Indica',165,y+5);
+y+=9;
+
+var nomesSub=Object.keys(SUBESCALAS);
+var descPDF={"Panico/Somatico":"T. Panico / Somat.","Ansiedade Generalizada":"T. Ans. Generalizada","Ansiedade de Separacao":"T. Ans. Separacao","Ansiedade Social":"T. Ans. Social","Evitacao Escolar":"Evitacao Escolar"};
+nomesSub.forEach(function(nome,idx){
+var s=subescalas[nome];
+if(idx%2===0){doc.setFillColor(255,248,235);doc.rect(15,y-3,180,8,'F');}
+doc.setTextColor(0,0,0);doc.setFontSize(8);doc.setFont(undefined,'normal');
+doc.text(nome,20,y+2);
+doc.text(s.escore+' / '+s.max,100,y+2);
+doc.text('>= '+s.corte,120,y+2);
+if(s.positivo){doc.setTextColor(198,40,40);doc.setFont(undefined,'bold');doc.text('POSITIVO',145,y+2);}
+else{doc.setTextColor(46,125,50);doc.text('Negativo',145,y+2);}
+doc.setTextColor(100,100,100);doc.setFont(undefined,'normal');
+doc.text(descPDF[nome]||'',165,y+2);
+y+=8;
+});
+
+// Grafico de barras
+y+=10;
+doc.setTextColor(230,81,0);doc.setFontSize(10);doc.setFont(undefined,'bold');
+doc.text('REPRESENTACAO GRAFICA',20,y);
+y+=8;
+nomesSub.forEach(function(nome){
+var s=subescalas[nome];
+var pct=Math.min(100,(s.escore/s.max)*100);
+var barW=pct*1.2;
+doc.setTextColor(0,0,0);doc.setFontSize(7);doc.setFont(undefined,'normal');
+doc.text(nome,20,y+3);
+doc.setFillColor(224,224,224);doc.rect(75,y,120,5,'F');
+if(s.positivo){doc.setFillColor(198,40,40);}else{doc.setFillColor(76,175,80);}
+doc.rect(75,y,barW,5,'F');
+doc.setTextColor(0,0,0);doc.text(s.escore+'/'+s.max,75+barW+3,y+4);
+y+=8;
+});
+
+// Interpretacao
+y+=8;
+doc.setTextColor(230,81,0);doc.setFontSize(10);doc.setFont(undefined,'bold');
+doc.text('INTERPRETACAO',20,y);
+y+=7;
+doc.setTextColor(0,0,0);doc.setFontSize(9);doc.setFont(undefined,'normal');
+var interp='';
+if(total>=30)interp='Escore total acima do ponto de corte especifico (>=30), indicando alta probabilidade de transtorno de ansiedade. Avaliacao clinica aprofundada recomendada.';
+else if(total>=25)interp='Escore total acima do ponto de corte sensivel (>=25), sugerindo possivel presenca de transtorno de ansiedade. Investigacao clinica complementar indicada.';
+else interp='Escore total abaixo dos pontos de corte, nao sugerindo transtorno de ansiedade clinicamente significativo neste momento.';
+var linhas=doc.splitTextToSize(interp,170);
+doc.text(linhas,20,y);
+y+=linhas.length*5+3;
+
+var positivos=[];
+nomesSub.forEach(function(n){if(subescalas[n].positivo)positivos.push(n);});
+if(positivos.length>0){
+doc.text('Subescalas positivas: '+positivos.join(', '),20,y);
+y+=6;
+}
+
+y+=8;
+if(y>260){doc.addPage();y=20;}
+doc.setFillColor(255,248,235);doc.rect(15,y,180,14,'F');
+doc.setTextColor(180,90,0);doc.setFontSize(7);
+doc.text('IMPORTANTE: O SCARED e um instrumento de rastreio e nao substitui avaliacao clinica profissional.',20,y+5);
+doc.text('Resultados devem ser interpretados no contexto da avaliacao clinica completa.',20,y+10);
+
+doc.setFillColor(80,80,80);doc.rect(0,285,210,12,'F');
+doc.setTextColor(200,200,200);doc.setFontSize(7);
+doc.text('SCARED - Escala de Ansiedade Infantil | Pagina 1/2',105,291,{align:'center'});
+
+// === PAGINA 2 - REFERENCIAS ===
+doc.addPage();
+doc.setFillColor(230,81,0);doc.rect(0,0,210,20,'F');
+doc.setTextColor(255,255,255);doc.setFontSize(11);doc.setFont(undefined,'bold');
+doc.text('REFERENCIAS',105,13,{align:'center'});
+
+y=30;
+doc.setTextColor(0,0,0);doc.setFontSize(9);doc.setFont(undefined,'normal');
+doc.text('BIRMAHER, B.; KHETARPAL, S.; BRENT, D.; CULLY, M.; BALACH, L.;',20,y);
+y+=5;doc.text('KAUFMAN, J.; NEER, S. M. The Screen for Child Anxiety Related Emotional',20,y);
+y+=5;doc.text('Disorders (SCARED): scale construction and psychometric characteristics.',20,y);
+y+=5;doc.text('J Am Acad Child Adolesc Psychiatry, v. 36, n. 4, p. 545-553, 1997.',20,y);
+y+=10;
+doc.text('BIRMAHER, B.; BRENT, D. A.; CHIAPPETTA, L.; BRIDGE, J.; MONGA, S.;',20,y);
+y+=5;doc.text('BAUGHER, M. Psychometric properties of the Screen for Child Anxiety',20,y);
+y+=5;doc.text('Related Emotional Disorders (SCARED): a replication study. J Am Acad',20,y);
+y+=5;doc.text('Child Adolesc Psychiatry, v. 38, n. 10, p. 1230-1236, 1999.',20,y);
+y+=10;
+doc.text('DESOUSA, D. A.; SALUM, G. A.; ISOLAN, L. R.; MANFRO, G. G. Sensitivity',20,y);
+y+=5;doc.text('and specificity of the Screen for Child Anxiety Related Emotional',20,y);
+y+=5;doc.text('Disorders (SCARED): a community-based study. Child Psychiatry Hum Dev,',20,y);
+y+=5;doc.text('v. 44, n. 3, p. 391-399, 2013.',20,y);
+
+doc.setFillColor(80,80,80);doc.rect(0,285,210,12,'F');
+doc.setTextColor(200,200,200);doc.setFontSize(7);
+doc.text('Relatorio gerado em: '+new Date().toLocaleString('pt-BR')+' | Pagina 2/2',105,291,{align:'center'});
+
+var ts=new Date();
+var tsStr=ts.getFullYear()+String(ts.getMonth()+1).padStart(2,'0')+String(ts.getDate()).padStart(2,'0')+String(ts.getHours()).padStart(2,'0')+String(ts.getMinutes()).padStart(2,'0');
+doc.save('SCARED_'+nome.replace(/\s+/g,'_')+'_'+tsStr+'.pdf');
+}
+
+function limparDados(){
+if(!confirm('Limpar todos os dados?'))return;
+document.getElementById('nome').value='';
+document.getElementById('dataNascimento').value='';
+document.getElementById('idadeCalculada').value='';
+document.getElementById('sexo').value='';
+document.getElementById('escolaridade').value='';
+document.getElementById('observacoes').value='';
+document.querySelectorAll('input[type="radio"]').forEach(function(r){r.checked=false;});
+document.getElementById('resultados').style.display='none';
+document.getElementById('data').value=new Date().toISOString().split('T')[0];
+}
+
+// ===== MODO PAINEL =====
+var _sessionInfo=null;
+var _API_URL='https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
+
+function _decodificarURL(){
+var params=new URLSearchParams(window.location.search);
+var d=params.get('d');
+if(!d)return false;
+try{_sessionInfo=JSON.parse(atob(decodeURIComponent(d)));}catch(e){return false;}
+var nomeEl=document.getElementById('nome');
+var nascEl=document.getElementById('dataNascimento');
+var sexoEl=document.getElementById('sexo');
+if(nomeEl&&_sessionInfo.patientName)nomeEl.value=_sessionInfo.patientName;
+if(nascEl&&_sessionInfo.birthDate)nascEl.value=_sessionInfo.birthDate;
+if(sexoEl&&_sessionInfo.sex)sexoEl.value=_sessionInfo.sex;
+if(typeof calcularIdade==='function')calcularIdade();
+if(nomeEl)nomeEl.dispatchEvent(new Event('input'));
+if(nascEl)nascEl.dispatchEvent(new Event('change'));
+var botoes=document.querySelector('.botoes');
+if(botoes){
+botoes.innerHTML='<button class="btn btn-primary" style="padding:15px 30px;border:none;border-radius:25px;font-size:16px;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#2e7d32,#43a047);color:white;" onclick="_enviarResultadosPainel()">Enviar Resultados ao Profissional</button>';
+}
+var els=document.querySelectorAll('.info-tecnica');
+els.forEach(function(el){el.style.display='none';});
+return true;
+}
+
+async function _enviarResultadosPainel(){
+var nomeEl=document.getElementById('nome');
+if(!nomeEl||!nomeEl.value.trim()){alert('Preencha o nome antes de enviar.');return;}
+var calcFn=window.calcularResultados;
+if(calcFn&&!window._escalaDados){try{calcFn();}catch(e){}}
+var dados=window._escalaDados||{};
+if(!dados.escala)dados.escala='SCARED';
+dados.idPaciente=document.getElementById('idPaciente')?document.getElementById('idPaciente').value:'';
+dados.data=new Date().toISOString();
+var btn=document.querySelector('.botoes button');
+if(btn){btn.disabled=true;btn.textContent='Enviando...';}
+try{
+var resp=await fetch(_API_URL+'/save-escala',{
+method:'POST',
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({sessionId:_sessionInfo.sessionId,email:_sessionInfo.email,data:dados})
+});
+var result=await resp.json();
+if(result.ok||resp.ok){
+var container=document.querySelector('.botoes');
+if(container)container.innerHTML='<div style="background:#c8e6c9;border:2px solid #2e7d32;border-radius:10px;padding:20px;text-align:center;"><p style="font-size:1.3em;color:#2e7d32;font-weight:bold;">Resultados enviados com sucesso!</p><p style="color:#555;margin-top:8px;">O profissional ja pode visualizar seus resultados no painel.</p><p style="color:#777;margin-top:5px;font-size:0.85em;">Voce pode fechar esta pagina.</p></div>';
+var res=document.getElementById('resultados');
+if(res)res.style.display='none';
+}else{
+if(btn){btn.disabled=false;btn.textContent='Enviar Resultados ao Profissional';}
+alert('Erro ao enviar. Tente novamente.');
+}
+}catch(e){
+if(btn){btn.disabled=false;btn.textContent='Enviar Resultados ao Profissional';}
+alert('Erro de conexao. Verifique sua internet e tente novamente.');
+}
+}
+
+// === INICIALIZACAO ===
+gerarQuestionario();
+document.getElementById('data').value=new Date().toISOString().split('T')[0];
+var params=new URLSearchParams(window.location.search);
+if(params.get('d')){
+_decodificarURL();
+}else if(params.get('print')){
+var els=document.querySelectorAll('.info-tecnica');
+els.forEach(function(el){el.style.display='none';});
+var botoes=document.querySelector('.botoes');
+if(botoes)botoes.style.display='none';
+setTimeout(function(){window.print();},500);
+}else{
+window.location.href='https://setmonte.github.io/online/';
+}
+    </script>
+<script>
+if(!new URLSearchParams(window.location.search).get('d')){
+var s1=document.createElement('script');s1.src='pdf-escalas.js';document.body.appendChild(s1);
+var s2=document.createElement('script');s2.src='salvar-escala.js';document.body.appendChild(s2);
+}
+var _sc=document.createElement('script');_sc.src='coleta-anonima.js';document.body.appendChild(_sc);
+</script>
+<div style="text-align:center;padding:15px;color:#999;font-size:0.75em;margin-top:20px;">Dados an&#244;nimos e n&#227;o-identific&#225;veis podem ser utilizados para fins de pesquisa e normatiza&#231;&#227;o.</div>
+</body>
+</html>

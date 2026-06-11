@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-QY1N9587DG"></script>
+    <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-QY1N9587DG');</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CY-BOCS &#8212; Escala Yale-Brown de Obsess&#245;es e Compuls&#245;es para Crian&#231;as</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%); min-height: 100vh; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; border-radius: 15px; box-shadow: 0 20px 40px rgba(0,0,0,0.15); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%); color: white; padding: 30px; text-align: center; }
+        .header h1 { font-size: 2.2em; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        .header p { font-size: 1.1em; opacity: 0.9; }
+        .content { padding: 30px; }
+        .info-tecnica { background: #e3f2fd; padding: 25px; border-radius: 10px; margin-bottom: 30px; border-left: 5px solid #1565c0; position: relative; }
+        .info-tecnica h2 { color: #1565c0; margin-bottom: 15px; font-size: 1.4em; }
+        .info-tecnica p { color: #555; line-height: 1.7; font-size: 0.95em; }
+        .dados-pessoais { background: #f8f9fa; padding: 25px; border-radius: 10px; margin-bottom: 30px; border-left: 5px solid #1565c0; }
+        .dados-pessoais h2 { color: #1565c0; margin-bottom: 20px; font-size: 1.5em; }
+        .form-row { display: flex; gap: 20px; margin-bottom: 15px; flex-wrap: wrap; }
+        .form-group { flex: 1; min-width: 200px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; color: #555; }
+        .form-group input, .form-group select { width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 16px; transition: border-color 0.3s; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: #1565c0; }
+        .instrucoes { background: #e8f5e9; padding: 20px; border-radius: 10px; margin-bottom: 30px; border-left: 5px solid #2e7d32; }
+        .instrucoes h3 { color: #2e7d32; margin-bottom: 10px; }
+        .instrucoes p { color: #555; font-size: 0.95em; line-height: 1.7; }
+        .secao-titulo { background: linear-gradient(135deg, #1565c0, #0d47a1); color: white; padding: 15px 25px; border-radius: 10px; margin: 30px 0 20px 0; font-size: 1.2em; font-weight: 700; }
+        .secao-titulo.compulsoes { background: linear-gradient(135deg, #e65100, #bf360c); }
+        .secao-titulo.complementar { background: linear-gradient(135deg, #37474f, #455a64); }
+        .item { padding: 20px; border-bottom: 1px solid #f0f0f0; transition: background-color 0.3s; }
+        .item:hover { background-color: #e3f2fd; }
+        .item:last-child { border-bottom: none; }
+        .item-texto { font-size: 1.05em; margin-bottom: 8px; color: #333; line-height: 1.5; font-weight: 600; }
+        .item-numero { font-weight: bold; color: #1565c0; margin-right: 8px; }
+        .item-pergunta { font-size: 0.92em; color: #555; margin-bottom: 12px; font-style: italic; line-height: 1.5; }
+        .item-nota { font-size: 0.82em; color: #777; margin-bottom: 12px; line-height: 1.5; background: #f5f5f5; padding: 8px 12px; border-radius: 6px; }
+        .opcoes { display: flex; flex-direction: column; gap: 6px; }
+        .opcao { display: flex; align-items: flex-start; gap: 10px; cursor: pointer; padding: 8px 12px; border-radius: 8px; transition: all 0.3s; border: 2px solid transparent; }
+        .opcao:hover { background-color: #e3f2fd; border-color: #1565c0; }
+        .opcao input[type="radio"] { width: 18px; height: 18px; cursor: pointer; accent-color: #1565c0; margin-top: 2px; flex-shrink: 0; }
+        .opcao label { cursor: pointer; font-size: 0.9em; color: #444; line-height: 1.4; }
+        .botoes { display: flex; gap: 15px; justify-content: center; margin: 30px 0; flex-wrap: wrap; }
+        .btn { padding: 15px 30px; border: none; border-radius: 25px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s; text-align: center; }
+        .btn-primary { background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(21,101,192,0.3); }
+        .btn-secondary { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; }
+        .btn-secondary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(40,167,69,0.3); }
+        .btn-danger { background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%); color: white; }
+        .btn-danger:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(220,53,69,0.3); }
+        .resultados { background: #f8f9fa; padding: 30px; border-radius: 10px; margin-top: 30px; border-left: 5px solid #1565c0; display: none; }
+        .resultados h2 { color: #1565c0; margin-bottom: 20px; text-align: center; }
+        .total-geral { background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%); color: white; padding: 25px; border-radius: 10px; text-align: center; margin: 20px 0; }
+        .escores-box { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin: 20px 0; }
+        .escore-card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 3px 10px rgba(0,0,0,0.08); text-align: center; min-width: 180px; flex: 1; }
+        .escore-card h4 { color: #1565c0; margin-bottom: 8px; }
+        .escore-card .valor { font-size: 2em; font-weight: 800; color: #333; }
+        .escore-card .max { font-size: 0.85em; color: #888; }
+        .rastreio-box { padding: 20px; border-radius: 10px; text-align: center; margin: 20px 0; font-size: 1.2em; font-weight: 700; }
+        .classif-subclinico { background: #e8f5e9; border: 3px solid #2e7d32; color: #1b5e20; }
+        .classif-leve { background: #fff9c4; border: 3px solid #f9a825; color: #f57f17; }
+        .classif-moderado { background: #ffe0b2; border: 3px solid #e65100; color: #bf360c; }
+        .classif-grave { background: #ffcdd2; border: 3px solid #c62828; color: #b71c1c; }
+        .classif-muitograve { background: #f8bbd0; border: 3px solid #880e4f; color: #880e4f; }
+        .complementar-card { background: white; padding: 15px 20px; border-radius: 10px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-left: 4px solid #455a64; display: flex; justify-content: space-between; align-items: center; }
+        .complementar-card h4 { color: #37474f; font-size: 0.95em; }
+        .complementar-card .valor { font-weight: 700; color: #333; }
+        .analise-texto { background: white; padding: 25px; border-radius: 10px; margin-top: 20px; border: 2px solid #1565c0; line-height: 1.8; }
+        .analise-texto h3 { color: #1565c0; margin-bottom: 15px; }
+        .analise-texto p { margin-bottom: 10px; color: #444; font-size: 0.95em; }
+        .disclaimer { background: #fff3e0; padding: 15px; border-radius: 8px; margin-top: 20px; border-left: 4px solid #ff9800; font-size: 0.85em; color: #e65100; line-height: 1.6; }
+        .btn-imprimir { position: absolute; top: 20px; right: 20px; padding: 10px 20px; background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%); color: white; border: none; border-radius: 20px; font-size: 14px; font-weight: 600; cursor: pointer; }
+        @media print { body { background: white !important; padding: 0 !important; } .botoes, .btn, .btn-imprimir { display: none !important; } .container { box-shadow: none !important; max-width: 100% !important; } .info-tecnica { display: none !important; } .resultados { display: none !important; } .item { page-break-inside: avoid; } }
+        @media (max-width: 768px) { .container { margin: 10px; border-radius: 10px; } .header { padding: 20px; } .header h1 { font-size: 1.6em; } .content { padding: 15px; } .form-row { flex-direction: column; } .botoes { flex-direction: column; } .btn { width: 100%; } .escores-box { flex-direction: column; } }
+    </style>
+</head>
+<body>
+<div style="padding:10px 20px;background:#2e7d32;"><a href="../" style="display:inline-block;background:#fff;color:#2e7d32;text-decoration:none;font-family:Segoe UI,Arial,sans-serif;font-size:14px;font-weight:bold;padding:8px 20px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.15);">&#11013; Voltar ao In&#237;cio</a></div>
+    <div class="container">
+        <div class="header">
+            <h1>&#129504; CY-BOCS</h1>
+            <p>Escala Yale-Brown de Obsess&#245;es e Compuls&#245;es &#8212; Vers&#227;o para Crian&#231;as</p>
+            <p style="font-size:0.85em; opacity:0.8; margin-top:5px;">Goodman et al. (1986) &#8212; Adapta&#231;&#227;o brasileira: Asbahr (1999)</p>
+        </div>
+        <div class="content">
+            <div class="info-tecnica">
+                <button class="btn-imprimir" onclick="window.print()">&#128424; Imprimir Formul&#225;rio</button>
+                <h2>&#128218; Informa&#231;&#245;es T&#233;cnicas</h2>
+                <p>
+                    <strong>Instrumento:</strong> CY-BOCS &#8212; Children's Yale-Brown Obsessive Compulsive Scale<br>
+                    <strong>Base te&#243;rica:</strong> Avalia&#231;&#227;o dimensional da gravidade do TOC em crian&#231;as e adolescentes<br>
+                    <strong>Estrutura:</strong> 10 itens principais (0&#8211;4) + 6 itens de investiga&#231;&#227;o complementar<br>
+                    <strong>Resultado:</strong> Escore Obsess&#245;es (0&#8211;20) + Escore Compuls&#245;es (0&#8211;20) = Total (0&#8211;40)<br>
+                    <strong>Classifica&#231;&#227;o:</strong> Subcl&#237;nico (0&#8211;7), Leve (8&#8211;15), Moderado (16&#8211;23), Grave (24&#8211;31), Muito Grave (32&#8211;40)<br>
+                    <strong>Aplica&#231;&#227;o:</strong> Entrevista cl&#237;nica semiestruturada &#8212; o profissional pontua<br>
+                    <strong>Popula&#231;&#227;o:</strong> Crian&#231;as e adolescentes (6&#8211;17 anos)
+                </p>
+            </div>
+            <div class="dados-pessoais">
+                <h2>&#128203; Dados do Paciente</h2>
+                <div class="form-row">
+                    <div class="form-group"><label for="nome">Nome:</label><input type="text" id="nome" placeholder="Nome completo"></div>
+                    <div class="form-group"><label for="dataNascimento">Data de Nascimento:</label><input type="date" id="dataNascimento" onchange="calcularIdade()"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label for="idadeCalculada">Idade:</label><input type="text" id="idadeCalculada" readonly style="background-color:#f0f0f0;" placeholder="Calculada automaticamente"></div>
+                    <div class="form-group"><label for="sexo">Sexo:</label><select id="sexo"><option value="">Selecione</option><option value="Masculino">Masculino</option><option value="Feminino">Feminino</option></select></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label for="escolaridade">Escolaridade:</label><input type="text" id="escolaridade" placeholder="Ex: 5&#186; ano do Ensino Fundamental"></div>
+                    <div class="form-group"><label for="data">Data da Avalia&#231;&#227;o:</label><input type="date" id="data"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label for="observacoes">Observa&#231;&#245;es (opcional):</label><input type="text" id="observacoes" placeholder="Informa&#231;&#245;es adicionais"></div>
+                </div>
+            </div>
+            <div class="instrucoes">
+                <h3>&#128221; Instru&#231;&#245;es ao Profissional</h3>
+                <p>Esta escala deve ser aplicada em formato de <strong>entrevista cl&#237;nica</strong>. Fa&#231;a as perguntas sugeridas para cada item e pontue com base na sua avalia&#231;&#227;o cl&#237;nica. Use linguagem acess&#237;vel para a crian&#231;a (ex: "pensamentos que entram na sua cabe&#231;a", "manias/h&#225;bitos"). Os itens 1&#8211;5 avaliam <strong>Obsess&#245;es</strong> e os itens 6&#8211;10 avaliam <strong>Compuls&#245;es</strong>. Os itens 11&#8211;16 s&#227;o complementares e n&#227;o entram no escore total.</p>
+            </div>
+            <div id="questionario"></div>
+            <div class="botoes">
+                <button class="btn btn-primary" onclick="calcularResultados()">Calcular Resultados</button>
+                <button class="btn btn-secondary" onclick="gerarRelatorioPDF()">Gerar Relat&#243;rio PDF</button>
+                <button class="btn btn-danger" onclick="limparDados()">Limpar Dados</button>
+            </div>
+            <div id="resultados" class="resultados"></div>
+            <div class="info-tecnica" id="referencias" style="margin-top:30px; background:#f8f9fa; border-left-color:#1565c0;">
+                <h2 style="color:#1565c0;">Refer&#234;ncias</h2>
+                <p style="color:#555; line-height:1.9; font-size:0.88em;">
+                    <strong>GOODMAN, W. K.; RASMUSSEN, S. A.; PRICE, L. H.; RIDDLE, M. A.; RAPOPORT, J. L.</strong> Children's Yale-Brown Obsessive-Compulsive Scale (CY-BOCS). New Haven, CT: Yale University, 1986.<br><br>
+                    <strong>SCAHILL, L.; RIDDLE, M. A.; McSWIGGIN-HARDIN, M.; ORT, S. I.; KING, R. A.; GOODMAN, W. K. et al.</strong> Children's Yale-Brown Obsessive Compulsive Scale: reliability and validity. <em>Journal of the American Academy of Child and Adolescent Psychiatry</em>, v. 36, n. 6, p. 844-852, 1997.<br><br>
+                    <strong>ASBAHR, F. R.</strong> Escalas de avalia&#231;&#227;o de transtorno obsessivo-compulsivo na inf&#226;ncia e adolesc&#234;ncia. <em>Revista de Psiquiatria Cl&#237;nica</em>, v. 25, n. 6, p. 310-319, 1999.
+                </p>
+            </div>
+        </div>
+    </div>
+    <script src="../id-paciente.js"></script>
+    <script>
+var ITENS_OBSESSOES=[
+{num:1,titulo:"Tempo ocupado pelos Pensamentos Obsessivos",pergunta:"Quanto tempo voc\u00ea gasta com esses pensamentos que entram na sua cabe\u00e7a?",opcoes:[
+{valor:0,texto:"Nenhum"},
+{valor:1,texto:"Leve: menos de 1 hora/dia ou intrus\u00f5es ocasionais"},
+{valor:2,texto:"Moderado: 1 a 3 horas/dia ou intrus\u00f5es frequentes"},
+{valor:3,texto:"Grave: 3 a 8 horas/dia ou intrus\u00f5es muito frequentes"},
+{valor:4,texto:"Muito grave: mais de 8 horas/dia ou intrus\u00f5es quase constantes"}
+]},
+{num:2,titulo:"Interfer\u00eancia provocada pelos Pensamentos Obsessivos",pergunta:"Quanto estes pensamentos atrapalham no caminho da escola ou quando voc\u00ea est\u00e1 fazendo alguma coisa/brincando com seus amigos?",nota:"Se n\u00e3o estiver frequentando a escola no momento, avalie at\u00e9 que ponto o desempenho seria afetado se o paciente estivesse na escola.",opcoes:[
+{valor:0,texto:"Nenhuma"},
+{valor:1,texto:"Alguma: leve interfer\u00eancia nas atividades, mas o desempenho global n\u00e3o \u00e9 deteriorado"},
+{valor:2,texto:"Moderada: clara interfer\u00eancia no desempenho social ou ocupacional, mas conseguindo ainda desempenhar"},
+{valor:3,texto:"Grave: provoca deteriora\u00e7\u00e3o consider\u00e1vel no desempenho social ou ocupacional"},
+{valor:4,texto:"Muito grave: incapacitante"}
+]},
+{num:3,titulo:"Sofrimento relacionado aos Pensamentos Obsessivos",pergunta:"Quanto estes pensamentos chateiam ou incomodam voc\u00ea?",nota:"Avalie somente a ansiedade que parece ser desencadeada pelas obsess\u00f5es, n\u00e3o a ansiedade generalizada ou a ansiedade associada a outros sintomas.",opcoes:[
+{valor:0,texto:"Nenhum"},
+{valor:1,texto:"Leve: n\u00e3o muito perturbadora"},
+{valor:2,texto:"Moderado: perturbadora, mas ainda control\u00e1vel"},
+{valor:3,texto:"Grave: muito perturbadora"},
+{valor:4,texto:"Muito grave: mal-estar quase constante e incapacitante"}
+]},
+{num:4,titulo:"Resist\u00eancia \u00e0s Obsess\u00f5es",pergunta:"Quanto voc\u00ea se esfor\u00e7a para parar ou ignorar (n\u00e3o ligar para) os pensamentos?",nota:"Avalie somente o esfor\u00e7o feito para resistir, n\u00e3o o sucesso/fracasso que tem ao tentar controlar as obsess\u00f5es. Se as obsess\u00f5es s\u00e3o m\u00ednimas, o paciente pode n\u00e3o sentir necessidade de resistir. Em tais casos, o escore 0 deve ser dado.",opcoes:[
+{valor:0,texto:"Faz sempre esfor\u00e7o para resistir, ou sintomas m\u00ednimos que n\u00e3o necessitam de resist\u00eancia ativa"},
+{valor:1,texto:"Tenta resistir a maior parte das vezes"},
+{valor:2,texto:"Faz algum esfor\u00e7o para resistir"},
+{valor:3,texto:"Cede a todas as obsess\u00f5es sem tentar control\u00e1-las, ainda que fa\u00e7a isso com alguma relut\u00e2ncia"},
+{valor:4,texto:"Cede completamente a todas as obsess\u00f5es de modo volunt\u00e1rio"}
+]},
+{num:5,titulo:"Grau de controle sobre os Pensamentos Obsessivos",pergunta:"Quando voc\u00ea briga com os pensamentos, voc\u00ea pode ganhar deles/derrot\u00e1-los? Quanto voc\u00ea consegue controlar seus pensamentos?",nota:"A capacidade do paciente em controlar as suas obsess\u00f5es est\u00e1 mais relacionada \u00e0 intensidade dos pensamentos intrusivos.",opcoes:[
+{valor:0,texto:"Controle total"},
+{valor:1,texto:"Bom controle: habitualmente capaz de interromper ou afastar as obsess\u00f5es com algum esfor\u00e7o e concentra\u00e7\u00e3o"},
+{valor:2,texto:"Controle moderado: algumas vezes capaz de interromper ou afastar as obsess\u00f5es"},
+{valor:3,texto:"Controle leve: raramente bem-sucedido; consegue somente desviar a aten\u00e7\u00e3o com dificuldade"},
+{valor:4,texto:"Nenhum controle: obsess\u00f5es experimentadas como completamente involunt\u00e1rias; raramente capaz de desviar seus pensamentos obsessivos"}
+]}
+];
+
+var ITENS_COMPULSOES=[
+{num:6,titulo:"Tempo gasto com Comportamentos Compulsivos",pergunta:"Quanto tempo voc\u00ea gasta fazendo essas coisas (manias/h\u00e1bitos)?",nota:"Quando os rituais mais importantes est\u00e3o relacionados \u00e0s atividades do dia a dia, pergunte: quanto tempo a mais voc\u00ea usa para executar suas atividades rotineiras por causa de seus rituais?",opcoes:[
+{valor:0,texto:"Nenhum"},
+{valor:1,texto:"Leve: passa menos de 1 hora/dia realizando compuls\u00f5es, ou execu\u00e7\u00e3o ocasional"},
+{valor:2,texto:"Moderado: passa 1 a 3 horas/dia realizando compuls\u00f5es, ou execu\u00e7\u00e3o frequente"},
+{valor:3,texto:"Grave: passa de 3 a 8 horas/dia realizando compuls\u00f5es, ou execu\u00e7\u00e3o muito frequente"},
+{valor:4,texto:"Muito grave: passa mais de 8 horas/dia realizando compuls\u00f5es, ou execu\u00e7\u00e3o quase constante"}
+]},
+{num:7,titulo:"Interfer\u00eancia provocada pelos Comportamentos Compulsivos",pergunta:"Quanto esses h\u00e1bitos/manias atrapalham no caminho da escola ou quando voc\u00ea est\u00e1 fazendo alguma coisa/brincando com seus amigos?",nota:"Se n\u00e3o estiver frequentando a escola no momento, avalie at\u00e9 que ponto o desempenho seria afetado se o paciente estivesse na escola.",opcoes:[
+{valor:0,texto:"Nenhuma"},
+{valor:1,texto:"Alguma: leve interfer\u00eancia nas atividades, mas o desempenho global n\u00e3o est\u00e1 deteriorado"},
+{valor:2,texto:"Moderada: clara interfer\u00eancia no desempenho social ou ocupacional, mas conseguindo ainda desempenhar"},
+{valor:3,texto:"Grave: deteriora\u00e7\u00e3o consider\u00e1vel no desempenho social ou ocupacional"},
+{valor:4,texto:"Muito grave: incapacitante"}
+]},
+{num:8,titulo:"Sofrimento relacionado ao Comportamento Compulsivo",pergunta:"Como voc\u00ea se sentiria se fosse impedido de fazer suas manias/h\u00e1bitos? Quanto isso deixaria voc\u00ea aborrecido/chateado?",nota:"Avalie o grau de mal-estar que o paciente teria se a execu\u00e7\u00e3o da compuls\u00e3o fosse repentinamente interrompida sem previamente ter sido reassegurada.",opcoes:[
+{valor:0,texto:"Nenhum"},
+{valor:1,texto:"Leve: ligeiramente ansioso se as compuls\u00f5es forem interrompidas, ou ligeiramente ansioso durante a sua execu\u00e7\u00e3o"},
+{valor:2,texto:"Moderado: ansiedade sobe a um n\u00edvel control\u00e1vel se as compuls\u00f5es forem interrompidas, ou ansiedade control\u00e1vel durante a sua execu\u00e7\u00e3o"},
+{valor:3,texto:"Intenso: aumento proeminente e muito perturbador da ansiedade se as compuls\u00f5es forem interrompidas, ou muito perturbador durante a sua execu\u00e7\u00e3o"},
+{valor:4,texto:"Muito intenso: ansiedade incapacitante por qualquer interven\u00e7\u00e3o que vise modificar as compuls\u00f5es, ou ansiedade incapacitante durante a execu\u00e7\u00e3o"}
+]},
+{num:9,titulo:"Resist\u00eancia \u00e0s Compuls\u00f5es",pergunta:"Quanto voc\u00ea se esfor\u00e7a para brigar com os/as h\u00e1bitos/manias?",nota:"Avalie somente o esfor\u00e7o feito para resistir, n\u00e3o o sucesso/fracasso que tem ao tentar controlar as compuls\u00f5es. Se as compuls\u00f5es s\u00e3o m\u00ednimas, o paciente pode n\u00e3o sentir necessidade de resistir. Em tais casos, o escore 0 deve ser dado.",opcoes:[
+{valor:0,texto:"Faz sempre esfor\u00e7o para resistir, ou sintomas m\u00ednimos que n\u00e3o necessitam de resist\u00eancia ativa"},
+{valor:1,texto:"Tenta resistir na maior parte das vezes"},
+{valor:2,texto:"Faz algum esfor\u00e7o para resistir"},
+{valor:3,texto:"Cede a todas as compuls\u00f5es sem tentar control\u00e1-las, ainda que fa\u00e7a isso com alguma relut\u00e2ncia"},
+{valor:4,texto:"Cede completamente a todas as compuls\u00f5es de modo volunt\u00e1rio"}
+]},
+{num:10,titulo:"Grau de controle sobre o Comportamento Compulsivo",pergunta:"Qual \u00e9 a for\u00e7a da sensa\u00e7\u00e3o que voc\u00ea tem para fazer seus h\u00e1bitos/manias? Quando voc\u00ea tenta brigar com eles, o que acontece?",nota:"A capacidade do paciente em controlar as suas compuls\u00f5es est\u00e1 mais relacionada \u00e0 intensidade das compuls\u00f5es.",opcoes:[
+{valor:0,texto:"Controle total"},
+{valor:1,texto:"Bom controle: sente-se pressionado a realizar as compuls\u00f5es, mas tem algum controle volunt\u00e1rio"},
+{valor:2,texto:"Controle moderado: sente-se fortemente pressionado a realizar as compuls\u00f5es e somente consegue control\u00e1-las com dificuldade"},
+{valor:3,texto:"Controle leve: press\u00e3o forte para executar as compuls\u00f5es; o comportamento compulsivo tem que ser executado at\u00e9 o fim e somente com dificuldade consegue retardar a execu\u00e7\u00e3o"},
+{valor:4,texto:"Nenhum controle: a press\u00e3o para realizar as compuls\u00f5es \u00e9 experimentada como completamente dominadora e involunt\u00e1ria; raramente capaz de retardar a execu\u00e7\u00e3o"}
+]}
+];
+
+var ITENS_COMPLEMENTARES=[
+{num:11,titulo:"Cr\u00edtica sobre as Obsess\u00f5es e Compuls\u00f5es",pergunta:"Voc\u00ea acha que as ideias ou h\u00e1bitos fazem sentido? O que voc\u00ea pensa que poderia acontecer se voc\u00ea n\u00e3o fizesse seus h\u00e1bitos/manias? Voc\u00ea tem medo de que alguma coisa possa acontecer de verdade?",nota:"Avalie a cr\u00edtica do paciente a prop\u00f3sito da falta de sentido ou do exagero das suas obsess\u00f5es, baseado nas cren\u00e7as expressas durante a entrevista.",opcoes:[
+{valor:0,texto:"Excelente cr\u00edtica: completamente racional"},
+{valor:1,texto:"Boa cr\u00edtica: reconhece prontamente o absurdo ou o exagero, mas n\u00e3o parece completamente convencido de que existe apenas a ansiedade como motivo de preocupa\u00e7\u00e3o"},
+{valor:2,texto:"Cr\u00edtica razo\u00e1vel: admite com relut\u00e2ncia que o pensamento ou o comportamento s\u00e3o absurdos, mas hesita"},
+{valor:3,texto:"Cr\u00edtica pobre: afirma que o pensamento ou o comportamento s\u00e3o razo\u00e1veis ou n\u00e3o exagerados, mas reconhece a validade da evid\u00eancia em contr\u00e1rio"},
+{valor:4,texto:"Aus\u00eancia de cr\u00edtica: delirante. Convicto de que suas preocupa\u00e7\u00f5es e comportamentos s\u00e3o razo\u00e1veis; n\u00e3o \u00e9 sens\u00edvel \u00e0 evid\u00eancia em contr\u00e1rio"}
+]},
+{num:12,titulo:"Evita\u00e7\u00e3o",pergunta:"Voc\u00ea n\u00e3o est\u00e1 fazendo coisas, n\u00e3o est\u00e1 indo a determinados lugares, ou n\u00e3o fica com ningu\u00e9m por causa dos seus pensamentos ou manias?",nota:"Avalie at\u00e9 que ponto o paciente deliberadamente tenta evitar. Rituais de lavagem de roupa s\u00e3o designados como compuls\u00f5es, n\u00e3o como comportamento de evita\u00e7\u00e3o.",opcoes:[
+{valor:0,texto:"Sem evita\u00e7\u00e3o deliberada"},
+{valor:1,texto:"Leve: m\u00ednima"},
+{valor:2,texto:"Moderada: alguma evita\u00e7\u00e3o claramente presente"},
+{valor:3,texto:"Intensa: grande evita\u00e7\u00e3o; proeminente"},
+{valor:4,texto:"Muito intensa: evita\u00e7\u00e3o muito acentuada; o paciente faz quase tudo que pode para evitar os sintomas desencadeadores"}
+]},
+{num:13,titulo:"Grau de indecis\u00e3o",pergunta:"Voc\u00ea tem problema em tomar decis\u00f5es sobre alguma coisinha que as outras crian\u00e7as n\u00e3o precisariam pensar duas vezes para fazer?",nota:"Exclua a dificuldade em tomar decis\u00f5es por pensamento ruminativo. Exclua igualmente a ambival\u00eancia relacionada com escolhas que racionalmente s\u00e3o dif\u00edceis de ser tomadas.",opcoes:[
+{valor:0,texto:"Nenhum"},
+{valor:1,texto:"Leve: alguma dificuldade em tomar decis\u00f5es sobre assuntos de pouca import\u00e2ncia"},
+{valor:2,texto:"Moderado: relata espontaneamente dificuldades em tomar decis\u00f5es que outras pessoas n\u00e3o pensariam duas vezes"},
+{valor:3,texto:"Intenso: pondera continuamente os pr\u00f3s e os contras sobre o que n\u00e3o \u00e9 essencial"},
+{valor:4,texto:"Muito intenso: incapaz de tomar decis\u00f5es, grau de indecis\u00e3o incapacitante"}
+]},
+{num:14,titulo:"Senso de responsabilidade Hipervalorizado",pergunta:"Voc\u00ea se sente culpado por coisas que n\u00e3o consegue mudar ou n\u00e3o pode fazer muita coisa? Voc\u00ea se sente culpado pelo que acontece para outras pessoas?",nota:"Distinguir dos sentimentos normais de responsabilidade, de sentimentos de desvaloriza\u00e7\u00e3o e de d\u00favida patol\u00f3gica.",opcoes:[
+{valor:0,texto:"Nenhum"},
+{valor:1,texto:"Leve: menciona, s\u00f3 se questionado a esse prop\u00f3sito; leve senso de hiper-responsabilidade"},
+{valor:2,texto:"Moderado: relatado de maneira espont\u00e2nea, claramente presente; o paciente tem grande senso de hiper-responsabilidade"},
+{valor:3,texto:"Intenso: ideias proeminentes e persuasivas; profundamente preocupado em sentir responsabilidade por acontecimentos fora de seu controle volunt\u00e1rio"},
+{valor:4,texto:"Extremo: senso de responsabilidade delirante (ex.: o paciente recrimina-se pela ocorr\u00eancia de um terremoto)"}
+]},
+{num:15,titulo:"Lentifica\u00e7\u00e3o / Transtorno de In\u00e9rcia",pergunta:"Voc\u00ea tem dificuldade em come\u00e7ar ou acabar suas coisas porque tem que faz\u00ea-las com muito cuidado? As coisas do seu dia a dia demoram mais tempo do que deveriam?",nota:"Distinguir de lentid\u00e3o psicomotora secund\u00e1ria \u00e0 depress\u00e3o. Avalie o aumento do tempo gasto para executar as atividades rotineiras.",opcoes:[
+{valor:0,texto:"Nenhuma"},
+{valor:1,texto:"Leve: demora ocasional em come\u00e7ar ou terminar"},
+{valor:2,texto:"Moderada: prolongamento frequente das atividades rotineiras, mas habitualmente completa as tarefas"},
+{valor:3,texto:"Intensa: dificuldade acentuada e abrangente em iniciar e completar as atividades rotineiras. Habitualmente atrasado"},
+{valor:4,texto:"Extrema: incapaz de iniciar ou completar atividades rotineiras sem uma grande ajuda"}
+]},
+{num:16,titulo:"D\u00favida Patol\u00f3gica",pergunta:"Voc\u00ea acha que voc\u00ea n\u00e3o confia na sua mem\u00f3ria ou nos pr\u00f3prios olhos ou ouvidos?",nota:"Distinguir da incerteza normal. Avalie a presen\u00e7a de d\u00favida patol\u00f3gica em rela\u00e7\u00e3o \u00e0 mem\u00f3ria e percep\u00e7\u00e3o.",opcoes:[
+{valor:0,texto:"Nenhuma"},
+{valor:1,texto:"Leve: s\u00f3 mencionada se questionado; leve d\u00favida patol\u00f3gica. Os exemplos fornecidos encontram-se dentro dos par\u00e2metros normais"},
+{valor:2,texto:"Moderada: relata-a espontaneamente; claramente presente e aparente em alguns comportamentos do paciente"},
+{valor:3,texto:"Intensa: incerteza proeminente a respeito da mem\u00f3ria ou da percep\u00e7\u00e3o; d\u00favida patol\u00f3gica afeta o desempenho frequentemente"},
+{valor:4,texto:"Extrema: incerteza a respeito da percep\u00e7\u00e3o, constantemente presente; d\u00favida patol\u00f3gica afeta substancialmente quase todas as atividades. Incapacitante"}
+]}
+];
+
+function gerarQuestionario(){
+var c=document.getElementById('questionario');
+var h='';
+h+='<div class="secao-titulo">Obsess\u00f5es (Itens 1\u20135) \u2014 "Pensamentos que entram na sua cabe\u00e7a"</div>';
+ITENS_OBSESSOES.forEach(function(item){
+h+=gerarItemHTML(item,'obs');
+});
+h+='<div class="secao-titulo compulsoes">Compuls\u00f5es (Itens 6\u201310) \u2014 "Manias/h\u00e1bitos que voc\u00ea n\u00e3o consegue evitar"</div>';
+ITENS_COMPULSOES.forEach(function(item){
+h+=gerarItemHTML(item,'comp');
+});
+h+='<div class="secao-titulo complementar">Itens Complementares (11\u201316) \u2014 N\u00e3o entram no escore total</div>';
+ITENS_COMPLEMENTARES.forEach(function(item){
+h+=gerarItemHTML(item,'compl');
+});
+c.innerHTML=h;
+}
+
+function gerarItemHTML(item,prefix){
+var h='<div class="item">';
+h+='<div class="item-texto"><span class="item-numero">'+item.num+'.</span> '+item.titulo+'</div>';
+h+='<div class="item-pergunta">'+item.pergunta+'</div>';
+if(item.nota)h+='<div class="item-nota">'+item.nota+'</div>';
+h+='<div class="opcoes">';
+item.opcoes.forEach(function(op){
+h+='<div class="opcao"><input type="radio" id="'+prefix+item.num+'_'+op.valor+'" name="'+prefix+item.num+'" value="'+op.valor+'"><label for="'+prefix+item.num+'_'+op.valor+'"><strong>'+op.valor+'</strong> \u2014 '+op.texto+'</label></div>';
+});
+h+='</div></div>';
+return h;
+}
+
+function calcularIdade(){
+var d=document.getElementById('dataNascimento').value;
+if(!d)return;
+var h=new Date(),n=new Date(d);
+var a=h.getFullYear()-n.getFullYear(),m=h.getMonth()-n.getMonth(),di=h.getDate()-n.getDate();
+if(di<0){m--;di+=new Date(h.getFullYear(),h.getMonth(),0).getDate();}
+if(m<0){a--;m+=12;}
+document.getElementById('idadeCalculada').value=a+' anos, '+m+' meses e '+di+' dias';
+}
+
+function obterEscores(){
+var obsessoes=0,compulsoes=0,faltam=0;
+for(var i=1;i<=5;i++){
+var s=document.querySelector('input[name="obs'+i+'"]:checked');
+if(!s){faltam++;}else{obsessoes+=parseInt(s.value);}
+}
+for(var i=6;i<=10;i++){
+var s=document.querySelector('input[name="comp'+i+'"]:checked');
+if(!s){faltam++;}else{compulsoes+=parseInt(s.value);}
+}
+if(faltam>0)return{erro:faltam};
+var complementares={};
+for(var i=11;i<=16;i++){
+var s=document.querySelector('input[name="compl'+i+'"]:checked');
+complementares[i]=s?parseInt(s.value):null;
+}
+return{obsessoes:obsessoes,compulsoes:compulsoes,total:obsessoes+compulsoes,complementares:complementares};
+}
+
+function classificar(total){
+if(total<=7)return{texto:"Subclinico",cor:"#2e7d32",classe:"classif-subclinico"};
+if(total<=15)return{texto:"Leve",cor:"#f9a825",classe:"classif-leve"};
+if(total<=23)return{texto:"Moderado",cor:"#e65100",classe:"classif-moderado"};
+if(total<=31)return{texto:"Grave",cor:"#c62828",classe:"classif-grave"};
+return{texto:"Muito Grave",cor:"#880e4f",classe:"classif-muitograve"};
+}
+
+function calcularResultados(){
+var n=document.getElementById('nome').value;
+if(!n){alert('Preencha o nome do paciente.');return;}
+var r=obterEscores();
+if(r.erro){alert('Faltam '+r.erro+' itens principais sem pontua\u00e7\u00e3o (itens 1-10). Pontue todos antes de calcular.');return;}
+var cl=classificar(r.total);
+var el=document.getElementById('resultados');
+var h='<h2>Resultados CY-BOCS</h2>';
+h+='<div class="escores-box">';
+h+='<div class="escore-card" style="border-top:4px solid #1565c0;"><h4>Obsess\u00f5es</h4><div class="valor">'+r.obsessoes+'</div><div class="max">/ 20</div></div>';
+h+='<div class="escore-card" style="border-top:4px solid #e65100;"><h4>Compuls\u00f5es</h4><div class="valor">'+r.compulsoes+'</div><div class="max">/ 20</div></div>';
+h+='<div class="escore-card" style="border-top:4px solid '+cl.cor+';"><h4>Total</h4><div class="valor" style="color:'+cl.cor+';">'+r.total+'</div><div class="max">/ 40</div></div>';
+h+='</div>';
+h+='<div class="rastreio-box '+cl.classe+'">Classifica\u00e7\u00e3o: '+cl.texto+' (Escore Total = '+r.total+')</div>';
+
+// Itens complementares
+var nomesCompl={11:"Cr\u00edtica",12:"Evita\u00e7\u00e3o",13:"Indecis\u00e3o",14:"Hiper-responsabilidade",15:"Lentifica\u00e7\u00e3o",16:"D\u00favida Patol\u00f3gica"};
+var temCompl=false;
+for(var i=11;i<=16;i++){if(r.complementares[i]!==null)temCompl=true;}
+if(temCompl){
+h+='<h3 style="color:#37474f;margin:20px 0 10px;">Itens Complementares</h3>';
+for(var i=11;i<=16;i++){
+if(r.complementares[i]!==null){
+h+='<div class="complementar-card"><h4>'+nomesCompl[i]+'</h4><span class="valor">'+r.complementares[i]+' / 4</span></div>';
+}
+}
+}
+
+h+='<div class="analise-texto"><h3>Interpreta\u00e7\u00e3o</h3>';
+if(r.total<=7)h+='<p>O escore total indica sintomas <strong>subcl\u00ednicos</strong>. Os pensamentos obsessivos e/ou comportamentos compulsivos, se presentes, s\u00e3o de intensidade m\u00ednima e n\u00e3o causam preju\u00edzo funcional significativo.</p>';
+else if(r.total<=15)h+='<p>O escore total indica sintomatologia de intensidade <strong>leve</strong>. H\u00e1 presen\u00e7a de obsess\u00f5es e/ou compuls\u00f5es que causam algum desconforto, mas com impacto limitado nas atividades di\u00e1rias.</p>';
+else if(r.total<=23)h+='<p>O escore total indica sintomatologia de intensidade <strong>moderada</strong>. As obsess\u00f5es e/ou compuls\u00f5es causam interfer\u00eancia clara no funcionamento escolar, social e/ou familiar. Interven\u00e7\u00e3o terap\u00eautica \u00e9 recomendada.</p>';
+else if(r.total<=31)h+='<p>O escore total indica sintomatologia <strong>grave</strong>. As obsess\u00f5es e compuls\u00f5es causam preju\u00edzo significativo em m\u00faltiplas \u00e1reas do funcionamento. Interven\u00e7\u00e3o terap\u00eautica intensiva \u00e9 indicada (TCC + avalia\u00e7\u00e3o farmacol\u00f3gica).</p>';
+else h+='<p>O escore total indica sintomatologia <strong>muito grave</strong>. As obsess\u00f5es e compuls\u00f5es s\u00e3o incapacitantes, dominando o funcionamento da crian\u00e7a/adolescente. Interven\u00e7\u00e3o imediata e intensiva \u00e9 necess\u00e1ria.</p>';
+if(r.obsessoes>r.compulsoes+5)h+='<p>Nota: predom\u00ednio de <strong>obsess\u00f5es</strong> sobre compuls\u00f5es.</p>';
+else if(r.compulsoes>r.obsessoes+5)h+='<p>Nota: predom\u00ednio de <strong>compuls\u00f5es</strong> sobre obsess\u00f5es.</p>';
+h+='</div>';
+h+='<div class="disclaimer"><strong>IMPORTANTE:</strong> A CY-BOCS \u00e9 uma escala de gravidade, n\u00e3o de diagn\u00f3stico. Pressup\u00f5e que o diagn\u00f3stico de TOC j\u00e1 foi estabelecido. Os resultados devem ser interpretados por profissional qualificado no contexto da avalia\u00e7\u00e3o cl\u00ednica completa.</div>';
+el.innerHTML=h;
+el.style.display='block';
+el.scrollIntoView({behavior:'smooth'});
+
+window._escalaDados={escala:'CY-BOCS',paciente:n,obsessoes:r.obsessoes,compulsoes:r.compulsoes,total:r.total,classificacao:cl.texto,complementares:r.complementares,idPaciente:(document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''),idade:document.getElementById('idadeCalculada').value,sexo:document.getElementById('sexo').value,data:new Date().toISOString()};
+if(window.injetarBotaoSalvar)injetarBotaoSalvar('resultados');
+}
+
+function gerarRelatorioPDF(){
+var nome=document.getElementById('nome').value;
+if(!nome){alert('Preencha o nome do paciente.');return;}
+var r=obterEscores();
+if(r.erro){alert('Pontue todos os 10 itens principais antes de gerar o PDF.');return;}
+var cl=classificar(r.total);
+var idade=document.getElementById('idadeCalculada').value||'';
+var sexo=document.getElementById('sexo').value||'';
+var dataAval=document.getElementById('data').value||new Date().toLocaleDateString('pt-BR');
+var idPac=document.getElementById('idPaciente')?document.getElementById('idPaciente').value:'';
+var escol=document.getElementById('escolaridade').value||'';
+
+var jsPDF=window.jspdf.jsPDF;
+var doc=new jsPDF();
+
+// === PAGINA 1 ===
+doc.setFillColor(21,101,192);doc.rect(0,0,210,35,'F');
+doc.setTextColor(255,255,255);doc.setFontSize(14);doc.setFont(undefined,'bold');
+doc.text('CY-BOCS - RELATORIO DE AVALIACAO',105,15,{align:'center'});
+doc.setFontSize(9);doc.setFont(undefined,'normal');
+doc.text('Escala Yale-Brown de Obsessoes e Compulsoes - Versao para Criancas',105,23,{align:'center'});
+doc.setFontSize(7);
+doc.text('Goodman et al. (1986) | Adaptacao brasileira: Asbahr (1999)',105,29,{align:'center'});
+
+var y=42;
+doc.setFillColor(248,249,250);doc.rect(15,y,180,22,'F');
+doc.setTextColor(21,101,192);doc.setFontSize(10);doc.setFont(undefined,'bold');
+doc.text('DADOS DO PACIENTE',20,y+6);
+doc.setTextColor(0,0,0);doc.setFontSize(9);doc.setFont(undefined,'normal');
+doc.text('Nome: '+nome,20,y+12);
+doc.text('Idade: '+idade+'   |   Sexo: '+sexo+(escol?'   |   Escolaridade: '+escol:''),20,y+17);
+doc.text('Data: '+dataAval+(idPac?'   |   ID: '+idPac:''),20,y+22);
+
+y=70;
+doc.setTextColor(21,101,192);doc.setFontSize(11);doc.setFont(undefined,'bold');
+doc.text('ESCORES',20,y);
+y+=10;
+
+// Caixas de escores
+doc.setFillColor(227,242,253);doc.rect(20,y,50,25,'F');
+doc.setFillColor(255,243,224);doc.rect(80,y,50,25,'F');
+doc.setFillColor(240,240,240);doc.rect(140,y,50,25,'F');
+
+doc.setTextColor(21,101,192);doc.setFontSize(8);doc.setFont(undefined,'bold');
+doc.text('OBSESSOES',45,y+6,{align:'center'});
+doc.setFontSize(16);doc.text(String(r.obsessoes),45,y+17,{align:'center'});
+doc.setFontSize(8);doc.setFont(undefined,'normal');doc.text('/ 20',45,y+22,{align:'center'});
+
+doc.setTextColor(230,81,0);doc.setFontSize(8);doc.setFont(undefined,'bold');
+doc.text('COMPULSOES',105,y+6,{align:'center'});
+doc.setFontSize(16);doc.text(String(r.compulsoes),105,y+17,{align:'center'});
+doc.setFontSize(8);doc.setFont(undefined,'normal');doc.text('/ 20',105,y+22,{align:'center'});
+
+doc.setFontSize(8);doc.setFont(undefined,'bold');
+if(cl.texto==='Subclinico'){doc.setTextColor(46,125,50);}
+else if(cl.texto==='Leve'){doc.setTextColor(249,168,37);}
+else if(cl.texto==='Moderado'){doc.setTextColor(230,81,0);}
+else if(cl.texto==='Grave'){doc.setTextColor(198,40,40);}
+else{doc.setTextColor(136,14,79);}
+doc.text('TOTAL',165,y+6,{align:'center'});
+doc.setFontSize(16);doc.text(String(r.total),165,y+17,{align:'center'});
+doc.setFontSize(8);doc.setFont(undefined,'normal');doc.text('/ 40',165,y+22,{align:'center'});
+
+y+=32;
+// Classificacao
+var corR=46,corG=125,corB=50;
+if(cl.texto==='Leve'){corR=249;corG=168;corB=37;}
+else if(cl.texto==='Moderado'){corR=230;corG=81;corB=0;}
+else if(cl.texto==='Grave'){corR=198;corG=40;corB=40;}
+else if(cl.texto==='Muito Grave'){corR=136;corG=14;corB=79;}
+doc.setFillColor(corR,corG,corB);doc.rect(20,y,170,10,'F');
+doc.setTextColor(255,255,255);doc.setFontSize(10);doc.setFont(undefined,'bold');
+doc.text('CLASSIFICACAO: '+cl.texto.toUpperCase()+' (Escore = '+r.total+')',105,y+7,{align:'center'});
+
+y+=18;
+// Faixas de classificacao
+doc.setTextColor(0,0,0);doc.setFontSize(8);doc.setFont(undefined,'normal');
+doc.text('Faixas: Subclinico (0-7) | Leve (8-15) | Moderado (16-23) | Grave (24-31) | Muito Grave (32-40)',105,y,{align:'center'});
+
+y+=12;
+// Itens complementares
+var nomesC={11:'Critica',12:'Evitacao',13:'Indecisao',14:'Hiper-responsabilidade',15:'Lentificacao',16:'Duvida Patologica'};
+var temC=false;
+for(var i=11;i<=16;i++){if(r.complementares[i]!==null)temC=true;}
+if(temC){
+doc.setTextColor(55,71,79);doc.setFontSize(10);doc.setFont(undefined,'bold');
+doc.text('ITENS COMPLEMENTARES (nao entram no escore total)',20,y);
+y+=8;
+doc.setFontSize(9);doc.setFont(undefined,'normal');doc.setTextColor(0,0,0);
+for(var i=11;i<=16;i++){
+if(r.complementares[i]!==null){
+doc.text(nomesC[i]+': '+r.complementares[i]+' / 4',25,y);
+y+=6;
+}
+}
+}
+
+y+=10;
+doc.setTextColor(21,101,192);doc.setFontSize(10);doc.setFont(undefined,'bold');
+doc.text('INTERPRETACAO',20,y);
+y+=8;
+doc.setTextColor(0,0,0);doc.setFontSize(9);doc.setFont(undefined,'normal');
+var interp='';
+if(r.total<=7)interp='Sintomas subclinicos. Pensamentos obsessivos e/ou comportamentos compulsivos de intensidade minima, sem prejuizo funcional significativo.';
+else if(r.total<=15)interp='Sintomatologia leve. Presenca de obsessoes e/ou compulsoes que causam algum desconforto, mas com impacto limitado nas atividades diarias.';
+else if(r.total<=23)interp='Sintomatologia moderada. Interferencia clara no funcionamento escolar, social e/ou familiar. Intervencao terapeutica recomendada.';
+else if(r.total<=31)interp='Sintomatologia grave. Prejuizo significativo em multiplas areas do funcionamento. Intervencao terapeutica intensiva indicada (TCC + avaliacao farmacologica).';
+else interp='Sintomatologia muito grave. Obsessoes e compulsoes incapacitantes. Intervencao imediata e intensiva necessaria.';
+var linhas=doc.splitTextToSize(interp,170);
+doc.text(linhas,20,y);
+y+=linhas.length*5+5;
+
+if(r.obsessoes>r.compulsoes+5){
+doc.text('Nota: predominio de OBSESSOES sobre compulsoes.',20,y);y+=6;
+}else if(r.compulsoes>r.obsessoes+5){
+doc.text('Nota: predominio de COMPULSOES sobre obsessoes.',20,y);y+=6;
+}
+
+y+=8;
+doc.setFillColor(255,248,235);doc.rect(15,y,180,15,'F');
+doc.setTextColor(180,90,0);doc.setFontSize(7);
+doc.text('IMPORTANTE: A CY-BOCS e uma escala de gravidade, nao de diagnostico.',20,y+5);
+doc.text('Pressupoem que o diagnostico de TOC ja foi estabelecido. Resultados devem ser interpretados por profissional qualificado.',20,y+10);
+
+doc.setFillColor(80,80,80);doc.rect(0,285,210,12,'F');
+doc.setTextColor(200,200,200);doc.setFontSize(7);
+doc.text('CY-BOCS - Escala Yale-Brown para Criancas | Pagina 1/2',105,291,{align:'center'});
+
+// === PAGINA 2 - REFERENCIAS ===
+doc.addPage();
+doc.setFillColor(21,101,192);doc.rect(0,0,210,20,'F');
+doc.setTextColor(255,255,255);doc.setFontSize(11);doc.setFont(undefined,'bold');
+doc.text('REFERENCIAS',105,13,{align:'center'});
+
+y=30;
+doc.setTextColor(0,0,0);doc.setFontSize(9);doc.setFont(undefined,'normal');
+doc.text('GOODMAN, W. K.; RASMUSSEN, S. A.; PRICE, L. H.; RIDDLE, M. A.; RAPOPORT, J. L.',20,y);
+y+=5;doc.text("Children's Yale-Brown Obsessive-Compulsive Scale (CY-BOCS). New Haven, CT:",20,y);
+y+=5;doc.text('Yale University, 1986.',20,y);
+y+=10;
+doc.text('SCAHILL, L.; RIDDLE, M. A.; McSWIGGIN-HARDIN, M.; ORT, S. I.; KING, R. A.;',20,y);
+y+=5;doc.text("GOODMAN, W. K. et al. Children's Yale-Brown Obsessive Compulsive Scale:",20,y);
+y+=5;doc.text('reliability and validity. J Am Acad Child Adolesc Psychiatry, v. 36, n. 6,',20,y);
+y+=5;doc.text('p. 844-852, 1997.',20,y);
+y+=10;
+doc.text('ASBAHR, F. R. Escalas de avaliacao de transtorno obsessivo-compulsivo na',20,y);
+y+=5;doc.text('infancia e adolescencia. Revista de Psiquiatria Clinica, v. 25, n. 6,',20,y);
+y+=5;doc.text('p. 310-319, 1999.',20,y);
+
+doc.setFillColor(80,80,80);doc.rect(0,285,210,12,'F');
+doc.setTextColor(200,200,200);doc.setFontSize(7);
+doc.text('Relatorio gerado em: '+new Date().toLocaleString('pt-BR')+' | Pagina 2/2',105,291,{align:'center'});
+
+var ts=new Date();
+var tsStr=ts.getFullYear()+String(ts.getMonth()+1).padStart(2,'0')+String(ts.getDate()).padStart(2,'0')+String(ts.getHours()).padStart(2,'0')+String(ts.getMinutes()).padStart(2,'0');
+doc.save('CY-BOCS_'+nome.replace(/\s+/g,'_')+'_'+tsStr+'.pdf');
+}
+
+function limparDados(){
+if(!confirm('Limpar todos os dados?'))return;
+document.getElementById('nome').value='';
+document.getElementById('dataNascimento').value='';
+document.getElementById('idadeCalculada').value='';
+document.getElementById('sexo').value='';
+document.getElementById('escolaridade').value='';
+document.getElementById('observacoes').value='';
+document.querySelectorAll('input[type="radio"]').forEach(function(r){r.checked=false;});
+document.getElementById('resultados').style.display='none';
+document.getElementById('data').value=new Date().toISOString().split('T')[0];
+}
+
+// ===== MODO PAINEL =====
+var _sessionInfo=null;
+var _API_URL='https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
+
+function _decodificarURL(){
+var params=new URLSearchParams(window.location.search);
+var d=params.get('d');
+if(!d)return false;
+try{_sessionInfo=JSON.parse(atob(decodeURIComponent(d)));}catch(e){return false;}
+var nomeEl=document.getElementById('nome');
+var nascEl=document.getElementById('dataNascimento');
+var sexoEl=document.getElementById('sexo');
+if(nomeEl&&_sessionInfo.patientName)nomeEl.value=_sessionInfo.patientName;
+if(nascEl&&_sessionInfo.birthDate)nascEl.value=_sessionInfo.birthDate;
+if(sexoEl&&_sessionInfo.sex)sexoEl.value=_sessionInfo.sex;
+if(typeof calcularIdade==='function')calcularIdade();
+if(nomeEl)nomeEl.dispatchEvent(new Event('input'));
+if(nascEl)nascEl.dispatchEvent(new Event('change'));
+var botoes=document.querySelector('.botoes');
+if(botoes){
+botoes.innerHTML='<button class="btn btn-primary" style="padding:15px 30px;border:none;border-radius:25px;font-size:16px;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#2e7d32,#43a047);color:white;" onclick="_enviarResultadosPainel()">Enviar Resultados ao Profissional</button>';
+}
+var els=document.querySelectorAll('.info-tecnica');
+els.forEach(function(el){el.style.display='none';});
+return true;
+}
+
+async function _enviarResultadosPainel(){
+var nomeEl=document.getElementById('nome');
+if(!nomeEl||!nomeEl.value.trim()){alert('Preencha o nome antes de enviar.');return;}
+var calcFn=window.calcularResultados;
+if(calcFn&&!window._escalaDados){try{calcFn();}catch(e){}}
+var dados=window._escalaDados||{};
+if(!dados.escala)dados.escala='CY-BOCS';
+dados.idPaciente=document.getElementById('idPaciente')?document.getElementById('idPaciente').value:'';
+dados.data=new Date().toISOString();
+var btn=document.querySelector('.botoes button');
+if(btn){btn.disabled=true;btn.textContent='Enviando...';}
+try{
+var resp=await fetch(_API_URL+'/save-escala',{
+method:'POST',
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({sessionId:_sessionInfo.sessionId,email:_sessionInfo.email,data:dados})
+});
+var result=await resp.json();
+if(result.ok||resp.ok){
+var container=document.querySelector('.botoes');
+if(container)container.innerHTML='<div style="background:#c8e6c9;border:2px solid #2e7d32;border-radius:10px;padding:20px;text-align:center;"><p style="font-size:1.3em;color:#2e7d32;font-weight:bold;">Resultados enviados com sucesso!</p><p style="color:#555;margin-top:8px;">O profissional ja pode visualizar seus resultados no painel.</p><p style="color:#777;margin-top:5px;font-size:0.85em;">Voce pode fechar esta pagina.</p></div>';
+var res=document.getElementById('resultados');
+if(res)res.style.display='none';
+}else{
+if(btn){btn.disabled=false;btn.textContent='Enviar Resultados ao Profissional';}
+alert('Erro ao enviar. Tente novamente.');
+}
+}catch(e){
+if(btn){btn.disabled=false;btn.textContent='Enviar Resultados ao Profissional';}
+alert('Erro de conexao. Verifique sua internet e tente novamente.');
+}
+}
+
+// === INICIALIZACAO ===
+gerarQuestionario();
+document.getElementById('data').value=new Date().toISOString().split('T')[0];
+var params=new URLSearchParams(window.location.search);
+if(params.get('d')){
+_decodificarURL();
+}else if(params.get('print')){
+var els=document.querySelectorAll('.info-tecnica');
+els.forEach(function(el){el.style.display='none';});
+var botoes=document.querySelector('.botoes');
+if(botoes)botoes.style.display='none';
+setTimeout(function(){window.print();},500);
+}else{
+window.location.href='https://setmonte.github.io/online/';
+}
+    </script>
+<script>
+if(!new URLSearchParams(window.location.search).get('d')){
+var s1=document.createElement('script');s1.src='pdf-escalas.js';document.body.appendChild(s1);
+var s2=document.createElement('script');s2.src='salvar-escala.js';document.body.appendChild(s2);
+}
+var _sc=document.createElement('script');_sc.src='coleta-anonima.js';document.body.appendChild(_sc);
+</script>
+<div style="text-align:center;padding:15px;color:#999;font-size:0.75em;margin-top:20px;">Dados an&#244;nimos e n&#227;o-identific&#225;veis podem ser utilizados para fins de pesquisa e normatiza&#231;&#227;o.</div>
+</body>
+</html>
