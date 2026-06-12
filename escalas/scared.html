@@ -298,7 +298,8 @@ el.innerHTML=h;
 el.style.display='block';
 el.scrollIntoView({behavior:'smooth'});
 
-window._escalaDados={escala:'SCARED',paciente:n,total:total,subescalas:subescalas,positivos:positivos,idPaciente:(document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''),idade:document.getElementById('idadeCalculada').value,sexo:document.getElementById('sexo').value,data:new Date().toISOString()};
+var _domSCARED={};Object.keys(subescalas).forEach(function(nome){var s=subescalas[nome];_domSCARED[nome]={pontuacao:s.escore,max:s.max,media:parseFloat((s.escore/s.max*5).toFixed(2)),classificacao:s.positivo?'POSITIVO (>='+s.corte+')':'Negativo'};});
+window._escalaDados={escala:'SCARED',paciente:n,escore:total,classificacao:total>=30?'Positivo (especifico)':total>=25?'Positivo (sensivel)':'Negativo',dominios:_domSCARED,positivos:positivos,idPaciente:(document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''),idade:document.getElementById('idadeCalculada').value,sexo:document.getElementById('sexo').value,data:new Date().toISOString()};
 if(window.injetarBotaoSalvar)injetarBotaoSalvar('resultados');
 }
 
