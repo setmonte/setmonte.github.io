@@ -49,6 +49,9 @@
     .tab-content { display:none; }
     .tab-content.active { display:block; }
     input[type="text"], input[type="date"], select { padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+    /* Toggle switch */
+    #freeModeToggle:checked + span { background: #ff6f00; }
+    #freeModeToggle:checked + span + span { transform: translateX(24px); }
     .form-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
     .form-row label { font-size: 13px; color: #555; display: flex; flex-direction: column; gap: 4px; }
   </style>
@@ -281,6 +284,22 @@
               <button class="btn btn-blue" style="padding:8px 16px;font-size:12px;background:#7b1fa2;" onclick="adminListarCognito()">Cognito (login)</button>
             </div>
             <div id="adminUsersList" style="margin-top:10px;max-height:300px;overflow-y:auto;"></div>
+          </div>
+
+          <!-- Modo Gratuito (toggle) -->
+          <div style="background:#fff8e1;border:2px solid #ff6f00;border-radius:10px;padding:15px;margin:10px 0;">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div>
+                <p style="font-size:13px;font-weight:bold;color:#ff6f00;margin-bottom:4px;">🔓 Modo Gratuito (bypass de créditos)</p>
+                <p style="font-size:11px;color:#777;">Quando ativo, todos os testes ficam gratuitos para todos os usuários. Use para demonstrações.</p>
+              </div>
+              <label style="position:relative;display:inline-block;width:50px;height:26px;cursor:pointer;">
+                <input type="checkbox" id="freeModeToggle" onchange="toggleFreeMode(this)" style="opacity:0;width:0;height:0;">
+                <span style="position:absolute;top:0;left:0;right:0;bottom:0;background:#ccc;border-radius:26px;transition:0.3s;"></span>
+                <span style="position:absolute;height:20px;width:20px;left:3px;bottom:3px;background:white;border-radius:50%;transition:0.3s;"></span>
+              </label>
+            </div>
+            <p id="freeModeStatus" style="font-size:11px;color:#c62828;margin-top:6px;font-weight:bold;display:none;">⚠️ MODO GRATUITO ATIVO — créditos NÃO serão cobrados</p>
           </div>
 
           <!-- Buscar resultados de um usuario -->
@@ -986,7 +1005,7 @@
       if (currentUser === 'setmonte@gmail.com') {
         document.getElementById('tabDepoimentos').classList.remove('hidden');
         document.getElementById('tabAdmin').classList.remove('hidden');
-
+        initFreeModeToggle();
       }
       // BAE visivel para todos
       document.getElementById('tabBae').classList.remove('hidden');
@@ -1096,7 +1115,7 @@
         return;
       }
       try {
-        var isAdmin = (currentUser === 'setmonte@gmail.com');
+        var isAdmin = (currentUser === 'setmonte@gmail.com' || isFreeModeActive());
         var sessionId = '';
         if (isAdmin) {
           sessionId = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -1422,7 +1441,7 @@
       // Calcula créditos necessários
       var creditosNecessarios = testesSelecionados.length;
       try {
-        var isAdmin = (currentUser === 'setmonte@gmail.com');
+        var isAdmin = (currentUser === 'setmonte@gmail.com' || isFreeModeActive());
         var sessionId = '';
         if (isAdmin) {
           sessionId = 'bae-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -1639,6 +1658,28 @@
         html += '</div>';
         el.innerHTML = html;
       } catch(e) { el.innerHTML = '<p style="color:red;">Erro: ' + e.message + '</p>'; }
+    }
+
+    function toggleFreeMode(el) {
+      var active = el.checked;
+      localStorage.setItem('freeMode', active ? 'true' : 'false');
+      var status = document.getElementById('freeModeStatus');
+      if (active) { status.style.display = 'block'; }
+      else { status.style.display = 'none'; }
+    }
+
+    function isFreeModeActive() {
+      return localStorage.getItem('freeMode') === 'true';
+    }
+
+    function initFreeModeToggle() {
+      var toggle = document.getElementById('freeModeToggle');
+      if (toggle) {
+        var active = isFreeModeActive();
+        toggle.checked = active;
+        var status = document.getElementById('freeModeStatus');
+        if (status) status.style.display = active ? 'block' : 'none';
+      }
     }
 
     async function adminAddCredits() {
@@ -2448,7 +2489,7 @@
       var birth = document.getElementById('trmvBirthDate').value;
       if (!name || !birth) { alert('Preencha pelo menos o nome e a data de nascimento.'); return; }
       try {
-        var isAdmin = (currentUser === 'setmonte@gmail.com');
+        var isAdmin = (currentUser === 'setmonte@gmail.com' || isFreeModeActive());
         var sessionId = '';
         if (isAdmin) {
           sessionId = 'trmv-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -2744,7 +2785,7 @@
       var birth = document.getElementById('taavBirthDate').value;
       if (!name || !birth) { alert('Preencha pelo menos o nome e a data de nascimento.'); return; }
       try {
-        var isAdmin = (currentUser === 'setmonte@gmail.com');
+        var isAdmin = (currentUser === 'setmonte@gmail.com' || isFreeModeActive());
         var sessionId = '';
         if (isAdmin) {
           sessionId = 'taav-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -3419,7 +3460,7 @@
       var sexo = document.getElementById('trefSexo').value;
       if (!nome || !dn || !sexo) { alert('Preencha nome, data de nascimento e sexo.'); return; }
       var sessionId;
-      if (currentUser === 'setmonte@gmail.com') {
+      if (currentUser === 'setmonte@gmail.com' || isFreeModeActive()) {
         sessionId = 'tref-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
       } else {
         var resp = await fetch(API_URL + '/use-credit', {
