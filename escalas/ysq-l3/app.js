@@ -41,6 +41,15 @@ function setupEventListeners() {
         form.addEventListener('submit', handleSubmit);
     }
 
+    // Auto-scroll para proximo item ao responder
+    var qContainer = document.getElementById('questionsContainer');
+    if (qContainer) qContainer.addEventListener('change', function(e) {
+        if (e.target.type === 'radio') {
+            var q = e.target.closest('.question');
+            if (q && q.nextElementSibling) { q.nextElementSibling.scrollIntoView({behavior:'smooth',block:'center'}); }
+        }
+    });
+
     const printBtn = document.getElementById('printBlankBtn');
     if (printBtn) {
         printBtn.addEventListener('click', printBlankForm);
