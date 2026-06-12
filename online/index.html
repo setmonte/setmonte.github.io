@@ -1666,6 +1666,26 @@
       var status = document.getElementById('freeModeStatus');
       if (active) { status.style.display = 'block'; }
       else { status.style.display = 'none'; }
+      aplicarFreeMode(active);
+    }
+
+    function aplicarFreeMode(active) {
+      // Esconder/mostrar caixas de creditos
+      document.querySelectorAll('.credits-box').forEach(function(el) { el.style.display = active ? 'none' : ''; });
+      // Esconder/mostrar botoes "Comprar Creditos"
+      document.querySelectorAll('a.btn-orange').forEach(function(el) { if (el.textContent.indexOf('Comprar') >= 0) el.style.display = active ? 'none' : ''; });
+      // Esconder seções de planos caso estejam abertas
+      ['plansSection','baePlansSection','trmvPlansSection','taavPlansSection','trefPlansSection'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el && active) el.classList.add('hidden');
+      });
+      // Reabilitar botoes de nova aplicacao (caso tenham sido desabilitados por falta de credito)
+      if (active) {
+        ['btnNewTest','btnNewBae','btnNewTrmv','btnNewTaav','btnNewTref'].forEach(function(id) {
+          var btn = document.getElementById(id);
+          if (btn) { btn.disabled = false; btn.textContent = btn.textContent.replace('Sem creditos','Nova Aplicacao'); }
+        });
+      }
     }
 
     function isFreeModeActive() {
@@ -1679,6 +1699,7 @@
         toggle.checked = active;
         var status = document.getElementById('freeModeStatus');
         if (status) status.style.display = active ? 'block' : 'none';
+        aplicarFreeMode(active);
       }
     }
 
