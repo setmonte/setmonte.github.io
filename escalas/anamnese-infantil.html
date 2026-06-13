@@ -28,7 +28,7 @@
         .campo textarea { min-height: 80px; resize: vertical; }
         .campo-row { display: flex; gap: 15px; flex-wrap: wrap; }
         .campo-row .campo { flex: 1; min-width: 200px; }
-        .radio-group { display: flex; gap: 15px; flex-wrap: wrap; margin-top: 6px; }
+        .radio-group { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 6px; }
         .radio-group label { display: flex; align-items: center; gap: 6px; font-weight: 400; cursor: pointer; padding: 8px 14px; border: 2px solid #e0e0e0; border-radius: 8px; transition: all 0.2s; }
         .radio-group label:hover { border-color: #00695c; background: #e8f5e9; }
         .radio-group input[type="radio"]:checked + span { font-weight: 600; color: #00695c; }
@@ -39,12 +39,19 @@
         .btn { padding: 15px 30px; border: none; border-radius: 25px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s; }
         .btn-primary { background: linear-gradient(135deg, #00695c 0%, #2e7d32 100%); color: white; }
         .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,105,92,0.3); }
+        .btn-salvar { background: linear-gradient(135deg, #1565c0 0%, #42a5f5 100%); color: white; }
+        .btn-salvar:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(21,101,192,0.3); }
         .btn-danger { background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%); color: white; }
         .btn-danger:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(220,53,69,0.3); }
         .progresso { background: #e0e0e0; height: 6px; border-radius: 3px; margin: 20px 0; overflow: hidden; }
         .progresso-inner { height: 100%; background: linear-gradient(90deg, #00695c, #2e7d32); border-radius: 3px; transition: width 0.3s; }
         .msg-sucesso { background: #c8e6c9; border: 2px solid #2e7d32; border-radius: 10px; padding: 30px; text-align: center; display: none; }
         .msg-sucesso h2 { color: #2e7d32; margin-bottom: 10px; }
+        .msg-salvo { background: #e3f2fd; border: 2px solid #1565c0; border-radius: 8px; padding: 12px; text-align: center; margin: 10px 0; display: none; font-size: 0.9em; color: #1565c0; font-weight: 600; }
+        .dados-fixos { background: #f1f8e9; border: 2px solid #aed581; border-radius: 10px; padding: 20px; margin-bottom: 25px; }
+        .dados-fixos h3 { color: #33691e; margin-bottom: 15px; font-size: 1.1em; }
+        .dados-fixos .campo-row { margin-bottom: 10px; }
+        .dados-fixos input[readonly] { background: #f0f0f0; }
         @media print { body { background: white !important; padding: 0 !important; } .botoes { display: none !important; } .container { box-shadow: none !important; } }
         @media (max-width: 768px) { .container { margin: 10px; border-radius: 10px; } .header { padding: 20px; } .header h1 { font-size: 1.5em; } .content { padding: 15px; } .campo-row { flex-direction: column; } .botoes { flex-direction: column; } .btn { width: 100%; } }
     </style>
@@ -58,11 +65,48 @@
         <p style="font-size:0.82em;opacity:0.7;margin-top:5px;">Preenchido pelo respons&#225;vel</p>
     </div>
     <div class="content">
+        <!-- DADOS FIXOS (preenchidos pelo profissional via link) -->
+        <div class="dados-fixos">
+            <h3>&#128100; Dados do Avaliando</h3>
+            <div class="campo-row">
+                <div class="campo"><label for="nome">Nome:</label><input type="text" id="nome" placeholder="Nome completo"></div>
+                <div class="campo"><label for="cpf">CPF:</label><input type="text" id="cpf" placeholder="000.000.000-00"></div>
+            </div>
+            <div class="campo-row">
+                <div class="campo"><label for="dataNascimento">Data de Nascimento:</label><input type="date" id="dataNascimento" onchange="calcularIdade()"></div>
+                <div class="campo"><label for="idadeCalculada">Idade:</label><input type="text" id="idadeCalculada" readonly placeholder="Calculada automaticamente"></div>
+            </div>
+            <div class="campo-row">
+                <div class="campo"><label for="sexo">Sexo:</label><select id="sexo"><option value="">Selecione</option><option value="Masculino">Masculino</option><option value="Feminino">Feminino</option></select></div>
+                <div class="campo"><label for="escolaridadeAvaliando">Escolaridade:</label><input type="text" id="escolaridadeAvaliando" placeholder="Ex: 3&#186; ano do Fundamental"></div>
+            </div>
+            <div class="campo" style="margin-top:15px;">
+                <label>Quem est&#225; respondendo?</label>
+                <div class="radio-group">
+                    <label><input type="radio" name="respondente" value="M\u00e3e"><span>M&#227;e</span></label>
+                    <label><input type="radio" name="respondente" value="Pai"><span>Pai</span></label>
+                    <label><input type="radio" name="respondente" value="Av\u00f3"><span>Av&#243;</span></label>
+                    <label><input type="radio" name="respondente" value="Av\u00f4"><span>Av&#244;</span></label>
+                    <label><input type="radio" name="respondente" value="Esposa"><span>Esposa</span></label>
+                    <label><input type="radio" name="respondente" value="Esposo"><span>Esposo</span></label>
+                    <label><input type="radio" name="respondente" value="Irm\u00e3"><span>Irm&#227;</span></label>
+                    <label><input type="radio" name="respondente" value="Irm\u00e3o"><span>Irm&#227;o</span></label>
+                    <label><input type="radio" name="respondente" value="Amigo(a)"><span>Amigo(a)</span></label>
+                    <label><input type="radio" name="respondente" value="Outro"><span>Outro</span></label>
+                </div>
+                <div id="outroRespondente" style="margin-top:8px;display:none;">
+                    <input type="text" id="outroRespondenteTexto" placeholder="Especifique o parentesco/rela&#231;&#227;o">
+                </div>
+            </div>
+        </div>
+
         <div class="progresso"><div class="progresso-inner" id="barraProgresso" style="width:0%;"></div></div>
         <div id="formulario"></div>
+        <div class="msg-salvo" id="msgSalvo">&#128190; Respostas salvas! Voc&#234; pode fechar e continuar depois.</div>
         <div class="botoes" id="botoesArea">
-            <button class="btn btn-primary" onclick="enviarAnamnese()">Enviar Respostas</button>
-            <button class="btn btn-danger" onclick="if(confirm('Limpar todas as respostas?')){location.reload();}">Limpar</button>
+            <button class="btn btn-salvar" onclick="salvarRascunho()">&#128190; Salvar para continuar depois</button>
+            <button class="btn btn-primary" onclick="enviarAnamnese()">&#128228; Enviar Respostas ao Profissional</button>
+            <button class="btn btn-danger" onclick="if(confirm('Limpar todas as respostas?')){localStorage.removeItem(_chaveRascunho);location.reload();}">Limpar</button>
         </div>
         <div class="msg-sucesso" id="msgSucesso">
             <h2>&#10004; Respostas enviadas com sucesso!</h2>
@@ -74,21 +118,17 @@
 <script src="../id-paciente.js"></script>
 <script>
 var SECOES=[
-{titulo:"Dados do Avaliando",campos:[
-{id:"nomeAvaliando",label:"Nome do avaliando",tipo:"text",obrigatorio:true},
-{id:"idadeAvaliando",label:"Idade",tipo:"text"},
-{id:"dnAvaliando",label:"Data de nascimento",tipo:"date"},
-{id:"escolaridadeAvaliando",label:"Escolaridade",tipo:"text"},
-{id:"respondente",label:"Quem est\u00e1 respondendo este question\u00e1rio?",tipo:"text",obrigatorio:true},
-{id:"parentesco",label:"Parentesco com o avaliando",tipo:"text"},
+{titulo:"Dados Familiares",campos:[
 {id:"nomeMae",label:"Nome da m\u00e3e",tipo:"text"},
 {id:"telMae",label:"Telefone da m\u00e3e",tipo:"text"},
 {id:"profMae",label:"Profiss\u00e3o da m\u00e3e",tipo:"text"},
+{id:"escolaridadeMae",label:"Escolaridade da m\u00e3e",tipo:"text"},
 {id:"nomePai",label:"Nome do pai",tipo:"text"},
 {id:"telPai",label:"Telefone do pai",tipo:"text"},
 {id:"profPai",label:"Profiss\u00e3o do pai",tipo:"text"},
+{id:"escolaridadePai",label:"Escolaridade do pai",tipo:"text"},
 {id:"escola",label:"Escola onde o avaliando estuda atualmente",tipo:"text"},
-{id:"enderecoEscola",label:"Endere\u00e7o",tipo:"text"},
+{id:"enderecoEscola",label:"Endere\u00e7o da escola",tipo:"text"},
 {id:"telEscola",label:"Telefone da escola",tipo:"text"}
 ]},
 {titulo:"1. Gesta\u00e7\u00e3o e Primeiros Meses (0-12 meses)",campos:[
@@ -118,17 +158,17 @@ var SECOES=[
 {id:"festasReunioes",label:"Como se comportava em festas ou reuni\u00f5es familiares?",tipo:"textarea"},
 {id:"empatia",label:"Demonstrava empatia? (se outra crian\u00e7a chorava, olhava, consolava ou ignorava?)",tipo:"textarea"}
 ]},
-{titulo:"4. Comportamentos Repetitivos e Interesses Restritos (2-12 anos)",campos:[
+{titulo:"4. Comportamentos Repetitivos e Interesses Restritos",campos:[
 {id:"movRepetitivos",label:"Tinha movimentos repetitivos? (balan\u00e7ar, bater m\u00e3os, girar, andar na ponta dos p\u00e9s)",tipo:"radio",opcoes:["Sim","N\u00e3o"]},
 {id:"movRepQuais",label:"Se sim, quais?",tipo:"text",condicional:"movRepetitivos",valorCondicional:"Sim"},
-{id:"rituaisRotinas",label:"Tinha rituais ou rotinas muito r\u00edgidas? (mesmo caminho, mesmo prato, mesma ordem)",tipo:"radio",opcoes:["Sim","N\u00e3o"]},
+{id:"rituaisRotinas",label:"Tinha rituais ou rotinas muito r\u00edgidas?",tipo:"radio",opcoes:["Sim","N\u00e3o"]},
 {id:"rituaisExemplo",label:"Se sim, d\u00ea um exemplo:",tipo:"text",condicional:"rituaisRotinas",valorCondicional:"Sim"},
-{id:"interessesIntensos",label:"Tinha interesses intensos e incomuns para a idade? (placas, dinossauros, n\u00fameros, trens)",tipo:"radio",opcoes:["Sim","N\u00e3o"]},
+{id:"interessesIntensos",label:"Tinha interesses intensos e incomuns para a idade?",tipo:"radio",opcoes:["Sim","N\u00e3o"]},
 {id:"interessesQuais",label:"Se sim, quais?",tipo:"text",condicional:"interessesIntensos",valorCondicional:"Sim"},
-{id:"interessesAtrapalham",label:"Esses interesses atrapalhavam a rotina (comer, estudar, outras brincadeiras)?",tipo:"radio",opcoes:["Sim","N\u00e3o"]},
-{id:"sensibilidadesSensoriais",label:"Tinha sensibilidades sensoriais (texturas, barulhos, etiquetas, luzes, cheiros)?",tipo:"radio",opcoes:["Sim","N\u00e3o"]},
+{id:"interessesAtrapalham",label:"Esses interesses atrapalhavam a rotina?",tipo:"radio",opcoes:["Sim","N\u00e3o"]},
+{id:"sensibilidadesSensoriais",label:"Tinha sensibilidades sensoriais? (texturas, barulhos, etiquetas, luzes, cheiros)",tipo:"radio",opcoes:["Sim","N\u00e3o"]},
 {id:"sensibilidadesQuais",label:"Se sim, quais?",tipo:"text",condicional:"sensibilidadesSensoriais",valorCondicional:"Sim"},
-{id:"indiferenteDor",label:"Parecia indiferente \u00e0 dor? (batia sem chorar, n\u00e3o reclamava)",tipo:"radio",opcoes:["Sim","N\u00e3o"]}
+{id:"indiferenteDor",label:"Parecia indiferente \u00e0 dor?",tipo:"radio",opcoes:["Sim","N\u00e3o"]}
 ]},
 {titulo:"5. Desenvolvimento Motor (0-5 anos)",campos:[
 {id:"sentou",label:"Sentou sem apoio com quantos meses?",tipo:"text"},
@@ -137,11 +177,11 @@ var SECOES=[
 {id:"atrasoMotor",label:"Teve algum atraso motor significativo?",tipo:"radio",opcoes:["Sim","N\u00e3o"]},
 {id:"atrasoMotorQual",label:"Se sim, qual?",tipo:"text",condicional:"atrasoMotor",valorCondicional:"Sim"},
 {id:"descoordenado",label:"Era desastrado ou descoordenado comparado aos colegas?",tipo:"radio",opcoes:["Sim","N\u00e3o"]},
-{id:"autoagressao",label:"Tinha comportamentos autoagressivos (bater cabe\u00e7a, se morder) ou agressivos com outros?",tipo:"radio",opcoes:["Sim","N\u00e3o"]},
+{id:"autoagressao",label:"Tinha comportamentos autoagressivos ou agressivos com outros?",tipo:"radio",opcoes:["Sim","N\u00e3o"]},
 {id:"birras",label:"Tinha birras muito intensas?",tipo:"radio",opcoes:["Sim","N\u00e3o"]},
 {id:"birrasFreq",label:"Com que frequ\u00eancia e o que desencadeava?",tipo:"text",condicional:"birras",valorCondicional:"Sim"}
 ]},
-{titulo:"6. Viv\u00eancia na Escola (4-12 anos)",campos:[
+{titulo:"6. Viv\u00eancia Escolar",campos:[
 {id:"gostaEscola",label:"Gostava de ir \u00e0 escola?",tipo:"radio",opcoes:["Sim","N\u00e3o","Mais ou menos"]},
 {id:"desempenhoEscolar",label:"Como era o desempenho escolar?",dica:"Excelente em alguns assuntos, fraco em outros, problemas de aten\u00e7\u00e3o...",tipo:"textarea"},
 {id:"amigosEscola",label:"Tinha amigos na escola? Como era o recreio?",tipo:"textarea"},
@@ -149,7 +189,7 @@ var SECOES=[
 {id:"bullying",label:"Era v\u00edtima de bullying ou exclu\u00eddo?",tipo:"radio",opcoes:["Sim","N\u00e3o"]}
 ]},
 {titulo:"7. Hist\u00f3rico de Sa\u00fade",campos:[
-{id:"profissionais",label:"O avaliando j\u00e1 frequentou algum profissional de sa\u00fade ao longo da vida?",dica:"Psic\u00f3logo, fonoaudi\u00f3logo, neurologista, psiquiatra, terapeuta ocupacional...",tipo:"textarea"},
+{id:"profissionais",label:"J\u00e1 frequentou algum profissional de sa\u00fade?",dica:"Psic\u00f3logo, fono, neurologista, psiquiatra, TO...",tipo:"textarea"},
 {id:"acidentes",label:"Algum acidente importante?",tipo:"textarea"},
 {id:"perdas",label:"Alguma perda importante?",tipo:"textarea"},
 {id:"cirurgias",label:"Alguma cirurgia?",tipo:"textarea"},
@@ -157,8 +197,8 @@ var SECOES=[
 {id:"medicamentos",label:"Medicamentos em uso atualmente?",tipo:"textarea"}
 ]},
 {titulo:"8. Hist\u00f3rico Familiar",campos:[
-{id:"historicoPsiq",label:"Algu\u00e9m na fam\u00edlia tem diagn\u00f3stico de TEA, TDAH, transtorno bipolar, depress\u00e3o, esquizofrenia ou outro?",tipo:"textarea"},
-{id:"profissionalDizia",label:"Algum profissional j\u00e1 disse que ele(a) era 'diferente', 'estranho(a)', 'no mundo dele(a)'?",tipo:"radio",opcoes:["Sim","N\u00e3o"]},
+{id:"historicoPsiq",label:"Algu\u00e9m na fam\u00edlia tem diagn\u00f3stico de TEA, TDAH, bipolar, depress\u00e3o, esquizofrenia ou outro?",tipo:"textarea"},
+{id:"profissionalDizia",label:"Algum profissional j\u00e1 disse que ele(a) era 'diferente' ou 'estranho(a)'?",tipo:"radio",opcoes:["Sim","N\u00e3o"]},
 {id:"profissionalDiziaOque",label:"Se sim, o que disseram?",tipo:"text",condicional:"profissionalDizia",valorCondicional:"Sim"}
 ]},
 {titulo:"9. Perguntas Finais",campos:[
@@ -168,10 +208,22 @@ var SECOES=[
 ]}
 ];
 
+var _chaveRascunho='';
+
+function calcularIdade(){
+var d=document.getElementById('dataNascimento').value;
+if(!d)return;
+var h=new Date(),n=new Date(d);
+var a=h.getFullYear()-n.getFullYear(),m=h.getMonth()-n.getMonth(),di=h.getDate()-n.getDate();
+if(di<0){m--;di+=new Date(h.getFullYear(),h.getMonth(),0).getDate();}
+if(m<0){a--;m+=12;}
+document.getElementById('idadeCalculada').value=a+' anos, '+m+' meses e '+di+' dias';
+}
+
 function gerarFormulario(){
 var container=document.getElementById('formulario');
 var h='';
-SECOES.forEach(function(secao,si){
+SECOES.forEach(function(secao){
 h+='<div class="secao"><div class="secao-header">'+secao.titulo+'</div><div class="secao-body">';
 secao.campos.forEach(function(campo){
 var cond=campo.condicional?(' data-condicional="'+campo.condicional+'" data-valor="'+campo.valorCondicional+'"'):'';
@@ -185,7 +237,7 @@ else if(campo.tipo==='number')h+='<input type="number" id="'+campo.id+'" name="'
 else if(campo.tipo==='textarea')h+='<textarea id="'+campo.id+'" name="'+campo.id+'" rows="3"></textarea>';
 else if(campo.tipo==='radio'){
 h+='<div class="radio-group">';
-campo.opcoes.forEach(function(op,oi){
+campo.opcoes.forEach(function(op){
 h+='<label><input type="radio" name="'+campo.id+'" value="'+op+'" onchange="checkCondicional(\''+campo.id+'\')"><span>'+op+'</span></label>';
 });
 h+='</div>';
@@ -209,52 +261,70 @@ atualizarProgresso();
 
 function atualizarProgresso(){
 var total=0,preenchidos=0;
-SECOES.forEach(function(secao){
-secao.campos.forEach(function(campo){
-if(campo.condicional)return;
-total++;
-if(campo.tipo==='radio'){
-if(document.querySelector('input[name="'+campo.id+'"]:checked'))preenchidos++;
-}else{
-var el=document.getElementById(campo.id);
-if(el&&el.value.trim())preenchidos++;
-}
-});
-});
+SECOES.forEach(function(secao){secao.campos.forEach(function(campo){
+if(campo.condicional)return;total++;
+if(campo.tipo==='radio'){if(document.querySelector('input[name="'+campo.id+'"]:checked'))preenchidos++;}
+else{var el=document.getElementById(campo.id);if(el&&el.value.trim())preenchidos++;}
+});});
+// Contar dados fixos
+['nome','dataNascimento','sexo'].forEach(function(id){total++;var el=document.getElementById(id);if(el&&el.value)preenchidos++;});
+var sel=document.querySelector('input[name="respondente"]:checked');total++;if(sel)preenchidos++;
 var pct=total>0?Math.round((preenchidos/total)*100):0;
 document.getElementById('barraProgresso').style.width=pct+'%';
 }
 
-function coletarRespostas(){
+function coletarTudo(){
 var dados={};
-SECOES.forEach(function(secao){
-secao.campos.forEach(function(campo){
-if(campo.tipo==='radio'){
-var sel=document.querySelector('input[name="'+campo.id+'"]:checked');
-dados[campo.id]=sel?sel.value:'';
-}else{
-var el=document.getElementById(campo.id);
-dados[campo.id]=el?el.value.trim():'';
-}
-});
-});
+dados.nome=document.getElementById('nome').value.trim();
+dados.cpf=document.getElementById('cpf').value.trim();
+dados.dataNascimento=document.getElementById('dataNascimento').value;
+dados.idade=document.getElementById('idadeCalculada').value;
+dados.sexo=document.getElementById('sexo').value;
+dados.escolaridade=document.getElementById('escolaridadeAvaliando').value.trim();
+var resp=document.querySelector('input[name="respondente"]:checked');
+dados.respondente=resp?resp.value:'';
+if(dados.respondente==='Outro')dados.respondente=document.getElementById('outroRespondenteTexto').value.trim()||'Outro';
+dados.idPaciente=document.getElementById('idPaciente')?document.getElementById('idPaciente').value:'';
+SECOES.forEach(function(secao){secao.campos.forEach(function(campo){
+if(campo.tipo==='radio'){var sel=document.querySelector('input[name="'+campo.id+'"]:checked');dados[campo.id]=sel?sel.value:'';}
+else{var el=document.getElementById(campo.id);dados[campo.id]=el?el.value.trim():'';}
+});});
+dados._secoes=SECOES.map(function(s){return{titulo:s.titulo,campos:s.campos.map(function(c){return{id:c.id,label:c.label,tipo:c.tipo};})};});
 return dados;
 }
 
-function validar(){
-var erros=[];
-SECOES.forEach(function(secao){
-secao.campos.forEach(function(campo){
-if(!campo.obrigatorio)return;
-if(campo.tipo==='radio'){
-if(!document.querySelector('input[name="'+campo.id+'"]:checked'))erros.push(campo.label);
-}else{
-var el=document.getElementById(campo.id);
-if(!el||!el.value.trim())erros.push(campo.label);
+function salvarRascunho(){
+var dados=coletarTudo();
+localStorage.setItem(_chaveRascunho,JSON.stringify(dados));
+var msg=document.getElementById('msgSalvo');
+msg.style.display='block';
+setTimeout(function(){msg.style.display='none';},3000);
 }
-});
-});
-return erros;
+
+function restaurarRascunho(){
+var salvo=localStorage.getItem(_chaveRascunho);
+if(!salvo)return;
+try{var dados=JSON.parse(salvo);}catch(e){return;}
+if(dados.nome)document.getElementById('nome').value=dados.nome;
+if(dados.cpf)document.getElementById('cpf').value=dados.cpf;
+if(dados.dataNascimento){document.getElementById('dataNascimento').value=dados.dataNascimento;calcularIdade();}
+if(dados.sexo)document.getElementById('sexo').value=dados.sexo;
+if(dados.escolaridade)document.getElementById('escolaridadeAvaliando').value=dados.escolaridade;
+if(dados.respondente){
+var radios=document.querySelectorAll('input[name="respondente"]');
+var encontrou=false;
+radios.forEach(function(r){if(r.value===dados.respondente){r.checked=true;encontrou=true;}});
+if(!encontrou&&dados.respondente){var outroR=document.querySelector('input[name="respondente"][value="Outro"]');if(outroR){outroR.checked=true;document.getElementById('outroRespondente').style.display='block';document.getElementById('outroRespondenteTexto').value=dados.respondente;}}
+}
+SECOES.forEach(function(secao){secao.campos.forEach(function(campo){
+if(!dados[campo.id])return;
+if(campo.tipo==='radio'){
+var radios=document.querySelectorAll('input[name="'+campo.id+'"]');
+radios.forEach(function(r){if(r.value===dados[campo.id])r.checked=true;});
+checkCondicional(campo.id);
+}else{var el=document.getElementById(campo.id);if(el)el.value=dados[campo.id];}
+});});
+atualizarProgresso();
 }
 
 // ===== MODO PAINEL =====
@@ -266,54 +336,69 @@ var params=new URLSearchParams(window.location.search);
 var d=params.get('d');
 if(!d)return false;
 try{_sessionInfo=JSON.parse(atob(decodeURIComponent(d)));}catch(e){return false;}
-var nomeEl=document.getElementById('nomeAvaliando');
-if(nomeEl&&_sessionInfo.patientName)nomeEl.value=_sessionInfo.patientName;
-var dnEl=document.getElementById('dnAvaliando');
-if(dnEl&&_sessionInfo.birthDate)dnEl.value=_sessionInfo.birthDate;
+if(_sessionInfo.patientName)document.getElementById('nome').value=_sessionInfo.patientName;
+if(_sessionInfo.birthDate){document.getElementById('dataNascimento').value=_sessionInfo.birthDate;calcularIdade();}
+if(_sessionInfo.sex)document.getElementById('sexo').value=_sessionInfo.sex;
+if(_sessionInfo.cpf)document.getElementById('cpf').value=_sessionInfo.cpf;
+// Disparar eventos para id-paciente.js
+var nomeEl=document.getElementById('nome');if(nomeEl)nomeEl.dispatchEvent(new Event('input'));
+var dnEl=document.getElementById('dataNascimento');if(dnEl)dnEl.dispatchEvent(new Event('change'));
 return true;
 }
 
 async function enviarAnamnese(){
-var erros=validar();
-if(erros.length>0){alert('Preencha os campos obrigat\u00f3rios:\n- '+erros.join('\n- '));return;}
-var dados=coletarRespostas();
-dados._secoes=SECOES.map(function(s){return{titulo:s.titulo,campos:s.campos.map(function(c){return{id:c.id,label:c.label,tipo:c.tipo};})};});
-if(_sessionInfo){
-var btn=document.querySelector('.botoes .btn-primary');
+var nome=document.getElementById('nome').value.trim();
+if(!nome){alert('Preencha o nome do avaliando.');return;}
+var resp=document.querySelector('input[name="respondente"]:checked');
+if(!resp){alert('Selecione quem est\u00e1 respondendo.');return;}
+var dados=coletarTudo();
+if(!_sessionInfo){alert('Link inv\u00e1lido. Pe\u00e7a ao profissional para gerar um novo link.');return;}
+var btn=document.querySelector('.btn-primary');
 if(btn){btn.disabled=true;btn.textContent='Enviando...';}
 try{
-var payload={sessionId:_sessionInfo.sessionId,email:_sessionInfo.email,data:{escala:'ANAMNESE-INF',paciente:dados.nomeAvaliando,respondente:dados.respondente,parentesco:dados.parentesco,respostas:dados,data:new Date().toISOString()}};
-var resp=await fetch(_API_URL+'/save-escala',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-var result=await resp.json();
-if(result.ok||resp.ok){
+var payload={sessionId:_sessionInfo.sessionId,email:_sessionInfo.email,data:{escala:'ANAMNESE-INF',paciente:dados.nome,respondente:dados.respondente,idPaciente:dados.idPaciente,respostas:dados,data:new Date().toISOString()}};
+var r=await fetch(_API_URL+'/save-escala',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+var result=await r.json();
+if(result.ok||r.ok){
+localStorage.removeItem(_chaveRascunho);
 document.getElementById('botoesArea').style.display='none';
 document.getElementById('formulario').style.display='none';
+document.querySelector('.dados-fixos').style.display='none';
+document.querySelector('.progresso').style.display='none';
 document.getElementById('msgSucesso').style.display='block';
 }else{
-if(btn){btn.disabled=false;btn.textContent='Enviar Respostas';}
+if(btn){btn.disabled=false;btn.textContent='Enviar Respostas ao Profissional';}
 alert('Erro ao enviar. Tente novamente.');
 }
 }catch(e){
-if(btn){btn.disabled=false;btn.textContent='Enviar Respostas';}
+if(btn){btn.disabled=false;btn.textContent='Enviar Respostas ao Profissional';}
 alert('Erro de conex\u00e3o. Verifique sua internet.');
-}
-}else{
-alert('Link inv\u00e1lido. Pe\u00e7a ao profissional para gerar um novo link.');
 }
 }
 
 // === INICIALIZACAO ===
 gerarFormulario();
-// Monitorar mudancas para barra de progresso
+// Monitorar "Outro" respondente
+document.querySelectorAll('input[name="respondente"]').forEach(function(r){
+r.addEventListener('change',function(){
+document.getElementById('outroRespondente').style.display=this.value==='Outro'?'block':'none';
+atualizarProgresso();
+});
+});
+// Progresso e auto-scroll
 document.getElementById('formulario').addEventListener('input',atualizarProgresso);
 document.getElementById('formulario').addEventListener('change',function(e){
 atualizarProgresso();
-// Auto-scroll
 if(e.target.type==='radio'){var campo=e.target.closest('.campo');if(campo){var next=campo.nextElementSibling;while(next&&next.classList.contains('campo-condicional')&&!next.classList.contains('visivel')){next=next.nextElementSibling;}if(next)next.scrollIntoView({behavior:'smooth',block:'center'});}}
 });
+document.querySelector('.dados-fixos').addEventListener('input',atualizarProgresso);
+document.querySelector('.dados-fixos').addEventListener('change',atualizarProgresso);
+
 var params=new URLSearchParams(window.location.search);
 if(params.get('d')){
 _decodificarURL();
+_chaveRascunho='anamnese_rascunho_'+(_sessionInfo?_sessionInfo.sessionId:'local');
+restaurarRascunho();
 }else if(params.get('print')){
 setTimeout(function(){window.print();},500);
 }else{
