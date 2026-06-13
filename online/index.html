@@ -270,6 +270,7 @@
               <label>Nome completo: <input type="text" id="pacNome" placeholder="Nome do paciente" style="width:220px;"></label>
               <label>Data Nasc: <input type="date" id="pacDN"></label>
               <label>CPF (opcional): <input type="text" id="pacCPF" placeholder="XXX.XXX.XXX-XX" maxlength="14" oninput="maskCPF(this)"></label>
+              <label>Sexo: <select id="pacSexo" style="width:120px;"><option value="">--</option><option value="Masculino">Masculino</option><option value="Feminino">Feminino</option></select></label>
             </div>
             <button class="btn btn-green" style="margin-top:10px;padding:8px 20px;font-size:13px;" onclick="cadastrarPaciente()">+ Cadastrar Paciente</button>
           </div>
@@ -1643,18 +1644,20 @@
     async function cadastrarPaciente() {
       var nome = document.getElementById('pacNome').value.trim();
       var dn = document.getElementById('pacDN').value;
+      var sexo = document.getElementById('pacSexo').value;
       if (!nome || !dn) { alert('Preencha pelo menos o nome e a data de nascimento.'); return; }
       try {
         var resp = await fetch(API_URL + '/save-paciente', {
           method: 'POST',
           headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({ email: currentUser, nome: nome, dataNascimento: dn, cpf: document.getElementById('pacCPF').value })
+          body: JSON.stringify({ email: currentUser, nome: nome, dataNascimento: dn, cpf: document.getElementById('pacCPF').value, sexo: sexo })
         });
         var r = await resp.json();
         if (r.ok) {
           document.getElementById('pacNome').value = '';
           document.getElementById('pacDN').value = '';
           document.getElementById('pacCPF').value = '';
+          document.getElementById('pacSexo').value = '';
           loadPacientes();
         } else { alert('Erro: ' + (r.error || 'tente novamente')); }
       } catch(e) { alert('Erro de conexao: ' + e.message); }
@@ -2021,7 +2024,7 @@
         var val = sel.value;
         sel.innerHTML = '<option value="">-- Digitar manualmente --</option>';
         _pacientesCache.forEach(function(p) {
-          sel.innerHTML += '<option value="' + p.id + '" data-nome="' + p.nome + '" data-dn="' + (p.dataNascimento||'') + '" data-cpf="' + (p.cpf||'') + '">' + p.nome + ' (' + (p.dataNascimento||'?') + ')</option>';
+          sel.innerHTML += '<option value="' + p.id + '" data-nome="' + p.nome + '" data-dn="' + (p.dataNascimento||'') + '" data-cpf="' + (p.cpf||'') + '" data-sexo="' + (p.sexo||'') + '">' + p.nome + ' (' + (p.dataNascimento||'?') + ')</option>';
         });
         sel.value = val;
       });
@@ -2044,6 +2047,11 @@
       if (campoNome) campoNome.value = opt.dataset.nome || '';
       if (campoDN) campoDN.value = opt.dataset.dn || '';
       if (campoCPF) campoCPF.value = opt.dataset.cpf || '';
+      // Preencher sexo se disponivel
+      var campoSexo = null;
+      if (tipo === 'anamnese') campoSexo = document.getElementById('anamneseSexo');
+      else if (tipo === 'escala') campoSexo = document.getElementById('escalaSexo');
+      if (campoSexo && opt.dataset.sexo) campoSexo.value = opt.dataset.sexo;
     }
 
     async function deletePaciente(id) {
