@@ -99,6 +99,7 @@
           <button class="tab-btn" id="tabTref" onclick="switchTab('tref')">TREF</button>
           <button class="tab-btn" id="tabTflod" onclick="switchTab('tflod')">TFLOD</button>
           <button class="tab-btn" id="tabEscalas" onclick="switchTab('escalas')">Escalas</button>
+          <button class="tab-btn" id="tabAnamnese" onclick="switchTab('anamnese')">Anamnese</button>
           <button class="tab-btn" id="tabPacientes" onclick="switchTab('pacientes')">Pacientes</button>
           <button class="tab-btn hidden" id="tabDepoimentos" onclick="switchTab('depoimentos')">Depoimentos</button>
           <button class="tab-btn hidden" id="tabAdmin" onclick="switchTab('admin')">⚙️ Admin</button>
@@ -149,7 +150,6 @@
             <label style="font-size:0.85em;color:#555;">Escala:</label>
             <select id="escalaSelect" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:6px;">
               <option value="">-- Selecione a escala --</option>
-              <option value="anamnese-infantil">ANAMNESE INFANTIL (Hist. Clinica)</option>
               <option value="snap-iv">SNAP-IV (TDAH/TOD)</option>
               <option value="dass-21">DASS-21 (Depressao/Ansiedade/Estresse)</option>
               <option value="asrs-18">ASRS-18 (TDAH Adulto)</option>
@@ -216,6 +216,45 @@
             </div>
           </div>
           <div id="escalasResultsList" style="margin-top:15px;"><p style="color:#777;">Carregando...</p></div>
+        </div>
+
+        <!-- === ABA ANAMNESE === -->
+        <div id="anamneseTab" class="tab-content">
+          <div style="text-align:center;padding:15px 0;">
+            <p style="font-size:15px;color:#00695c;font-weight:bold;">📋 Anamnese — Enviar e Receber</p>
+            <p style="font-size:12px;color:#555;margin-top:5px;">Envie o questionário de história clínica ao responsável e receba as respostas aqui.</p>
+          </div>
+          <div style="background:#e0f2f1;border:2px solid #00695c;border-radius:10px;padding:15px;margin:10px 0;">
+            <p style="font-size:13px;font-weight:bold;color:#00695c;margin-bottom:10px;">📤 Enviar Anamnese ao Responsável</p>
+            <label style="font-size:0.85em;color:#555;">Tipo:</label>
+            <select id="anamneseSelect" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+              <option value="anamnese-infantil">Anamnese Neuropsicológica Infantil</option>
+            </select>
+            <label style="font-size:0.85em;color:#555;">Paciente cadastrado:</label>
+            <select id="anamneseSelPac" onchange="preencherPaciente('anamnese')" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+              <option value="">-- Selecione ou preencha abaixo --</option>
+            </select>
+            <label style="font-size:0.85em;color:#555;">Nome do avaliando:</label>
+            <input type="text" id="anamneseNome" placeholder="Nome completo" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+            <label style="font-size:0.85em;color:#555;">Data de nascimento:</label>
+            <input type="date" id="anamneseDn" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+            <label style="font-size:0.85em;color:#555;">Sexo:</label>
+            <select id="anamneseSexo" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:12px;">
+              <option value="">Selecione...</option>
+              <option value="Masculino">Masculino</option>
+              <option value="Feminino">Feminino</option>
+            </select>
+            <button onclick="gerarLinkAnamnese()" class="btn btn-green" style="width:100%;">Gerar Link</button>
+            <div id="anamneseLinkResult" class="hidden" style="margin-top:15px;padding:12px;background:#e8f5e9;border-radius:8px;">
+              <p style="font-size:0.8em;color:#555;margin-bottom:5px;">Link gerado:</p>
+              <p id="anamneseSessionLink" style="word-break:break-all;font-size:0.75em;color:#00695c;"></p>
+              <div style="margin-top:10px;display:flex;gap:8px;">
+                <button onclick="copyAnamneseLink()" class="btn btn-blue" style="font-size:0.85em;">Copiar</button>
+                <button onclick="shareAnamneseWhatsApp()" class="btn btn-green" style="font-size:0.85em;">WhatsApp</button>
+              </div>
+            </div>
+          </div>
+          <div id="anamneseResultsList" style="margin-top:15px;"><p style="color:#777;">Carregando...</p></div>
         </div>
 
         <!-- === ABA PACIENTES === -->
@@ -1368,6 +1407,7 @@
       document.getElementById('tflodTab').classList.remove('active');
       document.getElementById('escalasTab').classList.remove('active');
       document.getElementById('pacientesTab').classList.remove('active');
+      document.getElementById('anamneseTab').classList.remove('active');
       document.getElementById('depoimentosTab').classList.remove('active');
       document.getElementById('adminTab').classList.remove('active');
       document.getElementById('tabTecfe').classList.remove('active');
@@ -1377,6 +1417,7 @@
       document.getElementById('tabTref').classList.remove('active');
       document.getElementById('tabTflod').classList.remove('active');
       document.getElementById('tabEscalas').classList.remove('active');
+      document.getElementById('tabAnamnese').classList.remove('active');
       document.getElementById('tabPacientes').classList.remove('active');
       document.getElementById('tabDepoimentos').classList.remove('active');
       document.getElementById('tabAdmin').classList.remove('active');
@@ -1405,6 +1446,10 @@
         document.getElementById('escalasTab').classList.add('active');
         document.getElementById('tabEscalas').classList.add('active');
         loadEscalasResults();
+      } else if (tab === 'anamnese') {
+        document.getElementById('anamneseTab').classList.add('active');
+        document.getElementById('tabAnamnese').classList.add('active');
+        loadAnamneseResults();
       } else if (tab === 'pacientes') {
         document.getElementById('pacientesTab').classList.add('active');
         document.getElementById('tabPacientes').classList.add('active');
@@ -1968,7 +2013,7 @@
     }
 
     function popularDropdownsPacientes() {
-      ['baeSelPac','trmvSelPac','tecfeSelPac','tflodSelPac','escalaSelPac'].forEach(function(id) {
+      ['baeSelPac','trmvSelPac','tecfeSelPac','tflodSelPac','escalaSelPac','anamneseSelPac'].forEach(function(id) {
         var sel = document.getElementById(id);
         if (!sel) return;
         var val = sel.value;
@@ -1993,6 +2038,7 @@
       else if (tipo === 'trmv') { campoNome = document.getElementById('trmvPatientName'); campoDN = document.getElementById('trmvBirthDate'); campoCPF = document.getElementById('trmvCpf'); }
       else if (tipo === 'escala') { campoNome = document.getElementById('escalaNome'); campoDN = document.getElementById('escalaDn'); campoCPF = null; }
       else if (tipo === 'tflod') { campoNome = document.getElementById('tflodNome'); campoDN = document.getElementById('tflodDn'); campoCPF = null; }
+      else if (tipo === 'anamnese') { campoNome = document.getElementById('anamneseNome'); campoDN = document.getElementById('anamneseDn'); campoCPF = null; }
       if (campoNome) campoNome.value = opt.dataset.nome || '';
       if (campoDN) campoDN.value = opt.dataset.dn || '';
       if (campoCPF) campoCPF.value = opt.dataset.cpf || '';
@@ -2088,6 +2134,113 @@
       doc.setFontSize(6); doc.setTextColor(150,150,150);
       doc.text('Gerado: ' + new Date().toLocaleString('pt-BR') + ' | SYM Online', 15, 293);
       doc.save('Relatorio_' + nome.replace(/\s+/g,'_') + '_' + new Date().toISOString().slice(0,10) + '.pdf');
+    }
+
+    // ===== FUNCOES ANAMNESE =====
+    function gerarLinkAnamnese() {
+      var tipo = document.getElementById('anamneseSelect').value;
+      var nome = document.getElementById('anamneseNome').value.trim();
+      var dn = document.getElementById('anamneseDn').value;
+      var sexo = document.getElementById('anamneseSexo').value;
+      if (!nome) { alert('Preencha o nome do avaliando.'); return; }
+      var sessionId = 'anam-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+      var sessionData = { sessionId: sessionId, email: currentUser, patientName: nome, birthDate: dn, sex: sexo };
+      var params = btoa(JSON.stringify(sessionData));
+      var link = 'https://setmonte.github.io/escalas/' + tipo + '.html?d=' + encodeURIComponent(params);
+      document.getElementById('anamneseSessionLink').textContent = link;
+      document.getElementById('anamneseLinkResult').classList.remove('hidden');
+      window._anamneseLink = link;
+    }
+
+    function copyAnamneseLink() {
+      var link = window._anamneseLink || document.getElementById('anamneseSessionLink').textContent;
+      navigator.clipboard.writeText(link).then(function() { alert('Link copiado!'); });
+    }
+
+    function shareAnamneseWhatsApp() {
+      var link = window._anamneseLink || document.getElementById('anamneseSessionLink').textContent;
+      var nome = document.getElementById('anamneseNome').value.trim();
+      var msg = 'Olá! Segue o link para preenchimento da anamnese de ' + nome + ':\n' + link;
+      window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+    }
+
+    async function loadAnamneseResults() {
+      var el = document.getElementById('anamneseResultsList');
+      try {
+        var resp = await fetch(API_URL + '/get-results?email=' + encodeURIComponent(currentUser) + '&tipo=escala');
+        var data = await resp.json();
+        if (data.results && data.results.length > 0) {
+          var anamneses = data.results.filter(function(r) { return r.data && r.data.escala && r.data.escala.indexOf('ANAMNESE') >= 0; });
+          if (anamneses.length > 0) {
+            var html = '<table class="results-table"><tr><th>Data</th><th>Paciente</th><th>Respondente</th><th>PDF</th></tr>';
+            anamneses.forEach(function(r, idx) {
+              var d = r.data || {};
+              var date = r.date ? new Date(r.date).toLocaleString('pt-BR') : (d.data ? new Date(d.data).toLocaleString('pt-BR') : '-');
+              html += '<tr><td style="font-size:11px;">' + date + '</td>';
+              html += '<td style="font-weight:bold;">' + (d.paciente || '-') + '</td>';
+              html += '<td>' + (d.respondente || '-') + '</td>';
+              html += '<td><button class="btn btn-green" style="padding:3px 8px;font-size:11px;" onclick="gerarPDFAnamnese(' + idx + ')">PDF</button></td></tr>';
+            });
+            html += '</table>';
+            el.innerHTML = html;
+            window._anamneseCache = anamneses;
+          } else {
+            el.innerHTML = '<p style="color:#777;">Nenhuma anamnese recebida ainda. Envie o link ao responsável.</p>';
+          }
+        } else {
+          el.innerHTML = '<p style="color:#777;">Nenhuma anamnese recebida ainda.</p>';
+        }
+      } catch(e) {
+        el.innerHTML = '<p style="color:#777;">Erro ao carregar.</p>';
+      }
+    }
+
+    function gerarPDFAnamnese(idx) {
+      var r = (window._anamneseCache || [])[idx];
+      if (!r) return;
+      var d = r.data || {};
+      var respostas = d.respostas || {};
+      var secoes = respostas._secoes || [];
+      var jsPDF = window.jspdf.jsPDF;
+      var doc = new jsPDF();
+      var maxY = 275;
+      var y = 0;
+      // Cabecalho
+      doc.setFillColor(0, 105, 92); doc.rect(0, 0, 210, 30, 'F');
+      doc.setTextColor(255, 255, 255); doc.setFontSize(14); doc.setFont(undefined, 'bold');
+      doc.text('ANAMNESE NEUROPSICOLOGICA INFANTIL', 105, 12, {align: 'center'});
+      doc.setFontSize(9); doc.setFont(undefined, 'normal');
+      doc.text('Paciente: ' + (d.paciente || 'N/I'), 105, 20, {align: 'center'});
+      doc.text('Respondente: ' + (d.respondente || '-') + ' (' + (d.parentesco || '-') + ')   |   Data: ' + (d.data ? new Date(d.data).toLocaleDateString('pt-BR') : '-'), 105, 26, {align: 'center'});
+      y = 38;
+      // Secoes
+      secoes.forEach(function(secao) {
+        if (y > maxY) { doc.addPage(); y = 15; }
+        doc.setFillColor(0, 105, 92); doc.rect(15, y - 3, 180, 8, 'F');
+        doc.setTextColor(255, 255, 255); doc.setFontSize(9); doc.setFont(undefined, 'bold');
+        doc.text(secao.titulo, 20, y + 2); y += 12;
+        doc.setTextColor(0, 0, 0); doc.setFontSize(8); doc.setFont(undefined, 'normal');
+        secao.campos.forEach(function(campo) {
+          var valor = respostas[campo.id];
+          if (!valor && valor !== 0) return;
+          if (y > maxY) { doc.addPage(); y = 15; }
+          doc.setFont(undefined, 'bold');
+          var labelLines = doc.splitTextToSize(campo.label + ':', 170);
+          labelLines.forEach(function(l) { doc.text(l, 18, y); y += 4; });
+          doc.setFont(undefined, 'normal');
+          var valorLines = doc.splitTextToSize(String(valor), 165);
+          valorLines.forEach(function(l) { doc.text(l, 22, y); y += 4; });
+          y += 3;
+        });
+        y += 5;
+      });
+      // Rodape
+      doc.setFillColor(80, 80, 80); doc.rect(0, 285, 210, 12, 'F');
+      doc.setTextColor(200, 200, 200); doc.setFontSize(7);
+      doc.text('Anamnese gerada em: ' + new Date().toLocaleString('pt-BR') + ' | SYM Online', 105, 291, {align: 'center'});
+      var ts = new Date();
+      var tsStr = ts.getFullYear() + String(ts.getMonth() + 1).padStart(2, '0') + String(ts.getDate()).padStart(2, '0');
+      doc.save('Anamnese_' + (d.paciente || '').replace(/\s+/g, '_') + '_' + tsStr + '.pdf');
     }
 
     // ===== FUNCOES ESCALAS =====
