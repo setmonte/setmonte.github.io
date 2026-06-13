@@ -236,6 +236,8 @@
             </select>
             <label style="font-size:0.85em;color:#555;">Nome do avaliando:</label>
             <input type="text" id="anamneseNome" placeholder="Nome completo" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+            <label style="font-size:0.85em;color:#555;">CPF:</label>
+            <input type="text" id="anamneseCpf" placeholder="000.000.000-00" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
             <label style="font-size:0.85em;color:#555;">Data de nascimento:</label>
             <input type="date" id="anamneseDn" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
             <label style="font-size:0.85em;color:#555;">Sexo:</label>
@@ -2038,7 +2040,7 @@
       else if (tipo === 'trmv') { campoNome = document.getElementById('trmvPatientName'); campoDN = document.getElementById('trmvBirthDate'); campoCPF = document.getElementById('trmvCpf'); }
       else if (tipo === 'escala') { campoNome = document.getElementById('escalaNome'); campoDN = document.getElementById('escalaDn'); campoCPF = null; }
       else if (tipo === 'tflod') { campoNome = document.getElementById('tflodNome'); campoDN = document.getElementById('tflodDn'); campoCPF = null; }
-      else if (tipo === 'anamnese') { campoNome = document.getElementById('anamneseNome'); campoDN = document.getElementById('anamneseDn'); campoCPF = null; }
+      else if (tipo === 'anamnese') { campoNome = document.getElementById('anamneseNome'); campoDN = document.getElementById('anamneseDn'); campoCPF = document.getElementById('anamneseCpf'); }
       if (campoNome) campoNome.value = opt.dataset.nome || '';
       if (campoDN) campoDN.value = opt.dataset.dn || '';
       if (campoCPF) campoCPF.value = opt.dataset.cpf || '';
@@ -2140,11 +2142,12 @@
     function gerarLinkAnamnese() {
       var tipo = document.getElementById('anamneseSelect').value;
       var nome = document.getElementById('anamneseNome').value.trim();
+      var cpf = document.getElementById('anamneseCpf').value.trim();
       var dn = document.getElementById('anamneseDn').value;
       var sexo = document.getElementById('anamneseSexo').value;
       if (!nome) { alert('Preencha o nome do avaliando.'); return; }
       var sessionId = 'anam-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-      var sessionData = { sessionId: sessionId, email: currentUser, patientName: nome, birthDate: dn, sex: sexo };
+      var sessionData = { sessionId: sessionId, email: currentUser, patientName: nome, birthDate: dn, sex: sexo, cpf: cpf };
       var params = btoa(JSON.stringify(sessionData));
       var link = 'https://setmonte.github.io/escalas/' + tipo + '.html?d=' + encodeURIComponent(params);
       document.getElementById('anamneseSessionLink').textContent = link;
