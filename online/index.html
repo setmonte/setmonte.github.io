@@ -2561,12 +2561,17 @@
         y += 5;
       });
 
-      // Rodape
-      doc.setFillColor(80, 80, 80); doc.rect(0, 285, 210, 12, 'F');
-      doc.setTextColor(200, 200, 200); doc.setFontSize(7);
-      var rodape = 'Anamnese gerada em: ' + new Date().toLocaleString('pt-BR');
-      if (cfg.nomeProfissional) rodape += ' | ' + cfg.nomeProfissional;
-      doc.text(rodape, 105, 291, {align: 'center'});
+      // Rodape com numeracao de paginas
+      var totalPags = doc.internal.getNumberOfPages();
+      for (var pg = 1; pg <= totalPags; pg++) {
+        doc.setPage(pg);
+        doc.setFillColor(80, 80, 80); doc.rect(0, 285, 210, 12, 'F');
+        doc.setTextColor(200, 200, 200); doc.setFontSize(7);
+        var rodape = 'Anamnese gerada em: ' + new Date().toLocaleString('pt-BR');
+        if (cfg.nomeProfissional) rodape += ' | ' + cfg.nomeProfissional;
+        doc.text(rodape, 15, 291);
+        doc.text('Pag. ' + pg + '/' + totalPags, 195, 291, {align: 'right'});
+      }
 
       var ts = new Date();
       var tsStr = ts.getFullYear() + String(ts.getMonth() + 1).padStart(2, '0') + String(ts.getDate()).padStart(2, '0');
