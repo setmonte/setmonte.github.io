@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-QY1N9587DG"></script>
+    <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-QY1N9587DG');</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anamnese Neuropsicol&#243;gica</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background: linear-gradient(135deg, #00695c 0%, #2e7d32 100%); min-height: 100vh; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; background: white; border-radius: 15px; box-shadow: 0 20px 40px rgba(0,0,0,0.15); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #00695c 0%, #2e7d32 100%); color: white; padding: 30px; text-align: center; }
+        .header h1 { font-size: 2em; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        .header p { font-size: 1em; opacity: 0.9; }
+        .content { padding: 30px; }
+        .secao { margin-bottom: 30px; border: 1px solid #e0e0e0; border-radius: 12px; overflow: hidden; }
+        .secao-header { background: linear-gradient(135deg, #00695c, #2e7d32); color: white; padding: 15px 20px; font-size: 1.1em; font-weight: 700; }
+        .secao-body { padding: 20px; }
+        .campo { margin-bottom: 18px; }
+        .campo label { display: block; font-weight: 600; color: #333; margin-bottom: 6px; font-size: 0.95em; }
+        .campo .dica { font-size: 0.82em; color: #777; font-style: italic; margin-bottom: 6px; }
+        .campo input[type="text"], .campo input[type="number"], .campo input[type="date"], .campo select, .campo textarea {
+            width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 15px; transition: border-color 0.3s; font-family: inherit;
+        }
+        .campo input:focus, .campo select:focus, .campo textarea:focus { outline: none; border-color: #00695c; }
+        .campo textarea { min-height: 80px; resize: vertical; }
+        .campo-row { display: flex; gap: 15px; flex-wrap: wrap; }
+        .campo-row .campo { flex: 1; min-width: 200px; }
+        .radio-group { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 6px; }
+        .radio-group label { display: flex; align-items: center; gap: 6px; font-weight: 400; cursor: pointer; padding: 8px 14px; border: 2px solid #e0e0e0; border-radius: 8px; transition: all 0.2s; }
+        .radio-group label:hover { border-color: #00695c; background: #e8f5e9; }
+        .radio-group input[type="radio"]:checked + span { font-weight: 600; color: #00695c; }
+        .radio-group input[type="radio"] { accent-color: #00695c; }
+        .campo-condicional { margin-top: 8px; padding-left: 20px; border-left: 3px solid #c8e6c9; display: none; }
+        .campo-condicional.visivel { display: block; }
+        .botoes { display: flex; gap: 15px; justify-content: center; margin: 30px 0; flex-wrap: wrap; }
+        .btn { padding: 15px 30px; border: none; border-radius: 25px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+        .btn-primary { background: linear-gradient(135deg, #00695c 0%, #2e7d32 100%); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,105,92,0.3); }
+        .btn-salvar { background: linear-gradient(135deg, #1565c0 0%, #42a5f5 100%); color: white; }
+        .btn-salvar:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(21,101,192,0.3); }
+        .btn-danger { background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%); color: white; }
+        .btn-danger:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(220,53,69,0.3); }
+        .progresso { background: #e0e0e0; height: 6px; border-radius: 3px; margin: 20px 0; overflow: hidden; }
+        .progresso-inner { height: 100%; background: linear-gradient(90deg, #00695c, #2e7d32); border-radius: 3px; transition: width 0.3s; }
+        .msg-sucesso { background: #c8e6c9; border: 2px solid #2e7d32; border-radius: 10px; padding: 30px; text-align: center; display: none; }
+        .msg-sucesso h2 { color: #2e7d32; margin-bottom: 10px; }
+        .msg-salvo { background: #e3f2fd; border: 2px solid #1565c0; border-radius: 8px; padding: 12px; text-align: center; margin: 10px 0; display: none; font-size: 0.9em; color: #1565c0; font-weight: 600; }
+        .dados-fixos { background: #f1f8e9; border: 2px solid #aed581; border-radius: 10px; padding: 20px; margin-bottom: 25px; }
+        .dados-fixos h3 { color: #33691e; margin-bottom: 15px; font-size: 1.1em; }
+        .dados-fixos .campo-row { margin-bottom: 10px; }
+        .dados-fixos input[readonly] { background: #f0f0f0; }
+        .aviso { background: #fff8e1; border: 2px solid #ffb300; border-radius: 10px; padding: 15px; margin-bottom: 20px; }
+        .aviso p:first-child { font-size: 0.95em; color: #e65100; font-weight: 700; margin-bottom: 6px; }
+        .aviso p:last-child { font-size: 0.88em; color: #555; line-height: 1.6; }
+        @media print { body { background: white !important; padding: 0 !important; } .botoes { display: none !important; } .container { box-shadow: none !important; } }
+        @media (max-width: 768px) { .container { margin: 10px; border-radius: 10px; } .header { padding: 20px; } .header h1 { font-size: 1.5em; } .content { padding: 15px; } .campo-row { flex-direction: column; } .botoes { flex-direction: column; } .btn { width: 100%; } }
+    </style>
+</head>
+<body>
+<div style="padding:10px 20px;background:#2e7d32;"><a href="../" style="display:inline-block;background:#fff;color:#2e7d32;text-decoration:none;font-family:Segoe UI,Arial,sans-serif;font-size:14px;font-weight:bold;padding:8px 20px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.15);">&#11013; Voltar ao In&#237;cio</a></div>
+<div class="container">
+    <div class="header">
+        <h1>&#128221; Anamnese Neuropsicol&#243;gica</h1>
+        <p>Question&#225;rio de hist&#243;ria cl&#237;nica</p>
+        <p style="font-size:0.82em;opacity:0.7;margin-top:5px;" id="headerSub"></p>
+    </div>
+    <div class="content">
+        <div class="dados-fixos">
+            <h3>&#128100; Dados do Paciente</h3>
+            <div class="campo-row">
+                <div class="campo"><label for="nome">Nome:</label><input type="text" id="nome" placeholder="Nome completo"></div>
+                <div class="campo"><label for="cpf">CPF:</label><input type="text" id="cpf" placeholder="000.000.000-00"></div>
+            </div>
+            <div class="campo-row">
+                <div class="campo"><label for="dataNascimento">Data de Nascimento:</label><input type="date" id="dataNascimento" onchange="calcularIdade()"></div>
+                <div class="campo"><label for="idadeCalculada">Idade:</label><input type="text" id="idadeCalculada" readonly placeholder="Calculada automaticamente"></div>
+            </div>
+            <div class="campo-row">
+                <div class="campo"><label for="sexo">Sexo:</label><select id="sexo"><option value="">Selecione</option><option value="Masculino">Masculino</option><option value="Feminino">Feminino</option></select></div>
+                <div class="campo"><label for="escolaridadePaciente">Escolaridade:</label><input type="text" id="escolaridadePaciente" placeholder="Ex: Ensino Superior completo"></div>
+            </div>
+            <div class="campo" style="margin-top:15px;">
+                <label>Quem est&#225; respondendo?</label>
+                <div class="radio-group">
+                    <label><input type="radio" name="respondente" value="Pr\u00f3prio paciente"><span>Pr&#243;prio paciente</span></label>
+                    <label><input type="radio" name="respondente" value="M\u00e3e"><span>M&#227;e</span></label>
+                    <label><input type="radio" name="respondente" value="Pai"><span>Pai</span></label>
+                    <label><input type="radio" name="respondente" value="Esposa"><span>Esposa</span></label>
+                    <label><input type="radio" name="respondente" value="Esposo"><span>Esposo</span></label>
+                    <label><input type="radio" name="respondente" value="Filho(a)"><span>Filho(a)</span></label>
+                    <label><input type="radio" name="respondente" value="Outro"><span>Outro</span></label>
+                </div>
+                <div id="outroRespondente" style="margin-top:8px;display:none;">
+                    <input type="text" id="outroRespondenteTexto" placeholder="Especifique">
+                </div>
+            </div>
+        </div>
+        <div class="aviso">
+            <p>&#9888; Importante:</p>
+            <p>Seja o mais <strong>detalhista poss&#237;vel</strong>. Se n&#227;o souber ou n&#227;o se aplicar, escreva <strong>"N/A"</strong>. O formul&#225;rio s&#243; ser&#225; enviado com todos os campos preenchidos.</p>
+        </div>
+        <div class="progresso"><div class="progresso-inner" id="barraProgresso" style="width:0%;"></div></div>
+        <div id="formulario"></div>
+        <div class="msg-salvo" id="msgSalvo">&#128190; Respostas salvas! Voc&#234; pode fechar e continuar depois.</div>
+        <div class="botoes" id="botoesArea">
+            <button class="btn btn-salvar" onclick="salvarRascunho()">&#128190; Salvar para continuar depois</button>
+            <button class="btn btn-primary" onclick="enviarAnamnese()">&#128228; Enviar Respostas ao Profissional</button>
+            <button class="btn btn-danger" onclick="if(confirm('Limpar todas as respostas?')){localStorage.removeItem(_chaveRascunho);location.reload();}">Limpar</button>
+        </div>
+        <div class="msg-sucesso" id="msgSucesso">
+            <h2>&#10004; Respostas enviadas com sucesso!</h2>
+            <p style="color:#555;margin-top:8px;">O profissional j&#225; pode visualizar suas respostas no painel.</p>
+            <p style="color:#777;margin-top:5px;font-size:0.85em;">Voc&#234; pode fechar esta p&#225;gina.</p>
+        </div>
+    </div>
+</div>
+<script src="../id-paciente.js"></script>
+<script>
+// === BANCO DE SECOES DISPONIVEIS ===
+var SECOES_TODAS=[
+{id:"dados_complementares",titulo:"Dados Complementares",campos:[
+{id:"localNascimento",label:"Local de nascimento",tipo:"text"},
+{id:"profissao",label:"Profiss\u00e3o",tipo:"text"},
+{id:"religiao",label:"Religi\u00e3o",tipo:"text"},
+{id:"estadoCivil",label:"Estado civil",tipo:"text"},
+{id:"endereco",label:"Endere\u00e7o completo",tipo:"text"},
+{id:"diagnosticoMedico",label:"Tem diagn\u00f3stico m\u00e9dico? Se sim, qual?",tipo:"text"}
+]},
+{id:"motivo_avaliacao",titulo:"Motivo da Avalia\u00e7\u00e3o",campos:[
+{id:"motivoAN",label:"Motivo da Avalia\u00e7\u00e3o Neuropsicol\u00f3gica",dica:"Descreva o que levou a buscar a avalia\u00e7\u00e3o, principais dificuldades observadas, h\u00e1 quanto tempo percebe e se houve mudan\u00e7a recente.",tipo:"textarea"},
+{id:"historiaSintomas",label:"Hist\u00f3ria dos sintomas",dica:"Hist\u00f3rico de doen\u00e7as neurol\u00f3gicas/psiqui\u00e1tricas, avalia\u00e7\u00f5es anteriores, medicamentos, acompanhamentos.",tipo:"textarea"}
+]},
+{id:"gestacao_desenvolvimento",titulo:"Gesta\u00e7\u00e3o e Desenvolvimento",campos:[
+{id:"gestacao",label:"Como foi a gesta\u00e7\u00e3o?",dica:"Planejada? Problemas? Pr\u00e9-natal? Parto normal ou ces\u00e1rea? Peso e comprimento ao nascer? Interna\u00e7\u00e3o?",tipo:"textarea"},
+{id:"desenvolvimentoInfantil",label:"Desenvolvimento infantil",dica:"Quando come\u00e7ou a balbuciar, falar, sorrir, rolar, engatinhar, andar, comer sozinho, vestir-se? Algum atraso? Dificuldade escolar? Repetiu de ano?",tipo:"textarea"}
+]},
+{id:"historico_familiar",titulo:"Hist\u00f3rico Familiar",campos:[
+{id:"familiarSintomas",label:"Existe algum familiar com sintomas ou tra\u00e7os parecidos?",tipo:"textarea"},
+{id:"ambienteFamiliar",label:"Como descreve seu ambiente familiar?",dica:"Calmo, agitado, etc.",tipo:"text"},
+{id:"violenciaFamiliar",label:"Existe algum tipo de viol\u00eancia familiar?",tipo:"text"}
+]},
+{id:"comportamento_fisico",titulo:"Comportamento F\u00edsico",campos:[
+{id:"sintomasFisicos",label:"Descreva sintomas f\u00edsicos que sente",dica:"Dor de cabe\u00e7a, tontura, n\u00e1usea, cansa\u00e7o, fraqueza, incontin\u00eancia, tremores, tiques, problemas de equil\u00edbrio, etc.",tipo:"textarea"}
+]},
+{id:"habitos_vida",titulo:"H\u00e1bitos de Vida",campos:[
+{id:"sono",label:"Como \u00e9 seu h\u00e1bito de sono?",tipo:"textarea"},
+{id:"atividadeFisica",label:"Pratica atividade f\u00edsica? Se sim, quais?",tipo:"text"},
+{id:"alimentacao",label:"Como \u00e9 sua alimenta\u00e7\u00e3o habitual?",tipo:"text"},
+{id:"alcool",label:"Faz uso de bebida alco\u00f3lica? Frequ\u00eancia e quantidade?",tipo:"text"},
+{id:"substancias",label:"Faz uso de subst\u00e2ncias il\u00edcitas? Quais e com que frequ\u00eancia?",tipo:"text"},
+{id:"tabagismo",label:"Fuma? Quantos cigarros por dia?",tipo:"text"}
+]},
+{id:"socioeconomico",titulo:"Situa\u00e7\u00e3o Socioecon\u00f4mica",campos:[
+{id:"rendaFamiliar",label:"Renda familiar (soma das rendas de quem mora na casa)",tipo:"radio",opcoes:["At\u00e9 R$1.500","R$1.500 a R$3.000","R$3.000 a R$6.000","R$6.000 a R$12.000","Acima de R$12.000"]},
+{id:"tipoMoradia",label:"Que tipo de casa mora?",dica:"Apartamento, casa, s\u00edtio, etc.",tipo:"text"},
+{id:"servicosBasicos",label:"Possui acesso a servi\u00e7os b\u00e1sicos (agua, luz, internet)?",tipo:"radio",opcoes:["Sim","N\u00e3o","Parcialmente"]}
+]},
+{id:"cognicao",titulo:"Cogni\u00e7\u00e3o",campos:[
+{id:"dificuldadesCognitivas",label:"Dificuldades cognitivas percebidas",dica:"Dificuldade de entender instru\u00e7\u00f5es, resolver problemas, planejar, mudar de plano, fazer coisas em ordem l\u00f3gica?",tipo:"textarea"}
+]},
+{id:"linguagem",titulo:"Linguagem e Habilidades Num\u00e9ricas",campos:[
+{id:"dificuldadesLinguagem",label:"Dificuldades com linguagem e n\u00fameros",dica:"Encontrar palavras certas, se fazer entender, sons estranhos, expressar pensamentos, entender o que l\u00ea, escrever, dificuldades com matem\u00e1tica?",tipo:"textarea"}
+]},
+{id:"habilidades_nao_verbais",titulo:"Habilidades N\u00e3o Verbais",campos:[
+{id:"dificuldadesNaoVerbais",label:"Dificuldades n\u00e3o verbais",dica:"Localiza\u00e7\u00e3o direita-esquerda, desenhar/copiar, vestir-se, orienta\u00e7\u00e3o espacial?",tipo:"textarea"}
+]},
+{id:"comportamentos_habituais",titulo:"Comportamentos Habituais",campos:[
+{id:"comportamentosHabituais",label:"Altera\u00e7\u00f5es em comportamentos habituais",dica:"Dificuldade em trajetos familiares, reconhecer pessoas/objetos, sem no\u00e7\u00e3o de tempo, mais lento, distra\u00eddo, 'd\u00e1 branco', desorientado, sensa\u00e7\u00f5es estranhas?",tipo:"textarea"}
+]},
+{id:"perguntas_finais",titulo:"Observa\u00e7\u00f5es Finais",campos:[
+{id:"expectativas",label:"O que espera da avalia\u00e7\u00e3o neuropsicol\u00f3gica?",tipo:"textarea"},
+{id:"acrescentar",label:"Algo importante que gostaria de acrescentar?",tipo:"textarea"}
+]}
+];
+
+// === VARIAVEIS GLOBAIS ===
+var _chaveRascunho='';
+var _sessionInfo=null;
+var _API_URL='https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
+var _secoesAtivas=[];
+var _perguntasExtras=[];
+
+function calcularIdade(){
+var d=document.getElementById('dataNascimento').value;
+if(!d)return;
+var h=new Date(),n=new Date(d);
+var a=h.getFullYear()-n.getFullYear(),m=h.getMonth()-n.getMonth(),di=h.getDate()-n.getDate();
+if(di<0){m--;di+=new Date(h.getFullYear(),h.getMonth(),0).getDate();}
+if(m<0){a--;m+=12;}
+document.getElementById('idadeCalculada').value=a+' anos, '+m+' meses e '+di+' dias';
+}
+
+function gerarFormulario(){
+var container=document.getElementById('formulario');
+var h='';
+_secoesAtivas.forEach(function(secao){
+h+='<div class="secao"><div class="secao-header">'+secao.titulo+'</div><div class="secao-body">';
+secao.campos.forEach(function(campo){
+var cond=campo.condicional?(' data-condicional="'+campo.condicional+'" data-valor="'+campo.valorCondicional+'"'):'';
+var classeCond=campo.condicional?' campo-condicional':'';
+h+='<div class="campo'+classeCond+'"'+cond+'>';
+h+='<label for="'+campo.id+'">'+campo.label+'</label>';
+if(campo.dica)h+='<div class="dica">'+campo.dica+'</div>';
+if(campo.tipo==='text')h+='<input type="text" id="'+campo.id+'" name="'+campo.id+'">';
+else if(campo.tipo==='date')h+='<input type="date" id="'+campo.id+'" name="'+campo.id+'">';
+else if(campo.tipo==='textarea')h+='<textarea id="'+campo.id+'" name="'+campo.id+'" rows="3"></textarea>';
+else if(campo.tipo==='radio'){
+h+='<div class="radio-group">';
+campo.opcoes.forEach(function(op){
+h+='<label><input type="radio" name="'+campo.id+'" value="'+op+'" onchange="checkCondicional(\''+campo.id+'\')"><span>'+op+'</span></label>';
+});
+h+='</div>';
+}
+h+='</div>';
+});
+h+='</div></div>';
+});
+// Perguntas extras do profissional
+if(_perguntasExtras.length>0){
+h+='<div class="secao"><div class="secao-header">Perguntas Adicionais</div><div class="secao-body">';
+_perguntasExtras.forEach(function(p,i){
+h+='<div class="campo"><label for="extra_'+i+'">'+p.label+'</label>';
+if(p.tipo==='textarea')h+='<textarea id="extra_'+i+'" name="extra_'+i+'" rows="3"></textarea>';
+else if(p.tipo==='radio')h+='<div class="radio-group"><label><input type="radio" name="extra_'+i+'" value="Sim"><span>Sim</span></label><label><input type="radio" name="extra_'+i+'" value="N\u00e3o"><span>N\u00e3o</span></label></div>';
+else h+='<input type="text" id="extra_'+i+'" name="extra_'+i+'">';
+h+='</div>';
+});
+h+='</div></div>';
+}
+container.innerHTML=h;
+}
+
+function checkCondicional(campoId){
+var selecionado=document.querySelector('input[name="'+campoId+'"]:checked');
+var valor=selecionado?selecionado.value:'';
+document.querySelectorAll('[data-condicional="'+campoId+'"]').forEach(function(el){
+if(valor===el.getAttribute('data-valor'))el.classList.add('visivel');
+else el.classList.remove('visivel');
+});
+atualizarProgresso();
+}
+
+function atualizarProgresso(){
+var total=0,preenchidos=0;
+_secoesAtivas.forEach(function(secao){secao.campos.forEach(function(campo){
+if(campo.condicional)return;total++;
+if(campo.tipo==='radio'){if(document.querySelector('input[name="'+campo.id+'"]:checked'))preenchidos++;}
+else{var el=document.getElementById(campo.id);if(el&&el.value.trim())preenchidos++;}
+});});
+_perguntasExtras.forEach(function(p,i){
+total++;
+if(p.tipo==='radio'){if(document.querySelector('input[name="extra_'+i+'"]:checked'))preenchidos++;}
+else{var el=document.getElementById('extra_'+i);if(el&&el.value.trim())preenchidos++;}
+});
+['nome','dataNascimento','sexo'].forEach(function(id){total++;var el=document.getElementById(id);if(el&&el.value)preenchidos++;});
+var sel=document.querySelector('input[name="respondente"]:checked');total++;if(sel)preenchidos++;
+var pct=total>0?Math.round((preenchidos/total)*100):0;
+document.getElementById('barraProgresso').style.width=pct+'%';
+}
+
+function coletarTudo(){
+var dados={};
+dados.nome=document.getElementById('nome').value.trim();
+dados.cpf=document.getElementById('cpf').value.trim();
+dados.dataNascimento=document.getElementById('dataNascimento').value;
+dados.idade=document.getElementById('idadeCalculada').value;
+dados.sexo=document.getElementById('sexo').value;
+dados.escolaridade=document.getElementById('escolaridadePaciente').value.trim();
+var resp=document.querySelector('input[name="respondente"]:checked');
+dados.respondente=resp?resp.value:'';
+if(dados.respondente==='Outro')dados.respondente=document.getElementById('outroRespondenteTexto').value.trim()||'Outro';
+dados.idPaciente=document.getElementById('idPaciente')?document.getElementById('idPaciente').value:'';
+_secoesAtivas.forEach(function(secao){secao.campos.forEach(function(campo){
+if(campo.tipo==='radio'){var sel=document.querySelector('input[name="'+campo.id+'"]:checked');dados[campo.id]=sel?sel.value:'';}
+else{var el=document.getElementById(campo.id);dados[campo.id]=el?el.value.trim():'';}
+});});
+_perguntasExtras.forEach(function(p,i){
+if(p.tipo==='radio'){var sel=document.querySelector('input[name="extra_'+i+'"]:checked');dados['extra_'+i]=sel?sel.value:'';}
+else{var el=document.getElementById('extra_'+i);dados['extra_'+i]=el?el.value.trim():'';}
+});
+dados._secoesAtivas=_secoesAtivas.map(function(s){return{titulo:s.titulo,campos:s.campos.map(function(c){return{id:c.id,label:c.label,tipo:c.tipo};})};});
+if(_perguntasExtras.length>0)dados._perguntasExtras=_perguntasExtras;
+return dados;
+}
+
+function salvarRascunho(){
+var dados=coletarTudo();
+localStorage.setItem(_chaveRascunho,JSON.stringify(dados));
+var msg=document.getElementById('msgSalvo');
+msg.style.display='block';
+setTimeout(function(){msg.style.display='none';},3000);
+}
+
+function restaurarRascunho(){
+var salvo=localStorage.getItem(_chaveRascunho);
+if(!salvo)return;
+try{var dados=JSON.parse(salvo);}catch(e){return;}
+if(dados.nome)document.getElementById('nome').value=dados.nome;
+if(dados.cpf)document.getElementById('cpf').value=dados.cpf;
+if(dados.dataNascimento){document.getElementById('dataNascimento').value=dados.dataNascimento;calcularIdade();}
+if(dados.sexo)document.getElementById('sexo').value=dados.sexo;
+if(dados.escolaridade)document.getElementById('escolaridadePaciente').value=dados.escolaridade;
+if(dados.respondente){
+var radios=document.querySelectorAll('input[name="respondente"]');
+var encontrou=false;
+radios.forEach(function(r){if(r.value===dados.respondente){r.checked=true;encontrou=true;}});
+if(!encontrou&&dados.respondente){var outroR=document.querySelector('input[name="respondente"][value="Outro"]');if(outroR){outroR.checked=true;document.getElementById('outroRespondente').style.display='block';document.getElementById('outroRespondenteTexto').value=dados.respondente;}}
+}
+_secoesAtivas.forEach(function(secao){secao.campos.forEach(function(campo){
+if(!dados[campo.id])return;
+if(campo.tipo==='radio'){document.querySelectorAll('input[name="'+campo.id+'"]').forEach(function(r){if(r.value===dados[campo.id])r.checked=true;});checkCondicional(campo.id);}
+else{var el=document.getElementById(campo.id);if(el)el.value=dados[campo.id];}
+});});
+_perguntasExtras.forEach(function(p,i){
+var key='extra_'+i;
+if(!dados[key])return;
+if(p.tipo==='radio'){document.querySelectorAll('input[name="'+key+'"]').forEach(function(r){if(r.value===dados[key])r.checked=true;});}
+else{var el=document.getElementById(key);if(el)el.value=dados[key];}
+});
+atualizarProgresso();
+}
+
+function _decodificarURL(){
+var params=new URLSearchParams(window.location.search);
+var d=params.get('d');
+if(!d)return false;
+try{_sessionInfo=JSON.parse(atob(decodeURIComponent(d)));}catch(e){return false;}
+if(_sessionInfo.patientName)document.getElementById('nome').value=_sessionInfo.patientName;
+if(_sessionInfo.birthDate){document.getElementById('dataNascimento').value=_sessionInfo.birthDate;calcularIdade();}
+if(_sessionInfo.sex)document.getElementById('sexo').value=_sessionInfo.sex;
+if(_sessionInfo.cpf)document.getElementById('cpf').value=_sessionInfo.cpf;
+// Carregar secoes ativas e perguntas extras do link
+if(_sessionInfo.secoes&&Array.isArray(_sessionInfo.secoes)){
+_secoesAtivas=[];
+_sessionInfo.secoes.forEach(function(sid){
+var found=SECOES_TODAS.find(function(s){return s.id===sid;});
+if(found)_secoesAtivas.push(found);
+});
+}else{
+_secoesAtivas=SECOES_TODAS.slice();
+}
+if(_sessionInfo.extras&&Array.isArray(_sessionInfo.extras)){
+_perguntasExtras=_sessionInfo.extras;
+}
+// Disparar eventos para id-paciente.js
+var nomeEl=document.getElementById('nome');if(nomeEl)nomeEl.dispatchEvent(new Event('input'));
+var dnEl=document.getElementById('dataNascimento');if(dnEl)dnEl.dispatchEvent(new Event('change'));
+return true;
+}
+
+async function enviarAnamnese(){
+var nome=document.getElementById('nome').value.trim();
+if(!nome){alert('Preencha o nome do paciente.');return;}
+var resp=document.querySelector('input[name="respondente"]:checked');
+if(!resp){alert('Selecione quem est\u00e1 respondendo.');return;}
+// Validacao
+var vazios=[];
+_secoesAtivas.forEach(function(secao){secao.campos.forEach(function(campo){
+if(campo.condicional){var condEl=document.querySelector('[data-condicional="'+campo.condicional+'"]');if(condEl&&!condEl.classList.contains('visivel'))return;}
+if(campo.tipo==='radio'){if(!document.querySelector('input[name="'+campo.id+'"]:checked'))vazios.push({secao:secao.titulo,campo:campo.label,id:campo.id});}
+else{var el=document.getElementById(campo.id);if(!el||!el.value.trim())vazios.push({secao:secao.titulo,campo:campo.label,id:campo.id});}
+});});
+_perguntasExtras.forEach(function(p,i){
+var key='extra_'+i;
+if(p.tipo==='radio'){if(!document.querySelector('input[name="'+key+'"]:checked'))vazios.push({secao:'Perguntas Adicionais',campo:p.label,id:key});}
+else{var el=document.getElementById(key);if(!el||!el.value.trim())vazios.push({secao:'Perguntas Adicionais',campo:p.label,id:key});}
+});
+if(vazios.length>0){
+var msg='Existem '+vazios.length+' campo(s) sem resposta:\n\n';
+var secAtual='';
+vazios.slice(0,10).forEach(function(v){if(v.secao!==secAtual){secAtual=v.secao;msg+='\n['+v.secao+']\n';}msg+='  - '+v.campo+'\n';});
+if(vazios.length>10)msg+='\n... e mais '+(vazios.length-10)+' campo(s).\n';
+msg+='\nColoque "N/A" se n\u00e3o se aplicar.\nDeseja revisar?';
+if(!confirm(msg))return;
+var primeiroVazio=document.getElementById(vazios[0].id)||document.querySelector('[name="'+vazios[0].id+'"]');
+if(primeiroVazio){var target=primeiroVazio.closest?primeiroVazio.closest('.campo'):primeiroVazio;target.scrollIntoView({behavior:'smooth',block:'center'});}
+return;
+}
+var dados=coletarTudo();
+if(!_sessionInfo){alert('Link inv\u00e1lido.');return;}
+var btn=document.querySelector('.btn-primary');
+if(btn){btn.disabled=true;btn.textContent='Enviando...';}
+try{
+var payload={sessionId:_sessionInfo.sessionId,email:_sessionInfo.email,data:{escala:'ANAMNESE',paciente:dados.nome,respondente:dados.respondente,idPaciente:dados.idPaciente,respostas:dados,data:new Date().toISOString()}};
+var r=await fetch(_API_URL+'/save-escala',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+var result=await r.json();
+if(result.ok||r.ok){
+localStorage.removeItem(_chaveRascunho);
+document.getElementById('botoesArea').style.display='none';
+document.getElementById('formulario').style.display='none';
+document.querySelector('.dados-fixos').style.display='none';
+document.querySelector('.progresso').style.display='none';
+document.querySelector('.aviso').style.display='none';
+document.getElementById('msgSucesso').style.display='block';
+}else{if(btn){btn.disabled=false;btn.textContent='Enviar Respostas ao Profissional';}alert('Erro ao enviar.');}
+}catch(e){if(btn){btn.disabled=false;btn.textContent='Enviar Respostas ao Profissional';}alert('Erro de conex\u00e3o.');}
+}
+
+// === INICIALIZACAO ===
+document.querySelectorAll('input[name="respondente"]').forEach(function(r){
+r.addEventListener('change',function(){document.getElementById('outroRespondente').style.display=this.value==='Outro'?'block':'none';atualizarProgresso();});
+});
+var params=new URLSearchParams(window.location.search);
+if(params.get('d')){
+_decodificarURL();
+gerarFormulario();
+_chaveRascunho='anamnese_rascunho_'+(_sessionInfo?_sessionInfo.sessionId:'local');
+restaurarRascunho();
+document.getElementById('formulario').addEventListener('input',atualizarProgresso);
+document.getElementById('formulario').addEventListener('change',function(e){
+atualizarProgresso();
+if(e.target.type==='radio'){var campo=e.target.closest('.campo');if(campo){var next=campo.nextElementSibling;while(next&&next.classList.contains('campo-condicional')&&!next.classList.contains('visivel')){next=next.nextElementSibling;}if(next)next.scrollIntoView({behavior:'smooth',block:'center'});}}
+});
+document.querySelector('.dados-fixos').addEventListener('input',atualizarProgresso);
+document.querySelector('.dados-fixos').addEventListener('change',atualizarProgresso);
+atualizarProgresso();
+}else if(params.get('print')){
+_secoesAtivas=SECOES_TODAS.slice();
+gerarFormulario();
+setTimeout(function(){window.print();},500);
+}else{
+window.location.href='https://setmonte.github.io/online/';
+}
+    </script>
+<script>
+var _sc=document.createElement('script');_sc.src='coleta-anonima.js';document.body.appendChild(_sc);
+</script>
+</body>
+</html>
