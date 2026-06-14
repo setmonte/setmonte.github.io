@@ -100,6 +100,12 @@
             </div>
         </div>
 
+        <!-- AVISO AO RESPONDENTE -->
+        <div style="background:#fff8e1;border:2px solid #ffb300;border-radius:10px;padding:15px;margin-bottom:20px;">
+            <p style="font-size:0.95em;color:#e65100;font-weight:700;margin-bottom:6px;">&#9888; Importante:</p>
+            <p style="font-size:0.88em;color:#555;line-height:1.6;">Por favor, seja o mais <strong>detalhista poss&#237;vel</strong> em suas respostas. Quanto mais informa&#231;&#245;es voc&#234; fornecer, melhor ser&#225; a avalia&#231;&#227;o. Se n&#227;o souber ou n&#227;o lembrar de alguma informa&#231;&#227;o, escreva pelo menos <strong>"N/A"</strong> (n&#227;o se aplica) ou <strong>"*"</strong> para que nenhum campo fique em branco. O formul&#225;rio s&#243; poder&#225; ser enviado quando todos os campos estiverem preenchidos.</p>
+        </div>
+
         <div class="progresso"><div class="progresso-inner" id="barraProgresso" style="width:0%;"></div></div>
         <div id="formulario"></div>
         <div class="msg-salvo" id="msgSalvo">&#128190; Respostas salvas! Voc&#234; pode fechar e continuar depois.</div>
@@ -351,6 +357,39 @@ var nome=document.getElementById('nome').value.trim();
 if(!nome){alert('Preencha o nome do avaliando.');return;}
 var resp=document.querySelector('input[name="respondente"]:checked');
 if(!resp){alert('Selecione quem est\u00e1 respondendo.');return;}
+// Validacao completa - verificar campos vazios
+var vazios=[];
+SECOES.forEach(function(secao){
+secao.campos.forEach(function(campo){
+// Pular campos condicionais que nao estao visiveis
+if(campo.condicional){
+var condEl=document.querySelector('[data-condicional="'+campo.condicional+'"]');
+if(condEl&&!condEl.classList.contains('visivel'))return;
+}
+if(campo.tipo==='radio'){
+if(!document.querySelector('input[name="'+campo.id+'"]:checked'))vazios.push({secao:secao.titulo,campo:campo.label,id:campo.id});
+}else{
+var el=document.getElementById(campo.id);
+if(!el||!el.value.trim())vazios.push({secao:secao.titulo,campo:campo.label,id:campo.id});
+}
+});
+});
+if(vazios.length>0){
+var msg='Existem '+vazios.length+' campo(s) sem resposta:\n\n';
+var secAtual='';
+vazios.slice(0,10).forEach(function(v){
+if(v.secao!==secAtual){secAtual=v.secao;msg+='\n['+v.secao+']\n';}
+msg+='  - '+v.campo+'\n';
+});
+if(vazios.length>10)msg+='\n... e mais '+(vazios.length-10)+' campo(s).\n';
+msg+='\nSe n\u00e3o tiver a informa\u00e7\u00e3o, coloque pelo menos "N/A" ou "*".\nDeseja revisar?';
+if(!confirm(msg))return;
+// Scroll para o primeiro campo vazio
+var primeiroVazio=document.getElementById(vazios[0].id);
+if(!primeiroVazio){var el2=document.querySelector('[name="'+vazios[0].id+'"]');if(el2)primeiroVazio=el2.closest('.campo');}
+if(primeiroVazio)primeiroVazio.scrollIntoView({behavior:'smooth',block:'center'});
+return;
+}
 var dados=coletarTudo();
 if(!_sessionInfo){alert('Link inv\u00e1lido. Pe\u00e7a ao profissional para gerar um novo link.');return;}
 var btn=document.querySelector('.btn-primary');
