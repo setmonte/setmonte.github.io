@@ -242,40 +242,90 @@ function calcularResultados() {
 function gerarRelatorioPDF() {
     var nome = document.getElementById('nome').value;
     if (!nome) { alert('Preencha o nome.'); return; }
-    if (!window._escalaDados) { alert('Calcule os resultados primeiro.'); return; }
+    // Calcular automaticamente se necessario
+    var respostas = [];
+    for (var i = 0; i < ITENS.length; i++) {
+        var s = document.querySelector('input[name="q' + i + '"]:checked');
+        if (!s) { alert('Responda todos os 21 itens antes de gerar o PDF.'); return; }
+        respostas.push(parseInt(s.value));
+    }
+    if (!window._escalaDados) { calcularResultados(); }
     var dados = window._escalaDados;
+    if (!dados) { alert('Erro ao calcular resultados.'); return; }
     var idade = document.getElementById('idadeCalculada').value;
     var sexo = document.getElementById('sexo').value;
     var dataAval = document.getElementById('data').value || new Date().toLocaleDateString('pt-BR');
     var idPac = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
 
+    // Recalcular escores
+    var somaD = 0, somaA = 0, somaE = 0;
+    ITENS.forEach(function(item, i) {
+        if (item.sub === 'D') somaD += respostas[i];
+        else if (item.sub === 'A') somaA += respostas[i];
+        else somaE += respostas[i];
+    });
+    var escD = somaD * 2, escA = somaA * 2, escE = somaE * 2;
+    var classD = classificar('D', escD);
+    var classA = classificar('A', escA);
+    var classE = classificar('E', escE);
+
     var jsPDF = window.jspdf.jsPDF; var doc = new jsPDF();
     doc.setFillColor(40,53,147); doc.rect(0,0,210,35,'F');
     doc.setTextColor(255,255,255); doc.setFontSize(14); doc.setFont(undefined,'bold');
-    doc.text('DASS-21 - RELATORIO', 105, 15, {align:'center'});
+    doc.text('DASS-21 - RELATORIO DE AVALIACAO', 105, 15, {align:'center'});
     doc.setFontSize(9); doc.setFont(undefined,'normal');
     doc.text('Escala de Depressao, Ansiedade e Estresse', 105, 23, {align:'center'});
+    doc.text('Lovibond & Lovibond (1995) | Vignola & Tucci (2014)', 105, 29, {align:'center'});
 
     var y = 42;
-    doc.setFillColor(248,249,250); doc.rect(15,y,180,18,'F');
+    doc.setFillColor(248,249,250); doc.rect(15,y,180,20,'F');
     doc.setTextColor(40,53,147); doc.setFontSize(10); doc.setFont(undefined,'bold');
     doc.text('DADOS PESSOAIS', 20, y+6);
     doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont(undefined,'normal');
     doc.text('Nome: '+nome+'   |   Sexo: '+sexo, 20, y+12);
     doc.text('Idade: '+idade+'   |   Data: '+dataAval+(idPac?'   |   ID: '+idPac:''), 20, y+17);
 
-    y = 66;
-    doc.setTextColor(40,53,147); doc.setFontSize(11); doc.setFont(undefined,'bold');
-    doc.text('RESULTADOS (escores x2)', 20, y); y += 8;
+    // --- RESULTADOS ---
+    y = 68;
+    doc.setTextColor(40,53,147); doc.setFontSize(10); doc.setFont(undefined,'bold');
+    doc.text('RESULTADOS (escores x2 - equivalencia DASS-42)', 20, y); y += 8;
     doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont(undefined,'normal');
-    doc.text('Depressao: '+dados.dominios.Depressao.pontuacao+' - '+dados.dominios.Depressao.classificacao, 20, y); y += 6;
-    doc.text('Ansiedade: '+dados.dominios.Ansiedade.pontuacao+' - '+dados.dominios.Ansiedade.classificacao, 20, y); y += 6;
-    doc.text('Estresse: '+dados.dominios.Estresse.pontuacao+' - '+dados.dominios.Estresse.classificacao, 20, y); y += 12;
+    doc.text('Depressao: '+escD+' - '+classD, 22, y); y += 6;
+    doc.text('Ansiedade: '+escA+' - '+classA, 22, y); y += 6;
+    doc.text('Estresse: '+escE+' - '+classE, 22, y); y += 10;
 
-    doc.setFillColor(255,248,235); doc.rect(15,y,180,12,'F');
+    // --- TABELA DE CORTES ---
+    doc.setTextColor(40,53,147); doc.setFontSize(10); doc.setFont(undefined,'bold');
+    doc.text('TABELA DE CLASSIFICACAO', 20, y); y += 7;
+    doc.setFillColor(40,53,147); doc.rect(15,y,180,7,'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(8); doc.setFont(undefined,'bold');
+    doc.text('Subescala', 20, y+5); doc.text('Normal', 65, y+5); doc.text('Leve', 90, y+5); doc.text('Moderado', 110, y+5); doc.text('Grave', 140, y+5); doc.text('Muito Grave', 162, y+5);
+    y += 9;
+    doc.setTextColor(0,0,0); doc.setFontSize(8); doc.setFont(undefined,'normal');
+    doc.text('Depressao ('+escD+')', 20, y+2); doc.text('0-9', 65, y+2); doc.text('10-13', 90, y+2); doc.text('14-20', 110, y+2); doc.text('21-27', 140, y+2); doc.text('28+', 162, y+2); y += 7;
+    doc.setFillColor(248,249,250); doc.rect(15,y-3,180,7,'F');
+    doc.text('Ansiedade ('+escA+')', 20, y+2); doc.text('0-7', 65, y+2); doc.text('8-9', 90, y+2); doc.text('10-14', 110, y+2); doc.text('15-19', 140, y+2); doc.text('20+', 162, y+2); y += 7;
+    doc.text('Estresse ('+escE+')', 20, y+2); doc.text('0-14', 65, y+2); doc.text('15-18', 90, y+2); doc.text('19-25', 110, y+2); doc.text('26-33', 140, y+2); doc.text('34+', 162, y+2); y += 12;
+
+    // --- DETALHAMENTO POR ITEM ---
+    doc.setTextColor(40,53,147); doc.setFontSize(10); doc.setFont(undefined,'bold');
+    doc.text('RESPOSTAS POR ITEM', 20, y); y += 7;
+    doc.setTextColor(0,0,0); doc.setFontSize(7.5); doc.setFont(undefined,'normal');
+    var labels = ['Nao se aplicou','Aplicou-se um pouco','Aplicou-se bastante','Aplicou-se muito'];
+    for (var i = 0; i < ITENS.length; i++) {
+        if (y > 270) { doc.addPage(); y = 20; }
+        var sub = ITENS[i].sub === 'D' ? '(D)' : ITENS[i].sub === 'A' ? '(A)' : '(E)';
+        doc.text((i+1) + '. ' + sub + ' ' + labels[respostas[i]] + ' (' + respostas[i] + ')', 22, y);
+        y += 4.5;
+    }
+
+    // --- DISCLAIMER ---
+    y += 6;
+    if (y > 260) { doc.addPage(); y = 20; }
+    doc.setFillColor(255,248,235); doc.rect(15,y,180,14,'F');
     doc.setTextColor(180,90,0); doc.setFontSize(7); doc.setFont(undefined,'normal');
     doc.text('IMPORTANTE: Instrumento de rastreio dimensional. Nao e diagnostico.', 20, y+5);
-    doc.text('Escores multiplicados por 2 (equivalencia DASS-42). Interpretar por profissional.', 20, y+9);
+    doc.text('Escores multiplicados por 2 (equivalencia DASS-42). Interpretar por profissional qualificado.', 20, y+10);
 
     doc.setFillColor(80,80,80); doc.rect(0,285,210,12,'F');
     doc.setTextColor(200,200,200); doc.setFontSize(7);

@@ -214,37 +214,82 @@ function calcularResultados() {
 function gerarRelatorioPDF() {
     var nome = document.getElementById('nome').value;
     if (!nome) { alert('Preencha o nome.'); return; }
-    if (!window._escalaDados) { alert('Calcule os resultados primeiro.'); return; }
+    // Calcular automaticamente se necessario
+    var respostas = [];
+    for (var i = 0; i < ITENS.length; i++) {
+        var s = document.querySelector('input[name="q' + i + '"]:checked');
+        if (!s) { alert('Responda todos os 30 itens antes de gerar o PDF.'); return; }
+        var v = parseInt(s.value);
+        if (ITENS[i].inv) v = 5 - v;
+        respostas.push(v);
+    }
+    if (!window._escalaDados) { calcularResultados(); }
     var dados = window._escalaDados;
+    if (!dados) { alert('Erro ao calcular resultados.'); return; }
     var idade = document.getElementById('idadeCalculada').value;
     var sexo = document.getElementById('sexo').value;
     var dataAval = document.getElementById('data').value || new Date().toLocaleDateString('pt-BR');
     var idPac = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
 
+    var scores = {fisica:0, cognitiva:0, emocional:0, ambiental:0, total:0};
+    for (var i = 0; i < ITENS.length; i++) {
+        scores[ITENS[i].cat] += respostas[i];
+        scores.total += respostas[i];
+    }
+    var nivel = dados.classificacao;
+
     var jsPDF = window.jspdf.jsPDF; var doc = new jsPDF();
     doc.setFillColor(106,27,154); doc.rect(0,0,210,35,'F');
     doc.setTextColor(255,255,255); doc.setFontSize(14); doc.setFont(undefined,'bold');
-    doc.text('ESCASI - RELATORIO', 105, 15, {align:'center'});
+    doc.text('ESCASI - RELATORIO DE AVALIACAO', 105, 15, {align:'center'});
     doc.setFontSize(9); doc.setFont(undefined,'normal');
     doc.text('Escala de Ansiedade Infantil', 105, 23, {align:'center'});
 
     var y = 42;
-    doc.setFillColor(248,249,250); doc.rect(15,y,180,18,'F');
+    doc.setFillColor(248,249,250); doc.rect(15,y,180,20,'F');
     doc.setTextColor(106,27,154); doc.setFontSize(10); doc.setFont(undefined,'bold');
-    doc.text('DADOS', 20, y+6);
+    doc.text('DADOS PESSOAIS', 20, y+6);
     doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont(undefined,'normal');
     doc.text('Nome: '+nome+'   |   Sexo: '+sexo, 20, y+12);
     doc.text('Idade: '+idade+'   |   Data: '+dataAval+(idPac?'   |   ID: '+idPac:''), 20, y+17);
 
-    y = 66;
-    doc.setFontSize(11); doc.setFont(undefined,'bold');
-    doc.text('Classificacao: '+dados.classificacao+' ('+dados.escore+'/120)', 20, y); y += 10;
-    doc.setFontSize(9); doc.setFont(undefined,'normal');
-    doc.text('Fisica: '+dados.dominios.fisica+' | Cognitiva: '+dados.dominios.cognitiva+' | Emocional: '+dados.dominios.emocional+' | Ambiental: '+dados.dominios.ambiental, 20, y); y += 12;
+    // --- CLASSIFICACAO ---
+    y = 68;
+    var corNivel = '#4caf50';
+    if (scores.total > 90) corNivel = '#b71c1c';
+    else if (scores.total > 75) corNivel = '#f44336';
+    else if (scores.total > 60) corNivel = '#ff9800';
+    else if (scores.total > 45) corNivel = '#8bc34a';
+    doc.setTextColor(106,27,154); doc.setFontSize(10); doc.setFont(undefined,'bold');
+    doc.text('RESULTADO: ' + nivel + ' (Total: ' + scores.total + '/120)', 20, y); y += 10;
 
-    doc.setFillColor(255,248,235); doc.rect(15,y,180,10,'F');
-    doc.setTextColor(180,90,0); doc.setFontSize(7);
-    doc.text('Instrumento de rastreio. Nao e diagnostico. Interpretar por profissional qualificado.', 20, y+6);
+    // --- DOMINIOS ---
+    doc.setTextColor(106,27,154); doc.setFontSize(10); doc.setFont(undefined,'bold');
+    doc.text('DOMINIOS', 20, y); y += 7;
+    doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont(undefined,'normal');
+    doc.text('Ansiedade Fisica: '+scores.fisica+' pontos', 22, y); y += 6;
+    doc.text('Ansiedade Cognitiva: '+scores.cognitiva+' pontos', 22, y); y += 6;
+    doc.text('Ansiedade Emocional: '+scores.emocional+' pontos', 22, y); y += 6;
+    doc.text('Ansiedade Ambiental: '+scores.ambiental+' pontos', 22, y); y += 10;
+
+    // --- DETALHAMENTO ---
+    doc.setTextColor(106,27,154); doc.setFontSize(10); doc.setFont(undefined,'bold');
+    doc.text('RESPOSTAS POR ITEM', 20, y); y += 7;
+    doc.setTextColor(0,0,0); doc.setFontSize(7.5); doc.setFont(undefined,'normal');
+    var cats = {fisica:'(F)', cognitiva:'(C)', emocional:'(E)', ambiental:'(A)'};
+    for (var i = 0; i < ITENS.length; i++) {
+        if (y > 270) { doc.addPage(); y = 20; }
+        doc.text((i+1) + '. ' + cats[ITENS[i].cat] + ' = ' + respostas[i] + '/4' + (ITENS[i].inv ? ' [inv]' : ''), 22, y);
+        y += 4.5;
+    }
+
+    // --- DISCLAIMER ---
+    y += 6;
+    if (y > 260) { doc.addPage(); y = 20; }
+    doc.setFillColor(255,248,235); doc.rect(15,y,180,14,'F');
+    doc.setTextColor(180,90,0); doc.setFontSize(7); doc.setFont(undefined,'normal');
+    doc.text('IMPORTANTE: A ESCASI e um instrumento de rastreio para ansiedade infantil. Nao e diagnostico.', 20, y+5);
+    doc.text('Interpretar por profissional qualificado.', 20, y+10);
 
     doc.setFillColor(80,80,80); doc.rect(0,285,210,12,'F');
     doc.setTextColor(200,200,200); doc.setFontSize(7);

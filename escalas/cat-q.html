@@ -211,41 +211,83 @@ function calcularResultados() {
 function gerarRelatorioPDF() {
     var nome = document.getElementById('nome').value;
     if (!nome) { alert('Preencha o nome.'); return; }
-    if (!window._escalaDados) { alert('Calcule os resultados primeiro.'); return; }
+    // Calcular automaticamente se necessario
+    var respostas = [];
+    for (var i = 0; i < ITENS.length; i++) {
+        var s = document.querySelector('input[name="q' + i + '"]:checked');
+        if (!s) { alert('Responda todos os 25 itens antes de gerar o PDF.'); return; }
+        var v = parseInt(s.value);
+        if (ITENS[i].inv) v = 8 - v;
+        respostas.push({valor: v, sub: ITENS[i].sub});
+    }
+    if (!window._escalaDados) { calcularResultados(); }
     var dados = window._escalaDados;
+    if (!dados) { alert('Erro ao calcular resultados.'); return; }
     var idade = document.getElementById('idadeCalculada').value;
     var sexo = document.getElementById('sexo').value;
     var dataAval = document.getElementById('data').value || new Date().toLocaleDateString('pt-BR');
     var idPac = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
 
+    var somaC = 0, somaM = 0, somaA = 0, nC = 0, nM = 0, nA = 0;
+    respostas.forEach(function(r) {
+        if (r.sub === 'C') { somaC += r.valor; nC++; }
+        else if (r.sub === 'M') { somaM += r.valor; nM++; }
+        else { somaA += r.valor; nA++; }
+    });
+    var total = somaC + somaM + somaA;
+    var positivo = total >= 124;
+
     var jsPDF = window.jspdf.jsPDF; var doc = new jsPDF();
     doc.setFillColor(74,20,140); doc.rect(0,0,210,35,'F');
     doc.setTextColor(255,255,255); doc.setFontSize(14); doc.setFont(undefined,'bold');
-    doc.text('CAT-Q - RELATORIO', 105, 15, {align:'center'});
+    doc.text('CAT-Q - RELATORIO DE AVALIACAO', 105, 15, {align:'center'});
     doc.setFontSize(9); doc.setFont(undefined,'normal');
     doc.text('Questionario de Camuflagem de Tracos Autistas (Hull et al., 2019)', 105, 23, {align:'center'});
+    doc.text('Ponto de corte >= 124', 105, 29, {align:'center'});
 
     var y = 42;
-    doc.setFillColor(248,249,250); doc.rect(15,y,180,18,'F');
+    doc.setFillColor(248,249,250); doc.rect(15,y,180,20,'F');
     doc.setTextColor(74,20,140); doc.setFontSize(10); doc.setFont(undefined,'bold');
     doc.text('DADOS PESSOAIS', 20, y+6);
     doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont(undefined,'normal');
     doc.text('Nome: '+nome+'   |   Sexo: '+sexo, 20, y+12);
     doc.text('Idade: '+idade+'   |   Data: '+dataAval+(idPac?'   |   ID: '+idPac:''), 20, y+17);
 
-    y = 66;
-    doc.setTextColor(74,20,140); doc.setFontSize(11); doc.setFont(undefined,'bold');
-    doc.text('RESULTADOS', 20, y); y += 8;
-    doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont(undefined,'normal');
-    doc.text('Total: '+dados.escore+'/175 - '+dados.classificacao, 20, y); y += 7;
-    doc.text('Compensacao (C): '+dados.dominios.Compensacao.pontuacao+' (media '+dados.dominios.Compensacao.media+')', 20, y); y += 6;
-    doc.text('Mascaramento (M): '+dados.dominios.Mascaramento.pontuacao+' (media '+dados.dominios.Mascaramento.media+')', 20, y); y += 6;
-    doc.text('Assimilacao (A): '+dados.dominios.Assimilacao.pontuacao+' (media '+dados.dominios.Assimilacao.media+')', 20, y); y += 10;
+    // --- RASTREIO ---
+    y = 68;
+    if (positivo) { doc.setFillColor(255,205,210); doc.setTextColor(198,40,40); }
+    else { doc.setFillColor(200,230,201); doc.setTextColor(46,125,50); }
+    doc.rect(15,y,180,10,'F');
+    doc.setFontSize(10); doc.setFont(undefined,'bold');
+    doc.text((positivo ? 'CAMUFLAGEM SIGNIFICATIVA' : 'CAMUFLAGEM NAO SIGNIFICATIVA') + ' - Total: ' + total + '/175 (corte: 124)', 105, y+7, {align:'center'});
 
-    doc.setFillColor(255,248,235); doc.rect(15,y,180,12,'F');
+    // --- DOMINIOS ---
+    y = 84;
+    doc.setTextColor(74,20,140); doc.setFontSize(10); doc.setFont(undefined,'bold');
+    doc.text('DOMINIOS', 20, y); y += 7;
+    doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont(undefined,'normal');
+    doc.text('Compensacao (C): '+somaC+'/'+nC*7+' (media: '+(somaC/nC).toFixed(1)+')', 22, y); y += 6;
+    doc.text('Mascaramento (M): '+somaM+'/'+nM*7+' (media: '+(somaM/nM).toFixed(1)+')', 22, y); y += 6;
+    doc.text('Assimilacao (A): '+somaA+'/'+nA*7+' (media: '+(somaA/nA).toFixed(1)+')', 22, y); y += 10;
+
+    // --- DETALHAMENTO ---
+    doc.setTextColor(74,20,140); doc.setFontSize(10); doc.setFont(undefined,'bold');
+    doc.text('RESPOSTAS POR ITEM', 20, y); y += 7;
+    doc.setTextColor(0,0,0); doc.setFontSize(7.5); doc.setFont(undefined,'normal');
+    for (var i = 0; i < respostas.length; i++) {
+        if (y > 270) { doc.addPage(); y = 20; }
+        var sub = respostas[i].sub === 'C' ? '(C)' : respostas[i].sub === 'M' ? '(M)' : '(A)';
+        doc.text((i+1) + '. ' + sub + ' = ' + respostas[i].valor + '/7' + (ITENS[i].inv ? ' [inv]' : ''), 22, y);
+        y += 4.5;
+    }
+
+    // --- DISCLAIMER ---
+    y += 6;
+    if (y > 260) { doc.addPage(); y = 20; }
+    doc.setFillColor(255,248,235); doc.rect(15,y,180,14,'F');
     doc.setTextColor(180,90,0); doc.setFontSize(7); doc.setFont(undefined,'normal');
-    doc.text('IMPORTANTE: Mede grau de camuflagem, nao diagnostica autismo. Interpretar por profissional.', 20, y+5);
-    doc.text('Ponto de corte >= 124 (Hull et al., 2019).', 20, y+9);
+    doc.text('IMPORTANTE: O CAT-Q mede o grau de camuflagem de tracos autistas, nao diagnostica autismo.', 20, y+5);
+    doc.text('Camuflagem elevada e comum em mulheres e diagnosticados tardiamente. Interpretar por profissional.', 20, y+10);
 
     doc.setFillColor(80,80,80); doc.rect(0,285,210,12,'F');
     doc.setTextColor(200,200,200); doc.setFontSize(7);

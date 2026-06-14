@@ -221,41 +221,108 @@ function calcularResultados() {
 function gerarRelatorioPDF() {
     var nome = document.getElementById('nome').value;
     if (!nome) { alert('Preencha o nome.'); return; }
-    if (!window._escalaDados) { alert('Calcule os resultados primeiro.'); return; }
+    // Calcular se ainda nao calculou
+    var respostas = [];
+    for (var i = 0; i < ITENS.length; i++) {
+        var s = document.querySelector('input[name="q' + i + '"]:checked');
+        if (!s) { alert('Responda todos os 18 itens antes de gerar o PDF.'); return; }
+        respostas.push(parseInt(s.value));
+    }
+    if (!window._escalaDados) { calcularResultados(); }
     var dados = window._escalaDados;
+    if (!dados) { alert('Erro ao calcular resultados.'); return; }
     var idade = document.getElementById('idadeCalculada').value;
     var sexo = document.getElementById('sexo').value;
     var dataAval = document.getElementById('data').value || new Date().toLocaleDateString('pt-BR');
     var idPac = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
 
+    // Calculos detalhados para o PDF
+    var parteAPositivos = 0;
+    for (var i = 0; i < 6; i++) { if (respostas[i] >= ITENS[i].corte) parteAPositivos++; }
+    var rastreioPositivo = parteAPositivos >= 4;
+    var somaD = 0, somaHI = 0, nD = 0, nHI = 0;
+    ITENS.forEach(function(item, i) {
+        if (item.dom === 'D') { somaD += respostas[i]; nD++; }
+        else { somaHI += respostas[i]; nHI++; }
+    });
+    var totalAcima = 0;
+    ITENS.forEach(function(item, i) { if (respostas[i] >= item.corte) totalAcima++; });
+
     var jsPDF = window.jspdf.jsPDF; var doc = new jsPDF();
+    // --- HEADER ---
     doc.setFillColor(21,101,192); doc.rect(0,0,210,35,'F');
     doc.setTextColor(255,255,255); doc.setFontSize(14); doc.setFont(undefined,'bold');
-    doc.text('ASRS-18 - RELATORIO', 105, 15, {align:'center'});
+    doc.text('ASRS-18 - RELATORIO DE AVALIACAO', 105, 15, {align:'center'});
     doc.setFontSize(9); doc.setFont(undefined,'normal');
     doc.text('Escala de Autoavaliacao do TDAH em Adultos (OMS)', 105, 23, {align:'center'});
+    doc.text('Kessler et al. (2005)', 105, 29, {align:'center'});
 
+    // --- DADOS PESSOAIS ---
     var y = 42;
-    doc.setFillColor(248,249,250); doc.rect(15,y,180,18,'F');
+    doc.setFillColor(248,249,250); doc.rect(15,y,180,20,'F');
     doc.setTextColor(21,101,192); doc.setFontSize(10); doc.setFont(undefined,'bold');
     doc.text('DADOS PESSOAIS', 20, y+6);
     doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont(undefined,'normal');
     doc.text('Nome: '+nome+'   |   Sexo: '+sexo, 20, y+12);
     doc.text('Idade: '+idade+'   |   Data: '+dataAval+(idPac?'   |   ID: '+idPac:''), 20, y+17);
 
-    y = 66;
-    doc.setTextColor(21,101,192); doc.setFontSize(11); doc.setFont(undefined,'bold');
-    doc.text('RESULTADOS', 20, y); y += 8;
+    // --- RASTREIO (PARTE A) ---
+    y = 68;
+    if (rastreioPositivo) { doc.setFillColor(255,205,210); doc.setTextColor(198,40,40); }
+    else { doc.setFillColor(200,230,201); doc.setTextColor(46,125,50); }
+    doc.rect(15,y,180,10,'F');
+    doc.setFontSize(10); doc.setFont(undefined,'bold');
+    doc.text('PARTE A: ' + (rastreioPositivo ? 'RASTREIO POSITIVO' : 'RASTREIO NEGATIVO') + ' (' + parteAPositivos + '/6 itens acima do corte, limiar: 4)', 105, y+7, {align:'center'});
+
+    // --- DOMINIOS ---
+    y = 84;
+    doc.setTextColor(21,101,192); doc.setFontSize(10); doc.setFont(undefined,'bold');
+    doc.text('DOMINIOS', 20, y); y += 7;
     doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont(undefined,'normal');
-    doc.text('Classificacao: '+dados.classificacao, 20, y); y += 7;
-    doc.text('Desatencao: '+dados.dominios.Desatencao.pontuacao+' (media '+dados.dominios.Desatencao.media+')', 20, y); y += 6;
-    doc.text('Hiperatividade/Impulsividade: '+dados.dominios.Hiperatividade.pontuacao+' (media '+dados.dominios.Hiperatividade.media+')', 20, y); y += 10;
+    var dAcima = ITENS.filter(function(it,i){return it.dom==='D'&&respostas[i]>=it.corte;}).length;
+    var hiAcima = ITENS.filter(function(it,i){return it.dom==='HI'&&respostas[i]>=it.corte;}).length;
+    doc.text('Desatencao: ' + somaD + '/' + (nD*4) + ' (media: ' + (somaD/nD).toFixed(2) + ') | Itens acima do corte: ' + dAcima + '/' + nD, 22, y); y += 6;
+    doc.text('Hiperatividade/Impulsividade: ' + somaHI + '/' + (nHI*4) + ' (media: ' + (somaHI/nHI).toFixed(2) + ') | Itens acima do corte: ' + hiAcima + '/' + nHI, 22, y); y += 6;
+    doc.setFont(undefined,'bold');
+    doc.text('Total acima do ponto de corte: ' + totalAcima + '/18', 22, y); y += 10;
 
-    doc.setFillColor(255,248,235); doc.rect(15,y,180,12,'F');
+    // --- DETALHAMENTO POR ITEM ---
+    doc.setTextColor(21,101,192); doc.setFontSize(10); doc.setFont(undefined,'bold');
+    doc.text('DETALHAMENTO - PARTE A (Rastreio)', 20, y); y += 6;
+    doc.setTextColor(0,0,0); doc.setFontSize(7.5); doc.setFont(undefined,'normal');
+    for (var i = 0; i < 6; i++) {
+        if (y > 270) { doc.addPage(); y = 20; }
+        var acima = respostas[i] >= ITENS[i].corte;
+        var status = acima ? '  [ACIMA DO CORTE]' : '';
+        var txt = (i+1) + '. ' + OPCOES[respostas[i]].texto.replace(/<br>/g,' ') + ' (' + respostas[i] + '/' + ITENS[i].corte + ')' + status;
+        if (acima) { doc.setFont(undefined,'bold'); } else { doc.setFont(undefined,'normal'); }
+        doc.text(txt, 22, y); y += 5;
+    }
+
+    y += 4;
+    if (y > 255) { doc.addPage(); y = 20; }
+    doc.setTextColor(21,101,192); doc.setFontSize(10); doc.setFont(undefined,'bold');
+    doc.text('DETALHAMENTO - PARTE B (Complementar)', 20, y); y += 6;
+    doc.setTextColor(0,0,0); doc.setFontSize(7.5); doc.setFont(undefined,'normal');
+    for (var i = 6; i < 18; i++) {
+        if (y > 270) { doc.addPage(); y = 20; }
+        var acima = respostas[i] >= ITENS[i].corte;
+        var status = acima ? '  [ACIMA DO CORTE]' : '';
+        var dom = ITENS[i].dom === 'D' ? '(D)' : '(H/I)';
+        var txt = (i+1) + '. ' + dom + ' ' + OPCOES[respostas[i]].texto.replace(/<br>/g,' ') + ' (' + respostas[i] + '/' + ITENS[i].corte + ')' + status;
+        if (acima) { doc.setFont(undefined,'bold'); } else { doc.setFont(undefined,'normal'); }
+        doc.text(txt, 22, y); y += 5;
+    }
+
+    // --- DISCLAIMER ---
+    y += 6;
+    if (y > 260) { doc.addPage(); y = 20; }
+    doc.setFillColor(255,248,235); doc.rect(15,y,180,14,'F');
     doc.setTextColor(180,90,0); doc.setFontSize(7); doc.setFont(undefined,'normal');
-    doc.text('IMPORTANTE: Instrumento de rastreio. Nao e diagnostico. Resultado positivo indica', 20, y+5);
-    doc.text('necessidade de avaliacao clinica especializada.', 20, y+9);
+    doc.text('IMPORTANTE: Instrumento de rastreio. Nao e diagnostico. Resultado positivo indica necessidade', 20, y+5);
+    doc.text('de avaliacao clinica especializada. Nao substitui avaliacao profissional.', 20, y+10);
 
+    // --- RODAPE ---
     doc.setFillColor(80,80,80); doc.rect(0,285,210,12,'F');
     doc.setTextColor(200,200,200); doc.setFontSize(7);
     doc.text('Relatorio gerado em: '+new Date().toLocaleString('pt-BR'), 105, 291, {align:'center'});
