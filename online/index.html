@@ -248,9 +248,10 @@
               <option value="Feminino">Feminino</option>
             </select>
             <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">
-              <button onclick="gerarLinkAnamnese()" class="btn btn-green" style="flex:1;min-width:140px;padding:12px;font-size:13px;">📤 Gerar Link</button>
-              <button onclick="abrirAnamnesePresencial()" class="btn btn-blue" style="flex:1;min-width:140px;padding:12px;font-size:13px;">🖥️ Preencher Aqui</button>
-              <button onclick="imprimirAnamnese()" class="btn btn-orange" style="flex:1;min-width:140px;padding:12px;font-size:13px;">🖨️ Imprimir em Branco</button>
+              <button onclick="gerarECopiarLinkAnamnese()" class="btn btn-green" style="flex:1;min-width:120px;padding:12px;font-size:13px;">📋 Copiar Link</button>
+              <button onclick="gerarEEnviarWhatsApp()" class="btn btn-green" style="flex:1;min-width:120px;padding:12px;font-size:13px;background:#25d366;">💬 WhatsApp</button>
+              <button onclick="abrirAnamnesePresencial()" class="btn btn-blue" style="flex:1;min-width:120px;padding:12px;font-size:13px;">🖥️ Preencher Aqui</button>
+              <button onclick="imprimirAnamnese()" class="btn btn-orange" style="flex:1;min-width:120px;padding:12px;font-size:13px;">🖨️ Imprimir</button>
             </div>
             <div id="anamneseLinkResult" class="hidden" style="margin-top:15px;padding:12px;background:#e8f5e9;border-radius:8px;">
               <p style="font-size:0.8em;color:#555;margin-bottom:5px;">Link gerado:</p>
@@ -2483,23 +2484,41 @@
       el.innerHTML = h;
     }
 
-    function gerarLinkAnamnese() {
+    function _gerarLinkAnamneseInterno() {
       var tipo = document.getElementById('anamneseSelect').value;
       var nome = document.getElementById('anamneseNome').value.trim();
       var cpf = document.getElementById('anamneseCpf').value.trim();
       var dn = document.getElementById('anamneseDn').value;
       var sexo = document.getElementById('anamneseSexo').value;
-      if (!nome) { alert('Preencha o nome do avaliando.'); return; }
+      if (!nome) { alert('Preencha o nome do avaliando.'); return null; }
       var sessionId = 'anam-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
       var sessionData = { sessionId: sessionId, email: currentUser, patientName: nome, birthDate: dn, sex: sexo, cpf: cpf };
-      // Para anamnese personalizada, incluir secoes e extras
       if (tipo === 'anamnese') {
         var cfg = getConfigAnamnese();
         sessionData.secoes = cfg.secoesAtivas || _SECOES_IDS.slice();
         if (cfg.perguntasExtras && cfg.perguntasExtras.length > 0) sessionData.extras = cfg.perguntasExtras;
       }
       var params = btoa(JSON.stringify(sessionData));
-      var link = 'https://setmonte.github.io/escalas/' + tipo + '.html?d=' + encodeURIComponent(params);
+      return 'https://setmonte.github.io/escalas/' + tipo + '.html?d=' + encodeURIComponent(params);
+    }
+
+    function gerarECopiarLinkAnamnese() {
+      var link = _gerarLinkAnamneseInterno();
+      if (!link) return;
+      navigator.clipboard.writeText(link).then(function() { alert('Link copiado!'); });
+    }
+
+    function gerarEEnviarWhatsApp() {
+      var link = _gerarLinkAnamneseInterno();
+      if (!link) return;
+      var nome = document.getElementById('anamneseNome').value.trim();
+      var msg = 'Ola! Segue o link para preenchimento da anamnese de ' + nome + ':\n' + link;
+      window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+    }
+
+    function gerarLinkAnamnese() {
+      var link = _gerarLinkAnamneseInterno();
+      if (!link) return;
       document.getElementById('anamneseSessionLink').textContent = link;
       document.getElementById('anamneseLinkResult').classList.remove('hidden');
       window._anamneseLink = link;
