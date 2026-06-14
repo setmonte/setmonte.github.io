@@ -286,7 +286,7 @@
               </div>
               <div style="flex:1;min-width:180px;">
                 <label style="font-size:0.8em;color:#555;">CRP / Registro:</label>
-                <input type="text" id="cfgCRP" placeholder="CRP XX/XXXXX-X" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:13px;" onchange="salvarConfigAnamnese()">
+                <input type="text" id="cfgCRP" placeholder="CRP XX/XXXXX-X" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:13px;" oninput="maskCRP(this)" onchange="salvarConfigAnamnese()">
               </div>
             </div>
             <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
@@ -296,17 +296,17 @@
               </div>
               <div style="flex:1;min-width:180px;">
                 <label style="font-size:0.8em;color:#555;">Telefone 1:</label>
-                <input type="text" id="cfgTelefone" placeholder="(XX) XXXXX-XXXX" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:13px;" onchange="salvarConfigAnamnese()">
+                <input type="text" id="cfgTelefone" placeholder="(XX) XXXXX-XXXX" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:13px;" oninput="maskTelefone(this)" onchange="salvarConfigAnamnese()">
               </div>
             </div>
             <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
               <div style="flex:1;min-width:180px;">
                 <label style="font-size:0.8em;color:#555;">Telefone 2 (opcional):</label>
-                <input type="text" id="cfgTelefone2" placeholder="(XX) XXXXX-XXXX" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:13px;" onchange="salvarConfigAnamnese()">
+                <input type="text" id="cfgTelefone2" placeholder="(XX) XXXXX-XXXX" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:13px;" oninput="maskTelefone(this)" onchange="salvarConfigAnamnese()">
               </div>
               <div style="flex:1;min-width:180px;">
                 <label style="font-size:0.8em;color:#555;">Telefone 3 (opcional):</label>
-                <input type="text" id="cfgTelefone3" placeholder="(XX) XXXXX-XXXX" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:13px;" onchange="salvarConfigAnamnese()">
+                <input type="text" id="cfgTelefone3" placeholder="(XX) XXXXX-XXXX" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:13px;" oninput="maskTelefone(this)" onchange="salvarConfigAnamnese()">
               </div>
             </div>
             <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
@@ -2361,6 +2361,22 @@
       localStorage.removeItem('anamneseLogo');
       document.getElementById('logoPreview').innerHTML = '';
       salvarConfigAnamnese();
+    }
+
+    function maskTelefone(el) {
+      var v = el.value.replace(/\D/g, '').slice(0, 11);
+      if (v.length > 6) el.value = '(' + v.slice(0,2) + ') ' + v.slice(2,7) + '-' + v.slice(7);
+      else if (v.length > 2) el.value = '(' + v.slice(0,2) + ') ' + v.slice(2);
+      else if (v.length > 0) el.value = '(' + v;
+    }
+
+    function maskCRP(el) {
+      var v = el.value.replace(/[^0-9\/\-]/g, '');
+      // Formato: CRP XX/XXXXX-X
+      var nums = v.replace(/\D/g, '');
+      if (nums.length <= 2) el.value = 'CRP ' + nums;
+      else if (nums.length <= 7) el.value = 'CRP ' + nums.slice(0,2) + '/' + nums.slice(2);
+      else el.value = 'CRP ' + nums.slice(0,2) + '/' + nums.slice(2,7) + '-' + nums.slice(7,8);
     }
 
     function getConfigAnamnese() {
