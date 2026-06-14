@@ -299,6 +299,16 @@
                 <input type="text" id="cfgTelefone" placeholder="(XX) XXXXX-XXXX" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:13px;" onchange="salvarConfigAnamnese()">
               </div>
             </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+              <div style="flex:1;min-width:180px;">
+                <label style="font-size:0.8em;color:#555;">Email profissional:</label>
+                <input type="text" id="cfgEmail" placeholder="profissional@email.com" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:13px;" onchange="salvarConfigAnamnese()">
+              </div>
+              <div style="flex:1;min-width:180px;">
+                <label style="font-size:0.8em;color:#555;">Endereço do local de trabalho:</label>
+                <input type="text" id="cfgEndereco" placeholder="Rua, nº - Bairro - Cidade/UF" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:13px;" onchange="salvarConfigAnamnese()">
+              </div>
+            </div>
 
             <!-- Cor do cabecalho -->
             <div style="margin-top:15px;">
@@ -2238,6 +2248,8 @@
         crp: document.getElementById('cfgCRP').value,
         consultorio: document.getElementById('cfgConsultorio').value,
         telefone: document.getElementById('cfgTelefone').value,
+        email: document.getElementById('cfgEmail').value,
+        endereco: document.getElementById('cfgEndereco').value,
         corPDF: document.getElementById('cfgCorPDF').value,
         corPDF2: document.getElementById('cfgCorPDF2').value,
         estiloCab: document.getElementById('cfgEstiloCab').value,
@@ -2256,6 +2268,8 @@
       el = document.getElementById('cfgCRP'); if (el && cfg.crp) el.value = cfg.crp;
       el = document.getElementById('cfgConsultorio'); if (el && cfg.consultorio) el.value = cfg.consultorio;
       el = document.getElementById('cfgTelefone'); if (el && cfg.telefone) el.value = cfg.telefone;
+      el = document.getElementById('cfgEmail'); if (el && cfg.email) el.value = cfg.email;
+      el = document.getElementById('cfgEndereco'); if (el && cfg.endereco) el.value = cfg.endereco;
       el = document.getElementById('cfgCorPDF'); if (el && cfg.corPDF) el.value = cfg.corPDF;
       el = document.getElementById('cfgCorPDF2'); if (el && cfg.corPDF2) el.value = cfg.corPDF2;
       el = document.getElementById('cfgEstiloCab'); if (el && cfg.estiloCab) el.value = cfg.estiloCab;
@@ -2337,7 +2351,7 @@
 
     function getConfigAnamnese() {
       var salvo = localStorage.getItem('anamneseConfig');
-      if (!salvo) return { nomeProfissional: '', crp: '', consultorio: '', telefone: '', corPDF: '#00695c', corPDF2: '#2e7d32', estiloCab: 'degrade', logo: '' };
+      if (!salvo) return { nomeProfissional: '', crp: '', consultorio: '', telefone: '', email: '', endereco: '', corPDF: '#00695c', corPDF2: '#2e7d32', estiloCab: 'degrade', logo: '' };
       try { var cfg = JSON.parse(salvo); cfg.logo = localStorage.getItem('anamneseLogo') || ''; return cfg; } catch(e) { return { corPDF: '#00695c', corPDF2: '#2e7d32', estiloCab: 'degrade', logo: '' }; }
     }
 
@@ -2451,18 +2465,28 @@
       doc.setTextColor(255, 255, 255);
       if (cfg.nomeProfissional) {
         doc.setFontSize(12); doc.setFont(undefined, 'bold');
-        doc.text(cfg.nomeProfissional, logoX, 12);
+        doc.text(cfg.nomeProfissional, logoX, 10);
         doc.setFontSize(8); doc.setFont(undefined, 'normal');
-        var infoLine = '';
-        if (cfg.crp) infoLine += cfg.crp;
-        if (cfg.consultorio) infoLine += (infoLine ? ' | ' : '') + cfg.consultorio;
-        if (cfg.telefone) infoLine += (infoLine ? ' | ' : '') + cfg.telefone;
-        if (infoLine) doc.text(infoLine, logoX, 18);
-        doc.setFontSize(10); doc.setFont(undefined, 'bold');
-        doc.text('ANAMNESE NEUROPSICOLOGICA INFANTIL', logoX, 27);
+        // Linha 2: CRP + Consultorio
+        var linha1 = '';
+        if (cfg.crp) linha1 += cfg.crp;
+        if (cfg.consultorio) linha1 += (linha1 ? '  |  ' : '') + cfg.consultorio;
+        if (linha1) doc.text(linha1, logoX, 16);
+        // Linha 3: Endereco
+        if (cfg.endereco) { doc.text(cfg.endereco, logoX, 21); }
+        // Linha 4: Telefone + Email
+        var linha3 = '';
+        if (cfg.telefone) linha3 += cfg.telefone;
+        if (cfg.email) linha3 += (linha3 ? '  |  ' : '') + cfg.email;
+        if (linha3) doc.text(linha3, logoX, cfg.endereco ? 26 : 21);
+        // Titulo do documento
+        doc.setFontSize(9); doc.setFont(undefined, 'bold');
+        doc.text('ANAMNESE NEUROPSICOLOGICA INFANTIL', logoX, 32);
       } else {
         doc.setFontSize(14); doc.setFont(undefined, 'bold');
-        doc.text('ANAMNESE NEUROPSICOLOGICA INFANTIL', 105, 12, {align: 'center'});
+        doc.text('ANAMNESE NEUROPSICOLOGICA INFANTIL', 105, 15, {align: 'center'});
+        doc.setFontSize(9); doc.setFont(undefined, 'normal');
+        doc.text('Questionario de historia clinica e desenvolvimento', 105, 22, {align: 'center'});
       }
 
       // Dados do paciente
