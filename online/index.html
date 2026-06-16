@@ -2902,20 +2902,47 @@
       var jsPDF = window.jspdf.jsPDF;
       var doc = new jsPDF();
       var maxY = 280;
-      doc.setFillColor(46,125,50); doc.rect(0,0,210,30,'F');
-      doc.setTextColor(255,255,255); doc.setFontSize(14); doc.setFont(undefined,'bold');
-      doc.text((d.escala||'Escala') + ' - RELATORIO', 105, 12, {align:'center'});
-      doc.setFontSize(9); doc.setFont(undefined,'normal');
-      doc.text('Paciente: ' + (d.paciente||'N/I'), 105, 20, {align:'center'});
-      doc.text('Data: ' + (r.date ? new Date(r.date).toLocaleDateString('pt-BR') : '-'), 105, 26, {align:'center'});
+      doc.setFillColor(46,125,50); doc.rect(0,0,210,32,'F');
+      doc.setTextColor(255,255,255); doc.setFontSize(16); doc.setFont(undefined,'bold');
+      doc.text(sanitize(d.escala||'Escala') + ' - RELATORIO', 105, 13, {align:'center'});
+      doc.setFontSize(10); doc.setFont(undefined,'normal');
+      doc.text('Paciente: ' + sanitize(d.paciente||'N/I'), 105, 21, {align:'center'});
+      doc.text('Data: ' + (r.date ? new Date(r.date).toLocaleDateString('pt-BR') : '-') + (d.sexo ? '   |   Sexo: ' + d.sexo : ''), 105, 27, {align:'center'});
       var y = 38;
-      doc.setTextColor(0,0,0); doc.setFontSize(10); doc.setFont(undefined,'bold');
-      if (d.idPaciente) { doc.text('ID: ' + d.idPaciente, 15, y); y += 6; }
-      if (d.idade) { doc.text('Idade: ' + sanitize(String(d.idade)), 15, y); y += 6; }
-      if (d.escore != null && d.escore !== undefined && d.escore !== '') { doc.text('Escore Total: ' + d.escore, 15, y); y += 6; }
-      if (d.media != null) { doc.text('Media: ' + d.media, 15, y); y += 6; }
-      if (d.classificacao) { doc.text('Classificacao: ' + sanitize(d.classificacao), 15, y); y += 6; }
-      if (d.sexo) { doc.setFont(undefined,'normal'); doc.text('Sexo: ' + d.sexo, 15, y); y += 6; }
+      // Box de dados pessoais
+      doc.setFillColor(248,249,250); doc.rect(15,y,180,18,'F');
+      doc.setDrawColor(46,125,50); doc.setLineWidth(0.8); doc.line(15,y,15,y+18);
+      doc.setTextColor(46,125,50); doc.setFontSize(9); doc.setFont(undefined,'bold');
+      doc.text('DADOS DO AVALIANDO', 20, y+5);
+      doc.setTextColor(40,40,40); doc.setFontSize(8.5); doc.setFont(undefined,'normal');
+      var dadosLinha1 = '';
+      if (d.idPaciente) dadosLinha1 += 'ID: ' + d.idPaciente + '   ';
+      if (d.idade) dadosLinha1 += 'Idade: ' + sanitize(String(d.idade)) + '   ';
+      if (d.sexo) dadosLinha1 += 'Sexo: ' + d.sexo;
+      if (dadosLinha1) doc.text(dadosLinha1, 20, y+11);
+      var dadosLinha2 = 'Data: ' + (r.date ? new Date(r.date).toLocaleDateString('pt-BR') : '-');
+      doc.text(dadosLinha2, 20, y+16);
+      y += 24;
+      // Box de classificacao com cor
+      if (d.classificacao || (d.escore != null && d.escore !== undefined && d.escore !== '')) {
+        var corR=46, corG=125, corB=50;
+        var cl = (d.classificacao||'').toLowerCase();
+        if (cl.indexOf('grave')>=0||cl.indexOf('elevad')>=0||cl.indexOf('alto')>=0||cl.indexOf('positivo')>=0||cl.indexOf('anormal')>=0||cl.indexOf('muito')>=0) { corR=244; corG=67; corB=54; }
+        else if (cl.indexOf('moderado')>=0||cl.indexOf('risco')>=0||cl.indexOf('nocivo')>=0||cl.indexOf('sublimiar')>=0||cl.indexOf('limítrofe')>=0||cl.indexOf('limitrofe')>=0) { corR=255; corG=152; corB=0; }
+        else if (cl.indexOf('leve')>=0) { corR=139; corG=195; corB=74; }
+        else if (cl.indexOf('minim')>=0||cl.indexOf('baixo')>=0||cl.indexOf('normal')>=0||cl.indexOf('negativo')>=0||cl.indexOf('nenhum')>=0) { corR=76; corG=175; corB=80; }
+        doc.setFillColor(corR, corG, corB); doc.rect(15,y,180,12,'F');
+        doc.setTextColor(255,255,255); doc.setFontSize(11); doc.setFont(undefined,'bold');
+        var textoClass = '';
+        if (d.escore != null && d.escore !== undefined && d.escore !== '') textoClass += 'Escore: ' + d.escore + '   |   ';
+        if (d.classificacao) textoClass += sanitize(d.classificacao);
+        if (d.media != null) textoClass += '   |   Media: ' + d.media;
+        doc.text(textoClass, 105, y+8, {align:'center'});
+        y += 18;
+      } else {
+        if (d.escore != null && d.escore !== undefined && d.escore !== '') { doc.setTextColor(0,0,0); doc.setFontSize(10); doc.setFont(undefined,'bold'); doc.text('Escore Total: ' + d.escore, 15, y); y += 8; }
+      }
+      doc.setTextColor(0,0,0); doc.setFont(undefined,'normal');
       y += 4;
       if (d.dominios && typeof d.dominios === 'object' && !Array.isArray(d.dominios)) {
         doc.setFillColor(46,125,50); doc.rect(15, y-3, 180, 8, 'F');
@@ -2938,6 +2965,42 @@
           doc.text(sanitize(linha), 18, y); y += 6;
         });
         y += 4;
+        // GRAFICO DE BARRAS para dominios numericos simples (PHQ-9, GAD-7, DIZCALC, etc.)
+        var temNumerico = keys.some(function(k) { return typeof d.dominios[k] === 'number'; });
+        var temMedia = keys.some(function(k) { return d.dominios[k] && typeof d.dominios[k] === 'object' && d.dominios[k].media != null; });
+        if (temNumerico && !temMedia) {
+          if (y + 10 + keys.length * 12 > maxY) { doc.addPage(); y = 20; }
+          y += 3;
+          doc.setFillColor(33,33,33); doc.rect(15, y-3, 180, 8, 'F');
+          doc.setTextColor(255,255,255); doc.setFontSize(9); doc.setFont(undefined,'bold');
+          doc.text('REPRESENTACAO GRAFICA', 20, y+2); y += 14;
+          var barX = 65; var barMaxW = 110; var barH = 8; var gap = 4;
+          var maxVal = 1;
+          keys.forEach(function(k) { var v = d.dominios[k]; if (typeof v === 'number' && v > maxVal) maxVal = v; });
+          maxVal = Math.ceil(maxVal * 1.1);
+          keys.forEach(function(k) {
+            var v = d.dominios[k];
+            if (typeof v !== 'number') return;
+            if (y > maxY) { doc.addPage(); y = 15; }
+            var barW = (v / maxVal) * barMaxW;
+            var nome = sanitize(k);
+            if (nome.length > 18) nome = nome.substring(0, 18) + '..';
+            doc.setTextColor(0,0,0); doc.setFontSize(7.5); doc.setFont(undefined,'bold');
+            doc.text(nome, 17, y + barH/2 + 1);
+            doc.setFillColor(230,230,230); doc.rect(barX, y, barMaxW, barH, 'F');
+            var pct = d.escore > 0 ? (v / d.escore) * 100 : 0;
+            if (pct < 25) { doc.setFillColor(76, 175, 80); }
+            else if (pct < 40) { doc.setFillColor(139, 195, 74); }
+            else if (pct < 55) { doc.setFillColor(255, 193, 7); }
+            else if (pct < 70) { doc.setFillColor(255, 152, 0); }
+            else { doc.setFillColor(244, 67, 54); }
+            if (barW > 0) doc.rect(barX, y, barW, barH, 'F');
+            doc.setTextColor(50,50,50); doc.setFontSize(7.5); doc.setFont(undefined,'bold');
+            doc.text(String(v), barX + barW + 3, y + barH/2 + 1);
+            y += barH + gap;
+          });
+          y += 6;
+        }
       }
       // DOMINIOS como ARRAY — usado por SMI e escalas que salvam dominios como array de objetos
       if (d.dominios && Array.isArray(d.dominios) && d.dominios.length > 0) {
@@ -3096,8 +3159,14 @@
         });
         y += 4;
       }
-      doc.setFontSize(6); doc.setTextColor(150,150,150);
-      doc.text('SYM Online | Gerado em ' + new Date().toLocaleString('pt-BR'), 105, 293, {align:'center'});
+      // Rodape profissional
+      var totalPages = doc.internal.getNumberOfPages();
+      for (var pg = 1; pg <= totalPages; pg++) {
+        doc.setPage(pg);
+        doc.setFillColor(50,50,50); doc.rect(0,287,210,10,'F');
+        doc.setTextColor(200,200,200); doc.setFontSize(7); doc.setFont(undefined,'normal');
+        doc.text('SYM Online | ' + sanitize(d.escala||'Escala') + ' | Gerado em ' + new Date().toLocaleString('pt-BR') + ' | Pag. ' + pg + '/' + totalPages, 105, 293, {align:'center'});
+      }
       var tsNow=new Date();var tsStr=tsNow.getFullYear()+String(tsNow.getMonth()+1).padStart(2,'0')+String(tsNow.getDate()).padStart(2,'0')+String(tsNow.getHours()).padStart(2,'0')+String(tsNow.getMinutes()).padStart(2,'0');
       doc.save((d.escala||'Escala').replace(/[\s\/]+/g,'_') + '_' + (d.paciente||'').replace(/\s+/g,'_') + '_' + tsStr + '.pdf');
     }
