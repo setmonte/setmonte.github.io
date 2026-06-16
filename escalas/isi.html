@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-QY1N9587DG"></script>
+    <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-QY1N9587DG');</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ISI &#8212; &#205;ndice de Gravidade da Ins&#244;nia</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background: linear-gradient(135deg, #1a237e 0%, #4a148c 100%); min-height: 100vh; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; border-radius: 15px; box-shadow: 0 20px 40px rgba(0,0,0,0.15); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #1a237e 0%, #4a148c 100%); color: white; padding: 30px; text-align: center; }
+        .header h1 { font-size: 2.2em; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        .header p { font-size: 1.1em; opacity: 0.9; }
+        .content { padding: 30px; }
+        .info-tecnica { background: #ede7f6; padding: 25px; border-radius: 10px; margin-bottom: 30px; border-left: 5px solid #1a237e; position: relative; }
+        .info-tecnica h2 { color: #1a237e; margin-bottom: 15px; font-size: 1.4em; }
+        .info-tecnica p { color: #555; line-height: 1.7; font-size: 0.95em; }
+        .dados-pessoais { background: #f8f9fa; padding: 25px; border-radius: 10px; margin-bottom: 30px; border-left: 5px solid #1a237e; }
+        .dados-pessoais h2 { color: #1a237e; margin-bottom: 20px; font-size: 1.5em; }
+        .form-row { display: flex; gap: 20px; margin-bottom: 15px; flex-wrap: wrap; }
+        .form-group { flex: 1; min-width: 200px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; color: #555; }
+        .form-group input, .form-group select { width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 16px; transition: border-color 0.3s; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: #1a237e; }
+        .instrucoes { background: #f3e5f5; padding: 20px; border-radius: 10px; margin-bottom: 30px; border-left: 5px solid #4a148c; }
+        .instrucoes h3 { color: #4a148c; margin-bottom: 10px; }
+        .instrucoes p { color: #555; font-size: 0.95em; line-height: 1.7; }
+        .item { padding: 20px; border-bottom: 1px solid #f0f0f0; transition: background-color 0.3s; }
+        .item:hover { background-color: #ede7f6; }
+        .item:last-child { border-bottom: none; }
+        .item-texto { font-size: 1.05em; margin-bottom: 15px; color: #444; line-height: 1.5; }
+        .item-numero { font-weight: bold; color: #1a237e; margin-right: 8px; }
+        .opcoes { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+        .opcao { display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; padding: 8px; border-radius: 8px; transition: all 0.3s; border: 2px solid transparent; min-width: 70px; min-height: 70px; }
+        .opcao:hover { background-color: #ede7f6; border-color: #1a237e; }
+        .opcao input[type="radio"] { width: 18px; height: 18px; cursor: pointer; accent-color: #1a237e; }
+        .opcao label { cursor: pointer; font-weight: 500; color: #555; text-align: center; font-size: 0.8em; line-height: 1.2; min-height: 30px; display: flex; align-items: center; }
+        .botoes { display: flex; gap: 15px; justify-content: center; margin: 30px 0; flex-wrap: wrap; }
+        .btn { padding: 15px 30px; border: none; border-radius: 25px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s; text-align: center; }
+        .btn-primary { background: linear-gradient(135deg, #1a237e 0%, #4a148c 100%); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(26,35,126,0.3); }
+        .btn-secondary { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; }
+        .btn-secondary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(40,167,69,0.3); }
+        .btn-danger { background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%); color: white; }
+        .btn-danger:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(220,53,69,0.3); }
+        .resultados { background: #f8f9fa; padding: 30px; border-radius: 10px; margin-top: 30px; border-left: 5px solid #1a237e; display: none; }
+        .resultados h2 { color: #1a237e; margin-bottom: 20px; text-align: center; }
+        .total-geral { background: linear-gradient(135deg, #1a237e 0%, #4a148c 100%); color: white; padding: 25px; border-radius: 10px; text-align: center; margin: 20px 0; }
+        .classificacao-box { padding: 20px; border-radius: 10px; text-align: center; margin: 20px 0; font-size: 1.2em; font-weight: 700; }
+        .dominio-card { background: white; padding: 20px; border-radius: 10px; margin-bottom: 15px; box-shadow: 0 3px 10px rgba(0,0,0,0.08); border-left: 4px solid #1a237e; }
+        .dominio-card h4 { color: #1a237e; margin-bottom: 8px; }
+        .disclaimer { background: #fff3e0; padding: 15px; border-radius: 8px; margin-top: 20px; border-left: 4px solid #ff9800; font-size: 0.85em; color: #e65100; line-height: 1.6; }
+        .btn-imprimir { position: absolute; top: 20px; right: 20px; padding: 10px 20px; background: linear-gradient(135deg, #1a237e 0%, #0d47a1 100%); color: white; border: none; border-radius: 20px; font-size: 14px; font-weight: 600; cursor: pointer; }
+        @media print { body { background: white !important; padding: 0 !important; } .botoes, .btn, .btn-imprimir { display: none !important; } .container { box-shadow: none !important; max-width: 100% !important; } .info-tecnica { display: none !important; } .resultados { display: none !important; } .item { page-break-inside: avoid; } .opcoes { flex-direction: row !important; align-items: center !important; justify-content: center !important; } .opcao { min-width: auto !important; padding: 4px 6px !important; } }
+        @media (max-width: 768px) { .container { margin: 10px; border-radius: 10px; } .header { padding: 20px; } .header h1 { font-size: 1.6em; } .content { padding: 15px; } .form-row { flex-direction: column; } .opcoes { flex-direction: column; align-items: center; } .botoes { flex-direction: column; } .btn { width: 100%; } }
+    </style>
+</head>
+<body>
+<div style="padding:10px 20px;background:#2e7d32;"><a href="../" style="display:inline-block;background:#fff;color:#2e7d32;text-decoration:none;font-family:Segoe UI,Arial,sans-serif;font-size:14px;font-weight:bold;padding:8px 20px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.15);">&#11013; Voltar ao In&#237;cio</a></div>
+    <div class="container">
+        <div class="header">
+            <h1>&#129504; ISI</h1>
+            <p>&#205;ndice de Gravidade da Ins&#244;nia</p>
+            <p style="font-size:0.85em; opacity:0.8; margin-top:5px;">Insomnia Severity Index &#8212; Morin (1993), Bastien, Valli&#232;res &amp; Morin (2001)</p>
+        </div>
+        <div class="content">
+            <div class="info-tecnica">
+                <button class="btn-imprimir" onclick="window.print()">&#128424; Imprimir Formul&#225;rio</button>
+                <h2>&#128218; Informa&#231;&#245;es T&#233;cnicas</h2>
+                <p>
+                    <strong>Instrumento:</strong> ISI &#8212; Insomnia Severity Index (&#205;ndice de Gravidade da Ins&#244;nia)<br>
+                    <strong>Estrutura:</strong> 7 itens, escala Likert 5 pontos (0-4)<br>
+                    <strong>Resultado:</strong> Escore total (0-28)<br>
+                    <strong>Per&#237;odo:</strong> &#218;ltimas 2 semanas<br>
+                    <strong>Popula&#231;&#227;o:</strong> Adultos &#8212; validado no Brasil
+                </p>
+            </div>
+            <div class="dados-pessoais">
+                <h2>&#128203; Dados Pessoais</h2>
+                <div class="form-row">
+                    <div class="form-group"><label for="nome">Nome:</label><input type="text" id="nome" placeholder="Nome completo"></div>
+                    <div class="form-group"><label for="dataNascimento">Data de Nascimento:</label><input type="date" id="dataNascimento" onchange="calcularIdade()"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label for="idadeCalculada">Idade:</label><input type="text" id="idadeCalculada" readonly style="background-color:#f0f0f0;" placeholder="Calculada automaticamente"></div>
+                    <div class="form-group"><label for="sexo">Sexo:</label><select id="sexo"><option value="">Selecione</option><option value="Masculino">Masculino</option><option value="Feminino">Feminino</option></select></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label for="data">Data da Avalia&#231;&#227;o:</label><input type="date" id="data"></div>
+                    <div class="form-group"><label for="observacoes">Observa&#231;&#245;es (opcional):</label><input type="text" id="observacoes" placeholder="Informa&#231;&#245;es adicionais"></div>
+                </div>
+            </div>
+            <div class="instrucoes">
+                <h3>&#128221; Instru&#231;&#245;es</h3>
+                <p>Avalie a <strong>GRAVIDADE</strong> dos seus problemas de sono considerando as <strong>&#218;LTIMAS 2 SEMANAS</strong>.</p>
+            </div>
+            <div id="questionario"></div>
+            <div class="botoes">
+                <button class="btn btn-primary" onclick="calcularResultados()">Calcular Resultados</button>
+                <button class="btn btn-secondary" onclick="gerarRelatorioPDF()">Gerar Relat&#243;rio PDF</button>
+                <button class="btn btn-danger" onclick="limparDados()">Limpar Dados</button>
+            </div>
+            <div id="resultados" class="resultados"></div>
+            <div class="info-tecnica" id="referencias" style="margin-top:30px; background:#f8f9fa; border-left-color:#1a237e;">
+                <h2 style="color:#1a237e;">Refer&#234;ncias</h2>
+                <p style="color:#555; line-height:1.9; font-size:0.88em;">
+                    <strong>MORIN, C. M.</strong> <em>Insomnia: psychological assessment and management.</em> New York: Guilford Press, 1993.<br><br>
+                    <strong>BASTIEN, C. H.; VALLI&#200;RES, A.; MORIN, C. M.</strong> Validation of the Insomnia Severity Index as an outcome measure for insomnia research. <em>Sleep Medicine</em>, v. 2, n. 4, p. 297-307, 2001.<br><br>
+                    <strong>CASTRO, L. S.</strong> Adapta&#231;&#227;o e valida&#231;&#227;o do &#205;ndice de Gravidade de Ins&#244;nia (IGI): caracteriza&#231;&#227;o da ins&#244;nia na cidade de S&#227;o Paulo. Tese de Doutorado &#8212; UNIFESP, 2011.
+                </p>
+            </div>
+        </div>
+    </div>
+    <script src="../id-paciente.js"></script>
+    <script>
+var ITENS=[
+{texto:"Dificuldade para pegar no sono (adormecer)",grupo:"grupo1"},
+{texto:"Dificuldade para permanecer dormindo (acordar durante a noite)",grupo:"grupo1"},
+{texto:"Problemas para acordar muito cedo (antes do hor\u00e1rio desejado)",grupo:"grupo1"},
+{texto:"Qu\u00e3o SATISFEITO(A)/insatisfeito(a) voc\u00ea est\u00e1 com seu padr\u00e3o de sono atual?",grupo:"grupo2"},
+{texto:"Em que medida voc\u00ea acha que seu problema de sono INTERFERE no seu funcionamento di\u00e1rio (fadiga, concentra\u00e7\u00e3o, mem\u00f3ria, humor)?",grupo:"grupo3"},
+{texto:"Em que medida os outros PERCEBEM que seu problema de sono prejudica sua qualidade de vida?",grupo:"grupo3"},
+{texto:"Qu\u00e3o PREOCUPADO(A) voc\u00ea est\u00e1 com seu problema de sono atual?",grupo:"grupo4"}
+];
+
+var OPCOES_GRUPO={
+grupo1:[{valor:0,texto:"Nenhuma"},{valor:1,texto:"Leve"},{valor:2,texto:"Moderada"},{valor:3,texto:"Grave"},{valor:4,texto:"Muito grave"}],
+grupo2:[{valor:0,texto:"Muito satisfeito(a)"},{valor:1,texto:"Satisfeito(a)"},{valor:2,texto:"Neutro"},{valor:3,texto:"Insatisfeito(a)"},{valor:4,texto:"Muito insatisfeito(a)"}],
+grupo3:[{valor:0,texto:"Nada"},{valor:1,texto:"Um pouco"},{valor:2,texto:"Razoavelmente"},{valor:3,texto:"Muito"},{valor:4,texto:"Muit\u00edssimo"}],
+grupo4:[{valor:0,texto:"Nada"},{valor:1,texto:"Um pouco"},{valor:2,texto:"Razoavelmente"},{valor:3,texto:"Muito"},{valor:4,texto:"Muit\u00edssimo"}]
+};
+
+function gerarQuestionario() {
+    var c = document.getElementById('questionario');
+    var h = '';
+    ITENS.forEach(function(item, i) {
+        var opcoes = OPCOES_GRUPO[item.grupo];
+        h += '<div class="item"><div class="item-texto"><span class="item-numero">' + (i+1) + '.</span> ' + item.texto + '</div><div class="opcoes">';
+        opcoes.forEach(function(op) {
+            h += '<div class="opcao"><input type="radio" id="q' + i + '_' + op.valor + '" name="q' + i + '" value="' + op.valor + '"><label for="q' + i + '_' + op.valor + '">' + op.texto + '</label></div>';
+        });
+        h += '</div></div>';
+    });
+    c.innerHTML = h;
+}
+
+function calcularIdade() {
+    var d = document.getElementById('dataNascimento').value;
+    if (!d) return;
+    var h = new Date(), n = new Date(d);
+    var a = h.getFullYear() - n.getFullYear(), m = h.getMonth() - n.getMonth(), di = h.getDate() - n.getDate();
+    if (di < 0) { m--; di += new Date(h.getFullYear(), h.getMonth(), 0).getDate(); }
+    if (m < 0) { a--; m += 12; }
+    document.getElementById('idadeCalculada').value = a + ' anos, ' + m + ' meses e ' + di + ' dias';
+}
+
+function obterRespostas() {
+    var r = [];
+    for (var i = 0; i < ITENS.length; i++) {
+        var s = document.querySelector('input[name="q' + i + '"]:checked');
+        if (!s) return null;
+        r.push(parseInt(s.value));
+    }
+    return r;
+}
+
+function classificarISI(escore) {
+    if (escore <= 7) return {texto: "Sem ins\u00f4nia cl\u00ednica", cor: "#4caf50"};
+    if (escore <= 14) return {texto: "Ins\u00f4nia sublimiar", cor: "#ffeb3b"};
+    if (escore <= 21) return {texto: "Ins\u00f4nia cl\u00ednica moderada", cor: "#ff9800"};
+    return {texto: "Ins\u00f4nia cl\u00ednica grave", cor: "#f44336"};
+}
+
+function calcularResultados() {
+    var nome = document.getElementById('nome').value;
+    if (!nome) { alert('Preencha o nome do paciente.'); return; }
+    var r = obterRespostas();
+    if (!r) {
+        var respondidos = 0;
+        for (var i = 0; i < ITENS.length; i++) {
+            if (document.querySelector('input[name="q' + i + '"]:checked')) respondidos++;
+        }
+        alert('Responda todos os 7 itens. Faltam ' + (7 - respondidos) + ' itens.');
+        return;
+    }
+
+    var escore = r.reduce(function(a, b) { return a + b; }, 0);
+    var classif = classificarISI(escore);
+
+    var el = document.getElementById('resultados');
+    var h = '<h2>Resultados ISI</h2>';
+
+    h += '<div class="classificacao-box" style="background:' + classif.cor + '22;border:3px solid ' + classif.cor + ';color:' + classif.cor + ';">';
+    h += '<div style="font-size:1.5em;">' + classif.texto + '</div>';
+    h += '<div style="font-size:1.1em;margin-top:5px;">Escore: ' + escore + ' / 28</div>';
+    h += '</div>';
+
+    h += '<div class="total-geral"><h3>Pontua\u00e7\u00e3o Total: ' + escore + ' / 28</h3><h3>Classifica\u00e7\u00e3o: ' + classif.texto + '</h3></div>';
+
+    h += '<div class="dominio-card"><h4>Detalhamento por Item</h4>';
+    for (var i = 0; i < ITENS.length; i++) {
+        var opcoes = OPCOES_GRUPO[ITENS[i].grupo];
+        h += '<p><strong>Item ' + (i+1) + ':</strong> ' + ITENS[i].texto + ' \u2014 <strong>' + r[i] + '</strong> (' + opcoes[r[i]].texto + ')</p>';
+    }
+    h += '</div>';
+
+    h += '<div class="dominio-card"><h4>Faixas de Classifica\u00e7\u00e3o</h4>';
+    h += '<p>0-7: Sem ins\u00f4nia cl\u00ednica | 8-14: Ins\u00f4nia sublimiar | 15-21: Ins\u00f4nia cl\u00ednica moderada | 22-28: Ins\u00f4nia cl\u00ednica grave</p>';
+    h += '</div>';
+
+    h += '<div class="disclaimer"><strong>IMPORTANTE:</strong> O ISI \u00e9 um instrumento de rastreio validado para ins\u00f4nia. N\u00e3o substitui avalia\u00e7\u00e3o cl\u00ednica profissional. Resultados devem ser interpretados por profissional qualificado.</div>';
+
+    el.innerHTML = h;
+    el.style.display = 'block';
+    el.scrollIntoView({behavior: 'smooth'});
+
+    var sexo = document.getElementById('sexo').value;
+    var idade = document.getElementById('idadeCalculada').value;
+    var idPac = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
+    window._escalaDados = {escala:'ISI', paciente:nome, escore:escore, classificacao:classif.texto, dominios:{}, sexo:sexo, idPaciente:idPac, idade:idade, data:new Date().toISOString()};
+    if (window.injetarBotaoSalvar) injetarBotaoSalvar('resultados');
+}
+
+function gerarRelatorioPDF() {
+    var nome = document.getElementById('nome').value;
+    if (!nome) { alert('Preencha o nome do paciente.'); return; }
+    var r = obterRespostas();
+    if (!r) { alert('Responda todos os 7 itens.'); return; }
+
+    var escore = r.reduce(function(a, b) { return a + b; }, 0);
+    var classif = classificarISI(escore);
+    var idade = document.getElementById('idadeCalculada').value;
+    var sexo = document.getElementById('sexo').value;
+    var dataAval = document.getElementById('data').value || new Date().toLocaleDateString('pt-BR');
+    var obs = document.getElementById('observacoes').value;
+    var idPac = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
+
+    var jsPDF = window.jspdf.jsPDF;
+    var doc = new jsPDF();
+
+    // Cabecalho
+    doc.setFillColor(26,35,126); doc.rect(0,0,210,35,'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(14); doc.setFont(undefined,'bold');
+    doc.text('ISI - RELAT\u00d3RIO DE AVALIA\u00c7\u00c3O', 105, 15, {align:'center'});
+    doc.setFontSize(9); doc.setFont(undefined,'normal');
+    doc.text('Insomnia Severity Index - \u00cdndice de Gravidade da Ins\u00f4nia', 105, 23, {align:'center'});
+    doc.text('Morin (1993), Bastien, Valli\u00e8res & Morin (2001)', 105, 29, {align:'center'});
+
+    // Dados pessoais
+    var y = 42;
+    doc.setFillColor(248,249,250); doc.rect(15,y,180,22,'F');
+    doc.setTextColor(26,35,126); doc.setFontSize(10); doc.setFont(undefined,'bold');
+    doc.text('DADOS PESSOAIS', 20, y+6);
+    doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont(undefined,'normal');
+    doc.text('Nome: ' + nome + '   |   Sexo: ' + sexo, 20, y+12);
+    doc.text('Idade: ' + idade + '   |   Data: ' + dataAval + (idPac ? '   |   ID: ' + idPac : ''), 20, y+18);
+
+    // Classificacao
+    y = 70;
+    var corR, corG, corB;
+    if (escore <= 7) { corR=76; corG=175; corB=80; }
+    else if (escore <= 14) { corR=255; corG=235; corB=59; }
+    else if (escore <= 21) { corR=255; corG=152; corB=0; }
+    else { corR=244; corG=67; corB=54; }
+    doc.setFillColor(corR, corG, corB); doc.rect(15,y,180,14,'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(12); doc.setFont(undefined,'bold');
+    doc.text('Classifica\u00e7\u00e3o: ' + classif.texto + '  |  Escore: ' + escore + '/28', 105, y+9, {align:'center'});
+
+    // Pontuacao por item
+    y = 90;
+    doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont(undefined,'bold');
+    doc.text('PONTUA\u00c7\u00c3O POR ITEM:', 20, y); y += 7;
+    doc.setFont(undefined,'normal');
+    for (var i = 0; i < ITENS.length; i++) {
+        var textoItem = (i+1) + '. ' + ITENS[i].texto;
+        if (textoItem.length > 85) textoItem = textoItem.substring(0, 82) + '...';
+        doc.text(textoItem + ' = ' + r[i], 22, y);
+        y += 5;
+    }
+
+    // Disclaimer
+    y += 5;
+    doc.setFillColor(255,248,235); doc.rect(15,y,180,14,'F');
+    doc.setTextColor(180,90,0); doc.setFontSize(7);
+    doc.text('IMPORTANTE: O ISI e um instrumento de rastreio. Nao substitui avaliacao clinica profissional.', 20, y+5);
+    doc.text('Resultados devem ser interpretados por profissional qualificado.', 20, y+10);
+
+    // Rodape
+    doc.setFillColor(80,80,80); doc.rect(0,285,210,12,'F');
+    doc.setTextColor(200,200,200); doc.setFontSize(7);
+    doc.text('Relat\u00f3rio gerado em: ' + new Date().toLocaleString('pt-BR'), 105, 291, {align:'center'});
+
+    // Salvar
+    var ts = new Date();
+    var tsStr = ts.getFullYear() + String(ts.getMonth()+1).padStart(2,'0') + String(ts.getDate()).padStart(2,'0') + String(ts.getHours()).padStart(2,'0') + String(ts.getMinutes()).padStart(2,'0');
+    doc.save('ISI_' + nome.replace(/\s+/g,'_') + '_' + tsStr + '.pdf');
+}
+
+function limparDados() {
+    if (!confirm('Limpar todos os dados?')) return;
+    document.getElementById('nome').value = '';
+    document.getElementById('dataNascimento').value = '';
+    document.getElementById('idadeCalculada').value = '';
+    document.getElementById('sexo').value = '';
+    document.getElementById('observacoes').value = '';
+    document.querySelectorAll('input[type="radio"]').forEach(function(r) { r.checked = false; });
+    document.getElementById('resultados').style.display = 'none';
+    document.getElementById('data').value = new Date().toISOString().split('T')[0];
+}
+
+// ===== MODO PAINEL =====
+var _sessionInfo = null;
+var _API_URL = 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
+
+function _decodificarURL() {
+    var params = new URLSearchParams(window.location.search);
+    var d = params.get('d');
+    if (!d) return false;
+    try { _sessionInfo = JSON.parse(atob(decodeURIComponent(d))); } catch(e) { return false; }
+    var nomeEl = document.getElementById('nome');
+    var nascEl = document.getElementById('dataNascimento');
+    var sexoEl = document.getElementById('sexo');
+    if (nomeEl && _sessionInfo.patientName) nomeEl.value = _sessionInfo.patientName;
+    if (nascEl && _sessionInfo.birthDate) nascEl.value = _sessionInfo.birthDate;
+    if (sexoEl && _sessionInfo.sex) sexoEl.value = _sessionInfo.sex;
+    if (typeof calcularIdade === 'function') calcularIdade();
+    if (nomeEl) nomeEl.dispatchEvent(new Event('input'));
+    if (nascEl) nascEl.dispatchEvent(new Event('change'));
+    var botoes = document.querySelector('.botoes');
+    if (botoes) {
+        botoes.innerHTML = '<button class="btn btn-primary" style="padding:15px 30px;border:none;border-radius:25px;font-size:16px;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#2e7d32,#43a047);color:white;" onclick="_enviarResultadosPainel()">Enviar Resultados ao Profissional</button>';
+    }
+    var els = document.querySelectorAll('.info-tecnica');
+    els.forEach(function(el) { el.style.display = 'none'; });
+    return true;
+}
+
+async function _enviarResultadosPainel() {
+    var nomeEl = document.getElementById('nome');
+    if (!nomeEl || !nomeEl.value.trim()) { alert('Preencha o nome antes de enviar.'); return; }
+    var calcFn = window.calcularResultados;
+    if (calcFn && !window._escalaDados) { try { calcFn(); } catch(e) {} }
+    var dados = window._escalaDados || {};
+    if (!dados.escala) dados.escala = 'ISI';
+    dados.idPaciente = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
+    dados.data = new Date().toISOString();
+    var btn = document.querySelector('.botoes button');
+    if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
+    try {
+        var resp = await fetch(_API_URL + '/save-escala', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({sessionId: _sessionInfo.sessionId, email: _sessionInfo.email, data: dados})
+        });
+        var result = await resp.json();
+        if (result.ok || resp.ok) {
+            var container = document.querySelector('.botoes');
+            if (container) container.innerHTML = '<div style="background:#c8e6c9;border:2px solid #2e7d32;border-radius:10px;padding:20px;text-align:center;"><p style="font-size:1.3em;color:#2e7d32;font-weight:bold;">Resultados enviados com sucesso!</p><p style="color:#555;margin-top:8px;">O profissional ja pode visualizar seus resultados no painel.</p><p style="color:#777;margin-top:5px;font-size:0.85em;">Voce pode fechar esta pagina.</p></div>';
+            var res = document.getElementById('resultados');
+            if (res) res.style.display = 'none';
+        } else {
+            if (btn) { btn.disabled = false; btn.textContent = 'Enviar Resultados ao Profissional'; }
+            alert('Erro ao enviar. Tente novamente.');
+        }
+    } catch(e) {
+        if (btn) { btn.disabled = false; btn.textContent = 'Enviar Resultados ao Profissional'; }
+        alert('Erro de conexao. Verifique sua internet e tente novamente.');
+    }
+}
+
+// === INICIALIZACAO ===
+gerarQuestionario();
+document.getElementById('questionario').addEventListener('change',function(e){if(e.target.type==='radio'){var item=e.target.closest('.item');if(item&&item.nextElementSibling){item.nextElementSibling.scrollIntoView({behavior:'smooth',block:'center'});}}});
+document.getElementById('data').value = new Date().toISOString().split('T')[0];
+var params = new URLSearchParams(window.location.search);
+if (params.get('d')) {
+    _decodificarURL();
+} else if (params.get('print')) {
+    var els = document.querySelectorAll('.info-tecnica');
+    els.forEach(function(el) { el.style.display = 'none'; });
+    var botoes = document.querySelector('.botoes');
+    if (botoes) botoes.style.display = 'none';
+    setTimeout(function() { window.print(); }, 500);
+} else {
+    if (!window.location.protocol.startsWith('file')) window.location.href = 'https://setmonte.github.io/online/';
+}
+    </script>
+<script>
+if (!new URLSearchParams(window.location.search).get('d')) {
+    var s1 = document.createElement('script'); s1.src = 'pdf-escalas.js'; document.body.appendChild(s1);
+    var s2 = document.createElement('script'); s2.src = 'salvar-escala.js'; document.body.appendChild(s2);
+}
+var _sc = document.createElement('script'); _sc.src = 'coleta-anonima.js'; document.body.appendChild(_sc);
+</script>
+<div style="text-align:center;padding:15px;color:#999;font-size:0.75em;margin-top:20px;">Dados an&#244;nimos e n&#227;o-identific&#225;veis podem ser utilizados para fins de pesquisa e normatiza&#231;&#227;o.</div>
+</body>
+</html>

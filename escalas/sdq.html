@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-QY1N9587DG"></script>
+    <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-QY1N9587DG');</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SDQ &#8212; Question&#225;rio de Capacidades e Dificuldades</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background: linear-gradient(135deg, #00695c 0%, #1b5e20 100%); min-height: 100vh; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; border-radius: 15px; box-shadow: 0 20px 40px rgba(0,0,0,0.15); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #00695c 0%, #1b5e20 100%); color: white; padding: 30px; text-align: center; }
+        .header h1 { font-size: 2.2em; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        .header p { font-size: 1.1em; opacity: 0.9; }
+        .content { padding: 30px; }
+        .info-tecnica { background: #e0f2f1; padding: 25px; border-radius: 10px; margin-bottom: 30px; border-left: 5px solid #00695c; position: relative; }
+        .info-tecnica h2 { color: #00695c; margin-bottom: 15px; font-size: 1.4em; }
+        .info-tecnica p { color: #555; line-height: 1.7; font-size: 0.95em; }
+        .dados-pessoais { background: #f8f9fa; padding: 25px; border-radius: 10px; margin-bottom: 30px; border-left: 5px solid #00695c; }
+        .dados-pessoais h2 { color: #00695c; margin-bottom: 20px; font-size: 1.5em; }
+        .form-row { display: flex; gap: 20px; margin-bottom: 15px; flex-wrap: wrap; }
+        .form-group { flex: 1; min-width: 200px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; color: #555; }
+        .form-group input, .form-group select { width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 16px; transition: border-color 0.3s; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: #00695c; }
+        .instrucoes { background: #e8f5e9; padding: 20px; border-radius: 10px; margin-bottom: 30px; border-left: 5px solid #1b5e20; }
+        .instrucoes h3 { color: #1b5e20; margin-bottom: 10px; }
+        .instrucoes p { color: #555; font-size: 0.95em; line-height: 1.7; }
+        .item { padding: 20px; border-bottom: 1px solid #f0f0f0; transition: background-color 0.3s; }
+        .item:hover { background-color: #e0f2f1; }
+        .item:last-child { border-bottom: none; }
+        .item-texto { font-size: 1.05em; margin-bottom: 15px; color: #444; line-height: 1.5; }
+        .item-numero { font-weight: bold; color: #00695c; margin-right: 8px; }
+        .opcoes { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+        .opcao { display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; padding: 8px; border-radius: 8px; transition: all 0.3s; border: 2px solid transparent; min-width: 70px; min-height: 70px; }
+        .opcao:hover { background-color: #e0f2f1; border-color: #00695c; }
+        .opcao input[type="radio"] { width: 18px; height: 18px; cursor: pointer; accent-color: #00695c; }
+        .opcao label { cursor: pointer; font-weight: 500; color: #555; text-align: center; font-size: 0.8em; line-height: 1.2; min-height: 30px; display: flex; align-items: center; }
+        .botoes { display: flex; gap: 15px; justify-content: center; margin: 30px 0; flex-wrap: wrap; }
+        .btn { padding: 15px 30px; border: none; border-radius: 25px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s; text-align: center; }
+        .btn-primary { background: linear-gradient(135deg, #00695c 0%, #1b5e20 100%); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,105,92,0.3); }
+        .btn-secondary { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; }
+        .btn-secondary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(40,167,69,0.3); }
+        .btn-danger { background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%); color: white; }
+        .btn-danger:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(220,53,69,0.3); }
+        .resultados { background: #f8f9fa; padding: 30px; border-radius: 10px; margin-top: 30px; border-left: 5px solid #00695c; display: none; }
+        .resultados h2 { color: #00695c; margin-bottom: 20px; text-align: center; }
+        .total-geral { background: linear-gradient(135deg, #00695c 0%, #1b5e20 100%); color: white; padding: 25px; border-radius: 10px; text-align: center; margin: 20px 0; }
+        .classificacao-box { padding: 20px; border-radius: 10px; text-align: center; margin: 20px 0; font-size: 1.2em; font-weight: 700; }
+        .dominio-card { background: white; padding: 20px; border-radius: 10px; margin-bottom: 15px; box-shadow: 0 3px 10px rgba(0,0,0,0.08); border-left: 4px solid #00695c; }
+        .dominio-card h4 { color: #00695c; margin-bottom: 8px; }
+        .disclaimer { background: #fff3e0; padding: 15px; border-radius: 8px; margin-top: 20px; border-left: 4px solid #ff9800; font-size: 0.85em; color: #e65100; line-height: 1.6; }
+        .btn-imprimir { position: absolute; top: 20px; right: 20px; padding: 10px 20px; background: linear-gradient(135deg, #00695c 0%, #004d40 100%); color: white; border: none; border-radius: 20px; font-size: 14px; font-weight: 600; cursor: pointer; }
+        @media print { body { background: white !important; padding: 0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; } @page { size: landscape; margin: 10mm; } .botoes, .btn, .btn-imprimir { display: none !important; } .container { box-shadow: none !important; max-width: 100% !important; } .info-tecnica { display: none !important; } .resultados { display: none !important; } .item { page-break-inside: avoid; } .opcoes { flex-direction: row !important; align-items: center !important; justify-content: center !important; } .opcao { min-width: auto !important; padding: 4px 6px !important; } }
+        @media (max-width: 768px) { .container { margin: 10px; border-radius: 10px; } .header { padding: 20px; } .header h1 { font-size: 1.6em; } .content { padding: 15px; } .form-row { flex-direction: column; } .opcoes { flex-direction: column; align-items: center; } .botoes { flex-direction: column; } .btn { width: 100%; } }
+    </style>
+</head>
+<body>
+<div style="padding:10px 20px;background:#2e7d32;"><a href="../" style="display:inline-block;background:#fff;color:#2e7d32;text-decoration:none;font-family:Segoe UI,Arial,sans-serif;font-size:14px;font-weight:bold;padding:8px 20px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.15);">&#11013; Voltar ao In&#237;cio</a></div>
+    <div class="container">
+        <div class="header">
+            <h1>&#129504; SDQ</h1>
+            <p>Question&#225;rio de Capacidades e Dificuldades</p>
+            <p style="font-size:0.85em; opacity:0.8; margin-top:5px;">Strengths and Difficulties Questionnaire &#8212; Goodman (1997)</p>
+        </div>
+        <div class="content">
+            <div class="info-tecnica">
+                <button class="btn-imprimir" onclick="window.print()">&#128424; Imprimir Formul&#225;rio</button>
+                <h2>&#128218; Informa&#231;&#245;es T&#233;cnicas</h2>
+                <p>
+                    <strong>Instrumento:</strong> SDQ &#8212; Strengths and Difficulties Questionnaire<br>
+                    <strong>Base te&#243;rica:</strong> Rastreio de problemas de sa&#250;de mental em crian&#231;as e adolescentes (4-17 anos)<br>
+                    <strong>Estrutura:</strong> 25 itens, 5 subescalas de 5 itens cada (0-2 por item)<br>
+                    <strong>Subescalas:</strong> Sintomas Emocionais, Problemas de Conduta, Hiperatividade, Problemas com Colegas, Comportamento Pr&#243;-social<br>
+                    <strong>Resultado:</strong> Total de Dificuldades (0-40) + subescalas individuais (0-10)<br>
+                    <strong>Per&#237;odo:</strong> &#218;ltimos 6 meses<br>
+                    <strong>Popula&#231;&#227;o:</strong> Crian&#231;as e adolescentes (4-17 anos) &#8212; vers&#245;es para pais, professores e autoavalia&#231;&#227;o
+                </p>
+            </div>
+            <div class="dados-pessoais">
+                <h2>&#128203; Dados Pessoais</h2>
+                <div class="form-row">
+                    <div class="form-group"><label for="nome">Nome da Crian&#231;a/Adolescente:</label><input type="text" id="nome" placeholder="Nome completo"></div>
+                    <div class="form-group"><label for="respondente">Respondente:</label><select id="respondente"><option value="">Selecione</option><option value="Pais">Pais</option><option value="Professor">Professor</option><option value="Autoavaliacao">Autoavalia&#231;&#227;o</option></select></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label for="dataNascimento">Data de Nascimento:</label><input type="date" id="dataNascimento" onchange="calcularIdade()"></div>
+                    <div class="form-group"><label for="idadeCalculada">Idade:</label><input type="text" id="idadeCalculada" readonly style="background-color:#f0f0f0;" placeholder="Calculada automaticamente"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label for="sexo">Sexo:</label><select id="sexo"><option value="">Selecione</option><option value="Masculino">Masculino</option><option value="Feminino">Feminino</option></select></div>
+                    <div class="form-group"><label for="data">Data da Avalia&#231;&#227;o:</label><input type="date" id="data"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label for="observacoes">Observa&#231;&#245;es (opcional):</label><input type="text" id="observacoes" placeholder="Informa&#231;&#245;es adicionais"></div>
+                </div>
+            </div>
+            <div class="instrucoes">
+                <h3>&#128221; Instru&#231;&#245;es</h3>
+                <p>Para cada item, marque: <strong>FALSO</strong>, <strong>MAIS OU MENOS VERDADEIRO</strong> ou <strong>VERDADEIRO</strong>. Responda com base no comportamento da crian&#231;a/adolescente nos <strong>&#250;ltimos 6 meses</strong>.</p>
+            </div>
+            <div id="questionario"></div>
+            <div class="botoes">
+                <button class="btn btn-primary" onclick="calcularResultados()">Calcular Resultados</button>
+                <button class="btn btn-secondary" onclick="gerarRelatorioPDF()">Gerar Relat&#243;rio PDF</button>
+                <button class="btn btn-danger" onclick="limparDados()">Limpar Dados</button>
+            </div>
+            <div id="resultados" class="resultados"></div>
+            <div class="info-tecnica" id="referencias" style="margin-top:30px; background:#f8f9fa; border-left-color:#00695c;">
+                <h2 style="color:#00695c;">Refer&#234;ncias</h2>
+                <p style="color:#555; line-height:1.9; font-size:0.88em;">
+                    <strong>GOODMAN, R.</strong> The Strengths and Difficulties Questionnaire: a research note. <em>Journal of Child Psychology and Psychiatry</em>, v. 38, n. 5, p. 581-586, 1997.<br><br>
+                    <strong>SAUR, A. M.; LOUREIRO, S. R.</strong> Propriedades psicom&#233;tricas do Strengths and Difficulties Questionnaire (SDQ): revis&#227;o da literatura. <em>Psico-USF</em>, v. 17, n. 1, p. 107-116, 2012.<br><br>
+                    <strong>FLEITLICH, B.; CORTAZAR, P. G.; GOODMAN, R.</strong> Question&#225;rio de Capacidades e Dificuldades (SDQ). <em>Infanto - Rev. Neuropsiq. da Inf&#226;ncia e Adolesc&#234;ncia</em>, v. 8, n. 1, p. 44-50, 2000.
+                </p>
+            </div>
+        </div>
+    </div>
+    <script src="../id-paciente.js"></script>
+    <script>
+var ITENS=[
+{texto:"Procura ser agrad\u00e1vel com as outras pessoas. Leva em considera\u00e7\u00e3o os sentimentos dos outros",sub:"S"},
+{texto:"N\u00e3o consegue ficar parado(a), \u00e9 irrequieto(a) ou hiperativo(a)",sub:"H"},
+{texto:"Queixa-se frequentemente de dor de cabe\u00e7a, dor de barriga ou enj\u00f4o",sub:"E"},
+{texto:"Compartilha facilmente com outras crian\u00e7as (doces, brinquedos, l\u00e1pis, etc.)",sub:"S"},
+{texto:"Frequentemente tem acessos de raiva ou crises de birra",sub:"C"},
+{texto:"\u00c9 solit\u00e1rio(a), tende a brincar sozinho(a)",sub:"P"},
+{texto:"Geralmente \u00e9 obediente e faz o que os adultos pedem",sub:"C",inv:true},
+{texto:"Tem muitas preocupa\u00e7\u00f5es, frequentemente parece preocupado(a)",sub:"E"},
+{texto:"Tenta ser atencioso(a) quando algu\u00e9m est\u00e1 machucado, triste ou doente",sub:"S"},
+{texto:"Est\u00e1 sempre se mexendo, balan\u00e7ando pernas ou m\u00e3os",sub:"H"},
+{texto:"Tem pelo menos um(a) bom(boa) amigo(a)",sub:"P",inv:true},
+{texto:"Frequentemente briga com outras crian\u00e7as ou as intimida",sub:"C"},
+{texto:"Frequentemente parece triste, desanimado(a) ou choroso(a)",sub:"E"},
+{texto:"\u00c9 geralmente querido(a) por outras crian\u00e7as",sub:"P",inv:true},
+{texto:"Facilmente distra\u00eddo(a), perde a concentra\u00e7\u00e3o",sub:"H"},
+{texto:"Fica nervoso(a) ou grudado(a) em novas situa\u00e7\u00f5es, facilmente perde a confian\u00e7a",sub:"E"},
+{texto:"\u00c9 gentil com crian\u00e7as mais novas",sub:"S"},
+{texto:"Frequentemente mente ou engana",sub:"C"},
+{texto:"\u00c9 alvo de provoca\u00e7\u00f5es ou bullying por outras crian\u00e7as",sub:"P"},
+{texto:"Frequentemente oferece-se para ajudar os outros (pais, professores, outras crian\u00e7as)",sub:"S"},
+{texto:"Pensa antes de agir",sub:"H",inv:true},
+{texto:"Rouba coisas de casa, da escola ou de outros lugares",sub:"C"},
+{texto:"D\u00e1-se melhor com adultos do que com outras crian\u00e7as",sub:"P"},
+{texto:"Tem muitos medos, assusta-se facilmente",sub:"E"},
+{texto:"Completa as tarefas que come\u00e7a, tem boa concentra\u00e7\u00e3o",sub:"H",inv:true}
+];
+
+var OPCOES=[{valor:0,texto:"Falso"},{valor:1,texto:"Mais ou menos verdadeiro"},{valor:2,texto:"Verdadeiro"}];
+
+var SUBESCALAS={E:"Sintomas Emocionais",C:"Problemas de Conduta",H:"Hiperatividade",P:"Problemas com Colegas",S:"Comportamento Pr\u00f3-social"};
+
+function gerarQuestionario() {
+    var c = document.getElementById('questionario');
+    var h = '';
+    ITENS.forEach(function(item, i) {
+        h += '<div class="item"><div class="item-texto"><span class="item-numero">' + (i+1) + '.</span> ' + item.texto + '</div><div class="opcoes">';
+        OPCOES.forEach(function(op) {
+            h += '<div class="opcao"><input type="radio" id="q' + i + '_' + op.valor + '" name="q' + i + '" value="' + op.valor + '"><label for="q' + i + '_' + op.valor + '">' + op.texto + '</label></div>';
+        });
+        h += '</div></div>';
+    });
+    c.innerHTML = h;
+}
+
+function calcularIdade() {
+    var d = document.getElementById('dataNascimento').value;
+    if (!d) return;
+    var h = new Date(), n = new Date(d);
+    var a = h.getFullYear() - n.getFullYear(), m = h.getMonth() - n.getMonth(), di = h.getDate() - n.getDate();
+    if (di < 0) { m--; di += new Date(h.getFullYear(), h.getMonth(), 0).getDate(); }
+    if (m < 0) { a--; m += 12; }
+    document.getElementById('idadeCalculada').value = a + ' anos, ' + m + ' meses e ' + di + ' dias';
+}
+
+function obterRespostas() {
+    var r = [];
+    for (var i = 0; i < ITENS.length; i++) {
+        var s = document.querySelector('input[name="q' + i + '"]:checked');
+        if (!s) return null;
+        r.push(parseInt(s.value));
+    }
+    return r;
+}
+
+function pontuar(indice, valorBruto) {
+    if (ITENS[indice].inv) return 2 - valorBruto;
+    return valorBruto;
+}
+
+function classificarSDQ(totalDif) {
+    if (totalDif <= 13) return {texto:"Normal",cor:"#4caf50"};
+    if (totalDif <= 16) return {texto:"Lim\u00edtrofe",cor:"#ff9800"};
+    return {texto:"Anormal",cor:"#f44336"};
+}
+
+function calcularResultados() {
+    var nome = document.getElementById('nome').value;
+    if (!nome) { alert('Preencha o nome da crianca/adolescente.'); return; }
+    var r = obterRespostas();
+    if (!r) {
+        var respondidos = 0;
+        for (var i = 0; i < ITENS.length; i++) {
+            if (document.querySelector('input[name="q' + i + '"]:checked')) respondidos++;
+        }
+        alert('Responda todos os 25 itens. Faltam ' + (25 - respondidos) + ' itens.');
+        return;
+    }
+
+    var subs = {E:0,C:0,H:0,P:0,S:0};
+    for (var i = 0; i < ITENS.length; i++) {
+        var pt = pontuar(i, r[i]);
+        subs[ITENS[i].sub] += pt;
+    }
+
+    var totalDif = subs.E + subs.C + subs.H + subs.P;
+    var classif = classificarSDQ(totalDif);
+
+    var el = document.getElementById('resultados');
+    var h = '<h2>Resultados SDQ</h2>';
+
+    h += '<div class="classificacao-box" style="background:' + classif.cor + '22;border:3px solid ' + classif.cor + ';color:' + classif.cor + ';">';
+    h += '<div style="font-size:1.5em;">' + classif.texto + '</div>';
+    h += '<div style="font-size:1.1em;margin-top:5px;">Total de Dificuldades: ' + totalDif + ' / 40</div>';
+    h += '</div>';
+
+    h += '<div class="total-geral"><h3>Total de Dificuldades: ' + totalDif + ' / 40</h3><h3>Classifica\u00e7\u00e3o: ' + classif.texto + '</h3></div>';
+
+    h += '<div class="dominio-card"><h4>Subescalas</h4>';
+    h += '<p><strong>Sintomas Emocionais (E):</strong> ' + subs.E + ' / 10</p>';
+    h += '<p><strong>Problemas de Conduta (C):</strong> ' + subs.C + ' / 10</p>';
+    h += '<p><strong>Hiperatividade (H):</strong> ' + subs.H + ' / 10</p>';
+    h += '<p><strong>Problemas com Colegas (P):</strong> ' + subs.P + ' / 10</p>';
+    h += '<p><strong>Comportamento Pr\u00f3-social (S):</strong> ' + subs.S + ' / 10</p>';
+    h += '</div>';
+
+    h += '<div class="dominio-card"><h4>Faixas de Classifica\u00e7\u00e3o - Total de Dificuldades</h4>';
+    h += '<p>0-13: Normal | 14-16: Lim\u00edtrofe | 17-40: Anormal</p>';
+    h += '</div>';
+
+    h += '<div class="disclaimer"><strong>IMPORTANTE:</strong> O SDQ \u00e9 um instrumento de rastreio para problemas de sa\u00fade mental em crian\u00e7as e adolescentes. N\u00e3o substitui avalia\u00e7\u00e3o cl\u00ednica profissional. Resultados devem ser interpretados por profissional qualificado.</div>';
+
+    el.innerHTML = h;
+    el.style.display = 'block';
+    el.scrollIntoView({behavior:'smooth'});
+
+    var sexo = document.getElementById('sexo').value;
+    var idade = document.getElementById('idadeCalculada').value;
+    var idPac = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
+    window._escalaDados = {escala:'SDQ', paciente:nome, escore:totalDif, classificacao:classif.texto, dominios:{Emocional:subs.E,Conduta:subs.C,Hiperatividade:subs.H,Colegas:subs.P,ProSocial:subs.S}, sexo:sexo, idPaciente:idPac, idade:idade, data:new Date().toISOString()};
+    if (window.injetarBotaoSalvar) injetarBotaoSalvar('resultados');
+}
+
+function gerarRelatorioPDF() {
+    var nome = document.getElementById('nome').value;
+    if (!nome) { alert('Preencha o nome da crianca/adolescente.'); return; }
+    var r = obterRespostas();
+    if (!r) { alert('Responda todos os 25 itens.'); return; }
+
+    var subs = {E:0,C:0,H:0,P:0,S:0};
+    for (var i = 0; i < ITENS.length; i++) {
+        var pt = pontuar(i, r[i]);
+        subs[ITENS[i].sub] += pt;
+    }
+    var totalDif = subs.E + subs.C + subs.H + subs.P;
+    var classif = classificarSDQ(totalDif);
+    var idade = document.getElementById('idadeCalculada').value;
+    var sexo = document.getElementById('sexo').value;
+    var respondente = document.getElementById('respondente').value;
+    var dataAval = document.getElementById('data').value || new Date().toLocaleDateString('pt-BR');
+    var obs = document.getElementById('observacoes').value;
+    var idPac = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
+
+    var jsPDF = window.jspdf.jsPDF;
+    var doc = new jsPDF();
+
+    doc.setFillColor(0,105,92); doc.rect(0,0,210,35,'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(14); doc.setFont(undefined,'bold');
+    doc.text('SDQ - RELAT\u00d3RIO DE AVALIA\u00c7\u00c3O', 105, 15, {align:'center'});
+    doc.setFontSize(9); doc.setFont(undefined,'normal');
+    doc.text('Questionario de Capacidades e Dificuldades', 105, 23, {align:'center'});
+    doc.text('Goodman (1997)', 105, 29, {align:'center'});
+
+    var y = 42;
+    doc.setFillColor(248,249,250); doc.rect(15,y,180,28,'F');
+    doc.setTextColor(0,105,92); doc.setFontSize(10); doc.setFont(undefined,'bold');
+    doc.text('DADOS PESSOAIS', 20, y+6);
+    doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont(undefined,'normal');
+    doc.text('Crianca/Adolescente: ' + nome + '   |   Sexo: ' + sexo, 20, y+12);
+    doc.text('Idade: ' + idade + '   |   Data: ' + dataAval + (idPac ? '   |   ID: ' + idPac : ''), 20, y+18);
+    doc.text('Respondente: ' + respondente + (obs ? '   |   Obs: ' + obs : ''), 20, y+24);
+
+    y = 76;
+    var corR, corG, corB;
+    if (totalDif <= 13) { corR=76; corG=175; corB=80; }
+    else if (totalDif <= 16) { corR=255; corG=152; corB=0; }
+    else { corR=244; corG=67; corB=54; }
+    doc.setFillColor(corR, corG, corB); doc.rect(15,y,180,14,'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(12); doc.setFont(undefined,'bold');
+    doc.text('Classificacao: ' + classif.texto + '  |  Total Dificuldades: ' + totalDif + '/40', 105, y+9, {align:'center'});
+
+    y = 96;
+    doc.setTextColor(0,0,0); doc.setFontSize(10); doc.setFont(undefined,'bold');
+    doc.text('SUBESCALAS:', 20, y); y += 8;
+    doc.setFont(undefined,'normal');
+    doc.text('Sintomas Emocionais (E): ' + subs.E + '/10', 22, y); y += 6;
+    doc.text('Problemas de Conduta (C): ' + subs.C + '/10', 22, y); y += 6;
+    doc.text('Hiperatividade (H): ' + subs.H + '/10', 22, y); y += 6;
+    doc.text('Problemas com Colegas (P): ' + subs.P + '/10', 22, y); y += 6;
+    doc.text('Comportamento Pro-social (S): ' + subs.S + '/10', 22, y); y += 10;
+
+    doc.setFontSize(9); doc.setFont(undefined,'bold');
+    doc.text('PONTUACAO POR ITEM:', 20, y); y += 6;
+    doc.setFont(undefined,'normal'); doc.setFontSize(8);
+    for (var i = 0; i < ITENS.length; i++) {
+        var textoItem = (i+1) + '. ' + ITENS[i].texto;
+        if (textoItem.length > 90) textoItem = textoItem.substring(0, 87) + '...';
+        var ptItem = pontuar(i, r[i]);
+        doc.text(textoItem + ' = ' + ptItem + (ITENS[i].inv ? ' (inv)' : ''), 22, y);
+        y += 4.5;
+        if (y > 270) { doc.addPage(); y = 20; }
+    }
+
+    y += 5;
+    if (y > 260) { doc.addPage(); y = 20; }
+    doc.setFillColor(255,248,235); doc.rect(15,y,180,14,'F');
+    doc.setTextColor(180,90,0); doc.setFontSize(7);
+    doc.text('IMPORTANTE: O SDQ e um instrumento de rastreio. Nao substitui avaliacao clinica profissional.', 20, y+5);
+    doc.text('Resultados devem ser interpretados por profissional qualificado.', 20, y+10);
+
+    doc.setFillColor(80,80,80); doc.rect(0,285,210,12,'F');
+    doc.setTextColor(200,200,200); doc.setFontSize(7);
+    doc.text('Relatorio gerado em: ' + new Date().toLocaleString('pt-BR'), 105, 291, {align:'center'});
+
+    var ts = new Date();
+    var tsStr = ts.getFullYear() + String(ts.getMonth()+1).padStart(2,'0') + String(ts.getDate()).padStart(2,'0') + String(ts.getHours()).padStart(2,'0') + String(ts.getMinutes()).padStart(2,'0');
+    doc.save('SDQ_' + nome.replace(/\s+/g,'_') + '_' + tsStr + '.pdf');
+}
+
+function limparDados() {
+    if (!confirm('Limpar todos os dados?')) return;
+    document.getElementById('nome').value = '';
+    document.getElementById('dataNascimento').value = '';
+    document.getElementById('idadeCalculada').value = '';
+    document.getElementById('sexo').value = '';
+    document.getElementById('respondente').value = '';
+    document.getElementById('observacoes').value = '';
+    document.querySelectorAll('input[type="radio"]').forEach(function(r) { r.checked = false; });
+    document.getElementById('resultados').style.display = 'none';
+    document.getElementById('data').value = new Date().toISOString().split('T')[0];
+}
+
+// ===== MODO PAINEL =====
+var _sessionInfo = null;
+var _API_URL = 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
+
+function _decodificarURL() {
+    var params = new URLSearchParams(window.location.search);
+    var d = params.get('d');
+    if (!d) return false;
+    try { _sessionInfo = JSON.parse(atob(decodeURIComponent(d))); } catch(e) { return false; }
+    var nomeEl = document.getElementById('nome');
+    var nascEl = document.getElementById('dataNascimento');
+    var sexoEl = document.getElementById('sexo');
+    if (nomeEl && _sessionInfo.patientName) nomeEl.value = _sessionInfo.patientName;
+    if (nascEl && _sessionInfo.birthDate) nascEl.value = _sessionInfo.birthDate;
+    if (sexoEl && _sessionInfo.sex) sexoEl.value = _sessionInfo.sex;
+    if (typeof calcularIdade === 'function') calcularIdade();
+    if (nomeEl) nomeEl.dispatchEvent(new Event('input'));
+    if (nascEl) nascEl.dispatchEvent(new Event('change'));
+    var botoes = document.querySelector('.botoes');
+    if (botoes) {
+        botoes.innerHTML = '<button class="btn btn-primary" style="padding:15px 30px;border:none;border-radius:25px;font-size:16px;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#2e7d32,#43a047);color:white;" onclick="_enviarResultadosPainel()">Enviar Resultados ao Profissional</button>';
+    }
+    var els = document.querySelectorAll('.info-tecnica');
+    els.forEach(function(el) { el.style.display = 'none'; });
+    return true;
+}
+
+async function _enviarResultadosPainel() {
+    var nomeEl = document.getElementById('nome');
+    if (!nomeEl || !nomeEl.value.trim()) { alert('Preencha o nome antes de enviar.'); return; }
+    var calcFn = window.calcularResultados;
+    if (calcFn && !window._escalaDados) { try { calcFn(); } catch(e) {} }
+    var dados = window._escalaDados || {};
+    if (!dados.escala) dados.escala = 'SDQ';
+    dados.idPaciente = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
+    dados.data = new Date().toISOString();
+    var btn = document.querySelector('.botoes button');
+    if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
+    try {
+        var resp = await fetch(_API_URL + '/save-escala', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({sessionId: _sessionInfo.sessionId, email: _sessionInfo.email, data: dados})
+        });
+        var result = await resp.json();
+        if (result.ok || resp.ok) {
+            var container = document.querySelector('.botoes');
+            if (container) container.innerHTML = '<div style="background:#c8e6c9;border:2px solid #2e7d32;border-radius:10px;padding:20px;text-align:center;"><p style="font-size:1.3em;color:#2e7d32;font-weight:bold;">Resultados enviados com sucesso!</p><p style="color:#555;margin-top:8px;">O profissional ja pode visualizar seus resultados no painel.</p><p style="color:#777;margin-top:5px;font-size:0.85em;">Voce pode fechar esta pagina.</p></div>';
+            var res = document.getElementById('resultados');
+            if (res) res.style.display = 'none';
+        } else {
+            if (btn) { btn.disabled = false; btn.textContent = 'Enviar Resultados ao Profissional'; }
+            alert('Erro ao enviar. Tente novamente.');
+        }
+    } catch(e) {
+        if (btn) { btn.disabled = false; btn.textContent = 'Enviar Resultados ao Profissional'; }
+        alert('Erro de conexao. Verifique sua internet e tente novamente.');
+    }
+}
+
+// === INICIALIZACAO ===
+gerarQuestionario();
+document.getElementById('questionario').addEventListener('change',function(e){if(e.target.type==='radio'){var item=e.target.closest('.item');if(item&&item.nextElementSibling){item.nextElementSibling.scrollIntoView({behavior:'smooth',block:'center'});}}});
+document.getElementById('data').value = new Date().toISOString().split('T')[0];
+var params = new URLSearchParams(window.location.search);
+if (params.get('d')) {
+    _decodificarURL();
+} else if (params.get('print')) {
+    var els = document.querySelectorAll('.info-tecnica');
+    els.forEach(function(el) { el.style.display = 'none'; });
+    var botoes = document.querySelector('.botoes');
+    if (botoes) botoes.style.display = 'none';
+    setTimeout(function() { window.print(); }, 500);
+} else {
+    if (!window.location.protocol.startsWith('file')) window.location.href = 'https://setmonte.github.io/online/';
+}
+    </script>
+<script>
+if (!new URLSearchParams(window.location.search).get('d')) {
+    var s1 = document.createElement('script'); s1.src = 'pdf-escalas.js'; document.body.appendChild(s1);
+    var s2 = document.createElement('script'); s2.src = 'salvar-escala.js'; document.body.appendChild(s2);
+}
+var _sc = document.createElement('script'); _sc.src = 'coleta-anonima.js'; document.body.appendChild(_sc);
+</script>
+<div style="text-align:center;padding:15px;color:#999;font-size:0.75em;margin-top:20px;">Dados an&#244;nimos e n&#227;o-identific&#225;veis podem ser utilizados para fins de pesquisa e normatiza&#231;&#227;o.</div>
+</body>
+</html>
