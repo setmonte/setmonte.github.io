@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-QY1N9587DG"></script>
+    <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-QY1N9587DG');</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DIZCALC &#8212; Escala de Rastreio de Discalculia</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background: linear-gradient(135deg, #ff6f00 0%, #e65100 100%); min-height: 100vh; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; border-radius: 15px; box-shadow: 0 20px 40px rgba(0,0,0,0.15); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #ff6f00 0%, #e65100 100%); color: white; padding: 30px; text-align: center; }
+        .header h1 { font-size: 2.2em; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        .header p { font-size: 1.1em; opacity: 0.9; }
+        .content { padding: 30px; }
+        .info-tecnica { background: #fff3e0; padding: 25px; border-radius: 10px; margin-bottom: 30px; border-left: 5px solid #ff6f00; position: relative; }
+        .info-tecnica h2 { color: #e65100; margin-bottom: 15px; font-size: 1.4em; }
+        .info-tecnica p { color: #555; line-height: 1.7; font-size: 0.95em; }
+        .dados-pessoais { background: #f8f9fa; padding: 25px; border-radius: 10px; margin-bottom: 30px; border-left: 5px solid #ff6f00; }
+        .dados-pessoais h2 { color: #e65100; margin-bottom: 20px; font-size: 1.5em; }
+        .form-row { display: flex; gap: 20px; margin-bottom: 15px; flex-wrap: wrap; }
+        .form-group { flex: 1; min-width: 200px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; color: #555; }
+        .form-group input, .form-group select { width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 16px; transition: border-color 0.3s; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: #ff6f00; }
+        .instrucoes { background: #fff8e1; padding: 20px; border-radius: 10px; margin-bottom: 30px; border-left: 5px solid #e65100; }
+        .instrucoes h3 { color: #e65100; margin-bottom: 10px; }
+        .instrucoes p { color: #555; font-size: 0.95em; line-height: 1.7; }
+        .item { padding: 20px; border-bottom: 1px solid #f0f0f0; transition: background-color 0.3s; }
+        .item:hover { background-color: #fff3e0; }
+        .item:last-child { border-bottom: none; }
+        .item-texto { font-size: 1.05em; margin-bottom: 15px; color: #444; line-height: 1.5; }
+        .item-numero { font-weight: bold; color: #e65100; margin-right: 8px; }
+        .opcoes { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+        .opcao { display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; padding: 8px; border-radius: 8px; transition: all 0.3s; border: 2px solid transparent; min-width: 70px; min-height: 70px; }
+        .opcao:hover { background-color: #fff3e0; border-color: #ff6f00; }
+        .opcao input[type="radio"] { width: 18px; height: 18px; cursor: pointer; accent-color: #ff6f00; }
+        .opcao label { cursor: pointer; font-weight: 500; color: #555; text-align: center; font-size: 0.8em; line-height: 1.2; min-height: 30px; display: flex; align-items: center; }
+        .botoes { display: flex; gap: 15px; justify-content: center; margin: 30px 0; flex-wrap: wrap; }
+        .btn { padding: 15px 30px; border: none; border-radius: 25px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s; text-align: center; }
+        .btn-primary { background: linear-gradient(135deg, #ff6f00 0%, #e65100 100%); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(255,111,0,0.3); }
+        .btn-secondary { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; }
+        .btn-secondary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(40,167,69,0.3); }
+        .btn-danger { background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%); color: white; }
+        .btn-danger:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(220,53,69,0.3); }
+        .resultados { background: #f8f9fa; padding: 30px; border-radius: 10px; margin-top: 30px; border-left: 5px solid #ff6f00; display: none; }
+        .resultados h2 { color: #e65100; margin-bottom: 20px; text-align: center; }
+        .total-geral { background: linear-gradient(135deg, #ff6f00 0%, #e65100 100%); color: white; padding: 25px; border-radius: 10px; text-align: center; margin: 20px 0; }
+        .classificacao-box { padding: 20px; border-radius: 10px; text-align: center; margin: 20px 0; font-size: 1.2em; font-weight: 700; }
+        .dominio-card { background: white; padding: 20px; border-radius: 10px; margin-bottom: 15px; box-shadow: 0 3px 10px rgba(0,0,0,0.08); border-left: 4px solid #ff6f00; }
+        .dominio-card h4 { color: #e65100; margin-bottom: 8px; }
+        .disclaimer { background: #fff3e0; padding: 15px; border-radius: 8px; margin-top: 20px; border-left: 4px solid #ff9800; font-size: 0.85em; color: #e65100; line-height: 1.6; }
+        .btn-imprimir { position: absolute; top: 20px; right: 20px; padding: 10px 20px; background: linear-gradient(135deg, #ff6f00 0%, #e65100 100%); color: white; border: none; border-radius: 20px; font-size: 14px; font-weight: 600; cursor: pointer; }
+        @media print { body { background: white !important; padding: 0 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } @page { size: landscape; margin: 10mm; } .botoes, .btn, .btn-imprimir { display: none !important; } .container { box-shadow: none !important; max-width: 100% !important; } .info-tecnica { display: none !important; } .resultados { display: none !important; } .item { page-break-inside: avoid; } .opcoes { flex-direction: row !important; align-items: center !important; justify-content: center !important; } .opcao { min-width: auto !important; padding: 4px 6px !important; } }
+        @media (max-width: 768px) { .container { margin: 10px; border-radius: 10px; } .header { padding: 20px; } .header h1 { font-size: 1.6em; } .content { padding: 15px; } .form-row { flex-direction: column; } .opcoes { flex-direction: column; align-items: center; } .botoes { flex-direction: column; } .btn { width: 100%; } }
+    </style>
+</head>
+<body>
+<div style="padding:10px 20px;background:#2e7d32;"><a href="../" style="display:inline-block;background:#fff;color:#2e7d32;text-decoration:none;font-family:Segoe UI,Arial,sans-serif;font-size:14px;font-weight:bold;padding:8px 20px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.15);">&#11013; Voltar ao In&#237;cio</a></div>
+    <div class="container">
+        <div class="header">
+            <h1>&#129504; DIZCALC</h1>
+            <p>Escala de Rastreio de Discalculia</p>
+            <p style="font-size:0.85em; opacity:0.8; margin-top:5px;">Rastreio de Discalculia &#8212; Monte (2026)</p>
+        </div>
+        <div class="content">
+            <div class="info-tecnica">
+                <button class="btn-imprimir" onclick="window.print()">&#128424; Imprimir Formul&#225;rio</button>
+                <h2>&#128218; Informa&#231;&#245;es T&#233;cnicas</h2>
+                <p>
+                    <strong>Instrumento:</strong> DIZCALC &#8212; Escala de Rastreio de Discalculia<br>
+                    <strong>Base te&#243;rica:</strong> Crit&#233;rios do DSM-5-TR + Geary (2004), Butterworth (2005), Dehaene (1997)<br>
+                    <strong>Estrutura:</strong> 30 itens, Likert 4 pontos (0-3), 6 dom&#237;nios<br>
+                    <strong>Dom&#237;nios:</strong> Senso Num&#233;rico, Mem&#243;ria de Fatos, Procedimentos, Racioc&#237;nio, Cogni&#231;&#227;o Espacial-Temporal, Impacto Emocional<br>
+                    <strong>Resultado:</strong> Escore total (0-90) com classifica&#231;&#227;o de risco<br>
+                    <strong>Popula&#231;&#227;o:</strong> 7&#8211;14 anos &#8212; respondido por pais ou professores
+                </p>
+            </div>
+            <div class="dados-pessoais">
+                <h2>&#128203; Dados Pessoais</h2>
+                <div class="form-row">
+                    <div class="form-group"><label for="nome">Nome da Crian&#231;a/Adolescente:</label><input type="text" id="nome" placeholder="Nome completo"></div>
+                    <div class="form-group"><label for="respondente">Respondente:</label><select id="respondente"><option value="">Selecione</option><option value="Pais/Responsavel">Pais/Respons&#225;vel</option><option value="Professor(a)">Professor(a)</option><option value="Outro">Outro</option></select></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label for="dataNascimento">Data de Nascimento:</label><input type="date" id="dataNascimento" onchange="calcularIdade()"></div>
+                    <div class="form-group"><label for="idadeCalculada">Idade:</label><input type="text" id="idadeCalculada" readonly style="background-color:#f0f0f0;" placeholder="Calculada automaticamente"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label for="sexo">Sexo:</label><select id="sexo"><option value="">Selecione</option><option value="Masculino">Masculino</option><option value="Feminino">Feminino</option></select></div>
+                    <div class="form-group"><label for="data">Data da Avalia&#231;&#227;o:</label><input type="date" id="data"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label for="observacoes">Observa&#231;&#245;es (opcional):</label><input type="text" id="observacoes" placeholder="Informa&#231;&#245;es adicionais"></div>
+                </div>
+            </div>
+            <div class="instrucoes">
+                <h3>&#128221; Instru&#231;&#245;es</h3>
+                <p>Responda com base no comportamento <strong>HABITUAL</strong> da crian&#231;a/adolescente em rela&#231;&#227;o a matem&#225;tica e n&#250;meros. Compare com outras crian&#231;as da mesma idade e escolaridade. <strong>Popula&#231;&#227;o:</strong> 7 a 14 anos.</p>
+            </div>
+            <div id="questionario"></div>
+            <div class="botoes">
+                <button class="btn btn-primary" onclick="calcularResultados()">Calcular Resultados</button>
+                <button class="btn btn-secondary" onclick="gerarRelatorioPDF()">Gerar Relat&#243;rio PDF</button>
+                <button class="btn btn-danger" onclick="limparDados()">Limpar Dados</button>
+            </div>
+            <div id="resultados" class="resultados"></div>
+            <div class="info-tecnica" id="referencias" style="margin-top:30px; background:#f8f9fa; border-left-color:#e65100;">
+                <h2 style="color:#e65100;">Refer&#234;ncias</h2>
+                <p style="color:#555; line-height:1.9; font-size:0.88em;">
+                    <strong>GEARY, D. C.</strong> Mathematics and learning disabilities. <em>Journal of Learning Disabilities</em>, v. 37, n. 1, p. 4-15, 2004.<br><br>
+                    <strong>BUTTERWORTH, B.</strong> Developmental dyscalculia. In: CAMPBELL, J. I. D. (Ed.). <em>Handbook of Mathematical Cognition</em>. New York: Psychology Press, p. 455-467, 2005.<br><br>
+                    <strong>DEHAENE, S.</strong> <em>The Number Sense</em>. New York: Oxford University Press, 1997.<br><br>
+                    <strong>ASHCRAFT, M. H.</strong> Math anxiety. <em>Current Directions in Psychological Science</em>, v. 11, n. 5, p. 181-185, 2002.<br><br>
+                    <strong>AMERICAN PSYCHIATRIC ASSOCIATION.</strong> <em>Diagnostic and Statistical Manual of Mental Disorders</em> (DSM-5-TR). 5th ed., text rev. Washington, DC: APA, 2022.
+                </p>
+            </div>
+        </div>
+    </div>
+    <script src="../id-paciente.js"></script>
+    <script>
+var ITENS=[
+{texto:"Tem dificuldade para entender qual n\u00famero \u00e9 maior ou menor (ex: confunde se 8 \u00e9 maior que 6)",dom:"SN"},
+{texto:"N\u00e3o consegue estimar quantidades sem contar (ex: quantas balas tem no pote?)",dom:"SN"},
+{texto:"Precisa usar os dedos para fazer contas simples que crian\u00e7as da mesma idade j\u00e1 fazem de cabe\u00e7a",dom:"SN"},
+{texto:"Tem dificuldade para entender o conceito de \u0027metade\u0027, \u0027dobro\u0027 ou \u0027um quarto\u0027",dom:"SN"},
+{texto:"Confunde a ordem dos n\u00fameros (ex: acha que 21 vem depois de 29)",dom:"SN"},
+{texto:"N\u00e3o consegue memorizar a tabuada, mesmo depois de muito treino",dom:"MF"},
+{texto:"Precisa recontar do zero para resolver somas que j\u00e1 deveria saber de cor (ex: 3+4)",dom:"MF"},
+{texto:"Esquece procedimentos matem\u00e1ticos que acabou de aprender (ex: aprende hoje, amanh\u00e3 n\u00e3o lembra)",dom:"MF"},
+{texto:"Demora muito mais que os colegas para responder c\u00e1lculos b\u00e1sicos",dom:"MF"},
+{texto:"Conta nos dedos para opera\u00e7\u00f5es que outras crian\u00e7as da mesma idade j\u00e1 automatizaram",dom:"MF"},
+{texto:"Confunde os sinais das opera\u00e7\u00f5es (+ com \u00d7, - com \u00f7)",dom:"PC"},
+{texto:"N\u00e3o entende o conceito de \u0027emprestar\u0027 ou \u0027carregar\u0027 (vai-um) nas opera\u00e7\u00f5es",dom:"PC"},
+{texto:"Come\u00e7a a conta pelo lado errado (pela esquerda em vez da direita)",dom:"PC"},
+{texto:"Pula etapas no meio da conta sem perceber",dom:"PC"},
+{texto:"Alinha os n\u00fameros errado nas contas armadas (unidade com dezena)",dom:"PC"},
+{texto:"N\u00e3o consegue identificar qual opera\u00e7\u00e3o usar em um problema de texto (ex: \u0027se tenho 5 e ganho 3...\u0027)",dom:"RM"},
+{texto:"Tem muita dificuldade com problemas que envolvem mais de uma etapa",dom:"RM"},
+{texto:"N\u00e3o percebe quando um resultado est\u00e1 absurdamente errado (ex: aceita que 3x4=72)",dom:"RM"},
+{texto:"N\u00e3o consegue aplicar conceitos matem\u00e1ticos em situa\u00e7\u00f5es do dia a dia (troco, pre\u00e7o)",dom:"RM"},
+{texto:"Decora f\u00f3rmulas mas n\u00e3o entende por que funcionam",dom:"RM"},
+{texto:"Tem dificuldade para ler horas em rel\u00f3gio anal\u00f3gico (de ponteiros)",dom:"CE"},
+{texto:"Confunde-se com dinheiro (n\u00e3o sabe se uma nota de 10 \u0027paga\u0027 algo de 7 reais)",dom:"CE"},
+{texto:"Tem dificuldade com medidas (metros, quilos, litros) e suas rela\u00e7\u00f5es",dom:"CE"},
+{texto:"Confunde direita/esquerda com frequ\u00eancia",dom:"CE"},
+{texto:"N\u00e3o consegue interpretar gr\u00e1ficos ou tabelas simples",dom:"CE"},
+{texto:"Evita atividades que envolvam n\u00fameros (jogos de tabuleiro, troco, receitas)",dom:"IE"},
+{texto:"Fica visivelmente ansioso(a) ou frustrado(a) ao fazer tarefas de matem\u00e1tica",dom:"IE"},
+{texto:"Diz que \u0027odeia matem\u00e1tica\u0027 ou que \u0027\u00e9 burro(a) para n\u00fameros\u0027",dom:"IE"},
+{texto:"Chora ou se recusa a fazer li\u00e7\u00e3o de matem\u00e1tica",dom:"IE"},
+{texto:"O desempenho em matem\u00e1tica \u00e9 muito inferior ao de leitura/escrita",dom:"IE"}
+];
+
+var OPCOES=[{valor:0,texto:"Nunca"},{valor:1,texto:"\u00c0s vezes"},{valor:2,texto:"Frequentemente"},{valor:3,texto:"Sempre"}];
+
+var DOMINIOS_MAP={"SN":"Senso Num\u00e9rico","MF":"Mem\u00f3ria de Fatos","PC":"Procedimentos de C\u00e1lculo","RM":"Racioc\u00ednio Matem\u00e1tico","CE":"Cogni\u00e7\u00e3o Espacial-Temporal","IE":"Impacto Emocional"};
+
+function gerarQuestionario() {
+    var c = document.getElementById('questionario');
+    var h = '';
+    ITENS.forEach(function(item, i) {
+        h += '<div class="item"><div class="item-texto"><span class="item-numero">' + (i+1) + '.</span> ' + item.texto + '</div><div class="opcoes">';
+        OPCOES.forEach(function(op) {
+            h += '<div class="opcao"><input type="radio" id="q' + i + '_' + op.valor + '" name="q' + i + '" value="' + op.valor + '"><label for="q' + i + '_' + op.valor + '">' + op.texto + '</label></div>';
+        });
+        h += '</div></div>';
+    });
+    c.innerHTML = h;
+}
+
+function calcularIdade() {
+    var d = document.getElementById('dataNascimento').value;
+    if (!d) return;
+    var h = new Date(), n = new Date(d);
+    var a = h.getFullYear() - n.getFullYear(), m = h.getMonth() - n.getMonth(), di = h.getDate() - n.getDate();
+    if (di < 0) { m--; di += new Date(h.getFullYear(), h.getMonth(), 0).getDate(); }
+    if (m < 0) { a--; m += 12; }
+    document.getElementById('idadeCalculada').value = a + ' anos, ' + m + ' meses e ' + di + ' dias';
+}
+
+function obterRespostas() {
+    var r = [];
+    for (var i = 0; i < ITENS.length; i++) {
+        var s = document.querySelector('input[name="q' + i + '"]:checked');
+        if (!s) return null;
+        r.push(parseInt(s.value));
+    }
+    return r;
+}
+
+function classificarDIZCALC(escore) {
+    if (escore <= 15) return {texto: "Baixo risco", cor: "#4caf50"};
+    if (escore <= 30) return {texto: "Risco moderado - Investigar", cor: "#fbc02d"};
+    if (escore <= 50) return {texto: "Risco elevado - Avalia\u00e7\u00e3o recomendada", cor: "#ff9800"};
+    return {texto: "Risco muito elevado - Encaminhar para avalia\u00e7\u00e3o neuropsicol\u00f3gica", cor: "#f44336"};
+}
+
+function calcularDominios(respostas) {
+    var dominios = {};
+    for (var k in DOMINIOS_MAP) { dominios[k] = 0; }
+    for (var i = 0; i < ITENS.length; i++) {
+        dominios[ITENS[i].dom] += respostas[i];
+    }
+    return dominios;
+}
+
+function calcularResultados() {
+    var nome = document.getElementById('nome').value;
+    if (!nome) { alert('Preencha o nome da crian\u00e7a/adolescente.'); return; }
+    var r = obterRespostas();
+    if (!r) {
+        var respondidos = 0;
+        for (var i = 0; i < ITENS.length; i++) {
+            if (document.querySelector('input[name="q' + i + '"]:checked')) respondidos++;
+        }
+        alert('Responda todos os 30 itens. Faltam ' + (30 - respondidos) + ' itens.');
+        return;
+    }
+
+    var escore = r.reduce(function(a, b) { return a + b; }, 0);
+    var classif = classificarDIZCALC(escore);
+    var dominios = calcularDominios(r);
+
+    var el = document.getElementById('resultados');
+    var h = '<h2>Resultados DIZCALC</h2>';
+
+    h += '<div class="classificacao-box" style="background:' + classif.cor + '22;border:3px solid ' + classif.cor + ';color:' + classif.cor + ';">';
+    h += '<div style="font-size:1.5em;">' + classif.texto + '</div>';
+    h += '<div style="font-size:1.1em;margin-top:5px;">Escore: ' + escore + ' / 90</div>';
+    h += '</div>';
+
+    h += '<div class="total-geral"><h3>Pontua\u00e7\u00e3o Total: ' + escore + ' / 90</h3><h3>Classifica\u00e7\u00e3o: ' + classif.texto + '</h3></div>';
+
+    h += '<div class="dominio-card"><h4>Escores por Dom\u00ednio</h4>';
+    for (var k in DOMINIOS_MAP) {
+        h += '<p><strong>' + DOMINIOS_MAP[k] + ' (' + k + '):</strong> ' + dominios[k] + ' / 15</p>';
+    }
+    h += '</div>';
+
+    h += '<div class="dominio-card"><h4>Faixas de Classifica\u00e7\u00e3o</h4>';
+    h += '<p>0-15: Baixo risco | 16-30: Risco moderado | 31-50: Risco elevado | 51-90: Risco muito elevado</p>';
+    h += '</div>';
+
+    h += '<div class="disclaimer"><strong>IMPORTANTE:</strong> O DIZCALC \u00e9 um instrumento de rastreio baseado em indicadores comportamentais da literatura cient\u00edfica. N\u00c3O possui valida\u00e7\u00e3o emp\u00edrica formal. N\u00e3o substitui avalia\u00e7\u00e3o neuropsicol\u00f3gica profissional. Resultados devem ser interpretados como indicadores de necessidade de investiga\u00e7\u00e3o, n\u00e3o como diagn\u00f3stico.</div>';
+
+    el.innerHTML = h;
+    el.style.display = 'block';
+    el.scrollIntoView({behavior: 'smooth'});
+
+    var sexo = document.getElementById('sexo').value;
+    var idade = document.getElementById('idadeCalculada').value;
+    var idPac = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
+    window._escalaDados = {escala:'DIZCALC', paciente:nome, escore:escore, classificacao:classif.texto, dominios:{SensoNumerico:dominios.SN,MemoriaFatos:dominios.MF,Procedimentos:dominios.PC,Raciocinio:dominios.RM,CognicaoEspacial:dominios.CE,ImpactoEmocional:dominios.IE}, sexo:sexo, idPaciente:idPac, idade:idade, data:new Date().toISOString()};
+    if (window.injetarBotaoSalvar) injetarBotaoSalvar('resultados');
+}
+
+function gerarRelatorioPDF() {
+    var nome = document.getElementById('nome').value;
+    if (!nome) { alert('Preencha o nome da crian\u00e7a/adolescente.'); return; }
+    var r = obterRespostas();
+    if (!r) { alert('Responda todos os 30 itens.'); return; }
+
+    var escore = r.reduce(function(a, b) { return a + b; }, 0);
+    var classif = classificarDIZCALC(escore);
+    var dominios = calcularDominios(r);
+    var idade = document.getElementById('idadeCalculada').value;
+    var sexo = document.getElementById('sexo').value;
+    var respondente = document.getElementById('respondente').value;
+    var dataAval = document.getElementById('data').value || new Date().toLocaleDateString('pt-BR');
+    var obs = document.getElementById('observacoes').value;
+    var idPac = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
+
+    var jsPDF = window.jspdf.jsPDF;
+    var doc = new jsPDF();
+
+    // Cabecalho
+    doc.setFillColor(255,111,0); doc.rect(0,0,210,35,'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(14); doc.setFont(undefined,'bold');
+    doc.text('DIZCALC - RELAT\u00d3RIO DE RASTREIO', 105, 15, {align:'center'});
+    doc.setFontSize(9); doc.setFont(undefined,'normal');
+    doc.text('Escala de Rastreio de Discalculia', 105, 23, {align:'center'});
+    doc.text('Monte (2026)', 105, 29, {align:'center'});
+
+    // Dados pessoais
+    var y = 42;
+    doc.setFillColor(248,249,250); doc.rect(15,y,180,28,'F');
+    doc.setTextColor(230,81,0); doc.setFontSize(10); doc.setFont(undefined,'bold');
+    doc.text('DADOS PESSOAIS', 20, y+6);
+    doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont(undefined,'normal');
+    doc.text('Nome: ' + nome + '   |   Sexo: ' + sexo, 20, y+12);
+    doc.text('Idade: ' + idade + '   |   Data: ' + dataAval + (idPac ? '   |   ID: ' + idPac : ''), 20, y+18);
+    doc.text('Respondente: ' + respondente + (obs ? '   |   Obs: ' + obs : ''), 20, y+24);
+
+    // Classificacao
+    y = 76;
+    var corR, corG, corB;
+    if (escore <= 15) { corR=76; corG=175; corB=80; }
+    else if (escore <= 30) { corR=251; corG=192; corB=45; }
+    else if (escore <= 50) { corR=255; corG=152; corB=0; }
+    else { corR=244; corG=67; corB=54; }
+    doc.setFillColor(corR, corG, corB); doc.rect(15,y,180,14,'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(12); doc.setFont(undefined,'bold');
+    doc.text('Classifica\u00e7\u00e3o: ' + classif.texto + '  |  Escore: ' + escore + '/90', 105, y+9, {align:'center'});
+
+    // Dominios
+    y = 96;
+    doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont(undefined,'bold');
+    doc.text('ESCORES POR DOM\u00cdNIO (cada dom\u00ednio: 0-15):', 20, y); y += 7;
+    doc.setFont(undefined,'normal');
+    for (var k in DOMINIOS_MAP) {
+        doc.text(DOMINIOS_MAP[k] + ' (' + k + '): ' + dominios[k] + '/15', 22, y);
+        y += 5;
+    }
+
+    // Pontuacao por item
+    y += 5;
+    doc.setFont(undefined,'bold');
+    doc.text('PONTUA\u00c7\u00c3O POR ITEM:', 20, y); y += 7;
+    doc.setFont(undefined,'normal');
+    for (var i = 0; i < ITENS.length; i++) {
+        if (y > 270) { doc.addPage(); y = 20; }
+        var textoItem = (i+1) + '. ' + ITENS[i].texto;
+        if (textoItem.length > 85) textoItem = textoItem.substring(0, 82) + '...';
+        doc.text(textoItem + ' = ' + r[i], 22, y);
+        y += 5;
+    }
+
+    // Disclaimer
+    if (y > 255) { doc.addPage(); y = 20; }
+    y += 5;
+    doc.setFillColor(255,248,235); doc.rect(15,y,180,20,'F');
+    doc.setTextColor(180,90,0); doc.setFontSize(7);
+    doc.text('IMPORTANTE: O DIZCALC e um instrumento de rastreio baseado em indicadores comportamentais da literatura cientifica.', 20, y+5);
+    doc.text('NAO possui validacao empirica formal. Nao substitui avaliacao neuropsicologica profissional.', 20, y+10);
+    doc.text('Resultados devem ser interpretados como indicadores de necessidade de investigacao, nao como diagnostico.', 20, y+15);
+
+    // Rodape
+    doc.setFillColor(80,80,80); doc.rect(0,285,210,12,'F');
+    doc.setTextColor(200,200,200); doc.setFontSize(7);
+    doc.text('Relat\u00f3rio gerado em: ' + new Date().toLocaleString('pt-BR'), 105, 291, {align:'center'});
+
+    // Salvar
+    var ts = new Date();
+    var tsStr = ts.getFullYear() + String(ts.getMonth()+1).padStart(2,'0') + String(ts.getDate()).padStart(2,'0') + String(ts.getHours()).padStart(2,'0') + String(ts.getMinutes()).padStart(2,'0');
+    doc.save('DIZCALC_' + nome.replace(/\s+/g,'_') + '_' + tsStr + '.pdf');
+}
+
+function limparDados() {
+    if (!confirm('Limpar todos os dados?')) return;
+    document.getElementById('nome').value = '';
+    document.getElementById('dataNascimento').value = '';
+    document.getElementById('idadeCalculada').value = '';
+    document.getElementById('sexo').value = '';
+    document.getElementById('respondente').value = '';
+    document.getElementById('observacoes').value = '';
+    document.querySelectorAll('input[type="radio"]').forEach(function(r) { r.checked = false; });
+    document.getElementById('resultados').style.display = 'none';
+    document.getElementById('data').value = new Date().toISOString().split('T')[0];
+}
+
+// ===== MODO PAINEL =====
+var _sessionInfo = null;
+var _API_URL = 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
+
+function _decodificarURL() {
+    var params = new URLSearchParams(window.location.search);
+    var d = params.get('d');
+    if (!d) return false;
+    try { _sessionInfo = JSON.parse(atob(decodeURIComponent(d))); } catch(e) { return false; }
+    var nomeEl = document.getElementById('nome');
+    var nascEl = document.getElementById('dataNascimento');
+    var sexoEl = document.getElementById('sexo');
+    if (nomeEl && _sessionInfo.patientName) nomeEl.value = _sessionInfo.patientName;
+    if (nascEl && _sessionInfo.birthDate) nascEl.value = _sessionInfo.birthDate;
+    if (sexoEl && _sessionInfo.sex) sexoEl.value = _sessionInfo.sex;
+    if (typeof calcularIdade === 'function') calcularIdade();
+    if (nomeEl) nomeEl.dispatchEvent(new Event('input'));
+    if (nascEl) nascEl.dispatchEvent(new Event('change'));
+    var botoes = document.querySelector('.botoes');
+    if (botoes) {
+        botoes.innerHTML = '<button class="btn btn-primary" style="padding:15px 30px;border:none;border-radius:25px;font-size:16px;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#2e7d32,#43a047);color:white;" onclick="_enviarResultadosPainel()">Enviar Resultados ao Profissional</button>';
+    }
+    var els = document.querySelectorAll('.info-tecnica');
+    els.forEach(function(el) { el.style.display = 'none'; });
+    return true;
+}
+
+async function _enviarResultadosPainel() {
+    var nomeEl = document.getElementById('nome');
+    if (!nomeEl || !nomeEl.value.trim()) { alert('Preencha o nome antes de enviar.'); return; }
+    var calcFn = window.calcularResultados;
+    if (calcFn && !window._escalaDados) { try { calcFn(); } catch(e) {} }
+    var dados = window._escalaDados || {};
+    if (!dados.escala) dados.escala = 'DIZCALC';
+    dados.idPaciente = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
+    dados.data = new Date().toISOString();
+    var btn = document.querySelector('.botoes button');
+    if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
+    try {
+        var resp = await fetch(_API_URL + '/save-escala', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({sessionId: _sessionInfo.sessionId, email: _sessionInfo.email, data: dados})
+        });
+        var result = await resp.json();
+        if (result.ok || resp.ok) {
+            var container = document.querySelector('.botoes');
+            if (container) container.innerHTML = '<div style="background:#c8e6c9;border:2px solid #2e7d32;border-radius:10px;padding:20px;text-align:center;"><p style="font-size:1.3em;color:#2e7d32;font-weight:bold;">Resultados enviados com sucesso!</p><p style="color:#555;margin-top:8px;">O profissional ja pode visualizar seus resultados no painel.</p><p style="color:#777;margin-top:5px;font-size:0.85em;">Voce pode fechar esta pagina.</p></div>';
+            var res = document.getElementById('resultados');
+            if (res) res.style.display = 'none';
+        } else {
+            if (btn) { btn.disabled = false; btn.textContent = 'Enviar Resultados ao Profissional'; }
+            alert('Erro ao enviar. Tente novamente.');
+        }
+    } catch(e) {
+        if (btn) { btn.disabled = false; btn.textContent = 'Enviar Resultados ao Profissional'; }
+        alert('Erro de conexao. Verifique sua internet e tente novamente.');
+    }
+}
+
+// === INICIALIZACAO ===
+gerarQuestionario();
+document.getElementById('questionario').addEventListener('change',function(e){if(e.target.type==='radio'){var item=e.target.closest('.item');if(item&&item.nextElementSibling){item.nextElementSibling.scrollIntoView({behavior:'smooth',block:'center'});}}});
+document.getElementById('data').value = new Date().toISOString().split('T')[0];
+var params = new URLSearchParams(window.location.search);
+if (params.get('d')) {
+    _decodificarURL();
+} else if (params.get('print')) {
+    var els = document.querySelectorAll('.info-tecnica');
+    els.forEach(function(el) { el.style.display = 'none'; });
+    var botoes = document.querySelector('.botoes');
+    if (botoes) botoes.style.display = 'none';
+    setTimeout(function() { window.print(); }, 500);
+} else {
+    if (!window.location.protocol.startsWith('file')) window.location.href = 'https://setmonte.github.io/online/';
+}
+    </script>
+<script>
+if (!new URLSearchParams(window.location.search).get('d')) {
+    var s1 = document.createElement('script'); s1.src = 'pdf-escalas.js'; document.body.appendChild(s1);
+    var s2 = document.createElement('script'); s2.src = 'salvar-escala.js'; document.body.appendChild(s2);
+}
+var _sc = document.createElement('script'); _sc.src = 'coleta-anonima.js'; document.body.appendChild(_sc);
+</script>
+<div style="text-align:center;padding:15px;color:#999;font-size:0.75em;margin-top:20px;">Dados an&#244;nimos e n&#227;o-identific&#225;veis podem ser utilizados para fins de pesquisa e normatiza&#231;&#227;o.</div>
+</body>
+</html>
