@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-QY1N9587DG"></script>
+    <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-QY1N9587DG');</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>M-CHAT-R &#8212; Rastreio de Autismo em Beb&#234;s</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background: linear-gradient(135deg, #c62828 0%, #880e4f 100%); min-height: 100vh; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; border-radius: 15px; box-shadow: 0 20px 40px rgba(0,0,0,0.15); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #c62828 0%, #880e4f 100%); color: white; padding: 30px; text-align: center; }
+        .header h1 { font-size: 2.2em; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        .header p { font-size: 1.1em; opacity: 0.9; }
+        .content { padding: 30px; }
+        .info-tecnica { background: #fce4ec; padding: 25px; border-radius: 10px; margin-bottom: 30px; border-left: 5px solid #c62828; position: relative; }
+        .info-tecnica h2 { color: #c62828; margin-bottom: 15px; font-size: 1.4em; }
+        .info-tecnica p { color: #555; line-height: 1.7; font-size: 0.95em; }
+        .dados-pessoais { background: #f8f9fa; padding: 25px; border-radius: 10px; margin-bottom: 30px; border-left: 5px solid #c62828; }
+        .dados-pessoais h2 { color: #c62828; margin-bottom: 20px; font-size: 1.5em; }
+        .form-row { display: flex; gap: 20px; margin-bottom: 15px; flex-wrap: wrap; }
+        .form-group { flex: 1; min-width: 200px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; color: #555; }
+        .form-group input, .form-group select { width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 16px; transition: border-color 0.3s; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: #c62828; }
+        .instrucoes { background: #fce4ec; padding: 20px; border-radius: 10px; margin-bottom: 30px; border-left: 5px solid #880e4f; }
+        .instrucoes h3 { color: #880e4f; margin-bottom: 10px; }
+        .instrucoes p { color: #555; font-size: 0.95em; line-height: 1.7; }
+        .item { padding: 20px; border-bottom: 1px solid #f0f0f0; transition: background-color 0.3s; }
+        .item:hover { background-color: #fce4ec; }
+        .item:last-child { border-bottom: none; }
+        .item-texto { font-size: 1.05em; margin-bottom: 15px; color: #444; line-height: 1.5; }
+        .item-numero { font-weight: bold; color: #c62828; margin-right: 8px; }
+        .opcoes { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+        .opcao { display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; padding: 8px; border-radius: 8px; transition: all 0.3s; border: 2px solid transparent; min-width: 70px; min-height: 70px; }
+        .opcao:hover { background-color: #fce4ec; border-color: #c62828; }
+        .opcao input[type="radio"] { width: 18px; height: 18px; cursor: pointer; accent-color: #c62828; }
+        .opcao label { cursor: pointer; font-weight: 500; color: #555; text-align: center; font-size: 0.8em; line-height: 1.2; min-height: 30px; display: flex; align-items: center; }
+        .botoes { display: flex; gap: 15px; justify-content: center; margin: 30px 0; flex-wrap: wrap; }
+        .btn { padding: 15px 30px; border: none; border-radius: 25px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s; text-align: center; }
+        .btn-primary { background: linear-gradient(135deg, #c62828 0%, #880e4f 100%); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(198,40,40,0.3); }
+        .btn-secondary { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; }
+        .btn-secondary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(40,167,69,0.3); }
+        .btn-danger { background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%); color: white; }
+        .btn-danger:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(220,53,69,0.3); }
+        .resultados { background: #f8f9fa; padding: 30px; border-radius: 10px; margin-top: 30px; border-left: 5px solid #c62828; display: none; }
+        .resultados h2 { color: #c62828; margin-bottom: 20px; text-align: center; }
+        .total-geral { background: linear-gradient(135deg, #c62828 0%, #880e4f 100%); color: white; padding: 25px; border-radius: 10px; text-align: center; margin: 20px 0; }
+        .classificacao-box { padding: 20px; border-radius: 10px; text-align: center; margin: 20px 0; font-size: 1.2em; font-weight: 700; }
+        .dominio-card { background: white; padding: 20px; border-radius: 10px; margin-bottom: 15px; box-shadow: 0 3px 10px rgba(0,0,0,0.08); border-left: 4px solid #c62828; }
+        .dominio-card h4 { color: #c62828; margin-bottom: 8px; }
+        .disclaimer { background: #fff3e0; padding: 15px; border-radius: 8px; margin-top: 20px; border-left: 4px solid #ff9800; font-size: 0.85em; color: #e65100; line-height: 1.6; }
+        .btn-imprimir { position: absolute; top: 20px; right: 20px; padding: 10px 20px; background: linear-gradient(135deg, #c62828 0%, #880e4f 100%); color: white; border: none; border-radius: 20px; font-size: 14px; font-weight: 600; cursor: pointer; }
+        @media print { body { background: white !important; padding: 0 !important; } .botoes, .btn, .btn-imprimir { display: none !important; } .container { box-shadow: none !important; max-width: 100% !important; } .info-tecnica { display: none !important; } .resultados { display: none !important; } .item { page-break-inside: avoid; } .opcoes { flex-direction: row !important; align-items: center !important; justify-content: center !important; } .opcao { min-width: auto !important; padding: 4px 6px !important; } @page { size: landscape; } }
+        @media (max-width: 768px) { .container { margin: 10px; border-radius: 10px; } .header { padding: 20px; } .header h1 { font-size: 1.6em; } .content { padding: 15px; } .form-row { flex-direction: column; } .opcoes { flex-direction: column; align-items: center; } .botoes { flex-direction: column; } .btn { width: 100%; } }
+    </style>
+</head>
+<body>
+<div style="padding:10px 20px;background:#2e7d32;"><a href="../" style="display:inline-block;background:#fff;color:#2e7d32;text-decoration:none;font-family:Segoe UI,Arial,sans-serif;font-size:14px;font-weight:bold;padding:8px 20px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.15);">&#11013; Voltar ao In&#237;cio</a></div>
+    <div class="container">
+        <div class="header">
+            <h1>&#129504; M-CHAT-R</h1>
+            <p>Modified Checklist for Autism in Toddlers, Revised</p>
+            <p style="font-size:0.85em; opacity:0.8; margin-top:5px;">Rastreio de Autismo em Beb&#234;s &#8212; Robins, Fein &amp; Barton (2009)</p>
+        </div>
+        <div class="content">
+            <div class="info-tecnica">
+                <button class="btn-imprimir" onclick="window.print()">&#128424; Imprimir Formul&#225;rio</button>
+                <h2>&#128218; Informa&#231;&#245;es T&#233;cnicas</h2>
+                <p>
+                    <strong>Instrumento:</strong> M-CHAT-R/F &#8212; Modified Checklist for Autism in Toddlers, Revised, with Follow-Up<br>
+                    <strong>Base te&#243;rica:</strong> Rastreio precoce de sinais de Transtorno do Espectro Autista (TEA)<br>
+                    <strong>Estrutura:</strong> 20 itens, respostas Sim/N&#227;o<br>
+                    <strong>Resultado:</strong> Escore total de falhas (0-20) com classifica&#231;&#227;o de risco<br>
+                    <strong>Popula&#231;&#227;o:</strong> Crian&#231;as de 16 a 30 meses
+                </p>
+            </div>
+            <div class="dados-pessoais">
+                <h2>&#128203; Dados Pessoais</h2>
+                <div class="form-row">
+                    <div class="form-group"><label for="nome">Nome da Crian&#231;a:</label><input type="text" id="nome" placeholder="Nome completo da crian&#231;a"></div>
+                    <div class="form-group"><label for="dataNascimento">Data de Nascimento:</label><input type="date" id="dataNascimento"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label for="idadeMeses">Idade em meses:</label><input type="number" id="idadeMeses" min="0" max="60" placeholder="Ex: 24"></div>
+                    <div class="form-group"><label for="sexo">Sexo:</label><select id="sexo"><option value="">Selecione</option><option value="Masculino">Masculino</option><option value="Feminino">Feminino</option></select></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label for="data">Data da Avalia&#231;&#227;o:</label><input type="date" id="data"></div>
+                    <div class="form-group"><label for="observacoes">Observa&#231;&#245;es (opcional):</label><input type="text" id="observacoes" placeholder="Informa&#231;&#245;es adicionais"></div>
+                </div>
+            </div>
+            <div class="instrucoes">
+                <h3>&#128221; Instru&#231;&#245;es</h3>
+                <p>Por favor, responda sobre o comportamento <strong>USUAL</strong> do(a) seu(sua) filho(a). Se o comportamento ocorreu poucas vezes (voc&#234; s&#243; viu uma ou duas vezes), responda como se a crian&#231;a N&#195;O fizesse. <strong>Popula&#231;&#227;o: 16 a 30 meses.</strong></p>
+            </div>
+            <div id="questionario"></div>
+            <div class="botoes">
+                <button class="btn btn-primary" onclick="calcularResultados()">Calcular Resultados</button>
+                <button class="btn btn-secondary" onclick="gerarRelatorioPDF()">Gerar Relat&#243;rio PDF</button>
+                <button class="btn btn-danger" onclick="limparDados()">Limpar Dados</button>
+            </div>
+            <div id="resultados" class="resultados"></div>
+            <div class="info-tecnica" id="referencias" style="margin-top:30px; background:#f8f9fa; border-left-color:#c62828;">
+                <h2 style="color:#c62828;">Refer&#234;ncias</h2>
+                <p style="color:#555; line-height:1.9; font-size:0.88em;">
+                    <strong>ROBINS, D. L.; FEIN, D.; BARTON, M.</strong> Modified Checklist for Autism in Toddlers, Revised, with Follow-Up (M-CHAT-R/F). 2009.<br><br>
+                    <strong>LOSAPIO, M. F.; POND&#201;, M. P.</strong> Tradu&#231;&#227;o para o portugu&#234;s da escala M-CHAT para rastreamento precoce de autismo. <em>Revista de Psiquiatria do Rio Grande do Sul</em>, v. 30, n. 3, p. 221-229, 2008.<br><br>
+                    <strong>AMERICAN PSYCHIATRIC ASSOCIATION.</strong> <em>Diagnostic and Statistical Manual of Mental Disorders</em> (DSM-5-TR). 5th ed., text rev. Washington, DC: APA, 2022.
+                </p>
+            </div>
+        </div>
+    </div>
+    <script src="../id-paciente.js"></script>
+    <script>
+var ITENS=[
+{texto:"Se voc\u00ea aponta algo do outro lado do c\u00f4modo, seu filho(a) olha para esse objeto? (por exemplo, se voc\u00ea aponta para um brinquedo ou animal, seu filho(a) olha para o brinquedo ou animal?)",inv:false},
+{texto:"Voc\u00ea j\u00e1 se perguntou se seu filho(a) poderia ser surdo(a)?",inv:true},
+{texto:"Seu filho(a) brinca de faz de conta? (por exemplo: finge beber de um copinho vazio, finge falar ao telefone, finge dar comida a uma boneca ou bicho de pel\u00facia?)",inv:false},
+{texto:"Seu filho(a) gosta de subir em objetos? (por exemplo: m\u00f3veis, brinquedos do parquinho, escadas?)",inv:false},
+{texto:"Seu filho(a) faz movimentos incomuns com os dedos perto dos olhos? (por exemplo: mexe os dedos perto dos olhos?)",inv:true},
+{texto:"Seu filho(a) aponta com o dedo para pedir algo ou para conseguir ajuda? (por exemplo: aponta para uma comida ou brinquedo que est\u00e1 fora do alcance?)",inv:false},
+{texto:"Seu filho(a) aponta com o dedo para mostrar algo interessante? (por exemplo: aponta para um avi\u00e3o no c\u00e9u ou para um caminh\u00e3o grande na rua?)",inv:false},
+{texto:"Seu filho(a) se interessa por outras crian\u00e7as? (por exemplo: seu filho(a) observa outras crian\u00e7as, sorri para elas ou vai at\u00e9 elas?)",inv:false},
+{texto:"Seu filho(a) mostra objetos para voc\u00ea, levantando-os para voc\u00ea ver - n\u00e3o para conseguir ajuda, mas apenas para compartilhar? (por exemplo: mostra uma flor, bicho de pel\u00facia ou caminh\u00e3o de brinquedo?)",inv:false},
+{texto:"Seu filho(a) responde quando voc\u00ea chama pelo nome dele(a)? (por exemplo: ele(a) olha para voc\u00ea, fala ou balbucia, ou para o que est\u00e1 fazendo quando voc\u00ea chama pelo nome dele(a)?)",inv:false},
+{texto:"Quando voc\u00ea sorri para seu filho(a), ele(a) sorri de volta?",inv:false},
+{texto:"Seu filho(a) fica incomodado(a) com barulhos do dia a dia? (por exemplo: aspirador de p\u00f3 ou m\u00fasica alta?)",inv:true},
+{texto:"Seu filho(a) anda?",inv:false},
+{texto:"Seu filho(a) olha nos seus olhos quando voc\u00ea fala com ele(a), brinca com ele(a) ou o(a) veste?",inv:false},
+{texto:"Seu filho(a) tenta copiar o que voc\u00ea faz? (por exemplo: dar tchau, bater palmas, ou fazer um barulho engra\u00e7ado que voc\u00ea fez?)",inv:false},
+{texto:"Se voc\u00ea vira a cabe\u00e7a para olhar algo, seu filho(a) olha ao redor para ver o que voc\u00ea est\u00e1 olhando?",inv:false},
+{texto:"Seu filho(a) tenta fazer com que voc\u00ea olhe para ele(a)? (por exemplo: seu filho(a) olha para voc\u00ea esperando elogio, ou diz \u0027olha\u0027 ou \u0027olha para mim\u0027?)",inv:false},
+{texto:"Seu filho(a) entende quando voc\u00ea pede para fazer algo? (por exemplo: se voc\u00ea n\u00e3o apontar, seu filho(a) entende \u0027coloque o livro na cadeira\u0027 ou \u0027me traga o cobertor\u0027?)",inv:false},
+{texto:"Se algo novo acontece, seu filho(a) olha para o seu rosto para ver como voc\u00ea se sente? (por exemplo: se ele(a) ouve um barulho estranho ou assustador, ou v\u00ea um brinquedo novo, ele(a) olha para o seu rosto?)",inv:false},
+{texto:"Seu filho(a) gosta de atividades com movimento? (por exemplo: ser balan\u00e7ado(a) ou quicado(a) no seu joelho?)",inv:false}
+];
+
+var OPCOES_NORMAL=[{valor:0,texto:"Sim"},{valor:1,texto:"N\u00e3o"}];
+var OPCOES_INV=[{valor:1,texto:"Sim"},{valor:0,texto:"N\u00e3o"}];
+
+function gerarQuestionario() {
+    var c = document.getElementById('questionario');
+    var h = '';
+    ITENS.forEach(function(item, i) {
+        var opcoes = item.inv ? OPCOES_INV : OPCOES_NORMAL;
+        h += '<div class="item"><div class="item-texto"><span class="item-numero">' + (i+1) + '.</span> ' + item.texto + '</div><div class="opcoes">';
+        opcoes.forEach(function(op) {
+            h += '<div class="opcao"><input type="radio" id="q' + i + '_' + op.valor + '" name="q' + i + '" value="' + op.valor + '"><label for="q' + i + '_' + op.valor + '">' + op.texto + '</label></div>';
+        });
+        h += '</div></div>';
+    });
+    c.innerHTML = h;
+}
+
+function obterRespostas() {
+    var r = [];
+    for (var i = 0; i < ITENS.length; i++) {
+        var s = document.querySelector('input[name="q' + i + '"]:checked');
+        if (!s) return null;
+        r.push(parseInt(s.value));
+    }
+    return r;
+}
+
+function classificarMCHATR(escore) {
+    if (escore <= 2) return {texto: "Baixo risco", cor: "#4caf50", desc: "Sem necessidade de follow-up"};
+    if (escore <= 7) return {texto: "Risco moderado", cor: "#ff9800", desc: "Recomenda-se M-CHAT-R/F (follow-up)"};
+    return {texto: "Alto risco", cor: "#f44336", desc: "Encaminhamento imediato para avalia\u00e7\u00e3o"};
+}
+
+function calcularResultados() {
+    var nome = document.getElementById('nome').value;
+    if (!nome) { alert('Preencha o nome da crian\u00e7a.'); return; }
+    var r = obterRespostas();
+    if (!r) {
+        var respondidos = 0;
+        for (var i = 0; i < ITENS.length; i++) {
+            if (document.querySelector('input[name="q' + i + '"]:checked')) respondidos++;
+        }
+        alert('Responda todos os 20 itens. Faltam ' + (20 - respondidos) + ' itens.');
+        return;
+    }
+
+    var escore = r.reduce(function(a, b) { return a + b; }, 0);
+    var classif = classificarMCHATR(escore);
+
+    var el = document.getElementById('resultados');
+    var h = '<h2>Resultados M-CHAT-R</h2>';
+
+    h += '<div class="classificacao-box" style="background:' + classif.cor + '22;border:3px solid ' + classif.cor + ';color:' + classif.cor + ';">';
+    h += '<div style="font-size:1.5em;">' + classif.texto + '</div>';
+    h += '<div style="font-size:1.1em;margin-top:5px;">Escore: ' + escore + ' / 20 falhas</div>';
+    h += '<div style="font-size:0.9em;margin-top:5px;">' + classif.desc + '</div>';
+    h += '</div>';
+
+    h += '<div class="total-geral"><h3>Total de Falhas: ' + escore + ' / 20</h3><h3>Classifica\u00e7\u00e3o: ' + classif.texto + '</h3></div>';
+
+    h += '<div class="dominio-card"><h4>Detalhamento por Item</h4>';
+    for (var i = 0; i < ITENS.length; i++) {
+        var status = r[i] === 1 ? '<span style="color:#f44336;font-weight:bold;">FALHA</span>' : '<span style="color:#4caf50;font-weight:bold;">OK</span>';
+        h += '<p><strong>Item ' + (i+1) + ':</strong> ' + status + (ITENS[i].inv ? ' (item invertido)' : '') + '</p>';
+    }
+    h += '</div>';
+
+    h += '<div class="dominio-card"><h4>Faixas de Classifica\u00e7\u00e3o</h4>';
+    h += '<p>0-2: Baixo risco (sem necessidade de follow-up)</p>';
+    h += '<p>3-7: Risco moderado (recomenda-se M-CHAT-R/F follow-up)</p>';
+    h += '<p>8-20: Alto risco (encaminhamento imediato para avalia\u00e7\u00e3o)</p>';
+    h += '</div>';
+
+    h += '<div class="disclaimer"><strong>IMPORTANTE:</strong> O M-CHAT-R/F \u00e9 um instrumento de rastreio para sinais precoces de Transtorno do Espectro Autista. N\u00e3o substitui avalia\u00e7\u00e3o cl\u00ednica profissional. Resultados devem ser interpretados por profissional qualificado. Crian\u00e7as com risco moderado ou alto devem ser encaminhadas para avalia\u00e7\u00e3o especializada.</div>';
+
+    el.innerHTML = h;
+    el.style.display = 'block';
+    el.scrollIntoView({behavior: 'smooth'});
+
+    var sexo = document.getElementById('sexo').value;
+    var idade = document.getElementById('idadeMeses').value ? document.getElementById('idadeMeses').value + ' meses' : '';
+    var idPac = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
+    window._escalaDados = {escala:'M-CHAT-R', paciente:nome, escore:escore, classificacao:classif.texto, dominios:{}, sexo:sexo, idPaciente:idPac, idade:idade, data:new Date().toISOString()};
+    if (window.injetarBotaoSalvar) injetarBotaoSalvar('resultados');
+}
+
+function gerarRelatorioPDF() {
+    var nome = document.getElementById('nome').value;
+    if (!nome) { alert('Preencha o nome da crian\u00e7a.'); return; }
+    var r = obterRespostas();
+    if (!r) { alert('Responda todos os 20 itens.'); return; }
+
+    var escore = r.reduce(function(a, b) { return a + b; }, 0);
+    var classif = classificarMCHATR(escore);
+    var idade = document.getElementById('idadeMeses').value ? document.getElementById('idadeMeses').value + ' meses' : '';
+    var sexo = document.getElementById('sexo').value;
+    var dataAval = document.getElementById('data').value || new Date().toLocaleDateString('pt-BR');
+    var obs = document.getElementById('observacoes').value;
+    var idPac = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
+
+    var jsPDF = window.jspdf.jsPDF;
+    var doc = new jsPDF();
+
+    // Cabecalho
+    doc.setFillColor(198,40,40); doc.rect(0,0,210,35,'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(14); doc.setFont(undefined,'bold');
+    doc.text('M-CHAT-R - RELAT\u00d3RIO DE RASTREIO', 105, 15, {align:'center'});
+    doc.setFontSize(9); doc.setFont(undefined,'normal');
+    doc.text('Modified Checklist for Autism in Toddlers, Revised', 105, 23, {align:'center'});
+    doc.text('Robins, Fein & Barton (2009)', 105, 29, {align:'center'});
+
+    // Dados pessoais
+    var y = 42;
+    doc.setFillColor(248,249,250); doc.rect(15,y,180,22,'F');
+    doc.setTextColor(198,40,40); doc.setFontSize(10); doc.setFont(undefined,'bold');
+    doc.text('DADOS DA CRIAN\u00c7A', 20, y+6);
+    doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont(undefined,'normal');
+    doc.text('Nome: ' + nome + '   |   Sexo: ' + sexo, 20, y+12);
+    doc.text('Idade: ' + idade + '   |   Data: ' + dataAval + (idPac ? '   |   ID: ' + idPac : ''), 20, y+18);
+
+    // Classificacao
+    y = 70;
+    var corR, corG, corB;
+    if (escore <= 2) { corR=76; corG=175; corB=80; }
+    else if (escore <= 7) { corR=255; corG=152; corB=0; }
+    else { corR=244; corG=67; corB=54; }
+    doc.setFillColor(corR, corG, corB); doc.rect(15,y,180,14,'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(12); doc.setFont(undefined,'bold');
+    doc.text('Classifica\u00e7\u00e3o: ' + classif.texto + '  |  Falhas: ' + escore + '/20', 105, y+9, {align:'center'});
+
+    // Pontuacao por item
+    y = 90;
+    doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont(undefined,'bold');
+    doc.text('RESULTADO POR ITEM:', 20, y); y += 7;
+    doc.setFont(undefined,'normal');
+    for (var i = 0; i < ITENS.length; i++) {
+        var statusTxt = r[i] === 1 ? 'FALHA' : 'OK';
+        var textoItem = (i+1) + '. ' + statusTxt + (ITENS[i].inv ? ' (invertido)' : '');
+        doc.text(textoItem, 22, y);
+        y += 5;
+        if (y > 270) { doc.addPage(); y = 20; }
+    }
+
+    // Recomendacao
+    y += 5;
+    doc.setFillColor(255,248,235); doc.rect(15,y,180,20,'F');
+    doc.setTextColor(198,40,40); doc.setFontSize(9); doc.setFont(undefined,'bold');
+    doc.text('RECOMENDA\u00c7\u00c3O: ' + classif.desc, 20, y+6);
+    doc.setTextColor(180,90,0); doc.setFontSize(7); doc.setFont(undefined,'normal');
+    doc.text('IMPORTANTE: O M-CHAT-R/F e um instrumento de rastreio. Nao substitui avaliacao clinica profissional.', 20, y+12);
+    doc.text('Resultados devem ser interpretados por profissional qualificado.', 20, y+16);
+
+    // Rodape
+    doc.setFillColor(80,80,80); doc.rect(0,285,210,12,'F');
+    doc.setTextColor(200,200,200); doc.setFontSize(7);
+    doc.text('Relat\u00f3rio gerado em: ' + new Date().toLocaleString('pt-BR'), 105, 291, {align:'center'});
+
+    // Salvar
+    var ts = new Date();
+    var tsStr = ts.getFullYear() + String(ts.getMonth()+1).padStart(2,'0') + String(ts.getDate()).padStart(2,'0') + String(ts.getHours()).padStart(2,'0') + String(ts.getMinutes()).padStart(2,'0');
+    doc.save('MCHATR_' + nome.replace(/\s+/g,'_') + '_' + tsStr + '.pdf');
+}
+
+function limparDados() {
+    if (!confirm('Limpar todos os dados?')) return;
+    document.getElementById('nome').value = '';
+    document.getElementById('dataNascimento').value = '';
+    document.getElementById('idadeMeses').value = '';
+    document.getElementById('sexo').value = '';
+    document.getElementById('observacoes').value = '';
+    document.querySelectorAll('input[type="radio"]').forEach(function(r) { r.checked = false; });
+    document.getElementById('resultados').style.display = 'none';
+    document.getElementById('data').value = new Date().toISOString().split('T')[0];
+}
+
+// ===== MODO PAINEL =====
+var _sessionInfo = null;
+var _API_URL = 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
+
+function _decodificarURL() {
+    var params = new URLSearchParams(window.location.search);
+    var d = params.get('d');
+    if (!d) return false;
+    try { _sessionInfo = JSON.parse(atob(decodeURIComponent(d))); } catch(e) { return false; }
+    var nomeEl = document.getElementById('nome');
+    var nascEl = document.getElementById('dataNascimento');
+    var sexoEl = document.getElementById('sexo');
+    if (nomeEl && _sessionInfo.patientName) nomeEl.value = _sessionInfo.patientName;
+    if (nascEl && _sessionInfo.birthDate) nascEl.value = _sessionInfo.birthDate;
+    if (sexoEl && _sessionInfo.sex) sexoEl.value = _sessionInfo.sex;
+    if (nomeEl) nomeEl.dispatchEvent(new Event('input'));
+    if (nascEl) nascEl.dispatchEvent(new Event('change'));
+    var botoes = document.querySelector('.botoes');
+    if (botoes) {
+        botoes.innerHTML = '<button class="btn btn-primary" style="padding:15px 30px;border:none;border-radius:25px;font-size:16px;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#2e7d32,#43a047);color:white;" onclick="_enviarResultadosPainel()">Enviar Resultados ao Profissional</button>';
+    }
+    var els = document.querySelectorAll('.info-tecnica');
+    els.forEach(function(el) { el.style.display = 'none'; });
+    return true;
+}
+
+async function _enviarResultadosPainel() {
+    var nomeEl = document.getElementById('nome');
+    if (!nomeEl || !nomeEl.value.trim()) { alert('Preencha o nome antes de enviar.'); return; }
+    var calcFn = window.calcularResultados;
+    if (calcFn && !window._escalaDados) { try { calcFn(); } catch(e) {} }
+    var dados = window._escalaDados || {};
+    if (!dados.escala) dados.escala = 'M-CHAT-R';
+    dados.idPaciente = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
+    dados.data = new Date().toISOString();
+    var btn = document.querySelector('.botoes button');
+    if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
+    try {
+        var resp = await fetch(_API_URL + '/save-escala', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({sessionId: _sessionInfo.sessionId, email: _sessionInfo.email, data: dados})
+        });
+        var result = await resp.json();
+        if (result.ok || resp.ok) {
+            var container = document.querySelector('.botoes');
+            if (container) container.innerHTML = '<div style="background:#c8e6c9;border:2px solid #2e7d32;border-radius:10px;padding:20px;text-align:center;"><p style="font-size:1.3em;color:#2e7d32;font-weight:bold;">Resultados enviados com sucesso!</p><p style="color:#555;margin-top:8px;">O profissional ja pode visualizar seus resultados no painel.</p><p style="color:#777;margin-top:5px;font-size:0.85em;">Voce pode fechar esta pagina.</p></div>';
+            var res = document.getElementById('resultados');
+            if (res) res.style.display = 'none';
+        } else {
+            if (btn) { btn.disabled = false; btn.textContent = 'Enviar Resultados ao Profissional'; }
+            alert('Erro ao enviar. Tente novamente.');
+        }
+    } catch(e) {
+        if (btn) { btn.disabled = false; btn.textContent = 'Enviar Resultados ao Profissional'; }
+        alert('Erro de conexao. Verifique sua internet e tente novamente.');
+    }
+}
+
+// === INICIALIZACAO ===
+gerarQuestionario();
+document.getElementById('questionario').addEventListener('change',function(e){if(e.target.type==='radio'){var item=e.target.closest('.item');if(item&&item.nextElementSibling){item.nextElementSibling.scrollIntoView({behavior:'smooth',block:'center'});}}});
+document.getElementById('data').value = new Date().toISOString().split('T')[0];
+var params = new URLSearchParams(window.location.search);
+if (params.get('d')) {
+    _decodificarURL();
+} else if (params.get('print')) {
+    var els = document.querySelectorAll('.info-tecnica');
+    els.forEach(function(el) { el.style.display = 'none'; });
+    var botoes = document.querySelector('.botoes');
+    if (botoes) botoes.style.display = 'none';
+    setTimeout(function() { window.print(); }, 500);
+} else {
+    if (!window.location.protocol.startsWith('file')) window.location.href = 'https://setmonte.github.io/online/';
+}
+    </script>
+<script>
+if (!new URLSearchParams(window.location.search).get('d')) {
+    var s1 = document.createElement('script'); s1.src = 'pdf-escalas.js'; document.body.appendChild(s1);
+    var s2 = document.createElement('script'); s2.src = 'salvar-escala.js'; document.body.appendChild(s2);
+}
+var _sc = document.createElement('script'); _sc.src = 'coleta-anonima.js'; document.body.appendChild(_sc);
+</script>
+<div style="text-align:center;padding:15px;color:#999;font-size:0.75em;margin-top:20px;">Dados an&#244;nimos e n&#227;o-identific&#225;veis podem ser utilizados para fins de pesquisa e normatiza&#231;&#227;o.</div>
+</body>
+</html>
