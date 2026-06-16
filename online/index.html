@@ -2897,7 +2897,7 @@
       function sanitize(s){if(!s)return '';return s.replace(/[\u2600-\u27BF\uD800-\uDFFF\uFE00-\uFE0F\u200D]/g,'').replace(/[^\x20-\x7E\xA0-\xFF\u0100-\u024F]/g,'').trim();}
       var r = _escalasResultCache[idx];
       if (!r) return;
-      var dd=(r.data||{}); if(dd.pdfBase64){var ts=new Date();var tsStr=ts.getFullYear()+String(ts.getMonth()+1).padStart(2,'0')+String(ts.getDate()).padStart(2,'0')+String(ts.getHours()).padStart(2,'0')+String(ts.getMinutes()).padStart(2,'0');var a=document.createElement('a');a.href=dd.pdfBase64;a.download=(dd.escala||'Escala').replace(/[\s\/]+/g,'_')+'_'+(dd.paciente||'').replace(/\s+/g,'_')+'_'+tsStr+'.pdf';document.body.appendChild(a);a.click();document.body.removeChild(a);return;}
+      var dd=(r.data||{}); if(dd.pdfBase64 && dd.pdfBase64.length > 100){var ts=new Date();var tsStr=ts.getFullYear()+String(ts.getMonth()+1).padStart(2,'0')+String(ts.getDate()).padStart(2,'0')+String(ts.getHours()).padStart(2,'0')+String(ts.getMinutes()).padStart(2,'0');var a=document.createElement('a');a.href=dd.pdfBase64;a.download=(dd.escala||'Escala').replace(/[\s\/]+/g,'_')+'_'+(dd.paciente||'').replace(/\s+/g,'_')+'_'+tsStr+'.pdf';document.body.appendChild(a);a.click();document.body.removeChild(a);return;}
       var d = r.data || {}; if(d.classificacao)d.classificacao=sanitize(d.classificacao); if(d.resultadoHTML)d.resultadoHTML=sanitize(d.resultadoHTML); if(d.paciente)d.paciente=sanitize(d.paciente);
       var jsPDF = window.jspdf.jsPDF;
       var doc = new jsPDF();
@@ -2911,7 +2911,8 @@
       var y = 38;
       doc.setTextColor(0,0,0); doc.setFontSize(10); doc.setFont(undefined,'bold');
       if (d.idPaciente) { doc.text('ID: ' + d.idPaciente, 15, y); y += 6; }
-      if (d.escore != null) { doc.text('Escore Total: ' + d.escore, 15, y); y += 6; }
+      if (d.idade) { doc.text('Idade: ' + sanitize(String(d.idade)), 15, y); y += 6; }
+      if (d.escore != null && d.escore !== undefined && d.escore !== '') { doc.text('Escore Total: ' + d.escore, 15, y); y += 6; }
       if (d.media != null) { doc.text('Media: ' + d.media, 15, y); y += 6; }
       if (d.classificacao) { doc.text('Classificacao: ' + sanitize(d.classificacao), 15, y); y += 6; }
       if (d.sexo) { doc.setFont(undefined,'normal'); doc.text('Sexo: ' + d.sexo, 15, y); y += 6; }
