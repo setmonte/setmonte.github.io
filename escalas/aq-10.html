@@ -344,7 +344,9 @@ document.getElementById('questionario').addEventListener('change',function(e){if
     document.getElementById('data').value = new Date().toISOString().split('T')[0];
     // Verificar modo de acesso
     var params = new URLSearchParams(window.location.search);
-    if (params.get('d')) {
+    if (params.get('s')) {
+    fetch(_API_URL + '/get-session?id=' + params.get('s')).then(function(r){return r.json();}).then(function(data){if(data.sessionId){_sessionInfo=data;var nomeEl=document.getElementById('nome');var nascEl=document.getElementById('dataNascimento');var sexoEl=document.getElementById('sexo');if(nomeEl&&data.patientName)nomeEl.value=data.patientName;if(nascEl&&data.birthDate)nascEl.value=data.birthDate;if(sexoEl&&data.sex)sexoEl.value=data.sex;if(typeof calcularIdade==='function')calcularIdade();if(nomeEl)nomeEl.dispatchEvent(new Event('input'));if(nascEl)nascEl.dispatchEvent(new Event('change'));var botoes=document.querySelector('.botoes');if(botoes){botoes.innerHTML='<button class="btn btn-primary" style="padding:15px 30px;border:none;border-radius:25px;font-size:16px;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#2e7d32,#43a047);color:white;" onclick="_enviarResultadosPainel()">Enviar Resultados ao Profissional</button>';}var els=document.querySelectorAll('.info-tecnica');els.forEach(function(el){el.style.display='none';});}}).catch(function(){});
+} else if (params.get('d')) {
         _decodificarURL();
     } else if (params.get('print')) {
         var infoTec = document.querySelectorAll('.info-tecnica');

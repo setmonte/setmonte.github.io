@@ -2770,31 +2770,34 @@
       window.open('https://setmonte.github.io/escalas/' + caminho + '?print=1', '_blank');
     }
 
-    function gerarLinkEscala() {
+    async function gerarLinkEscala() {
       var escala = document.getElementById('escalaSelect').value;
       var nome = document.getElementById('escalaNome').value.trim();
       var dn = document.getElementById('escalaDn').value;
       if (!escala) { alert('Selecione uma escala.'); return; }
       if (!nome) { alert('Preencha o nome do paciente.'); return; }
       if (!dn) { alert('Preencha a data de nascimento. O ID do paciente depende desse dado.'); return; }
-      var sessionId = 'esc-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-      var sessionData = {
-        email: currentUser,
-        sessionId: sessionId,
-        tipo: 'escala',
-        escala: escala,
-        patientName: nome,
-        birthDate: dn || '',
-        sex: document.getElementById('escalaSexo').value || '',
-        respondente: document.getElementById('escalaRespondente').value || '',
-        pacienteId: document.getElementById('escalaSelPac').value || ''
-      };
-      var params = btoa(JSON.stringify(sessionData));
-      var escalasSubpasta = ['smi', 'ysq-l3'];
-      var caminho = escalasSubpasta.indexOf(escala) >= 0 ? escala + '/' : escala + '.html';
-      var link = 'https://setmonte.github.io/escalas/' + caminho + '?d=' + encodeURIComponent(params);
-      document.getElementById('escalaSessionLink').textContent = link;
-      document.getElementById('escalaLinkResult').classList.remove('hidden');
+      var sexo = document.getElementById('escalaSexo').value || '';
+      // Salvar sessao no banco e obter ID curto
+      try {
+        var resp = await fetch(API_URL + '/save-session', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ email: currentUser, patientName: nome, birthDate: dn, sex: sexo, escala: escala })
+        });
+        var result = await resp.json();
+        if (result.ok && result.id) {
+          var escalasSubpasta = ['smi', 'ysq-l3'];
+          var caminho = escalasSubpasta.indexOf(escala) >= 0 ? escala + '/' : escala + '.html';
+          var link = 'https://setmonte.github.io/escalas/' + caminho + '?s=' + result.id;
+          document.getElementById('escalaSessionLink').textContent = link;
+          document.getElementById('escalaLinkResult').classList.remove('hidden');
+        } else {
+          alert('Erro ao gerar link: ' + (result.error || 'Tente novamente.'));
+        }
+      } catch(e) {
+        alert('Erro de conexao. Tente novamente.');
+      }
     }
 
     function copyEscalaLink() {
