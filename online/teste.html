@@ -100,9 +100,18 @@
   <script src="tecfe-v7-ai.js"></script>
   <script src="tecfe-v7-pdf.js"></script>
   <script>
-    // Desabilitar fullscreen e salvamento local para versao online
-    WCSTUI.enterFullscreen = function() {};
-    WCSTUI.exitFullscreen = function() {};
+    // Habilitar fullscreen para versao online
+    WCSTUI.enterFullscreen = function() {
+      var el = document.documentElement;
+      if (el.requestFullscreen) el.requestFullscreen();
+      else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+      else if (el.msRequestFullscreen) el.msRequestFullscreen();
+    };
+    WCSTUI.exitFullscreen = function() {
+      if (document.exitFullscreen) document.exitFullscreen();
+      else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+      else if (document.msExitFullscreen) document.msExitFullscreen();
+    };
     // Sobrescrever save do PDF para nao abrir dialogo de salvamento
     WCSTPDF.save = function(doc, fname) { return Promise.resolve({ success: true }); };
     // Interceptar IA para separar laudo/estrategia
