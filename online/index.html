@@ -794,7 +794,8 @@
         </select>
         <label style="font-size:0.85em;color:#555;">Observacoes:</label>
         <input type="text" id="trefObs" placeholder="Opcional" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:12px;">
-        <button onclick="startTrefOnlineTest()" class="btn btn-green" style="width:100%;">Gerar Link do Paciente</button>
+        <button onclick="startTrefOnlineTest()" class="btn btn-green" style="width:48%;">Gerar Link do Paciente</button>
+        <button onclick="startTrefOnlineTest(true)" class="btn btn-blue" style="width:48%;">Aplicar Localmente</button>
         <div id="trefLinkResult" class="hidden" style="margin-top:15px;padding:12px;background:#e8f5e9;border-radius:8px;">
           <p style="font-size:0.8em;color:#555;margin-bottom:5px;">Link gerado:</p>
           <p id="trefSessionLink" style="word-break:break-all;font-size:0.75em;color:#1565c0;"></p>
@@ -840,7 +841,8 @@
         </select>
         <label style="font-size:0.85em;color:#555;">Observacoes:</label>
         <input type="text" id="tflodObs" placeholder="Opcional" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:12px;">
-        <button onclick="startTflodOnlineTest()" class="btn btn-green" style="width:100%;">Gerar Link do Paciente</button>
+        <button onclick="startTflodOnlineTest()" class="btn btn-green" style="width:48%;">Gerar Link do Paciente</button>
+        <button onclick="startTflodOnlineTest(true)" class="btn btn-blue" style="width:48%;">Aplicar Localmente</button>
         <div id="tflodLinkResult" class="hidden" style="margin-top:15px;padding:12px;background:#e8f5e9;border-radius:8px;">
           <p style="font-size:0.8em;color:#555;margin-bottom:5px;">Link gerado:</p>
           <p id="tflodSessionLink" style="word-break:break-all;font-size:0.75em;color:#1565c0;"></p>
@@ -888,6 +890,7 @@
           <p style="font-size:11px;color:#666;margin-top:6px;">Bateria completa = 5 creditos | Teste individual = 1 credito</p>
         </div>
         <button class="btn btn-green" style="margin-top:10px;" onclick="startBaeOnlineTest()">Gerar Link do Paciente</button>
+        <button class="btn btn-blue" style="margin-top:10px;" onclick="startBaeOnlineTest(true)">Aplicar Localmente</button>
         <div id="baeLinkResult" class="hidden" style="margin-top:15px;">
           <p style="font-size:14px;color:#2e7d32;font-weight:bold;">Link gerado com sucesso!</p>
           <div class="session-link" id="baeSessionLink"></div>
@@ -931,6 +934,7 @@
           <label>CRP: <input type="text" id="trmvCrp" placeholder="XX/XXXXX-X" maxlength="10" style="width:120px;" oninput="maskCRP(this)"></label>
         </div>
         <button class="btn btn-green" style="margin-top:10px;" onclick="startTrmvOnlineTest()">Gerar Link do Paciente</button>
+        <button class="btn btn-blue" style="margin-top:10px;" onclick="startTrmvOnlineTest(true)">Aplicar Localmente</button>
         <div id="trmvLinkResult" class="hidden" style="margin-top:15px;">
           <p style="font-size:14px;color:#5e35b1;font-weight:bold;">Link gerado com sucesso!</p>
           <div class="session-link" id="trmvSessionLink"></div>
@@ -971,6 +975,7 @@
           <label>CRP: <input type="text" id="taavCrp" placeholder="XX/XXXXX-X" maxlength="10" style="width:120px;" oninput="maskCRP(this)"></label>
         </div>
         <button class="btn btn-green" style="margin-top:10px;" onclick="startTaavOnlineTest()">Gerar Link do Paciente</button>
+        <button class="btn btn-blue" style="margin-top:10px;" onclick="startTaavOnlineTest(true)">Aplicar Localmente</button>
         <div id="taavLinkResult" class="hidden" style="margin-top:15px;">
           <p style="font-size:14px;color:#5e35b1;font-weight:bold;">Link gerado com sucesso!</p>
           <div class="session-link" id="taavSessionLink"></div>
@@ -1014,6 +1019,7 @@
           <label>CRP: <input type="text" id="onCrp" placeholder="XX/XXXXX-X" maxlength="10" style="width:120px;" oninput="maskCRP(this)"></label>
         </div>
         <button class="btn btn-green" style="margin-top:10px;" onclick="startOnlineTest()">Gerar Link do Paciente</button>
+        <button class="btn btn-blue" style="margin-top:10px;" onclick="startOnlineTest(true)">Aplicar Localmente</button>
         <div id="linkResult" class="hidden" style="margin-top:15px;">
           <p style="font-size:14px;color:#2e7d32;font-weight:bold;">Link gerado com sucesso!</p>
           <div class="session-link" id="sessionLink"></div>
@@ -1325,7 +1331,7 @@
 
     var generatedLink = '';
 
-    async function startOnlineTest() {
+    async function startOnlineTest(abrirLocal) {
       var name = document.getElementById('onPatientName').value.trim();
       var birth = document.getElementById('onBirthDate').value;
       if (!name || !birth) {
@@ -1368,8 +1374,8 @@
         });
         var params = btoa(JSON.stringify(sessionData));
         generatedLink = 'https://setmonte.github.io/online/teste.html?d=' + encodeURIComponent(params);
-        document.getElementById('sessionLink').textContent = generatedLink;
-        document.getElementById('linkResult').classList.remove('hidden');
+        if (abrirLocal) { window.open(generatedLink, '_blank'); }
+        else { document.getElementById('sessionLink').textContent = generatedLink; document.getElementById('linkResult').classList.remove('hidden'); }
       } catch(e) {
         alert('Erro de conexao: ' + e.message);
       }
@@ -1656,7 +1662,7 @@
     var generatedBaeLink = '';
     var _baeResultCache = [];
 
-    async function startBaeOnlineTest() {
+    async function startBaeOnlineTest(abrirLocal) {
       var name = document.getElementById('baePatientName').value.trim();
       var birth = document.getElementById('baeBirthDate').value;
       if (!name || !birth) { alert('Preencha pelo menos o nome e a data de nascimento.'); return; }
@@ -1713,8 +1719,8 @@
         });
         var params = btoa(JSON.stringify(sessionData));
         generatedBaeLink = 'https://setmonte.github.io/online/teste-bae.html?d=' + encodeURIComponent(params);
-        document.getElementById('baeSessionLink').textContent = generatedBaeLink;
-        document.getElementById('baeLinkResult').classList.remove('hidden');
+        if (abrirLocal) { window.open(generatedBaeLink, '_blank'); }
+        else { document.getElementById('baeSessionLink').textContent = generatedBaeLink; document.getElementById('baeLinkResult').classList.remove('hidden'); }
         var nomesTestes = {concentrada:'TEAC',seletiva:'TEAS',dividida:'TEAD',alternada:'TEAL',sustentada:'TEASU'};
         var listaStr = testesSelecionados.map(function(t){return nomesTestes[t];}).join(', ');
         document.querySelector('#baeLinkResult p:last-child').textContent = 'Testes: ' + listaStr + ' (' + creditosNecessarios + ' credito' + (creditosNecessarios>1?'s':'') + ')';
@@ -3268,7 +3274,7 @@
     var generatedTrmvLink = '';
     var _trmvResultCache = [];
 
-    async function startTrmvOnlineTest() {
+    async function startTrmvOnlineTest(abrirLocal) {
       var name = document.getElementById('trmvPatientName').value.trim();
       var birth = document.getElementById('trmvBirthDate').value;
       if (!name || !birth) { alert('Preencha pelo menos o nome e a data de nascimento.'); return; }
@@ -3307,8 +3313,8 @@
         });
         var params = btoa(JSON.stringify(sessionData));
         generatedTrmvLink = 'https://setmonte.github.io/online/teste-trmv.html?d=' + encodeURIComponent(params);
-        document.getElementById('trmvSessionLink').textContent = generatedTrmvLink;
-        document.getElementById('trmvLinkResult').classList.remove('hidden');
+        if (abrirLocal) { window.open(generatedTrmvLink, '_blank'); }
+        else { document.getElementById('trmvSessionLink').textContent = generatedTrmvLink; document.getElementById('trmvLinkResult').classList.remove('hidden'); }
       } catch(e) { alert('Erro: ' + e.message); }
     }
 
@@ -3564,7 +3570,7 @@
     var generatedTaavLink = '';
     var _taavResultCache = [];
 
-    async function startTaavOnlineTest() {
+    async function startTaavOnlineTest(abrirLocal) {
       var name = document.getElementById('taavPatientName').value.trim();
       var birth = document.getElementById('taavBirthDate').value;
       if (!name || !birth) { alert('Preencha pelo menos o nome e a data de nascimento.'); return; }
@@ -3602,8 +3608,8 @@
         });
         var params = btoa(JSON.stringify(sessionData));
         generatedTaavLink = 'https://setmonte.github.io/online/teste-taav.html?d=' + encodeURIComponent(params);
-        document.getElementById('taavSessionLink').textContent = generatedTaavLink;
-        document.getElementById('taavLinkResult').classList.remove('hidden');
+        if (abrirLocal) { window.open(generatedTaavLink, '_blank'); }
+        else { document.getElementById('taavSessionLink').textContent = generatedTaavLink; document.getElementById('taavLinkResult').classList.remove('hidden'); }
       } catch(e) { alert('Erro: ' + e.message); }
     }
 
@@ -4238,7 +4244,7 @@
       doc.save('TREF_' + nome + '_' + ts + '.pdf');
     }
 
-    async function startTrefOnlineTest() {
+    async function startTrefOnlineTest(abrirLocal) {
       var nome = document.getElementById('trefNome').value.trim();
       var dn = document.getElementById('trefDn').value;
       var sexo = document.getElementById('trefSexo').value;
@@ -4268,8 +4274,8 @@
       };
       var params = btoa(JSON.stringify(sessionData));
       var link = 'https://setmonte.github.io/online/teste-tref.html?d=' + encodeURIComponent(params);
-      document.getElementById('trefSessionLink').textContent = link;
-      document.getElementById('trefLinkResult').classList.remove('hidden');
+      if (abrirLocal) { window.open(link, '_blank'); }
+      else { document.getElementById('trefSessionLink').textContent = link; document.getElementById('trefLinkResult').classList.remove('hidden'); }
     }
 
     function copyTrefLink() {
@@ -4338,7 +4344,7 @@
       } catch(e) { el.innerHTML = '<p>Erro ao carregar resultados.</p>'; }
     }
 
-    async function startTflodOnlineTest() {
+    async function startTflodOnlineTest(abrirLocal) {
       var nome = document.getElementById('tflodNome').value.trim();
       var dn = document.getElementById('tflodDn').value;
       var escolaridade = document.getElementById('tflodEscolaridade').value;
@@ -4357,8 +4363,8 @@
       };
       var params = btoa(JSON.stringify(sessionData));
       var link = 'https://setmonte.github.io/online/teste-tflod.html?d=' + encodeURIComponent(params);
-      document.getElementById('tflodSessionLink').textContent = link;
-      document.getElementById('tflodLinkResult').classList.remove('hidden');
+      if (abrirLocal) { window.open(link, '_blank'); }
+      else { document.getElementById('tflodSessionLink').textContent = link; document.getElementById('tflodLinkResult').classList.remove('hidden'); }
     }
 
     function copyTflodLink() {
