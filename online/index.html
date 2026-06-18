@@ -961,6 +961,9 @@
         <h2>Nova Aplicacao TAAV</h2>
         <p style="margin-bottom:12px;">Preencha os dados do paciente para o Teste de Aprendizagem e Armazenamento Visual.</p>
         <div class="form-row">
+          <label>Paciente cadastrado: <select id="taavSelPac" onchange="preencherPaciente('taav')" style="width:250px;"><option value="">-- Digitar manualmente --</option></select></label>
+        </div>
+        <div class="form-row">
           <label>Nome: <input type="text" id="taavPatientName" placeholder="Nome do paciente" style="width:220px;"></label>
           <label>Data Nasc: <input type="date" id="taavBirthDate"></label>
           <label>CPF: <input type="text" id="taavCpf" placeholder="XXX.XXX.XXX-XX" maxlength="14" style="width:150px;" oninput="maskCPF(this)"></label>
@@ -2200,7 +2203,7 @@
     }
 
     function popularDropdownsPacientes() {
-      ['baeSelPac','trmvSelPac','tecfeSelPac','tflodSelPac','escalaSelPac','anamneseSelPac'].forEach(function(id) {
+      ['baeSelPac','trmvSelPac','taavSelPac','tecfeSelPac','tflodSelPac','escalaSelPac','anamneseSelPac'].forEach(function(id) {
         var sel = document.getElementById(id);
         if (!sel) return;
         var val = sel.value;
@@ -2225,6 +2228,8 @@
       else if (tipo === 'trmv') { campoNome = document.getElementById('trmvPatientName'); campoDN = document.getElementById('trmvBirthDate'); campoCPF = document.getElementById('trmvCpf'); }
       else if (tipo === 'escala') { campoNome = document.getElementById('escalaNome'); campoDN = document.getElementById('escalaDn'); campoCPF = null; }
       else if (tipo === 'tflod') { campoNome = document.getElementById('tflodNome'); campoDN = document.getElementById('tflodDn'); campoCPF = null; }
+      else if (tipo === 'tref') { campoNome = document.getElementById('trefNome'); campoDN = document.getElementById('trefDn'); campoCPF = null; }
+      else if (tipo === 'taav') { campoNome = document.getElementById('taavPatientName'); campoDN = document.getElementById('taavBirthDate'); campoCPF = document.getElementById('taavCpf'); }
       else if (tipo === 'anamnese') { campoNome = document.getElementById('anamneseNome'); campoDN = document.getElementById('anamneseDn'); campoCPF = document.getElementById('anamneseCpf'); }
       if (campoNome) campoNome.value = opt.dataset.nome || '';
       if (campoDN) campoDN.value = opt.dataset.dn || '';
@@ -3599,7 +3604,8 @@
           education: document.getElementById('taavEducation').value,
           evaluator: document.getElementById('taavEvaluator').value,
           crp: document.getElementById('taavCrp').value,
-          email: currentUser
+          email: currentUser,
+          pacienteId: document.getElementById('taavSelPac').value || ''
         };
         await fetch(API_URL + '/save-result', {
           method: 'POST',
