@@ -99,7 +99,7 @@
           <button class="tab-btn" id="tabTref" onclick="switchTab('tref')">TREF</button>
           <button class="tab-btn" id="tabTflod" onclick="switchTab('tflod')">TFLOD</button>
           <button class="tab-btn" id="tabEscalas" onclick="switchTab('escalas')">Escalas</button>
-          <button class="tab-btn" id="tabReabilitacao" onclick="switchTab('reabilitacao')">Reabilitacao</button>
+          <button class="tab-btn hidden" id="tabReabilitacao" onclick="switchTab('reabilitacao')">Reabilitacao</button>
           <button class="tab-btn" id="tabAnamnese" onclick="switchTab('anamnese')">Anamnese</button>
           <button class="tab-btn" id="tabPacientes" onclick="switchTab('pacientes')">Pacientes</button>
           <button class="tab-btn hidden" id="tabDepoimentos" onclick="switchTab('depoimentos')">Depoimentos</button>
@@ -249,14 +249,41 @@
 
         <!-- === ABA REABILITACAO === -->
         <div id="reabilitacaoTab" class="tab-content">
-          <div style="text-align:center;padding:30px 15px;">
-            <div style="font-size:3em;margin-bottom:15px;">🧩</div>
-            <p style="font-size:18px;color:#2e7d32;font-weight:bold;margin-bottom:10px;">Reabilitacao Neuropsicologica</p>
-            <p style="font-size:14px;color:#555;line-height:1.6;max-width:500px;margin:0 auto;">Instrumentos de reabilitacao cognitiva estao em desenvolvimento.<br>Em breve voce tera acesso a exercicios de treino atencional, memoria de trabalho, funcoes executivas e mais.</p>
-            <div style="margin-top:25px;padding:15px;background:#e8f5e9;border-radius:10px;border:2px dashed #a5d6a7;max-width:400px;margin-left:auto;margin-right:auto;">
-              <p style="font-size:13px;color:#2e7d32;font-weight:600;">Em construcao</p>
-              <p style="font-size:12px;color:#777;margin-top:5px;">Os instrumentos serao publicados aqui conforme ficarem prontos.</p>
+          <div style="text-align:center;padding:15px 0;">
+            <p style="font-size:15px;color:#2e7d32;font-weight:bold;">Reabilitacao — Programas de Acompanhamento</p>
+            <p style="font-size:12px;color:#555;margin-top:5px;">Inicie sessoes de reabilitacao com seus pacientes</p>
+          </div>
+
+          <!-- CARD REOCUPA -->
+          <div style="background:#e8f5e9;border:2px solid #2e7d32;border-radius:10px;padding:20px;margin:10px 0;">
+            <p style="font-size:14px;font-weight:bold;color:#2e7d32;margin-bottom:8px;">🧠 REOCUPA — Reabilitacao Ocupacional</p>
+            <p style="font-size:12px;color:#555;line-height:1.6;margin-bottom:12px;">Programa de Terapia Ocupacional com reconhecimento de voz. Avalia respostas adaptativas a situacoes-problema do cotidiano. Registra tempo de leitura, classificacao e evolucao acumulativa.</p>
+            <div style="background:#fff;border:1px solid #c8e6c9;border-radius:8px;padding:12px;margin-bottom:12px;">
+              <label style="font-size:0.85em;color:#555;">Paciente cadastrado:</label>
+              <select id="reocupaSelPac" onchange="preencherPaciente('reocupa')" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+                <option value="">-- Selecione ou preencha abaixo --</option>
+              </select>
+              <label style="font-size:0.85em;color:#555;">Nome:</label>
+              <input type="text" id="reocupaNome" placeholder="Nome completo" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+              <label style="font-size:0.85em;color:#555;">Data de nascimento:</label>
+              <input type="date" id="reocupaDn" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+              <label style="font-size:0.85em;color:#555;">Sexo:</label>
+              <select id="reocupaSexo" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:12px;">
+                <option value="">Selecione...</option>
+                <option value="Masculino">Masculino</option>
+                <option value="Feminino">Feminino</option>
+              </select>
             </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button onclick="iniciarReocupa()" class="btn btn-green" style="flex:1;min-width:120px;padding:12px;font-size:13px;">▶ Iniciar Sessao</button>
+              <button onclick="abrirReocupaDireto()" class="btn btn-blue" style="flex:1;min-width:120px;padding:12px;font-size:13px;">🖥️ Abrir Direto</button>
+              <button onclick="imprimirReocupa()" class="btn btn-orange" style="flex:1;min-width:120px;padding:12px;font-size:13px;">🖨️ Imprimir</button>
+            </div>
+          </div>
+
+          <!-- Outros programas futuros -->
+          <div style="margin-top:15px;padding:15px;background:#f5f5f5;border-radius:10px;border:2px dashed #bdbdbd;text-align:center;">
+            <p style="font-size:12px;color:#999;">Mais programas de reabilitacao serao publicados aqui conforme ficarem prontos.</p>
           </div>
         </div>
 
@@ -1244,6 +1271,7 @@
       if (currentUser === 'setmonte@gmail.com') {
         document.getElementById('tabDepoimentos').classList.remove('hidden');
         document.getElementById('tabAdmin').classList.remove('hidden');
+        document.getElementById('tabReabilitacao').classList.remove('hidden');
         initFreeModeToggle();
       }
       // Aplicar modo gratuito para qualquer usuario (o toggle so aparece para admin, mas o efeito e global)
@@ -2222,7 +2250,7 @@
     }
 
     function popularDropdownsPacientes() {
-      ['baeSelPac','trmvSelPac','taavSelPac','tecfeSelPac','tflodSelPac','escalaSelPac','anamneseSelPac'].forEach(function(id) {
+      ['baeSelPac','trmvSelPac','taavSelPac','tecfeSelPac','tflodSelPac','escalaSelPac','anamneseSelPac','reocupaSelPac'].forEach(function(id) {
         var sel = document.getElementById(id);
         if (!sel) return;
         var val = sel.value;
@@ -2250,6 +2278,7 @@
       else if (tipo === 'tref') { campoNome = document.getElementById('trefNome'); campoDN = document.getElementById('trefDn'); campoCPF = null; }
       else if (tipo === 'taav') { campoNome = document.getElementById('taavPatientName'); campoDN = document.getElementById('taavBirthDate'); campoCPF = document.getElementById('taavCpf'); }
       else if (tipo === 'anamnese') { campoNome = document.getElementById('anamneseNome'); campoDN = document.getElementById('anamneseDn'); campoCPF = document.getElementById('anamneseCpf'); }
+      else if (tipo === 'reocupa') { campoNome = document.getElementById('reocupaNome'); campoDN = document.getElementById('reocupaDn'); campoCPF = null; }
       if (campoNome) campoNome.value = opt.dataset.nome || '';
       if (campoDN) campoDN.value = opt.dataset.dn || '';
       if (campoCPF) campoCPF.value = opt.dataset.cpf || '';
@@ -2257,7 +2286,29 @@
       var campoSexo = null;
       if (tipo === 'anamnese') campoSexo = document.getElementById('anamneseSexo');
       else if (tipo === 'escala') campoSexo = document.getElementById('escalaSexo');
+      else if (tipo === 'reocupa') campoSexo = document.getElementById('reocupaSexo');
       if (campoSexo && opt.dataset.sexo) campoSexo.value = opt.dataset.sexo;
+    }
+
+    // === REOCUPA - Funcoes do painel ===
+    function iniciarReocupa() {
+      var nome = document.getElementById('reocupaNome').value.trim();
+      var dn = document.getElementById('reocupaDn').value;
+      var sexo = document.getElementById('reocupaSexo').value;
+      if (!nome) { alert('Preencha o nome do paciente.'); return; }
+      if (!dn) { alert('Preencha a data de nascimento.'); return; }
+      var dados = { nome: nome, dn: dn, sexo: sexo, email: currentUser || '' };
+      var encoded = btoa(JSON.stringify(dados));
+      var url = 'reabilitacao/reocupa.html?d=' + encoded;
+      window.open(url, '_blank');
+    }
+
+    function abrirReocupaDireto() {
+      window.open('reabilitacao/reocupa.html', '_blank');
+    }
+
+    function imprimirReocupa() {
+      window.open('reabilitacao/reocupa.html?print=1', '_blank');
     }
 
     async function deletePaciente(id) {
