@@ -1318,6 +1318,8 @@ function _decodificarURL() {
         if (infoTec) infoTec.style.display = 'none';
         // Busca perguntas personalizadas do profissional (se existirem)
         if (dados.email) {
+            var btnIni = document.getElementById('btnIniciar');
+            if (btnIni) { btnIni.disabled = true; btnIni.textContent = 'Carregando perguntas...'; }
             _carregarPerguntasCustom(dados.email);
         }
         // Busca aprendizado do paciente (se tiver ID)
@@ -1334,15 +1336,18 @@ function _carregarPerguntasCustom(email) {
     .then(function(r) { return r.json(); })
     .then(function(data) {
         if (data && data.results && data.results.length > 0) {
-            // Pega o registro mais recente
             var mais_recente = data.results[0];
             if (mais_recente.data && mais_recente.data.perguntas) {
                 _perguntasCustom = mais_recente.data.perguntas;
                 console.log('REOCUPA: Perguntas personalizadas carregadas (' + Object.keys(_perguntasCustom).length + ' perguntas)');
             }
         }
+        var btnIni = document.getElementById('btnIniciar');
+        if (btnIni) { btnIni.disabled = false; btnIni.textContent = '\u25b6 Iniciar Sess\u00e3o'; }
     }).catch(function(e) {
         console.warn('REOCUPA: Nao foi possivel carregar perguntas personalizadas:', e.message);
+        var btnIni = document.getElementById('btnIniciar');
+        if (btnIni) { btnIni.disabled = false; btnIni.textContent = '\u25b6 Iniciar Sess\u00e3o'; }
     });
 }
 
