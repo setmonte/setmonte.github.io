@@ -166,6 +166,21 @@ var _registrosSessao = [];
 var _situacoesSessao = []; // situacoes filtradas pela categoria selecionada
 var _sessionInfo = null;
 var _API_URL = 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
+var _perguntasCustom = null; // perguntas personalizadas do profissional (objeto {id: pergunta})
+var _aprendizado = {}; // dicionario aprendido por paciente {idPaciente: [{situacaoId, palavras, nivel}]}
+var _nivelSugerido = 0; // nivel sugerido pela classificacao automatica (para detectar correcao)
+
+// Monta o texto completo de uma situacao (cenario + pergunta personalizada ou padrao)
+function obterTextoSituacao(sit) {
+    // Se tem campo texto antigo (retrocompatibilidade), usa direto
+    if (sit.texto && !sit.cenario) return sit.texto;
+    // Monta cenario + pergunta
+    var pergunta = sit.perguntaPadrao;
+    if (_perguntasCustom && _perguntasCustom[sit.id]) {
+        pergunta = _perguntasCustom[sit.id];
+    }
+    return sit.cenario + ' ' + pergunta;
+}
 
 // === FUNCOES UTILITARIAS ===
 
@@ -223,6 +238,14 @@ function iniciarSessao() {
     };
     _indiceSituacao = 0;
     _registrosSessao = [];
+    // Carrega aprendizado do paciente do localStorage (se disponivel)
+    if (_sessaoAtual.idPaciente && (!_aprendizado || !_aprendizado.length)) {
+        var todosApr = JSON.parse(localStorage.getItem('reocupa_aprendizado') || '{}');
+        if (todosApr[_sessaoAtual.idPaciente]) {
+            _aprendizado = todosApr[_sessaoAtual.idPaciente];
+            console.log('REOCUPA: Aprendizado carregado (' + _aprendizado.length + ' registros para este paciente)');
+        }
+    }
     // Esconde placeholder e mostra primeira situacao
     document.getElementById('programaPlaceholder').style.display = 'none';
     document.getElementById('btnIniciar').disabled = true;
@@ -243,7 +266,7 @@ function mostrarSituacao(indice) {
     html += '<span style="font-size:0.85em;color:#777;">Situa\u00e7\u00e3o ' + (indice + 1) + ' de ' + _situacoesSessao.length + '</span>';
     html += '<span style="font-size:0.85em;background:#e8f5e9;padding:4px 12px;border-radius:12px;color:#2e7d32;">' + REOCUPA_CATEGORIAS[sit.categoria].nome + '</span>';
     html += '</div>';
-    html += '<div class="situacao-texto">' + sit.texto + '</div>';
+    html += '<div class="situacao-texto">' + obterTextoSituacao(sit) + '</div>';
     html += '<div class="cronometro" id="cronometroDisplay">0.0s</div>';
     html += '<div class="status-voz" id="statusVoz">Aguardando... Clique em "Iniciar Leitura" quando o paciente estiver pronto.</div>';
     html += '<div style="text-align:center;margin-top:15px;">';
@@ -321,7 +344,7 @@ function iniciarLeitura() {
     _palavrasDetectadas = [];
     // Extrai palavras da situacao atual
     var sit = _situacoesSessao[_indiceSituacao];
-    _palavrasDaFrase = extrairPalavras(sit.texto);
+    _palavrasDaFrase = extrairPalavras(obterTextoSituacao(sit));
     // Inicia cronometro
     iniciarCronometro();
     var btn = document.getElementById('btnLeitura');
@@ -501,6 +524,7 @@ function finalizarResposta() {
     document.getElementById('btnLeitura').style.display = 'none';
     // Classifica a resposta por palavras-chave
     var nivelSugerido = classificarPorPalavrasChave(_textoResposta);
+    _nivelSugerido = nivelSugerido; // salva para detectar correcao depois
     // Mostra a classificacao com sugestao
     document.getElementById('classificacaoBox').style.display = 'block';
     document.getElementById('textoReconhecido').textContent = _textoResposta || '(nenhuma fala detectada)';
@@ -510,7 +534,14 @@ function finalizarResposta() {
     // Indicador de sugestao automatica
     var indicador = document.getElementById('sugestaoIndicador');
     if (_textoResposta) {
-        indicador.textContent = '\u2192 Sugest\u00e3o autom\u00e1tica por palavras-chave. Ajuste se necess\u00e1rio.';
+        var aprendido = consultarAprendizado(_situacoesSessao[_indiceSituacao].id, _textoResposta);
+        if (aprendido > 0) {
+            indicador.textContent = '\u2192 Classificado por aprendizado adaptativo (baseado em corre\u00e7\u00f5es anteriores). Ajuste se necess\u00e1rio.';
+            indicador.style.color = '#2196F3';
+        } else {
+            indicador.textContent = '\u2192 Sugest\u00e3o autom\u00e1tica por palavras-chave. Ajuste se necess\u00e1rio.';
+            indicador.style.color = '#ff9800';
+        }
         indicador.style.display = 'block';
         document.getElementById('statusVoz').textContent = 'Classifica\u00e7\u00e3o sugerida. Confirme ou ajuste abaixo:';
     } else {
@@ -523,6 +554,13 @@ function finalizarResposta() {
 function classificarPorPalavrasChave(textoResposta) {
     if (!textoResposta || textoResposta.trim() === '') return 1; // Ausente se nao falou nada
     var sit = _situacoesSessao[_indiceSituacao];
+    // PRIMEIRO: consulta o dicionario aprendido para este paciente/situacao
+    var nivelAprendido = consultarAprendizado(sit.id, textoResposta);
+    if (nivelAprendido > 0) {
+        console.log('REOCUPA: Classificacao por aprendizado adaptativo (nivel ' + nivelAprendido + ')');
+        return nivelAprendido;
+    }
+    // SEGUNDO: classificacao por palavras-chave genericas (padrao)
     var palavrasFaladas = extrairPalavras(textoResposta);
     // Conta matches por nivel (4, 3, 2, 1)
     var pontuacao = { 4: 0, 3: 0, 2: 0, 1: 0 };
@@ -585,25 +623,114 @@ function confirmarEAvancar() {
     var obs = document.getElementById('obsItem').value.trim();
     var tempoLeitura = parseInt(document.getElementById('classificacaoBox').dataset.tempoLeitura) || 0;
     var sit = _situacoesSessao[_indiceSituacao];
+    // Detecta se houve correcao pelo profissional (nivel diferente da sugestao automatica)
+    var houvCorrecao = (_textoResposta && _nivelSugerido > 0 && nivel !== _nivelSugerido);
+    if (houvCorrecao) {
+        registrarAprendizado(sit.id, _textoResposta, nivel);
+    }
     // Registra
     var registro = {
         situacaoId: sit.id,
-        situacaoTexto: sit.texto,
+        situacaoTexto: obterTextoSituacao(sit),
         categoria: sit.categoria,
         tempoLeitura: tempoLeitura,
         nivel: nivel,
         nivelNome: REOCUPA_NIVEIS[nivel].nome,
         respostaFalada: _textoResposta || '',
         observacao: obs,
-        horario: new Date().toISOString()
+        horario: new Date().toISOString(),
+        foiCorrigido: houvCorrecao,
+        nivelSugeridoOriginal: _nivelSugerido
     };
     _registrosSessao.push(registro);
-    // Limpa texto da resposta para proxima situacao
+    // Limpa texto da resposta e sugestao para proxima situacao
     _textoResposta = '';
+    _nivelSugerido = 0;
     // Avanca
     _indiceSituacao++;
     mostrarSituacao(_indiceSituacao);
 }
+// === APRENDIZADO ADAPTATIVO ===
+// Salva uma correcao feita pelo profissional para que o programa aprenda
+function registrarAprendizado(situacaoId, textoFalado, nivelCorreto) {
+    var idPaciente = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
+    if (!idPaciente || !textoFalado) return;
+    // Extrai palavras significativas da fala
+    var palavras = extrairPalavras(textoFalado);
+    if (palavras.length === 0) return;
+    var novoRegistro = {
+        situacaoId: situacaoId,
+        palavras: palavras,
+        nivel: nivelCorreto,
+        textoOriginal: textoFalado.substring(0, 200),
+        timestamp: new Date().toISOString()
+    };
+    // Adiciona ao aprendizado em memoria
+    if (!Array.isArray(_aprendizado)) _aprendizado = [];
+    _aprendizado.push(novoRegistro);
+    // Salva no localStorage
+    var todosAprendizados = JSON.parse(localStorage.getItem('reocupa_aprendizado') || '{}');
+    if (!todosAprendizados[idPaciente]) todosAprendizados[idPaciente] = [];
+    todosAprendizados[idPaciente].push(novoRegistro);
+    localStorage.setItem('reocupa_aprendizado', JSON.stringify(todosAprendizados));
+    // Salva na API (assincrono, nao bloqueia)
+    var payload = {
+        tipo: 'reocupa-aprendizado',
+        idPaciente: idPaciente,
+        registros: todosAprendizados[idPaciente],
+        dataAtualizacao: new Date().toISOString()
+    };
+    var email = (_sessionInfo && _sessionInfo.email) ? _sessionInfo.email : '';
+    fetch(_API_URL + '/save-escala', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email, data: payload })
+    }).then(function(r) { return r.json(); })
+    .then(function(result) {
+        console.log('REOCUPA: Aprendizado salvo (paciente ' + idPaciente + ', situacao ' + situacaoId + ')');
+    }).catch(function(e) {
+        console.warn('REOCUPA: Falha ao salvar aprendizado na API:', e.message);
+    });
+}
+
+// Consulta o dicionario aprendido antes de classificar por palavras-chave genericas
+// Retorna o nivel aprendido se encontrar padrao similar, ou 0 se nao encontrar
+function consultarAprendizado(situacaoId, textoFalado) {
+    if (!Array.isArray(_aprendizado) || _aprendizado.length === 0) return 0;
+    if (!textoFalado || textoFalado.trim() === '') return 0;
+    var palavrasFaladas = extrairPalavras(textoFalado);
+    if (palavrasFaladas.length === 0) return 0;
+    // Filtra registros de aprendizado desta situacao
+    var registrosSit = [];
+    for (var i = 0; i < _aprendizado.length; i++) {
+        if (_aprendizado[i].situacaoId === situacaoId) {
+            registrosSit.push(_aprendizado[i]);
+        }
+    }
+    if (registrosSit.length === 0) return 0;
+    // Para cada registro aprendido, calcula similaridade com a fala atual
+    var melhorMatch = { nivel: 0, similaridade: 0 };
+    for (var r = 0; r < registrosSit.length; r++) {
+        var regPalavras = registrosSit[r].palavras;
+        // Conta quantas palavras do registro aprendido aparecem na fala atual
+        var encontradas = 0;
+        for (var p = 0; p < regPalavras.length; p++) {
+            for (var f = 0; f < palavrasFaladas.length; f++) {
+                if (palavrasFaladas[f].indexOf(regPalavras[p]) >= 0 || regPalavras[p].indexOf(palavrasFaladas[f]) >= 0) {
+                    encontradas++;
+                    break;
+                }
+            }
+        }
+        var similaridade = regPalavras.length > 0 ? (encontradas / regPalavras.length) : 0;
+        // Se 60%+ das palavras do padrao aprendido aparecem na fala, considera um match
+        if (similaridade >= 0.60 && similaridade > melhorMatch.similaridade) {
+            melhorMatch = { nivel: registrosSit[r].nivel, similaridade: similaridade };
+        }
+    }
+    return melhorMatch.nivel;
+}
+
 // === FINALIZAR SESSAO ===
 function finalizarSessao() {
     _sessaoAtual.registros = _registrosSessao;
@@ -789,7 +916,7 @@ function montarTabelaPorSituacao(sessoes) {
     // Para cada situacao
     for (var s = 0; s < REOCUPA_SITUACOES.length; s++) {
         var sit = REOCUPA_SITUACOES[s];
-        html += '<tr><td style="text-align:left;font-size:0.8em;max-width:200px;">' + sit.texto.substring(0, 40) + '...</td>';
+        html += '<tr><td style="text-align:left;font-size:0.8em;max-width:200px;">' + obterTextoSituacao(sit).substring(0, 40) + '...</td>';
         var niveis = [];
         for (var i = 0; i < sessoes.length; i++) {
             var registro = null;
@@ -996,7 +1123,7 @@ function desenharGraficoPorSituacao(sessoes) {
         ctx.fillStyle = '#555';
         ctx.font = '10px Segoe UI';
         ctx.textAlign = 'left';
-        ctx.fillText('S' + (s + 1) + ': ' + sit.texto.substring(0, 15) + '...', padding.left + areaW + 26, legendaY + 10);
+        ctx.fillText('S' + (s + 1) + ': ' + obterTextoSituacao(sit).substring(0, 15) + '...', padding.left + areaW + 26, legendaY + 10);
     }
     // Labels X
     ctx.fillStyle = '#777';
@@ -1132,7 +1259,7 @@ function gerarRelatorioPDF() {
             }
         }
         var tend = niveis.length >= 2 ? (niveis[niveis.length-1] > niveis[0] ? 'MELHORANDO' : (niveis[niveis.length-1] < niveis[0] ? 'REGRESSAO' : 'ESTAVEL')) : 'INSUFICIENTE';
-        doc.text((s + 1) + '. ' + sit.texto.substring(0, 60) + '...', margem, y); y += 4;
+        doc.text((s + 1) + '. ' + obterTextoSituacao(sit).substring(0, 60) + '...', margem, y); y += 4;
         doc.text('   Tendencia: ' + tend + ' (' + niveis.join(' > ') + ')', margem, y); y += 6;
         if (y > 270) { doc.addPage(); y = 20; }
     }
@@ -1180,7 +1307,71 @@ function _decodificarURL() {
         // Esconde info tecnica no modo painel
         var infoTec = document.querySelector('.info-tecnica');
         if (infoTec) infoTec.style.display = 'none';
+        // Busca perguntas personalizadas do profissional (se existirem)
+        if (dados.email) {
+            _carregarPerguntasCustom(dados.email);
+        }
+        // Busca aprendizado do paciente (se tiver ID)
+        setTimeout(function() {
+            var idPac = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
+            if (idPac) { _carregarAprendizado(idPac); }
+        }, 500);
     } catch(e) { console.error('Erro ao decodificar URL:', e); }
+}
+
+// Carrega perguntas personalizadas do profissional a partir da API
+function _carregarPerguntasCustom(email) {
+    fetch(_API_URL + '/get-results?email=' + encodeURIComponent(email) + '&tipo=reocupa-perguntas')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data && data.results && data.results.length > 0) {
+            // Pega o registro mais recente
+            var mais_recente = data.results[0];
+            if (mais_recente.data && mais_recente.data.perguntas) {
+                _perguntasCustom = mais_recente.data.perguntas;
+                console.log('REOCUPA: Perguntas personalizadas carregadas (' + Object.keys(_perguntasCustom).length + ' perguntas)');
+            }
+        }
+    }).catch(function(e) {
+        console.warn('REOCUPA: Nao foi possivel carregar perguntas personalizadas:', e.message);
+    });
+}
+
+// Carrega aprendizado adaptativo do paciente (localStorage + API)
+function _carregarAprendizado(idPaciente) {
+    // Primeiro tenta do localStorage
+    var local = JSON.parse(localStorage.getItem('reocupa_aprendizado') || '{}');
+    if (local[idPaciente]) {
+        _aprendizado = local[idPaciente];
+        console.log('REOCUPA: Aprendizado carregado do localStorage (' + _aprendizado.length + ' registros)');
+    }
+    // Tambem busca da API (pode ter dados de outro dispositivo)
+    fetch(_API_URL + '/get-results?email=' + encodeURIComponent(_sessionInfo.email || '') + '&tipo=reocupa-aprendizado&paciente=' + encodeURIComponent(idPaciente))
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data && data.results && data.results.length > 0) {
+            var apiDados = data.results[0];
+            if (apiDados.data && apiDados.data.registros) {
+                // Merge com localStorage (API como fonte adicional)
+                var apiRegistros = apiDados.data.registros;
+                if (!_aprendizado || !_aprendizado.length) {
+                    _aprendizado = apiRegistros;
+                } else {
+                    // Adiciona os da API que nao existem localmente
+                    for (var i = 0; i < apiRegistros.length; i++) {
+                        var existe = false;
+                        for (var j = 0; j < _aprendizado.length; j++) {
+                            if (_aprendizado[j].timestamp === apiRegistros[i].timestamp) { existe = true; break; }
+                        }
+                        if (!existe) _aprendizado.push(apiRegistros[i]);
+                    }
+                }
+                console.log('REOCUPA: Aprendizado sincronizado com API');
+            }
+        }
+    }).catch(function(e) {
+        console.warn('REOCUPA: Nao foi possivel carregar aprendizado da API:', e.message);
+    });
 }
 // === INICIALIZACAO DIRETA (sem DOMContentLoaded) ===
 document.getElementById('data').value = new Date().toISOString().split('T')[0];
@@ -1216,7 +1407,7 @@ if (_params.get('d')) {
     for (var i = 0; i < REOCUPA_SITUACOES.length; i++) {
         var sit = REOCUPA_SITUACOES[i];
         printHtml += '<div class="print-item">';
-        printHtml += '<p><strong>' + (i + 1) + '.</strong> ' + sit.texto + '</p>';
+        printHtml += '<p><strong>' + (i + 1) + '.</strong> ' + obterTextoSituacao(sit) + '</p>';
         printHtml += '<p style="font-size:0.85em;color:#555;">Categoria: ' + REOCUPA_CATEGORIAS[sit.categoria].nome + '</p>';
         printHtml += '<p style="font-size:0.85em;color:#777;margin-top:8px;">Resposta:</p>';
         printHtml += '<div class="print-resposta"></div>';

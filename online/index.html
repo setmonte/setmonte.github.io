@@ -279,6 +279,21 @@
               <button onclick="abrirReocupaDireto()" class="btn btn-blue" style="flex:1;min-width:120px;padding:12px;font-size:13px;">🖥️ Abrir Direto</button>
               <button onclick="imprimirReocupa()" class="btn btn-orange" style="flex:1;min-width:120px;padding:12px;font-size:13px;">🖨️ Imprimir</button>
             </div>
+            <!-- Botao para editar perguntas -->
+            <div style="margin-top:12px;text-align:center;">
+              <button onclick="toggleEditorPerguntas()" class="btn btn-blue" style="padding:10px 20px;font-size:12px;">⚙️ Configurar Perguntas</button>
+            </div>
+            <!-- Editor de perguntas (oculto por padrao) -->
+            <div id="editorPerguntasReocupa" class="hidden" style="margin-top:15px;background:#f9fbe7;border:1px solid #c5e1a5;border-radius:10px;padding:15px;max-height:500px;overflow-y:auto;">
+              <p style="font-size:13px;font-weight:bold;color:#33691e;margin-bottom:8px;">📝 Personalizar Perguntas</p>
+              <p style="font-size:11px;color:#555;margin-bottom:12px;">Edite a pergunta de acompanhamento de cada situacao. O cenario (em negrito) e fixo. A pergunta abaixo pode ser personalizada para estimular diferentes angulos de raciocinio.</p>
+              <div id="listaPerguntasEditor" style="font-size:12px;"></div>
+              <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
+                <button onclick="salvarPerguntasCustom()" class="btn btn-green" style="flex:1;padding:10px;font-size:12px;">💾 Salvar Perguntas</button>
+                <button onclick="resetarPerguntas()" class="btn btn-orange" style="flex:1;padding:10px;font-size:12px;">🔄 Restaurar Padrao</button>
+              </div>
+              <p id="statusPerguntasSalvas" style="font-size:11px;color:#4CAF50;margin-top:8px;display:none;"></p>
+            </div>
           </div>
 
           <!-- Outros programas futuros -->
@@ -1678,6 +1693,7 @@
       } else if (tab === 'reabilitacao') {
         document.getElementById('reabilitacaoTab').classList.add('active');
         document.getElementById('tabReabilitacao').classList.add('active');
+        carregarPerguntasReocupaPainel();
       } else if (tab === 'anamnese') {
         document.getElementById('anamneseTab').classList.add('active');
         document.getElementById('tabAnamnese').classList.add('active');
@@ -2309,6 +2325,111 @@
 
     function imprimirReocupa() {
       window.open('reabilitacao/reocupa.html?print=1', '_blank');
+    }
+
+    // === EDITOR DE PERGUNTAS REOCUPA ===
+    // Dados das situacoes-problema (cenario + pergunta padrao) — espelho do reocupa-dados.js
+    var REOCUPA_DADOS_PAINEL = [
+      { id: 1, cat: 'Autocuidado', cenario: 'Uma pessoa nao toma banho desde ontem.', padrao: 'O que ela poderia fazer hoje para se sentir mais confortavel?' },
+      { id: 2, cat: 'Autocuidado', cenario: 'Uma pessoa nao escova os dentes antes de dormir.', padrao: 'O que ela poderia fazer para criar esse habito?' },
+      { id: 3, cat: 'Autocuidado', cenario: 'Uma pessoa nao consegue se vestir sozinha pela manha.', padrao: 'O que ela poderia fazer para tornar esse momento mais facil?' },
+      { id: 4, cat: 'Autocuidado', cenario: 'Uma pessoa esquece de tomar agua ao longo do dia.', padrao: 'O que ela poderia fazer para se lembrar de beber agua?' },
+      { id: 5, cat: 'Autocuidado', cenario: 'Uma pessoa tem dificuldade para dormir a noite.', padrao: 'O que ela poderia fazer antes de deitar para melhorar a qualidade do sono?' },
+      { id: 6, cat: 'Alimentacao', cenario: 'Uma pessoa nao se alimenta nos horarios certos e pula refeicoes.', padrao: 'O que ela poderia fazer para manter uma rotina alimentar?' },
+      { id: 7, cat: 'Alimentacao', cenario: 'Uma pessoa so quer comer os mesmos alimentos todos os dias.', padrao: 'O que ela poderia fazer para experimentar coisas novas?' },
+      { id: 8, cat: 'Alimentacao', cenario: 'Uma pessoa nao consegue preparar sua propria comida.', padrao: 'O que ela poderia fazer para comecar a se alimentar de forma mais independente?' },
+      { id: 9, cat: 'Alimentacao', cenario: 'Uma pessoa come muito rapido e nao percebe quando esta satisfeita.', padrao: 'O que ela poderia fazer para comer com mais calma?' },
+      { id: 10, cat: 'Alimentacao', cenario: 'Uma pessoa nao bebe agua suficiente porque nao gosta do sabor.', padrao: 'O que ela poderia fazer para se hidratar melhor?' },
+      { id: 11, cat: 'Socializacao', cenario: 'Uma pessoa nao sabe como iniciar uma conversa com alguem.', padrao: 'O que ela poderia fazer para se comunicar melhor?' },
+      { id: 12, cat: 'Socializacao', cenario: 'Uma pessoa se sente muito incomodada em lugares com muitas pessoas.', padrao: 'O que ela poderia fazer para lidar com isso?' },
+      { id: 13, cat: 'Socializacao', cenario: 'Uma pessoa nao responde mensagens de amigos ou familiares.', padrao: 'O que ela poderia fazer para manter contato?' },
+      { id: 14, cat: 'Socializacao', cenario: 'Uma pessoa quer pedir algo em uma loja mas nao consegue falar com o atendente.', padrao: 'O que ela poderia fazer?' },
+      { id: 15, cat: 'Socializacao', cenario: 'Uma pessoa nao sabe como se despedir de uma visita ou encerrar uma conversa.', padrao: 'O que ela poderia fazer?' },
+      { id: 16, cat: 'Lazer', cenario: 'Uma pessoa fica o dia todo sem fazer nenhuma atividade de lazer.', padrao: 'O que ela poderia fazer para ocupar o tempo livre?' },
+      { id: 17, cat: 'Lazer', cenario: 'Uma pessoa fica muitas horas no celular sem perceber o tempo passar.', padrao: 'O que ela poderia fazer para controlar o uso?' },
+      { id: 18, cat: 'Lazer', cenario: 'Uma pessoa tem um interesse especial mas nao sabe como transforma-lo em uma atividade prazerosa e organizada.', padrao: 'O que ela poderia fazer?' },
+      { id: 19, cat: 'Domestico', cenario: 'Uma pessoa nao consegue manter seu quarto organizado.', padrao: 'O que ela poderia fazer para melhorar a organizacao?' },
+      { id: 20, cat: 'Domestico', cenario: 'Uma pessoa precisa lavar a louca mas nao consegue comecar a tarefa.', padrao: 'O que ela poderia fazer?' },
+      { id: 21, cat: 'Domestico', cenario: 'Uma pessoa nao sabe separar roupas para lavar.', padrao: 'O que ela poderia fazer para aprender essa tarefa?' },
+      { id: 22, cat: 'Domestico', cenario: 'Uma pessoa precisa ir ao mercado mas nao sabe o que comprar.', padrao: 'O que ela poderia fazer para se organizar?' }
+    ];
+    var _perguntasSalvas = {}; // cache local das perguntas salvas
+
+    function toggleEditorPerguntas() {
+      var el = document.getElementById('editorPerguntasReocupa');
+      el.classList.toggle('hidden');
+      if (!el.classList.contains('hidden')) {
+        renderizarEditorPerguntas();
+      }
+    }
+
+    function renderizarEditorPerguntas() {
+      var container = document.getElementById('listaPerguntasEditor');
+      var html = '';
+      var catAtual = '';
+      for (var i = 0; i < REOCUPA_DADOS_PAINEL.length; i++) {
+        var item = REOCUPA_DADOS_PAINEL[i];
+        if (item.cat !== catAtual) {
+          catAtual = item.cat;
+          html += '<p style="font-weight:bold;color:#33691e;margin:12px 0 6px;border-bottom:1px solid #c5e1a5;padding-bottom:4px;">' + catAtual + '</p>';
+        }
+        var valorAtual = (_perguntasSalvas[item.id]) ? _perguntasSalvas[item.id] : item.padrao;
+        html += '<div style="margin-bottom:10px;padding:8px;background:#fff;border-radius:6px;border:1px solid #e0e0e0;">';
+        html += '<p style="font-size:11px;color:#333;margin-bottom:4px;"><strong>' + item.id + '.</strong> ' + item.cenario + '</p>';
+        html += '<input type="text" id="pergReocupa_' + item.id + '" value="' + valorAtual.replace(/"/g, '&quot;') + '" style="width:100%;padding:6px 8px;border:1px solid #c5e1a5;border-radius:4px;font-size:12px;" placeholder="' + item.padrao.replace(/"/g, '&quot;') + '">';
+        html += '</div>';
+      }
+      container.innerHTML = html;
+    }
+
+    async function salvarPerguntasCustom() {
+      var perguntas = {};
+      var temCustom = false;
+      for (var i = 0; i < REOCUPA_DADOS_PAINEL.length; i++) {
+        var item = REOCUPA_DADOS_PAINEL[i];
+        var input = document.getElementById('pergReocupa_' + item.id);
+        if (input && input.value.trim() && input.value.trim() !== item.padrao) {
+          perguntas[item.id] = input.value.trim();
+          temCustom = true;
+        }
+      }
+      _perguntasSalvas = perguntas;
+      // Salva na API
+      try {
+        var payload = { tipo: 'reocupa-perguntas', perguntas: perguntas, dataModificacao: new Date().toISOString() };
+        await fetch(API_URL + '/save-escala', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: currentUser, data: payload })
+        });
+        var status = document.getElementById('statusPerguntasSalvas');
+        status.textContent = temCustom ? 'Perguntas salvas! (' + Object.keys(perguntas).length + ' personalizadas)' : 'Todas as perguntas foram restauradas ao padrao.';
+        status.style.display = 'block';
+        setTimeout(function() { status.style.display = 'none'; }, 4000);
+      } catch(e) {
+        alert('Erro ao salvar. Tente novamente.');
+      }
+    }
+
+    function resetarPerguntas() {
+      if (!confirm('Restaurar todas as perguntas para o texto padrao?')) return;
+      _perguntasSalvas = {};
+      renderizarEditorPerguntas();
+      salvarPerguntasCustom();
+    }
+
+    // Carrega perguntas personalizadas ao abrir a aba
+    async function carregarPerguntasReocupaPainel() {
+      try {
+        var resp = await fetch(API_URL + '/get-results?email=' + encodeURIComponent(currentUser) + '&tipo=reocupa-perguntas');
+        var data = await resp.json();
+        if (data && data.results && data.results.length > 0) {
+          var mais_recente = data.results[0];
+          if (mais_recente.data && mais_recente.data.perguntas) {
+            _perguntasSalvas = mais_recente.data.perguntas;
+          }
+        }
+      } catch(e) { /* silencioso */ }
     }
 
     async function deletePaciente(id) {
