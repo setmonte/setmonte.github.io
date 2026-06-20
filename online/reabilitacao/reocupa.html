@@ -246,40 +246,143 @@ function iniciarSessao() {
         registros: []
     };
     _indiceSituacao = 0;
+    _indicePergunta = 0;
     _registrosSessao = [];
     // Carrega aprendizado do paciente do localStorage (se disponivel)
     if (_sessaoAtual.idPaciente && (!_aprendizado || !_aprendizado.length)) {
         var todosApr = JSON.parse(localStorage.getItem('reocupa_aprendizado') || '{}');
         if (todosApr[_sessaoAtual.idPaciente]) {
             _aprendizado = todosApr[_sessaoAtual.idPaciente];
-            console.log('REOCUPA: Aprendizado carregado (' + _aprendizado.length + ' registros para este paciente)');
         }
     }
     // Esconde placeholder e mostra primeira situacao
     document.getElementById('programaPlaceholder').style.display = 'none';
     document.getElementById('btnIniciar').disabled = true;
     document.getElementById('resultadoSessao').style.display = 'none';
-    mostrarSituacao(_indiceSituacao);
+    mostrarCenario(_indiceSituacao);
 }
-// === MOSTRAR SITUACAO ===
-function mostrarSituacao(indice) {
+
+// Obtem perguntas para uma situacao (personalizadas ou padrao)
+function obterPerguntasDaSituacao(sit) {
+    var perguntas = [];
+    // Pergunta padrao sempre como primeira
+    perguntas.push(sit.perguntaPadrao);
+    // Adiciona personalizadas (se existirem)
+    if (_perguntasCustom && _perguntasCustom[sit.id]) {
+        var custom = _perguntasCustom[sit.id];
+        if (typeof custom === 'string' && custom.trim()) {
+            perguntas.push(custom);
+        } else if (Array.isArray(custom)) {
+            for (var i = 0; i < custom.length; i++) {
+                if (custom[i] && custom[i].trim()) perguntas.push(custom[i]);
+            }
+        }
+    }
+    return perguntas;
+}
+
+// === ETAPA 1: MOSTRAR CENARIO (frase fixa) ===
+function mostrarCenario(indice) {
     if (indice >= _situacoesSessao.length) {
         finalizarSessao();
         return;
     }
     var sit = _situacoesSessao[indice];
-    var progresso = Math.round(((indice) / _situacoesSessao.length) * 100);
+    _indicePergunta = 0;
+    _perguntasDaSituacao = obterPerguntasDaSituacao(sit);
+    var progresso = Math.round((indice / _situacoesSessao.length) * 100);
     var html = '<div class="barra-progresso"><div class="barra-progresso-fill" style="width:' + progresso + '%"></div></div>';
     html += '<div class="situacao-card ativa">';
     html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">';
     html += '<span style="font-size:0.85em;color:#777;">Situa\u00e7\u00e3o ' + (indice + 1) + ' de ' + _situacoesSessao.length + '</span>';
     html += '<span style="font-size:0.85em;background:#e8f5e9;padding:4px 12px;border-radius:12px;color:#2e7d32;">' + REOCUPA_CATEGORIAS[sit.categoria].nome + '</span>';
     html += '</div>';
-    html += '<div class="situacao-texto">' + obterTextoSituacao(sit) + '</div>';
+    html += '<div style="background:#f1f8e9;padding:15px;border-radius:10px;border-left:5px solid #2e7d32;margin-bottom:15px;">';
+    html += '<p style="font-size:0.8em;color:#777;margin-bottom:5px;font-weight:600;">CEN\u00c1RIO — Pe\u00e7a ao paciente para ler em voz alta:</p>';
+    html += '<div class="situacao-texto">' + sit.cenario + '</div>';
+    html += '</div>';
     html += '<div class="cronometro" id="cronometroDisplay">0.0s</div>';
-    html += '<div class="status-voz" id="statusVoz">Aguardando... Clique em "Iniciar Leitura" quando o paciente estiver pronto.</div>';
+    html += '<div class="status-voz" id="statusVoz">Clique em "Iniciar Leitura" quando o paciente estiver pronto.</div>';
     html += '<div style="text-align:center;margin-top:15px;">';
-    html += '<button class="btn btn-primary" id="btnLeitura" onclick="iniciarLeitura()" style="padding:12px 25px;">&#127908; Iniciar Leitura</button>';
+    html += '<button class="btn btn-primary" id="btnLeitura" onclick="iniciarLeituraCenario()" style="padding:12px 25px;">\u25b6 Iniciar Leitura</button>';
+    html += '</div>';
+    html += '</div>';
+    document.getElementById('situacaoAtual').innerHTML = html;
+    document.getElementById('situacaoAtual').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+// Variavel para guardar tempo de leitura do cenario
+var _tempoCenario = 0;
+
+// === LEITURA DO CENARIO ===
+function iniciarLeituraCenario() {
+    var sit = _situacoesSessao[_indiceSituacao];
+    _leituraFinalizada = false;
+    _palavrasDetectadas = [];
+    _palavrasDaFrase = extrairPalavras(sit.cenario);
+    iniciarCronometro();
+    var btn = document.getElementById('btnLeitura');
+    if (verificarSuporteVoz()) {
+        iniciarReconhecimentoLeitura();
+        btn.textContent = '\u23f9 Parar manualmente';
+        btn.onclick = function() { pararLeituraCenarioManual(); };
+        document.getElementById('statusVoz').innerHTML = '<span class="mic-indicator"></span> Ouvindo leitura do cen\u00e1rio...';
+    } else {
+        btn.textContent = '\u23f9 Parar (leitura conclu\u00edda)';
+        btn.onclick = function() { pararLeituraCenarioManual(); };
+        document.getElementById('statusVoz').innerHTML = '<span class="mic-indicator"></span> Cronometrando leitura (modo manual)...';
+    }
+}
+
+function pararLeituraCenarioManual() {
+    pararReconhecimento();
+    _tempoCenario = pararCronometro();
+    concluirLeituraCenario(_tempoCenario);
+}
+
+function concluirLeituraCenario(tempo) {
+    _tempoCenario = tempo;
+    document.getElementById('statusVoz').textContent = 'Leitura do cen\u00e1rio: ' + formatarTempo(tempo) + '. Agora vem a pergunta.';
+    document.getElementById('cronometroDisplay').style.color = '#4CAF50';
+    // Espera 1 segundo e mostra a primeira pergunta
+    setTimeout(function() { mostrarPergunta(); }, 1000);
+}
+
+// === ETAPA 2: MOSTRAR PERGUNTA ===
+var _perguntasDaSituacao = [];
+var _indicePergunta = 0;
+var _tempoPergunta = 0;
+var _registrosPerguntaAtual = []; // registros de todas as perguntas de uma situacao
+
+function mostrarPergunta() {
+    if (_indicePergunta >= _perguntasDaSituacao.length) {
+        // Todas as perguntas respondidas para esta situacao — consolidar e ir para proxima
+        consolidarSituacao();
+        return;
+    }
+    var sit = _situacoesSessao[_indiceSituacao];
+    var pergunta = _perguntasDaSituacao[_indicePergunta];
+    var progresso = Math.round((_indiceSituacao / _situacoesSessao.length) * 100);
+    var html = '<div class="barra-progresso"><div class="barra-progresso-fill" style="width:' + progresso + '%"></div></div>';
+    html += '<div class="situacao-card ativa">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">';
+    html += '<span style="font-size:0.85em;color:#777;">Situa\u00e7\u00e3o ' + (_indiceSituacao + 1) + ' \u2014 Pergunta ' + (_indicePergunta + 1) + ' de ' + _perguntasDaSituacao.length + '</span>';
+    html += '<span style="font-size:0.85em;background:#e8f5e9;padding:4px 12px;border-radius:12px;color:#2e7d32;">' + REOCUPA_CATEGORIAS[sit.categoria].nome + '</span>';
+    html += '</div>';
+    // Mostra o cenario em fonte menor (referencia)
+    html += '<div style="background:#f5f5f5;padding:10px;border-radius:8px;margin-bottom:12px;border-left:3px solid #ccc;">';
+    html += '<p style="font-size:0.85em;color:#888;margin-bottom:3px;">Cen\u00e1rio:</p>';
+    html += '<p style="font-size:1em;color:#555;">' + sit.cenario + '</p>';
+    html += '</div>';
+    // Mostra a pergunta em destaque
+    html += '<div style="background:#fff8e1;padding:15px;border-radius:10px;border-left:5px solid #ff9800;margin-bottom:15px;">';
+    html += '<p style="font-size:0.8em;color:#e65100;margin-bottom:5px;font-weight:600;">PERGUNTA ' + (_indicePergunta + 1) + ':</p>';
+    html += '<div class="situacao-texto" style="font-size:1.4em;">' + pergunta + '</div>';
+    html += '</div>';
+    html += '<div class="cronometro" id="cronometroDisplay">0.0s</div>';
+    html += '<div class="status-voz" id="statusVoz">Clique para iniciar. O paciente l\u00ea a pergunta e depois responde.</div>';
+    html += '<div style="text-align:center;margin-top:15px;">';
+    html += '<button class="btn btn-primary" id="btnLeitura" onclick="iniciarLeituraPergunta()" style="padding:12px 25px;">\u25b6 Iniciar</button>';
     html += '</div>';
     // Area de classificacao (oculta ate a resposta)
     html += '<div class="classificacao-box" id="classificacaoBox" style="display:none;">';
@@ -297,11 +400,125 @@ function mostrarSituacao(indice) {
     html += '<div id="respostaModelo" style="margin-top:10px;padding:10px;background:#fff8e1;border-radius:6px;border-left:3px solid #ff9800;font-size:0.85em;color:#555;display:none;"><strong>Resposta modelo:</strong> <span id="respostaModeloTexto"></span></div>';
     html += '<input type="text" id="obsItem" placeholder="Observa\u00e7\u00e3o do profissional (opcional)" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;margin-top:10px;">';
     html += '<div style="text-align:center;margin-top:15px;">';
-    html += '<button class="btn btn-primary" onclick="confirmarEAvancar()" style="padding:12px 25px;">&#10004; Confirmar e Pr\u00f3xima</button>';
+    if (_indicePergunta < _perguntasDaSituacao.length - 1) {
+        html += '<button class="btn btn-primary" onclick="confirmarPergunta()" style="padding:12px 25px;">\u2714 Confirmar e Pr\u00f3xima Pergunta</button>';
+    } else if (_indiceSituacao < _situacoesSessao.length - 1) {
+        html += '<button class="btn btn-primary" onclick="confirmarPergunta()" style="padding:12px 25px;">\u2714 Confirmar e Pr\u00f3xima Situa\u00e7\u00e3o</button>';
+    } else {
+        html += '<button class="btn btn-primary" onclick="confirmarPergunta()" style="padding:12px 25px;">\u2714 Confirmar e Finalizar</button>';
+    }
     html += '</div></div></div>';
     document.getElementById('situacaoAtual').innerHTML = html;
-    // Scroll suave para a situacao
     document.getElementById('situacaoAtual').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+// === LEITURA DA PERGUNTA + RESPOSTA ===
+function iniciarLeituraPergunta() {
+    _leituraFinalizada = false;
+    _palavrasDetectadas = [];
+    var pergunta = _perguntasDaSituacao[_indicePergunta];
+    _palavrasDaFrase = extrairPalavras(pergunta);
+    iniciarCronometro();
+    var btn = document.getElementById('btnLeitura');
+    if (verificarSuporteVoz()) {
+        iniciarReconhecimentoLeitura();
+        btn.textContent = '\u23f9 Parar / Registrar Resposta';
+        btn.onclick = function() { pararLeituraPerguntaManual(); };
+        document.getElementById('statusVoz').innerHTML = '<span class="mic-indicator"></span> Ouvindo leitura da pergunta e resposta...';
+    } else {
+        btn.textContent = '\u23f9 Parar (resposta dada)';
+        btn.onclick = function() { pararLeituraPerguntaManual(); };
+        document.getElementById('statusVoz').innerHTML = '<span class="mic-indicator"></span> Cronometrando...';
+    }
+}
+
+function pararLeituraPerguntaManual() {
+    pararReconhecimento();
+    _tempoPergunta = pararCronometro();
+    finalizarResposta(_tempoPergunta);
+}
+
+// Quando a leitura atinge 70% (automatica), passa para a fase de resposta
+function concluirLeitura(tempoLeitura) {
+    // No novo fluxo, a leitura da pergunta e a resposta sao continuas
+    // O programa continua ouvindo ate o profissional parar manualmente
+    document.getElementById('statusVoz').innerHTML = '<span class="mic-indicator"></span> Pergunta lida. Ouvindo resposta do paciente...';
+    document.getElementById('cronometroDisplay').style.color = '#FF9800';
+    // Muda o botao para "Parar e Classificar"
+    var btn = document.getElementById('btnLeitura');
+    btn.textContent = '\u2714 Parar e Classificar';
+    btn.style.background = 'linear-gradient(135deg, #FF9800 0%, #F57C00 100%)';
+    btn.onclick = function() {
+        pararReconhecimento();
+        _tempoPergunta = pararCronometro();
+        finalizarResposta(_tempoPergunta);
+    };
+}
+
+// === CLASSIFICACAO DA RESPOSTA ===
+function finalizarResposta(tempo) {
+    _tempoPergunta = tempo;
+    var sit = _situacoesSessao[_indiceSituacao];
+    // Pega o texto completo reconhecido
+    var textoFalado = _palavrasDetectadas.join(' ');
+    // Classifica por palavras-chave (ou aprendizado)
+    var nivelSugerido = classificarPorPalavrasChave(sit, textoFalado);
+    _nivelSugerido = nivelSugerido;
+    // Mostra area de classificacao
+    document.getElementById('classificacaoBox').style.display = 'block';
+    document.getElementById('btnLeitura').style.display = 'none';
+    document.getElementById('statusVoz').textContent = 'Tempo total: ' + formatarTempo(tempo) + '. Confirme a classifica\u00e7\u00e3o:';
+    // Mostra texto reconhecido
+    var textoEl = document.getElementById('textoReconhecido');
+    if (textoFalado) {
+        textoEl.textContent = '"' + textoFalado + '"';
+    } else {
+        textoEl.textContent = '(Nenhum texto reconhecido - classifique manualmente)';
+    }
+    // Pre-seleciona o nivel sugerido
+    document.getElementById('selectNivel').value = nivelSugerido;
+    atualizarCorNivel();
+    mostrarRespostaModelo();
+    // Scroll para a classificacao
+    document.getElementById('classificacaoBox').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+// === CONFIRMAR PERGUNTA E AVANCAR ===
+function confirmarPergunta() {
+    var sit = _situacoesSessao[_indiceSituacao];
+    var nivelFinal = parseInt(document.getElementById('selectNivel').value);
+    var obs = document.getElementById('obsItem') ? document.getElementById('obsItem').value : '';
+    var textoFalado = document.getElementById('textoReconhecido') ? document.getElementById('textoReconhecido').textContent : '';
+    // Remove aspas do texto reconhecido
+    textoFalado = textoFalado.replace(/^"|"$/g, '');
+    // Registra esta pergunta
+    var registro = {
+        situacaoId: sit.id,
+        situacaoCenario: sit.cenario,
+        perguntaIndice: _indicePergunta,
+        perguntaTexto: _perguntasDaSituacao[_indicePergunta],
+        tempoCenario: _indicePergunta === 0 ? _tempoCenario : 0,
+        tempoPergunta: _tempoPergunta,
+        transcricao: textoFalado,
+        nivelSugerido: _nivelSugerido,
+        nivelFinal: nivelFinal,
+        observacao: obs,
+        timestamp: new Date().toISOString()
+    };
+    _registrosSessao.push(registro);
+    // Registra aprendizado se houve correcao
+    if (nivelFinal !== _nivelSugerido && textoFalado && textoFalado !== '(Nenhum texto reconhecido - classifique manualmente)') {
+        registrarAprendizado(sit, textoFalado, nivelFinal);
+    }
+    // Proxima pergunta ou proxima situacao
+    _indicePergunta++;
+    if (_indicePergunta < _perguntasDaSituacao.length) {
+        mostrarPergunta();
+    } else {
+        // Todas as perguntas desta situacao respondidas
+        _indiceSituacao++;
+        mostrarCenario(_indiceSituacao);
+    }
 }
 // === CRONOMETRO ===
 function iniciarCronometro() {
@@ -347,398 +564,14 @@ function verificarSuporteVoz() {
     return !!(window.SpeechRecognition || window.webkitSpeechRecognition);
 }
 
-// === INICIAR LEITURA ===
-function iniciarLeitura() {
-    _leituraFinalizada = false;
-    _palavrasDetectadas = [];
-    // Extrai palavras da situacao atual
-    var sit = _situacoesSessao[_indiceSituacao];
-    _palavrasDaFrase = extrairPalavras(obterTextoSituacao(sit));
-    // Inicia cronometro
-    iniciarCronometro();
-    var btn = document.getElementById('btnLeitura');
-    if (verificarSuporteVoz()) {
-        // Modo com reconhecimento de voz
-        iniciarReconhecimentoLeitura();
-        btn.textContent = '\u23F9 Parar manualmente';
-        btn.onclick = function() { pararLeituraManual(); };
-        document.getElementById('statusVoz').innerHTML = '<span class="mic-indicator"></span> Ouvindo leitura em voz alta...';
-    } else {
-        // Fallback: modo manual (navegador sem suporte)
-        btn.textContent = '\u23F9 Parar (leitura concluida)';
-        btn.onclick = function() { pararLeituraManual(); };
-        document.getElementById('statusVoz').innerHTML = '<span class="mic-indicator"></span> Cronometrando leitura (modo manual)...';
-    }
-}
-
-// Inicia o reconhecimento de voz para a fase de leitura
-function iniciarReconhecimentoLeitura() {
-    var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    _reconhecimento = new SpeechRecognition();
-    _reconhecimento.lang = 'pt-BR';
-    _reconhecimento.continuous = true;
-    _reconhecimento.interimResults = true;
-    _reconhecimento.onresult = function(event) {
-        if (_leituraFinalizada) return;
-        // Junta todas as palavras reconhecidas ate agora
-        var textoCompleto = '';
-        for (var i = 0; i < event.results.length; i++) {
-            textoCompleto += event.results[i][0].transcript + ' ';
-        }
-        var palavrasOuvidas = extrairPalavras(textoCompleto);
-        _palavrasDetectadas = palavrasOuvidas;
-        // Calcula porcentagem de palavras da frase que foram detectadas
-        var encontradas = 0;
-        for (var j = 0; j < _palavrasDaFrase.length; j++) {
-            for (var k = 0; k < palavrasOuvidas.length; k++) {
-                if (palavrasOuvidas[k].indexOf(_palavrasDaFrase[j]) >= 0 || _palavrasDaFrase[j].indexOf(palavrasOuvidas[k]) >= 0) {
-                    encontradas++;
-                    break;
-                }
-            }
-        }
-        var porcentagem = _palavrasDaFrase.length > 0 ? (encontradas / _palavrasDaFrase.length) : 0;
-        // Atualiza status visual
-        var statusEl = document.getElementById('statusVoz');
-        if (statusEl) {
-            statusEl.innerHTML = '<span class="mic-indicator"></span> Leitura: ' + Math.round(porcentagem * 100) + '% detectado';
-        }
-        // Se atingiu 70%, considera leitura concluida
-        if (porcentagem >= 0.70 && !_leituraFinalizada) {
-            _leituraFinalizada = true;
-            pararReconhecimento();
-            var tempoLeitura = pararCronometro();
-            concluirLeitura(tempoLeitura);
-        }
-    };
-    _reconhecimento.onerror = function(event) {
-        // Se der erro de permissao ou outro, volta para modo manual
-        if (event.error === 'not-allowed' || event.error === 'no-speech') {
-            document.getElementById('statusVoz').innerHTML = '<span class="mic-indicator"></span> Sem acesso ao microfone. Use o bot\u00e3o manual.';
-        }
-    };
-    _reconhecimento.onend = function() {
-        // Se acabou sem atingir 70%, reinicia (a menos que ja tenha finalizado)
-        if (!_leituraFinalizada && _reconhecimento) {
-            try { _reconhecimento.start(); } catch(e) {}
-        }
-    };
-    try { _reconhecimento.start(); } catch(e) {
-        document.getElementById('statusVoz').textContent = 'Erro ao iniciar microfone. Use o bot\u00e3o manual.';
-    }
-}
-
-// Para o reconhecimento de voz
-function pararReconhecimento() {
-    if (_reconhecimento) {
-        _leituraFinalizada = true;
-        try { _reconhecimento.stop(); } catch(e) {}
-        _reconhecimento = null;
-    }
-}
-
-// Para o cronometro manualmente (fallback ou botao manual)
-function pararLeituraManual() {
-    pararReconhecimento();
-    var tempoLeitura = pararCronometro();
-    concluirLeitura(tempoLeitura);
-}
-
-// Fase pos-leitura: mostra tempo e prepara para resposta
-function concluirLeitura(tempoLeitura) {
-    document.getElementById('statusVoz').textContent = 'Leitura conclu\u00edda em ' + formatarTempo(tempoLeitura) + '. Agora pe\u00e7a a resposta ao paciente.';
-    document.getElementById('cronometroDisplay').style.color = '#4CAF50';
-    var btn = document.getElementById('btnLeitura');
-    btn.textContent = 'Registrar Resposta';
-    btn.style.display = 'inline-block';
-    btn.onclick = function() { mostrarClassificacao(tempoLeitura); };
-    btn.dataset.tempoLeitura = tempoLeitura;
-}
-// === MOSTRAR CLASSIFICACAO ===
-function mostrarClassificacao(tempoLeitura) {
-    document.getElementById('classificacaoBox').dataset.tempoLeitura = tempoLeitura;
-    document.getElementById('btnLeitura').style.display = 'none';
-    if (verificarSuporteVoz()) {
-        // Ativa reconhecimento de voz para a resposta
-        document.getElementById('statusVoz').innerHTML = '<span class="mic-indicator"></span> Ouvindo resposta do paciente...';
-        iniciarReconhecimentoResposta();
-    } else {
-        // Sem suporte a voz: mostra classificacao direto (modo manual)
-        document.getElementById('classificacaoBox').style.display = 'block';
-        document.getElementById('statusVoz').textContent = 'Selecione a classifica\u00e7\u00e3o da resposta do paciente:';
-    }
-}
-
-// Inicia reconhecimento de voz para a fase de RESPOSTA
-var _respostaTimeout = null;
-var _textoResposta = '';
-
-function iniciarReconhecimentoResposta() {
-    var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    _reconhecimento = new SpeechRecognition();
-    _reconhecimento.lang = 'pt-BR';
-    _reconhecimento.continuous = true;
-    _reconhecimento.interimResults = true;
-    _textoResposta = '';
-    _reconhecimento.onresult = function(event) {
-        var textoCompleto = '';
-        for (var i = 0; i < event.results.length; i++) {
-            textoCompleto += event.results[i][0].transcript + ' ';
-        }
-        _textoResposta = textoCompleto.trim();
-        // Mostra o que esta sendo reconhecido em tempo real
-        var statusEl = document.getElementById('statusVoz');
-        if (statusEl) {
-            statusEl.innerHTML = '<span class="mic-indicator"></span> "' + _textoResposta.substring(0, 80) + (textoCompleto.length > 80 ? '...' : '') + '"';
-        }
-        // Reseta o timeout de silencio a cada nova palavra detectada
-        if (_respostaTimeout) clearTimeout(_respostaTimeout);
-        _respostaTimeout = setTimeout(function() {
-            // 3 segundos de silencio = paciente terminou de falar
-            finalizarResposta();
-        }, 3000);
-    };
-    _reconhecimento.onerror = function(event) {
-        if (event.error === 'not-allowed') {
-            document.getElementById('statusVoz').textContent = 'Sem acesso ao microfone. Classifique manualmente.';
-            document.getElementById('classificacaoBox').style.display = 'block';
-        }
-    };
-    _reconhecimento.onend = function() {
-        // Se terminou sem finalizarResposta, pode ser silencio longo
-        if (_textoResposta && !_respostaTimeout) {
-            finalizarResposta();
-        } else if (!_textoResposta) {
-            // Reinicia se ainda nao captou nada
-            try { _reconhecimento.start(); } catch(e) {}
-        }
-    };
-    try { _reconhecimento.start(); } catch(e) {
-        document.getElementById('statusVoz').textContent = 'Erro no microfone. Classifique manualmente.';
-        document.getElementById('classificacaoBox').style.display = 'block';
-    }
-    // Botao para parar manualmente e classificar
-    var btnArea = document.getElementById('btnLeitura');
-    if (btnArea) {
-        btnArea.style.display = 'inline-block';
-        btnArea.textContent = '\u23F9 Parar e Classificar';
-        btnArea.onclick = function() { finalizarResposta(); };
-    }
-}
-
-// Finaliza a fase de resposta: para microfone e classifica
-function finalizarResposta() {
-    if (_respostaTimeout) { clearTimeout(_respostaTimeout); _respostaTimeout = null; }
-    pararReconhecimento();
-    document.getElementById('btnLeitura').style.display = 'none';
-    // Classifica a resposta por palavras-chave
-    var nivelSugerido = classificarPorPalavrasChave(_textoResposta);
-    _nivelSugerido = nivelSugerido; // salva para detectar correcao depois
-    // Mostra a classificacao com sugestao
-    document.getElementById('classificacaoBox').style.display = 'block';
-    document.getElementById('textoReconhecido').textContent = _textoResposta || '(nenhuma fala detectada)';
-    document.getElementById('selectNivel').value = nivelSugerido;
-    atualizarCorNivel();
-    mostrarRespostaModelo();
-    // Indicador de sugestao automatica
-    var indicador = document.getElementById('sugestaoIndicador');
-    if (_textoResposta) {
-        var aprendido = consultarAprendizado(_situacoesSessao[_indiceSituacao].id, _textoResposta);
-        if (aprendido > 0) {
-            indicador.textContent = '\u2192 Classificado por aprendizado adaptativo (baseado em corre\u00e7\u00f5es anteriores). Ajuste se necess\u00e1rio.';
-            indicador.style.color = '#2196F3';
-        } else {
-            indicador.textContent = '\u2192 Sugest\u00e3o autom\u00e1tica por palavras-chave. Ajuste se necess\u00e1rio.';
-            indicador.style.color = '#ff9800';
-        }
-        indicador.style.display = 'block';
-        document.getElementById('statusVoz').textContent = 'Classifica\u00e7\u00e3o sugerida. Confirme ou ajuste abaixo:';
-    } else {
-        indicador.style.display = 'none';
-        document.getElementById('statusVoz').textContent = 'Nenhuma fala detectada. Classifique manualmente:';
-    }
-}
-
-// Classifica a resposta comparando com palavras-chave de cada nivel
-function classificarPorPalavrasChave(textoResposta) {
-    if (!textoResposta || textoResposta.trim() === '') return 1; // Ausente se nao falou nada
-    var sit = _situacoesSessao[_indiceSituacao];
-    // PRIMEIRO: consulta o dicionario aprendido para este paciente/situacao
-    var nivelAprendido = consultarAprendizado(sit.id, textoResposta);
-    if (nivelAprendido > 0) {
-        console.log('REOCUPA: Classificacao por aprendizado adaptativo (nivel ' + nivelAprendido + ')');
-        return nivelAprendido;
-    }
-    // SEGUNDO: classificacao por palavras-chave genericas (padrao)
-    var palavrasFaladas = extrairPalavras(textoResposta);
-    // Conta matches por nivel (4, 3, 2, 1)
-    var pontuacao = { 4: 0, 3: 0, 2: 0, 1: 0 };
-    for (var nivel = 4; nivel >= 1; nivel--) {
-        var chaves = sit.palavrasChave[nivel] || [];
-        for (var i = 0; i < chaves.length; i++) {
-            var chave = normalizarTexto(chaves[i]);
-            for (var j = 0; j < palavrasFaladas.length; j++) {
-                // Verifica se a palavra falada contem a chave ou vice-versa
-                if (palavrasFaladas[j].indexOf(chave) >= 0 || chave.indexOf(palavrasFaladas[j]) >= 0) {
-                    pontuacao[nivel]++;
-                    break; // Conta cada chave apenas uma vez
-                }
-            }
-        }
-    }
-    // Encontra o nivel com mais matches
-    var melhorNivel = 1;
-    var melhorPontuacao = 0;
-    for (var n = 4; n >= 1; n--) {
-        if (pontuacao[n] > melhorPontuacao) {
-            melhorPontuacao = pontuacao[n];
-            melhorNivel = n;
-        }
-    }
-    // Se nenhuma palavra-chave foi encontrada, retorna 1 (Ausente)
-    if (melhorPontuacao === 0) return 1;
-    return melhorNivel;
-}
-
-// Atualiza cor do preview ao mudar o nivel no dropdown
-function atualizarCorNivel() {
-    var nivel = parseInt(document.getElementById('selectNivel').value);
-    var nv = REOCUPA_NIVEIS[nivel];
-    var preview = document.getElementById('nivelPreview');
-    if (preview && nv) {
-        preview.style.background = nv.corFundo;
-        preview.style.color = nv.cor;
-        preview.textContent = nv.nome;
-    }
-}
-
-// Mostra a resposta modelo do nivel selecionado (para comparacao)
-function mostrarRespostaModelo() {
-    var nivel = parseInt(document.getElementById('selectNivel').value);
-    var sit = _situacoesSessao[_indiceSituacao];
-    var modeloDiv = document.getElementById('respostaModelo');
-    var modeloTexto = document.getElementById('respostaModeloTexto');
-    if (sit && sit.respostasModelo && sit.respostasModelo[nivel]) {
-        modeloTexto.textContent = sit.respostasModelo[nivel];
-        modeloDiv.style.display = 'block';
-    } else {
-        modeloDiv.style.display = 'none';
-    }
-}
-
-// === CONFIRMAR E AVANCAR ===
-function confirmarEAvancar() {
-    var nivel = parseInt(document.getElementById('selectNivel').value);
-    var obs = document.getElementById('obsItem').value.trim();
-    var tempoLeitura = parseInt(document.getElementById('classificacaoBox').dataset.tempoLeitura) || 0;
-    var sit = _situacoesSessao[_indiceSituacao];
-    // Detecta se houve correcao pelo profissional (nivel diferente da sugestao automatica)
-    var houvCorrecao = (_textoResposta && _nivelSugerido > 0 && nivel !== _nivelSugerido);
-    if (houvCorrecao) {
-        registrarAprendizado(sit.id, _textoResposta, nivel);
-    }
-    // Registra
-    var registro = {
-        situacaoId: sit.id,
-        situacaoTexto: obterTextoSituacao(sit),
-        categoria: sit.categoria,
-        tempoLeitura: tempoLeitura,
-        nivel: nivel,
-        nivelNome: REOCUPA_NIVEIS[nivel].nome,
-        respostaFalada: _textoResposta || '',
-        observacao: obs,
-        horario: new Date().toISOString(),
-        foiCorrigido: houvCorrecao,
-        nivelSugeridoOriginal: _nivelSugerido
-    };
-    _registrosSessao.push(registro);
-    // Limpa texto da resposta e sugestao para proxima situacao
-    _textoResposta = '';
-    _nivelSugerido = 0;
-    // Avanca
-    _indiceSituacao++;
-    mostrarSituacao(_indiceSituacao);
-}
-// === APRENDIZADO ADAPTATIVO ===
-// Salva uma correcao feita pelo profissional para que o programa aprenda
-function registrarAprendizado(situacaoId, textoFalado, nivelCorreto) {
-    var idPaciente = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
-    if (!idPaciente || !textoFalado) return;
-    // Extrai palavras significativas da fala
-    var palavras = extrairPalavras(textoFalado);
-    if (palavras.length === 0) return;
-    var novoRegistro = {
-        situacaoId: situacaoId,
-        palavras: palavras,
-        nivel: nivelCorreto,
-        textoOriginal: textoFalado.substring(0, 200),
-        timestamp: new Date().toISOString()
-    };
-    // Adiciona ao aprendizado em memoria
-    if (!Array.isArray(_aprendizado)) _aprendizado = [];
-    _aprendizado.push(novoRegistro);
-    // Salva no localStorage
-    var todosAprendizados = JSON.parse(localStorage.getItem('reocupa_aprendizado') || '{}');
-    if (!todosAprendizados[idPaciente]) todosAprendizados[idPaciente] = [];
-    todosAprendizados[idPaciente].push(novoRegistro);
-    localStorage.setItem('reocupa_aprendizado', JSON.stringify(todosAprendizados));
-    // Salva na API (assincrono, nao bloqueia)
-    var payload = {
-        tipo: 'reocupa-aprendizado',
-        idPaciente: idPaciente,
-        registros: todosAprendizados[idPaciente],
-        dataAtualizacao: new Date().toISOString()
-    };
-    var email = (_sessionInfo && _sessionInfo.email) ? _sessionInfo.email : '';
-    fetch(_API_URL + '/save-escala', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email, data: payload })
-    }).then(function(r) { return r.json(); })
-    .then(function(result) {
-        console.log('REOCUPA: Aprendizado salvo (paciente ' + idPaciente + ', situacao ' + situacaoId + ')');
-    }).catch(function(e) {
-        console.warn('REOCUPA: Falha ao salvar aprendizado na API:', e.message);
-    });
-}
-
-// Consulta o dicionario aprendido antes de classificar por palavras-chave genericas
-// Retorna o nivel aprendido se encontrar padrao similar, ou 0 se nao encontrar
-function consultarAprendizado(situacaoId, textoFalado) {
-    if (!Array.isArray(_aprendizado) || _aprendizado.length === 0) return 0;
-    if (!textoFalado || textoFalado.trim() === '') return 0;
-    var palavrasFaladas = extrairPalavras(textoFalado);
-    if (palavrasFaladas.length === 0) return 0;
-    // Filtra registros de aprendizado desta situacao
-    var registrosSit = [];
-    for (var i = 0; i < _aprendizado.length; i++) {
-        if (_aprendizado[i].situacaoId === situacaoId) {
-            registrosSit.push(_aprendizado[i]);
-        }
-    }
-    if (registrosSit.length === 0) return 0;
-    // Para cada registro aprendido, calcula similaridade com a fala atual
-    var melhorMatch = { nivel: 0, similaridade: 0 };
-    for (var r = 0; r < registrosSit.length; r++) {
-        var regPalavras = registrosSit[r].palavras;
-        // Conta quantas palavras do registro aprendido aparecem na fala atual
-        var encontradas = 0;
-        for (var p = 0; p < regPalavras.length; p++) {
-            for (var f = 0; f < palavrasFaladas.length; f++) {
-                if (palavrasFaladas[f].indexOf(regPalavras[p]) >= 0 || regPalavras[p].indexOf(palavrasFaladas[f]) >= 0) {
-                    encontradas++;
-                    break;
-                }
-            }
-        }
-        var similaridade = regPalavras.length > 0 ? (encontradas / regPalavras.length) : 0;
-        // Se 60%+ das palavras do padrao aprendido aparecem na fala, considera um match
-        if (similaridade >= 0.60 && similaridade > melhorMatch.similaridade) {
-            melhorMatch = { nivel: registrosSit[r].nivel, similaridade: similaridade };
-        }
-    }
-    return melhorMatch.nivel;
-}
+// === RECONHECIMENTO DE VOZ ===
+function iniciarReconhecimentoLeitura() { var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; _reconhecimento = new SpeechRecognition(); _reconhecimento.lang = 'pt-BR'; _reconhecimento.continuous = true; _reconhecimento.interimResults = true; _reconhecimento.onresult = function(event) { if (_leituraFinalizada) return; var textoCompleto = ''; for (var i = 0; i < event.results.length; i++) { textoCompleto += event.results[i][0].transcript + ' '; } var palavrasOuvidas = extrairPalavras(textoCompleto); _palavrasDetectadas = palavrasOuvidas; var encontradas = 0; for (var j = 0; j < _palavrasDaFrase.length; j++) { for (var k = 0; k < palavrasOuvidas.length; k++) { if (palavrasOuvidas[k].indexOf(_palavrasDaFrase[j]) >= 0 || _palavrasDaFrase[j].indexOf(palavrasOuvidas[k]) >= 0) { encontradas++; break; } } } var porcentagem = _palavrasDaFrase.length > 0 ? (encontradas / _palavrasDaFrase.length) : 0; var statusEl = document.getElementById('statusVoz'); if (statusEl) { statusEl.innerHTML = '<span class="mic-indicator"></span> Leitura: ' + Math.round(porcentagem * 100) + '% detectado'; } if (porcentagem >= 0.70 && !_leituraFinalizada) { _leituraFinalizada = true; pararReconhecimento(); var tempoLeitura = pararCronometro(); concluirLeituraCenario(tempoLeitura); } }; _reconhecimento.onerror = function(event) { if (event.error === 'not-allowed' || event.error === 'no-speech') { document.getElementById('statusVoz').innerHTML = '<span class="mic-indicator"></span> Sem acesso ao microfone. Use o bot\u00e3o manual.'; } }; _reconhecimento.onend = function() { if (!_leituraFinalizada && _reconhecimento) { try { _reconhecimento.start(); } catch(e) {} } }; try { _reconhecimento.start(); } catch(e) { document.getElementById('statusVoz').textContent = 'Erro ao iniciar microfone. Use o bot\u00e3o manual.'; } }
+function pararReconhecimento() { if (_reconhecimento) { _leituraFinalizada = true; try { _reconhecimento.stop(); } catch(e) {} _reconhecimento = null; } }
+function classificarPorPalavrasChave(sit, textoResposta) { if (!textoResposta || textoResposta.trim() === '') return 1; var nivelAprendido = consultarAprendizado(sit.id, textoResposta); if (nivelAprendido > 0) return nivelAprendido; var palavrasFaladas = extrairPalavras(textoResposta); var pontuacao = { 4: 0, 3: 0, 2: 0, 1: 0 }; for (var nivel = 4; nivel >= 1; nivel--) { var chaves = sit.palavrasChave[nivel] || []; for (var i = 0; i < chaves.length; i++) { var chave = normalizarTexto(chaves[i]); for (var j = 0; j < palavrasFaladas.length; j++) { if (palavrasFaladas[j].indexOf(chave) >= 0 || chave.indexOf(palavrasFaladas[j]) >= 0) { pontuacao[nivel]++; break; } } } } var melhorNivel = 1; var melhorPontuacao = 0; for (var n = 4; n >= 1; n--) { if (pontuacao[n] > melhorPontuacao) { melhorPontuacao = pontuacao[n]; melhorNivel = n; } } return melhorPontuacao === 0 ? 1 : melhorNivel; }
+function atualizarCorNivel() { var nivel = parseInt(document.getElementById('selectNivel').value); var nv = REOCUPA_NIVEIS[nivel]; var preview = document.getElementById('nivelPreview'); if (preview && nv) { preview.style.background = nv.corFundo; preview.style.color = nv.cor; preview.textContent = nv.nome; } }
+function mostrarRespostaModelo() { var nivel = parseInt(document.getElementById('selectNivel').value); var sit = _situacoesSessao[_indiceSituacao]; var modeloDiv = document.getElementById('respostaModelo'); var modeloTexto = document.getElementById('respostaModeloTexto'); if (sit && sit.respostasModelo && sit.respostasModelo[nivel]) { modeloTexto.textContent = sit.respostasModelo[nivel]; modeloDiv.style.display = 'block'; } else { modeloDiv.style.display = 'none'; } }
+function registrarAprendizado(sit, textoFalado, nivelCorreto) { var idPaciente = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : ''; if (!idPaciente || !textoFalado) return; var palavras = extrairPalavras(textoFalado); if (palavras.length === 0) return; var novoRegistro = { situacaoId: sit.id, palavras: palavras, nivel: nivelCorreto, textoOriginal: textoFalado.substring(0, 200), timestamp: new Date().toISOString() }; if (!Array.isArray(_aprendizado)) _aprendizado = []; _aprendizado.push(novoRegistro); var todosAprendizados = JSON.parse(localStorage.getItem('reocupa_aprendizado') || '{}'); if (!todosAprendizados[idPaciente]) todosAprendizados[idPaciente] = []; todosAprendizados[idPaciente].push(novoRegistro); localStorage.setItem('reocupa_aprendizado', JSON.stringify(todosAprendizados)); var email = (_sessionInfo && _sessionInfo.email) ? _sessionInfo.email : ''; fetch(_API_URL + '/save-escala', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email, data: { tipo: 'reocupa-aprendizado', idPaciente: idPaciente, registros: todosAprendizados[idPaciente] } }) }).catch(function(e) {}); }
+function consultarAprendizado(situacaoId, textoFalado) { if (!Array.isArray(_aprendizado) || _aprendizado.length === 0) return 0; if (!textoFalado || textoFalado.trim() === '') return 0; var palavrasFaladas = extrairPalavras(textoFalado); if (palavrasFaladas.length === 0) return 0; var registrosSit = []; for (var i = 0; i < _aprendizado.length; i++) { if (_aprendizado[i].situacaoId === situacaoId) registrosSit.push(_aprendizado[i]); } if (registrosSit.length === 0) return 0; var melhorMatch = { nivel: 0, similaridade: 0 }; for (var r = 0; r < registrosSit.length; r++) { var regPalavras = registrosSit[r].palavras; var encontradas = 0; for (var p = 0; p < regPalavras.length; p++) { for (var f = 0; f < palavrasFaladas.length; f++) { if (palavrasFaladas[f].indexOf(regPalavras[p]) >= 0 || regPalavras[p].indexOf(palavrasFaladas[f]) >= 0) { encontradas++; break; } } } var similaridade = regPalavras.length > 0 ? (encontradas / regPalavras.length) : 0; if (similaridade >= 0.60 && similaridade > melhorMatch.similaridade) { melhorMatch = { nivel: registrosSit[r].nivel, similaridade: similaridade }; } } return melhorMatch.nivel; }
 
 // === FINALIZAR SESSAO ===
 function finalizarSessao() {
@@ -747,7 +580,7 @@ function finalizarSessao() {
     // Calcula media geral da sessao
     var somaNotas = 0;
     for (var i = 0; i < _registrosSessao.length; i++) {
-        somaNotas += _registrosSessao[i].nivel;
+        somaNotas += (_registrosSessao[i].nivelFinal || _registrosSessao[i].nivel || 1);
     }
     _sessaoAtual.mediaGeral = parseFloat((somaNotas / _registrosSessao.length).toFixed(2));
     // Salva nos dois locais (localStorage + API)
@@ -771,15 +604,21 @@ function mostrarResumoSessao() {
     html += '<p style="font-size:1.3em;margin-top:10px;"><strong>M\u00e9dia Geral:</strong> <span style="color:' + corPorNivel(_sessaoAtual.mediaGeral) + ';font-weight:bold;">' + _sessaoAtual.mediaGeral.toFixed(1) + '/4.0</span></p>';
     html += '</div>';
     // Tabela de itens
-    html += '<table class="tabela-evolucao"><thead><tr><th>Situa\u00e7\u00e3o</th><th>Tempo</th><th>Classifica\u00e7\u00e3o</th><th>Obs.</th></tr></thead><tbody>';
+    html += '<table class="tabela-evolucao"><thead><tr><th>Situa\u00e7\u00e3o</th><th>Pergunta</th><th>Tempo</th><th>Classifica\u00e7\u00e3o</th><th>Transcri\u00e7\u00e3o</th></tr></thead><tbody>';
     for (var i = 0; i < _registrosSessao.length; i++) {
         var r = _registrosSessao[i];
-        var nv = REOCUPA_NIVEIS[r.nivel];
+        var nivelR = r.nivelFinal || r.nivel || 1;
+        var nv = REOCUPA_NIVEIS[nivelR];
+        var textoSit = (r.situacaoCenario || r.situacaoTexto || '').substring(0, 40);
+        var textoPerg = (r.perguntaTexto || '').substring(0, 40);
+        var tempoR = r.tempoPergunta || r.tempoLeitura || 0;
+        var transcricao = (r.transcricao || r.respostaFalada || '-').substring(0, 60);
         html += '<tr>';
-        html += '<td style="text-align:left;font-size:0.85em;">' + r.situacaoTexto.substring(0, 50) + '...</td>';
-        html += '<td>' + formatarTempo(r.tempoLeitura) + '</td>';
+        html += '<td style="text-align:left;font-size:0.8em;">' + textoSit + '...</td>';
+        html += '<td style="text-align:left;font-size:0.8em;">' + textoPerg + '...</td>';
+        html += '<td>' + formatarTempo(tempoR) + '</td>';
         html += '<td style="background:' + nv.corFundo + ';color:' + nv.cor + ';font-weight:bold;">' + nv.rotulo + '</td>';
-        html += '<td style="font-size:0.8em;">' + (r.observacao || '-') + '</td>';
+        html += '<td style="font-size:0.75em;font-style:italic;">' + transcricao + '</td>';
         html += '</tr>';
     }
     html += '</tbody></table>';
