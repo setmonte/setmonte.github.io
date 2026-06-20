@@ -177,7 +177,15 @@ function obterTextoSituacao(sit) {
     // Monta cenario + pergunta
     var pergunta = sit.perguntaPadrao;
     if (_perguntasCustom && _perguntasCustom[sit.id]) {
-        pergunta = _perguntasCustom[sit.id];
+        var custom = _perguntasCustom[sit.id];
+        if (typeof custom === 'string') {
+            // Formato antigo: uma string
+            pergunta = custom;
+        } else if (Array.isArray(custom) && custom.length > 0) {
+            // Formato novo: array de perguntas — escolhe aleatoriamente
+            var idx = Math.floor(Math.random() * custom.length);
+            pergunta = custom[idx];
+        }
     }
     return sit.cenario + ' ' + pergunta;
 }

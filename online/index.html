@@ -2373,13 +2373,52 @@
           catAtual = item.cat;
           html += '<p style="font-weight:bold;color:#33691e;margin:12px 0 6px;border-bottom:1px solid #c5e1a5;padding-bottom:4px;">' + catAtual + '</p>';
         }
-        var valorAtual = (_perguntasSalvas[item.id]) ? _perguntasSalvas[item.id] : item.padrao;
-        html += '<div style="margin-bottom:10px;padding:8px;background:#fff;border-radius:6px;border:1px solid #e0e0e0;">';
-        html += '<p style="font-size:11px;color:#333;margin-bottom:4px;"><strong>' + item.id + '.</strong> ' + item.cenario + '</p>';
-        html += '<input type="text" id="pergReocupa_' + item.id + '" value="' + valorAtual.replace(/"/g, '&quot;') + '" style="width:100%;padding:6px 8px;border:1px solid #c5e1a5;border-radius:4px;font-size:12px;" placeholder="' + item.padrao.replace(/"/g, '&quot;') + '">';
+        // Pega perguntas salvas (array) ou cria array com a padrao
+        var perguntas = [];
+        if (_perguntasSalvas[item.id]) {
+          // Compatibilidade: se for string antiga, converte para array
+          if (typeof _perguntasSalvas[item.id] === 'string') {
+            perguntas = [_perguntasSalvas[item.id]];
+          } else {
+            perguntas = _perguntasSalvas[item.id].slice();
+          }
+        }
+        // Sempre mostra a padrao como primeira (editavel)
+        html += '<div id="editorSit_' + item.id + '" style="margin-bottom:12px;padding:10px;background:#fff;border-radius:6px;border:1px solid #e0e0e0;">';
+        html += '<p style="font-size:11px;color:#333;margin-bottom:6px;"><strong>' + item.id + '.</strong> ' + item.cenario + '</p>';
+        // Pergunta padrao (sempre visivel, com fundo diferente)
+        html += '<div style="margin-bottom:4px;padding:4px 8px;background:#f1f8e9;border-radius:4px;border:1px dashed #aed581;">';
+        html += '<span style="font-size:10px;color:#689f38;">Padrao:</span> <span style="font-size:11px;color:#555;">' + item.padrao + '</span>';
+        html += '</div>';
+        // Perguntas personalizadas
+        html += '<div id="perguntasLista_' + item.id + '">';
+        for (var p = 0; p < perguntas.length; p++) {
+          html += '<div style="display:flex;gap:4px;margin-top:4px;align-items:center;">';
+          html += '<input type="text" class="pergCustom_' + item.id + '" value="' + perguntas[p].replace(/"/g, '&quot;') + '" style="flex:1;padding:5px 8px;border:1px solid #c5e1a5;border-radius:4px;font-size:11px;" placeholder="Pergunta personalizada...">';
+          html += '<button onclick="removerPergunta(' + item.id + ',this)" style="background:#ef5350;color:#fff;border:none;border-radius:4px;width:22px;height:22px;cursor:pointer;font-size:12px;line-height:1;">x</button>';
+          html += '</div>';
+        }
+        html += '</div>';
+        // Botao adicionar
+        html += '<button onclick="adicionarPergunta(' + item.id + ')" style="margin-top:6px;background:#c5e1a5;border:none;border-radius:4px;padding:4px 10px;font-size:11px;cursor:pointer;color:#33691e;">+ Adicionar pergunta</button>';
         html += '</div>';
       }
       container.innerHTML = html;
+    }
+
+    function adicionarPergunta(sitId) {
+      var lista = document.getElementById('perguntasLista_' + sitId);
+      var div = document.createElement('div');
+      div.style.cssText = 'display:flex;gap:4px;margin-top:4px;align-items:center;';
+      div.innerHTML = '<input type="text" class="pergCustom_' + sitId + '" value="" style="flex:1;padding:5px 8px;border:1px solid #c5e1a5;border-radius:4px;font-size:11px;" placeholder="Pergunta personalizada...">' +
+        '<button onclick="removerPergunta(' + sitId + ',this)" style="background:#ef5350;color:#fff;border:none;border-radius:4px;width:22px;height:22px;cursor:pointer;font-size:12px;line-height:1;">x</button>';
+      lista.appendChild(div);
+      // Foca no novo input
+      div.querySelector('input').focus();
+    }
+
+    function removerPergunta(sitId, btn) {
+      btn.parentElement.remove();
     }
 
     async function salvarPerguntasCustom() {
@@ -2387,9 +2426,14 @@
       var temCustom = false;
       for (var i = 0; i < REOCUPA_DADOS_PAINEL.length; i++) {
         var item = REOCUPA_DADOS_PAINEL[i];
-        var input = document.getElementById('pergReocupa_' + item.id);
-        if (input && input.value.trim() && input.value.trim() !== item.padrao) {
-          perguntas[item.id] = input.value.trim();
+        var inputs = document.querySelectorAll('.pergCustom_' + item.id);
+        var lista = [];
+        for (var j = 0; j < inputs.length; j++) {
+          var val = inputs[j].value.trim();
+          if (val) lista.push(val);
+        }
+        if (lista.length > 0) {
+          perguntas[item.id] = lista;
           temCustom = true;
         }
       }
@@ -2403,7 +2447,9 @@
           body: JSON.stringify({ email: currentUser, data: payload })
         });
         var status = document.getElementById('statusPerguntasSalvas');
-        status.textContent = temCustom ? 'Perguntas salvas! (' + Object.keys(perguntas).length + ' personalizadas)' : 'Todas as perguntas foram restauradas ao padrao.';
+        var totalPergs = 0;
+        for (var k in perguntas) { totalPergs += perguntas[k].length; }
+        status.textContent = temCustom ? 'Salvo! ' + totalPergs + ' perguntas personalizadas em ' + Object.keys(perguntas).length + ' situacoes.' : 'Todas restauradas ao padrao.';
         status.style.display = 'block';
         setTimeout(function() { status.style.display = 'none'; }, 4000);
       } catch(e) {
