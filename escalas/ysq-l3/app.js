@@ -388,14 +388,33 @@ async function _enviarYsq() {
     var origInit = initializeApp;
     window.addEventListener('load', function() {
         var params = new URLSearchParams(window.location.search);
-        if (params.get('d')) {
+        if (params.get('s')) {
+            // Modo painel via sessionId (link gerado pelo painel)
+            fetch(_API_URL_YSQ + '/get-session?id=' + params.get('s')).then(function(r){return r.json();}).then(function(data){
+                if(data.sessionId){
+                    _sessionInfoYsq = data;
+                    var nomeEl = document.getElementById('patientName');
+                    var nascEl = document.getElementById('birthDate');
+                    var sexoEl = document.getElementById('patientSex');
+                    if(nomeEl && data.patientName) nomeEl.value = data.patientName;
+                    if(nascEl && data.birthDate) nascEl.value = data.birthDate;
+                    if(sexoEl && data.sex) sexoEl.value = data.sex;
+                    if(nomeEl) nomeEl.dispatchEvent(new Event('input'));
+                    if(nascEl) nascEl.dispatchEvent(new Event('change'));
+                    var actions = document.querySelectorAll('.actions');
+                    actions.forEach(function(a){
+                        a.innerHTML = '<button type="button" class="btn-primary" style="padding:15px 30px;font-size:16px;background:#2e7d32;" onclick="_enviarYsq()">Enviar Resultados ao Profissional</button>';
+                    });
+                }
+            }).catch(function(){});
+        } else if (params.get('d')) {
             _decodificarURLYsq();
         } else if (params.get('print')) {
             var actions = document.querySelectorAll('.actions');
             actions.forEach(function(a) { a.style.display = 'none'; });
             document.getElementById('resultsSection').style.display = 'none';
             setTimeout(function(){ window.print(); }, 500);
-        } else {
+        } else if (!window.location.protocol.startsWith('file')) {
             window.location.href = 'https://setmonte.github.io/online/';
         }
     });
