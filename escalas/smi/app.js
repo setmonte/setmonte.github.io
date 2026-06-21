@@ -406,7 +406,29 @@ function renderQuestions() {
 document.addEventListener('DOMContentLoaded', function() {
     // === MODO PAINEL ===
     var params = new URLSearchParams(window.location.search);
-    if (params.get('d')) {
+    if (params.get('s')) {
+        initializeApp();
+        fetch(_API_URL_SMI + '/get-session?id=' + params.get('s')).then(function(r){
+            if(r.status===410){document.body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#e8f5e9,#c8e6c9);text-align:center;padding:20px;"><h1 style="color:#c62828;font-size:24px;margin-bottom:10px;">Este link j\u00e1 foi utilizado.</h1><p style="font-size:16px;color:#555;">Solicite um novo link ao seu avaliador.</p></div>';throw new Error("link_usado");}
+            return r.json();
+        }).then(function(data){
+            if(data.sessionId){
+                _sessionInfoSmi = data;
+                var nomeEl = document.getElementById('patientName');
+                var nascEl = document.getElementById('birthDate');
+                var sexoEl = document.getElementById('patientSex');
+                if(nomeEl && data.patientName) nomeEl.value = data.patientName;
+                if(nascEl && data.birthDate) nascEl.value = data.birthDate;
+                if(sexoEl && data.sex) sexoEl.value = data.sex;
+                if(nomeEl) nomeEl.dispatchEvent(new Event('input'));
+                if(nascEl) nascEl.dispatchEvent(new Event('change'));
+                var actions = document.querySelectorAll('.actions');
+                actions.forEach(function(a){
+                    a.innerHTML = '<button type="button" class="btn-primary" style="padding:15px 30px;font-size:16px;background:#2e7d32;" onclick="_enviarSmi()">Enviar Resultados ao Profissional</button>';
+                });
+            }
+        }).catch(function(){});
+    } else if (params.get('d')) {
         initializeApp();
         _decodificarURLSmi();
     } else if (params.get('print')) {
@@ -473,7 +495,7 @@ async function _enviarSmi() {
     try {
         var resp = await fetch(_API_URL_SMI + '/save-escala', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sessionId: _sessionInfoSmi.sessionId, email: _sessionInfoSmi.email, data: dados })
+            body: JSON.stringify({ sessionId: _sessionInfoSmi.sessionId, email: _sessionInfoSmi.email, data: dados, originalSessionId: _sessionInfoSmi.sessionId })
         });
         var result = await resp.json();
         if (result.ok || resp.ok) {

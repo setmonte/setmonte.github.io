@@ -368,7 +368,7 @@ async function _enviarYsq() {
     try {
         var resp = await fetch(_API_URL_YSQ + '/save-escala', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sessionId: _sessionInfoYsq.sessionId, email: _sessionInfoYsq.email, data: dados })
+            body: JSON.stringify({ sessionId: _sessionInfoYsq.sessionId, email: _sessionInfoYsq.email, data: dados, originalSessionId: _sessionInfoYsq.sessionId })
         });
         var result = await resp.json();
         if (result.ok || resp.ok) {
@@ -390,7 +390,10 @@ async function _enviarYsq() {
         var params = new URLSearchParams(window.location.search);
         if (params.get('s')) {
             // Modo painel via sessionId (link gerado pelo painel)
-            fetch(_API_URL_YSQ + '/get-session?id=' + params.get('s')).then(function(r){return r.json();}).then(function(data){
+            fetch(_API_URL_YSQ + '/get-session?id=' + params.get('s')).then(function(r){
+                if(r.status===410){document.body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#e8f5e9,#c8e6c9);text-align:center;padding:20px;"><h1 style="color:#c62828;font-size:24px;margin-bottom:10px;">Este link j\u00e1 foi utilizado.</h1><p style="font-size:16px;color:#555;">Solicite um novo link ao seu avaliador.</p></div>';throw new Error("link_usado");}
+                return r.json();
+            }).then(function(data){
                 if(data.sessionId){
                     _sessionInfoYsq = data;
                     var nomeEl = document.getElementById('patientName');
