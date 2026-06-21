@@ -2484,12 +2484,14 @@
     // Carrega perguntas personalizadas ao abrir a aba
     async function carregarPerguntasReocupaPainel() {
       try {
-        var resp = await fetch(API_URL + '/get-results?email=' + encodeURIComponent(currentUser) + '&tipo=reocupa-perguntas');
+        var resp = await fetch(API_URL + '/get-results?email=' + encodeURIComponent(currentUser) + '&tipo=escala');
         var data = await resp.json();
         if (data && data.results && data.results.length > 0) {
-          var mais_recente = data.results[0];
-          if (mais_recente.data && mais_recente.data.perguntas) {
-            _perguntasSalvas = mais_recente.data.perguntas;
+          for (var i = 0; i < data.results.length; i++) {
+            if (data.results[i].data && data.results[i].data.tipo === 'reocupa-perguntas' && data.results[i].data.perguntas) {
+              _perguntasSalvas = data.results[i].data.perguntas;
+              break;
+            }
           }
         }
       } catch(e) { /* silencioso */ }

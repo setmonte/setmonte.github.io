@@ -1174,14 +1174,18 @@ function _decodificarURL() {
 
 // Carrega perguntas personalizadas do profissional a partir da API
 function _carregarPerguntasCustom(email) {
-    fetch(_API_URL + '/get-results?email=' + encodeURIComponent(email) + '&tipo=reocupa-perguntas')
+    fetch(_API_URL + '/get-results?email=' + encodeURIComponent(email) + '&tipo=escala')
     .then(function(r) { return r.json(); })
     .then(function(data) {
         if (data && data.results && data.results.length > 0) {
-            var mais_recente = data.results[0];
-            if (mais_recente.data && mais_recente.data.perguntas) {
-                _perguntasCustom = mais_recente.data.perguntas;
-                console.log('REOCUPA: Perguntas personalizadas carregadas (' + Object.keys(_perguntasCustom).length + ' perguntas)');
+            // Filtra resultados que sejam do tipo reocupa-perguntas
+            for (var i = 0; i < data.results.length; i++) {
+                var item = data.results[i];
+                if (item.data && item.data.tipo === 'reocupa-perguntas' && item.data.perguntas) {
+                    _perguntasCustom = item.data.perguntas;
+                    console.log('REOCUPA: Perguntas personalizadas carregadas (' + Object.keys(_perguntasCustom).length + ' situacoes)');
+                    break;
+                }
             }
         }
         var btnIni = document.getElementById('btnIniciar');
