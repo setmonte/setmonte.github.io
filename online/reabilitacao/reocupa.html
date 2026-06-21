@@ -267,14 +267,16 @@ function obterPerguntasDaSituacao(sit) {
     var perguntas = [];
     // Pergunta padrao sempre como primeira
     perguntas.push(sit.perguntaPadrao);
-    // Adiciona personalizadas (se existirem)
-    if (_perguntasCustom && _perguntasCustom[sit.id]) {
-        var custom = _perguntasCustom[sit.id];
-        if (typeof custom === 'string' && custom.trim()) {
-            perguntas.push(custom);
-        } else if (Array.isArray(custom)) {
-            for (var i = 0; i < custom.length; i++) {
-                if (custom[i] && custom[i].trim()) perguntas.push(custom[i]);
+    // Adiciona personalizadas (se existirem) - tenta ID como numero e como string
+    if (_perguntasCustom) {
+        var custom = _perguntasCustom[sit.id] || _perguntasCustom[String(sit.id)] || null;
+        if (custom) {
+            if (typeof custom === 'string' && custom.trim()) {
+                perguntas.push(custom);
+            } else if (Array.isArray(custom)) {
+                for (var i = 0; i < custom.length; i++) {
+                    if (custom[i] && custom[i].trim()) perguntas.push(custom[i]);
+                }
             }
         }
     }
@@ -301,6 +303,7 @@ function mostrarCenario(indice) {
     html += '<p style="font-size:0.8em;color:#777;margin-bottom:5px;font-weight:600;">CEN\u00c1RIO — Pe\u00e7a ao paciente para ler em voz alta:</p>';
     html += '<div class="situacao-texto">' + sit.cenario + '</div>';
     html += '</div>';
+    html += '<p style="font-size:0.85em;color:#555;text-align:center;margin-bottom:10px;">\u2139\ufe0f Este cen\u00e1rio tem <strong>' + _perguntasDaSituacao.length + ' pergunta(s)</strong> para responder.</p>';
     html += '<div class="cronometro" id="cronometroDisplay">0.0s</div>';
     html += '<div class="status-voz" id="statusVoz">Clique em "Iniciar Leitura" quando o paciente estiver pronto.</div>';
     html += '<div style="text-align:center;margin-top:15px;">';
