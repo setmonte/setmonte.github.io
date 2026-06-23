@@ -9,6 +9,16 @@
     var _COLETA_URL = 'https://script.google.com/macros/s/AKfycbzYl7-ageXnHHyvrKMb6iS_7gX2l6ZBngPpbCHNfj7YYbXylcZ_vQ9iJkrbko8ICPcW/exec';
     var _jaEnviou = false;
 
+    function _extrairEmailProfissional() {
+        if (window._sessionInfo && window._sessionInfo.email) return window._sessionInfo.email;
+        if (window.sessionData && window.sessionData.email) return window.sessionData.email;
+        if (window.sessionInfo && window.sessionInfo.email) return window.sessionInfo.email;
+        if (window.currentUser) return window.currentUser;
+        if (window._sessionInfoSmi && window._sessionInfoSmi.email) return window._sessionInfoSmi.email;
+        if (window._sessionInfoYsq && window._sessionInfoYsq.email) return window._sessionInfoYsq.email;
+        return '';
+    }
+
     function _extrairIdadeAnos() {
         var campo = document.getElementById('idadeCalculada') || document.getElementById('idade');
         if (campo && campo.value) {
@@ -131,6 +141,7 @@
             }
 
             var pacote = {
+                email: _extrairEmailProfissional(),
                 escala: instrumento,
                 idade: idade,
                 sexo: sexo,
