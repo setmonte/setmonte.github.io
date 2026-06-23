@@ -363,6 +363,7 @@ async function _enviarYsq() {
     });
     dados.dominios = dominios;
     dados.idPaciente = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
+    dados.pacienteId = _sessionInfoYsq ? (_sessionInfoYsq.pacienteId || '') : '';
     var btn = document.querySelector('.actions button');
     if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
     try {

@@ -490,6 +490,7 @@ async function _enviarSmi() {
     });
     dados.dominios = dominios;
     dados.idPaciente = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
+    dados.pacienteId = _sessionInfoSmi ? (_sessionInfoSmi.pacienteId || '') : '';
     var btn = document.querySelector('.actions button');
     if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
     try {
