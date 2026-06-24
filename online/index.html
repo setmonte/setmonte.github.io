@@ -3102,19 +3102,33 @@
       el.classList.toggle('hidden');
     }
 
-    function aplicarEscalaAqui() {
+    async function aplicarEscalaAqui() {
       var escala = document.getElementById('escalaSelect').value;
       if (!escala) { alert('Selecione uma escala primeiro.'); return; }
       var nome = document.getElementById('escalaNome').value.trim();
       var dn = document.getElementById('escalaDn').value;
-      var sexo = document.getElementById('escalaSexo').value;
-      var sessionId = 'esc-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-      var sessionData = { sessionId: sessionId, email: currentUser, patientName: nome, birthDate: dn, sex: sexo };
-      var escalasSubpasta = ['smi', 'ysq-l3'];
-      var caminho = escalasSubpasta.indexOf(escala) >= 0 ? escala + '/' : escala + '.html';
-      var params = btoa(JSON.stringify(sessionData));
-      var link = 'https://setmonte.github.io/escalas/' + caminho + '?d=' + encodeURIComponent(params);
-      window.open(link, '_blank');
+      if (!nome) { alert('Preencha o nome do paciente.'); return; }
+      if (!dn) { alert('Preencha a data de nascimento.'); return; }
+      var sexo = document.getElementById('escalaSexo').value || '';
+      // Salvar sessao no banco (igual Gerar Link) para garantir uso unico
+      try {
+        var resp = await fetch(API_URL + '/save-session', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ email: currentUser, patientName: nome, birthDate: dn, sex: sexo, escala: escala, pacienteId: document.getElementById('escalaSelPac').value || '' })
+        });
+        var result = await resp.json();
+        if (result.ok && result.id) {
+          var escalasSubpasta = ['smi', 'ysq-l3'];
+          var caminho = escalasSubpasta.indexOf(escala) >= 0 ? escala + '/' : escala + '.html';
+          var link = 'https://setmonte.github.io/escalas/' + caminho + '?s=' + result.id;
+          window.open(link, '_blank');
+        } else {
+          alert('Erro ao iniciar aplicacao: ' + (result.error || 'Tente novamente.'));
+        }
+      } catch(e) {
+        alert('Erro de conexao. Tente novamente.');
+      }
     }
 
     function imprimirEscala() {
