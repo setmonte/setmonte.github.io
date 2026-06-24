@@ -420,6 +420,13 @@ function _decodificarURL() {
 async function _enviarResultadosPainel() {
     var nomeEl = document.getElementById('nome');
     if (!nomeEl || !nomeEl.value.trim()) { alert('Preencha o nome antes de enviar.'); return; }
+    var totalItens = document.querySelectorAll('.item').length;
+    var respondidos = document.querySelectorAll('input[type="radio"]:checked').length;
+    if (respondidos < totalItens) { alert('Responda todos os ' + totalItens + ' itens antes de enviar. Faltam ' + (totalItens - respondidos) + '.'); return; }
+    var sexoEl = document.getElementById('sexo');
+    if (sexoEl && !sexoEl.value) { sexoEl.value = 'Nao informado'; }
+    var idadeEl = document.getElementById('idadeCalculada');
+    if (idadeEl && !idadeEl.value) { idadeEl.value = 'Nao informado'; }
     var calcFn = window.calcularResultados;
     if (calcFn && !window._escalaDados) { try { calcFn(); } catch(e) {} }
     var dados = window._escalaDados || {};
