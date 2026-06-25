@@ -118,6 +118,16 @@
                     <div class="form-group"><label for="trabalhoPai">Tipo de trabalho do Pai:</label><input type="text" id="trabalhoPai" placeholder="Ex: mec&#226;nico, professor, vendedor..."></div>
                     <div class="form-group"><label for="trabalhoMae">Tipo de trabalho da M&#227;e:</label><input type="text" id="trabalhoMae" placeholder="Ex: enfermeira, dona de casa..."></div>
                 </div>
+                <div class="form-row">
+                    <div class="form-group"><label for="etnia">Etnia ou cor de pele:</label><input type="text" id="etnia" placeholder="Ex: branca, parda, negra, ind&#237;gena..."></div>
+                    <div class="form-group"><label for="doencaDeficiencia">A crian&#231;a tem alguma doen&#231;a ou defici&#234;ncia (f&#237;sica ou mental)?</label><input type="text" id="doencaDeficiencia" placeholder="Descreva ou deixe em branco se n&#227;o tem"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group" style="flex:2;"><label for="maiorPreocupacao">Qual &#233; a sua maior preocupa&#231;&#227;o em rela&#231;&#227;o a seu filho(a)?</label><textarea id="maiorPreocupacao" rows="2" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;resize:vertical;" placeholder="Descreva sua principal preocupa&#231;&#227;o..."></textarea></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group" style="flex:2;"><label for="qualidades">Descreva as principais qualidades e pontos positivos de seu filho(a):</label><textarea id="qualidades" rows="2" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;resize:vertical;" placeholder="Qualidades e pontos fortes..."></textarea></div>
+                </div>
             </div>
             <div class="instrucoes">
                 <h3>&#128221; Instru&#231;&#245;es</h3>
@@ -203,7 +213,7 @@ var ITENS=[
 {n:53,texto:"Come demais"},
 {n:54,texto:"Cansa-se com facilidade"},
 {n:55,texto:"Est\u00e1 acima do peso"},
-{n:56,texto:"Tem dores de cabe\u00e7a sem causa f\u00edsica"},
+{n:"56",texto:"Tem problemas f\u00edsicos de fundo emocional (sem causa m\u00e9dica):",subitem:true,subs:[{id:"56a",texto:"a) Dores (exceto de cabe\u00e7a ou de est\u00f4mago)"},{id:"56b",texto:"b) Dores de cabe\u00e7a"},{id:"56c",texto:"c) N\u00e1useas, enj\u00f4os"},{id:"56d",texto:"d) Problemas com os olhos (que n\u00e3o s\u00e3o corrigidos com \u00f3culos)"},{id:"56e",texto:"e) Problemas de pele"},{id:"56f",texto:"f) Dores de est\u00f4mago ou de barriga"},{id:"56g",texto:"g) V\u00f4mitos"},{id:"56h",texto:"h) Outros problemas f\u00edsicos"}]},
 {n:57,texto:"Ataca fisicamente as pessoas"},
 {n:58,texto:"Cutuca o nariz, a pele ou outras partes do corpo"},
 {n:59,texto:"Mexe nas partes \u00edntimas em p\u00fablico"},
@@ -260,14 +270,14 @@ var ITENS=[
 {n:110,texto:"Gostaria de ser do sexo oposto"},
 {n:111,texto:"Isola-se, n\u00e3o se relaciona com os outros"},
 {n:112,texto:"\u00c9 muito preocupado(a)"},
-{n:113,texto:"Outros problemas n\u00e3o listados acima"}
+{n:113,texto:"Outros problemas n\u00e3o listados acima",campoAberto:true}
 ];
 
 // Escalas sindromicas - itens conforme manual ASEBA (Achenbach, 2001)
 var ESCALAS = {
 "Ansiedade/Depress\u00e3o": [14,29,30,31,32,33,35,45,50,52,71,91,112],
 "Afastamento/Depress\u00e3o": [5,42,65,69,75,102,103,111],
-"Queixas Som\u00e1ticas": [47,49,51,54,56],
+"Queixas Som\u00e1ticas": [47,49,51,54,"56a","56b","56c","56d","56e","56f","56g"],
 "Problemas Sociais": [11,12,25,27,34,36,38,48,62,64,79],
 "Problemas de Pensamento": [9,18,40,46,58,59,60,66,70,76,83,84,85,92,100],
 "Problemas de Aten\u00e7\u00e3o": [1,4,8,10,13,17,41,61,78,80],
@@ -276,7 +286,7 @@ var ESCALAS = {
 };
 
 // Itens de Outros Problemas (nao pertencem a nenhuma sindrome acima)
-var OUTROS_PROBLEMAS = [6,7,15,24,44,53,55,74,77,93,98,107,108,109,110,113];
+var OUTROS_PROBLEMAS = [6,7,15,24,44,53,55,"56h",74,77,93,98,107,108,109,110,113];
 
 // Agrupamentos maiores
 var INTERNALIZANTE = ["Ansiedade/Depress\u00e3o","Afastamento/Depress\u00e3o","Queixas Som\u00e1ticas"];
@@ -298,12 +308,35 @@ function calcularIdade() {
 function gerarQuestionario() {
     var c = document.getElementById('questionario');
     var h = '';
+    var idx = 0;
     ITENS.forEach(function(item, i) {
-        h += '<div class="item"><div class="item-texto"><span class="item-numero">' + item.n + '.</span> ' + item.texto + '</div><div class="opcoes">';
-        OPCOES.forEach(function(op) {
-            h += '<div class="opcao"><input type="radio" id="q' + i + '_' + op.valor + '" name="q' + i + '" value="' + op.valor + '"><label for="q' + i + '_' + op.valor + '">' + op.texto + '</label></div>';
-        });
-        h += '</div></div>';
+        if (item.subitem) {
+            // Item 56 com subitens
+            h += '<div class="item" style="background:#f9f9f9;"><div class="item-texto"><span class="item-numero">' + item.n + '.</span> ' + item.texto + '</div>';
+            item.subs.forEach(function(sub) {
+                h += '<div style="padding:10px 0 10px 30px;border-top:1px solid #eee;"><div class="item-texto" style="margin-bottom:8px;">' + sub.texto + '</div><div class="opcoes">';
+                OPCOES.forEach(function(op) {
+                    h += '<div class="opcao"><input type="radio" id="' + sub.id + '_' + op.valor + '" name="' + sub.id + '" value="' + op.valor + '"><label for="' + sub.id + '_' + op.valor + '">' + op.texto + '</label></div>';
+                });
+                h += '</div></div>';
+            });
+            h += '</div>';
+        } else if (item.campoAberto) {
+            // Item 113 com campo de texto + opcoes
+            h += '<div class="item"><div class="item-texto"><span class="item-numero">' + item.n + '.</span> ' + item.texto + '</div>';
+            h += '<textarea id="campo113" rows="3" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;margin-bottom:12px;resize:vertical;" placeholder="Descreva outros problemas que n\u00e3o foram mencionados..."></textarea>';
+            h += '<div class="opcoes">';
+            OPCOES.forEach(function(op) {
+                h += '<div class="opcao"><input type="radio" id="q' + i + '_' + op.valor + '" name="q' + i + '" value="' + op.valor + '"><label for="q' + i + '_' + op.valor + '">' + op.texto + '</label></div>';
+            });
+            h += '</div></div>';
+        } else {
+            h += '<div class="item"><div class="item-texto"><span class="item-numero">' + item.n + '.</span> ' + item.texto + '</div><div class="opcoes">';
+            OPCOES.forEach(function(op) {
+                h += '<div class="opcao"><input type="radio" id="q' + i + '_' + op.valor + '" name="q' + i + '" value="' + op.valor + '"><label for="q' + i + '_' + op.valor + '">' + op.texto + '</label></div>';
+            });
+            h += '</div></div>';
+        }
     });
     c.innerHTML = h;
 }
@@ -311,9 +344,20 @@ function gerarQuestionario() {
 function obterRespostas() {
     var r = {};
     for (var i = 0; i < ITENS.length; i++) {
-        var s = document.querySelector('input[name="q' + i + '"]:checked');
-        if (!s) return null;
-        r[ITENS[i].n] = parseInt(s.value);
+        var item = ITENS[i];
+        if (item.subitem) {
+            // Item 56 - ler cada subitem
+            for (var j = 0; j < item.subs.length; j++) {
+                var sub = item.subs[j];
+                var s = document.querySelector('input[name="' + sub.id + '"]:checked');
+                if (!s) return null;
+                r[sub.id] = parseInt(s.value);
+            }
+        } else {
+            var s = document.querySelector('input[name="q' + i + '"]:checked');
+            if (!s) return null;
+            r[item.n] = parseInt(s.value);
+        }
     }
     return r;
 }
@@ -342,11 +386,9 @@ function calcularResultados() {
     var r = obterRespostas();
     if (!r) {
         // Contar quantos faltam
-        var resp = 0;
-        for (var i = 0; i < ITENS.length; i++) {
-            if (document.querySelector('input[name="q' + i + '"]:checked')) resp++;
-        }
-        alert('Responda todos os 113 itens antes de calcular. Faltam ' + (113 - resp) + ' itens.');
+        var totalRadios = document.querySelectorAll('input[type="radio"]').length / 3; // 3 opcoes cada
+        var respondidos = document.querySelectorAll('input[type="radio"]:checked').length;
+        alert('Responda todos os itens antes de calcular. Faltam ' + (Math.round(totalRadios) - respondidos) + ' itens.');
         return;
     }
 
@@ -381,10 +423,11 @@ function calcularResultados() {
     EXTERNALIZANTE.forEach(function(n) { somaExt += resultadosEscalas[n].soma; maxExt += resultadosEscalas[n].max; });
     var pctExt = (somaExt / maxExt) * 100;
 
-    // Total geral
+    // Total geral (soma de todos os valores no objeto r)
     var somaTotal = 0;
-    for (var k in r) { somaTotal += r[k]; }
-    var maxTotal = 113 * 2;
+    var totalItensContados = 0;
+    for (var k in r) { somaTotal += r[k]; totalItensContados++; }
+    var maxTotal = totalItensContados * 2;
     var pctTotal = (somaTotal / maxTotal) * 100;
 
     // Montar HTML dos resultados
@@ -473,8 +516,8 @@ function gerarRelatorioPDF() {
     INTERNALIZANTE.forEach(function(n) { somaInt += resultadosEscalas[n].soma; maxInt += resultadosEscalas[n].max; });
     var somaExt = 0, maxExt = 0;
     EXTERNALIZANTE.forEach(function(n) { somaExt += resultadosEscalas[n].soma; maxExt += resultadosEscalas[n].max; });
-    var somaTotal = 0; for (var k in r) { somaTotal += r[k]; }
-    var maxTotal = 113 * 2;
+    var somaTotal = 0; var totalItensC = 0; for (var k in r) { somaTotal += r[k]; totalItensC++; }
+    var maxTotal = totalItensC * 2;
 
     var idade = document.getElementById('idadeCalculada').value;
     var sexo = document.getElementById('sexo').value;
@@ -596,6 +639,12 @@ function limparDados() {
     document.getElementById('rendaFamiliar').value = '';
     document.getElementById('trabalhoPai').value = '';
     document.getElementById('trabalhoMae').value = '';
+    document.getElementById('etnia').value = '';
+    document.getElementById('doencaDeficiencia').value = '';
+    document.getElementById('maiorPreocupacao').value = '';
+    document.getElementById('qualidades').value = '';
+    var campo113 = document.getElementById('campo113');
+    if (campo113) campo113.value = '';
     document.querySelectorAll('input[type="radio"]').forEach(function(r) { r.checked = false; });
     document.querySelectorAll('.item').forEach(function(el) { el.style.backgroundColor = ''; el.style.borderLeft = ''; });
     document.getElementById('resultados').style.display = 'none';
@@ -632,9 +681,9 @@ function _decodificarURL() {
 async function _enviarResultadosPainel() {
     var nomeEl = document.getElementById('nome');
     if (!nomeEl || !nomeEl.value.trim()) { alert('Preencha o nome antes de enviar.'); return; }
-    var totalItens = document.querySelectorAll('.item').length;
+    var totalItens = document.querySelectorAll('input[type="radio"]').length / 3;
     var respondidos = document.querySelectorAll('input[type="radio"]:checked').length;
-    if (respondidos < totalItens) { alert('Responda todos os ' + totalItens + ' itens antes de enviar. Faltam ' + (totalItens - respondidos) + '.'); return; }
+    if (respondidos < Math.round(totalItens)) { alert('Responda todos os itens antes de enviar. Faltam ' + (Math.round(totalItens) - respondidos) + '.'); return; }
     var sexoEl = document.getElementById('sexo');
     if (sexoEl && !sexoEl.value) { sexoEl.value = 'Nao informado'; }
     var idadeEl = document.getElementById('idadeCalculada');
