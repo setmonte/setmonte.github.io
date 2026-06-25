@@ -691,7 +691,9 @@
 
     function renderizarPainelReconhecimento(painel, gridId, fase) {
       var grid = document.getElementById(gridId);
-      if (!grid) return;
+      if (!grid) { console.error('TAAV DEBUG: grid nao encontrado:', gridId); return; }
+      if (!painel || painel.length === 0) { console.error('TAAV DEBUG: painel vazio para fase:', fase); return; }
+      console.log('TAAV DEBUG: renderizando', painel.length, 'figuras em', gridId);
       grid.innerHTML = '';
       painel.forEach(function(figura, indice) {
         var div = document.createElement('div');
@@ -707,6 +709,7 @@
         div.appendChild(conteudo);
         grid.appendChild(div);
       });
+      console.log('TAAV DEBUG: grid children apos render:', grid.children.length);
     }
 
     // ===== INTERACAO =====
@@ -800,7 +803,9 @@
       estadoTeste.naoLembra = false;
       estadoTeste.tempoInicio = Date.now();
       var distratores = embaralharArray(estadoTeste.listaB.slice(0, 15));
+      console.log('TAAV DEBUG T1: listaA=', estadoTeste.listaA.length, 'distratores=', distratores.length);
       estadoTeste.paineis.t1 = montarPainel(estadoTeste.listaA, distratores);
+      console.log('TAAV DEBUG T1: painel montado=', estadoTeste.paineis.t1.length);
       navegarPara('pagina-reconhecimento-t1');
       renderizarPainelReconhecimento(estadoTeste.paineis.t1, 'grid-reconhecimento-t1', 't1');
       iniciarCronometroProgressivo('tempo-reconhecimento-t1');
