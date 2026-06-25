@@ -9,7 +9,7 @@
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
     body { font-family:'Segoe UI',Arial,sans-serif; background:linear-gradient(135deg,#5c6bc0 0%,#7e57c2 50%,#ab47bc 100%); min-height:100vh; padding:20px; line-height:1.6; }
-    .container { max-width:1000px; margin:0 auto; background:#fff; border-radius:16px; box-shadow:0 20px 60px rgba(0,0,0,0.15); overflow:hidden; }
+    .container { max-width:1000px; margin:0 auto; background:#fff; border-radius:16px; box-shadow:0 20px 60px rgba(0,0,0,0.15); overflow:visible; }
     header { background:linear-gradient(135deg,#311b92,#4527a0,#5e35b1); color:#fff; padding:30px; text-align:center; }
     header .logo { font-size:2.8em; font-weight:bold; margin-bottom:10px; letter-spacing:3px; }
     header h1 { font-size:1.6em; font-weight:300; margin-bottom:8px; }
@@ -691,9 +691,8 @@
 
     function renderizarPainelReconhecimento(painel, gridId, fase) {
       var grid = document.getElementById(gridId);
-      if (!grid) { console.error('TAAV DEBUG: grid nao encontrado:', gridId); return; }
-      if (!painel || painel.length === 0) { console.error('TAAV DEBUG: painel vazio para fase:', fase); return; }
-      console.log('TAAV DEBUG: renderizando', painel.length, 'figuras em', gridId);
+      if (!grid) return;
+      if (!painel || painel.length === 0) return;
       grid.innerHTML = '';
       painel.forEach(function(figura, indice) {
         var div = document.createElement('div');
@@ -709,7 +708,6 @@
         div.appendChild(conteudo);
         grid.appendChild(div);
       });
-      console.log('TAAV DEBUG: grid children apos render:', grid.children.length);
     }
 
     // ===== INTERACAO =====
@@ -803,9 +801,7 @@
       estadoTeste.naoLembra = false;
       estadoTeste.tempoInicio = Date.now();
       var distratores = embaralharArray(estadoTeste.listaB.slice(0, 15));
-      console.log('TAAV DEBUG T1: listaA=', estadoTeste.listaA.length, 'distratores=', distratores.length);
       estadoTeste.paineis.t1 = montarPainel(estadoTeste.listaA, distratores);
-      console.log('TAAV DEBUG T1: painel montado=', estadoTeste.paineis.t1.length);
       navegarPara('pagina-reconhecimento-t1');
       renderizarPainelReconhecimento(estadoTeste.paineis.t1, 'grid-reconhecimento-t1', 't1');
       iniciarCronometroProgressivo('tempo-reconhecimento-t1');
