@@ -1146,6 +1146,45 @@
     var currentUser = null;
     var accessToken = null;
 
+    // === FUNCAO SEGURA PARA CODIFICAR EM BASE64 (suporta acentos e emojis) ===
+    // O btoa() nativo do navegador NAO aceita caracteres fora do Latin-1 (como acentos).
+    // No celular isso causa erro silencioso. Esta funcao converte os caracteres non-ASCII
+    // para escapes unicode (\uXXXX) ANTES de codificar, mantendo compatibilidade com atob().
+    function safeBtoa(str) {
+      var safe = str.replace(/[^\x00-\x7F]/g, function(c) {
+        return '\\u' + ('0000' + c.charCodeAt(0).toString(16)).slice(-4);
+      });
+      return btoa(safe);
+    }
+
+    // === FEEDBACK VISUAL NOS BOTOES (evita clique duplo e mostra progresso no mobile) ===
+    function btnLoading(btn, texto) {
+      if (!btn) return;
+      btn.disabled = true;
+      btn.dataset.originalText = btn.textContent;
+      btn.textContent = texto || 'Gerando...';
+    }
+    function btnReset(btn) {
+      if (!btn) return;
+      btn.disabled = false;
+      btn.textContent = btn.dataset.originalText || 'Gerar Link';
+    }
+
+    // === NOTIFICACAO VISUAL (toast) — mais visivel que alert() no celular ===
+    function mostrarErro(msg) {
+      var el = document.getElementById('toastErro');
+      if (!el) {
+        el = document.createElement('div');
+        el.id = 'toastErro';
+        el.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#c62828;color:#fff;padding:16px 24px;border-radius:10px;font-size:15px;font-weight:600;z-index:99999;box-shadow:0 4px 20px rgba(0,0,0,0.3);max-width:90%;text-align:center;transition:opacity 0.3s;';
+        document.body.appendChild(el);
+      }
+      el.textContent = msg;
+      el.style.opacity = '1';
+      el.style.display = 'block';
+      setTimeout(function() { el.style.opacity = '0'; setTimeout(function() { el.style.display = 'none'; }, 300); }, 5000);
+    }
+
     // === AUTO-DETECTA TESTES PAGOS E PREENCHE DROPDOWNS ADMIN ===
     // Funciona assim: procura no HTML todos os elementos com ID terminando em "CreditsCount"
     // (ex: tecfeCreditsCount, baeCreditsCount, trmvCreditsCount, taavCreditsCount)
@@ -1419,6 +1458,8 @@
         alert('Preencha pelo menos o nome e a data de nascimento.');
         return;
       }
+      var btn = event && event.target ? event.target : null;
+      btnLoading(btn);
       try {
         var isAdmin = (currentUser === 'setmonte@gmail.com' || isFreeModeActive());
         var sessionId = '';
@@ -1453,13 +1494,14 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ sessionId: sessionId, email: currentUser, data: { formData: sessionData, status: 'aguardando' } })
         });
-        var params = btoa(JSON.stringify(sessionData));
+        var params = safeBtoa(JSON.stringify(sessionData));
         generatedLink = 'https://setmonte.github.io/online/teste.html?d=' + encodeURIComponent(params);
         if (abrirLocal) { window.open(generatedLink, '_blank'); }
         else { document.getElementById('sessionLink').textContent = generatedLink; document.getElementById('linkResult').classList.remove('hidden'); }
       } catch(e) {
-        alert('Erro de conexao: ' + e.message);
+        mostrarErro('Erro ao gerar link: ' + e.message);
       }
+      btnReset(btn);
     }
 
     function maskCPF(el) {
@@ -1759,6 +1801,8 @@
       if (testesSelecionados.length === 0) { alert('Selecione pelo menos um teste.'); return; }
       // Calcula créditos necessários
       var creditosNecessarios = testesSelecionados.length;
+      var btn = event && event.target ? event.target : null;
+      btnLoading(btn);
       try {
         var isAdmin = (currentUser === 'setmonte@gmail.com' || isFreeModeActive());
         var sessionId = '';
@@ -1804,14 +1848,15 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ sessionId: sessionId, email: currentUser, tipo: 'bae', data: { formData: sessionData, status: 'aguardando' } })
         });
-        var params = btoa(JSON.stringify(sessionData));
+        var params = safeBtoa(JSON.stringify(sessionData));
         generatedBaeLink = 'https://setmonte.github.io/online/teste-bae.html?d=' + encodeURIComponent(params);
         if (abrirLocal) { window.open(generatedBaeLink, '_blank'); }
         else { document.getElementById('baeSessionLink').textContent = generatedBaeLink; document.getElementById('baeLinkResult').classList.remove('hidden'); }
         var nomesTestes = {concentrada:'TEAC',seletiva:'TEAS',dividida:'TEAD',alternada:'TEAL',sustentada:'TEASU'};
         var listaStr = testesSelecionados.map(function(t){return nomesTestes[t];}).join(', ');
         document.querySelector('#baeLinkResult p:last-child').textContent = 'Testes: ' + listaStr + ' (' + creditosNecessarios + ' credito' + (creditosNecessarios>1?'s':'') + ')';
-      } catch(e) { alert('Erro: ' + e.message); }
+      } catch(e) { mostrarErro('Erro ao gerar link BAE: ' + e.message); }
+      btnReset(btn);
     }
 
     function copyBaeLink() {
@@ -2335,7 +2380,7 @@
       if (!nome) { alert('Preencha o nome do paciente.'); return; }
       if (!dn) { alert('Preencha a data de nascimento.'); return; }
       var dados = { nome: nome, dn: dn, sexo: sexo, email: currentUser || '' };
-      var encoded = btoa(JSON.stringify(dados));
+      var encoded = safeBtoa(JSON.stringify(dados));
       var url = 'reabilitacao/reocupa.html?d=' + encoded;
       window.open(url, '_blank');
     }
@@ -2869,7 +2914,7 @@
         sessionData.secoes = cfg.secoesAtivas || _SECOES_IDS.slice();
         if (cfg.perguntasExtras && cfg.perguntasExtras.length > 0) sessionData.extras = cfg.perguntasExtras;
       }
-      var params = btoa(JSON.stringify(sessionData));
+      var params = safeBtoa(JSON.stringify(sessionData));
       return 'https://setmonte.github.io/escalas/' + tipo + '.html?d=' + encodeURIComponent(params);
     }
 
@@ -2908,7 +2953,7 @@
         sessionData.secoes = cfg.secoesAtivas || _SECOES_IDS.slice();
         if (cfg.perguntasExtras && cfg.perguntasExtras.length > 0) sessionData.extras = cfg.perguntasExtras;
       }
-      var params = btoa(JSON.stringify(sessionData));
+      var params = safeBtoa(JSON.stringify(sessionData));
       var link = 'https://setmonte.github.io/escalas/' + tipo + '.html?d=' + encodeURIComponent(params);
       window.open(link, '_blank');
     }
@@ -3619,6 +3664,8 @@
       var name = document.getElementById('trmvPatientName').value.trim();
       var birth = document.getElementById('trmvBirthDate').value;
       if (!name || !birth) { alert('Preencha pelo menos o nome e a data de nascimento.'); return; }
+      var btn = event && event.target ? event.target : null;
+      btnLoading(btn);
       try {
         var isAdmin = (currentUser === 'setmonte@gmail.com' || isFreeModeActive());
         var sessionId = '';
@@ -3652,11 +3699,12 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ sessionId: sessionId, email: currentUser, tipo: 'trmv', data: { formData: sessionData, status: 'aguardando' } })
         });
-        var params = btoa(JSON.stringify(sessionData));
+        var params = safeBtoa(JSON.stringify(sessionData));
         generatedTrmvLink = 'https://setmonte.github.io/online/teste-trmv.html?d=' + encodeURIComponent(params);
         if (abrirLocal) { window.open(generatedTrmvLink, '_blank'); }
         else { document.getElementById('trmvSessionLink').textContent = generatedTrmvLink; document.getElementById('trmvLinkResult').classList.remove('hidden'); }
-      } catch(e) { alert('Erro: ' + e.message); }
+      } catch(e) { mostrarErro('Erro ao gerar link TRMV: ' + e.message); }
+      btnReset(btn);
     }
 
     function copyTrmvLink() {
@@ -3915,6 +3963,8 @@
       var name = document.getElementById('taavPatientName').value.trim();
       var birth = document.getElementById('taavBirthDate').value;
       if (!name || !birth) { alert('Preencha pelo menos o nome e a data de nascimento.'); return; }
+      var btn = event && event.target ? event.target : null;
+      btnLoading(btn);
       try {
         var isAdmin = (currentUser === 'setmonte@gmail.com' || isFreeModeActive());
         var sessionId = '';
@@ -3948,11 +3998,12 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ sessionId: sessionId, email: currentUser, tipo: 'taav', data: { formData: sessionData, status: 'aguardando' } })
         });
-        var params = btoa(JSON.stringify(sessionData));
+        var params = safeBtoa(JSON.stringify(sessionData));
         generatedTaavLink = 'https://setmonte.github.io/online/teste-taav.html?d=' + encodeURIComponent(params);
         if (abrirLocal) { window.open(generatedTaavLink, '_blank'); }
         else { document.getElementById('taavSessionLink').textContent = generatedTaavLink; document.getElementById('taavLinkResult').classList.remove('hidden'); }
-      } catch(e) { alert('Erro: ' + e.message); }
+      } catch(e) { mostrarErro('Erro ao gerar link TAAV: ' + e.message); }
+      btnReset(btn);
     }
 
     function copyTaavLink() {
@@ -4591,6 +4642,9 @@
       var dn = document.getElementById('trefDn').value;
       var sexo = document.getElementById('trefSexo').value;
       if (!nome || !dn || !sexo) { alert('Preencha nome, data de nascimento e sexo.'); return; }
+      var btn = event && event.target ? event.target : null;
+      btnLoading(btn);
+      try {
       var sessionId;
       if (currentUser === 'setmonte@gmail.com' || isFreeModeActive()) {
         sessionId = 'tref-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -4600,7 +4654,7 @@
           body: JSON.stringify({email: currentUser, tipo: 'tref'})
         });
         var data = await resp.json();
-        if (data.error) { alert('Erro: ' + data.error); return; }
+        if (data.error) { alert('Erro: ' + data.error); btnReset(btn); return; }
         sessionId = data.sessionId;
         document.getElementById('trefCreditsCount').textContent = data.credits;
       }
@@ -4614,10 +4668,12 @@
         obs: document.getElementById('trefObs').value || '',
         pacienteId: document.getElementById('trefSelPac').value || ''
       };
-      var params = btoa(JSON.stringify(sessionData));
+      var params = safeBtoa(JSON.stringify(sessionData));
       var link = 'https://setmonte.github.io/online/teste-tref.html?d=' + encodeURIComponent(params);
       if (abrirLocal) { window.open(link, '_blank'); }
       else { document.getElementById('trefSessionLink').textContent = link; document.getElementById('trefLinkResult').classList.remove('hidden'); }
+      } catch(e) { mostrarErro('Erro ao gerar link TREF: ' + e.message); }
+      btnReset(btn);
     }
 
     function copyTrefLink() {
@@ -4691,6 +4747,9 @@
       var dn = document.getElementById('tflodDn').value;
       var escolaridade = document.getElementById('tflodEscolaridade').value;
       if (!nome || !dn || !escolaridade) { alert('Preencha nome, data de nascimento e escolaridade.'); return; }
+      var btn = event && event.target ? event.target : null;
+      btnLoading(btn);
+      try {
       // TFLOD e gratuito - nao consome creditos, gera sessionId direto
       var sessionId = 'tflod-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
       var sessionData = {
@@ -4703,10 +4762,12 @@
         obs: document.getElementById('tflodObs').value || '',
         pacienteId: document.getElementById('tflodSelPac').value || ''
       };
-      var params = btoa(JSON.stringify(sessionData));
+      var params = safeBtoa(JSON.stringify(sessionData));
       var link = 'https://setmonte.github.io/online/teste-tflod.html?d=' + encodeURIComponent(params);
       if (abrirLocal) { window.open(link, '_blank'); }
       else { document.getElementById('tflodSessionLink').textContent = link; document.getElementById('tflodLinkResult').classList.remove('hidden'); }
+      } catch(e) { mostrarErro('Erro ao gerar link TFLOD: ' + e.message); }
+      btnReset(btn);
     }
 
     function copyTflodLink() {
