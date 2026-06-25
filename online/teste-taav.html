@@ -65,6 +65,26 @@
     }
     /* Esconder mouse nas fases passivas */
     body.cursor-hidden, body.cursor-hidden * { cursor:none !important; }
+    /* === FULLSCREEN === */
+    :fullscreen body, :-webkit-full-screen body, :-ms-fullscreen body {
+      background:#1a1a2e; padding:0;
+    }
+    :fullscreen .container, :-webkit-full-screen .container, :-ms-fullscreen .container {
+      max-width:100%; width:100%; min-height:100vh; border-radius:0; box-shadow:none;
+      display:flex; flex-direction:column; overflow-y:auto;
+    }
+    :fullscreen header, :-webkit-full-screen header, :-ms-fullscreen header {
+      padding:15px;
+    }
+    :fullscreen .secao, :-webkit-full-screen .secao, :-ms-fullscreen .secao {
+      flex:1; padding:20px;
+    }
+    :fullscreen .grid-figuras, :-webkit-full-screen .grid-figuras, :-ms-fullscreen .grid-figuras {
+      max-width:900px; margin:0 auto;
+    }
+    :fullscreen .progresso-container, :-webkit-full-screen .progresso-container, :-ms-fullscreen .progresso-container {
+      position:sticky; top:0; z-index:100; background:#f5f0ff;
+    }
   </style>
 </head>
 <body>
@@ -603,6 +623,9 @@
       var alvo = document.getElementById(idPagina);
       if (alvo) alvo.classList.add('active');
       window.scrollTo(0,0);
+      // Forcar scroll no container tambem (fullscreen pode bloquear window.scrollTo)
+      var container = document.querySelector('.container');
+      if (container) container.scrollTop = 0;
       atualizarProgresso(idPagina);
     }
 
@@ -837,6 +860,8 @@
 
     // --- TRIAL 4 ---
     function iniciarEstudoT4() {
+      // Esconder mouse durante fase de estudo
+      document.body.classList.add('cursor-hidden');
       estadoTeste.faseAtual = 'estudo-t4';
       navegarPara('pagina-estudo-t4');
       renderizarEstudo(estadoTeste.listaA, 'grid-estudo-t4');
@@ -845,6 +870,8 @@
 
     function iniciarReconhecimentoT4() {
       pararCronometro();
+      // Mostrar mouse para clicar nas figuras
+      document.body.classList.remove('cursor-hidden');
       estadoTeste.faseAtual = 'reconhecimento-t4';
       estadoTeste.selecoes.t4 = [];
       estadoTeste.timestamps.t4 = [];
@@ -859,6 +886,8 @@
 
     // --- TRIAL 5 ---
     function iniciarEstudoT5() {
+      // Esconder mouse durante fase de estudo
+      document.body.classList.add('cursor-hidden');
       estadoTeste.faseAtual = 'estudo-t5';
       navegarPara('pagina-estudo-t5');
       renderizarEstudo(estadoTeste.listaA, 'grid-estudo-t5');
@@ -867,6 +896,8 @@
 
     function iniciarReconhecimentoT5() {
       pararCronometro();
+      // Mostrar mouse para clicar nas figuras
+      document.body.classList.remove('cursor-hidden');
       estadoTeste.faseAtual = 'reconhecimento-t5';
       estadoTeste.selecoes.t5 = [];
       estadoTeste.timestamps.t5 = [];
