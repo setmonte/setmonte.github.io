@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-QY1N9587DG"></script>
+    <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-QY1N9587DG');</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de Corsi &#8212; Mem&#243;ria Visuoespacial</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background: linear-gradient(135deg, #1a237e 0%, #4a148c 100%); min-height: 100vh; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; border-radius: 15px; box-shadow: 0 20px 40px rgba(0,0,0,0.15); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #1a237e 0%, #4a148c 100%); color: white; padding: 30px; text-align: center; }
+        .header h1 { font-size: 2.2em; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        .header p { font-size: 1.1em; opacity: 0.9; }
+        .content { padding: 30px; }
+        .info-tecnica { background: #ede7f6; padding: 25px; border-radius: 10px; margin-bottom: 30px; border-left: 5px solid #4a148c; position: relative; }
+        .info-tecnica h2 { color: #4a148c; margin-bottom: 15px; font-size: 1.4em; }
+        .info-tecnica p { color: #555; line-height: 1.7; font-size: 0.95em; }
+        .dados-pessoais { background: #f8f9fa; padding: 25px; border-radius: 10px; margin-bottom: 30px; border-left: 5px solid #1a237e; }
+        .dados-pessoais h2 { color: #1a237e; margin-bottom: 20px; font-size: 1.5em; }
+        .form-row { display: flex; gap: 20px; margin-bottom: 15px; flex-wrap: wrap; }
+        .form-group { flex: 1; min-width: 200px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; color: #555; }
+        .form-group input, .form-group select { width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 16px; transition: border-color 0.3s; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: #4a148c; }
+        .instrucoes { background: #e8eaf6; padding: 20px; border-radius: 10px; margin-bottom: 30px; border-left: 5px solid #1a237e; }
+        .instrucoes h3 { color: #1a237e; margin-bottom: 10px; }
+        .instrucoes p { color: #555; font-size: 0.95em; line-height: 1.7; }
+        /* Mesa 3D */
+        .mesa-container { perspective: 800px; display: flex; justify-content: center; align-items: center; padding: 30px 10px; }
+        .mesa { width: 500px; height: 420px; background: linear-gradient(145deg, #5d4037 0%, #3e2723 100%); border-radius: 12px; position: relative; transform: rotateX(18deg); box-shadow: 0 30px 60px rgba(0,0,0,0.4), inset 0 2px 4px rgba(255,255,255,0.1); border: 3px solid #4e342e; }
+        .mesa::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: repeating-linear-gradient(90deg, transparent, transparent 48px, rgba(0,0,0,0.05) 48px, rgba(0,0,0,0.05) 50px); border-radius: 12px; pointer-events: none; }
+        .cubo { position: absolute; width: 50px; height: 50px; cursor: pointer; transition: transform 0.15s ease; user-select: none; }
+        .cubo-face { position: absolute; width: 50px; height: 50px; }
+        .cubo .top { background: linear-gradient(135deg, #90a4ae, #78909c); transform: rotateX(60deg) translateZ(25px); border: 1px solid #607d8b; border-radius: 3px; }
+        .cubo .front { background: linear-gradient(180deg, #78909c, #546e7a); transform: translateZ(25px) translateY(10px); height: 30px; top: 20px; border: 1px solid #607d8b; border-radius: 0 0 3px 3px; }
+        .cubo:active { transform: scale(0.92); }
+        .cubo.ativo .top { background: linear-gradient(135deg, #ffd600, #ffab00); border-color: #ff8f00; box-shadow: 0 0 20px rgba(255,214,0,0.8); }
+        .cubo.ativo .front { background: linear-gradient(180deg, #ffab00, #ff8f00); border-color: #ff6f00; }
+        .cubo.acerto .top { background: linear-gradient(135deg, #69f0ae, #00e676); border-color: #00c853; box-shadow: 0 0 15px rgba(0,230,118,0.6); }
+        .cubo.acerto .front { background: linear-gradient(180deg, #00e676, #00c853); border-color: #00a152; }
+        .cubo.erro .top { background: linear-gradient(135deg, #ff5252, #d50000); border-color: #b71c1c; box-shadow: 0 0 15px rgba(255,82,82,0.6); }
+        .cubo.erro .front { background: linear-gradient(180deg, #d50000, #b71c1c); border-color: #880e0e; }
+        .cubo.clicavel { cursor: pointer; }
+        .cubo.clicavel:hover .top { background: linear-gradient(135deg, #b0bec5, #90a4ae); }
+        .cubo.bloqueado { cursor: not-allowed; opacity: 0.7; }
+        /* Status e controles */
+        .status-bar { text-align: center; padding: 15px; background: #f5f5f5; border-radius: 10px; margin: 15px 0; font-size: 1.1em; font-weight: 600; color: #1a237e; }
+        .status-bar .fase { font-size: 0.85em; color: #666; font-weight: normal; margin-top: 5px; }
+        .sequencia-info { display: flex; justify-content: center; gap: 30px; padding: 10px; flex-wrap: wrap; }
+        .sequencia-info span { background: #e8eaf6; padding: 8px 15px; border-radius: 20px; font-size: 0.9em; color: #1a237e; font-weight: 500; }
+        .botoes { display: flex; gap: 15px; justify-content: center; margin: 30px 0; flex-wrap: wrap; }
+        .btn { padding: 15px 30px; border: none; border-radius: 25px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s; text-align: center; }
+        .btn-primary { background: linear-gradient(135deg, #1a237e 0%, #4a148c 100%); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(26,35,126,0.3); }
+        .btn-secondary { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; }
+        .btn-secondary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(40,167,69,0.3); }
+        .btn-danger { background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%); color: white; }
+        .btn-danger:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(220,53,69,0.3); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+        /* Resultados */
+        .resultados { background: #f8f9fa; padding: 30px; border-radius: 10px; margin-top: 30px; border-left: 5px solid #4a148c; display: none; }
+        .resultados h2 { color: #4a148c; margin-bottom: 20px; text-align: center; }
+        .resultado-card { background: white; padding: 20px; border-radius: 10px; margin-bottom: 15px; box-shadow: 0 3px 10px rgba(0,0,0,0.08); border-left: 4px solid #1a237e; }
+        .resultado-card h4 { color: #1a237e; margin-bottom: 8px; }
+        .resultado-card .valor { font-size: 2em; font-weight: bold; color: #4a148c; }
+        .resultado-card .desc { font-size: 0.85em; color: #666; margin-top: 5px; }
+        .resultado-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0; }
+        .norma-aviso { background: #fff3e0; padding: 15px; border-radius: 8px; margin-top: 20px; border-left: 4px solid #ff9800; font-size: 0.85em; color: #e65100; line-height: 1.6; }
+        .nota-metodologica { background: #e3f2fd; padding: 15px; border-radius: 8px; margin-top: 15px; border-left: 4px solid #1565c0; font-size: 0.85em; color: #0d47a1; line-height: 1.6; }
+        .classificacao-badge { display: inline-block; padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 0.9em; }
+        .badge-superior { background: #e8f5e9; color: #2e7d32; border: 1px solid #2e7d32; }
+        .badge-media-superior { background: #f1f8e9; color: #558b2f; border: 1px solid #558b2f; }
+        .badge-media { background: #fff9c4; color: #f57f17; border: 1px solid #f57f17; }
+        .badge-media-inferior { background: #fff3e0; color: #e65100; border: 1px solid #e65100; }
+        .badge-inferior { background: #ffebee; color: #c62828; border: 1px solid #c62828; }
+        .tabela-tentativas { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 0.9em; }
+        .tabela-tentativas th { background: #1a237e; color: white; padding: 10px; text-align: center; }
+        .tabela-tentativas td { padding: 8px; text-align: center; border-bottom: 1px solid #eee; }
+        .tabela-tentativas tr:nth-child(even) { background: #f5f5f5; }
+        .td-acerto { color: #2e7d32; font-weight: bold; }
+        .td-erro { color: #c62828; font-weight: bold; }
+        /* Secoes do teste */
+        .secao { display: none; }
+        .secao.ativa { display: block; }
+        .btn-imprimir { position: absolute; top: 20px; right: 20px; padding: 10px 20px; background: linear-gradient(135deg, #4a148c 0%, #6a1b9a 100%); color: white; border: none; border-radius: 20px; font-size: 14px; font-weight: 600; cursor: pointer; }
+        .disclaimer { background: #fff3e0; padding: 15px; border-radius: 8px; margin-top: 20px; border-left: 4px solid #ff9800; font-size: 0.85em; color: #e65100; line-height: 1.6; }
+        /* Tela de fases */
+        .fase-titulo { text-align: center; padding: 40px 20px; }
+        .fase-titulo h2 { color: #1a237e; font-size: 1.8em; margin-bottom: 15px; }
+        .fase-titulo p { color: #555; font-size: 1.1em; line-height: 1.7; max-width: 600px; margin: 0 auto; }
+        .fase-titulo .btn { margin-top: 25px; }
+        /* Print */
+        @media print { body { background: white !important; padding: 0 !important; } .botoes, .btn, .btn-imprimir { display: none !important; } .container { box-shadow: none !important; max-width: 100% !important; } .info-tecnica { display: none !important; } .mesa-container { display: none !important; } }
+        @media (max-width: 768px) { .container { margin: 10px; border-radius: 10px; } .header { padding: 20px; } .header h1 { font-size: 1.6em; } .content { padding: 15px; } .form-row { flex-direction: column; } .mesa { width: 320px; height: 270px; } .cubo { width: 35px; height: 35px; } .cubo .top, .cubo .front { width: 35px; height: 35px; } .cubo .front { height: 22px; top: 13px; } .cubo .top { transform: rotateX(60deg) translateZ(17px); } .cubo .front { transform: translateZ(17px) translateY(7px); } .resultado-grid { grid-template-columns: 1fr; } .botoes { flex-direction: column; } .btn { width: 100%; } }
+    </style>
+</head>
+<body>
+<div style="padding:10px 20px;background:#2e7d32;"><a href="../" style="display:inline-block;background:#fff;color:#2e7d32;text-decoration:none;font-family:Segoe UI,Arial,sans-serif;font-size:14px;font-weight:bold;padding:8px 20px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.15);">&#11013; Voltar ao In&#237;cio</a></div>
+    <div class="container">
+        <div class="header">
+            <h1>&#129504; Teste de Corsi</h1>
+            <p>Avalia&#231;&#227;o da Mem&#243;ria de Trabalho Visuoespacial</p>
+            <p style="font-size:0.85em; opacity:0.8; margin-top:5px;">Vers&#227;o digital com perspectiva 3D &#8212; Ordem Direta e Inversa</p>
+        </div>
+        <div class="content">
+            <!-- SECAO 1: INFO TECNICA -->
+            <div class="info-tecnica">
+                <button class="btn-imprimir" onclick="window.print()">&#128424; Imprimir</button>
+                <h2>&#128218; Informa&#231;&#245;es T&#233;cnicas</h2>
+                <p>
+                    <strong>Instrumento:</strong> Teste de Blocos de Corsi (Corsi Block-Tapping Task)<br>
+                    <strong>Base te&#243;rica:</strong> Mem&#243;ria de trabalho visuoespacial (Baddeley &amp; Hitch, 1974)<br>
+                    <strong>Estrutura:</strong> 9 blocos, ordem direta + ordem inversa, sequ&#234;ncias crescentes<br>
+                    <strong>Resultado:</strong> Span Direto, Span Inverso, Pontua&#231;&#227;o Total, Classifica&#231;&#227;o<br>
+                    <strong>Par&#226;metros:</strong> 1s aceso, 1s intervalo, 2 tentativas/n&#237;vel, parada ap&#243;s 2 erros<br>
+                    <strong>Popula&#231;&#227;o:</strong> A partir de 6 anos<br>
+                    <strong>Normas:</strong> Provis&#243;rias (literatura internacional) &#8212; normas brasileiras em constru&#231;&#227;o
+                </p>
+            </div>
+            <!-- SECAO 2: DADOS PESSOAIS -->
+            <div class="secao ativa" id="secaoDados">
+                <div class="dados-pessoais">
+                    <h2>&#128203; Dados do Avaliando</h2>
+                    <div class="form-row">
+                        <div class="form-group"><label for="nome">Nome:</label><input type="text" id="nome" placeholder="Nome completo"></div>
+                        <div class="form-group"><label for="dataNascimento">Data de Nascimento:</label><input type="date" id="dataNascimento" onchange="calcularIdade()"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label for="idadeCalculada">Idade:</label><input type="text" id="idadeCalculada" readonly style="background-color:#f0f0f0;" placeholder="Calculada automaticamente"></div>
+                        <div class="form-group"><label for="sexo">Sexo:</label><select id="sexo"><option value="">Selecione</option><option value="Masculino">Masculino</option><option value="Feminino">Feminino</option></select></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label for="escolaridade">Escolaridade:</label><select id="escolaridade"><option value="">Selecione</option><option value="1 ano">1&#186; ano (6-7 anos)</option><option value="2 ano">2&#186; ano (7-8 anos)</option><option value="3 ano">3&#186; ano (8-9 anos)</option><option value="4 ano">4&#186; ano (9-10 anos)</option><option value="5 ano">5&#186; ano (10-11 anos)</option><option value="6 ano">6&#186; ano (11-12 anos)</option><option value="7 ano">7&#186; ano (12-13 anos)</option><option value="8 ano">8&#186; ano (13-14 anos)</option><option value="9 ano">9&#186; ano (14-15 anos)</option><option value="Ensino Medio">Ensino M&#233;dio</option><option value="Superior incompleto">Superior incompleto</option><option value="Superior completo">Superior completo</option><option value="Pos-graduacao">P&#243;s-gradua&#231;&#227;o</option></select></div>
+                        <div class="form-group"><label for="data">Data da Avalia&#231;&#227;o:</label><input type="date" id="data"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label for="observacoes">Observa&#231;&#245;es (opcional):</label><input type="text" id="observacoes" placeholder="Informa&#231;&#245;es adicionais"></div>
+                    </div>
+                </div>
+                <div style="text-align:center;">
+                    <button class="btn btn-primary" onclick="iniciarTeste()">Iniciar Teste</button>
+                </div>
+            </div>
+            <!-- SECAO 3: INSTRUCOES DIRETA -->
+            <div class="secao" id="secaoInstrDireta">
+                <div class="fase-titulo">
+                    <h2>&#128073; Ordem Direta</h2>
+                    <p>Voc&#234; ver&#225; alguns cubos acenderem em sequ&#234;ncia na mesa. Preste aten&#231;&#227;o na <strong>ordem</strong> em que eles acendem.</p>
+                    <p style="margin-top:10px;">Depois que a sequ&#234;ncia terminar, clique nos cubos na <strong>mesma ordem</strong> em que acenderam.</p>
+                    <p style="margin-top:10px; font-size:0.9em; color:#888;">A sequ&#234;ncia come&#231;a com 2 cubos e vai aumentando. O teste termina quando voc&#234; errar 2 vezes no mesmo n&#237;vel.</p>
+                    <button class="btn btn-primary" onclick="iniciarFase('direta')">Come&#231;ar</button>
+                </div>
+            </div>
+
+            <!-- SECAO 4: TESTE DIRETA -->
+            <div class="secao" id="secaoTesteDireta">
+                <div class="status-bar" id="statusDireta">
+                    <div>Ordem Direta</div>
+                    <div class="fase" id="faseDireta">Preparando...</div>
+                </div>
+                <div class="sequencia-info" id="infoDireta">
+                    <span id="nivelDireta">N&#237;vel: 2</span>
+                    <span id="tentativaDireta">Tentativa: 1/2</span>
+                </div>
+                <div class="mesa-container">
+                    <div class="mesa" id="mesaDireta"></div>
+                </div>
+                <div id="feedbackDireta" style="text-align:center;padding:10px;font-weight:600;min-height:30px;"></div>
+            </div>
+            <!-- SECAO 5: INSTRUCOES INVERSA -->
+            <div class="secao" id="secaoInstrInversa">
+                <div class="fase-titulo">
+                    <h2>&#128072; Ordem Inversa</h2>
+                    <p>Agora ser&#225; um pouco diferente. Voc&#234; ver&#225; os cubos acenderem da mesma forma, mas desta vez deve clic&#225;-los na <strong>ordem contr&#225;ria</strong> (de tr&#225;s para frente).</p>
+                    <p style="margin-top:10px;">Exemplo: se acenderem os cubos A, B, C &#8212; voc&#234; deve clicar C, B, A.</p>
+                    <p style="margin-top:10px; font-size:0.9em; color:#888;">As mesmas regras se aplicam: 2 tentativas por n&#237;vel, para ap&#243;s 2 erros.</p>
+                    <button class="btn btn-primary" onclick="iniciarFase('inversa')">Come&#231;ar</button>
+                </div>
+            </div>
+
+            <!-- SECAO 6: TESTE INVERSA -->
+            <div class="secao" id="secaoTesteInversa">
+                <div class="status-bar" id="statusInversa">
+                    <div>Ordem Inversa</div>
+                    <div class="fase" id="faseInversa">Preparando...</div>
+                </div>
+                <div class="sequencia-info" id="infoInversa">
+                    <span id="nivelInversa">N&#237;vel: 2</span>
+                    <span id="tentativaInversa">Tentativa: 1/2</span>
+                </div>
+                <div class="mesa-container">
+                    <div class="mesa" id="mesaInversa"></div>
+                </div>
+                <div id="feedbackInversa" style="text-align:center;padding:10px;font-weight:600;min-height:30px;"></div>
+            </div>
+            <!-- SECAO 7: RESULTADOS -->
+            <div class="secao" id="secaoResultados">
+                <div class="botoes">
+                    <button class="btn btn-secondary" onclick="gerarRelatorioPDF()">Gerar Relat&#243;rio PDF</button>
+                    <button class="btn btn-danger" onclick="reiniciarTeste()">Reiniciar Teste</button>
+                </div>
+                <div id="resultados" class="resultados" style="display:block;"></div>
+            </div>
+
+            <!-- REFERENCIAS -->
+            <div class="info-tecnica" id="referencias" style="margin-top:30px; background:#f8f9fa; border-left-color:#4a148c;">
+                <h2 style="color:#4a148c;">Refer&#234;ncias</h2>
+                <p style="color:#555; line-height:1.9; font-size:0.88em;">
+                    <strong>CORSI, P. M.</strong> Human memory and the medial temporal region of the brain. <em>Dissertation Abstracts International</em>, v. 34, n. 2-B, p. 891, 1972.<br><br>
+                    <strong>KESSELS, R. P. C. et al.</strong> The Corsi Block-Tapping Task: standardization and normative data. <em>Applied Neuropsychology</em>, v. 7, n. 4, p. 252-258, 2000.<br><br>
+                    <strong>PICCOLO, L. R. et al.</strong> Developmental normative data for the Corsi Block-Tapping Task. <em>Journal of Clinical and Experimental Neuropsychology</em>, v. 28, p. 1-12, 2006.<br><br>
+                    <strong>BRUNETTI, R. et al.</strong> eCorsi: implementation and testing of the Corsi block-tapping task for digital tablets. <em>Frontiers in Psychology</em>, v. 5, art. 939, 2014.<br><br>
+                    <strong>ORSINI, A. et al.</strong> Verbal and spatial immediate memory span: normative data from 1355 adults and 1112 children. <em>Italian Journal of Neurological Sciences</em>, v. 8, p. 539-548, 1987.<br><br>
+                    <strong>MONACO, M. et al.</strong> Forward and backward span for verbal and visuo-spatial data: standardization and normative data from an Italian adult population. <em>Neurological Sciences</em>, v. 34, p. 749-754, 2013.
+                </p>
+            </div>
+        </div>
+    </div>
+    <script src="../id-paciente.js"></script>
+    <script>
+// === DADOS: Posicoes dos 9 blocos (Kessels et al., 2000) em % do tabuleiro ===
+var POSICOES = [
+    {x: 15, y: 72}, {x: 52, y: 82}, {x: 78, y: 68},
+    {x: 35, y: 52}, {x: 65, y: 45}, {x: 10, y: 38},
+    {x: 42, y: 25}, {x: 82, y: 20}, {x: 25, y: 10}
+];
+// Normas provisorias da literatura (span direto / span inverso)
+// Fontes: Piccolo et al. 2006, Orsini et al. 1987, Kessels et al. 2000, Monaco et al. 2013
+var NORMAS_CRIANCAS = {
+    6:  {direto: {media: 4.2, dp: 0.8}, inverso: {media: 3.2, dp: 0.7}},
+    7:  {direto: {media: 4.5, dp: 0.9}, inverso: {media: 3.5, dp: 0.8}},
+    8:  {direto: {media: 4.8, dp: 0.9}, inverso: {media: 3.8, dp: 0.8}},
+    9:  {direto: {media: 5.1, dp: 0.9}, inverso: {media: 4.0, dp: 0.9}},
+    10: {direto: {media: 5.3, dp: 1.0}, inverso: {media: 4.2, dp: 0.9}},
+    11: {direto: {media: 5.6, dp: 1.0}, inverso: {media: 4.5, dp: 0.9}},
+    12: {direto: {media: 5.8, dp: 1.0}, inverso: {media: 4.7, dp: 1.0}},
+    13: {direto: {media: 6.1, dp: 1.1}, inverso: {media: 5.0, dp: 1.0}},
+    14: {direto: {media: 6.3, dp: 1.1}, inverso: {media: 5.2, dp: 1.0}},
+    15: {direto: {media: 6.5, dp: 1.1}, inverso: {media: 5.3, dp: 1.0}},
+    16: {direto: {media: 6.7, dp: 1.1}, inverso: {media: 5.5, dp: 1.0}}
+};
+var NORMAS_ADULTOS = {
+    'Ensino Medio':       {direto: {media: 5.8, dp: 1.0}, inverso: {media: 5.0, dp: 1.0}},
+    'Superior incompleto':{direto: {media: 6.2, dp: 1.1}, inverso: {media: 5.3, dp: 1.0}},
+    'Superior completo':  {direto: {media: 6.5, dp: 1.0}, inverso: {media: 5.5, dp: 1.0}},
+    'Pos-graduacao':      {direto: {media: 6.8, dp: 1.0}, inverso: {media: 5.7, dp: 1.0}}
+};
+// Sequencias pre-definidas para cada nivel (2 tentativas por nivel)
+// Baseadas nas sequencias padrao do Corsi (Kessels et al., 2000)
+var SEQUENCIAS = {
+    2: [[1,7], [4,8]],
+    3: [[3,8,6], [5,1,7]],
+    4: [[2,6,3,9], [8,4,7,1]],
+    5: [[5,9,2,7,4], [3,1,8,6,5]],
+    6: [[7,2,5,9,4,8], [1,6,3,7,2,9]],
+    7: [[4,8,1,6,9,3,7], [2,5,8,4,1,7,6]],
+    8: [[6,3,9,1,5,8,2,7], [9,4,7,2,6,1,8,3]],
+    9: [[1,4,7,2,8,5,9,3,6], [3,6,9,5,2,8,1,7,4]]
+};
+
+// === VARIAVEIS DE ESTADO ===
+var estado = {
+    fase: '', // 'direta' ou 'inversa'
+    nivel: 2,
+    tentativa: 1,
+    errosNoNivel: 0,
+    sequenciaAtual: [],
+    respostaUsuario: [],
+    aceitandoCliques: false,
+    spanDireto: 0,
+    spanInverso: 0,
+    totalAcertosDireto: 0,
+    totalAcertosInverso: 0,
+    totalTentativasDireto: 0,
+    totalTentativasInverso: 0,
+    historicoDireto: [],
+    historicoInverso: [],
+    tempoInicio: 0,
+    temposResposta: []
+};
+// === FUNCOES UTILITARIAS ===
+function calcularIdade() {
+    var nascimento = document.getElementById('dataNascimento').value;
+    if (!nascimento) return;
+    var nasc = new Date(nascimento);
+    var hoje = new Date();
+    var anos = hoje.getFullYear() - nasc.getFullYear();
+    var meses = hoje.getMonth() - nasc.getMonth();
+    var dias = hoje.getDate() - nasc.getDate();
+    if (dias < 0) { meses--; dias += 30; }
+    if (meses < 0) { anos--; meses += 12; }
+    document.getElementById('idadeCalculada').value = anos + ' anos, ' + meses + ' meses e ' + dias + ' dias';
+}
+
+function getIdadeAnos() {
+    var nascimento = document.getElementById('dataNascimento').value;
+    if (!nascimento) return null;
+    var nasc = new Date(nascimento);
+    var hoje = new Date();
+    var anos = hoje.getFullYear() - nasc.getFullYear();
+    var m = hoje.getMonth() - nasc.getMonth();
+    if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) anos--;
+    return anos;
+}
+
+function mostrarSecao(id) {
+    var secoes = document.querySelectorAll('.secao');
+    for (var i = 0; i < secoes.length; i++) {
+        secoes[i].classList.remove('ativa');
+    }
+    document.getElementById(id).classList.add('ativa');
+    document.getElementById(id).scrollIntoView({behavior: 'smooth', block: 'start'});
+}
+function criarCubos(containerId) {
+    var mesa = document.getElementById(containerId);
+    mesa.innerHTML = '';
+    for (var i = 0; i < 9; i++) {
+        var cubo = document.createElement('div');
+        cubo.className = 'cubo bloqueado';
+        cubo.setAttribute('data-index', i);
+        cubo.style.left = POSICOES[i].x + '%';
+        cubo.style.top = POSICOES[i].y + '%';
+        cubo.style.transform = 'translate(-50%, -50%)';
+        cubo.innerHTML = '<div class="cubo-face top"></div><div class="cubo-face front"></div>';
+        cubo.addEventListener('click', function() { clicarCubo(this); });
+        mesa.appendChild(cubo);
+    }
+}
+
+function acenderCubo(containerId, index) {
+    var mesa = document.getElementById(containerId);
+    var cubos = mesa.querySelectorAll('.cubo');
+    cubos[index].classList.add('ativo');
+}
+
+function apagarCubo(containerId, index) {
+    var mesa = document.getElementById(containerId);
+    var cubos = mesa.querySelectorAll('.cubo');
+    cubos[index].classList.remove('ativo');
+}
+
+function apagarTodos(containerId) {
+    var mesa = document.getElementById(containerId);
+    var cubos = mesa.querySelectorAll('.cubo');
+    for (var i = 0; i < cubos.length; i++) {
+        cubos[i].classList.remove('ativo', 'acerto', 'erro');
+    }
+}
+
+function habilitarCliques(containerId, habilitar) {
+    var mesa = document.getElementById(containerId);
+    var cubos = mesa.querySelectorAll('.cubo');
+    for (var i = 0; i < cubos.length; i++) {
+        if (habilitar) {
+            cubos[i].classList.remove('bloqueado');
+            cubos[i].classList.add('clicavel');
+        } else {
+            cubos[i].classList.add('bloqueado');
+            cubos[i].classList.remove('clicavel');
+        }
+    }
+}
+// === LOGICA DO TESTE ===
+function iniciarTeste() {
+    var nome = document.getElementById('nome').value.trim();
+    if (!nome) { alert('Por favor, preencha o nome do avaliando.'); return; }
+    var nasc = document.getElementById('dataNascimento').value;
+    if (!nasc) { alert('Por favor, preencha a data de nascimento.'); return; }
+    mostrarSecao('secaoInstrDireta');
+}
+
+function iniciarFase(fase) {
+    estado.fase = fase;
+    estado.nivel = 2;
+    estado.tentativa = 1;
+    estado.errosNoNivel = 0;
+    estado.respostaUsuario = [];
+    estado.aceitandoCliques = false;
+    var containerId = fase === 'direta' ? 'mesaDireta' : 'mesaInversa';
+    criarCubos(containerId);
+    mostrarSecao(fase === 'direta' ? 'secaoTesteDireta' : 'secaoTesteInversa');
+    atualizarInfo();
+    setTimeout(function() { apresentarSequencia(); }, 1500);
+}
+
+function atualizarInfo() {
+    var sufixo = estado.fase === 'direta' ? 'Direta' : 'Inversa';
+    var nivelEl = document.getElementById('nivel' + sufixo);
+    var tentEl = document.getElementById('tentativa' + sufixo);
+    var faseEl = document.getElementById('fase' + sufixo);
+    if (nivelEl) nivelEl.textContent = 'N\u00edvel: ' + estado.nivel;
+    if (tentEl) tentEl.textContent = 'Tentativa: ' + estado.tentativa + '/2';
+    if (faseEl) faseEl.textContent = 'Apresentando sequ\u00eancia de ' + estado.nivel + ' cubos...';
+}
+function apresentarSequencia() {
+    var containerId = estado.fase === 'direta' ? 'mesaDireta' : 'mesaInversa';
+    var sufixo = estado.fase === 'direta' ? 'Direta' : 'Inversa';
+    var feedbackEl = document.getElementById('feedback' + sufixo);
+    feedbackEl.textContent = '';
+    feedbackEl.style.color = '';
+    apagarTodos(containerId);
+    habilitarCliques(containerId, false);
+    estado.aceitandoCliques = false;
+    estado.respostaUsuario = [];
+    // Pegar sequencia do nivel/tentativa
+    var seqIndex = estado.tentativa - 1;
+    estado.sequenciaAtual = SEQUENCIAS[estado.nivel][seqIndex].slice();
+    var faseEl = document.getElementById('fase' + sufixo);
+    if (faseEl) faseEl.textContent = 'Observe a sequ\u00eancia...';
+    // Apresentar cubos um a um
+    var i = 0;
+    var intervalo = setInterval(function() {
+        if (i > 0) { apagarCubo(containerId, estado.sequenciaAtual[i-1] - 1); }
+        if (i < estado.sequenciaAtual.length) {
+            acenderCubo(containerId, estado.sequenciaAtual[i] - 1);
+            i++;
+        } else {
+            clearInterval(intervalo);
+            // Aguardar resposta
+            setTimeout(function() {
+                if (faseEl) faseEl.textContent = estado.fase === 'direta' ? 'Agora clique na MESMA ordem!' : 'Agora clique na ordem INVERSA!';
+                habilitarCliques(containerId, true);
+                estado.aceitandoCliques = true;
+                estado.tempoInicio = Date.now();
+            }, 500);
+        }
+    }, 1000);
+}
+function clicarCubo(cuboEl) {
+    if (!estado.aceitandoCliques) return;
+    var index = parseInt(cuboEl.getAttribute('data-index'));
+    var blocoNum = index + 1; // blocos numerados de 1 a 9
+    estado.respostaUsuario.push(blocoNum);
+    // Feedback visual do clique
+    cuboEl.classList.add('ativo');
+    setTimeout(function() { cuboEl.classList.remove('ativo'); }, 200);
+    // Verificar se completou a sequencia
+    if (estado.respostaUsuario.length === estado.sequenciaAtual.length) {
+        estado.aceitandoCliques = false;
+        var tempoResposta = Date.now() - estado.tempoInicio;
+        var containerId = estado.fase === 'direta' ? 'mesaDireta' : 'mesaInversa';
+        habilitarCliques(containerId, false);
+        verificarResposta(tempoResposta);
+    }
+}
+
+function verificarResposta(tempoResposta) {
+    var sequenciaEsperada;
+    if (estado.fase === 'direta') {
+        sequenciaEsperada = estado.sequenciaAtual.slice();
+    } else {
+        sequenciaEsperada = estado.sequenciaAtual.slice().reverse();
+    }
+    var acertou = true;
+    for (var i = 0; i < sequenciaEsperada.length; i++) {
+        if (estado.respostaUsuario[i] !== sequenciaEsperada[i]) {
+            acertou = false;
+            break;
+        }
+    }
+    var sufixo = estado.fase === 'direta' ? 'Direta' : 'Inversa';
+    var feedbackEl = document.getElementById('feedback' + sufixo);
+    var containerId = estado.fase === 'direta' ? 'mesaDireta' : 'mesaInversa';
+    // Registrar tentativa
+    var registro = {
+        nivel: estado.nivel,
+        tentativa: estado.tentativa,
+        sequencia: estado.sequenciaAtual.slice(),
+        resposta: estado.respostaUsuario.slice(),
+        esperado: sequenciaEsperada.slice(),
+        acertou: acertou,
+        tempo: tempoResposta
+    };
+    if (estado.fase === 'direta') {
+        estado.historicoDireto.push(registro);
+        estado.totalTentativasDireto++;
+        if (acertou) estado.totalAcertosDireto++;
+    } else {
+        estado.historicoInverso.push(registro);
+        estado.totalTentativasInverso++;
+        if (acertou) estado.totalAcertosInverso++;
+    }
+    if (acertou) {
+        feedbackEl.textContent = '\u2714 Correto!';
+        feedbackEl.style.color = '#2e7d32';
+        // Mostrar cubos verdes
+        var mesa = document.getElementById(containerId);
+        var cubos = mesa.querySelectorAll('.cubo');
+        for (var j = 0; j < estado.sequenciaAtual.length; j++) {
+            cubos[estado.sequenciaAtual[j] - 1].classList.add('acerto');
+        }
+        // Atualizar span
+        if (estado.fase === 'direta') {
+            if (estado.nivel > estado.spanDireto) estado.spanDireto = estado.nivel;
+        } else {
+            if (estado.nivel > estado.spanInverso) estado.spanInverso = estado.nivel;
+        }
+        estado.errosNoNivel = 0;
+        // Proximo: avancar nivel ou proxima tentativa
+        setTimeout(function() { avancar(true); }, 1500);
+    } else {
+        feedbackEl.textContent = '\u2718 Incorreto';
+        feedbackEl.style.color = '#c62828';
+        // Mostrar cubos vermelhos
+        var mesa2 = document.getElementById(containerId);
+        var cubos2 = mesa2.querySelectorAll('.cubo');
+        for (var k = 0; k < estado.respostaUsuario.length; k++) {
+            cubos2[estado.respostaUsuario[k] - 1].classList.add('erro');
+        }
+        estado.errosNoNivel++;
+        setTimeout(function() { avancar(false); }, 1500);
+    }
+}
+function avancar(acertou) {
+    var containerId = estado.fase === 'direta' ? 'mesaDireta' : 'mesaInversa';
+    apagarTodos(containerId);
+    // Criterio de parada: 2 erros no mesmo nivel
+    if (estado.errosNoNivel >= 2) {
+        finalizarFase();
+        return;
+    }
+    if (acertou) {
+        // Se acertou, vai para proximo nivel
+        if (estado.nivel >= 9) {
+            // Nivel maximo atingido
+            finalizarFase();
+            return;
+        }
+        estado.nivel++;
+        estado.tentativa = 1;
+        estado.errosNoNivel = 0;
+    } else {
+        // Se errou, faz segunda tentativa no mesmo nivel
+        if (estado.tentativa === 1) {
+            estado.tentativa = 2;
+        } else {
+            // Ja errou a segunda vez, mas errosNoNivel < 2 nao deveria chegar aqui
+            finalizarFase();
+            return;
+        }
+    }
+    atualizarInfo();
+    setTimeout(function() { apresentarSequencia(); }, 1500);
+}
+
+function finalizarFase() {
+    if (estado.fase === 'direta') {
+        // Ir para instrucoes da ordem inversa
+        mostrarSecao('secaoInstrInversa');
+    } else {
+        // Fim do teste - mostrar resultados
+        mostrarResultados();
+    }
+}
+// === RESULTADOS ===
+function classificarSpan(span, tipo) {
+    var idade = getIdadeAnos();
+    var escolaridade = document.getElementById('escolaridade').value;
+    var norma = null;
+    // Determinar norma aplicavel
+    if (idade !== null && idade >= 6 && idade <= 16) {
+        norma = NORMAS_CRIANCAS[idade] ? NORMAS_CRIANCAS[idade][tipo] : null;
+    } else if (idade !== null && idade >= 17) {
+        if (NORMAS_ADULTOS[escolaridade]) {
+            norma = NORMAS_ADULTOS[escolaridade][tipo];
+        } else {
+            // Default adulto sem escolaridade especifica
+            norma = {media: 6.2, dp: 1.1};
+        }
+    }
+    if (!norma) return {classificacao: 'Sem norma dispon\u00edvel', badge: '', z: null};
+    var z = (span - norma.media) / norma.dp;
+    var classificacao = '';
+    var badge = '';
+    if (z >= 1.0) { classificacao = 'Superior'; badge = 'badge-superior'; }
+    else if (z >= 0.0) { classificacao = 'M\u00e9dia-Superior'; badge = 'badge-media-superior'; }
+    else if (z >= -1.0) { classificacao = 'M\u00e9dia'; badge = 'badge-media'; }
+    else if (z >= -2.0) { classificacao = 'M\u00e9dia-Inferior'; badge = 'badge-media-inferior'; }
+    else { classificacao = 'Inferior'; badge = 'badge-inferior'; }
+    return {classificacao: classificacao, badge: badge, z: z, media: norma.media, dp: norma.dp};
+}
+function mostrarResultados() {
+    mostrarSecao('secaoResultados');
+    var classDireto = classificarSpan(estado.spanDireto, 'direto');
+    var classInverso = classificarSpan(estado.spanInverso, 'inverso');
+    var pontuacaoTotal = estado.totalAcertosDireto + estado.totalAcertosInverso;
+    var idade = getIdadeAnos();
+    var escolaridade = document.getElementById('escolaridade').value;
+    var html = '';
+    html += '<h2>Resultados do Teste de Corsi</h2>';
+    // Cards principais
+    html += '<div class="resultado-grid">';
+    html += '<div class="resultado-card"><h4>Span Direto</h4><div class="valor">' + estado.spanDireto + '</div>';
+    html += '<div class="desc">Maior sequ\u00eancia reproduzida corretamente</div>';
+    if (classDireto.badge) html += '<div style="margin-top:10px;"><span class="classificacao-badge ' + classDireto.badge + '">' + classDireto.classificacao + '</span></div>';
+    if (classDireto.z !== null) html += '<div class="desc">z = ' + classDireto.z.toFixed(2) + ' (ref: M=' + classDireto.media.toFixed(1) + ', DP=' + classDireto.dp.toFixed(1) + ')</div>';
+    html += '</div>';
+    html += '<div class="resultado-card"><h4>Span Inverso</h4><div class="valor">' + estado.spanInverso + '</div>';
+    html += '<div class="desc">Maior sequ\u00eancia reproduzida na ordem inversa</div>';
+    if (classInverso.badge) html += '<div style="margin-top:10px;"><span class="classificacao-badge ' + classInverso.badge + '">' + classInverso.classificacao + '</span></div>';
+    if (classInverso.z !== null) html += '<div class="desc">z = ' + classInverso.z.toFixed(2) + ' (ref: M=' + classInverso.media.toFixed(1) + ', DP=' + classInverso.dp.toFixed(1) + ')</div>';
+    html += '</div>';
+    html += '<div class="resultado-card"><h4>Pontua\u00e7\u00e3o Total</h4><div class="valor">' + pontuacaoTotal + '</div>';
+    html += '<div class="desc">Total de sequ\u00eancias corretas (direto + inverso)</div></div>';
+    html += '</div>';
+    // Tabela de tentativas - Direta
+    html += '<h3 style="color:#1a237e;margin:20px 0 10px;">Detalhamento - Ordem Direta</h3>';
+    html += '<table class="tabela-tentativas"><tr><th>N\u00edvel</th><th>Tentativa</th><th>Resultado</th><th>Tempo (ms)</th></tr>';
+    for (var d = 0; d < estado.historicoDireto.length; d++) {
+        var t = estado.historicoDireto[d];
+        html += '<tr><td>' + t.nivel + '</td><td>' + t.tentativa + '</td>';
+        html += '<td class="' + (t.acertou ? 'td-acerto' : 'td-erro') + '">' + (t.acertou ? 'Acerto' : 'Erro') + '</td>';
+        html += '<td>' + t.tempo + '</td></tr>';
+    }
+    html += '</table>';
+    // Tabela de tentativas - Inversa
+    html += '<h3 style="color:#1a237e;margin:20px 0 10px;">Detalhamento - Ordem Inversa</h3>';
+    html += '<table class="tabela-tentativas"><tr><th>N\u00edvel</th><th>Tentativa</th><th>Resultado</th><th>Tempo (ms)</th></tr>';
+    for (var v = 0; v < estado.historicoInverso.length; v++) {
+        var t2 = estado.historicoInverso[v];
+        html += '<tr><td>' + t2.nivel + '</td><td>' + t2.tentativa + '</td>';
+        html += '<td class="' + (t2.acertou ? 'td-acerto' : 'td-erro') + '">' + (t2.acertou ? 'Acerto' : 'Erro') + '</td>';
+        html += '<td>' + t2.tempo + '</td></tr>';
+    }
+    html += '</table>';
+    // Normas de referencia
+    html += '<h3 style="color:#1a237e;margin:20px 0 10px;">Normas de Refer\u00eancia Utilizadas</h3>';
+    if (idade !== null && idade >= 6 && idade <= 16) {
+        html += '<p style="font-size:0.9em;color:#555;">Faixa et\u00e1ria: <strong>' + idade + ' anos</strong> (normas para crian\u00e7as)</p>';
+        html += '<table class="tabela-tentativas"><tr><th>Medida</th><th>M\u00e9dia</th><th>DP</th><th>Resultado</th><th>Classifica\u00e7\u00e3o</th></tr>';
+        var nd = NORMAS_CRIANCAS[idade] ? NORMAS_CRIANCAS[idade].direto : null;
+        var ni = NORMAS_CRIANCAS[idade] ? NORMAS_CRIANCAS[idade].inverso : null;
+        if (nd) html += '<tr><td>Span Direto</td><td>' + nd.media.toFixed(1) + '</td><td>' + nd.dp.toFixed(1) + '</td><td>' + estado.spanDireto + '</td><td><span class="classificacao-badge ' + classDireto.badge + '">' + classDireto.classificacao + '</span></td></tr>';
+        if (ni) html += '<tr><td>Span Inverso</td><td>' + ni.media.toFixed(1) + '</td><td>' + ni.dp.toFixed(1) + '</td><td>' + estado.spanInverso + '</td><td><span class="classificacao-badge ' + classInverso.badge + '">' + classInverso.classificacao + '</span></td></tr>';
+        html += '</table>';
+    } else if (idade !== null && idade >= 17) {
+        html += '<p style="font-size:0.9em;color:#555;">Faixa: <strong>Adulto (' + idade + ' anos)</strong> &#8212; Escolaridade: <strong>' + (escolaridade || 'N\u00e3o informada') + '</strong></p>';
+        var normaUsada = NORMAS_ADULTOS[escolaridade] || {direto:{media:6.2,dp:1.1},inverso:{media:5.3,dp:1.0}};
+        html += '<table class="tabela-tentativas"><tr><th>Medida</th><th>M\u00e9dia</th><th>DP</th><th>Resultado</th><th>Classifica\u00e7\u00e3o</th></tr>';
+        html += '<tr><td>Span Direto</td><td>' + normaUsada.direto.media.toFixed(1) + '</td><td>' + normaUsada.direto.dp.toFixed(1) + '</td><td>' + estado.spanDireto + '</td><td><span class="classificacao-badge ' + classDireto.badge + '">' + classDireto.classificacao + '</span></td></tr>';
+        html += '<tr><td>Span Inverso</td><td>' + normaUsada.inverso.media.toFixed(1) + '</td><td>' + normaUsada.inverso.dp.toFixed(1) + '</td><td>' + estado.spanInverso + '</td><td><span class="classificacao-badge ' + classInverso.badge + '">' + classInverso.classificacao + '</span></td></tr>';
+        html += '</table>';
+    }
+    // Aviso de normas em construcao
+    html += '<div class="norma-aviso"><strong>Normas provis\u00f3rias:</strong> As classifica\u00e7\u00f5es acima s\u00e3o baseadas em normas da literatura internacional (Piccolo et al., 2006; Orsini et al., 1987; Kessels et al., 2000; Monaco et al., 2013). Normas brasileiras para esta vers\u00e3o digital est\u00e3o em processo de constru\u00e7\u00e3o. Os resultados devem ser interpretados com cautela e como parte de uma avalia\u00e7\u00e3o mais ampla.</div>';
+    html += '<div class="nota-metodologica"><strong>Nota metodol\u00f3gica:</strong> As normas de refer\u00eancia foram obtidas majoritariamente com tabuleiro f\u00edsico. Vers\u00f5es digitais tendem a produzir desempenho equivalente ou levemente superior devido \u00e0 padroniza\u00e7\u00e3o do est\u00edmulo (Brunetti et al., 2014). Os tempos de apresenta\u00e7\u00e3o seguem o padr\u00e3o cl\u00e1ssico de 1 segundo.</div>';
+    html += '<div class="disclaimer"><strong>Aten\u00e7\u00e3o:</strong> Este instrumento \u00e9 uma ferramenta de avalia\u00e7\u00e3o neuropsicol\u00f3gica. Os resultados devem ser interpretados por profissional qualificado, dentro do contexto cl\u00ednico e em conjunto com outros instrumentos e observa\u00e7\u00f5es.</div>';
+    document.getElementById('resultados').innerHTML = html;
+    // Definir window._escalaDados para integracao com painel
+    window._escalaDados = {
+        escala: 'CORSI',
+        paciente: document.getElementById('nome').value,
+        escore: estado.spanDireto,
+        classificacao: classDireto.classificacao + ' / ' + classInverso.classificacao,
+        dominios: {'Span Direto': estado.spanDireto, 'Span Inverso': estado.spanInverso, 'Total Acertos': pontuacaoTotal},
+        spanDireto: estado.spanDireto,
+        spanInverso: estado.spanInverso,
+        pontuacaoTotal: pontuacaoTotal,
+        acertosDireto: estado.totalAcertosDireto,
+        tentativasDireto: estado.totalTentativasDireto,
+        acertosInverso: estado.totalAcertosInverso,
+        tentativasInverso: estado.totalTentativasInverso,
+        classificacaoDireto: classDireto.classificacao,
+        classificacaoInverso: classInverso.classificacao,
+        zDireto: classDireto.z,
+        zInverso: classInverso.z,
+        historicoDireto: estado.historicoDireto,
+        historicoInverso: estado.historicoInverso,
+        idPaciente: document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '',
+        idade: document.getElementById('idadeCalculada').value,
+        sexo: document.getElementById('sexo').value,
+        escolaridade: document.getElementById('escolaridade').value,
+        data: new Date().toISOString()
+    };
+}
+function reiniciarTeste() {
+    if (!confirm('Reiniciar o teste? Todos os dados ser\u00e3o perdidos.')) return;
+    estado.spanDireto = 0;
+    estado.spanInverso = 0;
+    estado.totalAcertosDireto = 0;
+    estado.totalAcertosInverso = 0;
+    estado.totalTentativasDireto = 0;
+    estado.totalTentativasInverso = 0;
+    estado.historicoDireto = [];
+    estado.historicoInverso = [];
+    window._escalaDados = null;
+    mostrarSecao('secaoDados');
+}
+// === GERACAO DE PDF ===
+function gerarRelatorioPDF() {
+    if (!window._escalaDados) { alert('Execute o teste antes de gerar o relat\u00f3rio.'); return; }
+    var jsPDF = window.jspdf.jsPDF;
+    var doc = new jsPDF();
+    var nome = document.getElementById('nome').value;
+    var idade = document.getElementById('idadeCalculada').value;
+    var sexo = document.getElementById('sexo').value;
+    var escolaridade = document.getElementById('escolaridade').value;
+    var dataAval = document.getElementById('data').value;
+    var idPaciente = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
+    var classDireto = classificarSpan(estado.spanDireto, 'direto');
+    var classInverso = classificarSpan(estado.spanInverso, 'inverso');
+    // === PAGINA 1 ===
+    // Cabecalho
+    doc.setFillColor(26, 35, 126);
+    doc.rect(0, 0, 210, 30, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(16);
+    doc.setFont(undefined, 'bold');
+    doc.text('TESTE DE CORSI', 105, 12, {align: 'center'});
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'normal');
+    doc.text('Avaliacao da Memoria de Trabalho Visuoespacial', 105, 20, {align: 'center'});
+    doc.text('Ordem Direta e Inversa', 105, 26, {align: 'center'});
+    // Dados pessoais
+    var y = 40;
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'bold');
+    doc.text('DADOS DO AVALIANDO', 20, y); y += 7;
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(9);
+    doc.text('Nome: ' + nome, 20, y); y += 5;
+    doc.text('Idade: ' + idade + '     Sexo: ' + sexo, 20, y); y += 5;
+    doc.text('Escolaridade: ' + escolaridade, 20, y); y += 5;
+    doc.text('Data da Avaliacao: ' + dataAval + '     ID: ' + idPaciente, 20, y); y += 10;
+    // Resultados principais
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(10);
+    doc.text('RESULTADOS', 20, y); y += 7;
+    doc.setFontSize(9);
+    doc.setFont(undefined, 'normal');
+    doc.setFillColor(232, 234, 246);
+    doc.rect(20, y - 3, 170, 24, 'F');
+    doc.text('Span Direto: ' + estado.spanDireto + ' blocos (' + classDireto.classificacao + ')', 25, y + 3);
+    if (classDireto.z !== null) doc.text('  z = ' + classDireto.z.toFixed(2) + ' | Ref: M=' + classDireto.media.toFixed(1) + ', DP=' + classDireto.dp.toFixed(1), 25, y + 8);
+    doc.text('Span Inverso: ' + estado.spanInverso + ' blocos (' + classInverso.classificacao + ')', 25, y + 14);
+    if (classInverso.z !== null) doc.text('  z = ' + classInverso.z.toFixed(2) + ' | Ref: M=' + classInverso.media.toFixed(1) + ', DP=' + classInverso.dp.toFixed(1), 25, y + 19);
+    y += 30;
+    var pontuacaoTotal = estado.totalAcertosDireto + estado.totalAcertosInverso;
+    doc.text('Pontuacao Total: ' + pontuacaoTotal + ' sequencias corretas', 25, y);
+    doc.text('Acertos Direto: ' + estado.totalAcertosDireto + '/' + estado.totalTentativasDireto + '    Acertos Inverso: ' + estado.totalAcertosInverso + '/' + estado.totalTentativasInverso, 25, y + 5);
+    y += 15;
+    // Tabela de tentativas - Direta
+    doc.setFont(undefined, 'bold');
+    doc.text('DETALHAMENTO - ORDEM DIRETA', 20, y); y += 6;
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(8);
+    doc.setFillColor(26, 35, 126); doc.setTextColor(255,255,255);
+    doc.rect(20, y - 3, 170, 5, 'F');
+    doc.text('Nivel', 25, y); doc.text('Tentativa', 50, y); doc.text('Resultado', 80, y); doc.text('Tempo (ms)', 120, y);
+    y += 5; doc.setTextColor(0,0,0);
+    for (var i = 0; i < estado.historicoDireto.length; i++) {
+        var t = estado.historicoDireto[i];
+        if (y > 270) { doc.addPage(); y = 20; }
+        doc.text(String(t.nivel), 25, y);
+        doc.text(String(t.tentativa), 55, y);
+        doc.setTextColor(t.acertou ? 46 : 198, t.acertou ? 125 : 40, t.acertou ? 50 : 40);
+        doc.text(t.acertou ? 'Acerto' : 'Erro', 82, y);
+        doc.setTextColor(0,0,0);
+        doc.text(String(t.tempo), 125, y);
+        y += 5;
+    }
+    // Tabela - Inversa
+    y += 5;
+    if (y > 240) { doc.addPage(); y = 20; }
+    doc.setFontSize(9); doc.setFont(undefined, 'bold');
+    doc.text('DETALHAMENTO - ORDEM INVERSA', 20, y); y += 6;
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(8);
+    doc.setFillColor(26, 35, 126); doc.setTextColor(255,255,255);
+    doc.rect(20, y - 3, 170, 5, 'F');
+    doc.text('Nivel', 25, y); doc.text('Tentativa', 50, y); doc.text('Resultado', 80, y); doc.text('Tempo (ms)', 120, y);
+    y += 5; doc.setTextColor(0,0,0);
+    for (var j = 0; j < estado.historicoInverso.length; j++) {
+        var t2 = estado.historicoInverso[j];
+        if (y > 270) { doc.addPage(); y = 20; }
+        doc.text(String(t2.nivel), 25, y);
+        doc.text(String(t2.tentativa), 55, y);
+        doc.setTextColor(t2.acertou ? 46 : 198, t2.acertou ? 125 : 40, t2.acertou ? 50 : 40);
+        doc.text(t2.acertou ? 'Acerto' : 'Erro', 82, y);
+        doc.setTextColor(0,0,0);
+        doc.text(String(t2.tempo), 125, y);
+        y += 5;
+    }
+    // === PAGINA 2: Notas e Referencias ===
+    doc.addPage();
+    y = 20;
+    doc.setFontSize(10); doc.setFont(undefined, 'bold');
+    doc.text('NOTAS METODOLOGICAS', 20, y); y += 7;
+    doc.setFont(undefined, 'normal'); doc.setFontSize(8);
+    doc.text('- Versao digital com perspectiva 3D (CSS) e posicoes padrao (Kessels et al., 2000)', 22, y); y += 5;
+    doc.text('- Tempo de apresentacao: 1 segundo aceso / 1 segundo intervalo entre blocos', 22, y); y += 5;
+    doc.text('- Criterio de parada: 2 erros consecutivos no mesmo nivel', 22, y); y += 5;
+    doc.text('- 2 tentativas por nivel de comprimento de sequencia', 22, y); y += 5;
+    doc.text('- Sequencias pre-definidas baseadas na padronizacao classica', 22, y); y += 10;
+    doc.setFillColor(255, 243, 224); doc.rect(20, y - 2, 170, 20, 'F');
+    doc.setTextColor(230, 81, 0); doc.setFontSize(7);
+    doc.text('NORMAS PROVISORIAS: As classificacoes sao baseadas em normas da literatura internacional', 22, y + 3);
+    doc.text('(Piccolo et al., 2006; Orsini et al., 1987; Kessels et al., 2000; Monaco et al., 2013).', 22, y + 7);
+    doc.text('Normas brasileiras para esta versao digital estao em construcao.', 22, y + 11);
+    doc.text('Versoes digitais tendem a produzir desempenho equivalente ou levemente superior (Brunetti et al., 2014).', 22, y + 15);
+    y += 28;
+    doc.setFillColor(255, 248, 235); doc.rect(20, y - 2, 170, 10, 'F');
+    doc.setTextColor(180, 90, 0);
+    doc.text('ATENCAO: Instrumento de avaliacao neuropsicologica. Resultados devem ser interpretados por', 22, y + 2);
+    doc.text('profissional qualificado, dentro do contexto clinico e em conjunto com outros instrumentos.', 22, y + 6);
+    y += 18;
+    // Referencias
+    doc.setTextColor(0,0,0); doc.setFontSize(10); doc.setFont(undefined, 'bold');
+    doc.text('REFERENCIAS', 20, y); y += 7;
+    doc.setFont(undefined, 'normal'); doc.setFontSize(7);
+    doc.text('CORSI, P. M. Human memory and the medial temporal region of the brain. Dissertation Abstracts International,', 22, y); y += 4;
+    doc.text('v. 34, n. 2-B, p. 891, 1972.', 22, y); y += 6;
+    doc.text('KESSELS, R. P. C. et al. The Corsi Block-Tapping Task: standardization and normative data. Applied', 22, y); y += 4;
+    doc.text('Neuropsychology, v. 7, n. 4, p. 252-258, 2000.', 22, y); y += 6;
+    doc.text('PICCOLO, L. R. et al. Developmental normative data for the Corsi Block-Tapping Task. Journal of Clinical', 22, y); y += 4;
+    doc.text('and Experimental Neuropsychology, v. 28, p. 1-12, 2006.', 22, y); y += 6;
+    doc.text('BRUNETTI, R. et al. eCorsi: implementation and testing of the Corsi block-tapping task for digital tablets.', 22, y); y += 4;
+    doc.text('Frontiers in Psychology, v. 5, art. 939, 2014.', 22, y); y += 6;
+    doc.text('ORSINI, A. et al. Verbal and spatial immediate memory span: normative data from 1355 adults and 1112', 22, y); y += 4;
+    doc.text('children. Italian Journal of Neurological Sciences, v. 8, p. 539-548, 1987.', 22, y); y += 6;
+    doc.text('MONACO, M. et al. Forward and backward span for verbal and visuo-spatial data: standardization and', 22, y); y += 4;
+    doc.text('normative data from an Italian adult population. Neurological Sciences, v. 34, p. 749-754, 2013.', 22, y);
+    // Rodape
+    doc.setFillColor(80, 80, 80); doc.rect(0, 285, 210, 12, 'F');
+    doc.setTextColor(200, 200, 200); doc.setFontSize(7);
+    doc.text('Relatorio gerado em: ' + new Date().toLocaleString('pt-BR'), 105, 291, {align: 'center'});
+    // Salvar
+    var ts = new Date();
+    var tsStr = ts.getFullYear() + String(ts.getMonth()+1).padStart(2,'0') + String(ts.getDate()).padStart(2,'0') + String(ts.getHours()).padStart(2,'0') + String(ts.getMinutes()).padStart(2,'0');
+    doc.save('CORSI_' + nome.replace(/\s+/g, '_') + '_' + tsStr + '.pdf');
+}
+// === MODO PAINEL ===
+var _sessionInfo = null;
+var _API_URL = 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
+
+function _decodificarURL() {
+    var params = new URLSearchParams(window.location.search);
+    var d = params.get('d');
+    if (!d) return false;
+    try { _sessionInfo = JSON.parse(atob(decodeURIComponent(d))); } catch(e) { return false; }
+    var nomeEl = document.getElementById('nome');
+    var nascEl = document.getElementById('dataNascimento');
+    var sexoEl = document.getElementById('sexo');
+    if (nomeEl && _sessionInfo.patientName) nomeEl.value = _sessionInfo.patientName;
+    if (nascEl && _sessionInfo.birthDate) nascEl.value = _sessionInfo.birthDate;
+    if (sexoEl && _sessionInfo.sex) sexoEl.value = _sessionInfo.sex;
+    if (typeof calcularIdade === 'function') calcularIdade();
+    if (nomeEl) nomeEl.dispatchEvent(new Event('input'));
+    if (nascEl) nascEl.dispatchEvent(new Event('change'));
+    var els = document.querySelectorAll('.info-tecnica');
+    els.forEach(function(el) { el.style.display = 'none'; });
+    return true;
+}
+async function _enviarResultadosPainel() {
+    var nomeEl = document.getElementById('nome');
+    if (!nomeEl || !nomeEl.value.trim()) { alert('Preencha o nome antes de enviar.'); return; }
+    if (!window._escalaDados) { alert('Complete o teste antes de enviar.'); return; }
+    var sexoEl = document.getElementById('sexo');
+    if (sexoEl && !sexoEl.value) { sexoEl.value = 'Nao informado'; }
+    var idadeEl = document.getElementById('idadeCalculada');
+    if (idadeEl && !idadeEl.value) { idadeEl.value = 'Nao informado'; }
+    var dados = window._escalaDados || {};
+    if (!dados.escala) dados.escala = 'CORSI';
+    dados.idPaciente = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
+    dados.pacienteId = _sessionInfo ? (_sessionInfo.pacienteId || '') : '';
+    dados.data = new Date().toISOString();
+    var btn = document.querySelector('.secaoResultados .btn-secondary') || document.querySelector('.btn-enviar-painel');
+    if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
+    try {
+        var resp = await fetch(_API_URL + '/save-escala', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({sessionId: _sessionInfo.sessionId, email: _sessionInfo.email, data: dados, originalSessionId: _sessionInfo.sessionId})
+        });
+        var result = await resp.json();
+        if (result.ok || resp.ok) {
+            var secRes = document.getElementById('secaoResultados');
+            if (secRes) {
+                var botoes = secRes.querySelector('.botoes');
+                if (botoes) botoes.innerHTML = '<div style="background:#c8e6c9;border:2px solid #2e7d32;border-radius:10px;padding:20px;text-align:center;"><p style="font-size:1.3em;color:#2e7d32;font-weight:bold;">Resultados enviados com sucesso!</p><p style="color:#555;margin-top:8px;">O profissional ja pode visualizar seus resultados no painel.</p><p style="color:#777;margin-top:5px;font-size:0.85em;">Voce pode fechar esta pagina.</p></div>';
+            }
+        } else {
+            if (btn) { btn.disabled = false; btn.textContent = 'Enviar Resultados ao Profissional'; }
+            alert('Erro ao enviar. Tente novamente.');
+        }
+    } catch(e) {
+        if (btn) { btn.disabled = false; btn.textContent = 'Enviar Resultados ao Profissional'; }
+        alert('Erro de conexao. Verifique sua internet e tente novamente.');
+    }
+}
+// === INICIALIZACAO (direta, sem DOMContentLoaded) ===
+document.getElementById('data').value = new Date().toISOString().split('T')[0];
+var params = new URLSearchParams(window.location.search);
+if (params.get('s')) {
+    fetch(_API_URL + '/get-session?id=' + params.get('s')).then(function(r){
+        if(r.status===410){
+            document.body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#e8eaf6,#c5cae9);text-align:center;padding:20px;"><h1 style="color:#c62828;font-size:24px;margin-bottom:10px;">Este link j\u00e1 foi utilizado.</h1><p style="font-size:16px;color:#555;">Solicite um novo link ao seu avaliador.</p></div>';
+            throw new Error("link_usado");
+        }
+        return r.json();
+    }).then(function(data){
+        if(data.sessionId){
+            _sessionInfo=data;
+            var nomeEl=document.getElementById('nome');
+            var nascEl=document.getElementById('dataNascimento');
+            var sexoEl=document.getElementById('sexo');
+            if(nomeEl&&data.patientName)nomeEl.value=data.patientName;
+            if(nascEl&&data.birthDate)nascEl.value=data.birthDate;
+            if(sexoEl&&data.sex)sexoEl.value=data.sex;
+            if(typeof calcularIdade==='function')calcularIdade();
+            if(nomeEl)nomeEl.dispatchEvent(new Event('input'));
+            if(nascEl)nascEl.dispatchEvent(new Event('change'));
+            var els=document.querySelectorAll('.info-tecnica');
+            els.forEach(function(el){el.style.display='none';});
+        }
+    }).catch(function(){});
+} else if (params.get('d')) {
+    _decodificarURL();
+} else if (params.get('print')) {
+    var els = document.querySelectorAll('.info-tecnica');
+    els.forEach(function(el) { el.style.display = 'none'; });
+    setTimeout(function() { window.print(); }, 500);
+} else {
+    window.location.href = 'https://setmonte.github.io/online/';
+}
+    </script>
+<script>
+if (!new URLSearchParams(window.location.search).get('d')) {
+    var s1 = document.createElement('script'); s1.src = '../escalas/pdf-escalas.js'; document.body.appendChild(s1);
+    var s2 = document.createElement('script'); s2.src = '../escalas/salvar-escala.js'; document.body.appendChild(s2);
+}
+var _sc = document.createElement('script'); _sc.src = '../escalas/coleta-anonima.js'; document.body.appendChild(_sc);
+</script>
+<div style="text-align:center;padding:15px;color:#999;font-size:0.75em;margin-top:20px;">Dados an&#244;nimos e n&#227;o-identific&#225;veis podem ser utilizados para fins de pesquisa e normatiza&#231;&#227;o.</div>
+</body>
+</html>
