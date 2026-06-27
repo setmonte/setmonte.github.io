@@ -48,12 +48,12 @@
         .f-top    { transform: rotateX(90deg) translateZ(31px); background: #1a8abf; border: 1px solid rgba(255,255,255,0.14); }
         .f-bottom { transform: rotateX(-90deg) translateZ(31px); background: #001020; }
         .cubo-shadow { position: absolute; width: 54px; height: 11px; left: -27px; top: -2px; background: rgba(0,0,0,0.22); border-radius: 50%; filter: blur(6px); pointer-events: none; }
-        /* Estado ativo - salta para cima mantendo volume 3D */
-        .cubo.ativo .f-top { background: #5fd4f5; }
-        .cubo.ativo .f-front { background: #2299d4; }
-        .cubo.ativo .f-left { background: #0a5a8a; }
-        .cubo.ativo .f-right { background: #063d60; }
-        .cubo.ativo .f-back { background: #0a5a8a; }
+        /* Estado ativo - laranja para contraste com mesa amarela e cubos azuis */
+        .cubo.ativo .f-top { background: #ff8c00; }
+        .cubo.ativo .f-front { background: #d47000; }
+        .cubo.ativo .f-left { background: #a85500; }
+        .cubo.ativo .f-right { background: #804000; }
+        .cubo.ativo .f-back { background: #a85500; }
         /* Estado acerto */
         .cubo.acerto .cubo-wrap { transform: translateZ(42px) scale(1.12); transition: transform 0.08s ease-out; }
         .cubo.acerto .f-top { background: #4dd88a; }
@@ -158,7 +158,7 @@
                         <div class="form-group"><label for="sexo">Sexo:</label><select id="sexo"><option value="">Selecione</option><option value="Masculino">Masculino</option><option value="Feminino">Feminino</option></select></div>
                     </div>
                     <div class="form-row">
-                        <div class="form-group"><label for="escolaridade">Escolaridade:</label><select id="escolaridade"><option value="">Selecione</option><option value="1 ano">1&#186; ano (6-7 anos)</option><option value="2 ano">2&#186; ano (7-8 anos)</option><option value="3 ano">3&#186; ano (8-9 anos)</option><option value="4 ano">4&#186; ano (9-10 anos)</option><option value="5 ano">5&#186; ano (10-11 anos)</option><option value="6 ano">6&#186; ano (11-12 anos)</option><option value="7 ano">7&#186; ano (12-13 anos)</option><option value="8 ano">8&#186; ano (13-14 anos)</option><option value="9 ano">9&#186; ano (14-15 anos)</option><option value="Ensino Medio">Ensino M&#233;dio</option><option value="Superior incompleto">Superior incompleto</option><option value="Superior completo">Superior completo</option><option value="Pos-graduacao">P&#243;s-gradua&#231;&#227;o</option></select></div>
+                        <div class="form-group"><label for="escolaridade">Escolaridade:</label><select id="escolaridade"><option value="">Selecione</option><option value="1o ano">1&#186; ano (6-7 anos)</option><option value="2o ano">2&#186; ano (7-8 anos)</option><option value="3o ano">3&#186; ano (8-9 anos)</option><option value="4o ano">4&#186; ano (9-10 anos)</option><option value="5o ano">5&#186; ano (10-11 anos)</option><option value="6o ano">6&#186; ano (11-12 anos)</option><option value="7o ano">7&#186; ano (12-13 anos)</option><option value="8o ano">8&#186; ano (13-14 anos)</option><option value="9o ano">9&#186; ano (14-15 anos)</option><option value="Ensino Medio">Ensino M&#233;dio</option><option value="Superior Incompleto">Superior incompleto</option><option value="Superior Completo">Superior completo</option><option value="Pos-graduacao">P&#243;s-gradua&#231;&#227;o</option></select></div>
                         <div class="form-group"><label for="data">Data da Avalia&#231;&#227;o:</label><input type="date" id="data"></div>
                     </div>
                     <div class="form-row">
@@ -269,8 +269,8 @@ var NORMAS_CRIANCAS = {
 };
 var NORMAS_ADULTOS = {
     'Ensino Medio':       {direto: {media: 5.8, dp: 1.0}, inverso: {media: 5.0, dp: 1.0}},
-    'Superior incompleto':{direto: {media: 6.2, dp: 1.1}, inverso: {media: 5.3, dp: 1.0}},
-    'Superior completo':  {direto: {media: 6.5, dp: 1.0}, inverso: {media: 5.5, dp: 1.0}},
+    'Superior Incompleto':{direto: {media: 6.2, dp: 1.1}, inverso: {media: 5.3, dp: 1.0}},
+    'Superior Completo':  {direto: {media: 6.5, dp: 1.0}, inverso: {media: 5.5, dp: 1.0}},
     'Pos-graduacao':      {direto: {media: 6.8, dp: 1.0}, inverso: {media: 5.7, dp: 1.0}}
 };
 // Sequencias pre-definidas para cada nivel (2 tentativas por nivel)
@@ -575,8 +575,14 @@ function finalizarFase() {
         // Ir para instrucoes da ordem inversa
         mostrarSecao('secaoInstrInversa');
     } else {
-        // Fim do teste - mostrar resultados
-        mostrarResultados();
+        // Fim do teste
+        if (_sessionInfo) {
+            // Modo painel: envia direto sem mostrar resultados ao paciente
+            _prepararDadosEEnviar();
+        } else {
+            // Modo profissional local: mostra resultados
+            mostrarResultados();
+        }
     }
 }
 // === RESULTADOS ===
@@ -869,15 +875,71 @@ function _decodificarURL() {
     var nomeEl = document.getElementById('nome');
     var nascEl = document.getElementById('dataNascimento');
     var sexoEl = document.getElementById('sexo');
+    var escEl = document.getElementById('escolaridade');
     if (nomeEl && _sessionInfo.patientName) nomeEl.value = _sessionInfo.patientName;
     if (nascEl && _sessionInfo.birthDate) nascEl.value = _sessionInfo.birthDate;
     if (sexoEl && _sessionInfo.sex) sexoEl.value = _sessionInfo.sex;
+    if (escEl && _sessionInfo.education) escEl.value = _sessionInfo.education;
     if (typeof calcularIdade === 'function') calcularIdade();
     if (nomeEl) nomeEl.dispatchEvent(new Event('input'));
     if (nascEl) nascEl.dispatchEvent(new Event('change'));
     var els = document.querySelectorAll('.info-tecnica');
     els.forEach(function(el) { el.style.display = 'none'; });
     return true;
+}
+async function _prepararDadosEEnviar() {
+    // Calcula resultados internamente sem mostrar na tela
+    var classDireto = classificarSpan(estado.spanDireto, 'direto');
+    var classInverso = classificarSpan(estado.spanInverso, 'inverso');
+    var pontuacaoTotal = estado.totalAcertosDireto + estado.totalAcertosInverso;
+    window._escalaDados = {
+        escala: 'CORSI',
+        paciente: document.getElementById('nome').value,
+        escore: estado.spanDireto,
+        classificacao: classDireto.classificacao + ' / ' + classInverso.classificacao,
+        dominios: {'Span Direto': estado.spanDireto, 'Span Inverso': estado.spanInverso, 'Total Acertos': pontuacaoTotal},
+        spanDireto: estado.spanDireto,
+        spanInverso: estado.spanInverso,
+        pontuacaoTotal: pontuacaoTotal,
+        acertosDireto: estado.totalAcertosDireto,
+        tentativasDireto: estado.totalTentativasDireto,
+        acertosInverso: estado.totalAcertosInverso,
+        tentativasInverso: estado.totalTentativasInverso,
+        classificacaoDireto: classDireto.classificacao,
+        classificacaoInverso: classInverso.classificacao,
+        zDireto: classDireto.z,
+        zInverso: classInverso.z,
+        historicoDireto: estado.historicoDireto,
+        historicoInverso: estado.historicoInverso,
+        idPaciente: document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '',
+        idade: document.getElementById('idadeCalculada').value,
+        sexo: document.getElementById('sexo').value,
+        escolaridade: document.getElementById('escolaridade').value,
+        data: new Date().toISOString()
+    };
+    // Mostrar tela de envio ao paciente
+    mostrarSecao('secaoResultados');
+    document.getElementById('resultados').style.display = 'none';
+    var botoesEl = document.querySelector('#secaoResultados .botoes');
+    if (botoesEl) botoesEl.innerHTML = '<p style="text-align:center;font-size:1.2em;color:#1a237e;font-weight:bold;">Enviando resultados...</p>';
+    // Enviar
+    try {
+        var dados = window._escalaDados;
+        dados.pacienteId = _sessionInfo.pacienteId || '';
+        var resp = await fetch(_API_URL + '/save-escala', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({sessionId: _sessionInfo.sessionId, email: _sessionInfo.email, data: dados, originalSessionId: _sessionInfo.sessionId})
+        });
+        var result = await resp.json();
+        if (result.ok || resp.ok) {
+            if (botoesEl) botoesEl.innerHTML = '<div style="background:#c8e6c9;border:2px solid #2e7d32;border-radius:10px;padding:20px;text-align:center;"><p style="font-size:1.3em;color:#2e7d32;font-weight:bold;">Teste conclu\u00eddo com sucesso!</p><p style="color:#555;margin-top:8px;">Os resultados foram enviados ao profissional.</p><p style="color:#777;margin-top:5px;font-size:0.85em;">Voc\u00ea pode fechar esta p\u00e1gina.</p></div>';
+        } else {
+            if (botoesEl) botoesEl.innerHTML = '<div style="background:#ffebee;border:2px solid #c62828;border-radius:10px;padding:20px;text-align:center;"><p style="color:#c62828;">Erro ao enviar. Tente recarregar a p\u00e1gina.</p></div>';
+        }
+    } catch(e) {
+        if (botoesEl) botoesEl.innerHTML = '<div style="background:#ffebee;border:2px solid #c62828;border-radius:10px;padding:20px;text-align:center;"><p style="color:#c62828;">Erro de conex\u00e3o. Verifique sua internet.</p></div>';
+    }
 }
 async function _enviarResultadosPainel() {
     var nomeEl = document.getElementById('nome');
@@ -932,9 +994,11 @@ if (params.get('s')) {
             var nomeEl=document.getElementById('nome');
             var nascEl=document.getElementById('dataNascimento');
             var sexoEl=document.getElementById('sexo');
+            var escEl=document.getElementById('escolaridade');
             if(nomeEl&&data.patientName)nomeEl.value=data.patientName;
             if(nascEl&&data.birthDate)nascEl.value=data.birthDate;
             if(sexoEl&&data.sex)sexoEl.value=data.sex;
+            if(escEl&&data.education)escEl.value=data.education;
             if(typeof calcularIdade==='function')calcularIdade();
             if(nomeEl)nomeEl.dispatchEvent(new Event('input'));
             if(nascEl)nascEl.dispatchEvent(new Event('change'));
