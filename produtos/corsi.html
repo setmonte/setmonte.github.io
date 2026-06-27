@@ -454,10 +454,7 @@ function apresentarSequencia() {
     var cubos = mesa.querySelectorAll('.cubo');
     var i = 0;
     var intervalo = setInterval(function() {
-        // Remover classe ativo do cubo anterior
-        if (i > 0) {
-            cubos[estado.sequenciaAtual[i-1] - 1].classList.remove('ativo');
-        }
+        // Nao precisa remover classe - a cor volta automaticamente via timeout
         if (i < estado.sequenciaAtual.length) {
             var idxBloco = estado.sequenciaAtual[i] - 1;
             var cuboEl = cubos[idxBloco];
@@ -471,13 +468,25 @@ function apresentarSequencia() {
                 dedo.style.left = dedoX + 'px';
                 dedo.style.top = dedoY + 'px';
             }
-            // Depois do dedo chegar (300ms da transition), cubo pula
+            // Depois do dedo chegar (300ms da transition), cubo reage
             (function(idx) {
                 setTimeout(function() {
-                    // Forcar re-trigger da animacao removendo e re-adicionando a classe
-                    cubos[idx].classList.remove('ativo');
-                    void cubos[idx].offsetWidth; // force reflow
-                    cubos[idx].classList.add('ativo');
+                    // Mudar cor do topo diretamente via JS (mais confiavel que classe CSS)
+                    var topFace = cubos[idx].querySelector('.f-top');
+                    if (topFace) topFace.style.background = '#fdd835';
+                    // Pulo via JS direto no cubo-wrap
+                    var wrap = cubos[idx].querySelector('.cubo-wrap');
+                    if (wrap) {
+                        wrap.style.transition = 'transform 0.15s ease-out';
+                        wrap.style.transform = 'translateZ(52px)';
+                        setTimeout(function() {
+                            wrap.style.transform = 'translateZ(31px)';
+                        }, 180);
+                    }
+                    // Voltar cor do topo ao normal depois
+                    setTimeout(function() {
+                        if (topFace) topFace.style.background = '';
+                    }, 800);
                 }, 300);
             })(idxBloco);
             i++;
