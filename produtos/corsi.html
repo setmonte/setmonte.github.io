@@ -47,21 +47,7 @@
         .f-top    { transform: rotateX(90deg) translateZ(31px); background: #1a8abf; border: 1px solid rgba(255,255,255,0.14); }
         .f-bottom { transform: rotateX(-90deg) translateZ(31px); background: #001020; }
         .cubo-shadow { position: absolute; width: 54px; height: 11px; left: -27px; top: -2px; background: rgba(0,0,0,0.22); border-radius: 50%; filter: blur(6px); pointer-events: none; }
-        /* Estado ativo - so altera a sombra (fora do preserve-3d, nao achata) */
-        .cubo.ativo .cubo-shadow { background: rgba(255,200,0,0.7); width: 74px; height: 20px; left: -37px; top: -4px; filter: blur(12px); }
-        /* Estado acerto - verde proporcional */
-        .cubo.acerto .f-top { background: #4dd88a; }
-        .cubo.acerto .f-front { background: #22b060; }
-        .cubo.acerto .f-left { background: #18904a; }
-        .cubo.acerto .f-right { background: #107838; }
-        .cubo.acerto .f-back { background: #18904a; }
-        /* Estado erro - vermelho proporcional */
-        .cubo.erro .f-top { background: #e85050; }
-        .cubo.erro .f-front { background: #c02020; }
-        .cubo.erro .f-left { background: #a01818; }
-        .cubo.erro .f-right { background: #881010; }
-        .cubo.erro .f-back { background: #a01818; }
-        /* Interacao */
+        /* Estado ativo/acerto/erro: aplicados via JS inline, nao por classe */
         .cubo.clicavel { cursor: pointer; }
         .cubo.bloqueado { cursor: not-allowed; opacity: 0.7; }
         /* Status e controles */
@@ -347,23 +333,49 @@ function criarCubos(containerId) {
     }
 }
 
+var CORES_NORMAL = {top:'#1a8abf',front:'#00609C',left:'#003050',right:'#001e35',back:'#003050'};
+var CORES_ATIVO = {top:'#f0c800',front:'#c8a000',left:'#a08000',right:'#785800',back:'#a08000'};
+var CORES_ACERTO = {top:'#4dd88a',front:'#22b060',left:'#18904a',right:'#107838',back:'#18904a'};
+var CORES_ERRO = {top:'#e85050',front:'#c02020',left:'#a01818',right:'#881010',back:'#a01818'};
+
+function pintarCubo(cuboEl, cores) {
+    var faces = cuboEl.querySelectorAll('.face');
+    for (var f = 0; f < faces.length; f++) {
+        var cl = faces[f].className;
+        if (cl.indexOf('f-top') > -1) faces[f].style.background = cores.top;
+        else if (cl.indexOf('f-front') > -1) faces[f].style.background = cores.front;
+        else if (cl.indexOf('f-left') > -1) faces[f].style.background = cores.left;
+        else if (cl.indexOf('f-right') > -1) faces[f].style.background = cores.right;
+        else if (cl.indexOf('f-back') > -1) faces[f].style.background = cores.back;
+    }
+}
+
 function acenderCubo(containerId, index) {
     var mesa = document.getElementById(containerId);
     var cubos = mesa.querySelectorAll('.cubo');
-    cubos[index].classList.add('ativo');
+    pintarCubo(cubos[index], CORES_ATIVO);
+    var sombra = cubos[index].querySelector('.cubo-shadow');
+    if (sombra) { sombra.style.background = 'rgba(255,200,0,0.6)'; sombra.style.width = '68px'; sombra.style.left = '-34px'; sombra.style.filter = 'blur(10px)'; }
 }
 
 function apagarCubo(containerId, index) {
     var mesa = document.getElementById(containerId);
     var cubos = mesa.querySelectorAll('.cubo');
-    cubos[index].classList.remove('ativo');
+    pintarCubo(cubos[index], CORES_NORMAL);
+    var sombra = cubos[index].querySelector('.cubo-shadow');
+    if (sombra) { sombra.style.background = ''; sombra.style.width = ''; sombra.style.left = ''; sombra.style.filter = ''; }
 }
 
 function apagarTodos(containerId) {
     var mesa = document.getElementById(containerId);
     var cubos = mesa.querySelectorAll('.cubo');
     for (var i = 0; i < cubos.length; i++) {
+        pintarCubo(cubos[i], CORES_NORMAL);
         cubos[i].classList.remove('ativo', 'acerto', 'erro');
+        var sombra = cubos[i].querySelector('.cubo-shadow');
+        if (sombra) { sombra.style.background = ''; sombra.style.width = ''; sombra.style.left = ''; sombra.style.filter = ''; }
+        var faces = cubos[i].querySelectorAll('.face');
+        for (var f = 0; f < faces.length; f++) { faces[f].style.background = ''; }
     }
 }
 
@@ -451,9 +463,9 @@ function clicarCubo(cuboEl) {
     var index = parseInt(cuboEl.getAttribute('data-index'));
     var blocoNum = index + 1; // blocos numerados de 1 a 9
     estado.respostaUsuario.push(blocoNum);
-    // Feedback visual do clique
-    cuboEl.classList.add('ativo');
-    setTimeout(function() { cuboEl.classList.remove('ativo'); }, 200);
+    // Feedback visual do clique (via JS inline, sem classList)
+    pintarCubo(cuboEl, CORES_ATIVO);
+    setTimeout(function() { pintarCubo(cuboEl, CORES_NORMAL); }, 200);
     // Verificar se completou a sequencia
     if (estado.respostaUsuario.length === estado.sequenciaAtual.length) {
         estado.aceitandoCliques = false;
@@ -507,7 +519,7 @@ function verificarResposta(tempoResposta) {
         var mesa = document.getElementById(containerId);
         var cubos = mesa.querySelectorAll('.cubo');
         for (var j = 0; j < estado.sequenciaAtual.length; j++) {
-            cubos[estado.sequenciaAtual[j] - 1].classList.add('acerto');
+            pintarCubo(cubos[estado.sequenciaAtual[j] - 1], CORES_ACERTO);
         }
         // Atualizar span
         if (estado.fase === 'direta') {
@@ -525,7 +537,7 @@ function verificarResposta(tempoResposta) {
         var mesa2 = document.getElementById(containerId);
         var cubos2 = mesa2.querySelectorAll('.cubo');
         for (var k = 0; k < estado.respostaUsuario.length; k++) {
-            cubos2[estado.respostaUsuario[k] - 1].classList.add('erro');
+            pintarCubo(cubos2[estado.respostaUsuario[k] - 1], CORES_ERRO);
         }
         estado.errosNoNivel++;
         setTimeout(function() { avancar(false); }, 1500);
