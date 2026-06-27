@@ -49,8 +49,7 @@
         .cubo-shadow { position: absolute; width: 54px; height: 11px; left: -27px; top: -2px; background: rgba(0,0,0,0.22); border-radius: 50%; filter: blur(6px); pointer-events: none; }
         /* Estado ativo - so topo amarelo + pulo, laterais intactas */
         .cubo.ativo .cubo-wrap {
-            animation: puloSusto 0.35s ease-out;
-            transform: translateZ(31px);
+            animation: puloSusto 0.35s ease-out forwards;
         }
         .cubo.ativo .f-top { background: #fdd835; }
         @keyframes puloSusto {
@@ -473,12 +472,14 @@ function apresentarSequencia() {
                 dedo.style.top = dedoY + 'px';
             }
             // Depois do dedo chegar (300ms da transition), cubo pula
-            setTimeout(function(idx) {
-                // Forcar re-trigger da animacao removendo e re-adicionando a classe
-                cubos[idx].classList.remove('ativo');
-                void cubos[idx].offsetWidth; // force reflow
-                cubos[idx].classList.add('ativo');
-            }, 300, idxBloco);
+            (function(idx) {
+                setTimeout(function() {
+                    // Forcar re-trigger da animacao removendo e re-adicionando a classe
+                    cubos[idx].classList.remove('ativo');
+                    void cubos[idx].offsetWidth; // force reflow
+                    cubos[idx].classList.add('ativo');
+                }, 300);
+            })(idxBloco);
             i++;
         } else {
             clearInterval(intervalo);
