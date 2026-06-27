@@ -38,7 +38,6 @@
         /* Cubos 3D solidos */
         .cubo { position: absolute; width: 0; height: 0; cursor: pointer; user-select: none; transform-style: preserve-3d; }
         .cubo-wrap { position: absolute; width: 62px; height: 62px; left: -31px; top: -31px; transform-style: preserve-3d; transform: translateZ(31px); transition: transform 0.12s ease-in; }
-        .cubo.ativo .cubo-wrap { transform: translateZ(42px) scale(1.12); transition: transform 0.08s ease-out; }
         .cubo:active .cubo-wrap { transform: translateZ(28px) scale(0.93); }
         .face { position: absolute; width: 62px; height: 62px; top: 0; left: 0; backface-visibility: hidden; }
         .f-front  { transform: translateZ(31px); background: #00609C; border: 1px solid rgba(255,255,255,0.09); }
@@ -48,12 +47,18 @@
         .f-top    { transform: rotateX(90deg) translateZ(31px); background: #1a8abf; border: 1px solid rgba(255,255,255,0.14); }
         .f-bottom { transform: rotateX(-90deg) translateZ(31px); background: #001020; }
         .cubo-shadow { position: absolute; width: 54px; height: 11px; left: -27px; top: -2px; background: rgba(0,0,0,0.22); border-radius: 50%; filter: blur(6px); pointer-events: none; }
-        /* Estado ativo - laranja para contraste com mesa amarela e cubos azuis */
-        .cubo.ativo .f-top { background: #ff8c00; }
-        .cubo.ativo .f-front { background: #d47000; }
-        .cubo.ativo .f-left { background: #a85500; }
-        .cubo.ativo .f-right { background: #804000; }
-        .cubo.ativo .f-back { background: #a85500; }
+        /* Estado ativo - cubo "leva um susto" (pulo bounce), sem mudar cor */
+        .cubo.ativo .cubo-wrap {
+            animation: puloSusto 0.35s ease-out;
+            transform: translateZ(31px);
+        }
+        @keyframes puloSusto {
+            0%   { transform: translateZ(31px) scale(1); }
+            30%  { transform: translateZ(55px) scale(1.06); }
+            60%  { transform: translateZ(35px) scale(0.98); }
+            80%  { transform: translateZ(42px) scale(1.02); }
+            100% { transform: translateZ(31px) scale(1); }
+        }
         /* Estado acerto */
         .cubo.acerto .cubo-wrap { transform: translateZ(42px) scale(1.12); transition: transform 0.08s ease-out; }
         .cubo.acerto .f-top { background: #4dd88a; }
@@ -68,6 +73,16 @@
         .cubo.erro .f-left { background: #a01818; }
         .cubo.erro .f-right { background: #881010; }
         .cubo.erro .f-back { background: #a01818; }
+        /* Dedo flutuante - fica FORA da cena 3D, sobre o container */
+        .dedo-indicador {
+            position: absolute;
+            font-size: 36px;
+            pointer-events: none;
+            z-index: 999;
+            display: none;
+            transition: left 0.3s ease, top 0.3s ease;
+            filter: drop-shadow(2px 4px 4px rgba(0,0,0,0.35));
+        }
         /* Interacao */
         .cubo.clicavel { cursor: pointer; }
         .cubo.bloqueado { cursor: not-allowed; opacity: 0.7; }
@@ -190,8 +205,9 @@
                     <span id="nivelDireta">N&#237;vel: 2</span>
                     <span id="tentativaDireta">Tentativa: 1/2</span>
                 </div>
-                <div class="mesa-container">
+                <div class="mesa-container" style="position:relative;">
                     <div class="mesa-scene"><div class="mesa" id="mesaDireta"><div class="mesa-left"></div></div></div>
+                    <span class="dedo-indicador" id="dedoDireta">&#9757;</span>
                 </div>
                 <div id="feedbackDireta" style="text-align:center;padding:10px;font-weight:600;min-height:30px;"></div>
             </div>
@@ -216,8 +232,9 @@
                     <span id="nivelInversa">N&#237;vel: 2</span>
                     <span id="tentativaInversa">Tentativa: 1/2</span>
                 </div>
-                <div class="mesa-container">
+                <div class="mesa-container" style="position:relative;">
                     <div class="mesa-scene"><div class="mesa" id="mesaInversa"><div class="mesa-left"></div></div></div>
+                    <span class="dedo-indicador" id="dedoInversa">&#9757;</span>
                 </div>
                 <div id="feedbackInversa" style="text-align:center;padding:10px;font-weight:600;min-height:30px;"></div>
             </div>
@@ -423,6 +440,8 @@ function apresentarSequencia() {
     var containerId = estado.fase === 'direta' ? 'mesaDireta' : 'mesaInversa';
     var sufixo = estado.fase === 'direta' ? 'Direta' : 'Inversa';
     var feedbackEl = document.getElementById('feedback' + sufixo);
+    var dedo = document.getElementById('dedo' + sufixo);
+    var containerEl = dedo ? dedo.parentElement : null;
     feedbackEl.textContent = '';
     feedbackEl.style.color = '';
     apagarTodos(containerId);
@@ -434,24 +453,57 @@ function apresentarSequencia() {
     estado.sequenciaAtual = SEQUENCIAS[estado.nivel][seqIndex].slice();
     var faseEl = document.getElementById('fase' + sufixo);
     if (faseEl) faseEl.textContent = 'Observe a sequ\u00eancia...';
-    // Apresentar cubos um a um
+    // Mostrar dedo no centro inicialmente
+    if (dedo && containerEl) {
+        dedo.style.left = (containerEl.offsetWidth / 2 - 18) + 'px';
+        dedo.style.top = (containerEl.offsetHeight / 2) + 'px';
+        dedo.style.display = 'block';
+    }
+    // Apresentar cubos um a um com dedo
+    var mesa = document.getElementById(containerId);
+    var cubos = mesa.querySelectorAll('.cubo');
     var i = 0;
     var intervalo = setInterval(function() {
-        if (i > 0) { apagarCubo(containerId, estado.sequenciaAtual[i-1] - 1); }
+        // Remover classe ativo do cubo anterior
+        if (i > 0) {
+            cubos[estado.sequenciaAtual[i-1] - 1].classList.remove('ativo');
+        }
         if (i < estado.sequenciaAtual.length) {
-            acenderCubo(containerId, estado.sequenciaAtual[i] - 1);
+            var idxBloco = estado.sequenciaAtual[i] - 1;
+            var cuboEl = cubos[idxBloco];
+            // Posicionar dedo sobre o cubo usando coordenadas reais na tela
+            if (dedo && containerEl) {
+                var cuboRect = cuboEl.getBoundingClientRect();
+                var containerRect = containerEl.getBoundingClientRect();
+                // Centraliza o dedo horizontalmente no cubo, um pouco acima
+                var dedoX = (cuboRect.left + cuboRect.width / 2) - containerRect.left - 12;
+                var dedoY = (cuboRect.top) - containerRect.top - 30;
+                dedo.style.left = dedoX + 'px';
+                dedo.style.top = dedoY + 'px';
+            }
+            // Depois do dedo chegar (300ms da transition), cubo pula
+            setTimeout(function(idx) {
+                // Forcar re-trigger da animacao removendo e re-adicionando a classe
+                cubos[idx].classList.remove('ativo');
+                void cubos[idx].offsetWidth; // force reflow
+                cubos[idx].classList.add('ativo');
+            }, 300, idxBloco);
             i++;
         } else {
             clearInterval(intervalo);
-            // Aguardar resposta
+            // Esconder dedo apos a ultima sequencia
+            setTimeout(function() {
+                if (dedo) dedo.style.display = 'none';
+            }, 400);
+            // Liberar cliques
             setTimeout(function() {
                 if (faseEl) faseEl.textContent = estado.fase === 'direta' ? 'Agora clique na MESMA ordem!' : 'Agora clique na ordem INVERSA!';
                 habilitarCliques(containerId, true);
                 estado.aceitandoCliques = true;
                 estado.tempoInicio = Date.now();
-            }, 500);
+            }, 600);
         }
-    }, 1000);
+    }, 1200);
 }
 function clicarCubo(cuboEl) {
     if (!estado.aceitandoCliques) return;
