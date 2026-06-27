@@ -30,33 +30,40 @@
         .instrucoes p { color: #555; font-size: 0.95em; line-height: 1.7; }
         /* Mesa 3D */
         .mesa-container { display: flex; justify-content: center; align-items: center; padding: 40px 10px; }
-        .mesa { width: 520px; height: 400px; background: linear-gradient(170deg, #6d4c41 0%, #4e342e 40%, #3e2723 100%); border-radius: 10px; position: relative; box-shadow: 0 20px 50px rgba(0,0,0,0.5), 0 5px 15px rgba(0,0,0,0.3); border: 2px solid #5d4037; }
-        .mesa::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: repeating-linear-gradient(90deg, transparent, transparent 50px, rgba(0,0,0,0.03) 50px, rgba(0,0,0,0.03) 52px); border-radius: 10px; pointer-events: none; }
-        /* Cubos solidos isometricos */
-        .cubo { position: absolute; width: 48px; height: 56px; cursor: pointer; user-select: none; transition: filter 0.15s ease; transform: translate(-50%, -50%); }
-        .cubo:active { filter: brightness(0.85); }
-        .cubo-top { position: absolute; top: 0; left: 0; width: 48px; height: 24px; background: linear-gradient(135deg, #1a8abf 0%, #00609C 100%); clip-path: polygon(50% 0%, 100% 25%, 50% 50%, 0% 25%); }
-        .cubo-right { position: absolute; top: 12px; left: 24px; width: 24px; height: 44px; background: linear-gradient(180deg, #003d66 0%, #002d4d 100%); clip-path: polygon(0% 0%, 100% 12.5%, 100% 87.5%, 0% 100%); }
-        .cubo-left { position: absolute; top: 12px; left: 0; width: 24px; height: 44px; background: linear-gradient(180deg, #005080 0%, #003a5c 100%); clip-path: polygon(0% 12.5%, 100% 0%, 100% 100%, 0% 87.5%); }
-        .cubo::after { content: ''; position: absolute; bottom: -4px; left: 8px; width: 32px; height: 8px; background: rgba(0,0,0,0.35); border-radius: 50%; filter: blur(3px); }
+        .mesa { position: relative; width: 520px; height: 380px; background: radial-gradient(ellipse at center, #6b3020 0%, #3a1205 100%); border-radius: 18px; box-shadow: 0 8px 40px rgba(0,0,0,0.7); }
+        /* Cubos 3D solidos */
+        .cubo { position: absolute; width: 0; height: 0; cursor: pointer; user-select: none; }
+        .cubo-persp { position: absolute; width: 50px; height: 50px; left: -25px; top: -25px; perspective: 500px; }
+        .cubo-3d { width: 50px; height: 50px; position: relative; transform-style: preserve-3d; transform: rotateX(-30deg) rotateY(45deg); transition: transform 0.12s ease; }
+        .cubo:active .cubo-3d { transform: rotateX(-30deg) rotateY(45deg) scale(0.92); }
+        .face { position: absolute; width: 50px; height: 50px; top: 0; left: 0; backface-visibility: hidden; }
+        .f-front  { transform: translateZ(25px); background: #00609C; border: 1px solid rgba(255,255,255,0.10); }
+        .f-back   { transform: rotateY(180deg) translateZ(25px); background: #003050; border: 1px solid rgba(0,0,0,0.2); }
+        .f-left   { transform: rotateY(-90deg) translateZ(25px); background: #003050; border: 1px solid rgba(0,0,0,0.2); }
+        .f-right  { transform: rotateY(90deg) translateZ(25px); background: #002540; border: 1px solid rgba(0,0,0,0.3); }
+        .f-top    { transform: rotateX(90deg) translateZ(25px); background: #1a8abf; border: 1px solid rgba(255,255,255,0.15); }
+        .f-bottom { transform: rotateX(-90deg) translateZ(25px); background: #001a2e; border: 1px solid rgba(0,0,0,0.3); }
+        .cubo-shadow { position: absolute; width: 44px; height: 10px; left: -22px; top: 18px; background: rgba(0,0,0,0.35); border-radius: 50%; filter: blur(4px); pointer-events: none; }
         /* Estado ativo (acendendo) */
-        .cubo.ativo .cubo-top { background: linear-gradient(135deg, #ffe040 0%, #ffc400 100%); }
-        .cubo.ativo .cubo-left { background: linear-gradient(180deg, #e6a800 0%, #b38200 100%); }
-        .cubo.ativo .cubo-right { background: linear-gradient(180deg, #cc8800 0%, #8c5e00 100%); }
-        .cubo.ativo { filter: drop-shadow(0 0 12px rgba(255,200,0,0.8)); }
+        .cubo.ativo .f-front { background: #4ab0ff; }
+        .cubo.ativo .f-right { background: #2070d0; }
+        .cubo.ativo .f-top { background: #a0ddff; }
+        .cubo.ativo .f-back { background: #1a55a0; }
+        .cubo.ativo .f-left { background: #1a55a0; }
         /* Estado acerto */
-        .cubo.acerto .cubo-top { background: linear-gradient(135deg, #69f0ae 0%, #00e676 100%); }
-        .cubo.acerto .cubo-left { background: linear-gradient(180deg, #00b862 0%, #007a3e 100%); }
-        .cubo.acerto .cubo-right { background: linear-gradient(180deg, #009e54 0%, #005c2e 100%); }
-        .cubo.acerto { filter: drop-shadow(0 0 10px rgba(0,230,118,0.7)); }
+        .cubo.acerto .f-front { background: #22c55e; }
+        .cubo.acerto .f-right { background: #15803d; }
+        .cubo.acerto .f-top { background: #86efac; }
+        .cubo.acerto .f-back { background: #14532d; }
+        .cubo.acerto .f-left { background: #14532d; }
         /* Estado erro */
-        .cubo.erro .cubo-top { background: linear-gradient(135deg, #ff5252 0%, #d50000 100%); }
-        .cubo.erro .cubo-left { background: linear-gradient(180deg, #b71c1c 0%, #7f0000 100%); }
-        .cubo.erro .cubo-right { background: linear-gradient(180deg, #9b0000 0%, #5c0000 100%); }
-        .cubo.erro { filter: drop-shadow(0 0 10px rgba(255,50,50,0.7)); }
+        .cubo.erro .f-front { background: #ef4444; }
+        .cubo.erro .f-right { background: #991b1b; }
+        .cubo.erro .f-top { background: #fca5a5; }
+        .cubo.erro .f-back { background: #7f1d1d; }
+        .cubo.erro .f-left { background: #7f1d1d; }
         /* Interacao */
         .cubo.clicavel { cursor: pointer; }
-        .cubo.clicavel:hover { filter: brightness(1.2) drop-shadow(0 0 8px rgba(0,96,156,0.5)); }
         .cubo.bloqueado { cursor: not-allowed; opacity: 0.7; }
         /* Status e controles */
         .status-bar { text-align: center; padding: 15px; background: #f5f5f5; border-radius: 10px; margin: 15px 0; font-size: 1.1em; font-weight: 600; color: #1a237e; }
@@ -106,7 +113,7 @@
         .fase-titulo .btn { margin-top: 25px; }
         /* Print */
         @media print { body { background: white !important; padding: 0 !important; } .botoes, .btn, .btn-imprimir { display: none !important; } .container { box-shadow: none !important; max-width: 100% !important; } .info-tecnica { display: none !important; } .mesa-container { display: none !important; } }
-        @media (max-width: 768px) { .container { margin: 10px; border-radius: 10px; } .header { padding: 20px; } .header h1 { font-size: 1.6em; } .content { padding: 15px; } .form-row { flex-direction: column; } .mesa { width: 330px; height: 270px; } .cubo { width: 36px; height: 42px; } .cubo-top { width: 36px; height: 18px; } .cubo-left { width: 18px; height: 33px; top: 9px; } .cubo-right { width: 18px; height: 33px; top: 9px; left: 18px; } .resultado-grid { grid-template-columns: 1fr; } .botoes { flex-direction: column; } .btn { width: 100%; } }
+        @media (max-width: 768px) { .container { margin: 10px; border-radius: 10px; } .header { padding: 20px; } .header h1 { font-size: 1.6em; } .content { padding: 15px; } .form-row { flex-direction: column; } .mesa { width: 340px; height: 250px; } .cubo-persp { width: 36px; height: 36px; left: -18px; top: -18px; } .cubo-3d { width: 36px; height: 36px; } .face { width: 36px; height: 36px; } .f-front { transform: translateZ(18px); } .f-back { transform: rotateY(180deg) translateZ(18px); } .f-left { transform: rotateY(-90deg) translateZ(18px); } .f-right { transform: rotateY(90deg) translateZ(18px); } .f-top { transform: rotateX(90deg) translateZ(18px); } .f-bottom { transform: rotateX(-90deg) translateZ(18px); } .cubo-shadow { width: 32px; height: 8px; left: -16px; top: 14px; } .resultado-grid { grid-template-columns: 1fr; } .botoes { flex-direction: column; } .btn { width: 100%; } }
     </style>
 </head>
 <body>
@@ -233,11 +240,11 @@
     </div>
     <script src="../id-paciente.js"></script>
     <script>
-// === DADOS: Posicoes dos 9 blocos (Kessels et al., 2000) em % do tabuleiro ===
+// === DADOS: Posicoes dos 9 blocos (Kessels et al., 2000) em px no tabuleiro 520x380 ===
 var POSICOES = [
-    {x: 15, y: 72}, {x: 52, y: 82}, {x: 78, y: 68},
-    {x: 35, y: 52}, {x: 65, y: 45}, {x: 10, y: 38},
-    {x: 42, y: 25}, {x: 82, y: 20}, {x: 25, y: 10}
+    {x: 80, y: 60},   {x: 200, y: 80},  {x: 340, y: 45},
+    {x: 450, y: 75},  {x: 110, y: 175}, {x: 260, y: 185},
+    {x: 400, y: 160}, {x: 150, y: 300}, {x: 350, y: 295}
 ];
 // Normas provisorias da literatura (span direto / span inverso)
 // Fontes: Piccolo et al. 2006, Orsini et al. 1987, Kessels et al. 2000, Monaco et al. 2013
@@ -333,9 +340,9 @@ function criarCubos(containerId) {
         var cubo = document.createElement('div');
         cubo.className = 'cubo bloqueado';
         cubo.setAttribute('data-index', i);
-        cubo.style.left = POSICOES[i].x + '%';
-        cubo.style.top = POSICOES[i].y + '%';
-        cubo.innerHTML = '<div class="cubo-top"></div><div class="cubo-left"></div><div class="cubo-right"></div>';
+        cubo.style.left = POSICOES[i].x + 'px';
+        cubo.style.top = POSICOES[i].y + 'px';
+        cubo.innerHTML = '<div class="cubo-persp"><div class="cubo-3d"><div class="face f-front"></div><div class="face f-back"></div><div class="face f-left"></div><div class="face f-right"></div><div class="face f-top"></div><div class="face f-bottom"></div></div></div><div class="cubo-shadow"></div>';
         cubo.addEventListener('click', function() { clicarCubo(this); });
         mesa.appendChild(cubo);
     }
