@@ -82,13 +82,11 @@
     }
 
     function _identificarInstrumento() {
+        // Prioridade 1: window._escalaDados (fonte mais confiavel)
         if (window._escalaDados && window._escalaDados.escala) return window._escalaDados.escala;
         if (window.resultadosBAE && window.resultadosBAE.concentrada) return 'BAE';
-        var titulo = document.title || '';
-        // Tenta extrair sigla do titulo (ex: "TREF - Teste de...")
-        var match = titulo.match(/^([A-Z0-9\-]+)/);
-        if (match) return match[1];
-        return titulo.substring(0, 30);
+        // NAO usar titulo da pagina como fallback - pode gerar siglas invalidas
+        return '';
     }
 
     function _formatarDominios(dominios) {
@@ -125,7 +123,10 @@
             var escolaridade = _extrairEscolaridade();
             var instrumento = _identificarInstrumento();
 
-            if (!instrumento || !idade) return;
+            // Validacoes obrigatorias para nao contaminar a coleta
+            if (!instrumento) return;              // sem instrumento = nao envia
+            if (instrumento.length < 3) return;    // sigla com menos de 3 chars = invalida
+            if (!idade) return;                    // sem idade = nao envia
 
             var pontuacao = '';
             var dominios = '';
@@ -139,6 +140,9 @@
                 dominios = _formatarResultadosBAE();
                 classificacao = 'BAE completa';
             }
+
+            // Sem pontuacao E sem dominios = teste nao foi calculado, nao enviar
+            if (!pontuacao && !dominios) return;
 
             var pacote = {
                 email: _extrairEmailProfissional(),
