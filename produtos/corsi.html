@@ -345,6 +345,13 @@ function mostrarSecao(id) {
     }
     document.getElementById(id).classList.add('ativa');
     document.getElementById(id).scrollIntoView({behavior: 'smooth', block: 'start'});
+    // Forcar recalculo 3D em mesas visiveis
+    var mesas = document.getElementById(id).querySelectorAll('.mesa-scene');
+    for (var j = 0; j < mesas.length; j++) {
+        mesas[j].style.transformStyle = 'flat';
+        void mesas[j].offsetHeight;
+        mesas[j].style.transformStyle = 'preserve-3d';
+    }
 }
 function criarCubos(containerId) {
     var mesa = document.getElementById(containerId);
@@ -358,6 +365,13 @@ function criarCubos(containerId) {
         cubo.innerHTML = '<div class="cubo-wrap"><div class="face f-top"></div><div class="face f-bottom"></div><div class="face f-front"></div><div class="face f-back"></div><div class="face f-right"></div><div class="face f-left"></div></div><div class="cubo-shadow"></div>';
         cubo.addEventListener('click', function() { clicarCubo(this); });
         mesa.appendChild(cubo);
+    }
+    // Forcar navegador a recalcular contexto 3D
+    var scene = mesa.parentElement;
+    if (scene) {
+        scene.style.transformStyle = 'flat';
+        void scene.offsetHeight;
+        scene.style.transformStyle = 'preserve-3d';
     }
 }
 
