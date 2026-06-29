@@ -994,14 +994,19 @@ async function _prepararDadosEEnviar() {
     document.getElementById('resultados').style.display = 'none';
     var botoesEl = document.querySelector('#secaoResultados .botoes');
     if (botoesEl) botoesEl.innerHTML = '<p style="text-align:center;font-size:1.2em;color:#1a237e;font-weight:bold;">Enviando resultados...</p>';
-    // Enviar
+    // Enviar no formato dos TESTES (save-result, tipo corsi)
     try {
-        var dados = window._escalaDados;
-        dados.pacienteId = _sessionInfo.pacienteId || '';
-        var resp = await fetch(_API_URL + '/save-escala', {
+        var dados = {
+            email: _sessionInfo.email,
+            tipo: 'corsi',
+            sessionId: _sessionInfo.sessionId,
+            data: window._escalaDados
+        };
+        dados.data.pacienteId = _sessionInfo.pacienteId || '';
+        var resp = await fetch(_API_URL + '/save-result', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({sessionId: _sessionInfo.sessionId, email: _sessionInfo.email, data: dados, originalSessionId: _sessionInfo.sessionId})
+            body: JSON.stringify(dados)
         });
         var result = await resp.json();
         if (result.ok || resp.ok) {
