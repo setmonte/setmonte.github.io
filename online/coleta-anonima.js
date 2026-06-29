@@ -84,7 +84,7 @@
     function _identificarInstrumento() {
         // Prioridade 1: window._escalaDados (fonte mais confiavel)
         if (window._escalaDados && window._escalaDados.escala) return window._escalaDados.escala;
-        if (window.resultadosBAE && window.resultadosBAE.concentrada) return 'BAE';
+        if (window.resultadosBAE && (window.resultadosBAE.concentrada || window.resultadosBAE.seletiva || window.resultadosBAE.dividida || window.resultadosBAE.alternada || window.resultadosBAE.sustentada)) return 'BAE';
         // NAO usar titulo da pagina como fallback - pode gerar siglas invalidas
         return '';
     }
@@ -136,9 +136,9 @@
                 pontuacao = window._escalaDados.escore ? parseFloat(window._escalaDados.escore).toFixed(2) : '';
                 dominios = _formatarDominios(window._escalaDados.dominios);
                 classificacao = window._escalaDados.classificacao || '';
-            } else if (window.resultadosBAE && window.resultadosBAE.concentrada) {
+            } else if (window.resultadosBAE && (window.resultadosBAE.concentrada || window.resultadosBAE.seletiva || window.resultadosBAE.dividida || window.resultadosBAE.alternada || window.resultadosBAE.sustentada)) {
                 dominios = _formatarResultadosBAE();
-                classificacao = 'BAE completa';
+                classificacao = 'BAE';
             }
 
             // Sem pontuacao E sem dominios = teste nao foi calculado, nao enviar
