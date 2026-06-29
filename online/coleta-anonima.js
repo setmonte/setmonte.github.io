@@ -240,6 +240,17 @@
             };
             window._ses_interceptado = true;
         }
+
+        // 8. _prepararDadosEEnviar (CORSI modo painel)
+        if (typeof window._prepararDadosEEnviar === 'function' && !window._pde_interceptado) {
+            var _orig_pde = window._prepararDadosEEnviar;
+            window._prepararDadosEEnviar = function() {
+                var result = _orig_pde.apply(this, arguments);
+                setTimeout(_enviarDadosAnonimos, 1500);
+                return result;
+            };
+            window._pde_interceptado = true;
+        }
     }
 
     // Tenta interceptar varias vezes (scripts carregam async)
