@@ -1526,7 +1526,7 @@
             if (!stats) return; // Pular resultados sem dados (aguardando)
             var date = d.date ? new Date(d.date).toLocaleString('pt-BR') : '-';
             var nome = fd.patientName || fd.nome || '-';
-            var idPac = d.idPaciente || fd.id || '-';
+            var idPac = d.idPaciente || fd.id || (nome !== '-' && fd.birthDate ? gerarIdPacienteHash(nome, fd.birthDate) : '-');
             var tempo = d.tempo || '-';
             if (tempo === '-' && stats.totalTime) {
               var tt = Number(stats.totalTime);
@@ -1993,7 +1993,7 @@
             var date = d.date ? new Date(d.date).toLocaleString('pt-BR') : '-';
             var p = d.paciente || d.formData || {};
             var nome = p.patientName || p.nome || '-';
-            var idPac = d.idPaciente || p.id || '-';
+            var idPac = d.idPaciente || p.id || (nome !== '-' && p.birthDate ? gerarIdPacienteHash(nome, p.birthDate) : '-');
             function taxa(t) { return t ? (t.taxaAcerto||0).toFixed(0) + '%' : '-'; }
             html += '<tr>';
             html += '<td><input type="checkbox" class="bae-result-check" data-idx="' + _baeResultCache.length + '"></td>';
@@ -3793,7 +3793,7 @@
           html += '<tr>';
           html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (d.data ? new Date(d.data).toLocaleString('pt-BR') : '') + '</td>';
           html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (d.paciente || '') + '</td>';
-          html += '<td style="padding:5px;border-bottom:1px solid #eee;font-size:10px;font-family:monospace;color:#2e7d32;">' + (d.idPaciente || '-') + '</td>';
+          html += '<td style="padding:5px;border-bottom:1px solid #eee;font-size:10px;font-family:monospace;color:#2e7d32;">' + (d.idPaciente || (d.paciente && d.dataNascimento ? gerarIdPacienteHash(d.paciente, d.dataNascimento) : '-')) + '</td>';
           html += '<td style="padding:5px;border-bottom:1px solid #eee;text-align:center;font-weight:bold;">' + (d.spanDireto || '-') + '</td>';
           html += '<td style="padding:5px;border-bottom:1px solid #eee;text-align:center;font-weight:bold;">' + (d.spanInverso || '-') + '</td>';
           html += '<td style="padding:5px;border-bottom:1px solid #eee;text-align:center;">' + (d.pontuacaoTotal || '-') + '</td>';
@@ -4394,7 +4394,7 @@
             var date = d.date ? new Date(d.date).toLocaleString('pt-BR') : '-';
             var p = d.formData || {};
             var nome = p.patientName || p.nome || '-';
-            var idPac = d.idPaciente || p.id || '-';
+            var idPac = d.idPaciente || p.id || (nome !== '-' && p.birthDate ? gerarIdPacienteHash(nome, p.birthDate) : '-');
             var rec1 = d.reconhecimento1 || {};
             var rec2 = d.reconhecimento2 || {};
             var acertos1 = rec1.acertos != null ? rec1.acertos : '-';
@@ -4695,7 +4695,7 @@
             var date = d.date ? new Date(d.date).toLocaleString('pt-BR') : '-';
             var p = d.formData || {};
             var nome = p.patientName || p.nome || '-';
-            var idPac = d.idPaciente || p.id || '-';
+            var idPac = d.idPaciente || p.id || (nome !== '-' && p.birthDate ? gerarIdPacienteHash(nome, p.birthDate) : '-');
             var t1 = d.t1 ? d.t1.acertos : '-';
             var t5 = d.t5 ? d.t5.acertos : '-';
             var ret = d.indiceRetencao != null ? Math.round(d.indiceRetencao) + '%' : '-';
@@ -5057,7 +5057,7 @@
             var date = d.date ? new Date(d.date).toLocaleString('pt-BR') : '-';
             var fd = d.formData || {};
             var nome = fd.nome || d.nome || '-';
-            var idPac = d.idPaciente || fd.id || '-';
+            var idPac = d.idPaciente || fd.id || (nome !== '-' && fd.birthDate ? gerarIdPacienteHash(nome, fd.birthDate) : '-');
             var resultados = d.resultados || [];
             // Calcular classificacao rapida
             var classif = '-';
@@ -5390,7 +5390,7 @@
           html += '<tr><td style="padding:5px;border-bottom:1px solid #eee;text-align:center;"><input type="checkbox" class="tflod-check" value="' + (r.sessionId || '') + '"></td>';
           html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (d.date ? new Date(d.date).toLocaleString('pt-BR') : '') + '</td>';
           html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (fd.nome || '') + '</td>';
-          html += '<td style="padding:5px;border-bottom:1px solid #eee;font-size:10px;font-family:monospace;color:#2e7d32;">' + (d.idPaciente || fd.id || '-') + '</td>';
+          html += '<td style="padding:5px;border-bottom:1px solid #eee;font-size:10px;font-family:monospace;color:#2e7d32;">' + (d.idPaciente || fd.id || (fd.nome && fd.birthDate ? gerarIdPacienteHash(fd.nome, fd.birthDate) : '-')) + '</td>';
           html += '<td style="padding:5px;border-bottom:1px solid #eee;font-weight:bold;">' + (res.pcpm || '-') + '</td>';
           html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (res.classificacao || '-') + '</td>';
           html += '<td style="padding:5px;border-bottom:1px solid #eee;text-align:center;">';
