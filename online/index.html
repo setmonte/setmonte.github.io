@@ -2758,7 +2758,15 @@
       doc.setFontSize(14); doc.setFont(undefined,'bold'); doc.setTextColor(46,125,50);
       doc.text('RELATORIO DO PACIENTE', 15, 14);
       doc.setFontSize(11); doc.setTextColor(33,33,33);
-      doc.text(nome + (window._historicoPacId ? '  (ID: '+window._historicoPacId+')' : ''), 15, 21);
+      doc.text(nome, 15, 21);
+      // Dados do paciente (ID, Data Nasc, Sexo)
+      doc.setFontSize(8); doc.setFont(undefined,'normal'); doc.setTextColor(80,80,80);
+      var pacDados = '';
+      var pacCacheInfo = _pacientesCache.filter(function(p) { return p.id === window._historicoPacId; })[0];
+      if (window._historicoPacId) pacDados += 'ID: ' + window._historicoPacId;
+      if (pacCacheInfo && pacCacheInfo.dataNascimento) pacDados += (pacDados ? ' | ' : '') + 'Data Nasc.: ' + pacCacheInfo.dataNascimento;
+      if (pacCacheInfo && pacCacheInfo.sexo) pacDados += (pacDados ? ' | ' : '') + 'Sexo: ' + pacCacheInfo.sexo;
+      if (pacDados) doc.text(pacDados, 15, 26);
       doc.setFontSize(8); doc.setFont(undefined,'normal'); doc.setTextColor(100,100,100);
       var periodo = '';
       if (todos.length > 0) {
@@ -2766,10 +2774,10 @@
         var dataFim = todos[0].date ? new Date(todos[0].date).toLocaleDateString('pt-BR') : '-';
         periodo = 'Periodo: ' + dataInicio + ' a ' + dataFim + ' | ';
       }
-      doc.text('Sistema SYM Online | ' + periodo + 'Total: ' + todos.length + ' aplicacoes', 15, 27);
-      doc.setDrawColor(46,125,50); doc.setLineWidth(0.5); doc.line(15, 30, pageW - 15, 30);
+      doc.text('Sistema SYM Online | ' + periodo + 'Total: ' + todos.length + ' aplicacoes', 15, 31);
+      doc.setDrawColor(46,125,50); doc.setLineWidth(0.5); doc.line(15, 33, pageW - 15, 33);
       // Cabecalho da tabela
-      var y = 36;
+      var y = 39;
       var colX = [15, 40, 75, 140, 230]; // Data, Instrumento, Resultado, Escores, Tempo
       doc.setFontSize(8); doc.setFont(undefined,'bold'); doc.setTextColor(255,255,255);
       doc.setFillColor(46,125,50);
@@ -2954,7 +2962,8 @@
       area.style.display = 'block';
       area.innerHTML = '<div style="text-align:center;padding:30px;"><p style="font-size:14px;color:#1565c0;font-weight:bold;">Buscando historico de ' + nome + '...</p><p style="font-size:12px;color:#777;margin-top:8px;">Aguarde enquanto a IA analisa os resultados.</p></div>';
       // Guardar referencia do paciente atual
-      _smartPacienteAtual = { id: pacId, nome: nome };
+      var pacInfoAtual = _pacientesCache.filter(function(p) { return p.id === pacId; })[0];
+      _smartPacienteAtual = { id: pacId, nome: nome, dataNascimento: pacInfoAtual ? pacInfoAtual.dataNascimento : '', sexo: pacInfoAtual ? pacInfoAtual.sexo : '' };
       _smartMetasCache = null;
       // Buscar historico (mesma logica de verHistoricoPaciente)
       try {
@@ -3142,6 +3151,16 @@
         y += 5;
         if (cfg.consultorio) { doc.text('Local: ' + cfg.consultorio, 15, y); y += 5; }
       }
+      // Dados do paciente
+      y += 2;
+      doc.setFontSize(9); doc.setFont(undefined,'bold'); doc.setTextColor(33,33,33);
+      doc.text('Paciente: ' + nome, 15, y);
+      doc.setFont(undefined,'normal');
+      var dadosPac = '';
+      if (_smartPacienteAtual.dataNascimento) dadosPac += 'Data Nasc.: ' + _smartPacienteAtual.dataNascimento;
+      if (_smartPacienteAtual.id) dadosPac += (dadosPac ? ' | ' : '') + 'ID: ' + _smartPacienteAtual.id;
+      if (_smartPacienteAtual.sexo) dadosPac += (dadosPac ? ' | ' : '') + 'Sexo: ' + _smartPacienteAtual.sexo;
+      if (dadosPac) { y += 5; doc.setFontSize(8); doc.text(dadosPac, 15, y); }
       // Resumo dos testes aplicados
       y += 3;
       doc.setFontSize(10); doc.setFont(undefined,'bold'); doc.setTextColor(azul[0], azul[1], azul[2]);
