@@ -1233,6 +1233,17 @@
     window._isOnlineTest = true;
     // Configuracao
     var API_URL = 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
+
+    // Utilitario: gerar ID hash do paciente (mesmo algoritmo do id-paciente.js)
+    function gerarIdPacienteHash(nome, nascimento) {
+      if (!nascimento || !nome || nome.trim().length < 1) return '-';
+      var n = nome.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z]/g,'').toLowerCase();
+      var prefixo = n.substring(0, 3);
+      var raw = nascimento + '+' + prefixo;
+      var hash = 5381;
+      for (var i = 0; i < raw.length; i++) hash = ((hash << 5) + hash) + raw.charCodeAt(i);
+      return 'P' + Math.abs(hash).toString(36).toUpperCase();
+    }
     var COGNITO_DOMAIN = 'https://sa-east-1msq8gxrbw.auth.sa-east-1.amazoncognito.com';
     var CLIENT_ID = '3hbflr5cjb3jortib8nl7bpe60';
     var REDIRECT_URI = 'https://setmonte.github.io/online/';
@@ -2088,10 +2099,11 @@
         if (_pacientesCache.length > 0) {
           var html = '<table class="results-table"><tr><th>Nome</th><th>Data Nasc.</th><th>ID</th><th>CPF</th><th>Sexo</th><th>Historico</th><th>Acao</th></tr>';
           _pacientesCache.forEach(function(p) {
+            var idHash = gerarIdPacienteHash(p.nome, p.dataNascimento);
             html += '<tr>';
             html += '<td>' + p.nome + '</td>';
             html += '<td>' + (p.dataNascimento || '-') + '</td>';
-            html += '<td style="font-size:10px;font-family:monospace;">' + (p.id || '-') + '</td>';
+            html += '<td style="font-size:10px;font-family:monospace;color:#2e7d32;">' + idHash + '</td>';
             html += '<td>' + (p.cpf || '-') + '</td>';
             html += '<td>' + (p.sexo || '-') + '</td>';
             html += '<td><button class="btn btn-blue" style="padding:4px 10px;font-size:11px;" onclick="verHistoricoPaciente(\'' + p.id + '\',\'' + p.nome.replace(/'/g,'') + '\')">Ver</button></td>';
@@ -2768,7 +2780,8 @@
       doc.setFontSize(8); doc.setFont(undefined,'normal'); doc.setTextColor(80,80,80);
       var pacDados = '';
       var pacCacheInfo = _pacientesCache.filter(function(p) { return p.id === window._historicoPacId; })[0];
-      if (window._historicoPacId) pacDados += 'ID: ' + window._historicoPacId;
+      var idHashPdf = pacCacheInfo ? gerarIdPacienteHash(pacCacheInfo.nome, pacCacheInfo.dataNascimento) : '-';
+      if (idHashPdf && idHashPdf !== '-') pacDados += 'ID: ' + idHashPdf;
       if (pacCacheInfo && pacCacheInfo.dataNascimento) pacDados += (pacDados ? ' | ' : '') + 'Data Nasc.: ' + pacCacheInfo.dataNascimento;
       if (pacCacheInfo && pacCacheInfo.sexo) pacDados += (pacDados ? ' | ' : '') + 'Sexo: ' + pacCacheInfo.sexo;
       if (pacDados) doc.text(pacDados, 15, 26);
@@ -2948,10 +2961,11 @@
       }
       var html = '<table class="results-table" style="font-size:12px;"><tr><th>Nome</th><th>Data Nasc.</th><th>ID</th><th>Sexo</th><th>Programa SMART</th></tr>';
       _pacientesCache.forEach(function(p) {
+        var idHash = gerarIdPacienteHash(p.nome, p.dataNascimento);
         html += '<tr>';
         html += '<td>' + p.nome + '</td>';
         html += '<td>' + (p.dataNascimento || '-') + '</td>';
-        html += '<td style="font-size:10px;font-family:monospace;">' + (p.id || '-') + '</td>';
+        html += '<td style="font-size:10px;font-family:monospace;color:#2e7d32;">' + idHash + '</td>';
         html += '<td>' + (p.sexo || '-') + '</td>';
         html += '<td>';
         html += '<button class="btn btn-blue" style="padding:4px 10px;font-size:11px;margin-right:4px;" onclick="gerarSmartPaciente(\'' + p.id + '\',\'' + p.nome.replace(/'/g,'') + '\')">Ver</button>';
@@ -3164,7 +3178,8 @@
       doc.setFont(undefined,'normal');
       var dadosPac = '';
       if (_smartPacienteAtual.dataNascimento) dadosPac += 'Data Nasc.: ' + _smartPacienteAtual.dataNascimento;
-      if (_smartPacienteAtual.id) dadosPac += (dadosPac ? ' | ' : '') + 'ID: ' + _smartPacienteAtual.id;
+      var smartIdHash = gerarIdPacienteHash(_smartPacienteAtual.nome, _smartPacienteAtual.dataNascimento);
+      if (smartIdHash && smartIdHash !== '-') dadosPac += (dadosPac ? ' | ' : '') + 'ID: ' + smartIdHash;
       if (_smartPacienteAtual.sexo) dadosPac += (dadosPac ? ' | ' : '') + 'Sexo: ' + _smartPacienteAtual.sexo;
       if (dadosPac) { y += 5; doc.setFontSize(8); doc.text(dadosPac, 15, y); }
       // Resumo dos testes aplicados
