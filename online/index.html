@@ -2723,7 +2723,9 @@
         window._historicoPacId = pacId;
 
         if (todos.length > 0) {
-          var html = '<h3 style="color:#2e7d32;margin-bottom:10px;">Historico de ' + nome + '</h3>';
+          var idHashHist = gerarIdPacienteHash(nome, (function(){ var pi = _pacientesCache.filter(function(p){return p.id===pacId;})[0]; return pi ? pi.dataNascimento : ''; })());
+          var html = '<h3 style="color:#2e7d32;margin-bottom:5px;">Historico de ' + nome + '</h3>';
+          html += '<p style="font-size:11px;color:#555;margin-bottom:10px;">ID: <strong style="font-family:monospace;color:#2e7d32;">' + idHashHist + '</strong></p>';
           html += '<button class="btn btn-green" style="padding:6px 14px;font-size:12px;margin-bottom:10px;" onclick="gerarRelatorioPacientePDF()">Relatorio PDF</button>';
           html += ' <button class="btn btn-blue" style="padding:6px 14px;font-size:12px;margin-bottom:10px;" onclick="loadPacientes()">Voltar</button>';
           html += '<table class="results-table"><tr><th>Data</th><th>Tipo</th><th>Detalhes</th></tr>';
@@ -3559,12 +3561,14 @@
         if (data.results && data.results.length > 0) {
           var anamneses = data.results.filter(function(r) { return r.data && r.data.escala && r.data.escala.indexOf('ANAMNESE') >= 0; });
           if (anamneses.length > 0) {
-            var html = '<table class="results-table"><tr><th>Data</th><th>Paciente</th><th>Respondente</th><th>PDF</th></tr>';
+            var html = '<table class="results-table"><tr><th>Data</th><th>Paciente</th><th>ID</th><th>Respondente</th><th>PDF</th></tr>';
             anamneses.forEach(function(r, idx) {
               var d = r.data || {};
               var date = r.date ? new Date(r.date).toLocaleString('pt-BR') : (d.data ? new Date(d.data).toLocaleString('pt-BR') : '-');
+              var idAnam = d.idPaciente || '-';
               html += '<tr><td style="font-size:11px;">' + date + '</td>';
               html += '<td style="font-weight:bold;">' + (d.paciente || '-') + '</td>';
+              html += '<td style="font-size:10px;font-family:monospace;color:#2e7d32;">' + idAnam + '</td>';
               html += '<td>' + (d.respondente || '-') + '</td>';
               html += '<td><button class="btn btn-green" style="padding:3px 8px;font-size:11px;" onclick="gerarPDFAnamnese(' + idx + ')">PDF</button></td></tr>';
             });
