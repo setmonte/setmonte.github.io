@@ -1507,7 +1507,7 @@
         var data = await resp.json();
         if (data.results && data.results.length > 0) {
           _resultCache = [];
-          var html = '<table class="results-table"><tr><th><input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)"></th><th>Data</th><th>Paciente</th><th>Status</th><th>Categorias</th><th>% Erros</th><th>Tempo</th><th>Acao</th></tr>';
+          var html = '<table class="results-table"><tr><th><input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)"></th><th>Data</th><th>Paciente</th><th>ID</th><th>Status</th><th>Categorias</th><th>% Erros</th><th>Tempo</th><th>Acao</th></tr>';
           data.results.forEach(function(r) {
             var d = r.data || {};
             var stats = d.stats || null;
@@ -1515,6 +1515,7 @@
             if (!stats) return; // Pular resultados sem dados (aguardando)
             var date = d.date ? new Date(d.date).toLocaleString('pt-BR') : '-';
             var nome = fd.patientName || fd.nome || '-';
+            var idPac = d.idPaciente || fd.id || '-';
             var tempo = d.tempo || '-';
             if (tempo === '-' && stats.totalTime) {
               var tt = Number(stats.totalTime);
@@ -1524,6 +1525,7 @@
             html += '<td><input type="checkbox" class="result-check" data-idx="' + _resultCache.length + '"></td>';
             html += '<td>' + date + '</td>';
             html += '<td>' + nome + '</td>';
+            html += '<td style="font-size:10px;font-family:monospace;color:#2e7d32;">' + idPac + '</td>';
             html += '<td>' + (d.status || '-') + '</td>';
             html += '<td>' + (stats.completedCategories != null ? stats.completedCategories : '-') + '</td>';
             html += '<td>' + (stats.pctErrors != null ? stats.pctErrors.toFixed(1) : '-') + '</td>';
@@ -1973,18 +1975,20 @@
         var data = await resp.json();
         _baeResultCache = [];
         if (data.results && data.results.length > 0) {
-          var html = '<table class="results-table"><tr><th><input type="checkbox" id="baeSelectAll" onclick="toggleBaeSelectAll(this)"></th><th>Data</th><th>Paciente</th><th>Status</th><th>Conc</th><th>Sel</th><th>Div</th><th>Alt</th><th>Sus</th><th>PDF</th></tr>';
+          var html = '<table class="results-table"><tr><th><input type="checkbox" id="baeSelectAll" onclick="toggleBaeSelectAll(this)"></th><th>Data</th><th>Paciente</th><th>ID</th><th>Status</th><th>Conc</th><th>Sel</th><th>Div</th><th>Alt</th><th>Sus</th><th>PDF</th></tr>';
           data.results.forEach(function(r) {
             var d = r.data || {};
             if (d.status === 'aguardando') return;
             var date = d.date ? new Date(d.date).toLocaleString('pt-BR') : '-';
             var p = d.paciente || d.formData || {};
             var nome = p.patientName || p.nome || '-';
+            var idPac = d.idPaciente || p.id || '-';
             function taxa(t) { return t ? (t.taxaAcerto||0).toFixed(0) + '%' : '-'; }
             html += '<tr>';
             html += '<td><input type="checkbox" class="bae-result-check" data-idx="' + _baeResultCache.length + '"></td>';
             html += '<td>' + date + '</td>';
             html += '<td>' + nome + '</td>';
+            html += '<td style="font-size:10px;font-family:monospace;color:#2e7d32;">' + idPac + '</td>';
             html += '<td>' + (d.status || '-') + '</td>';
             html += '<td>' + taxa(d.concentrada) + '</td>';
             html += '<td>' + taxa(d.seletiva) + '</td>';
@@ -3763,13 +3767,14 @@
         var data = await resp.json();
         _corsiResultCache = data.results || [];
         if (_corsiResultCache.length === 0) { el.innerHTML = '<p>Nenhum resultado CORSI encontrado.</p>'; return; }
-        var html = '<h3>Resultados CORSI</h3><table style="width:100%;border-collapse:collapse;font-size:0.85em;"><tr><th style="padding:6px;border-bottom:2px solid #4a148c;">Data</th><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">Paciente</th><th style="padding:6px;border-bottom:2px solid #4a148c;">Span D</th><th style="padding:6px;border-bottom:2px solid #4a148c;">Span I</th><th style="padding:6px;border-bottom:2px solid #4a148c;">Total</th><th style="padding:6px;border-bottom:2px solid #4a148c;">Class.</th></tr>';
+        var html = '<h3>Resultados CORSI</h3><table style="width:100%;border-collapse:collapse;font-size:0.85em;"><tr><th style="padding:6px;border-bottom:2px solid #4a148c;">Data</th><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">Paciente</th><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">ID</th><th style="padding:6px;border-bottom:2px solid #4a148c;">Span D</th><th style="padding:6px;border-bottom:2px solid #4a148c;">Span I</th><th style="padding:6px;border-bottom:2px solid #4a148c;">Total</th><th style="padding:6px;border-bottom:2px solid #4a148c;">Class.</th></tr>';
         for (var i = 0; i < _corsiResultCache.length; i++) {
           var r = _corsiResultCache[i];
           var d = r.data || {};
           html += '<tr>';
           html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (d.data ? new Date(d.data).toLocaleString('pt-BR') : '') + '</td>';
           html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (d.paciente || '') + '</td>';
+          html += '<td style="padding:5px;border-bottom:1px solid #eee;font-size:10px;font-family:monospace;color:#2e7d32;">' + (d.idPaciente || '-') + '</td>';
           html += '<td style="padding:5px;border-bottom:1px solid #eee;text-align:center;font-weight:bold;">' + (d.spanDireto || '-') + '</td>';
           html += '<td style="padding:5px;border-bottom:1px solid #eee;text-align:center;font-weight:bold;">' + (d.spanInverso || '-') + '</td>';
           html += '<td style="padding:5px;border-bottom:1px solid #eee;text-align:center;">' + (d.pontuacaoTotal || '-') + '</td>';
@@ -4363,13 +4368,14 @@
         var data = await resp.json();
         _trmvResultCache = [];
         if (data.results && data.results.length > 0) {
-          var html = '<table class="results-table"><tr><th><input type="checkbox" id="trmvSelectAll" onclick="toggleTrmvSelectAll(this)"></th><th>Data</th><th>Paciente</th><th>Status</th><th>Acertos 1o</th><th>Acertos 2o</th><th>Retencao%</th><th>PDF</th></tr>';
+          var html = '<table class="results-table"><tr><th><input type="checkbox" id="trmvSelectAll" onclick="toggleTrmvSelectAll(this)"></th><th>Data</th><th>Paciente</th><th>ID</th><th>Status</th><th>Acertos 1o</th><th>Acertos 2o</th><th>Retencao%</th><th>PDF</th></tr>';
           data.results.forEach(function(r) {
             var d = r.data || {};
             if (d.status === 'aguardando') return;
             var date = d.date ? new Date(d.date).toLocaleString('pt-BR') : '-';
             var p = d.formData || {};
             var nome = p.patientName || p.nome || '-';
+            var idPac = d.idPaciente || p.id || '-';
             var rec1 = d.reconhecimento1 || {};
             var rec2 = d.reconhecimento2 || {};
             var acertos1 = rec1.acertos != null ? rec1.acertos : '-';
@@ -4379,6 +4385,7 @@
             html += '<td><input type="checkbox" class="trmv-result-check" data-idx="' + _trmvResultCache.length + '"></td>';
             html += '<td>' + date + '</td>';
             html += '<td>' + nome + '</td>';
+            html += '<td style="font-size:10px;font-family:monospace;color:#2e7d32;">' + idPac + '</td>';
             html += '<td>' + (d.status || '-') + '</td>';
             html += '<td>' + acertos1 + '</td>';
             html += '<td>' + acertos2 + '</td>';
@@ -4662,13 +4669,14 @@
         var data = await resp.json();
         _taavResultCache = [];
         if (data.results && data.results.length > 0) {
-          var html = '<table class="results-table"><tr><th><input type="checkbox" id="taavSelectAll" onclick="toggleTaavSelectAll(this)"></th><th>Data</th><th>Paciente</th><th>Status</th><th>T1</th><th>T5</th><th>Retencao</th><th>PDF</th></tr>';
+          var html = '<table class="results-table"><tr><th><input type="checkbox" id="taavSelectAll" onclick="toggleTaavSelectAll(this)"></th><th>Data</th><th>Paciente</th><th>ID</th><th>Status</th><th>T1</th><th>T5</th><th>Retencao</th><th>PDF</th></tr>';
           data.results.forEach(function(r) {
             var d = r.data || {};
             if (d.status === 'aguardando') return;
             var date = d.date ? new Date(d.date).toLocaleString('pt-BR') : '-';
             var p = d.formData || {};
             var nome = p.patientName || p.nome || '-';
+            var idPac = d.idPaciente || p.id || '-';
             var t1 = d.t1 ? d.t1.acertos : '-';
             var t5 = d.t5 ? d.t5.acertos : '-';
             var ret = d.indiceRetencao != null ? Math.round(d.indiceRetencao) + '%' : '-';
@@ -4676,6 +4684,7 @@
             html += '<td><input type="checkbox" class="taav-result-check" data-idx="' + _taavResultCache.length + '"></td>';
             html += '<td>' + date + '</td>';
             html += '<td>' + nome + '</td>';
+            html += '<td style="font-size:10px;font-family:monospace;color:#2e7d32;">' + idPac + '</td>';
             html += '<td>' + (d.status || '-') + '</td>';
             html += '<td>' + t1 + '</td>';
             html += '<td>' + t5 + '</td>';
@@ -5022,13 +5031,14 @@
         _trefResultCache = [];
         if (data.results && data.results.length > 0) {
           var html = '<h3>Resultados TREF</h3><div style="margin-bottom:10px;"><button class="btn btn-red" style="padding:5px 12px;font-size:12px;" onclick="deleteTrefSelected()">Apagar Selecionados</button></div>';
-          html += '<table class="results-table"><tr><th><input type="checkbox" id="trefSelectAll" onclick="toggleTrefSelectAll(this)"></th><th>Data</th><th>Paciente</th><th>Classificacao</th><th>PDF</th></tr>';
+          html += '<table class="results-table"><tr><th><input type="checkbox" id="trefSelectAll" onclick="toggleTrefSelectAll(this)"></th><th>Data</th><th>Paciente</th><th>ID</th><th>Classificacao</th><th>PDF</th></tr>';
           data.results.forEach(function(r) {
             var d = r.data || {};
             if (d.status === 'aguardando') return;
             var date = d.date ? new Date(d.date).toLocaleString('pt-BR') : '-';
             var fd = d.formData || {};
             var nome = fd.nome || d.nome || '-';
+            var idPac = d.idPaciente || fd.id || '-';
             var resultados = d.resultados || [];
             // Calcular classificacao rapida
             var classif = '-';
@@ -5049,6 +5059,7 @@
             html += '<td><input type="checkbox" class="tref-result-check" data-idx="' + _trefResultCache.length + '"></td>';
             html += '<td>' + date + '</td>';
             html += '<td>' + nome + '</td>';
+            html += '<td style="font-size:10px;font-family:monospace;color:#2e7d32;">' + idPac + '</td>';
             html += '<td>' + classif + '</td>';
             html += '<td><button class="btn btn-green" style="padding:5px 12px;font-size:12px;" data-idx="' + _trefResultCache.length + '" onclick="this.textContent=\'Gerando...\';this.disabled=true;var btn=this;generateTrefPDF(this.dataset.idx).finally(function(){btn.textContent=\'PDF\';btn.disabled=false;});">PDF</button></td>';
             html += '</tr>';
@@ -5350,7 +5361,7 @@
         var data = await resp.json();
         _tflodResultCache = data.results || [];
         if (_tflodResultCache.length === 0) { el.innerHTML = '<p>Nenhum resultado TFLOD encontrado.</p>'; return; }
-        var html = '<h3>Resultados TFLOD</h3><table style="width:100%;border-collapse:collapse;font-size:0.85em;"><tr><th style="padding:6px;border-bottom:2px solid #1565c0;width:30px;"><input type="checkbox" onclick="toggleAllTflod(this)"></th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Data</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Paciente</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">PCPM</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Classificacao</th><th style="padding:6px;border-bottom:2px solid #1565c0;">Acoes</th></tr>';
+        var html = '<h3>Resultados TFLOD</h3><table style="width:100%;border-collapse:collapse;font-size:0.85em;"><tr><th style="padding:6px;border-bottom:2px solid #1565c0;width:30px;"><input type="checkbox" onclick="toggleAllTflod(this)"></th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Data</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Paciente</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">ID</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">PCPM</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Classificacao</th><th style="padding:6px;border-bottom:2px solid #1565c0;">Acoes</th></tr>';
         for (var i = 0; i < _tflodResultCache.length; i++) {
           var r = _tflodResultCache[i];
           var d = r.data || {};
@@ -5360,6 +5371,7 @@
           html += '<tr><td style="padding:5px;border-bottom:1px solid #eee;text-align:center;"><input type="checkbox" class="tflod-check" value="' + (r.sessionId || '') + '"></td>';
           html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (d.date ? new Date(d.date).toLocaleString('pt-BR') : '') + '</td>';
           html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (fd.nome || '') + '</td>';
+          html += '<td style="padding:5px;border-bottom:1px solid #eee;font-size:10px;font-family:monospace;color:#2e7d32;">' + (d.idPaciente || fd.id || '-') + '</td>';
           html += '<td style="padding:5px;border-bottom:1px solid #eee;font-weight:bold;">' + (res.pcpm || '-') + '</td>';
           html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (res.classificacao || '-') + '</td>';
           html += '<td style="padding:5px;border-bottom:1px solid #eee;text-align:center;">';
