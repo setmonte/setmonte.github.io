@@ -270,6 +270,9 @@ function calcularEEnviar() {
     var risco = mediaGeral >= 2.5 ? "SIM" : "NÃO";
     var ia = analisarIA(respostas, dominiosScores, mediaGeral, escalaSelecionada);
 
+    // Coleta anonima
+    window._escalaDados = {escala:escalaAtual.sigla, escore:parseFloat(mediaGeral.toFixed(2)), classificacao:classif, dominios:dominiosScores};
+
     // Montar dados para envio
     var dados = {
         dataHora: new Date().toLocaleString('pt-BR'),
