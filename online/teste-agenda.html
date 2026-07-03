@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Consulta em Andamento - SYM</title>
+<title>Prontuario IA - SYM</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--bg:#f7f6f2;--surface:#fff;--border:#e2e0d8;--text:#1c1b18;--text2:#6b6860;--text3:#9c9a94;--accent:#2d6a8f;--accent-light:#e8f2f8;--green:#2d7a4f;--green-light:#e8f5ee;--red:#b83232;--red-light:#fdf0f0;--radius:10px}
@@ -12,15 +12,28 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .header{text-align:center;margin-bottom:1.5rem}
 .header h1{font-size:20px;color:var(--accent);font-weight:600}
 .header p{font-size:12px;color:var(--text3);margin-top:4px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.25rem;margin-bottom:1rem}
+.topico-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.topico-row input{flex:1;font-size:13px;height:32px;border:1px solid var(--border);border-radius:8px;padding:0 10px;background:var(--bg);outline:none}
+.topico-row input:focus{border-color:var(--accent);background:#fff}
+.topico-row button{width:26px;height:26px;border:1px solid var(--border);border-radius:7px;background:transparent;cursor:pointer;color:var(--text3);font-size:13px;display:flex;align-items:center;justify-content:center}
+.topico-row button:hover{background:var(--red-light);color:var(--red)}
+.btn-add{font-size:12px;color:var(--accent);background:none;border:none;cursor:pointer;padding:5px 0;margin-top:4px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 20px;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;border:none;transition:all .15s}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:#245a7a}
+.btn-green{background:var(--green);color:#fff}.btn-green:hover{background:#1f5c3a}
+.btn-outline{background:var(--surface);color:var(--text);border:1px solid var(--border)}.btn-outline:hover{background:var(--bg)}
+.btn:disabled{opacity:0.5;cursor:not-allowed}
 </style>
 </head>
 <body>
 <div class="app">
 <div class="header">
-<h1>&#128203; Consulta em Andamento</h1>
+<h1 id="page-title">&#128203; Prontuario IA</h1>
 <p>S&#233;rgio Teixeira Monte &#183; Neuropsic&#243;logo &#183; CRP 14/05739-9</p>
 </div>
 <div id="paciente-info"></div>
+<div id="topicos-section"></div>
 <div id="consulta-area"></div>
 </div>
 </body>
@@ -29,6 +42,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 <script>
 var API_URL = 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
 var sessionInfo = {};
+var modoAgenda = false; // true = com timer/bips, false = modo livre
 var gravando = false;
 var timerInterval = null;
 var segundosDecorridos = 0;
@@ -38,48 +52,104 @@ var bipDadoFinal = false;
 var recognition = null;
 var transcricaoAcumulada = '';
 var topicosPadrao = ['Nome completo','Idade e data de nascimento','CPF','Nome do pai','Nome da mae','Queixa principal','Desenvolvimento na infancia','Desenvolvimento na adolescencia','Vida adulta','Historico familiar','Medicamentos em uso','Observacoes adicionais'];
+var topicosAtuais = [];
 
 // Decodificar dados da URL
-function decodificarURL() {
+function init() {
   var params = new URLSearchParams(window.location.search);
   var d = params.get('d');
-  if (!d) { document.body.innerHTML = '<div style="text-align:center;padding:60px;"><h2 style="color:#c62828;">Erro: nenhum dado recebido.</h2><p>Acesse esta pagina pelo painel.</p></div>'; return false; }
-  try { sessionInfo = JSON.parse(atob(decodeURIComponent(d))); } catch(e) { try { sessionInfo = JSON.parse(atob(d)); } catch(e2) {} }
-  if (!sessionInfo.email) { document.body.innerHTML = '<div style="text-align:center;padding:60px;"><h2 style="color:#c62828;">Erro ao decodificar dados.</h2></div>'; return false; }
-  return true;
+  if (d) {
+    // Modo agenda (vindo do painel com dados do paciente)
+    try { sessionInfo = JSON.parse(atob(decodeURIComponent(d))); } catch(e) { try { sessionInfo = JSON.parse(atob(d)); } catch(e2) {} }
+    if (!sessionInfo.email) { document.body.innerHTML = '<div style="text-align:center;padding:60px;"><h2 style="color:#c62828;">Erro ao decodificar dados.</h2></div>'; return; }
+    modoAgenda = true;
+    totalSegundos = (parseInt(sessionInfo.duracao) || 60) * 60;
+    document.getElementById('page-title').innerHTML = '&#128203; Consulta em Andamento';
+    renderPacienteInfo();
+  } else {
+    // Modo livre (acesso direto)
+    modoAgenda = false;
+    sessionInfo = { patientName: '', tipoConsulta: 'Livre', duracao: 0 };
+    document.getElementById('page-title').innerHTML = '&#128203; Prontuario IA — Modo Livre';
+    renderModoLivreInfo();
+  }
+  // Carregar topicos salvos ou usar padrao
+  var saved = localStorage.getItem('prontuario_topicos');
+  topicosAtuais = saved ? JSON.parse(saved) : (sessionInfo.topicos || topicosPadrao.slice());
+  renderTopicos();
+  renderConsultaArea();
 }
 
-// Renderizar info do paciente
+function renderModoLivreInfo() {
+  var el = document.getElementById('paciente-info');
+  el.innerHTML = '<div class="card" style="background:var(--accent-light);border-color:#a8cce0;">' +
+    '<div style="font-size:13px;color:var(--accent);">&#128161; <strong>Modo Livre</strong> — grave uma consulta, anamnese ou observacoes. Pare quando quiser.</div>' +
+    '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">' +
+    '<label style="font-size:12px;color:var(--text2);">Paciente (opcional): <input type="text" id="livre-nome" placeholder="Nome" style="height:30px;border:1px solid var(--border);border-radius:6px;padding:0 8px;font-size:13px;width:180px;margin-left:4px;"></label>' +
+    '<label style="font-size:12px;color:var(--text2);">Tipo: <select id="livre-tipo" style="height:30px;border:1px solid var(--border);border-radius:6px;padding:0 8px;font-size:13px;margin-left:4px;"><option>Anamnese</option><option>Consulta</option><option>Observacoes</option><option>Devolutiva</option><option>Outro</option></select></label>' +
+    '</div></div>';
+}
+
 function renderPacienteInfo() {
   var el = document.getElementById('paciente-info');
-  el.innerHTML = '<div style="background:var(--accent-light);border:1px solid #a8cce0;border-radius:var(--radius);padding:15px;margin-bottom:1rem;">' +
+  el.innerHTML = '<div class="card" style="background:var(--accent-light);border-color:#a8cce0;">' +
     '<div style="display:flex;align-items:center;gap:12px;">' +
     '<div style="width:48px;height:48px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:bold;">' + iniciais(sessionInfo.patientName || 'P') + '</div>' +
     '<div><div style="font-size:16px;font-weight:600;">' + (sessionInfo.patientName || 'Paciente') + '</div>' +
     '<div style="font-size:12px;color:var(--text2);">' + (sessionInfo.tipoConsulta || 'Consulta') + ' &mdash; ' + (sessionInfo.duracao || 60) + ' min</div></div></div></div>';
 }
 
-function iniciais(nome) { return nome.split(' ').map(function(p){return p[0]||'';}).slice(0,2).join('').toUpperCase(); }
+function iniciais(nome) { if (!nome) return 'P'; return nome.split(' ').map(function(p){return p[0]||'';}).slice(0,2).join('').toUpperCase(); }
 
-// Renderizar area principal
+// === TOPICOS EDITAVEIS ===
+function renderTopicos() {
+  var el = document.getElementById('topicos-section');
+  var html = '<div class="card"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;"><span style="font-size:13px;font-weight:600;color:var(--accent);">&#128221; Topicos do Prontuario</span><button class="btn-add" onclick="toggleTopicos()" id="btn-toggle-topicos">editar</button></div>';
+  html += '<div id="topicos-lista" style="display:none;">';
+  topicosAtuais.forEach(function(t, i) {
+    html += '<div class="topico-row"><input type="text" value="' + t.replace(/"/g,'&quot;') + '" onchange="atualizarTopico(' + i + ',this.value)"><button onclick="removerTopico(' + i + ')">&#10005;</button></div>';
+  });
+  html += '<button class="btn-add" onclick="adicionarTopico()">+ Adicionar topico</button></div>';
+  html += '<div id="topicos-resumo" style="font-size:12px;color:var(--text3);line-height:1.8;">' + topicosAtuais.join(' &bull; ') + '</div>';
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function toggleTopicos() {
+  var lista = document.getElementById('topicos-lista');
+  var resumo = document.getElementById('topicos-resumo');
+  var btn = document.getElementById('btn-toggle-topicos');
+  if (lista.style.display === 'none') { lista.style.display = 'block'; resumo.style.display = 'none'; btn.textContent = 'fechar'; }
+  else { lista.style.display = 'none'; resumo.style.display = 'block'; btn.textContent = 'editar'; salvarTopicos(); }
+}
+
+function atualizarTopico(i, val) { topicosAtuais[i] = val; }
+function removerTopico(i) { topicosAtuais.splice(i, 1); salvarTopicos(); renderTopicos(); }
+function adicionarTopico() { topicosAtuais.push('Novo topico'); salvarTopicos(); renderTopicos(); toggleTopicos(); }
+function salvarTopicos() { localStorage.setItem('prontuario_topicos', JSON.stringify(topicosAtuais)); }
+
+// === AREA DE GRAVACAO ===
 function renderConsultaArea() {
-  totalSegundos = (parseInt(sessionInfo.duracao) || 60) * 60;
   var el = document.getElementById('consulta-area');
-  el.innerHTML = '<div id="step-gravacao">' +
-    '<div style="text-align:center;padding:1.5rem 0;">' +
-    '<div id="timer-display" style="font-size:56px;font-weight:300;color:var(--text);letter-spacing:-2px;font-variant-numeric:tabular-nums;">' + fmtTempo(totalSegundos) + '</div>' +
-    '<div style="font-size:12px;color:var(--text3);margin-top:4px;" id="timer-label">Tempo restante</div>' +
-    '<div style="height:8px;background:#e8e8e8;border-radius:4px;margin:12px 0;overflow:hidden;"><div id="progress-bar" style="height:100%;width:0%;background:var(--accent);border-radius:4px;transition:width 1s linear;"></div></div>' +
-    '</div>' +
+  var timerHTML = '';
+  if (modoAgenda) {
+    timerHTML = '<div style="text-align:center;padding:1rem 0;">' +
+      '<div id="timer-display" style="font-size:56px;font-weight:300;color:var(--text);letter-spacing:-2px;font-variant-numeric:tabular-nums;">' + fmtTempo(totalSegundos) + '</div>' +
+      '<div style="font-size:12px;color:var(--text3);margin-top:4px;" id="timer-label">Tempo restante</div>' +
+      '<div style="height:8px;background:#e8e8e8;border-radius:4px;margin:12px 0;overflow:hidden;"><div id="progress-bar" style="height:100%;width:0%;background:var(--accent);border-radius:4px;transition:width 1s linear;"></div></div></div>';
+  } else {
+    timerHTML = '<div style="text-align:center;padding:1rem 0;">' +
+      '<div id="timer-display" style="font-size:56px;font-weight:300;color:var(--text);letter-spacing:-2px;font-variant-numeric:tabular-nums;">00:00</div>' +
+      '<div style="font-size:12px;color:var(--text3);margin-top:4px;" id="timer-label">Tempo decorrido</div></div>';
+  }
+  el.innerHTML = '<div id="step-gravacao">' + timerHTML +
     '<div style="text-align:center;margin-bottom:1.5rem;">' +
     '<button id="btn-gravar" onclick="toggleGravacao()" style="width:72px;height:72px;border-radius:50%;background:#fff0f0;border:2px solid #f09595;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:28px;transition:all 0.2s;">&#127908;</button>' +
-    '<div id="status-gravacao" style="font-size:12px;color:var(--text3);margin-top:8px;">Clique para iniciar a gravacao</div>' +
-    '</div>' +
+    '<div id="status-gravacao" style="font-size:12px;color:var(--text3);margin-top:8px;">Clique para iniciar a gravacao</div></div>' +
     '<div style="margin-bottom:1rem;"><label style="font-size:12px;font-weight:500;color:var(--text2);">Transcricao:</label>' +
-    '<textarea id="transcricao" style="width:100%;min-height:120px;border:1px solid var(--border);border-radius:8px;padding:10px;font-size:13px;font-family:inherit;resize:vertical;margin-top:6px;" placeholder="A transcricao aparecera aqui durante a gravacao..."></textarea></div>' +
-    '<div style="text-align:center;margin-top:1rem;">' +
-    '<button id="btn-gerar" onclick="gerarProntuario()" style="display:none;padding:12px 24px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;">&#10024; Gerar Prontuario por Topicos</button>' +
-    '</div></div>' +
+    '<textarea id="transcricao" style="width:100%;min-height:120px;border:1px solid var(--border);border-radius:8px;padding:10px;font-size:13px;font-family:inherit;resize:vertical;margin-top:6px;" placeholder="A transcricao aparecera aqui... Voce tambem pode colar texto manualmente."></textarea></div>' +
+    '<div style="text-align:center;margin-top:1rem;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">' +
+    '<button id="btn-gerar" onclick="gerarProntuario()" class="btn btn-primary">&#10024; Gerar Prontuario por Topicos</button></div></div>' +
     '<div id="step-prontuario" style="display:none;"></div>';
 }
 
@@ -113,36 +183,28 @@ function iniciarGravacao() {
       }
       document.getElementById('transcricao').value = transcricaoAcumulada + interim;
     };
-    recognition.onerror = function(e) { document.getElementById('status-gravacao').textContent = 'Erro: ' + e.error; };
-    recognition.onend = function() { if (gravando) recognition.start(); };
+    recognition.onerror = function(e) { document.getElementById('status-gravacao').textContent = 'Erro: ' + e.error + '. Verifique permissao do microfone.'; };
+    recognition.onend = function() { if (gravando) { try { recognition.start(); } catch(er){} } };
     recognition.start();
+  } else {
+    document.getElementById('status-gravacao').textContent = 'Navegador nao suporta reconhecimento de voz. Use Chrome.';
+    gravando = false; return;
   }
-  // Iniciar timer
+  // Timer
   timerInterval = setInterval(function() {
     segundosDecorridos++;
-    var restante = totalSegundos - segundosDecorridos;
-    if (restante < 0) restante = 0;
-    document.getElementById('timer-display').textContent = fmtTempo(restante);
-    var pct = (segundosDecorridos / totalSegundos) * 100;
-    if (pct > 100) pct = 100;
-    document.getElementById('progress-bar').style.width = pct + '%';
-    // Urgencia visual nos ultimos 10 min
-    if (restante <= 600) {
-      document.getElementById('timer-display').style.color = '#e24b4a';
-      document.getElementById('progress-bar').style.background = '#e24b4a';
-    }
-    // Bip 10 min antes
-    if (!bipDado10 && restante <= 600 && restante > 0) {
-      bipDado10 = true;
-      emitirBip(1);
-      document.getElementById('timer-label').textContent = '10 minutos restantes!';
-    }
-    // Bip final (2 bips)
-    if (!bipDadoFinal && restante <= 0) {
-      bipDadoFinal = true;
-      emitirBip(2);
-      document.getElementById('timer-label').textContent = 'Tempo esgotado!';
-      setTimeout(function() { pararGravacao(); }, 1500);
+    if (modoAgenda) {
+      var restante = totalSegundos - segundosDecorridos;
+      if (restante < 0) restante = 0;
+      document.getElementById('timer-display').textContent = fmtTempo(restante);
+      var pct = (segundosDecorridos / totalSegundos) * 100;
+      if (pct > 100) pct = 100;
+      document.getElementById('progress-bar').style.width = pct + '%';
+      if (restante <= 600) { document.getElementById('timer-display').style.color = '#e24b4a'; document.getElementById('progress-bar').style.background = '#e24b4a'; }
+      if (!bipDado10 && restante <= 600 && restante > 0) { bipDado10 = true; emitirBip(1); document.getElementById('timer-label').textContent = '10 minutos restantes!'; }
+      if (!bipDadoFinal && restante <= 0) { bipDadoFinal = true; emitirBip(2); document.getElementById('timer-label').textContent = 'Tempo esgotado!'; setTimeout(function() { pararGravacao(); }, 1500); }
+    } else {
+      document.getElementById('timer-display').textContent = fmtTempo(segundosDecorridos);
     }
   }, 1000);
 }
@@ -156,7 +218,6 @@ function pararGravacao() {
   document.getElementById('btn-gravar').innerHTML = '&#127908;';
   document.getElementById('btn-gravar').style.color = '#e24b4a';
   document.getElementById('status-gravacao').textContent = 'Gravacao encerrada. Edite a transcricao se necessario.';
-  document.getElementById('btn-gerar').style.display = 'inline-block';
   if (!document.getElementById('transcricao').value.trim()) {
     document.getElementById('transcricao').value = transcricaoAcumulada;
   }
@@ -170,13 +231,9 @@ function emitirBip(vezes) {
         setTimeout(function() {
           var osc = ctx.createOscillator();
           var gain = ctx.createGain();
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          osc.frequency.value = 880;
-          osc.type = 'sine';
-          gain.gain.value = 0.3;
-          osc.start(ctx.currentTime);
-          osc.stop(ctx.currentTime + 0.3);
+          osc.connect(gain); gain.connect(ctx.destination);
+          osc.frequency.value = 880; osc.type = 'sine'; gain.gain.value = 0.3;
+          osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.3);
         }, delay);
       })(i * 500);
     }
@@ -185,12 +242,16 @@ function emitirBip(vezes) {
 
 async function gerarProntuario() {
   var transcricao = document.getElementById('transcricao').value.trim();
-  if (!transcricao) { alert('A transcricao esta vazia.'); return; }
-  var topicos = sessionInfo.topicos || topicosPadrao;
+  if (!transcricao) { alert('A transcricao esta vazia. Grave ou cole o texto.'); return; }
+  // Atualizar nome do paciente se modo livre
+  if (!modoAgenda) {
+    var nomeEl = document.getElementById('livre-nome');
+    var tipoEl = document.getElementById('livre-tipo');
+    if (nomeEl) sessionInfo.patientName = nomeEl.value.trim() || 'Paciente';
+    if (tipoEl) sessionInfo.tipoConsulta = tipoEl.value;
+  }
   var btn = document.getElementById('btn-gerar');
-  btn.disabled = true;
-  btn.textContent = 'Analisando...';
-  // Mostrar area de resultado
+  btn.disabled = true; btn.textContent = 'Analisando...';
   var stepPront = document.getElementById('step-prontuario');
   stepPront.style.display = 'block';
   stepPront.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text3);">Gerando prontuario por topicos...</div>';
@@ -198,20 +259,19 @@ async function gerarProntuario() {
     var resp = await fetch(API_URL + '/generate-prontuario', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ transcricao: transcricao, topicos: topicos })
+      body: JSON.stringify({ transcricao: transcricao, topicos: topicosAtuais })
     });
     var data = await resp.json();
     if (data.error) throw new Error(data.error);
     var resultados = data.resultados || [];
-    renderProntuario(resultados, topicos);
+    renderProntuario(resultados);
   } catch(e) {
     stepPront.innerHTML = '<div style="background:var(--red-light);border:1px solid #e8a8a8;border-radius:8px;padding:12px;color:var(--red);">Erro: ' + e.message + '</div>';
-    btn.disabled = false;
-    btn.textContent = '&#10024; Tentar novamente';
+    btn.disabled = false; btn.textContent = '&#10024; Tentar novamente';
   }
 }
 
-function renderProntuario(resultados, topicos) {
+function renderProntuario(resultados) {
   var stepPront = document.getElementById('step-prontuario');
   var html = '<div style="margin-top:1.5rem;"><div style="font-size:14px;font-weight:600;color:var(--accent);margin-bottom:12px;">Prontuario Clinico <span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;background:var(--green-light);color:var(--green);border-radius:6px;padding:2px 8px;margin-left:8px;font-weight:400;">IA</span></div>';
   html += '<div style="display:flex;flex-direction:column;gap:8px;">';
@@ -222,15 +282,21 @@ function renderProntuario(resultados, topicos) {
   });
   html += '</div>';
   html += '<div style="display:flex;gap:8px;margin-top:1.5rem;justify-content:center;flex-wrap:wrap;">';
-  html += '<button onclick="salvarComoHTML()" style="padding:12px 24px;background:var(--green);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;">&#128190; Salvar Prontuario (.html)</button>';
-  html += '<button onclick="copiarTudo()" style="padding:12px 24px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:14px;cursor:pointer;">&#128203; Copiar Texto</button>';
+  html += '<button onclick="salvarComoHTML()" class="btn btn-green">&#128190; Salvar Prontuario (.html)</button>';
+  html += '<button onclick="copiarTudo()" class="btn btn-outline">&#128203; Copiar Texto</button>';
+  html += '<button onclick="gerarNovamente()" class="btn btn-outline">&#128260; Gerar Novamente</button>';
   html += '</div></div>';
   stepPront.innerHTML = html;
 }
 
+function gerarNovamente() {
+  document.getElementById('step-prontuario').style.display = 'none';
+  var btn = document.getElementById('btn-gerar');
+  btn.disabled = false; btn.innerHTML = '&#10024; Gerar Prontuario por Topicos';
+}
+
 function salvarComoHTML() {
   var conteudos = document.querySelectorAll('.prontuario-conteudo');
-  var headers = document.querySelectorAll('#step-prontuario div[style*="border-bottom"] ~ div');
   var topicosEl = document.querySelectorAll('#step-prontuario div[style*="background:#f0efe9"]');
   var corpo = '';
   topicosEl.forEach(function(el, i) {
@@ -239,32 +305,31 @@ function salvarComoHTML() {
   });
   var dataAtual = new Date().toLocaleDateString('pt-BR');
   var horaAtual = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
-  var htmlDoc = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Prontuario - ' + (sessionInfo.patientName||'Paciente') + '</title>' +
+  var nomePac = sessionInfo.patientName || 'Paciente';
+  var htmlDoc = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Prontuario - ' + nomePac + '</title>' +
     '<style>body{font-family:"Segoe UI",sans-serif;max-width:700px;margin:0 auto;padding:30px 20px;color:#333;} ' +
     '.header{border-bottom:2px solid #2d6a8f;padding-bottom:15px;margin-bottom:20px;} ' +
-    '.header h1{font-size:18px;color:#2d6a8f;margin:0;} .header p{font-size:12px;color:#666;margin:4px 0;} ' +
+    '.header h1{font-size:18px;color:#2d6a8f;margin:0;} .header p{font-size:12px;color:#666;margin:4px 0 0;} ' +
     '.info{display:flex;gap:20px;flex-wrap:wrap;background:#f7f6f2;padding:12px;border-radius:8px;margin-bottom:20px;font-size:13px;} ' +
     '.btn-print{display:block;text-align:center;margin-top:30px;} ' +
     '@media print{.btn-print{display:none !important;}}</style></head><body>' +
     '<div class="header"><h1>Prontuario Clinico</h1>' +
     '<p>Sergio Teixeira Monte - Neuropsicologo - CRP 14/05739-9</p></div>' +
-    '<div class="info"><span><strong>Paciente:</strong> ' + (sessionInfo.patientName||'-') + '</span>' +
-    '<span><strong>Tipo:</strong> ' + (sessionInfo.tipoConsulta||'-') + '</span>' +
+    '<div class="info"><span><strong>Paciente:</strong> ' + nomePac + '</span>' +
+    '<span><strong>Tipo:</strong> ' + (sessionInfo.tipoConsulta || 'Livre') + '</span>' +
     '<span><strong>Data:</strong> ' + dataAtual + '</span>' +
-    '<span><strong>Duracao:</strong> ' + (sessionInfo.duracao||60) + ' min</span></div>' +
+    (modoAgenda ? '<span><strong>Duracao:</strong> ' + (sessionInfo.duracao||60) + ' min</span>' : '<span><strong>Duracao real:</strong> ' + fmtTempo(segundosDecorridos) + '</span>') + '</div>' +
     corpo +
     '<div class="btn-print"><button onclick="window.print()" style="padding:10px 20px;background:#2d6a8f;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;">Imprimir / Salvar PDF</button></div>' +
-    '<div style="text-align:center;margin-top:30px;font-size:11px;color:#aaa;">Gerado em ' + dataAtual + ' as ' + horaAtual + ' | SYM Agenda Clinica</div>' +
+    '<div style="text-align:center;margin-top:30px;font-size:11px;color:#aaa;">Gerado em ' + dataAtual + ' as ' + horaAtual + ' | SYM Prontuario IA</div>' +
     '</body></html>';
-  // Disparar download
   var blob = new Blob([htmlDoc], {type: 'text/html;charset=utf-8'});
   var url = URL.createObjectURL(blob);
   var a = document.createElement('a');
-  var nomeArquivo = 'Prontuario_' + (sessionInfo.patientName||'Paciente').replace(/\s+/g,'_') + '_' + new Date().toISOString().split('T')[0] + '.html';
-  a.href = url; a.download = nomeArquivo; a.click();
-  URL.revokeObjectURL(url);
-  // Salvar metadados no servidor
-  salvarMetadados();
+  a.href = url; a.download = 'Prontuario_' + nomePac.replace(/\s+/g,'_') + '_' + new Date().toISOString().split('T')[0] + '.html';
+  a.click(); URL.revokeObjectURL(url);
+  // Se modo agenda, salvar metadados
+  if (modoAgenda) salvarMetadados();
 }
 
 async function salvarMetadados() {
@@ -274,47 +339,24 @@ async function salvarMetadados() {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({
-        email: sessionInfo.email,
-        tipo: 'agenda',
-        sessionId: sessionInfo.sessionId,
-        data: {
-          status: 'finalizado',
-          date: new Date().toISOString(),
-          formData: {
-            nome: sessionInfo.patientName || '',
-            tipoConsulta: sessionInfo.tipoConsulta || '',
-            duracao: parseInt(sessionInfo.duracao) || 60,
-            duracaoReal: Math.floor(segundosDecorridos / 60),
-            horaConsulta: sessionInfo.hora || '',
-            dataConsulta: new Date().toISOString().split('T')[0],
-            pacienteId: sessionInfo.pacienteId || '',
-            obs: sessionInfo.obs || ''
-          }
+        email: sessionInfo.email, tipo: 'agenda', sessionId: sessionInfo.sessionId,
+        data: { status: 'finalizado', date: new Date().toISOString(),
+          formData: { nome: sessionInfo.patientName||'', tipoConsulta: sessionInfo.tipoConsulta||'', duracao: parseInt(sessionInfo.duracao)||60, duracaoReal: Math.floor(segundosDecorridos/60), horaConsulta: sessionInfo.hora||'', dataConsulta: new Date().toISOString().split('T')[0], pacienteId: sessionInfo.pacienteId||'', obs: sessionInfo.obs||'' }
         }
       })
     });
   } catch(e) {}
-  // Mostrar mensagem de sucesso
-  var area = document.getElementById('consulta-area');
-  area.innerHTML += '<div style="background:var(--green-light);border:2px solid var(--green);border-radius:10px;padding:20px;text-align:center;margin-top:1.5rem;">' +
-    '<p style="font-size:1.2em;color:var(--green);font-weight:bold;">&#10004; Prontuario salvo e consulta finalizada!</p>' +
-    '<p style="color:#555;margin-top:8px;">O arquivo .html foi salvo no seu computador.</p>' +
-    '<p style="color:#999;margin-top:5px;font-size:12px;">Voce pode fechar esta pagina.</p></div>';
+  document.getElementById('consulta-area').innerHTML += '<div style="background:var(--green-light);border:2px solid var(--green);border-radius:10px;padding:20px;text-align:center;margin-top:1.5rem;"><p style="font-size:1.2em;color:var(--green);font-weight:bold;">&#10004; Prontuario salvo e consulta finalizada!</p><p style="color:#555;margin-top:8px;">O arquivo .html foi salvo no seu computador.</p></div>';
 }
 
 function copiarTudo() {
   var conteudos = document.querySelectorAll('.prontuario-conteudo');
   var topicosEl = document.querySelectorAll('#step-prontuario div[style*="background:#f0efe9"]');
   var texto = '';
-  topicosEl.forEach(function(el, i) {
-    texto += el.textContent + ':\n' + (conteudos[i] ? conteudos[i].textContent : '') + '\n\n';
-  });
-  navigator.clipboard.writeText(texto).then(function() { alert('Copiado!'); });
+  topicosEl.forEach(function(el, i) { texto += el.textContent + ':\n' + (conteudos[i] ? conteudos[i].textContent : '') + '\n\n'; });
+  navigator.clipboard.writeText(texto).then(function() { alert('Copiado para a area de transferencia!'); });
 }
 
 // Inicializar
-if (decodificarURL()) {
-  renderPacienteInfo();
-  renderConsultaArea();
-}
+init();
 </script>

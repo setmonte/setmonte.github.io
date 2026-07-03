@@ -103,6 +103,7 @@
           <button class="tab-btn hidden" id="tabReabilitacao" onclick="switchTab('reabilitacao')">Reabilitacao</button>
           <button class="tab-btn" id="tabAnamnese" onclick="switchTab('anamnese')">Anamnese</button>
           <button class="tab-btn" id="tabAgenda" onclick="switchTab('agenda')">Agenda</button>
+          <button class="tab-btn" id="tabProntuarioIA" onclick="switchTab('prontuarioIA')">Prontuario IA</button>
           <button class="tab-btn" id="tabPacientes" onclick="switchTab('pacientes')">Pacientes</button>
           <button class="tab-btn hidden" id="tabDepoimentos" onclick="switchTab('depoimentos')">Depoimentos</button>
           <button class="tab-btn hidden" id="tabAdmin" onclick="switchTab('admin')">⚙️ Admin</button>
@@ -575,6 +576,29 @@
               <button class="btn btn-green" style="padding:10px 20px;font-size:13px;" onclick="salvarConsultaAgenda()">Agendar</button>
               <button class="btn btn-orange" style="padding:10px 20px;font-size:13px;" onclick="document.getElementById('novaConsultaSection').classList.add('hidden');">Cancelar</button>
             </div>
+          </div>
+        </div>
+
+        <!-- === ABA PRONTUARIO IA === -->
+        <div id="prontuarioIATab" class="tab-content">
+          <div style="text-align:center;padding:10px 0;">
+            <p style="font-size:15px;color:#2d6a8f;font-weight:bold;">&#128203; Prontuario IA</p>
+            <p style="font-size:12px;color:#555;margin-top:5px;">Grave consultas, anamneses ou observacoes e a IA organiza por topicos.</p>
+          </div>
+          <div style="background:#e8f2f8;border:1px solid #a8cce0;border-radius:10px;padding:20px;margin:10px 0;text-align:center;">
+            <p style="font-size:13px;color:#2d6a8f;margin-bottom:12px;">Abra a ferramenta em uma nova aba para gravar e gerar prontuarios:</p>
+            <button class="btn btn-blue" style="padding:12px 24px;font-size:14px;" onclick="window.open('teste-agenda.html','_blank')">&#127908; Abrir Prontuario IA (Modo Livre)</button>
+            <p style="font-size:11px;color:var(--text3);margin-top:12px;">Voce pode gravar, parar quando quiser, editar topicos e gerar o resumo.<br>O prontuario salva como .html no seu computador.</p>
+          </div>
+          <div style="background:#f9f9f9;border:1px solid #ddd;border-radius:8px;padding:15px;margin:15px 0;">
+            <p style="font-size:13px;font-weight:bold;color:#2d6a8f;margin-bottom:8px;">&#9881; Topicos padrao</p>
+            <p style="font-size:12px;color:#555;margin-bottom:8px;">Os topicos sao salvos no navegador. Edite aqui ou diretamente na pagina de gravacao.</p>
+            <div id="prontuarioTopicosConfig" style="display:flex;flex-direction:column;gap:6px;"></div>
+            <button class="btn btn-blue" style="padding:6px 14px;font-size:12px;margin-top:8px;" onclick="addTopicoProntuarioConfig()">+ Adicionar topico</button>
+            <button class="btn btn-green" style="padding:6px 14px;font-size:12px;margin-top:8px;margin-left:8px;" onclick="salvarTopicosConfig()">Salvar</button>
+          </div>
+          <div style="background:#fff8e1;border:1px solid #f5c842;border-radius:8px;padding:12px;font-size:12px;color:#7a5c00;">
+            <strong>Dica:</strong> Voce tambem pode colar texto diretamente na caixa de transcricao (sem gravar) para resumir anotacoes ou observacoes de consultas passadas.
           </div>
         </div>
 
@@ -1886,6 +1910,7 @@
       document.getElementById('pacientesTab').classList.remove('active');
       document.getElementById('anamneseTab').classList.remove('active');
       document.getElementById('agendaTab').classList.remove('active');
+      document.getElementById('prontuarioIATab').classList.remove('active');
       document.getElementById('depoimentosTab').classList.remove('active');
       document.getElementById('adminTab').classList.remove('active');
       document.getElementById('tabTecfe').classList.remove('active');
@@ -1899,6 +1924,7 @@
       document.getElementById('tabReabilitacao').classList.remove('active');
       document.getElementById('tabAnamnese').classList.remove('active');
       document.getElementById('tabAgenda').classList.remove('active');
+      document.getElementById('tabProntuarioIA').classList.remove('active');
       document.getElementById('tabPacientes').classList.remove('active');
       document.getElementById('tabDepoimentos').classList.remove('active');
       document.getElementById('tabAdmin').classList.remove('active');
@@ -1946,6 +1972,10 @@
         document.getElementById('tabAgenda').classList.add('active');
         loadAgendaConsultas();
         verificarGoogleCalendar();
+      } else if (tab === 'prontuarioIA') {
+        document.getElementById('prontuarioIATab').classList.add('active');
+        document.getElementById('tabProntuarioIA').classList.add('active');
+        renderTopicosConfig();
       } else if (tab === 'pacientes') {
         document.getElementById('pacientesTab').classList.add('active');
         document.getElementById('tabPacientes').classList.add('active');
@@ -2134,6 +2164,36 @@
       var wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'BAE Resultados');
       XLSX.writeFile(wb, 'BAE_resultados_' + new Date().toISOString().slice(0,10) + '.xlsx');
+    }
+
+    // ===== FUNCOES PRONTUARIO IA (config topicos) =====
+    function renderTopicosConfig() {
+      var saved = localStorage.getItem('prontuario_topicos');
+      var topicos = saved ? JSON.parse(saved) : ['Nome completo','Idade e data de nascimento','CPF','Nome do pai','Nome da mae','Queixa principal','Desenvolvimento na infancia','Desenvolvimento na adolescencia','Vida adulta','Historico familiar','Medicamentos em uso','Observacoes adicionais'];
+      var el = document.getElementById('prontuarioTopicosConfig');
+      var html = '';
+      topicos.forEach(function(t, i) {
+        html += '<div style="display:flex;align-items:center;gap:6px;"><input type="text" value="' + t.replace(/"/g,'&quot;') + '" style="flex:1;padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;" data-topico-idx="' + i + '"><button style="padding:4px 8px;border:1px solid #ddd;border-radius:6px;background:transparent;cursor:pointer;color:#c62828;font-size:12px;" onclick="this.parentElement.remove()">&#10005;</button></div>';
+      });
+      el.innerHTML = html;
+    }
+
+    function addTopicoProntuarioConfig() {
+      var el = document.getElementById('prontuarioTopicosConfig');
+      var div = document.createElement('div');
+      div.style = 'display:flex;align-items:center;gap:6px;';
+      div.innerHTML = '<input type="text" value="Novo topico" style="flex:1;padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;"><button style="padding:4px 8px;border:1px solid #ddd;border-radius:6px;background:transparent;cursor:pointer;color:#c62828;font-size:12px;" onclick="this.parentElement.remove()">&#10005;</button>';
+      el.appendChild(div);
+      div.querySelector('input').focus();
+      div.querySelector('input').select();
+    }
+
+    function salvarTopicosConfig() {
+      var inputs = document.querySelectorAll('#prontuarioTopicosConfig input');
+      var topicos = [];
+      inputs.forEach(function(inp) { if (inp.value.trim()) topicos.push(inp.value.trim()); });
+      localStorage.setItem('prontuario_topicos', JSON.stringify(topicos));
+      alert('Topicos salvos! Serao usados na proxima gravacao.');
     }
 
     // ===== FUNCOES AGENDA =====
