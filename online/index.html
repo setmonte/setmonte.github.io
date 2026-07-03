@@ -2378,7 +2378,14 @@
 
     function conectarGoogleCalendar() {
       var authUrl = API_URL + '/google-auth?email=' + encodeURIComponent(currentUser);
-      window.open(authUrl, '_blank', 'width=500,height=600');
+      var popup = window.open(authUrl, '_blank', 'width=500,height=600');
+      // Verificar quando a popup fechar para atualizar o status
+      var checkInterval = setInterval(function() {
+        if (popup && popup.closed) {
+          clearInterval(checkInterval);
+          setTimeout(function() { verificarGoogleCalendar(); }, 1000);
+        }
+      }, 500);
     }
 
     // ===== FUNCOES PACIENTES =====
