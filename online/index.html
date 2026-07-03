@@ -102,6 +102,7 @@
           <button class="tab-btn" id="tabEscalas" onclick="switchTab('escalas')">Escalas</button>
           <button class="tab-btn hidden" id="tabReabilitacao" onclick="switchTab('reabilitacao')">Reabilitacao</button>
           <button class="tab-btn" id="tabAnamnese" onclick="switchTab('anamnese')">Anamnese</button>
+          <button class="tab-btn" id="tabAgenda" onclick="switchTab('agenda')">Agenda</button>
           <button class="tab-btn" id="tabPacientes" onclick="switchTab('pacientes')">Pacientes</button>
           <button class="tab-btn hidden" id="tabDepoimentos" onclick="switchTab('depoimentos')">Depoimentos</button>
           <button class="tab-btn hidden" id="tabAdmin" onclick="switchTab('admin')">⚙️ Admin</button>
@@ -518,6 +519,65 @@
           </div>
         </div>
 
+        <!-- === ABA AGENDA === -->
+        <div id="agendaTab" class="tab-content">
+          <div style="text-align:center;padding:10px 0;">
+            <p style="font-size:15px;color:#2d6a8f;font-weight:bold;">&#128197; Agenda Clinica</p>
+            <p style="font-size:12px;color:#555;margin-top:5px;">Agende consultas, inicie atendimentos e sincronize com Google Calendar.</p>
+          </div>
+          <!-- Botao conectar Google Calendar -->
+          <div id="googleCalStatus" style="background:#e3f2fd;border:1px solid #90caf9;border-radius:8px;padding:12px;margin:10px 0;display:flex;align-items:center;justify-content:space-between;">
+            <span style="font-size:12px;color:#1565c0;" id="googleCalMsg">&#128279; Google Calendar: verificando...</span>
+            <button class="btn btn-blue" style="padding:6px 14px;font-size:12px;" id="btnConectarGoogle" onclick="conectarGoogleCalendar()">Conectar</button>
+          </div>
+          <!-- Mini calendario -->
+          <div style="background:#fff;border:1px solid #ddd;border-radius:10px;padding:15px;margin:10px 0;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+              <button class="btn btn-blue" style="padding:4px 10px;font-size:12px;" onclick="agendaMudarMes(-1)">&#8249;</button>
+              <span id="agendaMesAno" style="font-size:14px;font-weight:bold;color:#2d6a8f;"></span>
+              <button class="btn btn-blue" style="padding:4px 10px;font-size:12px;" onclick="agendaMudarMes(1)">&#8250;</button>
+            </div>
+            <div id="agendaCalGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;font-size:12px;"></div>
+          </div>
+          <!-- Consultas do dia -->
+          <div style="display:flex;align-items:center;justify-content:space-between;margin:15px 0 8px;">
+            <p style="font-size:13px;font-weight:bold;color:#2d6a8f;" id="agendaDiaTitulo">Consultas de hoje</p>
+            <button class="btn btn-green" style="padding:8px 16px;font-size:12px;" onclick="abrirNovaConsulta()">+ Nova Consulta</button>
+          </div>
+          <div id="agendaConsultasDia" style="margin-top:8px;"><p style="color:#777;font-size:12px;">Carregando...</p></div>
+          <!-- Formulario nova consulta -->
+          <div id="novaConsultaSection" class="hidden" style="background:#f0f7fa;border:2px solid #2d6a8f;border-radius:10px;padding:15px;margin:15px 0;">
+            <p style="font-size:13px;font-weight:bold;color:#2d6a8f;margin-bottom:10px;">&#128221; Nova Consulta</p>
+            <label style="font-size:0.85em;color:#555;">Paciente cadastrado:</label>
+            <select id="agendaSelPac" onchange="preencherPaciente('agenda')" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+              <option value="">-- Selecione ou preencha abaixo --</option>
+            </select>
+            <div class="form-row">
+              <label>Nome: <input type="text" id="agendaNome" placeholder="Nome do paciente" style="width:200px;"></label>
+              <label>Data: <input type="date" id="agendaData"></label>
+              <label>Hora: <input type="time" id="agendaHora"></label>
+            </div>
+            <div class="form-row" style="margin-top:8px;">
+              <label>Tipo: <select id="agendaTipo" onchange="agendaAplicarDuracao()" style="width:180px;">
+                <option value="Avaliacao neuropsicologica">Avaliacao neuropsicologica</option>
+                <option value="Retorno">Retorno</option>
+                <option value="Devolutiva">Devolutiva</option>
+                <option value="Sessao de reabilitacao">Sessao de reabilitacao</option>
+                <option value="Consulta inicial">Consulta inicial</option>
+                <option value="Outro">Outro</option>
+              </select></label>
+              <label>Duracao (min): <input type="number" id="agendaDuracao" value="90" min="15" max="240" step="15" style="width:70px;"></label>
+            </div>
+            <div class="form-row" style="margin-top:8px;">
+              <label>Observacoes: <input type="text" id="agendaObs" placeholder="Motivo, queixa..." style="width:300px;"></label>
+            </div>
+            <div style="margin-top:12px;display:flex;gap:8px;">
+              <button class="btn btn-green" style="padding:10px 20px;font-size:13px;" onclick="salvarConsultaAgenda()">Agendar</button>
+              <button class="btn btn-orange" style="padding:10px 20px;font-size:13px;" onclick="document.getElementById('novaConsultaSection').classList.add('hidden');">Cancelar</button>
+            </div>
+          </div>
+        </div>
+
         <!-- === ABA PACIENTES === -->
         <div id="pacientesTab" class="tab-content">
           <div style="text-align:center;padding:10px 0;">
@@ -530,6 +590,10 @@
               <label>Data Nasc: <input type="date" id="pacDN"></label>
               <label>CPF (opcional): <input type="text" id="pacCPF" placeholder="XXX.XXX.XXX-XX" maxlength="14" oninput="maskCPF(this)"></label>
               <label>Sexo: <select id="pacSexo" style="width:120px;"><option value="">--</option><option value="Masculino">Masculino</option><option value="Feminino">Feminino</option></select></label>
+            </div>
+            <div class="form-row" style="margin-top:8px;">
+              <label>Email (opcional): <input type="email" id="pacEmail" placeholder="paciente@email.com" style="width:220px;"></label>
+              <label>WhatsApp (opcional): <input type="tel" id="pacWhats" placeholder="67 9 9999-9999" style="width:160px;"></label>
             </div>
             <button class="btn btn-green" style="margin-top:10px;padding:8px 20px;font-size:13px;" onclick="cadastrarPaciente()">+ Cadastrar Paciente</button>
           </div>
@@ -1821,6 +1885,7 @@
       document.getElementById('reabilitacaoTab').classList.remove('active');
       document.getElementById('pacientesTab').classList.remove('active');
       document.getElementById('anamneseTab').classList.remove('active');
+      document.getElementById('agendaTab').classList.remove('active');
       document.getElementById('depoimentosTab').classList.remove('active');
       document.getElementById('adminTab').classList.remove('active');
       document.getElementById('tabTecfe').classList.remove('active');
@@ -1833,6 +1898,7 @@
       document.getElementById('tabEscalas').classList.remove('active');
       document.getElementById('tabReabilitacao').classList.remove('active');
       document.getElementById('tabAnamnese').classList.remove('active');
+      document.getElementById('tabAgenda').classList.remove('active');
       document.getElementById('tabPacientes').classList.remove('active');
       document.getElementById('tabDepoimentos').classList.remove('active');
       document.getElementById('tabAdmin').classList.remove('active');
@@ -1875,6 +1941,11 @@
         loadAnamneseResults();
         carregarConfigAnamnese();
         carregarSecoesCheckboxes();
+      } else if (tab === 'agenda') {
+        document.getElementById('agendaTab').classList.add('active');
+        document.getElementById('tabAgenda').classList.add('active');
+        loadAgendaConsultas();
+        verificarGoogleCalendar();
       } else if (tab === 'pacientes') {
         document.getElementById('pacientesTab').classList.add('active');
         document.getElementById('tabPacientes').classList.add('active');
@@ -2065,6 +2136,251 @@
       XLSX.writeFile(wb, 'BAE_resultados_' + new Date().toISOString().slice(0,10) + '.xlsx');
     }
 
+    // ===== FUNCOES AGENDA =====
+    var _agendaCache = [];
+    var _agendaMesCal = new Date();
+    var _agendaDiaSel = new Date();
+    var _agendaDuracoes = { 'Avaliacao neuropsicologica': 90, 'Retorno': 45, 'Devolutiva': 60, 'Sessao de reabilitacao': 60, 'Consulta inicial': 60, 'Outro': 60 };
+
+    function agendaAplicarDuracao() {
+      var tipo = document.getElementById('agendaTipo').value;
+      document.getElementById('agendaDuracao').value = _agendaDuracoes[tipo] || 60;
+    }
+
+    function abrirNovaConsulta() {
+      var sec = document.getElementById('novaConsultaSection');
+      sec.classList.toggle('hidden');
+      if (!sec.classList.contains('hidden')) {
+        document.getElementById('agendaData').value = _agendaDiaSel.toISOString().split('T')[0];
+        popularDropdownsPacientes();
+      }
+    }
+
+    async function loadAgendaConsultas() {
+      try {
+        var resp = await fetch(API_URL + '/get-results?email=' + encodeURIComponent(currentUser) + '&tipo=agenda');
+        var data = await resp.json();
+        _agendaCache = (data.results || []).filter(function(r) { return r.tipo === 'agenda'; });
+        _agendaCache.sort(function(a, b) { return (b.date || '').localeCompare(a.date || ''); });
+      } catch(e) { _agendaCache = []; }
+      renderAgendaCalendario();
+      renderAgendaConsultasDia();
+    }
+
+    function renderAgendaCalendario() {
+      var ano = _agendaMesCal.getFullYear(), mes = _agendaMesCal.getMonth();
+      var meses = ['Janeiro','Fevereiro','Marco','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+      document.getElementById('agendaMesAno').textContent = meses[mes] + ' ' + ano;
+      var grid = document.getElementById('agendaCalGrid');
+      grid.innerHTML = '';
+      var diasSem = ['D','S','T','Q','Q','S','S'];
+      diasSem.forEach(function(d) { grid.innerHTML += '<div style="font-weight:bold;color:#888;padding:4px;">' + d + '</div>'; });
+      var primeiro = new Date(ano, mes, 1);
+      var ini = new Date(primeiro); ini.setDate(ini.getDate() - ini.getDay());
+      var hoje = new Date(); hoje.setHours(0,0,0,0);
+      for (var i = 0; i < 42; i++) {
+        var dia = new Date(ini); dia.setDate(ini.getDate() + i);
+        var key = dia.toISOString().split('T')[0];
+        var temConsulta = _agendaCache.some(function(c) { var d = c.data || {}; return (d.formData && d.formData.dataConsulta === key) || (c.date && c.date.startsWith(key)); });
+        var isHoje = dia.getTime() === hoje.getTime();
+        var isSel = dia.toISOString().split('T')[0] === _agendaDiaSel.toISOString().split('T')[0];
+        var isMes = dia.getMonth() === mes;
+        var style = 'padding:6px;border-radius:6px;cursor:pointer;position:relative;';
+        if (!isMes) style += 'opacity:0.3;';
+        if (isHoje) style += 'font-weight:bold;color:#2d6a8f;';
+        if (isSel) style += 'background:#2d6a8f;color:#fff !important;border-radius:50%;';
+        var dot = temConsulta ? '<div style="position:absolute;bottom:2px;left:50%;transform:translateX(-50%);width:5px;height:5px;border-radius:50%;background:' + (isSel ? '#fff' : '#2d6a8f') + ';"></div>' : '';
+        grid.innerHTML += '<div style="' + style + '" onclick="agendaSelecionarDia(\'' + key + '\')">' + dia.getDate() + dot + '</div>';
+      }
+    }
+
+    function agendaSelecionarDia(key) {
+      _agendaDiaSel = new Date(key + 'T12:00:00');
+      renderAgendaCalendario();
+      renderAgendaConsultasDia();
+    }
+
+    function agendaMudarMes(d) {
+      _agendaMesCal.setMonth(_agendaMesCal.getMonth() + d);
+      renderAgendaCalendario();
+    }
+
+    function renderAgendaConsultasDia() {
+      var key = _agendaDiaSel.toISOString().split('T')[0];
+      var meses = ['janeiro','fevereiro','marco','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+      document.getElementById('agendaDiaTitulo').textContent = 'Consultas de ' + _agendaDiaSel.getDate() + ' de ' + meses[_agendaDiaSel.getMonth()];
+      var consultasDia = _agendaCache.filter(function(c) {
+        var d = c.data || {};
+        var fd = d.formData || {};
+        return (fd.dataConsulta === key) || (c.date && c.date.startsWith(key));
+      });
+      var el = document.getElementById('agendaConsultasDia');
+      if (consultasDia.length === 0) {
+        el.innerHTML = '<p style="color:#999;font-size:12px;text-align:center;padding:20px;">Nenhuma consulta neste dia.</p>';
+        return;
+      }
+      consultasDia.sort(function(a, b) { var fa = (a.data||{}).formData||{}; var fb = (b.data||{}).formData||{}; return (fa.horaConsulta||'').localeCompare(fb.horaConsulta||''); });
+      var html = '<table class="results-table"><tr><th>Hora</th><th>Paciente</th><th>Tipo</th><th>Duracao</th><th>Status</th><th>Acoes</th></tr>';
+      consultasDia.forEach(function(c) {
+        var d = c.data || {};
+        var fd = d.formData || {};
+        var status = d.status || 'agendado';
+        var corStatus = status === 'finalizado' ? '#2e7d32' : status === 'cancelado' ? '#c62828' : status === 'confirmado' ? '#1565c0' : '#8a6d00';
+        html += '<tr>';
+        html += '<td style="font-weight:bold;">' + (fd.horaConsulta || '--:--') + '</td>';
+        html += '<td>' + (fd.nome || '-') + '</td>';
+        html += '<td style="font-size:11px;">' + (fd.tipoConsulta || '-') + '</td>';
+        html += '<td>' + (fd.duracao || '-') + ' min</td>';
+        html += '<td><span style="color:' + corStatus + ';font-weight:bold;font-size:11px;text-transform:uppercase;">' + status + '</span></td>';
+        html += '<td style="display:flex;gap:4px;flex-wrap:wrap;">';
+        if (status === 'agendado' || status === 'confirmado') {
+          html += '<button class="btn btn-green" style="padding:3px 8px;font-size:11px;" onclick="iniciarConsultaAgenda(\'' + c.sessionId + '\')">&#9654; Iniciar</button>';
+          html += '<button class="btn btn-blue" style="padding:3px 8px;font-size:11px;" onclick="confirmarConsultaAgenda(\'' + c.sessionId + '\')">&#10003;</button>';
+          html += '<button class="btn btn-red" style="padding:3px 8px;font-size:11px;" onclick="cancelarConsultaAgenda(\'' + c.sessionId + '\')">&#10007;</button>';
+        }
+        if (fd.whatsapp) {
+          html += '<a class="btn btn-green" style="padding:3px 8px;font-size:11px;text-decoration:none;background:#25d366;color:#fff;border-color:#25d366;" href="https://wa.me/55' + fd.whatsapp.replace(/\D/g,'') + '?text=' + encodeURIComponent('Ola! Lembrete da sua consulta em ' + fd.dataConsulta + ' as ' + fd.horaConsulta + '.') + '" target="_blank">&#128172;</a>';
+        }
+        html += '</td></tr>';
+      });
+      html += '</table>';
+      el.innerHTML = html;
+    }
+
+    async function salvarConsultaAgenda() {
+      var nome = document.getElementById('agendaNome').value.trim();
+      var data = document.getElementById('agendaData').value;
+      var hora = document.getElementById('agendaHora').value;
+      var tipo = document.getElementById('agendaTipo').value;
+      var duracao = document.getElementById('agendaDuracao').value;
+      var obs = document.getElementById('agendaObs').value.trim();
+      var pacId = document.getElementById('agendaSelPac').value;
+      if (!nome || !data || !hora) { alert('Preencha nome, data e hora.'); return; }
+      // Buscar dados do paciente selecionado
+      var pacInfo = _pacientesCache.filter(function(p) { return p.id === pacId; })[0];
+      var pacEmail = pacInfo ? (pacInfo.pacienteEmail || '') : '';
+      var pacWhats = pacInfo ? (pacInfo.whatsapp || '') : '';
+      var sessionId = 'agenda-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+      var dadosConsulta = {
+        email: currentUser,
+        tipo: 'agenda',
+        sessionId: sessionId,
+        data: {
+          status: 'agendado',
+          formData: {
+            nome: nome,
+            dataConsulta: data,
+            horaConsulta: hora,
+            tipoConsulta: tipo,
+            duracao: parseInt(duracao),
+            obs: obs,
+            pacienteId: pacId,
+            pacienteEmail: pacEmail,
+            whatsapp: pacWhats
+          }
+        }
+      };
+      try {
+        await fetch(API_URL + '/save-result', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify(dadosConsulta)
+        });
+        // Tentar criar evento no Google Calendar
+        try {
+          var dataHoraISO = data + 'T' + hora + ':00';
+          await fetch(API_URL + '/google-calendar-create', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({
+              email: currentUser,
+              titulo: 'Consulta - ' + nome,
+              descricao: tipo + (obs ? ' | ' + obs : ''),
+              dataHora: dataHoraISO,
+              duracao: parseInt(duracao),
+              pacienteEmail: pacEmail
+            })
+          });
+        } catch(ge) { /* Google Calendar opcional */ }
+        document.getElementById('novaConsultaSection').classList.add('hidden');
+        document.getElementById('agendaNome').value = '';
+        document.getElementById('agendaObs').value = '';
+        loadAgendaConsultas();
+        alert('Consulta agendada com sucesso!');
+      } catch(e) { alert('Erro ao agendar: ' + e.message); }
+    }
+
+    function iniciarConsultaAgenda(sessionId) {
+      var consulta = _agendaCache.filter(function(c) { return c.sessionId === sessionId; })[0];
+      if (!consulta) { alert('Consulta nao encontrada.'); return; }
+      var d = consulta.data || {};
+      var fd = d.formData || {};
+      var sessionData = {
+        email: currentUser,
+        sessionId: sessionId,
+        tipo: 'agenda',
+        patientName: fd.nome,
+        birthDate: fd.dataNasc || '',
+        hora: fd.horaConsulta,
+        duracao: fd.duracao,
+        tipoConsulta: fd.tipoConsulta,
+        obs: fd.obs || '',
+        pacienteId: fd.pacienteId || ''
+      };
+      var params = safeBtoa(JSON.stringify(sessionData));
+      var link = 'https://setmonte.github.io/online/teste-agenda.html?d=' + encodeURIComponent(params);
+      window.open(link, '_blank');
+    }
+
+    async function confirmarConsultaAgenda(sessionId) {
+      try {
+        await fetch(API_URL + '/save-result', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ email: currentUser, tipo: 'agenda', sessionId: sessionId, data: { status: 'confirmado' } })
+        });
+        loadAgendaConsultas();
+      } catch(e) { alert('Erro: ' + e.message); }
+    }
+
+    async function cancelarConsultaAgenda(sessionId) {
+      if (!confirm('Cancelar esta consulta?')) return;
+      try {
+        await fetch(API_URL + '/save-result', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ email: currentUser, tipo: 'agenda', sessionId: sessionId, data: { status: 'cancelado' } })
+        });
+        loadAgendaConsultas();
+      } catch(e) { alert('Erro: ' + e.message); }
+    }
+
+    async function verificarGoogleCalendar() {
+      try {
+        var resp = await fetch(API_URL + '/credits?email=' + encodeURIComponent(currentUser));
+        var data = await resp.json();
+        var msg = document.getElementById('googleCalMsg');
+        var btn = document.getElementById('btnConectarGoogle');
+        if (data.googleTokens) {
+          msg.innerHTML = '&#9989; Google Calendar conectado';
+          msg.style.color = '#2e7d32';
+          btn.textContent = 'Reconectar';
+          btn.style.background = '#e8f5e9';
+          btn.style.color = '#2e7d32';
+          btn.style.borderColor = '#a5d6a7';
+        } else {
+          msg.innerHTML = '&#128279; Google Calendar: nao conectado';
+          msg.style.color = '#1565c0';
+          btn.textContent = 'Conectar';
+        }
+      } catch(e) {}
+    }
+
+    function conectarGoogleCalendar() {
+      var authUrl = API_URL + '/google-auth?email=' + encodeURIComponent(currentUser);
+      window.open(authUrl, '_blank', 'width=500,height=600');
+    }
+
     // ===== FUNCOES PACIENTES =====
     var _pacientesCache = [];
 
@@ -2077,7 +2393,7 @@
         var resp = await fetch(API_URL + '/save-paciente', {
           method: 'POST',
           headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({ email: currentUser, nome: nome, dataNascimento: dn, cpf: document.getElementById('pacCPF').value, sexo: sexo })
+          body: JSON.stringify({ email: currentUser, nome: nome, dataNascimento: dn, cpf: document.getElementById('pacCPF').value, sexo: sexo, pacienteEmail: document.getElementById('pacEmail').value.trim(), whatsapp: document.getElementById('pacWhats').value.trim() })
         });
         var r = await resp.json();
         if (r.ok) {
@@ -2085,6 +2401,8 @@
           document.getElementById('pacDN').value = '';
           document.getElementById('pacCPF').value = '';
           document.getElementById('pacSexo').value = '';
+          document.getElementById('pacEmail').value = '';
+          document.getElementById('pacWhats').value = '';
           loadPacientes();
         } else { alert('Erro: ' + (r.error || 'tente novamente')); }
       } catch(e) { alert('Erro de conexao: ' + e.message); }
@@ -2097,15 +2415,20 @@
         _pacientesCache = data.pacientes || [];
         popularDropdownsPacientes();
         if (_pacientesCache.length > 0) {
-          var html = '<table class="results-table"><tr><th>Nome</th><th>Data Nasc.</th><th>ID</th><th>CPF</th><th>Sexo</th><th>Historico</th><th>Acao</th></tr>';
+          var html = '<table class="results-table"><tr><th>Nome</th><th>Data Nasc.</th><th>ID</th><th>CPF</th><th>Sexo</th><th>Contato</th><th>Historico</th><th>Acao</th></tr>';
           _pacientesCache.forEach(function(p) {
             var idHash = gerarIdPacienteHash(p.nome, p.dataNascimento);
+            var contato = '';
+            if (p.pacienteEmail) contato += '<span title="' + p.pacienteEmail + '" style="cursor:help;">&#128231;</span> ';
+            if (p.whatsapp) contato += '<span title="' + p.whatsapp + '" style="cursor:help;">&#128241;</span>';
+            if (!contato) contato = '-';
             html += '<tr>';
             html += '<td>' + p.nome + '</td>';
             html += '<td>' + (p.dataNascimento || '-') + '</td>';
             html += '<td style="font-size:10px;font-family:monospace;color:#2e7d32;">' + idHash + '</td>';
             html += '<td>' + (p.cpf || '-') + '</td>';
             html += '<td>' + (p.sexo || '-') + '</td>';
+            html += '<td>' + contato + '</td>';
             html += '<td><button class="btn btn-blue" style="padding:4px 10px;font-size:11px;" onclick="verHistoricoPaciente(\'' + p.id + '\',\'' + p.nome.replace(/'/g,'') + '\')">Ver</button></td>';
             html += '<td><button class="btn btn-red" style="padding:4px 10px;font-size:11px;" onclick="deletePaciente(\'' + p.id + '\')">X</button></td>';
             html += '</tr>';
@@ -2477,6 +2800,7 @@
       else if (tipo === 'tref') { campoNome = document.getElementById('trefNome'); campoDN = document.getElementById('trefDn'); campoCPF = null; }
       else if (tipo === 'taav') { campoNome = document.getElementById('taavPatientName'); campoDN = document.getElementById('taavBirthDate'); campoCPF = document.getElementById('taavCpf'); }
       else if (tipo === 'anamnese') { campoNome = document.getElementById('anamneseNome'); campoDN = document.getElementById('anamneseDn'); campoCPF = document.getElementById('anamneseCpf'); }
+      else if (tipo === 'agenda') { campoNome = document.getElementById('agendaNome'); campoDN = null; campoCPF = null; }
       else if (tipo === 'reocupa') { campoNome = document.getElementById('reocupaNome'); campoDN = document.getElementById('reocupaDn'); campoCPF = null; }
       if (campoNome) campoNome.value = opt.dataset.nome || '';
       if (campoDN) campoDN.value = opt.dataset.dn || '';
@@ -2752,6 +3076,10 @@
             else if (tipo === 'tflod') {
               var res = d.resultados || {};
               detalhe = res.ppm ? 'PPM: ' + res.ppm + ' | Erros: ' + (res.erros||0) : 'Status: ' + (d.status||'-');
+            }
+            else if (tipo === 'agenda') {
+              var fd2 = d.formData || {};
+              detalhe = '&#128197; ' + (fd2.tipoConsulta||'Consulta') + ' | ' + (fd2.duracao||'-') + ' min | ' + (d.status||'agendado');
             }
             else { var s=d.stats||{}; detalhe = 'Cat: '+(s.completedCategories||0)+' Erros: '+(s.pctErrors?s.pctErrors.toFixed(1):'0')+'%'; }
             html += '<tr><td>'+date+'</td><td style="text-transform:uppercase;font-weight:bold;">'+tipo+'</td><td>'+detalhe+'</td></tr>';

@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Consulta em Andamento - SYM</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#f7f6f2;--surface:#fff;--border:#e2e0d8;--text:#1c1b18;--text2:#6b6860;--text3:#9c9a94;--accent:#2d6a8f;--accent-light:#e8f2f8;--green:#2d7a4f;--green-light:#e8f5ee;--red:#b83232;--red-light:#fdf0f0;--radius:10px}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
+.app{max-width:800px;margin:0 auto;padding:1.5rem 1rem}
+.header{text-align:center;margin-bottom:1.5rem}
+.header h1{font-size:20px;color:var(--accent);font-weight:600}
+.header p{font-size:12px;color:var(--text3);margin-top:4px}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="header">
+<h1>&#128203; Consulta em Andamento</h1>
+<p>S&#233;rgio Teixeira Monte &#183; Neuropsic&#243;logo &#183; CRP 14/05739-9</p>
+</div>
+<div id="paciente-info"></div>
+<div id="consulta-area"></div>
+</div>
+</body>
+</html>
+
+<script>
+var API_URL = 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
+var sessionInfo = {};
+var gravando = false;
+var timerInterval = null;
+var segundosDecorridos = 0;
+var totalSegundos = 0;
+var bipDado10 = false;
+var bipDadoFinal = false;
+var recognition = null;
+var transcricaoAcumulada = '';
+var topicosPadrao = ['Nome completo','Idade e data de nascimento','CPF','Nome do pai','Nome da mae','Queixa principal','Desenvolvimento na infancia','Desenvolvimento na adolescencia','Vida adulta','Historico familiar','Medicamentos em uso','Observacoes adicionais'];
+
+// Decodificar dados da URL
+function decodificarURL() {
+  var params = new URLSearchParams(window.location.search);
+  var d = params.get('d');
+  if (!d) { document.body.innerHTML = '<div style="text-align:center;padding:60px;"><h2 style="color:#c62828;">Erro: nenhum dado recebido.</h2><p>Acesse esta pagina pelo painel.</p></div>'; return false; }
+  try { sessionInfo = JSON.parse(atob(decodeURIComponent(d))); } catch(e) { try { sessionInfo = JSON.parse(atob(d)); } catch(e2) {} }
+  if (!sessionInfo.email) { document.body.innerHTML = '<div style="text-align:center;padding:60px;"><h2 style="color:#c62828;">Erro ao decodificar dados.</h2></div>'; return false; }
+  return true;
+}
+
+// Renderizar info do paciente
+function renderPacienteInfo() {
+  var el = document.getElementById('paciente-info');
+  el.innerHTML = '<div style="background:var(--accent-light);border:1px solid #a8cce0;border-radius:var(--radius);padding:15px;margin-bottom:1rem;">' +
+    '<div style="display:flex;align-items:center;gap:12px;">' +
+    '<div style="width:48px;height:48px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:bold;">' + iniciais(sessionInfo.patientName || 'P') + '</div>' +
+    '<div><div style="font-size:16px;font-weight:600;">' + (sessionInfo.patientName || 'Paciente') + '</div>' +
+    '<div style="font-size:12px;color:var(--text2);">' + (sessionInfo.tipoConsulta || 'Consulta') + ' &mdash; ' + (sessionInfo.duracao || 60) + ' min</div></div></div></div>';
+}
+
+function iniciais(nome) { return nome.split(' ').map(function(p){return p[0]||'';}).slice(0,2).join('').toUpperCase(); }
+
+// Renderizar area principal
+function renderConsultaArea() {
+  totalSegundos = (parseInt(sessionInfo.duracao) || 60) * 60;
+  var el = document.getElementById('consulta-area');
+  el.innerHTML = '<div id="step-gravacao">' +
+    '<div style="text-align:center;padding:1.5rem 0;">' +
+    '<div id="timer-display" style="font-size:56px;font-weight:300;color:var(--text);letter-spacing:-2px;font-variant-numeric:tabular-nums;">' + fmtTempo(totalSegundos) + '</div>' +
+    '<div style="font-size:12px;color:var(--text3);margin-top:4px;" id="timer-label">Tempo restante</div>' +
+    '<div style="height:8px;background:#e8e8e8;border-radius:4px;margin:12px 0;overflow:hidden;"><div id="progress-bar" style="height:100%;width:0%;background:var(--accent);border-radius:4px;transition:width 1s linear;"></div></div>' +
+    '</div>' +
+    '<div style="text-align:center;margin-bottom:1.5rem;">' +
+    '<button id="btn-gravar" onclick="toggleGravacao()" style="width:72px;height:72px;border-radius:50%;background:#fff0f0;border:2px solid #f09595;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:28px;transition:all 0.2s;">&#127908;</button>' +
+    '<div id="status-gravacao" style="font-size:12px;color:var(--text3);margin-top:8px;">Clique para iniciar a gravacao</div>' +
+    '</div>' +
+    '<div style="margin-bottom:1rem;"><label style="font-size:12px;font-weight:500;color:var(--text2);">Transcricao:</label>' +
+    '<textarea id="transcricao" style="width:100%;min-height:120px;border:1px solid var(--border);border-radius:8px;padding:10px;font-size:13px;font-family:inherit;resize:vertical;margin-top:6px;" placeholder="A transcricao aparecera aqui durante a gravacao..."></textarea></div>' +
+    '<div style="text-align:center;margin-top:1rem;">' +
+    '<button id="btn-gerar" onclick="gerarProntuario()" style="display:none;padding:12px 24px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;">&#10024; Gerar Prontuario por Topicos</button>' +
+    '</div></div>' +
+    '<div id="step-prontuario" style="display:none;"></div>';
+}
+
+function fmtTempo(s) { var m = Math.floor(s / 60); var sec = s % 60; return String(m).padStart(2,'0') + ':' + String(sec).padStart(2,'0'); }
+
+function toggleGravacao() { gravando ? pararGravacao() : iniciarGravacao(); }
+
+function iniciarGravacao() {
+  gravando = true;
+  segundosDecorridos = 0;
+  bipDado10 = false;
+  bipDadoFinal = false;
+  transcricaoAcumulada = '';
+  document.getElementById('btn-gravar').style.background = '#e24b4a';
+  document.getElementById('btn-gravar').style.borderColor = '#e24b4a';
+  document.getElementById('btn-gravar').innerHTML = '&#9632;';
+  document.getElementById('btn-gravar').style.color = '#fff';
+  document.getElementById('status-gravacao').textContent = 'Gravando... clique para parar';
+  // Iniciar Speech Recognition
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (SR) {
+    recognition = new SR();
+    recognition.lang = 'pt-BR';
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.onresult = function(e) {
+      var interim = '';
+      for (var i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) transcricaoAcumulada += e.results[i][0].transcript + ' ';
+        else interim = e.results[i][0].transcript;
+      }
+      document.getElementById('transcricao').value = transcricaoAcumulada + interim;
+    };
+    recognition.onerror = function(e) { document.getElementById('status-gravacao').textContent = 'Erro: ' + e.error; };
+    recognition.onend = function() { if (gravando) recognition.start(); };
+    recognition.start();
+  }
+  // Iniciar timer
+  timerInterval = setInterval(function() {
+    segundosDecorridos++;
+    var restante = totalSegundos - segundosDecorridos;
+    if (restante < 0) restante = 0;
+    document.getElementById('timer-display').textContent = fmtTempo(restante);
+    var pct = (segundosDecorridos / totalSegundos) * 100;
+    if (pct > 100) pct = 100;
+    document.getElementById('progress-bar').style.width = pct + '%';
+    // Urgencia visual nos ultimos 10 min
+    if (restante <= 600) {
+      document.getElementById('timer-display').style.color = '#e24b4a';
+      document.getElementById('progress-bar').style.background = '#e24b4a';
+    }
+    // Bip 10 min antes
+    if (!bipDado10 && restante <= 600 && restante > 0) {
+      bipDado10 = true;
+      emitirBip(1);
+      document.getElementById('timer-label').textContent = '10 minutos restantes!';
+    }
+    // Bip final (2 bips)
+    if (!bipDadoFinal && restante <= 0) {
+      bipDadoFinal = true;
+      emitirBip(2);
+      document.getElementById('timer-label').textContent = 'Tempo esgotado!';
+      setTimeout(function() { pararGravacao(); }, 1500);
+    }
+  }, 1000);
+}
+
+function pararGravacao() {
+  gravando = false;
+  if (recognition) { try { recognition.stop(); } catch(e){} }
+  clearInterval(timerInterval);
+  document.getElementById('btn-gravar').style.background = '#fff0f0';
+  document.getElementById('btn-gravar').style.borderColor = '#f09595';
+  document.getElementById('btn-gravar').innerHTML = '&#127908;';
+  document.getElementById('btn-gravar').style.color = '#e24b4a';
+  document.getElementById('status-gravacao').textContent = 'Gravacao encerrada. Edite a transcricao se necessario.';
+  document.getElementById('btn-gerar').style.display = 'inline-block';
+  if (!document.getElementById('transcricao').value.trim()) {
+    document.getElementById('transcricao').value = transcricaoAcumulada;
+  }
+}
+
+function emitirBip(vezes) {
+  try {
+    var ctx = new (window.AudioContext || window.webkitAudioContext)();
+    for (var i = 0; i < vezes; i++) {
+      (function(delay) {
+        setTimeout(function() {
+          var osc = ctx.createOscillator();
+          var gain = ctx.createGain();
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.frequency.value = 880;
+          osc.type = 'sine';
+          gain.gain.value = 0.3;
+          osc.start(ctx.currentTime);
+          osc.stop(ctx.currentTime + 0.3);
+        }, delay);
+      })(i * 500);
+    }
+  } catch(e) {}
+}
+
+async function gerarProntuario() {
+  var transcricao = document.getElementById('transcricao').value.trim();
+  if (!transcricao) { alert('A transcricao esta vazia.'); return; }
+  var topicos = sessionInfo.topicos || topicosPadrao;
+  var btn = document.getElementById('btn-gerar');
+  btn.disabled = true;
+  btn.textContent = 'Analisando...';
+  // Mostrar area de resultado
+  var stepPront = document.getElementById('step-prontuario');
+  stepPront.style.display = 'block';
+  stepPront.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text3);">Gerando prontuario por topicos...</div>';
+  try {
+    var resp = await fetch(API_URL + '/generate-prontuario', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ transcricao: transcricao, topicos: topicos })
+    });
+    var data = await resp.json();
+    if (data.error) throw new Error(data.error);
+    var resultados = data.resultados || [];
+    renderProntuario(resultados, topicos);
+  } catch(e) {
+    stepPront.innerHTML = '<div style="background:var(--red-light);border:1px solid #e8a8a8;border-radius:8px;padding:12px;color:var(--red);">Erro: ' + e.message + '</div>';
+    btn.disabled = false;
+    btn.textContent = '&#10024; Tentar novamente';
+  }
+}
+
+function renderProntuario(resultados, topicos) {
+  var stepPront = document.getElementById('step-prontuario');
+  var html = '<div style="margin-top:1.5rem;"><div style="font-size:14px;font-weight:600;color:var(--accent);margin-bottom:12px;">Prontuario Clinico <span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;background:var(--green-light);color:var(--green);border-radius:6px;padding:2px 8px;margin-left:8px;font-weight:400;">IA</span></div>';
+  html += '<div style="display:flex;flex-direction:column;gap:8px;">';
+  resultados.forEach(function(r) {
+    html += '<div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;">' +
+      '<div style="background:#f0efe9;padding:7px 12px;font-size:12px;font-weight:500;color:var(--text2);border-bottom:1px solid var(--border);">' + r.topico + '</div>' +
+      '<div contenteditable="true" class="prontuario-conteudo" style="padding:10px 12px;font-size:13px;line-height:1.6;min-height:34px;outline:none;white-space:pre-wrap;">' + (r.conteudo || 'nao mencionado') + '</div></div>';
+  });
+  html += '</div>';
+  html += '<div style="display:flex;gap:8px;margin-top:1.5rem;justify-content:center;flex-wrap:wrap;">';
+  html += '<button onclick="salvarComoHTML()" style="padding:12px 24px;background:var(--green);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;">&#128190; Salvar Prontuario (.html)</button>';
+  html += '<button onclick="copiarTudo()" style="padding:12px 24px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:14px;cursor:pointer;">&#128203; Copiar Texto</button>';
+  html += '</div></div>';
+  stepPront.innerHTML = html;
+}
+
+function salvarComoHTML() {
+  var conteudos = document.querySelectorAll('.prontuario-conteudo');
+  var headers = document.querySelectorAll('#step-prontuario div[style*="border-bottom"] ~ div');
+  var topicosEl = document.querySelectorAll('#step-prontuario div[style*="background:#f0efe9"]');
+  var corpo = '';
+  topicosEl.forEach(function(el, i) {
+    var conteudo = conteudos[i] ? conteudos[i].textContent : '';
+    corpo += '<div style="margin-bottom:15px;"><div style="background:#f0f7fa;padding:8px 12px;border-left:3px solid #2d6a8f;font-weight:600;font-size:13px;color:#2d6a8f;margin-bottom:4px;">' + el.textContent + '</div><div style="padding:4px 12px;font-size:14px;line-height:1.7;color:#333;">' + conteudo + '</div></div>';
+  });
+  var dataAtual = new Date().toLocaleDateString('pt-BR');
+  var horaAtual = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
+  var htmlDoc = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Prontuario - ' + (sessionInfo.patientName||'Paciente') + '</title>' +
+    '<style>body{font-family:"Segoe UI",sans-serif;max-width:700px;margin:0 auto;padding:30px 20px;color:#333;} ' +
+    '.header{border-bottom:2px solid #2d6a8f;padding-bottom:15px;margin-bottom:20px;} ' +
+    '.header h1{font-size:18px;color:#2d6a8f;margin:0;} .header p{font-size:12px;color:#666;margin:4px 0;} ' +
+    '.info{display:flex;gap:20px;flex-wrap:wrap;background:#f7f6f2;padding:12px;border-radius:8px;margin-bottom:20px;font-size:13px;} ' +
+    '.btn-print{display:block;text-align:center;margin-top:30px;} ' +
+    '@media print{.btn-print{display:none !important;}}</style></head><body>' +
+    '<div class="header"><h1>Prontuario Clinico</h1>' +
+    '<p>Sergio Teixeira Monte - Neuropsicologo - CRP 14/05739-9</p></div>' +
+    '<div class="info"><span><strong>Paciente:</strong> ' + (sessionInfo.patientName||'-') + '</span>' +
+    '<span><strong>Tipo:</strong> ' + (sessionInfo.tipoConsulta||'-') + '</span>' +
+    '<span><strong>Data:</strong> ' + dataAtual + '</span>' +
+    '<span><strong>Duracao:</strong> ' + (sessionInfo.duracao||60) + ' min</span></div>' +
+    corpo +
+    '<div class="btn-print"><button onclick="window.print()" style="padding:10px 20px;background:#2d6a8f;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;">Imprimir / Salvar PDF</button></div>' +
+    '<div style="text-align:center;margin-top:30px;font-size:11px;color:#aaa;">Gerado em ' + dataAtual + ' as ' + horaAtual + ' | SYM Agenda Clinica</div>' +
+    '</body></html>';
+  // Disparar download
+  var blob = new Blob([htmlDoc], {type: 'text/html;charset=utf-8'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  var nomeArquivo = 'Prontuario_' + (sessionInfo.patientName||'Paciente').replace(/\s+/g,'_') + '_' + new Date().toISOString().split('T')[0] + '.html';
+  a.href = url; a.download = nomeArquivo; a.click();
+  URL.revokeObjectURL(url);
+  // Salvar metadados no servidor
+  salvarMetadados();
+}
+
+async function salvarMetadados() {
+  if (!sessionInfo.email || !sessionInfo.sessionId) return;
+  try {
+    await fetch(API_URL + '/save-result', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        email: sessionInfo.email,
+        tipo: 'agenda',
+        sessionId: sessionInfo.sessionId,
+        data: {
+          status: 'finalizado',
+          date: new Date().toISOString(),
+          formData: {
+            nome: sessionInfo.patientName || '',
+            tipoConsulta: sessionInfo.tipoConsulta || '',
+            duracao: parseInt(sessionInfo.duracao) || 60,
+            duracaoReal: Math.floor(segundosDecorridos / 60),
+            horaConsulta: sessionInfo.hora || '',
+            dataConsulta: new Date().toISOString().split('T')[0],
+            pacienteId: sessionInfo.pacienteId || '',
+            obs: sessionInfo.obs || ''
+          }
+        }
+      })
+    });
+  } catch(e) {}
+  // Mostrar mensagem de sucesso
+  var area = document.getElementById('consulta-area');
+  area.innerHTML += '<div style="background:var(--green-light);border:2px solid var(--green);border-radius:10px;padding:20px;text-align:center;margin-top:1.5rem;">' +
+    '<p style="font-size:1.2em;color:var(--green);font-weight:bold;">&#10004; Prontuario salvo e consulta finalizada!</p>' +
+    '<p style="color:#555;margin-top:8px;">O arquivo .html foi salvo no seu computador.</p>' +
+    '<p style="color:#999;margin-top:5px;font-size:12px;">Voce pode fechar esta pagina.</p></div>';
+}
+
+function copiarTudo() {
+  var conteudos = document.querySelectorAll('.prontuario-conteudo');
+  var topicosEl = document.querySelectorAll('#step-prontuario div[style*="background:#f0efe9"]');
+  var texto = '';
+  topicosEl.forEach(function(el, i) {
+    texto += el.textContent + ':\n' + (conteudos[i] ? conteudos[i].textContent : '') + '\n\n';
+  });
+  navigator.clipboard.writeText(texto).then(function() { alert('Copiado!'); });
+}
+
+// Inicializar
+if (decodificarURL()) {
+  renderPacienteInfo();
+  renderConsultaArea();
+}
+</script>
