@@ -103,6 +103,7 @@
           <button class="tab-btn hidden" id="tabReabilitacao" onclick="switchTab('reabilitacao')">Reabilitacao</button>
           <button class="tab-btn" id="tabAnamnese" onclick="switchTab('anamnese')">Anamnese</button>
           <button class="tab-btn" id="tabAgenda" onclick="switchTab('agenda')">Agenda</button>
+          <button class="tab-btn" id="tabProntuario" onclick="switchTab('prontuario')">Prontuario</button>
           <button class="tab-btn" id="tabPacientes" onclick="switchTab('pacientes')">Pacientes</button>
           <button class="tab-btn hidden" id="tabDepoimentos" onclick="switchTab('depoimentos')">Depoimentos</button>
           <button class="tab-btn hidden" id="tabAdmin" onclick="switchTab('admin')">⚙️ Admin</button>
@@ -576,21 +577,30 @@
               <button class="btn btn-orange" style="padding:10px 20px;font-size:13px;" onclick="document.getElementById('novaConsultaSection').classList.add('hidden');">Cancelar</button>
             </div>
           </div>
-          <!-- Secao Prontuario IA (dentro da aba Agenda) -->
-          <div style="background:#e8f2f8;border:2px solid #2d6a8f;border-radius:10px;padding:20px;margin:20px 0;text-align:center;">
-            <p style="font-size:14px;font-weight:bold;color:#2d6a8f;margin-bottom:8px;">&#128203; Prontuario — Gravar e Resumir</p>
-            <p style="font-size:12px;color:#555;margin-bottom:12px;">Use para anamneses, observacoes ou qualquer gravacao. A IA organiza por topicos.</p>
-            <button class="btn btn-blue" style="padding:12px 24px;font-size:14px;" onclick="window.open('teste-agenda.html','_blank')">&#127908; Abrir Prontuario (Modo Livre)</button>
+        </div>
+
+        <!-- === ABA PRONTUARIO === -->
+        <div id="prontuarioTab" class="tab-content">
+          <div style="text-align:center;padding:10px 0;">
+            <p style="font-size:15px;color:#2d6a8f;font-weight:bold;">&#128203; Prontuario</p>
+            <p style="font-size:12px;color:#555;margin-top:5px;">Grave consultas, anamneses ou observacoes e a IA organiza por topicos.</p>
           </div>
-          <!-- Config topicos -->
-          <div style="background:#f9f9f9;border:1px solid #ddd;border-radius:8px;padding:15px;margin:10px 0;">
-            <p style="font-size:13px;font-weight:bold;color:#2d6a8f;margin-bottom:8px;">&#9881; Topicos padrao do prontuario</p>
+          <div style="background:#e8f2f8;border:2px solid #2d6a8f;border-radius:10px;padding:20px;margin:10px 0;text-align:center;">
+            <p style="font-size:13px;color:#2d6a8f;margin-bottom:12px;">Abra a ferramenta para gravar e gerar prontuarios:</p>
+            <button class="btn btn-blue" style="padding:12px 24px;font-size:14px;" onclick="window.open('teste-agenda.html','_blank')">&#127908; Abrir Prontuario (Modo Livre)</button>
+            <p style="font-size:11px;color:#888;margin-top:12px;">Grave, pare quando quiser, edite topicos e gere o resumo.<br>O prontuario salva como .html no seu computador.</p>
+          </div>
+          <div style="background:#f9f9f9;border:1px solid #ddd;border-radius:8px;padding:15px;margin:15px 0;">
+            <p style="font-size:13px;font-weight:bold;color:#2d6a8f;margin-bottom:8px;">&#9881; Topicos padrao</p>
             <p style="font-size:12px;color:#555;margin-bottom:8px;">Edite os topicos que a IA vai usar para organizar o resumo.</p>
             <div id="prontuarioTopicosConfig" style="display:flex;flex-direction:column;gap:6px;"></div>
             <div style="margin-top:8px;display:flex;gap:8px;">
               <button class="btn btn-blue" style="padding:6px 14px;font-size:12px;" onclick="addTopicoProntuarioConfig()">+ Adicionar</button>
               <button class="btn btn-green" style="padding:6px 14px;font-size:12px;" onclick="salvarTopicosConfig()">Salvar topicos</button>
             </div>
+          </div>
+          <div style="background:#fff8e1;border:1px solid #f5c842;border-radius:8px;padding:12px;font-size:12px;color:#7a5c00;">
+            <strong>Dica:</strong> Voce tambem pode colar texto diretamente na caixa de transcricao (sem gravar) para resumir anotacoes ou observacoes de consultas passadas.
           </div>
         </div>
 
@@ -1902,6 +1912,7 @@
       document.getElementById('pacientesTab').classList.remove('active');
       document.getElementById('anamneseTab').classList.remove('active');
       document.getElementById('agendaTab').classList.remove('active');
+      document.getElementById('prontuarioTab').classList.remove('active');
       document.getElementById('depoimentosTab').classList.remove('active');
       document.getElementById('adminTab').classList.remove('active');
       document.getElementById('tabTecfe').classList.remove('active');
@@ -1915,6 +1926,7 @@
       document.getElementById('tabReabilitacao').classList.remove('active');
       document.getElementById('tabAnamnese').classList.remove('active');
       document.getElementById('tabAgenda').classList.remove('active');
+      document.getElementById('tabProntuario').classList.remove('active');
       document.getElementById('tabPacientes').classList.remove('active');
       document.getElementById('tabDepoimentos').classList.remove('active');
       document.getElementById('tabAdmin').classList.remove('active');
@@ -1962,6 +1974,9 @@
         document.getElementById('tabAgenda').classList.add('active');
         loadAgendaConsultas();
         verificarGoogleCalendar();
+      } else if (tab === 'prontuario') {
+        document.getElementById('prontuarioTab').classList.add('active');
+        document.getElementById('tabProntuario').classList.add('active');
         renderTopicosConfig();
       } else if (tab === 'pacientes') {
         document.getElementById('pacientesTab').classList.add('active');
