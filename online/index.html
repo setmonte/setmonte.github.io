@@ -106,6 +106,7 @@
           <button class="tab-btn" id="tabAgenda" onclick="switchTab('agenda')">Agenda</button>
           <button class="tab-btn" id="tabProntuario" onclick="switchTab('prontuario')">Prontuario</button>
           <button class="tab-btn" id="tabPacientes" onclick="switchTab('pacientes')">Pacientes</button>
+          <button class="tab-btn hidden" id="tabProgramasOcultos" onclick="switchTab('programasOcultos')">Programas Ocultos</button>
           <button class="tab-btn hidden" id="tabDepoimentos" onclick="switchTab('depoimentos')">Depoimentos</button>
           <button class="tab-btn hidden" id="tabAdmin" onclick="switchTab('admin')">⚙️ Admin</button>
         </div>
@@ -643,6 +644,47 @@
             <p style="font-size:11px;color:#4a9bd9;margin-top:5px;">Link para enviar: <a href="../depoimento/" target="_blank">setmonte.github.io/depoimento/</a></p>
           </div>
           <div id="depoimentosList" style="margin-top:15px;"><p style="color:#777;">Carregando...</p></div>
+        </div>
+
+        <!-- === ABA PROGRAMAS OCULTOS === -->
+        <div id="programasOcultosTab" class="tab-content">
+          <div style="text-align:center;padding:15px 0;">
+            <p style="font-size:15px;color:#6a1b9a;font-weight:bold;">Programas Ocultos — Uso Exclusivo</p>
+            <p style="font-size:12px;color:#555;margin-top:5px;">Programas privativos de uso profissional</p>
+          </div>
+
+          <!-- SUB-ABAS -->
+          <div style="display:flex;gap:0;border-bottom:2px solid #e0e0e0;margin-bottom:15px;">
+            <button id="subTabPfister" onclick="switchProgOcultoSubTab('pfister')" style="flex:1;padding:12px 20px;font-size:13px;font-weight:bold;border:none;border-bottom:3px solid #6a1b9a;background:#f3e5f5;color:#6a1b9a;cursor:pointer;border-radius:8px 8px 0 0;">Pfister</button>
+          </div>
+
+          <!-- CONTEUDO PFISTER -->
+          <div id="subPfisterContent" style="display:block;">
+            <div style="background:#f3e5f5;border:2px solid #6a1b9a;border-radius:10px;padding:20px;margin:10px 0;">
+              <p style="font-size:14px;font-weight:bold;color:#6a1b9a;margin-bottom:8px;">Teste das Piramides Coloridas de Pfister</p>
+              <p style="font-size:12px;color:#555;line-height:1.6;margin-bottom:12px;">Teste projetivo para avaliacao da dinamica emocional e indicadores cognitivos. O paciente preenche piramides com cores de sua preferencia. Analisa frequencia cromatica, sindromes e formula cromatiaca.</p>
+              <div style="background:#fff;border:1px solid #ce93d8;border-radius:8px;padding:12px;margin-bottom:12px;">
+                <label style="font-size:0.85em;color:#555;">Paciente cadastrado:</label>
+                <select id="pfisterSelPac" onchange="preencherPaciente('pfister')" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+                  <option value="">-- Selecione ou preencha abaixo --</option>
+                </select>
+                <label style="font-size:0.85em;color:#555;">Nome:</label>
+                <input type="text" id="pfisterNome" placeholder="Nome completo" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+                <label style="font-size:0.85em;color:#555;">Data de nascimento:</label>
+                <input type="date" id="pfisterDn" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+                <label style="font-size:0.85em;color:#555;">Sexo:</label>
+                <select id="pfisterSexo" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:12px;">
+                  <option value="">Selecione...</option>
+                  <option value="Masculino">Masculino</option>
+                  <option value="Feminino">Feminino</option>
+                </select>
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button onclick="iniciarPfister()" class="btn btn-green" style="flex:1;min-width:120px;padding:12px;font-size:13px;background:#6a1b9a;">Iniciar Aplicacao</button>
+                <button onclick="abrirPfisterDireto()" class="btn btn-blue" style="flex:1;min-width:120px;padding:12px;font-size:13px;">Abrir Direto</button>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- === ABA ADMIN === -->
@@ -1541,6 +1583,7 @@
         document.getElementById('tabDepoimentos').classList.remove('hidden');
         document.getElementById('tabAdmin').classList.remove('hidden');
         document.getElementById('tabReabilitacao').classList.remove('hidden');
+        document.getElementById('tabProgramasOcultos').classList.remove('hidden');
         initFreeModeToggle();
       }
       // Mostrar aba Reabilitacao para profissional autorizada
@@ -1921,6 +1964,7 @@
       document.getElementById('prontuarioTab').classList.remove('active');
       document.getElementById('depoimentosTab').classList.remove('active');
       document.getElementById('adminTab').classList.remove('active');
+      document.getElementById('programasOcultosTab').classList.remove('active');
       document.getElementById('tabTecfe').classList.remove('active');
       document.getElementById('tabBae').classList.remove('active');
       document.getElementById('tabTrmv').classList.remove('active');
@@ -1936,6 +1980,7 @@
       document.getElementById('tabPacientes').classList.remove('active');
       document.getElementById('tabDepoimentos').classList.remove('active');
       document.getElementById('tabAdmin').classList.remove('active');
+      document.getElementById('tabProgramasOcultos').classList.remove('active');
       ['plansSection','newTestSection','resultsSection','baePlansSection','newBaeSection','baeResultsSection','trmvPlansSection','newTrmvSection','trmvResultsSection','taavPlansSection','newTaavSection','taavResultsSection','trefPlansSection','newTrefSection','trefResultsSection','newTflodSection','tflodResultsSection','newCorsiSection','corsiResultsSection'].forEach(function(id) {
         var el = document.getElementById(id); if (el) el.classList.add('hidden');
       });
@@ -1988,6 +2033,10 @@
         document.getElementById('pacientesTab').classList.add('active');
         document.getElementById('tabPacientes').classList.add('active');
         loadPacientes();
+      } else if (tab === 'programasOcultos') {
+        document.getElementById('programasOcultosTab').classList.add('active');
+        document.getElementById('tabProgramasOcultos').classList.add('active');
+        loadPfisterPacientes();
       } else if (tab === 'depoimentos') {
         document.getElementById('depoimentosTab').classList.add('active');
         document.getElementById('tabDepoimentos').classList.add('active');
@@ -2955,7 +3004,7 @@
     }
 
     function popularDropdownsPacientes() {
-      ['baeSelPac','trmvSelPac','taavSelPac','tecfeSelPac','trefSelPac','tflodSelPac','escalaSelPac','anamneseSelPac','reocupaSelPac'].forEach(function(id) {
+      ['baeSelPac','trmvSelPac','taavSelPac','tecfeSelPac','trefSelPac','tflodSelPac','escalaSelPac','anamneseSelPac','reocupaSelPac','pfisterSelPac'].forEach(function(id) {
         var sel = document.getElementById(id);
         if (!sel) return;
         var val = sel.value;
@@ -2986,6 +3035,7 @@
       else if (tipo === 'anamnese') { campoNome = document.getElementById('anamneseNome'); campoDN = document.getElementById('anamneseDn'); campoCPF = document.getElementById('anamneseCpf'); }
       else if (tipo === 'agenda') { campoNome = document.getElementById('agendaNome'); campoDN = null; campoCPF = null; }
       else if (tipo === 'reocupa') { campoNome = document.getElementById('reocupaNome'); campoDN = document.getElementById('reocupaDn'); campoCPF = null; }
+      else if (tipo === 'pfister') { campoNome = document.getElementById('pfisterNome'); campoDN = document.getElementById('pfisterDn'); campoCPF = null; }
       if (campoNome) campoNome.value = opt.dataset.nome || '';
       if (campoDN) campoDN.value = opt.dataset.dn || '';
       if (campoCPF) campoCPF.value = opt.dataset.cpf || '';
@@ -2995,6 +3045,7 @@
       else if (tipo === 'escala') campoSexo = document.getElementById('escalaSexo');
       else if (tipo === 'reocupa') campoSexo = document.getElementById('reocupaSexo');
       else if (tipo === 'corsi') campoSexo = document.getElementById('corsiSexo');
+      else if (tipo === 'pfister') campoSexo = document.getElementById('pfisterSexo');
       if (campoSexo && opt.dataset.sexo) campoSexo.value = opt.dataset.sexo;
     }
 
@@ -3433,6 +3484,37 @@
       doc.setFontSize(6); doc.setTextColor(150,150,150);
       doc.text('Gerado: ' + new Date().toLocaleString('pt-BR') + ' | SYM Online - Centro de Testagem em Neuropsicologia', 15, 205);
       doc.save('Relatorio_' + nome.replace(/\s+/g,'_') + '_' + new Date().toISOString().slice(0,10) + '.pdf');
+    }
+
+    // ===== FUNCOES PROGRAMAS OCULTOS - PFISTER =====
+    function switchProgOcultoSubTab(sub) {
+      // Por enquanto so tem Pfister, mas preparado para futuras sub-abas
+      var pfisterContent = document.getElementById('subPfisterContent');
+      var btnPfister = document.getElementById('subTabPfister');
+      if (sub === 'pfister') {
+        pfisterContent.style.display = 'block';
+        btnPfister.style.background = '#f3e5f5';
+        btnPfister.style.color = '#6a1b9a';
+        btnPfister.style.borderBottom = '3px solid #6a1b9a';
+      }
+    }
+
+    function loadPfisterPacientes() {
+      if (typeof popularDropdownsPacientes === 'function') popularDropdownsPacientes();
+    }
+
+    function iniciarPfister() {
+      var nome = document.getElementById('pfisterNome').value.trim();
+      var dn = document.getElementById('pfisterDn').value;
+      var sexo = document.getElementById('pfisterSexo').value;
+      if (!nome) { alert('Preencha o nome do paciente.'); return; }
+      if (!dn) { alert('Preencha a data de nascimento.'); return; }
+      var params = '?nome=' + encodeURIComponent(nome) + '&dn=' + encodeURIComponent(dn) + '&sexo=' + encodeURIComponent(sexo);
+      window.open('../programas-ocultos/teste-pfister-v2.html' + params, '_blank');
+    }
+
+    function abrirPfisterDireto() {
+      window.open('../programas-ocultos/teste-pfister-v2.html', '_blank');
     }
 
     // ===== FUNCOES SMART - REABILITACAO COM IA =====

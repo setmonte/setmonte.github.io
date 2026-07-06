@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste das Pirâmides Coloridas de Pfister</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f5f5f5; }
+        .page { display: none; min-height: 100vh; padding: 40px 20px; }
+        .page.active { display: block; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; margin-bottom: 30px; text-align: center; }
+        h2 { color: #34495e; margin: 20px 0; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px; }
+        button { background: #3498db; color: white; padding: 12px 30px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin-top: 20px; }
+        button:hover { background: #2980b9; }
+        .instructions { line-height: 1.8; color: #555; margin: 20px 0; }
+        .pyramid { width: 300px; height: 300px; margin: 30px auto; position: relative; }
+        .pyramid-row { display: flex; justify-content: center; margin: 2px 0; }
+        .pyramid-cell { width: 50px; height: 50px; border: 2px solid #333; margin: 1px; cursor: pointer; transition: transform 0.2s; }
+        .pyramid-cell:hover { transform: scale(1.1); }
+        .color-palette { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin: 30px 0; }
+        .color-option { width: 60px; height: 60px; border: 3px solid #333; cursor: pointer; border-radius: 5px; position: relative; }
+        .color-option.selected { border-color: #e74c3c; border-width: 4px; }
+        .color-option .count { position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%); font-size: 12px; font-weight: bold; }
+        .pyramids-container { display: flex; justify-content: space-around; flex-wrap: wrap; }
+        .pyramid-wrapper { margin: 20px; }
+        .pyramid-wrapper h3 { text-align: center; margin-bottom: 10px; }
+        .timer { text-align: center; font-size: 24px; color: #e74c3c; margin: 20px 0; font-weight: bold; }
+        .question-group { margin: 30px 0; padding: 20px; background: #f8f9fa; border-radius: 5px; }
+        .color-grid { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; margin-top: 15px; }
+        .color-choice { width: 60px; height: 60px; border: 3px solid #999; border-radius: 8px; cursor: pointer; transition: all 0.3s; }
+        .color-choice:hover { transform: scale(1.15); box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
+        .color-choice.selected { border: 5px solid #e74c3c; transform: scale(1.2); box-shadow: 0 6px 12px rgba(231,76,60,0.5); }
+        .pyramid-choice { cursor: pointer; transition: all 0.3s; border: 3px solid #999; border-radius: 8px; padding: 15px; background: white; }
+        .pyramid-choice:hover { transform: scale(1.05); box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
+        .pyramid-choice.selected { border: 5px solid #e74c3c; transform: scale(1.1); box-shadow: 0 6px 12px rgba(231,76,60,0.5); }
+        .pyramid-choice h3 { text-align: center; margin-bottom: 10px; color: #2c3e50; }
+        .pyramid-mini { width: 150px; height: 150px; margin: 0 auto; position: relative; }
+        .pyramid-mini .pyramid-row { display: flex; justify-content: center; margin: 1px 0; }
+        .pyramid-mini .pyramid-cell { width: 25px; height: 25px; border: 1px solid #333; margin: 0.5px; }
+    </style>
+</head>
+<body>
+    <!-- Página 1: Formulário de Identificação -->
+    <div class="page active" id="page1">
+        <div class="container">
+            <h1>Teste das Pirâmides Coloridas de Pfister</h1>
+            <h2>Dados de Identificação</h2>
+            <form id="formIdentificacao">
+                <div class="form-group">
+                    <label>Nome Completo:</label>
+                    <input type="text" id="nome" required>
+                </div>
+                <div class="form-group">
+                    <label>Data de Nascimento:</label>
+                    <input type="date" id="dataNascimento" required>
+                </div>
+                <div class="form-group">
+                    <label>Idade Calculada:</label>
+                    <input type="text" id="idadeCalculada" readonly>
+                </div>
+                <div class="form-group">
+                    <label>ID Paciente:</label>
+                    <input type="text" id="idPaciente" readonly style="background:#e8f5e8;font-weight:bold;color:#2e7d32;text-align:center;cursor:default;" placeholder="Preencha nome e nascimento">
+                </div>
+                <div class="form-group">
+                    <label>CPF:</label>
+                    <input type="text" id="cpf" placeholder="000.000.000-00" maxlength="14" required>
+                </div>
+                <div class="form-group">
+                    <label>Escolaridade:</label>
+                    <select id="escolaridade" required>
+                        <option value="">Selecione...</option>
+                        <option value="Não Alfabetizado">Não Alfabetizado</option>
+                        <option value="Jardim de Infância">Jardim de Infância</option>
+                        <option value="Ensino Fundamental Incompleto">Ensino Fundamental Incompleto</option>
+                        <option value="Ensino Fundamental Completo">Ensino Fundamental Completo</option>
+                        <option value="Ensino Médio Incompleto">Ensino Médio Incompleto</option>
+                        <option value="Ensino Médio Completo">Ensino Médio Completo</option>
+                        <option value="Ensino Superior Incompleto">Ensino Superior Incompleto</option>
+                        <option value="Ensino Superior Completo">Ensino Superior Completo</option>
+                        <option value="Pós-Graduação (Especialização)">Pós-Graduação (Especialização)</option>
+                        <option value="Mestrado">Mestrado</option>
+                        <option value="Doutorado">Doutorado</option>
+                        <option value="Pós-Doutorado">Pós-Doutorado</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Nome do Psicólogo Avaliador:</label>
+                    <input type="text" id="psicologo" required>
+                </div>
+                <div class="form-group">
+                    <label>CRP:</label>
+                    <input type="text" id="crp" placeholder="00/00000" required>
+                </div>
+                <button type="submit">Próximo</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Página 2: Instruções -->
+    <div class="page" id="page2">
+        <div class="container">
+            <h1>Instruções do Teste</h1>
+            <div class="instructions">
+                <h2>Teste das Pirâmides Coloridas de Pfister</h2>
+                <p><strong>Objetivo:</strong> Este teste avalia aspectos da dinâmica emocional e cognitiva através da escolha de cores.</p>
+                <h3>Como realizar o teste:</h3>
+                <ol style="margin-left: 20px; line-height: 2;">
+                    <li>Você deverá construir <strong>três pirâmides</strong> utilizando quadrículos coloridos.</li>
+                    <li>Cada pirâmide possui <strong>15 quadrados</strong> distribuídos em 5 níveis:
+                        <ul style="margin-left: 20px;">
+                            <li>Base: 5 quadrados</li>
+                            <li>2º nível: 4 quadrados</li>
+                            <li>3º nível: 3 quadrados</li>
+                            <li>4º nível: 2 quadrados</li>
+                            <li>Topo: 1 quadrado</li>
+                        </ul>
+                    </li>
+                    <li>Você terá à disposição <strong>10 cores</strong> em diferentes tonalidades.</li>
+                    <li><strong>Instrução:</strong> Construa três pirâmides que você ache <strong>bonitas</strong>.</li>
+                    <li>Clique na cor desejada e depois no quadrado da pirâmide onde deseja colocá-la.</li>
+                    <li>Não há resposta certa ou errada. Escolha livremente as cores que preferir.</li>
+                    <li>O tempo de execução será registrado automaticamente.</li>
+                </ol>
+                <p style="margin-top: 30px; font-weight: bold; color: #e74c3c;">
+                    Quando estiver pronto, clique em "Iniciar" para começar o teste.
+                </p>
+            </div>
+            <button onclick="iniciarTeste()">Iniciar Teste</button>
+        </div>
+    </div>
+
+    <!-- Página 3: Teste das Pirâmides -->
+    <div class="page" id="page3">
+        <div class="container">
+            <h1>Construa as Pirâmides</h1>
+            <div class="timer" id="timer">Tempo: 00:00</div>
+            <div id="piramideAtual">
+                <h2 style="text-align: center;">Pirâmide <span id="numeroPiramide">1</span> de 3</h2>
+                <div class="pyramid" id="pyramid"></div>
+            </div>
+            <h3 style="text-align: center; margin-top: 30px;">Selecione uma cor:</h3>
+            <div class="color-palette" id="colorPalette"></div>
+            <div style="text-align: center;">
+                <button onclick="proximaPiramide()" id="btnProxima">Próxima Pirâmide</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Página 4: Perguntas Finais -->
+    <div class="page" id="page4">
+        <div class="container">
+            <h1>Perguntas Finais</h1>
+            <p style="text-align: center; margin-bottom: 30px; color: #555;">Clique nas cores para responder. Escolha pela sua simpatia visual.</p>
+            <form id="formPerguntas">
+                <div class="question-group">
+                    <label style="text-align: center; font-size: 18px; margin-bottom: 20px;">Qual cor você mais gosta em geral?</label>
+                    <div id="coresGrupo1" class="color-grid"></div>
+                    <input type="hidden" id="corMaisGosta" required>
+                </div>
+                <div class="question-group">
+                    <label style="text-align: center; font-size: 18px; margin-bottom: 20px;">Qual cor você menos gosta em geral?</label>
+                    <div id="coresGrupo2" class="color-grid"></div>
+                    <input type="hidden" id="corMenosGosta" required>
+                </div>
+                <div class="question-group">
+                    <label style="text-align: center; font-size: 18px; margin-bottom: 20px;">Qual cor você mais gostou de usar no teste?</label>
+                    <div id="coresGrupo3" class="color-grid"></div>
+                    <input type="hidden" id="corMaisGostouTeste" required>
+                </div>
+                <div class="question-group">
+                    <label style="text-align: center; font-size: 18px; margin-bottom: 20px;">Qual cor você menos gostou de usar no teste?</label>
+                    <div id="coresGrupo4" class="color-grid"></div>
+                    <input type="hidden" id="corMenosGostouTeste" required>
+                </div>
+                <button type="submit">Próximo</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Página 5: Escolha de Pirâmides -->
+    <div class="page" id="page5">
+        <div class="container">
+            <h1>Escolha das Pirâmides</h1>
+            <p style="text-align: center; margin-bottom: 30px; color: #555;">Clique na pirâmide para escolher.</p>
+            <form id="formPiramides">
+                <div class="question-group">
+                    <label style="text-align: center; font-size: 18px; margin-bottom: 20px;">Qual pirâmide você mais gostou?</label>
+                    <div id="piramidesMaisGostou" style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 20px;"></div>
+                    <input type="hidden" id="piramideMaisGostou" required>
+                </div>
+                <div class="question-group">
+                    <label style="text-align: center; font-size: 18px; margin-bottom: 20px;">Qual pirâmide você menos gostou?</label>
+                    <div id="piramisMenosGostou" style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 20px;"></div>
+                    <input type="hidden" id="piramideMenosGostou" required>
+                </div>
+                <button type="submit">Gerar Relatório PDF</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script>
+    // ========== DADOS DO TESTE ==========
+    const dadosTeste = {
+        identificacao: {},
+        piramides: [[], [], []],
+        piramideAtual: 0,
+        corSelecionada: null,
+        tempos: { inicio: null, piramides: [null, null, null], fim: null },
+        respostas: {},
+        contagemCores: {},
+        sequenciaColocacao: [[], [], []],
+        pausas: [[], [], []],
+        mudancasCor: [0, 0, 0],
+        ultimaAcao: null
+    };
+
+    // ========== CORES DO TESTE (PALETA OFICIAL PFISTER) ==========
+    const cores = {
+        'Azul 1': '#C5E8F0', 'Azul 2': '#00A5B5', 'Azul 3': '#0077B6', 'Azul 4': '#1B2A4E',
+        'Vermelho 1': '#FFB3D9', 'Vermelho 2': '#E30613', 'Vermelho 3': '#8B0A1A', 'Vermelho 4': '#4A1A1A',
+        'Verde 1': '#C5D92E', 'Verde 2': '#8BC53F', 'Verde 3': '#00843D', 'Verde 4': '#2C3E2C',
+        'Violeta 1': '#E6D7F0', 'Violeta 2': '#7B1E5C', 'Violeta 3': '#5C4A72',
+        'Laranja 1': '#FF7F32', 'Laranja 2': '#FF3300',
+        'Amarelo 1': '#FFED00', 'Amarelo 2': '#FFA500',
+        'Marrom 1': '#5C3317', 'Marrom 2': '#3E2723',
+        'Preto': '#000000', 'Branco': '#FFFFFF', 'Cinza': '#9E9E9E'
+    };
+
+    Object.keys(cores).forEach(cor => dadosTeste.contagemCores[cor] = 0);
+
+    // ========== ID ÚNICO DO PACIENTE (SΨM) ==========
+    function gerarIdPaciente(nome, nascimento) {
+        if (!nascimento || !nome || nome.trim().length < 1) return null;
+        var n = nome.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z]/g,'').toLowerCase();
+        var prefixo = n.substring(0, 3);
+        var raw = nascimento + '+' + prefixo;
+        var hash = 5381;
+        for (var i = 0; i < raw.length; i++) hash = ((hash << 5) + hash) + raw.charCodeAt(i);
+        return 'P' + Math.abs(hash).toString(36).toUpperCase();
+    }
+
+    function atualizarIdPaciente() {
+        const nome = document.getElementById('nome').value;
+        const nasc = document.getElementById('dataNascimento').value;
+        const idEl = document.getElementById('idPaciente');
+        const id = gerarIdPaciente(nome, nasc);
+        idEl.value = id || '';
+    }
+
+    // ========== PÁGINA 1: FORMULÁRIO ==========
+    document.getElementById('dataNascimento')?.addEventListener('change', calcularIdade);
+    document.getElementById('nome')?.addEventListener('input', atualizarIdPaciente);
+    document.getElementById('cpf')?.addEventListener('input', formatarCPF);
+    document.getElementById('formIdentificacao')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        dadosTeste.identificacao = {
+            nome: document.getElementById('nome').value,
+            dataNascimento: document.getElementById('dataNascimento').value,
+            idade: document.getElementById('idadeCalculada').value,
+            idPaciente: document.getElementById('idPaciente').value,
+            cpf: document.getElementById('cpf').value,
+            escolaridade: document.getElementById('escolaridade').value,
+            psicologo: document.getElementById('psicologo').value,
+            crp: document.getElementById('crp').value
+        };
+        mudarPagina(2);
+    });
+
+    function calcularIdade() {
+        const dataNasc = new Date(document.getElementById('dataNascimento').value);
+        const hoje = new Date();
+        let anos = hoje.getFullYear() - dataNasc.getFullYear();
+        let meses = hoje.getMonth() - dataNasc.getMonth();
+        let dias = hoje.getDate() - dataNasc.getDate();
+        if (dias < 0) { meses--; dias += new Date(hoje.getFullYear(), hoje.getMonth(), 0).getDate(); }
+        if (meses < 0) { anos--; meses += 12; }
+        document.getElementById('idadeCalculada').value = `${anos} anos, ${meses} meses e ${dias} dias`;
+        atualizarIdPaciente();
+    }
+
+    function formatarCPF(e) {
+        let valor = e.target.value.replace(/\D/g, '');
+        valor = valor.replace(/(\d{3})(\d)/, '$1.$2');
+        valor = valor.replace(/(\d{3})(\d)/, '$1.$2');
+        valor = valor.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+        e.target.value = valor;
+    }
+
+    function mudarPagina(numero) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById(`page${numero}`).classList.add('active');
+    }
+
+    // ========== PÁGINA 2: INSTRUÇÕES ==========
+    function iniciarTeste() {
+        dadosTeste.tempos.inicio = new Date();
+        dadosTeste.tempos.piramides[0] = new Date();
+        mudarPagina(3);
+        criarPiramide();
+        criarPaletaCores();
+        iniciarTimer();
+    }
+
+    // ========== PÁGINA 3: TESTE ==========
+    let timerInterval;
+    function iniciarTimer() {
+        timerInterval = setInterval(() => {
+            const agora = new Date();
+            const diff = Math.floor((agora - dadosTeste.tempos.inicio) / 1000);
+            const min = Math.floor(diff / 60).toString().padStart(2, '0');
+            const seg = (diff % 60).toString().padStart(2, '0');
+            document.getElementById('timer').textContent = `Tempo: ${min}:${seg}`;
+        }, 1000);
+    }
+
+    function criarPiramide() {
+        const pyramid = document.getElementById('pyramid');
+        pyramid.innerHTML = '';
+        const niveis = [1, 2, 3, 4, 5];
+        let idxGlobal = 0;
+        niveis.forEach(nivel => {
+            const row = document.createElement('div');
+            row.className = 'pyramid-row';
+            for (let i = 0; i < nivel; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'pyramid-cell';
+                cell.style.backgroundColor = '#f0f0f0';
+                cell.dataset.idx = idxGlobal;
+                cell.onclick = () => preencherCelula(cell);
+                row.appendChild(cell);
+                idxGlobal++;
+            }
+            pyramid.appendChild(row);
+        });
+    }
+
+    function criarPaletaCores() {
+        const palette = document.getElementById('colorPalette');
+        palette.innerHTML = '';
+        Object.entries(cores).forEach(([nome, cor]) => {
+            const div = document.createElement('div');
+            div.className = 'color-option';
+            div.style.backgroundColor = cor;
+            if (cor === '#FFFFFF') div.style.border = '3px solid #333';
+            div.onclick = () => selecionarCor(nome, div);
+            palette.appendChild(div);
+        });
+    }
+
+    function selecionarCor(nome, elemento) {
+        document.querySelectorAll('.color-option').forEach(el => el.classList.remove('selected'));
+        elemento.classList.add('selected');
+        dadosTeste.corSelecionada = nome;
+    }
+
+    function preencherCelula(celula) {
+        if (!dadosTeste.corSelecionada) { alert('Selecione uma cor primeiro!'); return; }
+        const agora = Date.now();
+        if (dadosTeste.ultimaAcao && (agora - dadosTeste.ultimaAcao) > 3000) {
+            const pausa = Math.floor((agora - dadosTeste.ultimaAcao) / 1000);
+            dadosTeste.pausas[dadosTeste.piramideAtual].push(pausa);
+        }
+        dadosTeste.ultimaAcao = agora;
+        const corAnterior = celula.dataset.cor;
+        if (corAnterior) dadosTeste.contagemCores[corAnterior]--;
+        const ultimaEntrada = dadosTeste.sequenciaColocacao[dadosTeste.piramideAtual].slice(-1)[0];
+        const ultimaCor = ultimaEntrada ? (ultimaEntrada.cor || ultimaEntrada) : null;
+        if (ultimaCor && ultimaCor !== dadosTeste.corSelecionada) {
+            dadosTeste.mudancasCor[dadosTeste.piramideAtual]++;
+        }
+        celula.style.backgroundColor = cores[dadosTeste.corSelecionada];
+        celula.dataset.cor = dadosTeste.corSelecionada;
+        celula.dataset.ordem = dadosTeste.sequenciaColocacao[dadosTeste.piramideAtual].length;
+        dadosTeste.contagemCores[dadosTeste.corSelecionada]++;
+        const indiceCelula = parseInt(celula.dataset.idx);
+        dadosTeste.sequenciaColocacao[dadosTeste.piramideAtual].push({ cor: dadosTeste.corSelecionada, posicao: indiceCelula });
+        salvarEstadoPiramide();
+    }
+
+    function salvarEstadoPiramide() {
+        const celulas = document.querySelectorAll('.pyramid-cell');
+        dadosTeste.piramides[dadosTeste.piramideAtual] = Array.from(celulas).map(c => c.dataset.cor || null);
+    }
+
+    function proximaPiramide() {
+        const celulas = document.querySelectorAll('.pyramid-cell');
+        const preenchidas = Array.from(celulas).filter(c => c.dataset.cor).length;
+        if (preenchidas < 15) { alert('Preencha todos os quadrados da pirâmide antes de continuar!'); return; }
+        const agora = new Date();
+        const tempoPiramide = Math.floor((agora - dadosTeste.tempos.piramides[dadosTeste.piramideAtual]) / 1000);
+        dadosTeste.tempos[`piramide${dadosTeste.piramideAtual + 1}`] = tempoPiramide;
+        dadosTeste.piramideAtual++;
+        if (dadosTeste.piramideAtual < 3) {
+            dadosTeste.tempos.piramides[dadosTeste.piramideAtual] = new Date();
+            dadosTeste.ultimaAcao = Date.now();
+            document.getElementById('numeroPiramide').textContent = dadosTeste.piramideAtual + 1;
+            criarPiramide();
+            dadosTeste.corSelecionada = null;
+            document.querySelectorAll('.color-option').forEach(el => el.classList.remove('selected'));
+        } else {
+            clearInterval(timerInterval);
+            dadosTeste.tempos.fim = new Date();
+            prepararPerguntas();
+            mudarPagina(4);
+        }
+    }
+
+    // ========== PÁGINA 4: PERGUNTAS ==========
+    function prepararPerguntas() {
+        const grupos = [
+            { grid: 'coresGrupo1', input: 'corMaisGosta' },
+            { grid: 'coresGrupo2', input: 'corMenosGosta' },
+            { grid: 'coresGrupo3', input: 'corMaisGostouTeste' },
+            { grid: 'coresGrupo4', input: 'corMenosGostouTeste' }
+        ];
+        grupos.forEach(({ grid, input }) => {
+            const gridDiv = document.getElementById(grid);
+            const inputHidden = document.getElementById(input);
+            if (!gridDiv || !inputHidden) return;
+            gridDiv.innerHTML = '';
+            Object.entries(cores).forEach(([nome, cor]) => {
+                const div = document.createElement('div');
+                div.className = 'color-choice';
+                div.style.backgroundColor = cor;
+                if (cor === '#FFFFFF') div.style.border = '3px solid #333';
+                div.dataset.corNome = nome;
+                div.onclick = function() {
+                    gridDiv.querySelectorAll('.color-choice').forEach(el => el.classList.remove('selected'));
+                    this.classList.add('selected');
+                    inputHidden.value = nome;
+                };
+                gridDiv.appendChild(div);
+            });
+        });
+    }
+
+    document.getElementById('formPerguntas')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const corMaisGosta = document.getElementById('corMaisGosta').value;
+        const corMenosGosta = document.getElementById('corMenosGosta').value;
+        const corMaisGostouTeste = document.getElementById('corMaisGostouTeste').value;
+        const corMenosGostouTeste = document.getElementById('corMenosGostouTeste').value;
+        if (!corMaisGosta || !corMenosGosta || !corMaisGostouTeste || !corMenosGostouTeste) {
+            alert('Por favor, responda todas as perguntas clicando nas cores!');
+            return;
+        }
+        dadosTeste.respostas = { corMaisGosta, corMenosGosta, corMaisGostouTeste, corMenosGostouTeste };
+        prepararEscolhaPiramides();
+        mudarPagina(5);
+    });
+
+    function prepararEscolhaPiramides() {
+        const divMaisGostou = document.getElementById('piramidesMaisGostou');
+        const divMenosGostou = document.getElementById('piramisMenosGostou');
+        [divMaisGostou, divMenosGostou].forEach((div, idx) => {
+            div.innerHTML = '';
+            const inputId = idx === 0 ? 'piramideMaisGostou' : 'piramideMenosGostou';
+            for (let i = 0; i < 3; i++) {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'pyramid-choice';
+                wrapper.onclick = function() {
+                    div.querySelectorAll('.pyramid-choice').forEach(el => el.classList.remove('selected'));
+                    this.classList.add('selected');
+                    document.getElementById(inputId).value = i + 1;
+                };
+                const titulo = document.createElement('h3');
+                titulo.textContent = `Pirâmide ${i + 1}`;
+                wrapper.appendChild(titulo);
+                const pyramidDiv = document.createElement('div');
+                pyramidDiv.className = 'pyramid-mini';
+                const niveis = [1, 2, 3, 4, 5];
+                let celIdx = 0;
+                niveis.forEach(nivel => {
+                    const row = document.createElement('div');
+                    row.className = 'pyramid-row';
+                    for (let j = 0; j < nivel; j++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'pyramid-cell';
+                        const cor = dadosTeste.piramides[i][celIdx];
+                        if (cor && cores[cor]) cell.style.backgroundColor = cores[cor];
+                        else cell.style.backgroundColor = '#f0f0f0';
+                        row.appendChild(cell);
+                        celIdx++;
+                    }
+                    pyramidDiv.appendChild(row);
+                });
+                wrapper.appendChild(pyramidDiv);
+                div.appendChild(wrapper);
+            }
+        });
+    }
+
+    document.getElementById('formPiramides')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const piramideMaisGostou = document.getElementById('piramideMaisGostou').value;
+        const piramideMenosGostou = document.getElementById('piramideMenosGostou').value;
+        if (!piramideMaisGostou || !piramideMenosGostou) {
+            alert('Por favor, escolha as pirâmides clicando nelas!');
+            return;
+        }
+        dadosTeste.respostas.piramideMaisGostou = piramideMaisGostou;
+        dadosTeste.respostas.piramideMenosGostou = piramideMenosGostou;
+        gerarPDF();
+    });
+
+    // ========== FUNÇÕES DE ANÁLISE ==========
+    function analisarAspectoFormal(piramide) {
+        const aspectos = [];
+        const niveis = [[piramide[0]], [piramide[1], piramide[2]], [piramide[3], piramide[4], piramide[5]], [piramide[6], piramide[7], piramide[8], piramide[9]], [piramide[10], piramide[11], piramide[12], piramide[13], piramide[14]]];
+        const basePreenchida = niveis[4].filter(c => c).length === 5;
+        const topoVazio = !niveis[0][0];
+        const nivel2Vazio = niveis[1].filter(c => c).length < 2;
+        if (basePreenchida && (topoVazio || nivel2Vazio)) aspectos.push('TAPETE - Construção horizontal/achatada. Indica dificuldade de elaboração, pensamento concreto.');
+        const vaziosBase = niveis[4].filter(c => !c).length;
+        if (vaziosBase > 0 && !topoVazio) aspectos.push('TAPETE FURADO - Espaços vazios na base. Indica falhas na elaboração, possível desorganização.');
+        if (topoVazio && niveis[1].filter(c => c).length > 0) aspectos.push('PIRÂMIDE DECEPADA - Sem vértice. Indica dificuldade de finalização, falta de objetivos claros.');
+        const simetriaNivel2 = niveis[1][0] === niveis[1][1];
+        const simetriaNivel4 = niveis[3][0] === niveis[3][3] && niveis[3][1] === niveis[3][2];
+        const simetricaBase = niveis[4][0] === niveis[4][4] && niveis[4][1] === niveis[4][3];
+        if (simetriaNivel2 && simetriaNivel4 && simetricaBase) aspectos.push('FORMAÇÃO SIMÉTRICA - Organização equilibrada, busca de harmonia.');
+        else aspectos.push('FORMAÇÃO ASSIMÉTRICA - Espontaneidade, menor rigidez.');
+        const camadasDefinidas = niveis.every((nivel, idx) => { if (idx === 0) return true; const coresNivel = nivel.filter(c => c); return coresNivel.length === 0 || coresNivel.every(c => c === coresNivel[0]); });
+        if (camadasDefinidas) aspectos.push('CAMADAS BEM DEFINIDAS - Organização, planejamento, controle.');
+        const coresUnicas = [...new Set(piramide.filter(c => c))].length;
+        if (coresUnicas > 2) { let rupturas = 0; for (let i = 0; i < piramide.length - 1; i++) { if (piramide[i] && piramide[i + 1] && piramide[i] !== piramide[i + 1]) rupturas++; } if (rupturas > 10) aspectos.push('TAPETE RASGADO - Muitas rupturas cromáticas. Indica possível dissociação, conflitos graves.'); }
+        return aspectos.length > 0 ? aspectos : ['Formação adequada sem aspectos formais patológicos evidentes.'];
+    }
+
+    function analisarModoColocacao(sequencia) {
+        if (sequencia.length < 15) return 'Dados insuficientes';
+        let sequenciasIguais = 0;
+        for (let i = 0; i < sequencia.length - 1; i++) { const corAtual = sequencia[i].cor || sequencia[i]; const corProx = sequencia[i+1].cor || sequencia[i+1]; if (corAtual === corProx) sequenciasIguais++; }
+        if (sequenciasIguais > 8) return 'POR CAMADAS - Metódico, organizado, planejamento prévio.';
+        else if (sequenciasIguais < 3) return 'MOSAICO - Alternância constante, criatividade, possível impulsividade.';
+        else return 'MISTO - Combinação de estratégias, flexibilidade.';
+    }
+
+    function analisarDirecao(sequencia) {
+        if (sequencia.length < 3) return 'Dados insuficientes';
+        function getNivel(posicao) {
+            if (posicao === 0) return 0;
+            if (posicao <= 2) return 1;
+            if (posicao <= 5) return 2;
+            if (posicao <= 9) return 3;
+            return 4;
+        }
+        let cimaParaBaixo = 0, baixoParaCima = 0;
+        for (let i = 0; i < sequencia.length - 1; i++) {
+            const posAtual = sequencia[i].posicao !== undefined ? sequencia[i].posicao : i;
+            const posProx = sequencia[i+1].posicao !== undefined ? sequencia[i+1].posicao : i+1;
+            const nivelAtual = getNivel(posAtual);
+            const nivelProximo = getNivel(posProx);
+            if (nivelProximo > nivelAtual) cimaParaBaixo++;
+            else if (nivelProximo < nivelAtual) baixoParaCima++;
+        }
+        if (cimaParaBaixo > baixoParaCima * 2) return 'Cima para baixo (descendente)';
+        if (baixoParaCima > cimaParaBaixo * 2) return 'Baixo para cima (ascendente)';
+        return 'Misto/Aleatório';
+    }
+
+    function analisarModoExecucao(tempo, pausas, mudancas) {
+        const aspectos = [];
+        if (tempo < 60) aspectos.push('EXECUÇÃO RÁPIDA - Impulsividade, pouca reflexão.');
+        else if (tempo > 180) aspectos.push('EXECUÇÃO LENTA - Reflexão excessiva, dúvida, possível ansiedade.');
+        else aspectos.push('TEMPO ADEQUADO - Equilíbrio entre reflexão e ação.');
+        if (pausas.length > 3) aspectos.push(`HESITAÇÕES (${pausas.length} pausas) - Dúvida, conflito na escolha.`);
+        if (mudancas > 10) aspectos.push('MUITAS MUDANÇAS DE COR - Instabilidade, dificuldade de manter escolha.');
+        else if (mudancas < 3) aspectos.push('POUCAS MUDANÇAS - Persistência, possível rigidez.');
+        return aspectos;
+    }
+
+    function analisarSequencial() {
+        const aspectos = [];
+        const formulas = dadosTeste.piramides.map(p => { const contagem = {}; p.forEach(cor => { if (cor) contagem[cor] = (contagem[cor] || 0) + 1; }); return contagem; });
+        const amplitudes = formulas.map(f => Object.keys(f).length);
+        aspectos.push(`AMPLITUDE CROMÁTICA: P1=${amplitudes[0]}, P2=${amplitudes[1]}, P3=${amplitudes[2]} cores`);
+        if (amplitudes[2] > amplitudes[0] + 3) aspectos.push('EXPANSÃO PROGRESSIVA - Aumento de cores. Indica maior espontaneidade no inconsciente.');
+        else if (amplitudes[2] < amplitudes[0] - 3) aspectos.push('CONSTRIÇÃO PROGRESSIVA - Redução de cores. Indica maior controle/inibição no inconsciente.');
+        else aspectos.push('AMPLITUDE ESTÁVEL - Consistência nas escolhas cromáticas.');
+        return aspectos;
+    }
+
+    function analisarMaturacional(idadeStr) {
+        const aspectos = [];
+        const match = idadeStr.match(/(\d+)\s*anos/);
+        if (!match) return ['Idade não identificada para análise maturacional.'];
+        const anos = parseInt(match[1]);
+        if (anos < 6) { aspectos.push('FAIXA ETÁRIA: Pré-escolar', 'ESPERADO: Uso de cores primárias, pouca organização formal, predomínio de vermelho e amarelo.'); }
+        else if (anos >= 6 && anos <= 11) { aspectos.push('FAIXA ETÁRIA: Escolar', 'ESPERADO: Aumento progressivo de azul e verde, maior organização, redução de vermelho.'); }
+        else if (anos >= 12 && anos <= 17) { aspectos.push('FAIXA ETÁRIA: Adolescente', 'ESPERADO: Instabilidade cromática, aumento de violeta, busca de identidade nas cores.'); }
+        else if (anos >= 18 && anos <= 25) { aspectos.push('FAIXA ETÁRIA: Adulto jovem', 'ESPERADO: Estabilização cromática, equilíbrio azul-vermelho, uso moderado de verde.'); }
+        else if (anos >= 26 && anos <= 59) { aspectos.push('FAIXA ETÁRIA: Adulto', 'ESPERADO: Estabilidade cromática, preferência por azul e verde, menor uso de cores acromáticas.'); }
+        else if (anos >= 60) { aspectos.push('FAIXA ETÁRIA: Idoso', 'ESPERADO: Menor uso de azul e cores acromáticas, maior uso de vermelho, amarelo e marrom (conforme normas para idosos).'); }
+        return aspectos;
+    }
+
+    function gerarInterpretacaoResumida(contagem) {
+        const vermelho = Object.entries(contagem).filter(([c]) => c.includes('Vermelho')).reduce((s, [_, v]) => s + v, 0);
+        const azul = Object.entries(contagem).filter(([c]) => c.includes('Azul')).reduce((s, [_, v]) => s + v, 0);
+        const verde = Object.entries(contagem).filter(([c]) => c.includes('Verde')).reduce((s, [_, v]) => s + v, 0);
+        const violeta = Object.entries(contagem).filter(([c]) => c.includes('Violeta')).reduce((s, [_, v]) => s + v, 0);
+        const marrom = Object.entries(contagem).filter(([c]) => c.includes('Marrom')).reduce((s, [_, v]) => s + v, 0);
+        const amarelo = Object.entries(contagem).filter(([c]) => c.includes('Amarelo')).reduce((s, [_, v]) => s + v, 0);
+        const laranja = Object.entries(contagem).filter(([c]) => c.includes('Laranja')).reduce((s, [_, v]) => s + v, 0);
+        const preto = contagem['Preto'] || 0, branco = contagem['Branco'] || 0, cinza = contagem['Cinza'] || 0;
+        let texto = 'Interpretação: ';
+        if (vermelho >= 5) texto += `Alta energia/impulsos (Vermelho: ${vermelho}). `;
+        else if (vermelho > 0) texto += `Energia moderada (Vermelho: ${vermelho}). `;
+        if (azul >= 5) texto += `Forte controle racional (Azul: ${azul}). `;
+        else if (azul > 0) texto += `Controle moderado (Azul: ${azul}). `;
+        if (amarelo >= 5) texto += `Busca de expansão (Amarelo: ${amarelo}). `;
+        if (laranja >= 3) texto += `Ambição/produtividade (Laranja: ${laranja}). `;
+        if (vermelho > azul + 3) texto += 'Predomínio de impulsos sobre controle. ';
+        else if (azul > vermelho + 3) texto += 'Predomínio de controle sobre impulsos. ';
+        else if (vermelho > 0 && azul > 0) texto += 'Equilíbrio impulso/controle. ';
+        if (verde >= 4) texto += `Boa adaptação (Verde: ${verde}). `;
+        if (violeta >= 3) texto += `Ansiedade/tensão (Violeta: ${violeta}). `;
+        if (marrom >= 2) texto += `Desconforto manifesto (Marrom: ${marrom}). `;
+        if (preto + branco + cinza >= 3) texto += `Mecanismos defensivos (Acromáticas: ${preto + branco + cinza}). `;
+        return texto.trim() || 'Padrão equilibrado de escolhas cromáticas.';
+    }
+
+    function calcularSindromes() {
+        const total = 45;
+        const vermelho = Object.entries(dadosTeste.contagemCores).filter(([c]) => c.includes('Vermelho')).reduce((s, [_, v]) => s + v, 0);
+        const verde = Object.entries(dadosTeste.contagemCores).filter(([c]) => c.includes('Verde')).reduce((s, [_, v]) => s + v, 0);
+        const azul = Object.entries(dadosTeste.contagemCores).filter(([c]) => c.includes('Azul')).reduce((s, [_, v]) => s + v, 0);
+        const violeta = Object.entries(dadosTeste.contagemCores).filter(([c]) => c.includes('Violeta')).reduce((s, [_, v]) => s + v, 0);
+        const amarelo = Object.entries(dadosTeste.contagemCores).filter(([c]) => c.includes('Amarelo')).reduce((s, [_, v]) => s + v, 0);
+        const laranja = Object.entries(dadosTeste.contagemCores).filter(([c]) => c.includes('Laranja')).reduce((s, [_, v]) => s + v, 0);
+        const marrom = Object.entries(dadosTeste.contagemCores).filter(([c]) => c.includes('Marrom')).reduce((s, [_, v]) => s + v, 0);
+        const preto = dadosTeste.contagemCores['Preto'] || 0, branco = dadosTeste.contagemCores['Branco'] || 0, cinza = dadosTeste.contagemCores['Cinza'] || 0;
+        return {
+            'Síndrome Normal (Verde + Vermelho + Violeta)': ((verde + vermelho + violeta) / total) * 100,
+            'Síndrome Estímulo (Vermelho + Laranja + Amarelo)': ((vermelho + laranja + amarelo) / total) * 100,
+            'Síndrome Fria (Azul + Verde + Violeta)': ((azul + verde + violeta) / total) * 100,
+            'Síndrome Incolor (Branco + Preto + Cinza)': ((branco + preto + cinza) / total) * 100,
+            'Síndrome Dinamismo (Vermelho + Laranja + Amarelo + Marrom)': ((vermelho + laranja + amarelo + marrom) / total) * 100
+        };
+    }
+
+    function desenharPiramidePDF(doc, piramide, x, y) {
+        const tamanho = 8, niveis = [1, 2, 3, 4, 5];
+        let idx = 0;
+        niveis.forEach((nivel, nIdx) => {
+            const offsetX = x - (nivel * tamanho / 2);
+            for (let i = 0; i < nivel; i++) {
+                const cor = piramide[idx];
+                if (cor && cores[cor]) { doc.setFillColor(cores[cor]); doc.rect(offsetX + (i * tamanho), y + (nIdx * tamanho), tamanho, tamanho, 'FD'); }
+                doc.rect(offsetX + (i * tamanho), y + (nIdx * tamanho), tamanho, tamanho, 'S');
+                idx++;
+            }
+        });
+    }
+
+    // ========== GERAR PDF ==========
+    async function gerarPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        const agora = new Date();
+        const timestamp = agora.getFullYear() + String(agora.getMonth() + 1).padStart(2, '0') + String(agora.getDate()).padStart(2, '0') + String(agora.getHours()).padStart(2, '0') + String(agora.getMinutes()).padStart(2, '0');
+        const nomeArquivo = `PfisterEltr_${dadosTeste.identificacao.nome.replace(/\s+/g, '_')}_${timestamp}.pdf`;
+        
+        // Página 1: Identificação
+        doc.setFontSize(18); doc.text('TESTE DAS PIRÂMIDES COLORIDAS DE PFISTER', 105, 20, { align: 'center' });
+        doc.setFontSize(14); doc.text('DADOS DE IDENTIFICAÇÃO', 20, 40);
+        doc.setFontSize(11);
+        let y = 55;
+        doc.text(`Nome: ${dadosTeste.identificacao.nome}`, 20, y);
+        doc.text(`Data de Nascimento: ${new Date(dadosTeste.identificacao.dataNascimento).toLocaleDateString('pt-BR')}`, 20, y += 7);
+        doc.text(`Idade: ${dadosTeste.identificacao.idade}`, 20, y += 7);
+        doc.text(`ID Paciente: ${dadosTeste.identificacao.idPaciente || 'N/A'}`, 20, y += 7);
+        doc.text(`CPF: ${dadosTeste.identificacao.cpf}`, 20, y += 7);
+        doc.text(`Escolaridade: ${dadosTeste.identificacao.escolaridade}`, 20, y += 7);
+        doc.text(`Psicólogo: ${dadosTeste.identificacao.psicologo}`, 20, y += 7);
+        doc.text(`CRP: ${dadosTeste.identificacao.crp}`, 20, y += 7);
+        doc.text(`Data da Avaliação: ${agora.toLocaleDateString('pt-BR')} às ${agora.toLocaleTimeString('pt-BR')}`, 20, y += 7);
+        
+        const tempoTotal = Math.floor((dadosTeste.tempos.fim - dadosTeste.tempos.inicio) / 1000);
+        doc.setFontSize(14); doc.text('TEMPOS DE EXECUÇÃO', 20, y += 14);
+        doc.setFontSize(11);
+        doc.text(`Tempo Total: ${Math.floor(tempoTotal / 60)}min ${tempoTotal % 60}s`, 20, y += 8);
+        doc.text(`Pirâmide 1: ${Math.floor(dadosTeste.tempos.piramide1 / 60)}min ${dadosTeste.tempos.piramide1 % 60}s`, 20, y += 6);
+        doc.text(`Pirâmide 2: ${Math.floor(dadosTeste.tempos.piramide2 / 60)}min ${dadosTeste.tempos.piramide2 % 60}s`, 20, y += 6);
+        doc.text(`Pirâmide 3: ${Math.floor(dadosTeste.tempos.piramide3 / 60)}min ${dadosTeste.tempos.piramide3 % 60}s`, 20, y += 6);
+        
+        // Página 2: Análise das pirâmides
+        doc.addPage(); doc.setFontSize(14); doc.text('ANÁLISE DAS PIRÂMIDES', 105, 15, { align: 'center' });
+        const espacamentoPiramides = 85;
+        for (let i = 0; i < 3; i++) {
+            y = 25 + (i * espacamentoPiramides);
+            doc.setFontSize(12); doc.setFont(undefined, 'bold'); doc.text(`PIRÂMIDE ${i + 1}`, 20, y); doc.setFont(undefined, 'normal');
+            desenharPiramidePDF(doc, dadosTeste.piramides[i], 175, y + 5);
+            const contagem = {};
+            dadosTeste.piramides[i].forEach(cor => { if (cor) contagem[cor] = (contagem[cor] || 0) + 1; });
+            doc.setFontSize(9);
+            let yLocal = y + 8;
+            const linhasCores = [];
+            Object.entries(contagem).sort((a, b) => b[1] - a[1]).forEach(([cor, qtd]) => { linhasCores.push(`${cor}: ${qtd} (${((qtd / 15) * 100).toFixed(1)}%)`); });
+            linhasCores.forEach(linha => { const partes = doc.splitTextToSize(linha, 110); partes.forEach(p => { doc.text(p, 20, yLocal); yLocal += 4; }); });
+            const ordenadas = Object.entries(contagem).sort((a, b) => b[1] - a[1]);
+            const maxQtd = ordenadas[0][1], minQtd = ordenadas[ordenadas.length - 1][1];
+            const maisUsadas = ordenadas.filter(([_, qtd]) => qtd === maxQtd).map(([cor]) => cor);
+            const menosUsadas = ordenadas.filter(([_, qtd]) => qtd === minQtd).map(([cor]) => cor);
+            doc.setFont(undefined, 'bold');
+            doc.text(`Mais usada: ${maisUsadas.join(', ')} (${maxQtd}x)`, 20, yLocal += 6);
+            doc.text(`Menos usada: ${menosUsadas.join(', ')} (${minQtd}x)`, 20, yLocal += 5);
+            doc.setFont(undefined, 'normal');
+            yLocal += 6; doc.setFontSize(8); doc.setFont(undefined, 'bold'); doc.text('Mapa de Posições:', 20, yLocal); doc.setFont(undefined, 'normal'); yLocal += 4;
+            const posicoes = ['A1', 'B1', 'B2', 'C1', 'C2', 'C3', 'D1', 'D2', 'D3', 'D4', 'E1', 'E2', 'E3', 'E4', 'E5'];
+            posicoes.forEach((pos, idx) => { const cor = dadosTeste.piramides[i][idx]; if (cor) { doc.text(`${pos}:${cor}`, 20 + (idx % 5) * 28, yLocal); if ((idx + 1) % 5 === 0) yLocal += 4; } });
+            if (posicoes.length % 5 !== 0) yLocal += 4;
+            yLocal += 3; doc.setFont(undefined, 'bold'); doc.text('Ordem de Colocação:', 20, yLocal); doc.setFont(undefined, 'normal'); yLocal += 4;
+            const sequencia = dadosTeste.sequenciaColocacao[i];
+            const ordemTexto = sequencia.map((entrada, idx) => { const pos = entrada.posicao !== undefined ? posicoes[entrada.posicao] : '?'; return `${idx+1}°:${pos}`; }).join(', ');
+            const linhasOrdem = doc.splitTextToSize(ordemTexto, 150);
+            linhasOrdem.forEach(l => { doc.text(l, 20, yLocal); yLocal += 4; });
+            yLocal += 3; const direcao = analisarDirecao(sequencia); doc.text(`Direção: ${direcao}`, 20, yLocal); yLocal += 4;
+            const pausas = dadosTeste.pausas[i]; if (pausas.length > 0) { doc.text(`Hesitações: ${pausas.length} pausas (${pausas.join('s, ')}s)`, 20, yLocal); yLocal += 4; }
+            yLocal += 6; doc.setFontSize(8); const interpretacao = gerarInterpretacaoResumida(contagem); const linhas = doc.splitTextToSize(interpretacao, 120);
+            linhas.slice(0, 3).forEach(l => { doc.text(l, 20, yLocal); yLocal += 4; });
+            if (i < 2) { doc.setDrawColor(180); doc.line(20, y + espacamentoPiramides - 5, 190, y + espacamentoPiramides - 5); }
+        }
+        
+        // Página 3: Análise Qualitativa
+        doc.addPage(); doc.setFontSize(14); doc.setFont(undefined, 'bold'); doc.text('ANÁLISE QUALITATIVA', 105, 15, { align: 'center' }); doc.setFont(undefined, 'normal'); y = 25;
+        for (let i = 0; i < 3; i++) {
+            doc.setFontSize(11); doc.setFont(undefined, 'bold'); doc.text(`PIRÂMIDE ${i + 1} - ASPECTOS FORMAIS:`, 20, y); doc.setFont(undefined, 'normal'); doc.setFontSize(9); y += 6;
+            const aspectos = analisarAspectoFormal(dadosTeste.piramides[i]);
+            aspectos.forEach(asp => { const linhas = doc.splitTextToSize(asp, 170); linhas.forEach(l => { doc.text(l, 20, y); y += 4; }); }); y += 3;
+        }
+        y += 3; doc.setFontSize(11); doc.setFont(undefined, 'bold'); doc.text('MODO DE COLOCAÇÃO:', 20, y); doc.setFont(undefined, 'normal'); doc.setFontSize(9); y += 6;
+        for (let i = 0; i < 3; i++) { const modo = analisarModoColocacao(dadosTeste.sequenciaColocacao[i]); doc.text(`Pirâmide ${i + 1}: ${modo}`, 20, y); y += 5; }
+        y += 3; doc.setFontSize(11); doc.setFont(undefined, 'bold'); doc.text('MODO DE EXECUÇÃO:', 20, y); doc.setFont(undefined, 'normal'); doc.setFontSize(9); y += 6;
+        for (let i = 0; i < 3; i++) { const tempo = dadosTeste.tempos[`piramide${i + 1}`]; const aspectos = analisarModoExecucao(tempo, dadosTeste.pausas[i], dadosTeste.mudancasCor[i]); doc.text(`Pirâmide ${i + 1}:`, 20, y); y += 5; aspectos.forEach(asp => { const linhas = doc.splitTextToSize(`  ${asp}`, 170); linhas.forEach(l => { doc.text(l, 20, y); y += 4; }); }); }
+        if (y > 240) { doc.addPage(); y = 20; } else y += 5;
+        doc.setFontSize(11); doc.setFont(undefined, 'bold'); doc.text('ANÁLISE SEQUENCIAL:', 20, y); doc.setFont(undefined, 'normal'); doc.setFontSize(9); y += 6;
+        const sequencial = analisarSequencial(); sequencial.forEach(asp => { const linhas = doc.splitTextToSize(asp, 170); linhas.forEach(l => { if (y > 280) { doc.addPage(); y = 20; } doc.text(l, 20, y); y += 4; }); });
+        if (y > 240) { doc.addPage(); y = 20; } else y += 5;
+        doc.setFontSize(11); doc.setFont(undefined, 'bold'); doc.text('ANÁLISE PSICODINÂMICA:', 20, y); doc.setFont(undefined, 'normal'); doc.setFontSize(9); y += 6;
+        doc.text('• Pirâmide 1 (Consciente): Persona, adaptação social', 20, y); y += 5;
+        doc.text('• Pirâmide 2 (Pré-consciente): Transição, conflitos em elaboração', 20, y); y += 5;
+        doc.text('• Pirâmide 3 (Inconsciente): Conteúdos profundos, impulsos primitivos', 20, y); y += 5;
+        if (y > 240) { doc.addPage(); y = 20; } else y += 5;
+        doc.setFontSize(11); doc.setFont(undefined, 'bold'); doc.text('ANÁLISE MATURACIONAL:', 20, y); doc.setFont(undefined, 'normal'); doc.setFontSize(9); y += 6;
+        const maturacional = analisarMaturacional(dadosTeste.identificacao.idade); maturacional.forEach(asp => { const linhas = doc.splitTextToSize(asp, 170); linhas.forEach(l => { doc.text(l, 20, y); y += 4; }); });
+
+        // Página 4: Frequência total
+        doc.addPage(); doc.setFontSize(14); doc.text('FREQUÊNCIA TOTAL DE CORES (45 quadrados)', 105, 20, { align: 'center' });
+        const coresOrdenadas = Object.entries(dadosTeste.contagemCores).filter(([_, qtd]) => qtd > 0).sort((a, b) => b[1] - a[1]);
+        y = 40; doc.setFontSize(9); doc.setFont(undefined, 'bold'); doc.text('Cor', 105, y, { align: 'center' });
+        y += 8; let x = 20; const espacamento = 22;
+        coresOrdenadas.forEach(([cor]) => { const corAbrev = cor.length > 10 ? cor.substring(0, 10) : cor; doc.text(corAbrev, x, y, { align: 'center' }); x += espacamento; });
+        y += 8; x = 20; coresOrdenadas.forEach(([_, qtd]) => { doc.text(String(qtd), x, y, { align: 'center' }); x += espacamento; });
+        y += 8; x = 20; coresOrdenadas.forEach(([_, qtd]) => { doc.text(`${((qtd / 45) * 100).toFixed(1)}%`, x, y, { align: 'center' }); x += espacamento; });
+        doc.setFont(undefined, 'normal');
+        y += 12; doc.setFontSize(12); doc.setFont(undefined, 'bold'); doc.text('SÍNDROMES CROMÁTICAS:', 20, y); doc.setFont(undefined, 'normal'); doc.setFontSize(10);
+        const sindromes = calcularSindromes(); y += 8; Object.entries(sindromes).forEach(([nome, valor]) => { doc.text(`${nome}: ${valor.toFixed(1)}%`, 20, y); y += 6; });
+        y += 15; doc.setFontSize(14); doc.setFont(undefined, 'bold'); doc.text('PREFERÊNCIAS DECLARADAS', 20, y); doc.setFont(undefined, 'normal'); doc.setFontSize(11); y += 10;
+        doc.text(`Cor que mais gosta em geral: ${dadosTeste.respostas.corMaisGosta}`, 20, y);
+        doc.text(`Cor que menos gosta em geral: ${dadosTeste.respostas.corMenosGosta}`, 20, y += 7);
+        doc.text(`Cor que mais gostou no teste: ${dadosTeste.respostas.corMaisGostouTeste}`, 20, y += 7);
+        doc.text(`Cor que menos gostou no teste: ${dadosTeste.respostas.corMenosGostouTeste}`, 20, y += 7);
+        doc.text(`Pirâmide que mais gostou: Pirâmide ${dadosTeste.respostas.piramideMaisGostou}`, 20, y += 7);
+        doc.text(`Pirâmide que menos gostou: Pirâmide ${dadosTeste.respostas.piramideMenosGostou}`, 20, y += 7);
+        y += 15; doc.setFontSize(14); doc.setFont(undefined, 'bold'); doc.text('REFERÊNCIAS', 20, y); doc.setFont(undefined, 'normal'); doc.setFontSize(9); y += 8;
+        const refs = ['VILLEMOR-AMARAL, A. E. As Pirâmides Coloridas de Pfister. São Paulo: Centro Editor de Testes e Pesquisas em Psicologia, 2012.', 'VILLEMOR-AMARAL, A. E.; PRIMI, R. Teste das Pirâmides Coloridas de Pfister. 2. ed. São Paulo: Casa do Psicólogo, 2009.', 'VILLEMOR-AMARAL, A. E. et al. A fórmula cromática em diferentes faixas etárias. Avaliação Psicológica, v. 3, n. 2, p. 85-91, 2004.', 'OLIVEIRA, S. E. S.; BANDEIRA, D. R.; VAZ, C. E. Estudo normativo do Teste das Pirâmides Coloridas de Pfister para população idosa. Avaliação Psicológica, v. 6, n. 1, p. 61-69, 2007.'];
+        refs.forEach(ref => { const linhas = doc.splitTextToSize(ref, 170); linhas.forEach(l => { if (y > 280) { doc.addPage(); y = 20; } doc.text(l, 20, y); y += 5; }); y += 2; });
+        
+        // Gerar laudo via IA
+        try {
+            const laudoIA = await gerarLaudoIA();
+            if (laudoIA) {
+                y += 10;
+                if (y > 250) { doc.addPage(); y = 20; }
+                doc.setFontSize(12); doc.setFont(undefined, 'bold'); doc.text('ANÁLISE CLÍNICA (IA)', 20, y); doc.setFont(undefined, 'normal'); y += 8;
+                doc.setFontSize(9);
+                const linhasLaudo = doc.splitTextToSize(laudoIA, 170);
+                linhasLaudo.forEach(l => { if (y > 280) { doc.addPage(); y = 20; } doc.text(l, 20, y); y += 4; });
+            }
+        } catch (err) { console.error('Erro ao gerar laudo IA:', err); }
+        
+        doc.save(nomeArquivo);
+        alert('Relatório gerado com sucesso!');
+    }
+
+    // ========== LAUDO VIA IA (GEMINI) ==========
+    const GEMINI_API_KEY = 'CHAVE_GEMINI_REMOVIDA';
+    const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=';
+
+    async function gerarLaudoIA() {
+        const contagens = dadosTeste.piramides.map(p => {
+            const c = {}; p.forEach(cor => { if (cor) c[cor] = (c[cor] || 0) + 1; }); return c;
+        });
+        const sindromes = calcularSindromes();
+        const direcoes = dadosTeste.sequenciaColocacao.map(seq => analisarDirecao(seq));
+        const modos = dadosTeste.sequenciaColocacao.map(seq => analisarModoColocacao(seq));
+        const aspectosFormais = dadosTeste.piramides.map(p => analisarAspectoFormal(p));
+
+        let prompt = 'Voce e um neuropsicologo experiente especializado em testes projetivos. ' +
+            'Gere uma ANALISE CLINICA breve (maximo 12 linhas) baseada nos resultados abaixo do ' +
+            'Teste das Piramides Coloridas de Pfister.\n\n' +
+            'DADOS DO PACIENTE:\n' +
+            '- Idade: ' + dadosTeste.identificacao.idade + '\n' +
+            '- Escolaridade: ' + dadosTeste.identificacao.escolaridade + '\n\n' +
+            'RESULTADOS POR PIRAMIDE:\n';
+
+        for (let i = 0; i < 3; i++) {
+            prompt += '\nPiramide ' + (i+1) + ':\n';
+            prompt += '- Cores: ' + Object.entries(contagens[i]).sort((a,b) => b[1]-a[1]).map(([c,q]) => c+'('+q+')').join(', ') + '\n';
+            prompt += '- Direcao: ' + direcoes[i] + '\n';
+            prompt += '- Modo colocacao: ' + modos[i] + '\n';
+            prompt += '- Aspectos formais: ' + aspectosFormais[i].join('; ') + '\n';
+        }
+
+        prompt += '\nSINDROMES CROMATICAS:\n';
+        Object.entries(sindromes).forEach(([nome, valor]) => { prompt += '- ' + nome + ': ' + valor.toFixed(1) + '%\n'; });
+
+        prompt += '\nFREQUENCIA TOTAL (45 quadrados):\n';
+        const coresTotal = Object.entries(dadosTeste.contagemCores).filter(([_,q]) => q > 0).sort((a,b) => b[1]-a[1]);
+        coresTotal.forEach(([cor, qtd]) => { prompt += '- ' + cor + ': ' + qtd + ' (' + ((qtd/45)*100).toFixed(1) + '%)\n'; });
+
+        prompt += '\nPREFERENCIAS DECLARADAS:\n';
+        prompt += '- Cor que mais gosta: ' + dadosTeste.respostas.corMaisGosta + '\n';
+        prompt += '- Cor que menos gosta: ' + dadosTeste.respostas.corMenosGosta + '\n';
+        prompt += '- Cor que mais gostou no teste: ' + dadosTeste.respostas.corMaisGostouTeste + '\n';
+        prompt += '- Cor que menos gostou no teste: ' + dadosTeste.respostas.corMenosGostouTeste + '\n';
+        prompt += '- Piramide preferida: ' + dadosTeste.respostas.piramideMaisGostou + '\n';
+        prompt += '- Piramide menos gostou: ' + dadosTeste.respostas.piramideMenosGostou + '\n';
+
+        prompt += '\nANALISE PSICODINAMICA (referencia):\n' +
+            '- Piramide 1 = Consciente (persona, adaptacao social)\n' +
+            '- Piramide 2 = Pre-consciente (transicao, conflitos em elaboracao)\n' +
+            '- Piramide 3 = Inconsciente (conteudos profundos, impulsos primitivos)\n\n';
+
+        prompt += 'INSTRUCOES:\n' +
+            '- Escreva em portugues brasileiro, linguagem tecnica mas acessivel\n' +
+            '- Interprete as cores segundo a teoria de Pfister/Villemor-Amaral\n' +
+            '- Considere: Vermelho=impulsos/afetos; Azul=controle/racional; Verde=adaptacao; ' +
+            'Violeta=ansiedade/tensao; Amarelo=expansao/dependencia; Laranja=ambicao; ' +
+            'Marrom=desconforto; Preto=negacao; Branco=vazio; Cinza=neutralizacao\n' +
+            '- Analise a evolucao entre as 3 piramides (consciente para inconsciente)\n' +
+            '- Comente sobre sindromes cromaticas e aspectos formais\n' +
+            '- NAO repita numeros, interprete clinicamente\n' +
+            '- NAO faca recomendacoes de tratamento\n' +
+            '- Termine com conclusao sobre dinamica emocional global';
+
+        const body = JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] });
+
+        const response = await fetch(GEMINI_API_URL + GEMINI_API_KEY, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: body
+        });
+
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        const data = await response.json();
+        if (data.candidates && data.candidates[0] && data.candidates[0].content) {
+            return data.candidates[0].content.parts[0].text.trim();
+        }
+        return null;
+    }
+    </script>
+</body>
+</html>
