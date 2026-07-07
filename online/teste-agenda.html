@@ -46,6 +46,7 @@ var API_URL = 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.
 var sessionInfo = {};
 var modoAgenda = false; // true = com timer/bips, false = modo livre
 var gravando = false;
+var pausado = false;
 var timerInterval = null;
 var segundosDecorridos = 0;
 var totalSegundos = 0;
@@ -147,6 +148,7 @@ function renderConsultaArea() {
   el.innerHTML = '<div id="step-gravacao">' + timerHTML +
     '<div style="text-align:center;margin-bottom:1.5rem;">' +
     '<button id="btn-gravar" onclick="toggleGravacao()" style="width:72px;height:72px;border-radius:50%;background:#fff0f0;border:2px solid #f09595;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:28px;transition:all 0.2s;">&#127908;</button>' +
+    '<button id="btn-pausar" onclick="togglePausa()" style="width:52px;height:52px;border-radius:50%;background:#fff8e1;border:2px solid #ffcc80;cursor:pointer;display:none;align-items:center;justify-content:center;font-size:20px;transition:all 0.2s;margin-left:12px;vertical-align:middle;">&#9208;</button>' +
     '<div id="status-gravacao" style="font-size:12px;color:var(--text3);margin-top:8px;">Clique para iniciar a gravacao</div></div>' +
     '<div style="margin-bottom:1rem;"><label style="font-size:12px;font-weight:500;color:var(--text2);">Transcricao:</label>' +
     '<textarea id="transcricao" style="width:100%;min-height:120px;border:1px solid var(--border);border-radius:8px;padding:10px;font-size:13px;font-family:inherit;resize:vertical;margin-top:6px;" placeholder="A transcricao aparecera aqui... Voce tambem pode colar texto manualmente."></textarea></div>' +
@@ -159,8 +161,51 @@ function fmtTempo(s) { var m = Math.floor(s / 60); var sec = s % 60; return Stri
 
 function toggleGravacao() { gravando ? pararGravacao() : iniciarGravacao(); }
 
+function togglePausa() {
+  if (!gravando) return;
+  if (pausado) {
+    // Retomar gravacao
+    pausado = false;
+    document.getElementById('btn-pausar').innerHTML = '&#9208;';
+    document.getElementById('btn-pausar').style.background = '#fff8e1';
+    document.getElementById('btn-pausar').style.borderColor = '#ffcc80';
+    document.getElementById('status-gravacao').textContent = 'Gravando... clique para parar';
+    // Retomar reconhecimento de voz
+    if (recognition) { try { recognition.start(); } catch(e){} }
+    // Retomar timer
+    timerInterval = setInterval(function() {
+      segundosDecorridos++;
+      if (modoAgenda) {
+        var restante = totalSegundos - segundosDecorridos;
+        if (restante < 0) restante = 0;
+        document.getElementById('timer-display').textContent = fmtTempo(restante);
+        var pct = (segundosDecorridos / totalSegundos) * 100;
+        if (pct > 100) pct = 100;
+        document.getElementById('progress-bar').style.width = pct + '%';
+        if (restante <= 600) { document.getElementById('timer-display').style.color = '#e24b4a'; document.getElementById('progress-bar').style.background = '#e24b4a'; }
+        if (!bipDado10 && restante <= 600 && restante > 0) { bipDado10 = true; emitirBip(1); document.getElementById('timer-label').textContent = '10 minutos restantes!'; }
+        if (!bipDadoFinal && restante <= 0) { bipDadoFinal = true; emitirBip(2); document.getElementById('timer-label').textContent = 'Tempo esgotado!'; setTimeout(function() { pararGravacao(); }, 1500); }
+      } else {
+        document.getElementById('timer-display').textContent = fmtTempo(segundosDecorridos);
+      }
+    }, 1000);
+  } else {
+    // Pausar gravacao
+    pausado = true;
+    document.getElementById('btn-pausar').innerHTML = '&#9654;';
+    document.getElementById('btn-pausar').style.background = '#e8f5e9';
+    document.getElementById('btn-pausar').style.borderColor = '#4caf50';
+    document.getElementById('status-gravacao').textContent = 'Pausado. Clique &#9654; para retomar.';
+    // Pausar reconhecimento de voz
+    if (recognition) { try { recognition.stop(); } catch(e){} }
+    // Pausar timer
+    clearInterval(timerInterval);
+  }
+}
+
 function iniciarGravacao() {
   gravando = true;
+  pausado = false;
   segundosDecorridos = 0;
   bipDado10 = false;
   bipDadoFinal = false;
@@ -169,6 +214,10 @@ function iniciarGravacao() {
   document.getElementById('btn-gravar').style.borderColor = '#e24b4a';
   document.getElementById('btn-gravar').innerHTML = '&#9632;';
   document.getElementById('btn-gravar').style.color = '#fff';
+  document.getElementById('btn-pausar').style.display = 'inline-flex';
+  document.getElementById('btn-pausar').innerHTML = '&#9208;';
+  document.getElementById('btn-pausar').style.background = '#fff8e1';
+  document.getElementById('btn-pausar').style.borderColor = '#ffcc80';
   document.getElementById('status-gravacao').textContent = 'Gravando... clique para parar';
   // Iniciar Speech Recognition
   var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -186,7 +235,7 @@ function iniciarGravacao() {
       document.getElementById('transcricao').value = transcricaoAcumulada + interim;
     };
     recognition.onerror = function(e) { document.getElementById('status-gravacao').textContent = 'Erro: ' + e.error + '. Verifique permissao do microfone.'; };
-    recognition.onend = function() { if (gravando) { try { recognition.start(); } catch(er){} } };
+    recognition.onend = function() { if (gravando && !pausado) { try { recognition.start(); } catch(er){} } };
     recognition.start();
   } else {
     document.getElementById('status-gravacao').textContent = 'Navegador nao suporta reconhecimento de voz. Use Chrome.';
@@ -213,12 +262,14 @@ function iniciarGravacao() {
 
 function pararGravacao() {
   gravando = false;
+  pausado = false;
   if (recognition) { try { recognition.stop(); } catch(e){} }
   clearInterval(timerInterval);
   document.getElementById('btn-gravar').style.background = '#fff0f0';
   document.getElementById('btn-gravar').style.borderColor = '#f09595';
   document.getElementById('btn-gravar').innerHTML = '&#127908;';
   document.getElementById('btn-gravar').style.color = '#e24b4a';
+  document.getElementById('btn-pausar').style.display = 'none';
   document.getElementById('status-gravacao').textContent = 'Gravacao encerrada. Edite a transcricao se necessario.';
   if (!document.getElementById('transcricao').value.trim()) {
     document.getElementById('transcricao').value = transcricaoAcumulada;
