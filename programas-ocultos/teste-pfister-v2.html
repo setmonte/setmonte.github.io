@@ -249,8 +249,23 @@
                     var dnEl = document.getElementById('dataNascimento');
                     if (nomeEl && sessionInfo.patientName) nomeEl.value = sessionInfo.patientName;
                     if (dnEl && sessionInfo.birthDate) { dnEl.value = sessionInfo.birthDate; if (typeof calcularIdade === 'function') calcularIdade(); }
+                    if (sessionInfo.sex) { var sexEl = document.getElementById('sexo'); if (sexEl) sexEl.value = sessionInfo.sex; }
+                    if (sessionInfo.education) { var escEl = document.getElementById('escolaridade'); if (escEl) escEl.value = sessionInfo.education; }
                     if (typeof atualizarIdPaciente === 'function') atualizarIdPaciente();
-                }, 100);
+                    // Preencher dados de identificacao e pular para instruções
+                    dadosTeste.identificacao = {
+                        nome: sessionInfo.patientName || '',
+                        dataNascimento: sessionInfo.birthDate || '',
+                        idade: document.getElementById('idadeCalculada') ? document.getElementById('idadeCalculada').value : '',
+                        idPaciente: document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '',
+                        cpf: '',
+                        escolaridade: sessionInfo.education || '',
+                        psicologo: '',
+                        crp: ''
+                    };
+                    // Ir direto para pagina de instrucoes
+                    if (typeof mudarPagina === 'function') mudarPagina(2);
+                }, 200);
             }
         }
     })();
