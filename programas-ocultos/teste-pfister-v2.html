@@ -235,6 +235,26 @@
 
     Object.keys(cores).forEach(cor => dadosTeste.contagemCores[cor] = 0);
 
+    // ========== SESSÃO DO PAINEL ==========
+    var sessionInfo = {};
+    var API_URL = 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
+    (function() {
+        var params = new URLSearchParams(window.location.search);
+        var d = params.get('d');
+        if (d) {
+            try { sessionInfo = JSON.parse(atob(decodeURIComponent(d))); } catch(e) { try { sessionInfo = JSON.parse(atob(d)); } catch(e2) {} }
+            if (sessionInfo.patientName) {
+                setTimeout(function() {
+                    var nomeEl = document.getElementById('nome');
+                    var dnEl = document.getElementById('dataNascimento');
+                    if (nomeEl && sessionInfo.patientName) nomeEl.value = sessionInfo.patientName;
+                    if (dnEl && sessionInfo.birthDate) { dnEl.value = sessionInfo.birthDate; if (typeof calcularIdade === 'function') calcularIdade(); }
+                    if (typeof atualizarIdPaciente === 'function') atualizarIdPaciente();
+                }, 100);
+            }
+        }
+    })();
+
     // ========== ID ÚNICO DO PACIENTE (SΨM) ==========
     function gerarIdPaciente(nome, nascimento) {
         if (!nascimento || !nome || nome.trim().length < 1) return null;
@@ -788,7 +808,46 @@
         } catch (err) { console.error('Erro ao gerar laudo IA:', err); }
         
         doc.save(nomeArquivo);
-        alert('Relatório gerado com sucesso!');
+        // Enviar resultados ao servidor se veio do painel
+        if (sessionInfo && sessionInfo.sessionId && sessionInfo.email) {
+            var sindromes = calcularSindromes();
+            var coresTotal = {};
+            Object.entries(dadosTeste.contagemCores).filter(function(e) { return e[1] > 0; }).forEach(function(e) { coresTotal[e[0]] = e[1]; });
+            fetch(API_URL + '/save-result', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    email: sessionInfo.email,
+                    tipo: 'pfister',
+                    sessionId: sessionInfo.sessionId,
+                    data: {
+                        status: 'finalizado',
+                        date: new Date().toISOString(),
+                        formData: {
+                            nome: dadosTeste.identificacao.nome || '',
+                            idade: dadosTeste.identificacao.idade || '',
+                            dataNasc: dadosTeste.identificacao.dataNascimento || '',
+                            escolaridade: dadosTeste.identificacao.escolaridade || '',
+                            id: dadosTeste.identificacao.idPaciente || ''
+                        },
+                        resultados: {
+                            piramides: dadosTeste.piramides,
+                            contagemCores: coresTotal,
+                            sindromes: sindromes,
+                            respostas: dadosTeste.respostas,
+                            sequenciaColocacao: dadosTeste.sequenciaColocacao,
+                            mudancasCor: dadosTeste.mudancasCor,
+                            tempos: dadosTeste.tempos
+                        }
+                    }
+                })
+            }).then(function() {
+                console.log('Resultados enviados ao painel.');
+            }).catch(function(err) {
+                console.error('Erro ao enviar resultados:', err);
+            });
+        }
+        alert('Relatorio gerado com sucesso!');
     }
 
     // ========== LAUDO VIA IA (GEMINI) ==========
