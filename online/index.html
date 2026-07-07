@@ -2811,9 +2811,74 @@
           document.getElementById('pacSexo').value = '';
           document.getElementById('pacEmail').value = '';
           document.getElementById('pacWhats').value = '';
-          loadPacientes();
+          await loadPacientes();
+          // Vinculacao retroativa: buscar resultados anteriores com nome parecido
+          await vincularHistoricoRetroativo(nome, dn);
         } else { alert('Erro: ' + (r.error || 'tente novamente')); }
       } catch(e) { alert('Erro de conexao: ' + e.message); }
+    }
+
+    async function vincularHistoricoRetroativo(nome, dn) {
+      try {
+        var resp = await fetch(API_URL + '/get-results?email=' + encodeURIComponent(currentUser));
+        var data = await resp.json();
+        var todos = data.results || [];
+        // Gerar ID hash esperado para este paciente
+        var idHashEsperado = gerarIdPacienteHash(nome, dn);
+        // Normalizar nome para comparacao
+        var nomeNorm = nome.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+        // Buscar resultados que coincidem por ID hash OU por nome similar
+        var encontrados = todos.filter(function(r) {
+          var d = r.data || {};
+          var fd = d.formData || {};
+          // Verificar pelo ID hash
+          if (idHashEsperado && d.idPaciente === idHashEsperado) return true;
+          if (idHashEsperado && fd.id === idHashEsperado) return true;
+          // Verificar pelo nome (comparacao flexivel)
+          var nomeResult = (fd.patientName || fd.nome || (d.paciente ? d.paciente : '') || '').toString();
+          var nomeResultNorm = nomeResult.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+          if (nomeResultNorm && nomeNorm && nomeResultNorm === nomeNorm) return true;
+          // Comparar primeiros nomes (caso tenha sobrenome diferente)
+          var primeiroNome = nomeNorm.split(' ')[0];
+          var primeiroResult = nomeResultNorm.split(' ')[0];
+          if (primeiroNome.length >= 4 && primeiroNome === primeiroResult) return true;
+          return false;
+        });
+        // Filtrar resultados que ja estao vinculados a algum paciente cadastrado
+        var paciente = _pacientesCache.filter(function(p) { return p.nome === nome && p.dataNascimento === dn; })[0];
+        var pacId = paciente ? paciente.id : '';
+        encontrados = encontrados.filter(function(r) {
+          var d = r.data || {};
+          var fd = d.formData || {};
+          // Ja vinculado a este paciente? Pular
+          if (d.pacienteId === pacId || fd.pacienteId === pacId) return false;
+          return true;
+        });
+        if (encontrados.length > 0) {
+          var tipos = {};
+          encontrados.forEach(function(r) { var t = r.tipo || 'outro'; tipos[t] = (tipos[t] || 0) + 1; });
+          var resumo = Object.keys(tipos).map(function(t) { return t.toUpperCase() + ': ' + tipos[t]; }).join(', ');
+          var confirma = confirm('Encontrei ' + encontrados.length + ' resultado(s) anterior(es) para "' + nome + '":\n\n' + resumo + '\n\nDeseja vincular ao cadastro deste paciente?\n(Isso permite ver tudo no historico unificado)');
+          if (confirma && pacId) {
+            // Vincular todos os resultados encontrados
+            for (var vi = 0; vi < encontrados.length; vi++) {
+              try {
+                await fetch(API_URL + '/save-result', {
+                  method: 'POST',
+                  headers: {'Content-Type':'application/json'},
+                  body: JSON.stringify({
+                    email: currentUser,
+                    tipo: encontrados[vi].tipo || 'escala',
+                    sessionId: encontrados[vi].sessionId,
+                    data: Object.assign({}, encontrados[vi].data, { pacienteId: pacId })
+                  })
+                });
+              } catch(ve) {}
+            }
+            alert(encontrados.length + ' resultado(s) vinculado(s) com sucesso!');
+          }
+        }
+      } catch(e) { /* Falha silenciosa na vinculacao */ }
     }
 
     async function loadPacientes() {
