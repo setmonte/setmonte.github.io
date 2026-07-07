@@ -587,6 +587,14 @@
             <p style="font-size:15px;color:#2d6a8f;font-weight:bold;">&#128203; Prontuario</p>
             <p style="font-size:12px;color:#555;margin-top:5px;">Escolha um perfil de topicos e abra o gravador. Crie perfis para cada tipo de atendimento.</p>
           </div>
+          <!-- Selecao de paciente -->
+          <div style="background:#f0f7fa;border:1px solid #a8cce0;border-radius:8px;padding:12px;margin:10px 0;">
+            <label style="font-size:0.85em;color:#555;">Paciente cadastrado:</label>
+            <select id="prontuarioSelPac" onchange="preencherPaciente('prontuario')" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:4px;">
+              <option value="">-- Sem paciente (modo livre) --</option>
+            </select>
+            <p style="font-size:11px;color:#888;margin:0;">Selecione um paciente para o gravador abrir com os dados preenchidos.</p>
+          </div>
           <!-- Perfis -->
           <div id="perfisContainer" style="margin:10px 0;"></div>
           <!-- Botao criar perfil -->
@@ -2295,9 +2303,21 @@
       var perfis = getPerfis();
       var perfil = perfis.filter(function(p) { return p.id === id; })[0];
       if (!perfil) return;
-      // Salvar topicos ativos e abrir gravador
+      // Salvar topicos ativos
       localStorage.setItem('prontuario_topicos', JSON.stringify(perfil.topicos));
-      window.open('teste-agenda.html', '_blank');
+      // Verificar se tem paciente selecionado
+      var sel = document.getElementById('prontuarioSelPac');
+      var pacId = sel ? sel.value : '';
+      if (pacId) {
+        // Abrir gravador com dados do paciente
+        var opt = sel.options[sel.selectedIndex];
+        var dados = { email: currentUser, patientName: opt.dataset.nome || '', topicos: perfil.topicos, tipoConsulta: 'Prontu\u00e1rio', duracao: 60 };
+        var encoded = safeBtoa(JSON.stringify(dados));
+        window.open('teste-agenda.html?d=' + encoded, '_blank');
+      } else {
+        // Modo livre (sem paciente)
+        window.open('teste-agenda.html', '_blank');
+      }
     }
 
     function abrirCriarPerfil() {
@@ -3004,7 +3024,7 @@
     }
 
     function popularDropdownsPacientes() {
-      ['baeSelPac','trmvSelPac','taavSelPac','tecfeSelPac','trefSelPac','tflodSelPac','escalaSelPac','anamneseSelPac','reocupaSelPac','pfisterSelPac'].forEach(function(id) {
+      ['baeSelPac','trmvSelPac','taavSelPac','tecfeSelPac','trefSelPac','tflodSelPac','escalaSelPac','anamneseSelPac','reocupaSelPac','pfisterSelPac','agendaSelPac','prontuarioSelPac'].forEach(function(id) {
         var sel = document.getElementById(id);
         if (!sel) return;
         var val = sel.value;
@@ -3036,6 +3056,7 @@
       else if (tipo === 'agenda') { campoNome = document.getElementById('agendaNome'); campoDN = null; campoCPF = null; }
       else if (tipo === 'reocupa') { campoNome = document.getElementById('reocupaNome'); campoDN = document.getElementById('reocupaDn'); campoCPF = null; }
       else if (tipo === 'pfister') { campoNome = document.getElementById('pfisterNome'); campoDN = document.getElementById('pfisterDn'); campoCPF = null; }
+      else if (tipo === 'prontuario') { campoNome = null; campoDN = null; campoCPF = null; }
       if (campoNome) campoNome.value = opt.dataset.nome || '';
       if (campoDN) campoDN.value = opt.dataset.dn || '';
       if (campoCPF) campoCPF.value = opt.dataset.cpf || '';
