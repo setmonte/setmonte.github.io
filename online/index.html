@@ -2918,22 +2918,59 @@
 
     // ===== FUNCOES ADMIN =====
     async function adminBuscarUsuario() {
-      var email = document.getElementById('adminBuscaEmail').value.trim();
+      var email = document.getElementById('adminBuscaEmail').value.trim().toLowerCase();
       if (!email) { alert('Digite um email.'); return; }
       var el = document.getElementById('adminUserResult');
       el.innerHTML = '<p style="color:#555;">Buscando...</p>';
       try {
+        // Buscar creditos
         var resp = await fetch(API_URL + '/credits?email=' + encodeURIComponent(email));
         var data = await resp.json();
-        var html = '<div style="background:#fff;padding:10px;border-radius:6px;border:1px solid #ddd;">';
+        // Buscar resultados/uso
+        var respRes = await fetch(API_URL + '/get-results?email=' + encodeURIComponent(email));
+        var dataRes = await respRes.json();
+        var resultados = dataRes.results || [];
+        // Contagem por tipo
+        var contagem = {};
+        var ultimoUso = {};
+        resultados.forEach(function(r) {
+          var tipo = r.tipo || 'outro';
+          contagem[tipo] = (contagem[tipo] || 0) + 1;
+          var dt = r.date || '';
+          if (!ultimoUso[tipo] || dt > ultimoUso[tipo]) ultimoUso[tipo] = dt;
+        });
+        // Montar HTML do relatorio
+        var html = '<div style="background:#fff;padding:15px;border-radius:8px;border:1px solid #ddd;">';
+        html += '<h3 style="color:#2d6a8f;margin-bottom:10px;">Relatorio do Usuario</h3>';
         html += '<p><strong>Email:</strong> ' + email + '</p>';
         html += '<p><strong>Nome:</strong> ' + (data.name || 'N/I') + '</p>';
-        html += '<p><strong>Creditos TECFE:</strong> ' + (data.credits || 0) + '</p>';
-        html += '<p><strong>Creditos BAE:</strong> ' + (data.baeCredits || 0) + '</p>';
-        html += '<p><strong>Creditos TRMV:</strong> ' + (data.trmvCredits || 0) + '</p>';
-        html += '<p><strong>Creditos TAAV:</strong> ' + (data.taavCredits || 0) + '</p>';
-        html += '<p><strong>Creditos TREF:</strong> ' + (data.trefCredits || 0) + '</p>';
-        html += '<p><strong>Creditos TFLOD:</strong> ' + (data.tflodCredits || 0) + '</p>';
+        html += '<hr style="margin:10px 0;border:none;border-top:1px solid #eee;">';
+        html += '<p style="font-weight:bold;color:#2e7d32;margin-bottom:5px;">Creditos Disponiveis:</p>';
+        html += '<table class="results-table" style="margin-bottom:15px;"><tr><th>Teste</th><th>Creditos</th></tr>';
+        html += '<tr><td>TECFE</td><td>' + (data.credits || 0) + '</td></tr>';
+        html += '<tr><td>BAE</td><td>' + (data.baeCredits || 0) + '</td></tr>';
+        html += '<tr><td>TRMV</td><td>' + (data.trmvCredits || 0) + '</td></tr>';
+        html += '<tr><td>TAAV</td><td>' + (data.taavCredits || 0) + '</td></tr>';
+        html += '<tr><td>TREF</td><td>' + (data.trefCredits || 0) + '</td></tr>';
+        html += '<tr><td>TFLOD</td><td>' + (data.tflodCredits || 0) + '</td></tr>';
+        html += '<tr><td>CORSI</td><td>' + (data.corsiCredits || 0) + '</td></tr>';
+        html += '</table>';
+        // Historico de uso
+        var tipos = Object.keys(contagem);
+        if (tipos.length > 0) {
+          html += '<p style="font-weight:bold;color:#1565c0;margin-bottom:5px;">Historico de Uso (' + resultados.length + ' registros):</p>';
+          html += '<table class="results-table"><tr><th>Tipo</th><th>Aplicacoes</th><th>Ultimo Uso</th></tr>';
+          tipos.sort();
+          tipos.forEach(function(t) {
+            var ult = ultimoUso[t] ? new Date(ultimoUso[t]).toLocaleString('pt-BR') : '-';
+            html += '<tr><td style="text-transform:uppercase;font-weight:bold;">' + t + '</td><td>' + contagem[t] + '</td><td style="font-size:11px;">' + ult + '</td></tr>';
+          });
+          html += '</table>';
+        } else {
+          html += '<p style="color:#999;">Nenhum resultado registrado para este usuario.</p>';
+        }
+        // Mostrar resposta bruta dos creditos (debug)
+        html += '<details style="margin-top:10px;"><summary style="font-size:11px;color:#999;cursor:pointer;">Debug: resposta API credits</summary><pre style="font-size:10px;background:#f5f5f5;padding:8px;border-radius:4px;overflow-x:auto;">' + JSON.stringify(data, null, 2) + '</pre></details>';
         html += '</div>';
         el.innerHTML = html;
       } catch(e) { el.innerHTML = '<p style="color:red;">Erro: ' + e.message + '</p>'; }
