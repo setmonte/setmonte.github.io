@@ -1649,6 +1649,8 @@
       document.getElementById('loadingPage').classList.add('hidden');
       document.getElementById('dashboardPage').classList.remove('hidden');
       document.getElementById('userEmail').textContent = currentUser;
+      // Registrar ultimo login no DynamoDB
+      try { fetch(API_URL + '/save-result', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:currentUser,tipo:'login',sessionId:'login-'+Date.now().toString(36),data:{status:'login',timestamp:new Date().toISOString()}})}); } catch(e){}
       // Mostrar aba Depoimentos e Admin apenas para admin
       if (currentUser === 'setmonte@gmail.com') {
         document.getElementById('tabDepoimentos').classList.remove('hidden');
@@ -2933,8 +2935,14 @@
         // Contagem por tipo
         var contagem = {};
         var ultimoUso = {};
+        var ultimoLogin = null;
         resultados.forEach(function(r) {
           var tipo = r.tipo || 'outro';
+          if (tipo === 'login') {
+            var dt = r.date || (r.data && r.data.timestamp) || '';
+            if (!ultimoLogin || dt > ultimoLogin) ultimoLogin = dt;
+            return; // Nao contar login na tabela de uso
+          }
           contagem[tipo] = (contagem[tipo] || 0) + 1;
           var dt = r.date || '';
           if (!ultimoUso[tipo] || dt > ultimoUso[tipo]) ultimoUso[tipo] = dt;
@@ -2944,6 +2952,7 @@
         html += '<h3 style="color:#2d6a8f;margin-bottom:10px;">Relatorio do Usuario</h3>';
         html += '<p><strong>Email:</strong> ' + email + '</p>';
         html += '<p><strong>Nome:</strong> ' + (data.name || 'N/I') + '</p>';
+        html += '<p><strong>Ultimo login:</strong> ' + (ultimoLogin ? new Date(ultimoLogin).toLocaleString('pt-BR') : 'Nunca registrado') + '</p>';
         html += '<hr style="margin:10px 0;border:none;border-top:1px solid #eee;">';
         html += '<p style="font-weight:bold;color:#2e7d32;margin-bottom:5px;">Creditos Disponiveis:</p>';
         html += '<table class="results-table" style="margin-bottom:15px;"><tr><th>Teste</th><th>Creditos</th></tr>';
