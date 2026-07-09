@@ -697,6 +697,7 @@
           <!-- SUB-ABAS -->
           <div style="display:flex;gap:0;border-bottom:2px solid #e0e0e0;margin-bottom:15px;">
             <button id="subTabPfister" onclick="switchProgOcultoSubTab('pfister')" style="flex:1;padding:12px 20px;font-size:13px;font-weight:bold;border:none;border-bottom:3px solid #6a1b9a;background:#f3e5f5;color:#6a1b9a;cursor:pointer;border-radius:8px 8px 0 0;">Pfister</button>
+            <button id="subTabNeo" onclick="switchProgOcultoSubTab('neo')" style="flex:1;padding:12px 20px;font-size:13px;font-weight:bold;border:none;border-bottom:3px solid transparent;background:#f5f5f5;color:#777;cursor:pointer;border-radius:8px 8px 0 0;">NEO PI-R</button>
           </div>
 
           <!-- CONTEUDO PFISTER -->
@@ -755,6 +756,51 @@
             </div>
             <!-- RESULTADOS PFISTER -->
             <div id="pfisterResultsSection" class="card hidden" style="margin-top:15px;"></div>
+          </div>
+
+          <!-- CONTEUDO NEO PI-R -->
+          <div id="subNeoContent" style="display:none;">
+            <div style="background:#ede7f6;border:2px solid #4a148c;border-radius:10px;padding:20px;margin:10px 0;">
+              <p style="font-size:14px;font-weight:bold;color:#4a148c;margin-bottom:8px;">NEO PI-R - Inventario de Personalidade NEO Revisado</p>
+              <p style="font-size:12px;color:#555;line-height:1.6;margin-bottom:12px;">Avalia os 5 grandes fatores de personalidade (Big Five): Neuroticismo, Extroversao, Abertura, Amabilidade e Conscienciosidade. 240 itens, 30 facetas. Normas brasileiras (N=160.671). Ideal para envio por link — o paciente responde com conforto em casa.</p>
+              <div class="btn-row">
+                <button class="btn btn-green" onclick="showNewNeo()">Nova Aplicacao</button>
+                <button class="btn btn-blue" onclick="showNeoResults()">Resultados</button>
+              </div>
+            </div>
+            <!-- NOVA APLICACAO NEO -->
+            <div id="newNeoSection" class="card hidden" style="margin-top:15px;">
+              <h2 style="font-size:16px;color:#4a148c;">Nova Aplicacao NEO PI-R</h2>
+              <p style="margin-bottom:10px;color:#555;font-size:0.9em;">Inventario de Personalidade - 240 itens, Big Five</p>
+              <label style="font-size:0.85em;color:#555;">Paciente cadastrado:</label>
+              <select id="neoSelPac" onchange="preencherPaciente('neo')" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:10px;">
+                <option value="">-- Selecione ou preencha abaixo --</option>
+              </select>
+              <label style="font-size:0.85em;color:#555;">Nome:</label>
+              <input type="text" id="neoNome" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+              <label style="font-size:0.85em;color:#555;">Data de Nascimento:</label>
+              <input type="date" id="neoDn" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+              <label style="font-size:0.85em;color:#555;">Sexo:</label>
+              <select id="neoSexo" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+                <option value="">Selecione...</option>
+                <option value="Masculino">Masculino</option>
+                <option value="Feminino">Feminino</option>
+              </select>
+              <label style="font-size:0.85em;color:#555;">Observacoes:</label>
+              <input type="text" id="neoObs" placeholder="Opcional" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:12px;">
+              <button onclick="startNeoOnlineTest()" class="btn btn-green" style="width:48%;">Gerar Link</button>
+              <button onclick="startNeoOnlineTest(true)" class="btn btn-blue" style="width:48%;">Aplicar Localmente</button>
+              <div id="neoLinkResult" class="hidden" style="margin-top:15px;padding:12px;background:#ede7f6;border-radius:8px;">
+                <p style="font-size:0.8em;color:#555;margin-bottom:5px;">Link gerado:</p>
+                <p id="neoSessionLink" style="word-break:break-all;font-size:0.75em;color:#4a148c;"></p>
+                <div style="margin-top:10px;display:flex;gap:8px;">
+                  <button onclick="copyNeoLink()" class="btn btn-blue" style="font-size:0.85em;">Copiar</button>
+                  <button onclick="whatsappNeoLink()" class="btn btn-green" style="font-size:0.85em;">WhatsApp</button>
+                </div>
+              </div>
+            </div>
+            <!-- RESULTADOS NEO -->
+            <div id="neoResultsSection" class="card hidden" style="margin-top:15px;"></div>
           </div>
         </div>
 
@@ -3306,7 +3352,7 @@
     }
 
     function popularDropdownsPacientes() {
-      ['baeSelPac','trmvSelPac','taavSelPac','tecfeSelPac','trefSelPac','tflodSelPac','escalaSelPac','anamneseSelPac','reocupaSelPac','pfisterSelPac','agendaSelPac','prontuarioSelPac'].forEach(function(id) {
+      ['baeSelPac','trmvSelPac','taavSelPac','tecfeSelPac','trefSelPac','tflodSelPac','escalaSelPac','anamneseSelPac','reocupaSelPac','pfisterSelPac','neoSelPac','agendaSelPac','prontuarioSelPac'].forEach(function(id) {
         var sel = document.getElementById(id);
         if (!sel) return;
         var val = sel.value;
@@ -3338,6 +3384,7 @@
       else if (tipo === 'agenda') { campoNome = document.getElementById('agendaNome'); campoDN = null; campoCPF = null; }
       else if (tipo === 'reocupa') { campoNome = document.getElementById('reocupaNome'); campoDN = document.getElementById('reocupaDn'); campoCPF = null; }
       else if (tipo === 'pfister') { campoNome = document.getElementById('pfisterNome'); campoDN = document.getElementById('pfisterDn'); campoCPF = null; }
+      else if (tipo === 'neo') { campoNome = document.getElementById('neoNome'); campoDN = document.getElementById('neoDn'); campoCPF = null; }
       else if (tipo === 'prontuario') { campoNome = null; campoDN = null; campoCPF = null; if(document.getElementById('prontuarioNomeManual'))document.getElementById('prontuarioNomeManual').value=''; }
       if (campoNome) campoNome.value = opt.dataset.nome || '';
       if (campoDN) campoDN.value = opt.dataset.dn || '';
@@ -3349,6 +3396,7 @@
       else if (tipo === 'reocupa') campoSexo = document.getElementById('reocupaSexo');
       else if (tipo === 'corsi') campoSexo = document.getElementById('corsiSexo');
       else if (tipo === 'pfister') campoSexo = document.getElementById('pfisterSexo');
+      else if (tipo === 'neo') campoSexo = document.getElementById('neoSexo');
       if (campoSexo && opt.dataset.sexo) campoSexo.value = opt.dataset.sexo;
     }
 
@@ -3791,14 +3839,29 @@
 
     // ===== FUNCOES PROGRAMAS OCULTOS - PFISTER =====
     function switchProgOcultoSubTab(sub) {
-      // Por enquanto so tem Pfister, mas preparado para futuras sub-abas
       var pfisterContent = document.getElementById('subPfisterContent');
+      var neoContent = document.getElementById('subNeoContent');
       var btnPfister = document.getElementById('subTabPfister');
+      var btnNeo = document.getElementById('subTabNeo');
+      // Reset all
+      pfisterContent.style.display = 'none';
+      neoContent.style.display = 'none';
+      btnPfister.style.background = '#f5f5f5';
+      btnPfister.style.color = '#777';
+      btnPfister.style.borderBottom = '3px solid transparent';
+      btnNeo.style.background = '#f5f5f5';
+      btnNeo.style.color = '#777';
+      btnNeo.style.borderBottom = '3px solid transparent';
       if (sub === 'pfister') {
         pfisterContent.style.display = 'block';
         btnPfister.style.background = '#f3e5f5';
         btnPfister.style.color = '#6a1b9a';
         btnPfister.style.borderBottom = '3px solid #6a1b9a';
+      } else if (sub === 'neo') {
+        neoContent.style.display = 'block';
+        btnNeo.style.background = '#ede7f6';
+        btnNeo.style.color = '#4a148c';
+        btnNeo.style.borderBottom = '3px solid #4a148c';
       }
     }
 
@@ -3911,6 +3974,86 @@
     function whatsappPfisterLink() {
       var link = document.getElementById('pfisterSessionLink').textContent;
       window.open('https://wa.me/?text=' + encodeURIComponent('Acesse o teste Pfister: ' + link), '_blank');
+    }
+
+    // ===== FUNCOES PROGRAMAS OCULTOS - NEO PI-R =====
+    function showNewNeo() {
+      document.getElementById('newNeoSection').classList.toggle('hidden');
+      var res = document.getElementById('neoResultsSection');
+      if (res) res.classList.add('hidden');
+    }
+
+    function showNeoResults() {
+      var res = document.getElementById('neoResultsSection');
+      if (res) res.classList.toggle('hidden');
+      document.getElementById('newNeoSection').classList.add('hidden');
+      loadNeoResults();
+    }
+
+    async function startNeoOnlineTest(abrirLocal) {
+      var nome = document.getElementById('neoNome').value.trim();
+      var dn = document.getElementById('neoDn').value;
+      if (!nome || !dn) { alert('Preencha nome e data de nascimento.'); return; }
+      var btn = event && event.target ? event.target : null;
+      if (typeof btnLoading === 'function') btnLoading(btn);
+      try {
+        var sessionId = 'neo-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+        var sessionData = {
+          email: currentUser,
+          sessionId: sessionId,
+          tipo: 'neo-pi-r',
+          patientName: nome,
+          birthDate: dn,
+          sex: document.getElementById('neoSexo').value || '',
+          obs: document.getElementById('neoObs').value || '',
+          pacienteId: document.getElementById('neoSelPac').value || ''
+        };
+        var params = safeBtoa(JSON.stringify(sessionData));
+        var link = 'https://setmonte.github.io/programas-ocultos/neo-pi-r.html?d=' + encodeURIComponent(params);
+        if (abrirLocal) { window.open(link, '_blank'); }
+        else { document.getElementById('neoSessionLink').textContent = link; document.getElementById('neoLinkResult').classList.remove('hidden'); }
+      } catch(e) { alert('Erro ao gerar link: ' + e.message); }
+      if (typeof btnReset === 'function') btnReset(btn);
+    }
+
+    function copyNeoLink() {
+      var link = document.getElementById('neoSessionLink').textContent;
+      navigator.clipboard.writeText(link);
+      alert('Link copiado!');
+    }
+
+    function whatsappNeoLink() {
+      var link = document.getElementById('neoSessionLink').textContent;
+      window.open('https://wa.me/?text=' + encodeURIComponent('Acesse o inventario NEO PI-R: ' + link), '_blank');
+    }
+
+    async function loadNeoResults() {
+      var el = document.getElementById('neoResultsSection');
+      if (!el) return;
+      el.innerHTML = '<p>Carregando...</p>';
+      try {
+        var resp = await fetch(API_URL + '/get-results?email=' + encodeURIComponent(currentUser) + '&tipo=neo-pi-r');
+        var data = await resp.json();
+        var results = data.results || [];
+        if (results.length === 0) { el.innerHTML = '<p>Nenhum resultado NEO PI-R encontrado.</p>'; return; }
+        var html = '<h3 style="color:#4a148c;">Resultados NEO PI-R</h3><table style="width:100%;border-collapse:collapse;font-size:0.85em;"><tr><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">Data</th><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">Paciente</th><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">N</th><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">E</th><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">O</th><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">A</th><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">C</th></tr>';
+        for (var i = 0; i < results.length; i++) {
+          var r = results[i];
+          var d = r.data || {};
+          var dom = d.dominios || {};
+          html += '<tr>';
+          html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (d.data ? new Date(d.data).toLocaleDateString('pt-BR') : '') + '</td>';
+          html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (d.paciente || '') + '</td>';
+          html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (dom.Neuroticismo ? dom.Neuroticismo.escoreT : '-') + '</td>';
+          html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (dom.Extroversao ? dom.Extroversao.escoreT : '-') + '</td>';
+          html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (dom.Abertura ? dom.Abertura.escoreT : '-') + '</td>';
+          html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (dom.Amabilidade ? dom.Amabilidade.escoreT : '-') + '</td>';
+          html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (dom.Conscienciosidade ? dom.Conscienciosidade.escoreT : '-') + '</td>';
+          html += '</tr>';
+        }
+        html += '</table>';
+        el.innerHTML = html;
+      } catch(e) { el.innerHTML = '<p>Erro ao carregar resultados.</p>'; }
     }
 
     // ===== FUNCOES SMART - REABILITACAO COM IA =====

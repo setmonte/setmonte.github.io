@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-QY1N9587DG"></script>
+    <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-QY1N9587DG');</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEO PI-R</title>
+    <style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;line-height:1.6;color:#333;background:linear-gradient(135deg,#1a237e 0%,#4a148c 100%);min-height:100vh;padding:20px}
+.container{max-width:1000px;margin:0 auto;background:#fff;border-radius:15px;box-shadow:0 20px 40px rgba(0,0,0,.15);overflow:hidden}
+.header{background:linear-gradient(135deg,#1a237e 0%,#4a148c 100%);color:#fff;padding:30px;text-align:center}
+.header h1{font-size:2.2em;margin-bottom:10px;text-shadow:2px 2px 4px rgba(0,0,0,.3)}
+.header p{font-size:1.1em;opacity:.9}
+.content{padding:30px}
+.info-tecnica{background:#ede7f6;padding:25px;border-radius:10px;margin-bottom:30px;border-left:5px solid #4a148c;position:relative}
+.info-tecnica h2{color:#4a148c;margin-bottom:15px;font-size:1.4em}
+.info-tecnica p{color:#555;line-height:1.7;font-size:.95em}
+.dados-pessoais{background:#f8f9fa;padding:25px;border-radius:10px;margin-bottom:30px;border-left:5px solid #4a148c}
+.dados-pessoais h2{color:#4a148c;margin-bottom:20px;font-size:1.5em}
+.form-row{display:flex;gap:20px;margin-bottom:15px;flex-wrap:wrap}
+.form-group{flex:1;min-width:200px}
+.form-group label{display:block;margin-bottom:5px;font-weight:600;color:#555}
+.form-group input,.form-group select{width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:8px;font-size:16px;transition:border-color .3s}
+.form-group input:focus,.form-group select:focus{outline:none;border-color:#4a148c}
+.instrucoes{background:#e8eaf6;padding:20px;border-radius:10px;margin-bottom:30px;border-left:5px solid #1a237e}
+.instrucoes h3{color:#1a237e;margin-bottom:10px}
+.instrucoes p{color:#555;font-size:.95em;line-height:1.7}
+.item{padding:20px;border-bottom:1px solid #f0f0f0;transition:background-color .3s}
+.item:hover{background-color:#ede7f6}
+.item:last-child{border-bottom:none}
+.item-texto{font-size:1.05em;margin-bottom:15px;color:#444;line-height:1.5}
+.item-numero{font-weight:bold;color:#4a148c;margin-right:8px}
+.opcoes{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.opcao{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;padding:8px;border-radius:8px;transition:all .3s;border:2px solid transparent;min-width:80px;min-height:70px}
+.opcao:hover{background-color:#ede7f6;border-color:#4a148c}
+.opcao input[type="radio"]{width:18px;height:18px;cursor:pointer;accent-color:#4a148c}
+.opcao label{cursor:pointer;font-weight:500;color:#555;text-align:center;font-size:.78em;line-height:1.2;min-height:30px;display:flex;align-items:center}
+.botoes{display:flex;gap:15px;justify-content:center;margin:30px 0;flex-wrap:wrap}
+.btn{padding:15px 30px;border:none;border-radius:25px;font-size:16px;font-weight:600;cursor:pointer;transition:all .3s;text-align:center}
+.btn-primary{background:linear-gradient(135deg,#1a237e 0%,#4a148c 100%);color:#fff}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 10px 20px rgba(74,20,140,.3)}
+.btn-secondary{background:linear-gradient(135deg,#28a745 0%,#20c997 100%);color:#fff}
+.btn-secondary:hover{transform:translateY(-2px);box-shadow:0 10px 20px rgba(40,167,69,.3)}
+.btn-danger{background:linear-gradient(135deg,#dc3545 0%,#fd7e14 100%);color:#fff}
+.btn-danger:hover{transform:translateY(-2px);box-shadow:0 10px 20px rgba(220,53,69,.3)}
+.resultados{background:#f8f9fa;padding:30px;border-radius:10px;margin-top:30px;border-left:5px solid #4a148c;display:none}
+.resultados h2{color:#4a148c;margin-bottom:20px;text-align:center}
+.total-geral{background:linear-gradient(135deg,#1a237e 0%,#4a148c 100%);color:#fff;padding:25px;border-radius:10px;text-align:center;margin:20px 0}
+.dominio-card{background:#fff;padding:20px;border-radius:10px;margin-bottom:15px;box-shadow:0 3px 10px rgba(0,0,0,.08);border-left:4px solid #4a148c}
+.dominio-card h4{color:#4a148c;margin-bottom:8px}
+.faceta-item{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f0f0f0;font-size:.9em}
+.faceta-item:last-child{border-bottom:none}
+.badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:.8em;font-weight:600;color:#fff}
+.progress-bar{height:8px;background:#e0e0e0;border-radius:4px;overflow:hidden;margin-top:5px}
+.progress-fill{height:100%;border-radius:4px;transition:width .3s}
+.disclaimer{background:#fff3e0;padding:15px;border-radius:8px;margin-top:20px;border-left:4px solid #ff9800;font-size:.85em;color:#e65100;line-height:1.6}
+.btn-imprimir{position:absolute;top:20px;right:20px;padding:10px 20px;background:linear-gradient(135deg,#4a148c 0%,#6a1b9a 100%);color:#fff;border:none;border-radius:20px;font-size:14px;font-weight:600;cursor:pointer}
+@media print{body{background:#fff!important;padding:0!important}.botoes,.btn,.btn-imprimir{display:none!important}.container{box-shadow:none!important;max-width:100%!important}.info-tecnica{display:none!important}.resultados{display:none!important}.item{page-break-inside:avoid}}
+@media(max-width:768px){.container{margin:10px;border-radius:10px}.header{padding:20px}.header h1{font-size:1.6em}.content{padding:15px}.form-row{flex-direction:column}.opcoes{flex-direction:column;align-items:center}.botoes{flex-direction:column}.btn{width:100%}}
+</style>
+</head>
+<body>
+<div style="padding:10px 20px;background:#2e7d32;"><a href="../" style="display:inline-block;background:#fff;color:#2e7d32;text-decoration:none;font-family:Segoe UI,Arial,sans-serif;font-size:14px;font-weight:bold;padding:8px 20px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.15);">&#11013; Voltar ao In&#237;cio</a></div>
+<div class="container">
+<div class="header">
+<h1>&#129504; NEO PI-R</h1>
+<p>Invent&#225;rio de Personalidade NEO Revisado</p>
+<p style="font-size:0.85em;opacity:0.8;margin-top:5px;">Modelo dos Cinco Grandes Fatores (Big Five) &#8212; Costa &amp; McCrae</p>
+</div>
+<div class="content">
+<div class="info-tecnica">
+<button class="btn-imprimir" onclick="window.print()">&#128424; Imprimir Formul&#225;rio</button>
+<h2>&#128218; Informa&#231;&#245;es T&#233;cnicas</h2>
+<p>
+<strong>Instrumento:</strong> NEO PI-R &#8212; Invent&#225;rio de Personalidade NEO Revisado<br>
+<strong>Base te&#243;rica:</strong> Modelo dos Cinco Grandes Fatores (Big Five)<br>
+<strong>Estrutura:</strong> 240 itens, 5 dom&#237;nios, 30 facetas, escala Likert 5 pontos<br>
+<strong>Resultado:</strong> Escores T com normas brasileiras (N=160.671)<br>
+<strong>Dom&#237;nios:</strong> Neuroticismo, Extrovers&#227;o, Abertura, Amabilidade, Conscienciosidade<br>
+<strong>Popula&#231;&#227;o:</strong> Adultos (18-60 anos)
+</p>
+</div>
+<div class="dados-pessoais">
+<h2>&#128203; Dados Pessoais</h2>
+<div class="form-row">
+<div class="form-group"><label for="nome">Nome:</label><input type="text" id="nome" placeholder="Nome completo"></div>
+<div class="form-group"><label for="dataNascimento">Data de Nascimento:</label><input type="date" id="dataNascimento" onchange="calcularIdade()"></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label for="idadeCalculada">Idade:</label><input type="text" id="idadeCalculada" readonly style="background-color:#f0f0f0;" placeholder="Calculada automaticamente"></div>
+<div class="form-group"><label for="sexo">Sexo:</label><select id="sexo"><option value="">Selecione</option><option value="Masculino">Masculino</option><option value="Feminino">Feminino</option></select></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label for="escolaridade">Escolaridade:</label><select id="escolaridade"><option value="">Selecione</option><option value="Ensino Medio">Ensino M&#233;dio</option><option value="Ensino Superior">Ensino Superior</option></select></div>
+<div class="form-group"><label for="data">Data da Avalia&#231;&#227;o:</label><input type="date" id="data"></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label for="observacoes">Observa&#231;&#245;es (opcional):</label><input type="text" id="observacoes" placeholder="Informa&#231;&#245;es adicionais"></div>
+</div>
+</div>
+<div class="instrucoes">
+<h3>&#128221; Instru&#231;&#245;es</h3>
+<p>Leia cada afirma&#231;&#227;o com aten&#231;&#227;o e marque a op&#231;&#227;o que melhor descreve a sua maneira habitual de ser. N&#227;o existem respostas certas ou erradas. Responda de forma honesta e espont&#226;nea, indicando o quanto voc&#234; concorda ou discorda de cada afirma&#231;&#227;o.</p>
+</div>
+<div id="questionario"></div>
+<div class="botoes">
+<button class="btn btn-primary" onclick="calcularResultados()">Calcular Resultados</button>
+<button class="btn btn-secondary" onclick="gerarRelatorioPDF()">Gerar Relat&#243;rio PDF</button>
+<button class="btn btn-danger" onclick="limparDados()">Limpar Dados</button>
+</div>
+<div id="resultados" class="resultados"></div>
+</div>
+</div>
+<script src="../id-paciente.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+var ITENS=[
+"Sou uma pessoa despreocupada.",
+"Gosto realmente da maioria das pessoas que encontro.",
+"Tenho uma imagina\u00e7\u00e3o muito f\u00e9rtil.",
+"Tendo a ser discreto(a) frente \u00e0s inten\u00e7\u00f5es dos outros.",
+"Sou conhecido(a) pela minha prud\u00eancia e bom senso.",
+"Muitas vezes, fico irritado(a) com a maneira como as pessoas me tratam.",
+"N\u00e3o gosto de multid\u00f5es e por isso as evito.",
+"Assuntos de est\u00e9tica e de arte n\u00e3o s\u00e3o muito importantes para mim.",
+"N\u00e3o sou dissimulado(a) nem espertalh\u00e3o(ona).",
+"Prefiro deixar as op\u00e7\u00f5es em aberto a planejar tudo com anteced\u00eancia.",
+"Raramente me sinto s\u00f3 ou triste.",
+"Sou dominador(a), firme e assertivo(a).",
+"Sem emo\u00e7\u00f5es fortes a vida n\u00e3o teria muita gra\u00e7a para mim.",
+"Algumas pessoas pensam que sou invejoso(a) e ego\u00edsta.",
+"Tento cumprir todas as minhas obriga\u00e7\u00f5es com responsabilidade.",
+"Ao lidar com outras pessoas, sempre tenho medo de fazer alguma coisa errada.",
+"Gosto de realizar as coisas com calma.",
+"Sou bastante agarrado(a) \u00e0s minhas pr\u00f3prias maneiras de agir.",
+"Prefiro colaborar com as outras pessoas a competir com elas.",
+"Sou despreocupado(a) e pouco determinado(a).",
+"Raramente me excedo em qualquer coisa.",
+"Sinto, muitas vezes, forte necessidade de me divertir.",
+"Muitas vezes, sinto prazer em brincar com teorias e ideias abstratas.",
+"N\u00e3o me incomodo de me vangloriar de meus talentos e sucessos.",
+"Eu sou bom(boa) em organizar meu tempo de maneira a fazer as coisas dentro do prazo.",
+"Sinto-me, muitas vezes, desamparado(a), desejando que algu\u00e9m resolva os meus problemas.",
+"Para dizer a verdade, nunca pulei de alegria.",
+"Acredito que deixar estudantes ouvirem pessoas com ideias controversas s\u00f3 vai confundi-los e desorienta-los.",
+"Os governantes precisam estar muito mais atentos para o lado humano dos seus projetos pol\u00edticos.",
+"Ao longo dos anos cometi muitos erros.",
+"Assusto-me facilmente.",
+"Eu n\u00e3o gosto muito de ficar conversando com as pessoas.",
+"Tento sempre organizar os meus pensamentos de forma realista, n\u00e3o dando asas \u00e0 imagina\u00e7\u00e3o.",
+"Acredito que a maioria das pessoas \u00e9, no fundo, bem intencionada.",
+"N\u00e3o levo muito a s\u00e9rio os deveres c\u00edvicos, como votar.",
+"Sou uma pessoa tranquila.",
+"Gosto de ter muita gente \u00e0 minha volta.",
+"Em algumas ocasi\u00f5es, quando ou\u00e7o m\u00fasica, n\u00e3o presto aten\u00e7\u00e3o em mais nada.",
+"Se for necess\u00e1rio, estou disposto(a) a manipular as pessoas para conseguir aquilo que quero.",
+"Mantenho as minhas coisas limpas e em ordem.",
+"As vezes, sinto que eu n\u00e3o valho nada.",
+"As vezes, eu deveria mostrar maior firmeza em minhas a\u00e7\u00f5es.",
+"Raramente experimento fortes emo\u00e7\u00f5es.",
+"Tento ser educado(a) com todas as pessoas que encontro.",
+"As vezes, n\u00e3o sou t\u00e3o confi\u00e1vel como deveria ser.",
+"Raramente me sinto constrangido(a) quando estou rodeado(a) de pessoas.",
+"Quando fa\u00e7o alguma coisa, eu fa\u00e7o com todo o entusiasmo.",
+"Acho interessante aprender e cultivar novos hobbies (passatempos).",
+"Sei ser sarc\u00e1stico(a) e ir\u00f4nico(a) quando necess\u00e1rio.",
+"Tenho objetivos claros e busco atingi-los de forma organizada.",
+"Tenho dificuldade em resistir aos meus desejos.",
+"N\u00e3o gostaria de passar as f\u00e9rias em um lugar muito frequentado e agitado.",
+"Acho as discuss\u00f5es filos\u00f3ficas enfadonhas (chatas).",
+"Quando estou conversando com as pessoas, prefiro n\u00e3o falar de mim mesmo(a) e das minhas realiza\u00e7\u00f5es.",
+"Perco muito tempo antes de me concentrar no trabalho.",
+"Sinto que sou capaz de resolver a maioria dos meus problemas.",
+"J\u00e1 experimentei, algumas vezes, sensa\u00e7\u00f5es de grande alegria ou de \u00eatxtase (arrebatamento).",
+"Acredito que as leis e as pol\u00edticas sociais deveriam mudar para que possam refletir as necessidades atuais.",
+"Sou inflex\u00edvel e teimoso(a) nas minhas atitudes.",
+"Penso muito antes de tomar uma decis\u00e3o.",
+"Raramente me sinto amedrontado(a) ou ansioso(a).",
+"Sou uma pessoa amig\u00e1vel e simp\u00e1tica.",
+"Tenho uma grande capacidade de fantasiar.",
+"Acredito que, se voc\u00ea deixar, as pessoas v\u00e3o te passar para tr\u00e1s (enganar).",
+"Mantenho-me informado(a) e, geralmente, tomo decis\u00f5es inteligentes.",
+"Eu sou conhecido(a) como uma pessoa esquentada.",
+"Normalmente, prefiro fazer as coisas sozinho(a).",
+"Assistir bal\u00e9 ou dan\u00e7a moderna me deixa entediado(a).",
+"Mesmo que quisesse, n\u00e3o conseguiria enganar ningu\u00e9m.",
+"N\u00e3o sou uma pessoa muito met\u00f3dica (ordeira).",
+"Raramente estou triste ou deprimido(a).",
+"J\u00e1 fui muitas vezes l\u00edder de grupos a que pertenci.",
+"\u00c9 importante para mim como eu me sinto frente a pessoas ou situa\u00e7\u00f5es.",
+"Algumas pessoas consideram-me frio(a) e calculista.",
+"Pago minhas d\u00edvidas em dia.",
+"Algumas vezes me senti t\u00e3o envergonhado(a) que simplesmente queria sumir.",
+"Trabalho devagar, mas persistentemente (de forma regular).",
+"Quando encontro a maneira correta de fazer uma coisa me agarro a ela.",
+"Apesar de ter direito, tenho receio em mostrar a minha indigna\u00e7\u00e3o e raiva, pois posso magoar as pessoas.",
+"Quando inicio um programa de modifica\u00e7\u00e3o pessoal (regime, esporte), deixo de cumpri-lo ap\u00f3s alguns dias.",
+"Eu n\u00e3o tenho dificuldade em resistir \u00e0s tenta\u00e7\u00f5es.",
+"J\u00e1 fiz algumas coisas s\u00f3 por puro entusiasmo.",
+"Gosto de resolver problemas e quebra-cabe\u00e7as.",
+"Sou melhor que a maioria das pessoas e tenho consci\u00eancia disso.",
+"Eu sou uma pessoa produtiva que sempre consegue fazer as coisas.",
+"Quando estou sob uma grande tens\u00e3o, algumas vezes sinto que n\u00e3o vou resistir.",
+"N\u00e3o sou um(a) grande otimista.",
+"Acredito que devemos confiar nas nossas autoridades religiosas para decis\u00f5es sobre assuntos morais.",
+"Nunca fazemos o suficiente pelos pobres e pelos velhos.",
+"As vezes, ajo primeiro e penso depois.",
+"Frequentemente, sinto-me tenso(a) e agitado(a).",
+"Muitas pessoas me veem como algu\u00e9m um pouco frio e distante.",
+"N\u00e3o gosto de perder tempo sonhando acordado(a).",
+"Penso que a maioria das pessoas com quem lido \u00e9 honesta e digna de confian\u00e7a.",
+"Frequentemente entro em situa\u00e7\u00f5es sem estar totalmente preparado(a) para elas.",
+"N\u00e3o sou considerado(a) uma pessoa melindrosa e temperamental.",
+"Sinto muita necessidade de estar com outras pessoas quando fico sozinho(a) durante muito tempo.",
+"Fico admirado(a) com a variedade de padr\u00f5es que encontro na arte e na natureza.",
+"Penso que ser totalmente honesto(a) n\u00e3o \u00e9 uma boa maneira de fazer neg\u00f3cios.",
+"Gosto de ter as coisas no seu lugar, pois assim sei onde posso encontr\u00e1-las.",
+"J\u00e1 senti, algumas vezes, uma sensa\u00e7\u00e3o profunda de culpa ou de ter pecado.",
+"Geralmente, nas reuni\u00f5es, deixo os outros falarem.",
+"Raramente presto muita aten\u00e7\u00e3o ao que estou sentindo no momento.",
+"Geralmente, procuro ser atencioso(a) e delicado(a).",
+"Em alguns jogos, acho divertido conseguir trapacear os outros sem ser percebido.",
+"N\u00e3o fico desconcertado(a) se as pessoas me ridicularizam ou me provocam.",
+"Frequentemente, sinto-me explodindo de energia.",
+"Frequentemente, experimento comidas novas e desconhecidas.",
+"Quando n\u00e3o gosto de algu\u00e9m, fa\u00e7o quest\u00e3o de demonstrar.",
+"Trabalho muito para conseguir o que quero.",
+"Tenho tend\u00eancia a me esbaldar, a agir em excesso, quando estou diante de coisas ou situa\u00e7\u00f5es que gosto muito.",
+"Procuro evitar filmes com cenas muito chocantes ou assustadoras.",
+"As vezes, perco o interesse quando as pessoas come\u00e7am a falar sobre assuntos muito te\u00f3ricos e abstratos.",
+"Tento ser humilde.",
+"Tenho dificuldade em come\u00e7ar a fazer o que eu devo fazer.",
+"Em casos de emerg\u00eancia, mantenho a cabe\u00e7a fria.",
+"As vezes, sinto que vou explodir de alegria.",
+"Considero que definir o que \u00e9 certo e errado depende da cultura em que as pessoas vivem.",
+"N\u00e3o gosto de mendigos.",
+"Sempre penso nas consequ\u00eancias antes de agir.",
+"Fico apreensivo(a) com o futuro.",
+"Gosto muito de falar com as outras pessoas.",
+"Gosto de me concentrar numa fantasia e explorar todas as suas possibilidades, deixando-a crescer e se desenvolver.",
+"Fico desconfiado(a) quando algu\u00e9m faz alguma coisa boa para mim.",
+"Tenho orgulho do meu bom senso.",
+"Frequentemente, sinto antipatia pelas pessoas com as quais tenho que conviver.",
+"Prefiro trabalhos que possa fazer sozinho(a), sem ser incomodado(a) por outras pessoas.",
+"A poesia pouco ou nada me sensibiliza.",
+"Ficaria aborrecido(a) se algu\u00e9m me considerasse um(a) pessoa hip\u00f3crita.",
+"Parece que nunca consigo ser organizado(a).",
+"Tenho tend\u00eancia a me culpar se alguma coisa d\u00e1 errado.",
+"Muitas vezes, outras pessoas pedem para eu ajud\u00e1-las a tomar decis\u00f5es.",
+"Experimento uma grande variedade de emo\u00e7\u00f5es e sentimentos.",
+"N\u00e3o sou conhecido(a) como algu\u00e9m generoso.",
+"Quando assumo um compromisso as pessoas confiam que vou cumprir.",
+"Sinto-me, muitas vezes, inferior \u00e0s outras pessoas.",
+"N\u00e3o sou t\u00e3o ativo(a) e animado(a) como as outras pessoas.",
+"Prefiro ficar em ambientes conhecidos.",
+"Quando sou insultado(a), tento perdoar e esquecer.",
+"N\u00e3o sou ambicioso(a).",
+"Tenho facilidade em resistir a meus impulsos.",
+"Gosto de estar em lugares animados.",
+"Gosto de resolver problemas complicados do tipo quebra-cabe\u00e7as.",
+"Eu tenho uma opini\u00e3o muito boa sobre mim.",
+"Quando come\u00e7o um projeto, quase sempre o termino.",
+"Frequentemente, tenho dificuldade em tomar decis\u00f5es.",
+"N\u00e3o me considero uma pessoa alegre.",
+"Acredito que \u00e9 mais importante ser fiel aos meus ideais e princ\u00edpios do que ter uma mente aberta.",
+"As necessidades humanas s\u00e3o mais importantes que os interesses econ\u00f4micos.",
+"Costumo agir sem pensar.",
+"Frequentemente me preocupo com as coisas que podem dar errado.",
+"\u00c9 f\u00e1cil para mim sorrir e ser simp\u00e1tico(a) com pessoas desconhecidas.",
+"Quando percebo que estou sendo levado(a) pela minha pr\u00f3pria imagina\u00e7\u00e3o, procuro me concentrar, ocupando-me com algum trabalho ou atividade.",
+"Minha primeira rea\u00e7\u00e3o \u00e9 confiar nas pessoas.",
+"Eu acho que n\u00e3o tive sucesso completo em coisa nenhuma.",
+"\u00c9 preciso muito para me irritar.",
+"Prefiro passar f\u00e9rias numa praia cheia a um chal\u00e9 isolado nas montanhas.",
+"Fico extasiado com certos tipos de m\u00fasica.",
+"Por vezes, levo as pessoas a fazerem o que eu quero.",
+"Sou uma pessoa exigente e meticulosa.",
+"Tenho uma opini\u00e3o pouco favor\u00e1vel de mim mesmo(a).",
+"Prefiro tratar da minha vida a ser um(a) l\u00edder para outras pessoas.",
+"Raramente me dou conta dos humores ou sentimentos que diferentes ambientes causam.",
+"A maioria das pessoas que me conhece gosta de mim.",
+"Sigo, rigorosamente, meus princ\u00edpios \u00e9ticos.",
+"Sinto-me \u00e0 vontade na presen\u00e7a do meu chefe ou de outras autoridades.",
+"As pessoas acham que estou sempre com pressa.",
+"Por vezes, mudo coisas em minha casa s\u00f3 para experimentar a diferen\u00e7a.",
+"Se algu\u00e9m come\u00e7a uma briga, estou sempre pronto(a) para revidar.",
+"Esfor\u00e7o-me para conseguir tudo que puder.",
+"As vezes, como at\u00e9 me sentir mal.",
+"Adoraria sentir as emo\u00e7\u00f5es de pular de paraquedas.",
+"Tenho pouco interesse em especular sobre a natureza do universo ou da condi\u00e7\u00e3o humana.",
+"Sinto que n\u00e3o sou melhor que os outros, seja qual for a condi\u00e7\u00e3o deles.",
+"Quando um projeto se torna muito dif\u00edcil, minha tend\u00eancia \u00e9 come\u00e7ar um novo.",
+"Consigo me controlar muito bem numa situa\u00e7\u00e3o de crise.",
+"Sou uma pessoa alegre e bem disposta.",
+"Considero-me um indiv\u00edduo aberto e tolerante quanto ao estilo de vida das outras pessoas.",
+"Penso que todos os seres humanos s\u00e3o dignos de respeito.",
+"Raramente tomo decis\u00f5es precipitadas.",
+"Tenho menos temores que a maioria das pessoas.",
+"Tenho fortes liga\u00e7\u00f5es afetivas com meus amigos.",
+"Quando crian\u00e7a, raramente me divertia com jogos de faz-de-conta.",
+"Tendo a pensar o melhor acerca das pessoas.",
+"Sou uma pessoa muito competente.",
+"Algumas vezes senti ressentimento e amargura.",
+"Geralmente eu fico entediado(a) em encontros sociais.",
+"As vezes, ao ler poesia ou ao olhar para uma obra de arte, sinto um arrepio, uma onda de emo\u00e7\u00e3o.",
+"As vezes, intimido ou bajulo as pessoas para que elas fa\u00e7am o que eu quero.",
+"N\u00e3o tenho obsess\u00e3o por limpeza.",
+"As vezes, as coisas parecem-me bastante tristes e sem esperan\u00e7a.",
+"Nas conversas, tendo a falar mais do que os outros.",
+"Acho f\u00e1cil ser emp\u00e1tico(a), ou seja, sentir o que os outros sentem.",
+"Considero-me uma pessoa caridosa.",
+"Tento fazer as tarefas com todo o cuidado, para n\u00e3o ter necessidade de faz\u00ea-las novamente.",
+"Caso eu tenha dito ou feito algo errado a algu\u00e9m, custa-me muito encar\u00e1-lo(a) outra vez.",
+"Minha vida \u00e9 agitada.",
+"Quando estou em f\u00e9rias, prefiro voltar a um lugar j\u00e1 conhecido.",
+"Sou cabe\u00e7udo(a) e teimoso(a).",
+"Esfor\u00e7o-me por ser excelente em tudo que fa\u00e7o.",
+"As vezes, fa\u00e7o as coisas de modo t\u00e3o impulsivo que, mais tarde, me arrependo.",
+"Sinto-me atra\u00eddo(a) por cores alegres e estilos exuberantes.",
+"Tenho muita curiosidade intelectual.",
+"Prefiro muito mais elogiar os outros a ser elogiado(a).",
+"T\u00eam tantas pequenas coisas que precisam ser feitas que, \u00e0s vezes, eu simplesmente ignoro todas elas.",
+"Mesmo quando tudo parece estar dando errado, ainda consigo tomar boas decis\u00f5es.",
+"\u00c9 raro eu utilizar palavras como \u0022fant\u00e1stico\u0022 ou \u0022sensacional\u0022 para descrever minhas experi\u00eancias.",
+"Acho que se pessoas com 25 anos de idade n\u00e3o sabem no que acreditam, alguma coisa est\u00e1 errada com elas.",
+"Tenho pena de pessoas com menos sorte do que eu.",
+"Planejo as minhas viagens com anteced\u00eancia e com cuidado.",
+"As vezes, tenho pensamentos aterrorizantes.",
+"Crio facilmente v\u00ednculos sociais com as pessoas com quem trabalho.",
+"Tenho dificuldade em soltar a minha imagina\u00e7\u00e3o (devanear).",
+"Tenho bastante f\u00e9 na natureza humana.",
+"Sou eficiente e eficaz no meu trabalho.",
+"Mesmo os pequenos contratempos podem ser frustrantes para mim.",
+"Gosto de festas com muita gente.",
+"Gosto mais de ler poesia do que hist\u00f3rias estruturadas (romances e contos).",
+"Orgulho-me do meu jeito de lidar com as pessoas.",
+"Gasto muito tempo \u00e0 procura de coisas que coloquei fora do lugar.",
+"Muitas vezes, quando as coisas d\u00e3o errado, fico desanimado(a) e tenho vontade de desistir.",
+"N\u00e3o considero f\u00e1cil dirigir (comandar) uma situa\u00e7\u00e3o.",
+"Coisas diferentes, como certos cheiros ou nomes de locais distantes, podem evocar em mim fortes emo\u00e7\u00f5es.",
+"Quando posso, deixo o que estou fazendo para ajudar os outros.",
+"S\u00f3 faltaria ao trabalho se estivesse realmente doente.",
+"Quando pessoas que eu conhe\u00e7o fazem uma bobagem, fico constrangido(a) por elas.",
+"Sou uma pessoa muito ativa.",
+"Sigo sempre o mesmo caminho quando vou a qualquer lugar.",
+"Frequentemente me envolvo em discuss\u00f5es com a minha fam\u00edlia e colegas de trabalho.",
+"Sou um pouco viciado(a) em trabalho.",
+"Consigo sempre manter os meus sentimentos sob controle.",
+"Gosto de fazer parte da multid\u00e3o em acontecimentos esportivos.",
+"Tenho uma grande variedade de interesses intelectuais.",
+"Considero que sou melhor que a maioria das pessoas.",
+"Tenho muita autodisciplina.",
+"Sou bastante est\u00e1vel do ponto de vista emocional.",
+"Sou propenso(a) a rir facilmente.",
+"Penso que a nova moralidade, que consiste em tudo permitir, n\u00e3o \u00e9 moralidade nenhuma.",
+"Prefiro ser conhecido(a) como uma pessoa \u0022compreensiva\u0022 (inclinada a perdoar) do que como uma pessoa \u0022justa\u0022 (inclinada ao rigor).",
+"Penso duas vezes antes de responder a uma pergunta."
+];
+
+var OPCOES=[{valor:0,texto:"Discordo<br>Fortemente"},{valor:1,texto:"Discordo"},{valor:2,texto:"Neutro"},{valor:3,texto:"Concordo"},{valor:4,texto:"Concordo<br>Fortemente"}];
+
+// Facetas: cada faceta tem 8 itens (numero do item 1-240)
+var FACETAS={
+'N1':{nome:'Ansiedade',itens:[1,31,61,91,121,151,181,211]},
+'N2':{nome:'Raiva/Hostilidade',itens:[6,36,66,96,126,156,186,216]},
+'N3':{nome:'Depress\u00e3o',itens:[11,41,71,101,131,161,191,221]},
+'N4':{nome:'Embara\u00e7o/Constrangimento',itens:[16,46,76,106,136,166,196,226]},
+'N5':{nome:'Impulsividade',itens:[21,51,81,111,141,171,201,231]},
+'N6':{nome:'Vulnerabilidade',itens:[26,56,86,116,146,176,206,236]},
+'E1':{nome:'Acolhimento Caloroso',itens:[2,32,62,92,122,152,182,212]},
+'E2':{nome:'Gregarismo',itens:[7,37,67,97,127,157,187,217]},
+'E3':{nome:'Assertividade',itens:[12,42,72,102,132,162,192,222]},
+'E4':{nome:'Atividade',itens:[17,47,77,107,137,167,197,227]},
+'E5':{nome:'Busca de Sensa\u00e7\u00f5es',itens:[22,52,82,112,142,172,202,232]},
+'E6':{nome:'Emo\u00e7\u00f5es Positivas',itens:[27,57,87,117,147,177,207,237]},
+'O1':{nome:'Fantasia',itens:[3,33,63,93,123,153,183,213]},
+'O2':{nome:'Est\u00e9tica',itens:[8,38,68,98,128,158,188,218]},
+'O3':{nome:'Sentimentos',itens:[13,43,73,103,133,163,193,223]},
+'O4':{nome:'A\u00e7\u00f5es Variadas',itens:[18,48,78,108,138,168,198,228]},
+'O5':{nome:'Ideias',itens:[23,53,83,113,143,173,203,233]},
+'O6':{nome:'Valores',itens:[28,58,88,118,148,178,208,238]},
+'A1':{nome:'Confian\u00e7a',itens:[4,34,64,94,124,154,184,214]},
+'A2':{nome:'Franqueza',itens:[9,39,69,99,129,159,189,219]},
+'A3':{nome:'Altru\u00edsmo',itens:[14,44,74,104,134,164,194,224]},
+'A4':{nome:'Complac\u00eancia',itens:[19,49,79,109,139,169,199,229]},
+'A5':{nome:'Mod\u00e9stia',itens:[24,54,84,114,144,174,204,234]},
+'A6':{nome:'Sensibilidade',itens:[29,59,89,119,149,179,209,239]},
+'C1':{nome:'Compet\u00eancia',itens:[5,35,65,95,125,155,185,215]},
+'C2':{nome:'Ordem',itens:[10,40,70,100,130,160,190,220]},
+'C3':{nome:'Senso de Dever',itens:[15,45,75,105,135,165,195,225]},
+'C4':{nome:'Esfor\u00e7o por Realiza\u00e7\u00f5es',itens:[20,50,80,110,140,170,200,230]},
+'C5':{nome:'Autodisciplina',itens:[25,55,85,115,145,175,205,235]},
+'C6':{nome:'Pondera\u00e7\u00e3o',itens:[30,60,90,120,150,180,210,240]}
+};
+
+var DOMINIOS={
+'N':{nome:'Neuroticismo',facetas:['N1','N2','N3','N4','N5','N6']},
+'E':{nome:'Extrovers\u00e3o',facetas:['E1','E2','E3','E4','E5','E6']},
+'O':{nome:'Abertura',facetas:['O1','O2','O3','O4','O5','O6']},
+'A':{nome:'Amabilidade',facetas:['A1','A2','A3','A4','A5','A6']},
+'C':{nome:'Conscienciosidade',facetas:['C1','C2','C3','C4','C5','C6']}
+};
+
+// Itens invertidos (pontuacao reversa: valor = 4 - valor_marcado)
+// NEO PI-R: itens negativamente keyed conforme manual
+// N: itens diretos (nao inverte - escores altos = mais neuroticismo)
+// E: itens 7,32,37,42,52,57,67,87,92,97,127,137,147,157,162,187,207 sao invertidos (keyed negatively)
+// O: itens 8,33,48,53,68,78,83,88,93,113,128,138,153,163,183,198,213 sao invertidos
+// A: itens 14,24,39,44,49,54,59,64,74,84,99,104,109,114,119,124,134,154,164,169,189,199,209,219,234 inverte
+// C: itens 10,20,25,35,45,55,70,80,95,100,115,120,130,140,145,150,155,175,190,205,220 inverte
+// Consolidado com base na chave padrao:
+var INVERTIDOS=[1,11,16,21,36,46,61,71,76,81,86,91,96,106,111,116,121,131,146,151,161,166,171,176,181,191,196,201,206,211,221,226,231,236,7,32,37,42,52,57,67,87,92,97,127,137,147,157,162,187,207,8,33,48,53,68,78,83,88,93,113,128,138,153,163,183,198,213,14,24,39,44,49,54,59,64,74,84,99,104,109,114,119,124,134,154,164,169,189,199,209,219,234,10,20,25,35,45,55,70,80,95,100,115,120,130,140,145,150,155,175,190,205,220];
+
+// Normas brasileiras - Tabela 33 (Medias e DPs)
+// Formato: {geral:{m,dp}, masculino:{m,dp}, feminino:{m,dp}}
+var NORMAS={
+'N':{geral:{m:70.19,dp:24.79},masculino:{m:65.59,dp:22.30},feminino:{m:76.32,dp:26.55}},
+'E':{geral:{m:119.62,dp:17.79},masculino:{m:119.49,dp:17.30},feminino:{m:119.79,dp:18.42}},
+'O':{geral:{m:112.76,dp:15.80},masculino:{m:110.77,dp:15.55},feminino:{m:115.42,dp:15.74}},
+'A':{geral:{m:129.44,dp:14.16},masculino:{m:128.77,dp:14.20},feminino:{m:130.34,dp:14.06}},
+'C':{geral:{m:142.71,dp:19.93},masculino:{m:144.04,dp:19.03},feminino:{m:140.93,dp:20.93}},
+'N1':{geral:{m:15.01,dp:3.73},masculino:{m:14.24,dp:3.40},feminino:{m:16.02,dp:3.89}},
+'N2':{geral:{m:10.34,dp:4.78},masculino:{m:9.63,dp:4.36},feminino:{m:11.29,dp:5.13}},
+'N3':{geral:{m:11.19,dp:5.67},masculino:{m:10.45,dp:5.24},feminino:{m:12.17,dp:6.06}},
+'N4':{geral:{m:13.76,dp:5.00},masculino:{m:12.91,dp:4.71},feminino:{m:14.90,dp:5.16}},
+'N5':{geral:{m:11.24,dp:5.15},masculino:{m:10.68,dp:4.86},feminino:{m:12.00,dp:5.43}},
+'N6':{geral:{m:8.65,dp:4.94},masculino:{m:7.68,dp:4.28},feminino:{m:9.94,dp:5.44}},
+'E1':{geral:{m:24.11,dp:4.07},masculino:{m:23.87,dp:3.97},feminino:{m:24.43,dp:4.17}},
+'E2':{geral:{m:18.68,dp:4.90},masculino:{m:18.68,dp:4.80},feminino:{m:18.67,dp:5.03}},
+'E3':{geral:{m:17.47,dp:4.14},masculino:{m:17.63,dp:4.00},feminino:{m:17.26,dp:4.32}},
+'E4':{geral:{m:17.96,dp:3.62},masculino:{m:17.92,dp:3.50},feminino:{m:18.01,dp:3.78}},
+'E5':{geral:{m:18.71,dp:3.94},masculino:{m:18.91,dp:3.86},feminino:{m:18.45,dp:4.02}},
+'E6':{geral:{m:22.69,dp:4.27},masculino:{m:22.48,dp:4.14},feminino:{m:22.97,dp:4.42}},
+'O1':{geral:{m:16.63,dp:4.67},masculino:{m:16.39,dp:4.58},feminino:{m:16.96,dp:4.77}},
+'O2':{geral:{m:17.92,dp:4.14},masculino:{m:17.22,dp:4.07},feminino:{m:18.85,dp:4.05}},
+'O3':{geral:{m:19.86,dp:3.71},masculino:{m:19.22,dp:3.64},feminino:{m:20.71,dp:3.63}},
+'O4':{geral:{m:17.07,dp:3.81},masculino:{m:16.71,dp:3.70},feminino:{m:17.54,dp:3.89}},
+'O5':{geral:{m:20.60,dp:4.49},masculino:{m:20.90,dp:4.39},feminino:{m:20.21,dp:4.58}},
+'O6':{geral:{m:20.69,dp:3.71},masculino:{m:20.34,dp:3.66},feminino:{m:21.15,dp:3.73}},
+'A1':{geral:{m:20.06,dp:4.41},masculino:{m:20.15,dp:4.29},feminino:{m:19.92,dp:4.57}},
+'A2':{geral:{m:21.07,dp:3.58},masculino:{m:20.79,dp:3.57},feminino:{m:21.45,dp:3.55}},
+'A3':{geral:{m:25.15,dp:3.26},masculino:{m:24.77,dp:3.19},feminino:{m:25.67,dp:3.28}},
+'A4':{geral:{m:21.42,dp:4.03},masculino:{m:21.50,dp:3.88},feminino:{m:21.30,dp:4.23}},
+'A5':{geral:{m:19.10,dp:3.63},masculino:{m:18.93,dp:3.67},feminino:{m:19.32,dp:3.58}},
+'A6':{geral:{m:22.65,dp:3.12},masculino:{m:22.63,dp:3.18},feminino:{m:22.67,dp:3.04}},
+'C1':{geral:{m:24.79,dp:3.64},masculino:{m:25.03,dp:3.52},feminino:{m:24.47,dp:3.77}},
+'C2':{geral:{m:21.86,dp:4.16},masculino:{m:21.93,dp:4.00},feminino:{m:21.77,dp:4.36}},
+'C3':{geral:{m:27.06,dp:3.42},masculino:{m:27.07,dp:3.39},feminino:{m:27.04,dp:3.46}},
+'C4':{geral:{m:23.32,dp:3.89},masculino:{m:23.59,dp:3.75},feminino:{m:22.96,dp:4.05}},
+'C5':{geral:{m:23.59,dp:5.15},masculino:{m:23.90,dp:4.77},feminino:{m:23.18,dp:5.58}},
+'C6':{geral:{m:22.08,dp:4.48},masculino:{m:22.50,dp:4.19},feminino:{m:21.51,dp:4.79}}
+};
+
+// === FUNCOES ===
+function gerarQuestionario(){
+var c=document.getElementById('questionario');var h='';
+for(var i=0;i<ITENS.length;i++){
+h+='<div class="item"><div class="item-texto"><span class="item-numero">'+(i+1)+'.</span> '+ITENS[i]+'</div><div class="opcoes">';
+for(var j=0;j<OPCOES.length;j++){
+h+='<div class="opcao"><input type="radio" id="q'+i+'_'+OPCOES[j].valor+'" name="q'+i+'" value="'+OPCOES[j].valor+'"><label for="q'+i+'_'+OPCOES[j].valor+'">'+OPCOES[j].texto+'</label></div>';
+}
+h+='</div></div>';
+}
+c.innerHTML=h;
+}
+
+function calcularIdade(){
+var d=document.getElementById('dataNascimento').value;
+if(!d)return;
+var h=new Date(),n=new Date(d);
+var a=h.getFullYear()-n.getFullYear(),m=h.getMonth()-n.getMonth(),di=h.getDate()-n.getDate();
+if(di<0){m--;di+=new Date(h.getFullYear(),h.getMonth(),0).getDate();}
+if(m<0){a--;m+=12;}
+document.getElementById('idadeCalculada').value=a+' anos, '+m+' meses e '+di+' dias';
+}
+
+function obterRespostas(){
+var r=[];
+for(var i=0;i<ITENS.length;i++){
+var s=document.querySelector('input[name="q'+i+'"]:checked');
+if(!s)return null;
+var v=parseInt(s.value);
+// Verificar se item e invertido (numero do item = i+1)
+if(INVERTIDOS.indexOf(i+1)!==-1) v=4-v;
+r.push(v);
+}
+return r;
+}
+
+function calcularEscoreT(bruto,chave,sexo){
+var norma;
+if(sexo==='Masculino') norma=NORMAS[chave].masculino;
+else if(sexo==='Feminino') norma=NORMAS[chave].feminino;
+else norma=NORMAS[chave].geral;
+var t=50+10*((bruto-norma.m)/norma.dp);
+return Math.round(t);
+}
+
+function classificarT(t){
+if(t<=35) return {texto:'Muito Baixo',cor:'#1565c0'};
+if(t<=45) return {texto:'Baixo',cor:'#2196f3'};
+if(t<=55) return {texto:'M\u00e9dio',cor:'#4caf50'};
+if(t<=65) return {texto:'Alto',cor:'#ff9800'};
+return {texto:'Muito Alto',cor:'#f44336'};
+}
+
+function calcularResultados(){
+var nome=document.getElementById('nome').value;
+var idade=document.getElementById('idadeCalculada').value;
+var sexo=document.getElementById('sexo').value;
+if(!nome){alert('Preencha o nome.');return;}
+var r=obterRespostas();
+if(!r){
+var resp=document.querySelectorAll('input[type="radio"]:checked').length;
+alert('Responda todos os 240 itens antes de calcular. Faltam '+(240-resp)+' itens.');return;
+}
+
+// Calcular escores brutos por faceta
+var escoresFacetas={};
+var keys=Object.keys(FACETAS);
+for(var k=0;k<keys.length;k++){
+var fk=keys[k];
+var f=FACETAS[fk];
+var soma=0;
+for(var j=0;j<f.itens.length;j++){
+soma+=r[f.itens[j]-1]; // itens sao 1-based, array e 0-based
+}
+escoresFacetas[fk]=soma;
+}
+
+// Calcular escores brutos por dominio
+var escoresDominios={};
+var dkeys=Object.keys(DOMINIOS);
+for(var d=0;d<dkeys.length;d++){
+var dk=dkeys[d];
+var dom=DOMINIOS[dk];
+var soma=0;
+for(var f=0;f<dom.facetas.length;f++){
+soma+=escoresFacetas[dom.facetas[f]];
+}
+escoresDominios[dk]=soma;
+}
+
+// Calcular escores T
+var tDominios={};
+for(var d=0;d<dkeys.length;d++){
+var dk=dkeys[d];
+tDominios[dk]=calcularEscoreT(escoresDominios[dk],dk,sexo);
+}
+var tFacetas={};
+for(var k=0;k<keys.length;k++){
+var fk=keys[k];
+tFacetas[fk]=calcularEscoreT(escoresFacetas[fk],fk,sexo);
+}
+
+// Montar HTML dos resultados
+var el=document.getElementById('resultados');
+var h='<h2>Resultados NEO PI-R</h2>';
+h+='<div class="total-geral"><h3>Perfil de Personalidade - Cinco Grandes Fatores</h3>';
+h+='<p style="opacity:0.8;font-size:0.9em;">Normas: '+(sexo==='Masculino'?'Masculino':sexo==='Feminino'?'Feminino':'Amostra Geral')+' (N=160.671)</p></div>';
+
+// Dominios
+for(var d=0;d<dkeys.length;d++){
+var dk=dkeys[d];
+var dom=DOMINIOS[dk];
+var tD=tDominios[dk];
+var clD=classificarT(tD);
+var pct=Math.min(100,Math.max(0,(tD/80)*100));
+h+='<div class="dominio-card">';
+h+='<h4>'+dom.nome+' ('+dk+')</h4>';
+h+='<p>Escore Bruto: <strong>'+escoresDominios[dk]+'</strong> | Escore T: <strong>'+tD+'</strong> | <span class="badge" style="background:'+clD.cor+'">'+clD.texto+'</span></p>';
+h+='<div class="progress-bar"><div class="progress-fill" style="width:'+pct+'%;background:'+clD.cor+'"></div></div>';
+// Facetas do dominio
+for(var f=0;f<dom.facetas.length;f++){
+var fk=dom.facetas[f];
+var tF=tFacetas[fk];
+var clF=classificarT(tF);
+h+='<div class="faceta-item"><span>'+FACETAS[fk].nome+' ('+fk+')</span><span>Bruto: '+escoresFacetas[fk]+' | T: '+tF+' <span class="badge" style="background:'+clF.cor+';font-size:0.7em;">'+clF.texto+'</span></span></div>';
+}
+h+='</div>';
+}
+
+h+='<div class="disclaimer"><strong>IMPORTANTE:</strong> O NEO PI-R \u00e9 um instrumento psicol\u00f3gico de uso exclusivo do psic\u00f3logo. Os resultados devem ser interpretados por profissional habilitado, considerando o contexto cl\u00ednico e demais informa\u00e7\u00f5es da avalia\u00e7\u00e3o.</div>';
+
+el.innerHTML=h;
+el.style.display='block';
+el.scrollIntoView({behavior:'smooth'});
+
+// Salvar dados para envio ao painel
+var domObj={};
+for(var d=0;d<dkeys.length;d++){
+var dk=dkeys[d];
+domObj[DOMINIOS[dk].nome]={bruto:escoresDominios[dk],escoreT:tDominios[dk],classificacao:classificarT(tDominios[dk]).texto};
+}
+var facObj={};
+for(var k=0;k<keys.length;k++){
+var fk=keys[k];
+facObj[FACETAS[fk].nome]={bruto:escoresFacetas[fk],escoreT:tFacetas[fk],classificacao:classificarT(tFacetas[fk]).texto};
+}
+window._escalaDados={escala:'NEO-PI-R',paciente:nome,dominios:domObj,facetas:facObj,idPaciente:(document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''),idade:idade,sexo:sexo,normaUtilizada:sexo||'Geral',data:new Date().toISOString()};
+if(window.injetarBotaoSalvar)injetarBotaoSalvar('resultados');
+}
+
+function gerarRelatorioPDF(){
+var nome=document.getElementById('nome').value;
+if(!nome){alert('Preencha o nome.');return;}
+var r=obterRespostas();
+if(!r){alert('Responda todos os 240 itens.');return;}
+if(!window._escalaDados){calcularResultados();}
+var dados=window._escalaDados;
+var idade=document.getElementById('idadeCalculada').value;
+var sexo=document.getElementById('sexo').value;
+var dataAval=document.getElementById('data').value||new Date().toLocaleDateString('pt-BR');
+var idPac=document.getElementById('idPaciente')?document.getElementById('idPaciente').value:'';
+
+var jsPDF=window.jspdf.jsPDF;
+var doc=new jsPDF();
+
+// Pagina 1 - Cabecalho
+doc.setFillColor(74,20,140);doc.rect(0,0,210,30,'F');
+doc.setTextColor(255,255,255);doc.setFontSize(14);doc.setFont(undefined,'bold');
+doc.text('NEO PI-R - PERFIL DE PERSONALIDADE',105,12,{align:'center'});
+doc.setFontSize(9);doc.setFont(undefined,'normal');
+doc.text('Inventario de Personalidade NEO Revisado - Big Five',105,20,{align:'center'});
+
+var y=38;
+doc.setFillColor(248,249,250);doc.rect(15,y,180,22,'F');
+doc.setTextColor(74,20,140);doc.setFontSize(10);doc.setFont(undefined,'bold');
+doc.text('DADOS PESSOAIS',20,y+6);
+doc.setTextColor(0,0,0);doc.setFontSize(9);doc.setFont(undefined,'normal');
+doc.text('Nome: '+nome+'   |   Sexo: '+(sexo||'Nao informado'),20,y+12);
+doc.text('Idade: '+idade+'   |   Data: '+dataAval+(idPac?'   |   ID: '+idPac:''),20,y+18);
+
+y=66;
+doc.setTextColor(74,20,140);doc.setFontSize(10);doc.setFont(undefined,'bold');
+doc.text('DOMINIOS',20,y);y+=6;
+doc.setFontSize(8);doc.setFont(undefined,'normal');
+doc.setTextColor(100,100,100);
+doc.text('Norma utilizada: '+(sexo||'Geral')+' (N=160.671)',20,y);y+=6;
+
+// Tabela dominios
+doc.setFillColor(74,20,140);doc.setTextColor(255,255,255);doc.setFontSize(8);doc.setFont(undefined,'bold');
+doc.rect(15,y,180,7,'F');
+doc.text('Dominio',20,y+5);doc.text('Bruto',90,y+5);doc.text('Escore T',110,y+5);doc.text('Classificacao',140,y+5);
+y+=7;
+doc.setTextColor(0,0,0);doc.setFont(undefined,'normal');
+var dkeys=Object.keys(DOMINIOS);
+for(var d=0;d<dkeys.length;d++){
+var dk=dkeys[d];
+var dom=dados.dominios[DOMINIOS[dk].nome];
+if(d%2===0){doc.setFillColor(245,245,250);doc.rect(15,y,180,6,'F');}
+doc.text(DOMINIOS[dk].nome+' ('+dk+')',20,y+4);
+doc.text(String(dom.bruto),92,y+4);
+doc.text(String(dom.escoreT),115,y+4);
+doc.text(dom.classificacao,142,y+4);
+y+=6;
+}
+
+y+=8;
+doc.setTextColor(74,20,140);doc.setFontSize(10);doc.setFont(undefined,'bold');
+doc.text('FACETAS',20,y);y+=6;
+doc.setFillColor(74,20,140);doc.setTextColor(255,255,255);doc.setFontSize(7);doc.setFont(undefined,'bold');
+doc.rect(15,y,180,6,'F');
+doc.text('Faceta',20,y+4);doc.text('Bruto',80,y+4);doc.text('T',98,y+4);doc.text('Class.',110,y+4);
+doc.text('Faceta',130,y+4);doc.text('Bruto',170,y+4);doc.text('T',183,y+4);
+y+=6;
+doc.setTextColor(0,0,0);doc.setFont(undefined,'normal');doc.setFontSize(7);
+var fkeys=Object.keys(FACETAS);
+var col=0;var startY=y;
+for(var k=0;k<fkeys.length;k++){
+var fk=fkeys[k];
+var fac=dados.facetas[FACETAS[fk].nome];
+if(col===0){
+if(k%2===0){doc.setFillColor(250,248,255);doc.rect(15,y,90,5,'F');}
+doc.text(FACETAS[fk].nome+' ('+fk+')',20,y+3.5);
+doc.text(String(fac.bruto),82,y+3.5);
+doc.text(String(fac.escoreT),98,y+3.5);
+doc.text(fac.classificacao,110,y+3.5);
+}
+if(k===15){col=1;y=startY;}
+if(col===1&&k>=15){
+if((k-15)%2===0){doc.setFillColor(250,248,255);doc.rect(125,y,70,5,'F');}
+doc.text(FACETAS[fk].nome+' ('+fk+')',130,y+3.5);
+doc.text(String(fac.bruto),172,y+3.5);
+doc.text(String(fac.escoreT),185,y+3.5);
+}
+y+=5;
+}
+
+// Rodape
+doc.setFillColor(80,80,80);doc.rect(0,285,210,12,'F');
+doc.setTextColor(200,200,200);doc.setFontSize(7);
+doc.text('Relatorio gerado em: '+new Date().toLocaleString('pt-BR')+' | NEO PI-R - Costa & McCrae (2010) - Normas Vetor Editora',105,291,{align:'center'});
+
+var ts=new Date();
+var tsStr=ts.getFullYear()+String(ts.getMonth()+1).padStart(2,'0')+String(ts.getDate()).padStart(2,'0')+String(ts.getHours()).padStart(2,'0')+String(ts.getMinutes()).padStart(2,'0');
+doc.save('NEO-PI-R_'+nome.replace(/\s+/g,'_')+'_'+tsStr+'.pdf');
+}
+
+function limparDados(){
+if(!confirm('Limpar todos os dados?'))return;
+document.getElementById('nome').value='';
+document.getElementById('dataNascimento').value='';
+document.getElementById('idadeCalculada').value='';
+document.getElementById('sexo').value='';
+document.getElementById('observacoes').value='';
+document.querySelectorAll('input[type="radio"]').forEach(function(r){r.checked=false;});
+document.querySelectorAll('.item').forEach(function(it){it.style.backgroundColor='';it.style.borderLeft='';});
+document.getElementById('resultados').style.display='none';
+document.getElementById('data').value=new Date().toISOString().split('T')[0];
+window._escalaDados=null;
+}
+
+// ===== MODO PAINEL =====
+var _sessionInfo=null;
+var _API_URL='https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
+
+function _decodificarURL(){
+var params=new URLSearchParams(window.location.search);
+var d=params.get('d');
+if(!d)return false;
+try{_sessionInfo=JSON.parse(atob(decodeURIComponent(d)));}catch(e){return false;}
+var nomeEl=document.getElementById('nome');
+var nascEl=document.getElementById('dataNascimento');
+var sexoEl=document.getElementById('sexo');
+if(nomeEl&&_sessionInfo.patientName)nomeEl.value=_sessionInfo.patientName;
+if(nascEl&&_sessionInfo.birthDate)nascEl.value=_sessionInfo.birthDate;
+if(sexoEl&&_sessionInfo.sex)sexoEl.value=_sessionInfo.sex;
+if(typeof calcularIdade==='function')calcularIdade();
+if(nomeEl)nomeEl.dispatchEvent(new Event('input'));
+if(nascEl)nascEl.dispatchEvent(new Event('change'));
+var botoes=document.querySelector('.botoes');
+if(botoes){botoes.innerHTML='<button class="btn btn-primary" style="padding:15px 30px;border:none;border-radius:25px;font-size:16px;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#2e7d32,#43a047);color:white;" onclick="_enviarResultadosPainel()">Enviar Resultados ao Profissional</button>';}
+var els=document.querySelectorAll('.info-tecnica');
+els.forEach(function(el){el.style.display='none';});
+return true;
+}
+
+async function _enviarResultadosPainel(){
+var nomeEl=document.getElementById('nome');
+if(!nomeEl||!nomeEl.value.trim()){alert('Preencha o nome antes de enviar.');return;}
+var totalItens=document.querySelectorAll('.item').length;
+var respondidos=document.querySelectorAll('input[type="radio"]:checked').length;
+if(respondidos<totalItens){alert('Responda todos os '+totalItens+' itens antes de enviar. Faltam '+(totalItens-respondidos)+'.');return;}
+var sexoEl=document.getElementById('sexo');
+if(sexoEl&&!sexoEl.value){sexoEl.value='Nao informado';}
+var idadeEl=document.getElementById('idadeCalculada');
+if(idadeEl&&!idadeEl.value){idadeEl.value='Nao informado';}
+var calcFn=window.calcularResultados;
+if(calcFn&&!window._escalaDados){try{calcFn();}catch(e){}}
+var dados=window._escalaDados||{};
+if(!dados.escala)dados.escala='NEO-PI-R';
+dados.idPaciente=document.getElementById('idPaciente')?document.getElementById('idPaciente').value:'';
+dados.pacienteId=_sessionInfo?(_sessionInfo.pacienteId||''):'';
+dados.data=new Date().toISOString();
+var btn=document.querySelector('.botoes button');
+if(btn){btn.disabled=true;btn.textContent='Enviando...';}
+try{
+var resp=await fetch(_API_URL+'/save-escala',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:_sessionInfo.sessionId,email:_sessionInfo.email,data:dados,originalSessionId:_sessionInfo.sessionId})});
+var result=await resp.json();
+if(result.ok||resp.ok){
+var container=document.querySelector('.botoes');
+if(container)container.innerHTML='<div style="background:#c8e6c9;border:2px solid #2e7d32;border-radius:10px;padding:20px;text-align:center;"><p style="font-size:1.3em;color:#2e7d32;font-weight:bold;">Resultados enviados com sucesso!</p><p style="color:#555;margin-top:8px;">O profissional ja pode visualizar seus resultados no painel.</p><p style="color:#777;margin-top:5px;font-size:0.85em;">Voce pode fechar esta pagina.</p></div>';
+var res=document.getElementById('resultados');if(res)res.style.display='none';
+}else{
+if(btn){btn.disabled=false;btn.textContent='Enviar Resultados ao Profissional';}
+alert('Erro ao enviar. Tente novamente.');
+}
+}catch(e){
+if(btn){btn.disabled=false;btn.textContent='Enviar Resultados ao Profissional';}
+alert('Erro de conexao. Verifique sua internet e tente novamente.');
+}
+}
+
+// === INICIALIZACAO (direta, sem wrapper) ===
+gerarQuestionario();
+document.getElementById('questionario').addEventListener('change',function(e){if(e.target.type==='radio'){var item=e.target.closest('.item');if(item){item.style.backgroundColor='#f1f8e9';item.style.borderLeft='4px solid #4caf50';}if(item&&item.nextElementSibling){item.nextElementSibling.scrollIntoView({behavior:'smooth',block:'center'});}}});
+document.getElementById('data').value=new Date().toISOString().split('T')[0];
+var params=new URLSearchParams(window.location.search);
+if(params.get('s')){
+fetch(_API_URL+'/get-session?id='+params.get('s')).then(function(r){if(r.status===410){document.body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#e8f5e9,#c8e6c9);text-align:center;padding:20px;"><h1 style="color:#c62828;font-size:24px;margin-bottom:10px;">Este link j\u00e1 foi utilizado.</h1><p style="font-size:16px;color:#555;">Solicite um novo link ao seu avaliador.</p></div>';throw new Error("link_usado");}return r.json();}).then(function(data){if(data.sessionId){_sessionInfo=data;var nomeEl=document.getElementById('nome');var nascEl=document.getElementById('dataNascimento');var sexoEl=document.getElementById('sexo');if(nomeEl&&data.patientName)nomeEl.value=data.patientName;if(nascEl&&data.birthDate)nascEl.value=data.birthDate;if(sexoEl&&data.sex)sexoEl.value=data.sex;if(typeof calcularIdade==='function')calcularIdade();if(nomeEl)nomeEl.dispatchEvent(new Event('input'));if(nascEl)nascEl.dispatchEvent(new Event('change'));var botoes=document.querySelector('.botoes');if(botoes){botoes.innerHTML='<button class="btn btn-primary" style="padding:15px 30px;border:none;border-radius:25px;font-size:16px;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#2e7d32,#43a047);color:white;" onclick="_enviarResultadosPainel()">Enviar Resultados ao Profissional</button>';}var els=document.querySelectorAll('.info-tecnica');els.forEach(function(el){el.style.display='none';});}}).catch(function(){});
+}else if(params.get('d')){
+_decodificarURL();
+}else if(params.get('print')){
+var els=document.querySelectorAll('.info-tecnica');els.forEach(function(el){el.style.display='none';});
+var botoes=document.querySelector('.botoes');if(botoes)botoes.style.display='none';
+setTimeout(function(){window.print();},500);
+}else{
+window.location.href='https://setmonte.github.io/online/';
+}
+</script>
+<script>
+if(!new URLSearchParams(window.location.search).get('d')){
+var s1=document.createElement('script');s1.src='../escalas/pdf-escalas.js';document.body.appendChild(s1);
+var s2=document.createElement('script');s2.src='../escalas/salvar-escala.js';document.body.appendChild(s2);
+}
+var _sc=document.createElement('script');_sc.src='../escalas/coleta-anonima.js';document.body.appendChild(_sc);
+</script>
+<div style="text-align:center;padding:15px;color:#999;font-size:0.75em;margin-top:20px;">Dados an&#244;nimos e n&#227;o-identific&#225;veis podem ser utilizados para fins de pesquisa e normatiza&#231;&#227;o.</div>
+</body>
+</html>
