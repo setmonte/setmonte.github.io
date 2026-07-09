@@ -592,14 +592,14 @@ el.scrollIntoView({behavior:'smooth'});
 var domObj={};
 for(var d=0;d<dkeys.length;d++){
 var dk=dkeys[d];
-domObj[DOMINIOS[dk].nome]={bruto:escoresDominios[dk],escoreT:tDominios[dk],classificacao:classificarT(tDominios[dk]).texto};
+domObj[DOMINIOS[dk].nome]={bruto:escoresDominios[dk],escoreT:tDominios[dk],score:tDominios[dk],classificacao:classificarT(tDominios[dk]).texto};
 }
 var facObj={};
 for(var k=0;k<keys.length;k++){
 var fk=keys[k];
-facObj[FACETAS[fk].nome]={bruto:escoresFacetas[fk],escoreT:tFacetas[fk],classificacao:classificarT(tFacetas[fk]).texto};
+facObj[FACETAS[fk].nome]={bruto:escoresFacetas[fk],escoreT:tFacetas[fk],score:tFacetas[fk],classificacao:classificarT(tFacetas[fk]).texto};
 }
-window._escalaDados={escala:'NEO-PI-R',paciente:nome,dominios:domObj,facetas:facObj,idPaciente:(document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''),idade:idade,sexo:sexo,normaUtilizada:sexo||'Geral',data:new Date().toISOString()};
+window._escalaDados={escala:'NEO-PI-R',paciente:nome,escore:tDominios['N']+'|'+tDominios['E']+'|'+tDominios['O']+'|'+tDominios['A']+'|'+tDominios['C'],classificacao:'N:'+classificarT(tDominios['N']).texto+' E:'+classificarT(tDominios['E']).texto+' O:'+classificarT(tDominios['O']).texto+' A:'+classificarT(tDominios['A']).texto+' C:'+classificarT(tDominios['C']).texto,dominios:domObj,facetas:facObj,idPaciente:(document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''),idade:idade,sexo:sexo,normaUtilizada:sexo||'Geral',data:new Date().toISOString()};
 if(window.injetarBotaoSalvar)injetarBotaoSalvar('resultados');
 }
 
@@ -752,13 +752,15 @@ var calcFn=window.calcularResultados;
 if(calcFn&&!window._escalaDados){try{calcFn();}catch(e){}}
 var dados=window._escalaDados||{};
 if(!dados.escala)dados.escala='NEO-PI-R';
+dados.tipo='neo-pi-r';
 dados.idPaciente=document.getElementById('idPaciente')?document.getElementById('idPaciente').value:'';
 dados.pacienteId=_sessionInfo?(_sessionInfo.pacienteId||''):'';
 dados.data=new Date().toISOString();
 var btn=document.querySelector('.botoes button');
 if(btn){btn.disabled=true;btn.textContent='Enviando...';}
 try{
-var resp=await fetch(_API_URL+'/save-escala',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:_sessionInfo.sessionId,email:_sessionInfo.email,data:dados,originalSessionId:_sessionInfo.sessionId})});
+var payload={sessionId:_sessionInfo.sessionId,email:_sessionInfo.email,data:dados,originalSessionId:_sessionInfo.sessionId,tipo:'neo-pi-r'};
+var resp=await fetch(_API_URL+'/save-escala',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
 var result=await resp.json();
 if(result.ok||resp.ok){
 var container=document.querySelector('.botoes');
