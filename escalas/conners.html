@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-QY1N9587DG"></script>
+    <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-QY1N9587DG');</script>
+    <meta name="description" content="Escala de Conners para Pais: rastreio de hiperatividade e problemas de comportamento infantil.">
+    <meta property="og:description" content="Escala de Conners para Pais: rastreio de hiperatividade e problemas de comportamento infantil.">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CONNERS &#8212; Escala de Conners para Pais</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background: linear-gradient(135deg, #1565c0 0%, #e65100 100%); min-height: 100vh; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; border-radius: 15px; box-shadow: 0 20px 40px rgba(0,0,0,0.15); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #1565c0 0%, #e65100 100%); color: white; padding: 30px; text-align: center; }
+        .header h1 { font-size: 2.2em; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        .header p { font-size: 1.1em; opacity: 0.9; }
+        .content { padding: 30px; }
+        .info-tecnica { background: #e3f2fd; padding: 25px; border-radius: 10px; margin-bottom: 30px; border-left: 5px solid #1565c0; position: relative; }
+        .info-tecnica h2 { color: #1565c0; margin-bottom: 15px; font-size: 1.4em; }
+        .info-tecnica p { color: #555; line-height: 1.7; font-size: 0.95em; }
+        .dados-pessoais { background: #f8f9fa; padding: 25px; border-radius: 10px; margin-bottom: 30px; border-left: 5px solid #1565c0; }
+        .dados-pessoais h2 { color: #1565c0; margin-bottom: 20px; font-size: 1.5em; }
+        .form-row { display: flex; gap: 20px; margin-bottom: 15px; flex-wrap: wrap; }
+        .form-group { flex: 1; min-width: 200px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; color: #555; }
+        .form-group input, .form-group select { width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 16px; transition: border-color 0.3s; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: #1565c0; }
+        .instrucoes { background: #fff3e0; padding: 20px; border-radius: 10px; margin-bottom: 30px; border-left: 5px solid #e65100; }
+        .instrucoes h3 { color: #e65100; margin-bottom: 10px; }
+        .instrucoes p { color: #555; font-size: 0.95em; line-height: 1.7; }
+        .item { padding: 20px; border-bottom: 1px solid #f0f0f0; transition: background-color 0.3s; }
+        .item:hover { background-color: #e3f2fd; }
+        .item:last-child { border-bottom: none; }
+        .item-texto { font-size: 1.05em; margin-bottom: 15px; color: #444; line-height: 1.5; }
+        .item-numero { font-weight: bold; color: #1565c0; margin-right: 8px; }
+        .opcoes { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+        .opcao { display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; padding: 8px; border-radius: 8px; transition: all 0.3s; border: 2px solid transparent; min-width: 80px; min-height: 70px; }
+        .opcao:hover { background-color: #e3f2fd; border-color: #1565c0; }
+        .opcao input[type="radio"] { width: 18px; height: 18px; cursor: pointer; accent-color: #1565c0; }
+        .opcao label { cursor: pointer; font-weight: 500; color: #555; text-align: center; font-size: 0.8em; line-height: 1.2; min-height: 30px; display: flex; align-items: center; }
+        .botoes { display: flex; gap: 15px; justify-content: center; margin: 30px 0; flex-wrap: wrap; }
+        .btn { padding: 15px 30px; border: none; border-radius: 25px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s; text-align: center; }
+        .btn-primary { background: linear-gradient(135deg, #1565c0 0%, #e65100 100%); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(21,101,192,0.3); }
+        .btn-secondary { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; }
+        .btn-secondary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(40,167,69,0.3); }
+        .btn-danger { background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%); color: white; }
+        .btn-danger:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(220,53,69,0.3); }
+        .resultados { background: #f8f9fa; padding: 30px; border-radius: 10px; margin-top: 30px; border-left: 5px solid #1565c0; display: none; }
+        .resultados h2 { color: #1565c0; margin-bottom: 20px; text-align: center; }
+        .total-geral { background: linear-gradient(135deg, #1565c0 0%, #e65100 100%); color: white; padding: 25px; border-radius: 10px; text-align: center; margin: 20px 0; }
+        .rastreio-box { padding: 20px; border-radius: 10px; text-align: center; margin: 20px 0; font-size: 1.2em; font-weight: 700; }
+        .rastreio-positivo { background: #ffcdd2; border: 3px solid #c62828; color: #b71c1c; }
+        .rastreio-negativo { background: #c8e6c9; border: 3px solid #2e7d32; color: #1b5e20; }
+        .dominio-card { background: white; padding: 20px; border-radius: 10px; margin-bottom: 15px; box-shadow: 0 3px 10px rgba(0,0,0,0.08); border-left: 4px solid #1565c0; }
+        .dominio-card h4 { color: #1565c0; margin-bottom: 8px; }
+        .barra-container { background: #e0e0e0; border-radius: 10px; height: 20px; overflow: hidden; margin: 8px 0; }
+        .barra-preenchida { height: 100%; border-radius: 10px; transition: width 0.5s; }
+        .badge-intensidade { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 0.8em; font-weight: bold; color: white; }
+        .analise-texto { background: white; padding: 25px; border-radius: 10px; margin-top: 20px; border: 2px solid #1565c0; line-height: 1.8; }
+        .analise-texto h3 { color: #1565c0; margin-bottom: 15px; }
+        .analise-texto p { margin-bottom: 10px; color: #444; font-size: 0.95em; }
+        .disclaimer { background: #fff3e0; padding: 15px; border-radius: 8px; margin-top: 20px; border-left: 4px solid #ff9800; font-size: 0.85em; color: #e65100; line-height: 1.6; }
+        .btn-imprimir { position: absolute; top: 20px; right: 20px; padding: 10px 20px; background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%); color: white; border: none; border-radius: 20px; font-size: 14px; font-weight: 600; cursor: pointer; }
+        @media print { body { background: white !important; padding: 0 !important; } .botoes, .btn, .btn-imprimir { display: none !important; } .container { box-shadow: none !important; max-width: 100% !important; } .info-tecnica { display: none !important; } .resultados { display: none !important; } .item { page-break-inside: avoid; } .opcoes { flex-direction: row !important; align-items: center !important; justify-content: center !important; } .opcao { min-width: auto !important; padding: 4px 6px !important; } }
+        @media (max-width: 768px) { .container { margin: 10px; border-radius: 10px; } .header { padding: 20px; } .header h1 { font-size: 1.6em; } .content { padding: 15px; } .form-row { flex-direction: column; } .opcoes { flex-direction: column; align-items: center; } .botoes { flex-direction: column; } .btn { width: 100%; } }
+    </style>
+</head>
+<body>
+<div style="padding:10px 20px;background:#2e7d32;"><a href="../" style="display:inline-block;background:#fff;color:#2e7d32;text-decoration:none;font-family:Segoe UI,Arial,sans-serif;font-size:14px;font-weight:bold;padding:8px 20px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.15);">&#11013; Voltar ao In&#237;cio</a></div>
+    <div class="container">
+        <div class="header">
+            <h1>&#129504; CONNERS</h1>
+            <p>Escala de Conners para Pais &#8212; Vers&#227;o Completa (42 itens)</p>
+            <p style="font-size:0.85em; opacity:0.8; margin-top:5px;">Adaptada e validada no Brasil por Barbosa (1995)</p>
+        </div>
+        <div class="content">
+            <div class="info-tecnica">
+                <button class="btn-imprimir" onclick="window.print()">&#128424; Imprimir Formul&#225;rio</button>
+                <h2>&#128218; Informa&#231;&#245;es T&#233;cnicas</h2>
+                <p>
+                    <strong>Instrumento:</strong> Escala de Conners para Pais &#8212; Vers&#227;o Completa<br>
+                    <strong>Base te&#243;rica:</strong> Avalia&#231;&#227;o comportamental infantil com foco em TDAH<br>
+                    <strong>Estrutura:</strong> 42 itens, 7 dom&#237;nios, escala Likert 4 pontos (0-3)<br>
+                    <strong>Resultado:</strong> H&#237;brido &#8212; Rastreio categorial (ponto de corte = 58) + Perfil dimensional<br>
+                    <strong>Dom&#237;nios:</strong> Ansiedade, Queixas Psicossom&#225;ticas, Problemas Sociais, Problemas de Conduta, Aprendizagem, Perfeccionismo, Hiperatividade-Impulsividade<br>
+                    <strong>Popula&#231;&#227;o:</strong> Crian&#231;as e adolescentes &#8212; preenchida pelos pais/respons&#225;veis
+                </p>
+            </div>
+            <div class="dados-pessoais">
+                <h2>&#128203; Dados da Crian&#231;a</h2>
+                <div class="form-row">
+                    <div class="form-group"><label for="nome">Nome da Crian&#231;a:</label><input type="text" id="nome" placeholder="Nome completo"></div>
+                    <div class="form-group"><label for="dataNascimento">Data de Nascimento:</label><input type="date" id="dataNascimento" onchange="calcularIdade()"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label for="idadeCalculada">Idade:</label><input type="text" id="idadeCalculada" readonly style="background-color:#f0f0f0;" placeholder="Calculada automaticamente"></div>
+                    <div class="form-group"><label for="sexo">Sexo:</label><select id="sexo"><option value="">Selecione</option><option value="Masculino">Masculino</option><option value="Feminino">Feminino</option></select></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label for="respondente">Respondente:</label><select id="respondente"><option value="">Selecione</option><option value="Mae">M&#227;e</option><option value="Pai">Pai</option><option value="Responsavel">Respons&#225;vel</option></select></div>
+                    <div class="form-group"><label for="data">Data da Avalia&#231;&#227;o:</label><input type="date" id="data"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label for="observacoes">Observa&#231;&#245;es (opcional):</label><input type="text" id="observacoes" placeholder="Informa&#231;&#245;es adicionais"></div>
+                </div>
+            </div>
+            <div class="instrucoes">
+                <h3>&#128221; Instru&#231;&#245;es</h3>
+                <p>Responda marcando apenas <strong>uma op&#231;&#227;o para cada item</strong>. Marque a op&#231;&#227;o que melhor se aplica ao comportamento habitual de seu(sua) filho(a) <strong>em casa</strong>. N&#227;o existem respostas certas ou erradas.</p>
+            </div>
+            <div id="questionario"></div>
+            <div class="botoes">
+                <button class="btn btn-primary" onclick="calcularResultados()">Calcular Resultados</button>
+                <button class="btn btn-secondary" onclick="gerarRelatorioPDF()">Gerar Relat&#243;rio PDF</button>
+                <button class="btn btn-danger" onclick="limparDados()">Limpar Dados</button>
+            </div>
+            <div id="resultados" class="resultados"></div>
+            <div class="info-tecnica" id="referencias" style="margin-top:30px; background:#f8f9fa; border-left-color:#1565c0;">
+                <h2 style="color:#1565c0;">Refer&#234;ncias</h2>
+                <p style="color:#555; line-height:1.9; font-size:0.88em;">
+                    <strong>BARBOSA, G. A.</strong> Escala de Conners para pais: adapta&#231;&#227;o e valida&#231;&#227;o no Brasil. <em>Infanto &#8212; Revista de Neuropsiquiatria da Inf&#226;ncia e Adolesc&#234;ncia</em>, v. 3, n. 1, p. 24-28, 1995.<br><br>
+                    <strong>CONNERS, C. K.</strong> <em>Conners&#8217; Rating Scales &#8212; Revised: Technical Manual</em>. Toronto: Multi-Health Systems, 1997.<br><br>
+                    <strong>AMERICAN PSYCHIATRIC ASSOCIATION.</strong> <em>Diagnostic and Statistical Manual of Mental Disorders</em> (DSM-5-TR). 5th ed., text rev. Washington, DC: APA, 2022.
+                </p>
+            </div>
+        </div>
+    </div>
+    <script src="../id-paciente.js"></script>
+    <script>
+var ITENS=[
+{texto:"Desperta \u00e0 noite",dominio:1},
+{texto:"Tem medo diante de novas situa\u00e7\u00f5es",dominio:1},
+{texto:"Tem medo de gente",dominio:1},
+{texto:"Tem medo de estar sozinho",dominio:1},
+{texto:"Preocupa-se com doen\u00e7as e mortes",dominio:1},
+{texto:"Mostra-se tenso e r\u00edgido",dominio:1},
+{texto:"Apresenta sacudidas ou espasmos musculares",dominio:2},
+{texto:"Apresenta tremores",dominio:2},
+{texto:"Sente dores de cabe\u00e7a",dominio:2},
+{texto:"Sente dores de est\u00f4mago",dominio:2},
+{texto:"Tem v\u00f4mitos",dominio:2},
+{texto:"Queixa-se de enfermidades e dores",dominio:2},
+{texto:"Deixa-se levar por outras crian\u00e7as",dominio:4},
+{texto:"Desafia e intimida os demais",dominio:4},
+{texto:"\u00c9 valente (arrogante) e desrespeita seus superiores",dominio:4},
+{texto:"\u00c9 descarado com os adultos",dominio:4},
+{texto:"\u00c9 t\u00edmido diante dos amigos",dominio:3},
+{texto:"Teme n\u00e3o agradar seus amigos",dominio:3},
+{texto:"Tem amigos",dominio:3,invertido:true},
+{texto:"\u00c9 malicioso com seus irm\u00e3os",dominio:4},
+{texto:"Briga constantemente",dominio:4},
+{texto:"Critica muito outras crian\u00e7as",dominio:4},
+{texto:"Aprende na escola",dominio:5,invertido:true},
+{texto:"Gosta de ir \u00e0 escola",dominio:5,invertido:true},
+{texto:"Tem medo de ir \u00e0 escola",dominio:5},
+{texto:"Desobedece as normas da escola",dominio:5},
+{texto:"Mente, culpando os demais dos seus erros",dominio:4},
+{texto:"Realiza roubos de seus pais",dominio:4},
+{texto:"Realiza roubos na escola",dominio:4},
+{texto:"Rouba em lojas, em barracas e em outros lugares",dominio:4},
+{texto:"Tem problemas com a pol\u00edcia",dominio:4},
+{texto:"Pretende fazer tudo bem feito (perfeito)",dominio:6},
+{texto:"Necessita fazer sempre as coisas da mesma maneira",dominio:6},
+{texto:"Tem objetivos muito altos (sonhar alto)",dominio:6},
+{texto:"Distrai-se facilmente",dominio:7},
+{texto:"Mostra-se nervoso e inquieto",dominio:7},
+{texto:"N\u00e3o pode ficar quieto",dominio:7},
+{texto:"Sobe em todas as partes",dominio:7},
+{texto:"Desperta-se muito cedo",dominio:7},
+{texto:"N\u00e3o fica quieto durante as refei\u00e7\u00f5es",dominio:7},
+{texto:"Se come\u00e7a a fazer alguma coisa repetitivamente, \u00e9 imposs\u00edvel parar",dominio:7},
+{texto:"Seus atos d\u00e3o a impress\u00e3o de serem movidos por um motor",dominio:7}
+];
+var DOMINIOS_NOMES={1:"Ansiedade",2:"Queixas Psicossom\u00e1ticas",3:"Problemas Sociais",4:"Problemas de Conduta",5:"Problemas de Aprendizagem",6:"Perfeccionismo",7:"Hiperatividade-Impulsividade"};
+var DOMINIOS_ITENS={1:[0,1,2,3,4,5],2:[6,7,8,9,10,11],3:[16,17,18],4:[12,13,14,15,19,20,21,26,27,28,29,30],5:[22,23,24,25],6:[31,32,33],7:[34,35,36,37,38,39,40,41]};
+var OPCOES=[{valor:0,texto:"Nunca"},{valor:1,texto:"\u00c0s Vezes"},{valor:2,texto:"Frequente-<br>mente"},{valor:3,texto:"Sempre"}];
+var PONTO_CORTE=58;
+
+function gerarQuestionario(){
+var c=document.getElementById('questionario');var h='';
+ITENS.forEach(function(item,i){
+h+='<div class="item"><div class="item-texto"><span class="item-numero">'+(i+1)+'.</span> '+item.texto+'</div><div class="opcoes">';
+OPCOES.forEach(function(op){
+h+='<div class="opcao"><input type="radio" id="q'+i+'_'+op.valor+'" name="q'+i+'" value="'+op.valor+'"><label for="q'+i+'_'+op.valor+'">'+op.texto+'</label></div>';
+});
+h+='</div></div>';
+});
+c.innerHTML=h;
+}
+
+function calcularIdade(){
+var d=document.getElementById('dataNascimento').value;
+if(!d)return;
+var h=new Date(),n=new Date(d);
+var a=h.getFullYear()-n.getFullYear(),m=h.getMonth()-n.getMonth(),di=h.getDate()-n.getDate();
+if(di<0){m--;di+=new Date(h.getFullYear(),h.getMonth(),0).getDate();}
+if(m<0){a--;m+=12;}
+document.getElementById('idadeCalculada').value=a+' anos, '+m+' meses e '+di+' dias';
+}
+
+function obterRespostas(){
+var r=[];
+for(var i=0;i<ITENS.length;i++){
+var s=document.querySelector('input[name="q'+i+'"]:checked');
+if(!s)return null;
+var v=parseInt(s.value);
+if(ITENS[i].invertido)v=3-v;
+r.push(v);
+}
+return r;
+}
+
+function classificarIntensidade(media,maxPontos){
+var pct=media/maxPontos;
+if(pct<0.25)return{texto:"M\u00ednimo",cor:"#4caf50"};
+if(pct<0.40)return{texto:"Leve",cor:"#8bc34a"};
+if(pct<0.55)return{texto:"Moderado",cor:"#ffc107"};
+if(pct<0.70)return{texto:"Significativo",cor:"#ff9800"};
+return{texto:"Intenso",cor:"#f44336"};
+}
+
+function calcularResultados(){
+var nome=document.getElementById('nome').value;
+var idade=document.getElementById('idadeCalculada').value;
+var sexo=document.getElementById('sexo').value;
+if(!nome){alert('Preencha o nome da crian\u00e7a.');return;}
+var r=obterRespostas();
+if(!r){alert('Responda todos os 42 itens antes de calcular.');return;}
+
+var somaTotal=r.reduce(function(a,b){return a+b;},0);
+var rastreioPositivo=somaTotal>=PONTO_CORTE;
+
+// Calcular por dominio
+var dominiosResult={};
+Object.keys(DOMINIOS_ITENS).forEach(function(domId){
+var itens=DOMINIOS_ITENS[domId];
+var soma=0;
+itens.forEach(function(idx){soma+=r[idx];});
+var media=soma/itens.length;
+var maxDom=itens.length*3;
+dominiosResult[domId]={
+nome:DOMINIOS_NOMES[domId],
+soma:soma,
+media:parseFloat(media.toFixed(2)),
+maxPontos:maxDom,
+percentual:parseFloat(((soma/maxDom)*100).toFixed(1)),
+classificacao:classificarIntensidade(soma,maxDom)
+};
+});
+
+// Montar HTML dos resultados
+var el=document.getElementById('resultados');
+var h='<h2>Resultados - Escala de Conners</h2>';
+
+// Rastreio categorial
+if(rastreioPositivo){
+h+='<div class="rastreio-box rastreio-positivo">RASTREIO POSITIVO \u2014 Soma total: '+somaTotal+' pontos (ponto de corte: \u2265'+PONTO_CORTE+')</div>';
+}else{
+h+='<div class="rastreio-box rastreio-negativo">RASTREIO NEGATIVO \u2014 Soma total: '+somaTotal+' pontos (ponto de corte: \u2265'+PONTO_CORTE+')</div>';
+}
+
+// Soma geral
+var mediaGeral=somaTotal/(ITENS.length*3);
+var classGeral=classificarIntensidade(somaTotal,ITENS.length*3);
+h+='<div class="total-geral"><h3>Soma Total: '+somaTotal+' / '+(ITENS.length*3)+'</h3><h3>Intensidade Geral: '+classGeral.texto+' ('+((mediaGeral)*100).toFixed(1)+'%)</h3></div>';
+
+// Cards de dominios
+h+='<h3 style="color:#1565c0;margin:20px 0 15px;">Perfil por Dom\u00ednios</h3>';
+Object.keys(dominiosResult).forEach(function(domId){
+var d=dominiosResult[domId];
+h+='<div class="dominio-card">';
+h+='<h4>'+d.nome+'</h4>';
+h+='<p>Soma: <strong>'+d.soma+'/'+d.maxPontos+'</strong> | M\u00e9dia: <strong>'+d.media+'</strong> | <span class="badge-intensidade" style="background:'+d.classificacao.cor+';">'+d.classificacao.texto+'</span></p>';
+h+='<div class="barra-container"><div class="barra-preenchida" style="width:'+d.percentual+'%;background:'+d.classificacao.cor+';"></div></div>';
+h+='</div>';
+});
+
+// Disclaimer
+h+='<div class="disclaimer"><strong>IMPORTANTE:</strong> A Escala de Conners \u00e9 um instrumento de rastreio comportamental. Os resultados devem ser interpretados por profissional qualificado e n\u00e3o substituem avalia\u00e7\u00e3o cl\u00ednica completa. Ponto de corte de 58 pontos conforme adapta\u00e7\u00e3o de Barbosa (1995).</div>';
+
+el.innerHTML=h;
+el.style.display='block';
+el.scrollIntoView({behavior:'smooth'});
+
+// Salvar dados para envio ao painel
+var domExport={};
+Object.keys(dominiosResult).forEach(function(domId){
+var d=dominiosResult[domId];
+domExport[d.nome]={soma:d.soma,media:d.media,percentual:d.percentual,classificacao:d.classificacao.texto};
+});
+window._escalaDados={escala:'CONNERS',paciente:nome,escore:somaTotal,classificacao:classGeral.texto+(rastreioPositivo?' (Positivo)':' (Negativo)'),dominios:domExport,idPaciente:(document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''),idade:idade,sexo:sexo,data:new Date().toISOString()};
+if(window.injetarBotaoSalvar)injetarBotaoSalvar('resultados');
+}
+
+function gerarRelatorioPDF(){
+var nome=document.getElementById('nome').value;
+if(!nome){alert('Preencha o nome da crian\u00e7a.');return;}
+var r=obterRespostas();
+if(!r){alert('Responda todos os 42 itens.');return;}
+
+var somaTotal=r.reduce(function(a,b){return a+b;},0);
+var rastreioPositivo=somaTotal>=PONTO_CORTE;
+var idade=document.getElementById('idadeCalculada').value||'';
+var sexo=document.getElementById('sexo').value||'';
+var respondente=document.getElementById('respondente').value||'';
+var dataAval=document.getElementById('data').value||new Date().toLocaleDateString('pt-BR');
+var idPac=document.getElementById('idPaciente')?document.getElementById('idPaciente').value:'';
+
+// Calcular dominios
+var dominiosResult={};
+Object.keys(DOMINIOS_ITENS).forEach(function(domId){
+var itens=DOMINIOS_ITENS[domId];
+var soma=0;
+itens.forEach(function(idx){soma+=r[idx];});
+var media=soma/itens.length;
+var maxDom=itens.length*3;
+dominiosResult[domId]={
+nome:DOMINIOS_NOMES[domId],
+soma:soma,
+media:parseFloat(media.toFixed(2)),
+maxPontos:maxDom,
+percentual:parseFloat(((soma/maxDom)*100).toFixed(1)),
+classificacao:classificarIntensidade(soma,maxDom)
+};
+});
+
+var jsPDF=window.jspdf.jsPDF;
+var doc=new jsPDF();
+
+// === PAGINA 1 ===
+// Cabecalho
+doc.setFillColor(21,101,192);doc.rect(0,0,210,32,'F');
+doc.setTextColor(255,255,255);doc.setFontSize(14);doc.setFont(undefined,'bold');
+doc.text('ESCALA DE CONNERS PARA PAIS - RELATORIO',105,13,{align:'center'});
+doc.setFontSize(9);doc.setFont(undefined,'normal');
+doc.text('Versao Completa (42 itens) - Adaptada por Barbosa (1995)',105,21,{align:'center'});
+
+// Dados pessoais
+var y=38;
+doc.setFillColor(248,249,250);doc.rect(15,y,180,22,'F');
+doc.setTextColor(21,101,192);doc.setFontSize(10);doc.setFont(undefined,'bold');
+doc.text('DADOS DA CRIANCA',20,y+6);
+doc.setTextColor(0,0,0);doc.setFontSize(9);doc.setFont(undefined,'normal');
+doc.text('Nome: '+nome+'   |   Sexo: '+sexo,20,y+12);
+doc.text('Idade: '+idade+'   |   Data: '+dataAval+(idPac?'   |   ID: '+idPac:''),20,y+17);
+if(respondente)doc.text('Respondente: '+respondente,20,y+22);
+
+// Rastreio categorial
+y=66;
+if(rastreioPositivo){doc.setFillColor(255,205,210);doc.setTextColor(198,40,40);}
+else{doc.setFillColor(200,230,201);doc.setTextColor(46,125,50);}
+doc.rect(15,y,180,12,'F');
+doc.setFontSize(11);doc.setFont(undefined,'bold');
+doc.text((rastreioPositivo?'RASTREIO POSITIVO':'RASTREIO NEGATIVO')+' - Soma: '+somaTotal+'/126 (corte: >=58)',105,y+8,{align:'center'});
+
+// Tabela de dominios
+y=84;
+doc.setTextColor(21,101,192);doc.setFontSize(10);doc.setFont(undefined,'bold');
+doc.text('RESULTADOS POR DOMINIO',20,y);
+y+=6;
+doc.setFontSize(8);doc.setTextColor(100,100,100);doc.setFont(undefined,'normal');
+doc.text('Dominio',20,y);doc.text('Soma',100,y);doc.text('Media',120,y);doc.text('%',140,y);doc.text('Classificacao',155,y);
+y+=2;doc.setDrawColor(200,200,200);doc.line(20,y,195,y);y+=5;
+doc.setTextColor(0,0,0);
+Object.keys(dominiosResult).forEach(function(domId){
+var d=dominiosResult[domId];
+doc.text(d.nome,20,y);
+doc.text(d.soma+'/'+d.maxPontos,100,y);
+doc.text(String(d.media),120,y);
+doc.text(d.percentual+'%',140,y);
+doc.text(d.classificacao.texto,155,y);
+y+=6;
+});
+
+// === GRAFICO DE BARRAS ===
+y+=8;
+doc.setTextColor(21,101,192);doc.setFontSize(10);doc.setFont(undefined,'bold');
+doc.text('GRAFICO DE PERFIL POR DOMINIOS',20,y);
+y+=8;
+
+var barMaxWidth=90;
+var barHeight=8;
+var barGap=4;
+var labelX=20;
+var barX=75;
+var cores={1:[66,165,245],2:[129,199,132],3:[255,183,77],4:[239,83,80],5:[149,117,205],6:[77,182,172],7:[255,138,101]};
+
+Object.keys(dominiosResult).forEach(function(domId){
+var d=dominiosResult[domId];
+var barWidth=(d.percentual/100)*barMaxWidth;
+
+// Label do dominio (abreviado se necessario)
+doc.setTextColor(60,60,60);doc.setFontSize(7);doc.setFont(undefined,'normal');
+var nomeAbrev=d.nome.length>18?d.nome.substring(0,18)+'...':d.nome;
+doc.text(nomeAbrev,labelX,y+barHeight-2);
+
+// Fundo cinza da barra
+doc.setFillColor(230,230,230);
+doc.rect(barX,y,barMaxWidth,barHeight,'F');
+
+// Barra preenchida
+var cor=cores[parseInt(domId)]||[100,100,100];
+doc.setFillColor(cor[0],cor[1],cor[2]);
+doc.rect(barX,y,barWidth,barHeight,'F');
+
+// Percentual ao lado
+doc.setTextColor(0,0,0);doc.setFontSize(7);
+doc.text(d.percentual+'%  ('+d.classificacao.texto+')',barX+barMaxWidth+3,y+barHeight-2);
+
+y+=barHeight+barGap;
+});
+
+// Legenda do grafico
+y+=5;
+doc.setTextColor(100,100,100);doc.setFontSize(6);
+doc.text('0%',barX,y);doc.text('25%',barX+22,y);doc.text('50%',barX+45,y);doc.text('75%',barX+67,y);doc.text('100%',barX+barMaxWidth-3,y);
+
+// === PAGINA 2 ===
+doc.addPage();
+// Cabecalho pagina 2
+doc.setFillColor(21,101,192);doc.rect(0,0,210,20,'F');
+doc.setTextColor(255,255,255);doc.setFontSize(11);doc.setFont(undefined,'bold');
+doc.text('ESCALA DE CONNERS - ANALISE E INTERPRETACAO',105,13,{align:'center'});
+
+y=30;
+doc.setTextColor(21,101,192);doc.setFontSize(10);doc.setFont(undefined,'bold');
+doc.text('ANALISE POR DOMINIOS',20,y);y+=7;
+
+// Texto interpretativo por dominio
+doc.setTextColor(0,0,0);doc.setFontSize(8);doc.setFont(undefined,'normal');
+Object.keys(dominiosResult).forEach(function(domId){
+var d=dominiosResult[domId];
+var txt=d.nome+': '+d.classificacao.texto+' ('+d.percentual+'%)';
+if(d.percentual>=55){
+txt+=' - Nivel elevado, sugere investigacao clinica.';
+}else if(d.percentual>=40){
+txt+=' - Nivel moderado, manter observacao.';
+}else{
+txt+=' - Dentro do esperado.';
+}
+doc.text(txt,22,y);y+=6;
+if(y>270){doc.addPage();y=20;}
+});
+
+// Interpretacao geral
+y+=8;
+doc.setTextColor(21,101,192);doc.setFont(undefined,'bold');doc.setFontSize(9);
+doc.text('INTERPRETACAO GERAL',20,y);y+=6;
+doc.setTextColor(0,0,0);doc.setFont(undefined,'normal');doc.setFontSize(8);
+if(rastreioPositivo){
+doc.text('O resultado sugere presenca de indicadores clinicamente significativos de',22,y);y+=5;
+doc.text('hiperatividade e/ou problemas de comportamento. Recomenda-se avaliacao clinica',22,y);y+=5;
+doc.text('aprofundada por profissional especializado (neuropsicologo, neurologista ou psiquiatra infantil).',22,y);y+=5;
+}else{
+doc.text('O resultado nao atingiu o ponto de corte para rastreio positivo. Contudo, dominios',22,y);y+=5;
+doc.text('individuais com percentuais elevados merecem atencao clinica.',22,y);y+=5;
+}
+
+// Disclaimer
+y+=10;
+doc.setFillColor(255,248,235);doc.rect(15,y,180,20,'F');
+doc.setTextColor(180,90,0);doc.setFontSize(7);
+doc.text('IMPORTANTE: A Escala de Conners e um instrumento de rastreio comportamental.',20,y+5);
+doc.text('Os resultados nao constituem diagnostico e devem ser interpretados por profissional qualificado.',20,y+10);
+doc.text('Ponto de corte de 58 pontos conforme adaptacao de Barbosa (1995).',20,y+15);
+
+// === PAGINA 3 - REFERENCIAS ===
+doc.addPage();
+doc.setFillColor(21,101,192);doc.rect(0,0,210,20,'F');
+doc.setTextColor(255,255,255);doc.setFontSize(11);doc.setFont(undefined,'bold');
+doc.text('REFERENCIAS BIBLIOGRAFICAS',105,13,{align:'center'});
+
+y=30;
+doc.setTextColor(0,0,0);doc.setFontSize(8);doc.setFont(undefined,'normal');
+doc.text('BARBOSA, G. A. Escala de Conners para pais: adaptacao e validacao no Brasil.',20,y);y+=5;
+doc.text('Infanto - Revista de Neuropsiquiatria da Infancia e Adolescencia, v. 3, n. 1, p. 24-28, 1995.',20,y);y+=10;
+doc.text('CONNERS, C. K. Conners\' Rating Scales - Revised: Technical Manual.',20,y);y+=5;
+doc.text('Toronto: Multi-Health Systems, 1997.',20,y);y+=10;
+doc.text('AMERICAN PSYCHIATRIC ASSOCIATION. Diagnostic and Statistical Manual of Mental',20,y);y+=5;
+doc.text('Disorders (DSM-5-TR). 5th ed., text rev. Washington, DC: APA, 2022.',20,y);
+
+// Rodape em todas as paginas
+var totalPages=doc.internal.getNumberOfPages();
+for(var p=1;p<=totalPages;p++){
+doc.setPage(p);
+doc.setFillColor(80,80,80);doc.rect(0,285,210,12,'F');
+doc.setTextColor(200,200,200);doc.setFontSize(7);
+doc.text('Relatorio gerado em: '+new Date().toLocaleString('pt-BR')+'  |  Pagina '+p+'/'+totalPages,105,291,{align:'center'});
+}
+
+var ts=new Date();
+var tsStr=ts.getFullYear()+String(ts.getMonth()+1).padStart(2,'0')+String(ts.getDate()).padStart(2,'0')+String(ts.getHours()).padStart(2,'0')+String(ts.getMinutes()).padStart(2,'0');
+doc.save('CONNERS_'+nome.replace(/\s+/g,'_')+'_'+tsStr+'.pdf');
+}
+
+function limparDados(){
+if(!confirm('Limpar todos os dados?'))return;
+document.getElementById('nome').value='';
+document.getElementById('dataNascimento').value='';
+document.getElementById('idadeCalculada').value='';
+document.getElementById('sexo').value='';
+document.getElementById('respondente').value='';
+document.getElementById('observacoes').value='';
+document.querySelectorAll('input[type="radio"]').forEach(function(r){r.checked=false;});
+document.querySelectorAll('.item').forEach(function(el){el.style.backgroundColor='';el.style.borderLeft='';});
+document.getElementById('resultados').style.display='none';
+document.getElementById('data').value=new Date().toISOString().split('T')[0];
+}
+
+// ===== MODO PAINEL =====
+var _sessionInfo=null;
+var _API_URL='https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
+
+function _decodificarURL(){
+var params=new URLSearchParams(window.location.search);
+var d=params.get('d');
+if(!d)return false;
+try{_sessionInfo=JSON.parse(atob(decodeURIComponent(d)));}catch(e){return false;}
+var nomeEl=document.getElementById('nome');
+var nascEl=document.getElementById('dataNascimento');
+var sexoEl=document.getElementById('sexo');
+if(nomeEl&&_sessionInfo.patientName)nomeEl.value=_sessionInfo.patientName;
+if(nascEl&&_sessionInfo.birthDate)nascEl.value=_sessionInfo.birthDate;
+if(sexoEl&&_sessionInfo.sex)sexoEl.value=_sessionInfo.sex;
+if(typeof calcularIdade==='function')calcularIdade();
+if(nomeEl)nomeEl.dispatchEvent(new Event('input'));
+if(nascEl)nascEl.dispatchEvent(new Event('change'));
+var botoes=document.querySelector('.botoes');
+if(botoes){botoes.innerHTML='<button class="btn btn-primary" style="padding:15px 30px;border:none;border-radius:25px;font-size:16px;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#2e7d32,#43a047);color:white;" onclick="_enviarResultadosPainel()">Enviar Resultados ao Profissional</button>';}
+var els=document.querySelectorAll('.info-tecnica');
+els.forEach(function(el){el.style.display='none';});
+return true;
+}
+
+async function _enviarResultadosPainel(){
+var nomeEl=document.getElementById('nome');
+if(!nomeEl||!nomeEl.value.trim()){alert('Preencha o nome antes de enviar.');return;}
+var totalItens=document.querySelectorAll('.item').length;
+var respondidos=document.querySelectorAll('input[type="radio"]:checked').length;
+if(respondidos<totalItens){alert('Responda todos os '+totalItens+' itens antes de enviar. Faltam '+(totalItens-respondidos)+'.');return;}
+var sexoEl=document.getElementById('sexo');
+if(sexoEl&&!sexoEl.value){sexoEl.value='Nao informado';}
+var idadeEl=document.getElementById('idadeCalculada');
+if(idadeEl&&!idadeEl.value){idadeEl.value='Nao informado';}
+var calcFn=window.calcularResultados;
+if(calcFn&&!window._escalaDados){try{calcFn();}catch(e){}}
+var dados=window._escalaDados||{};
+if(!dados.escala)dados.escala='CONNERS';
+dados.idPaciente=document.getElementById('idPaciente')?document.getElementById('idPaciente').value:'';
+dados.pacienteId=_sessionInfo?(_sessionInfo.pacienteId||''):'';
+dados.data=new Date().toISOString();
+var btn=document.querySelector('.botoes button');
+if(btn){btn.disabled=true;btn.textContent='Enviando...';}
+try{
+var resp=await fetch(_API_URL+'/save-escala',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:_sessionInfo.sessionId,email:_sessionInfo.email,data:dados,originalSessionId:_sessionInfo.sessionId})});
+var result=await resp.json();
+if(result.ok||resp.ok){
+var container=document.querySelector('.botoes');
+if(container)container.innerHTML='<div style="background:#c8e6c9;border:2px solid #2e7d32;border-radius:10px;padding:20px;text-align:center;"><p style="font-size:1.3em;color:#2e7d32;font-weight:bold;">Resultados enviados com sucesso!</p><p style="color:#555;margin-top:8px;">O profissional ja pode visualizar seus resultados no painel.</p><p style="color:#777;margin-top:5px;font-size:0.85em;">Voce pode fechar esta pagina.</p></div>';
+var res=document.getElementById('resultados');
+if(res)res.style.display='none';
+}else{
+if(btn){btn.disabled=false;btn.textContent='Enviar Resultados ao Profissional';}
+alert('Erro ao enviar. Tente novamente.');
+}
+}catch(e){
+if(btn){btn.disabled=false;btn.textContent='Enviar Resultados ao Profissional';}
+alert('Erro de conexao. Verifique sua internet e tente novamente.');
+}
+}
+
+// === INICIALIZACAO ===
+gerarQuestionario();
+document.getElementById('questionario').addEventListener('change',function(e){if(e.target.type==='radio'){var item=e.target.closest('.item');if(item){item.style.backgroundColor='#f1f8e9';item.style.borderLeft='4px solid #4caf50';}if(item&&item.nextElementSibling){item.nextElementSibling.scrollIntoView({behavior:'smooth',block:'center'});}}});
+document.getElementById('data').value=new Date().toISOString().split('T')[0];
+var params=new URLSearchParams(window.location.search);
+if(params.get('s')){
+fetch(_API_URL+'/get-session?id='+params.get('s')).then(function(r){if(r.status===410){document.body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#e8f5e9,#c8e6c9);text-align:center;padding:20px;"><h1 style="color:#c62828;font-size:24px;margin-bottom:10px;">Este link j\u00e1 foi utilizado.</h1><p style="font-size:16px;color:#555;">Solicite um novo link ao seu avaliador.</p></div>';throw new Error("link_usado");}return r.json();}).then(function(data){if(data.sessionId){_sessionInfo=data;var nomeEl=document.getElementById('nome');var nascEl=document.getElementById('dataNascimento');var sexoEl=document.getElementById('sexo');if(nomeEl&&data.patientName)nomeEl.value=data.patientName;if(nascEl&&data.birthDate)nascEl.value=data.birthDate;if(sexoEl&&data.sex)sexoEl.value=data.sex;if(typeof calcularIdade==='function')calcularIdade();if(nomeEl)nomeEl.dispatchEvent(new Event('input'));if(nascEl)nascEl.dispatchEvent(new Event('change'));var botoes=document.querySelector('.botoes');if(botoes){botoes.innerHTML='<button class="btn btn-primary" style="padding:15px 30px;border:none;border-radius:25px;font-size:16px;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#2e7d32,#43a047);color:white;" onclick="_enviarResultadosPainel()">Enviar Resultados ao Profissional</button>';}var els=document.querySelectorAll('.info-tecnica');els.forEach(function(el){el.style.display='none';});}}).catch(function(){});
+}else if(params.get('d')){
+_decodificarURL();
+}else if(params.get('print')){
+var els=document.querySelectorAll('.info-tecnica');
+els.forEach(function(el){el.style.display='none';});
+var botoes=document.querySelector('.botoes');
+if(botoes)botoes.style.display='none';
+setTimeout(function(){window.print();},500);
+}else{
+window.location.href='https://setmonte.github.io/online/';
+}
+    </script>
+<script>
+if(!new URLSearchParams(window.location.search).get('d')){
+    var s1=document.createElement('script');s1.src='pdf-escalas.js';document.body.appendChild(s1);
+    var s2=document.createElement('script');s2.src='salvar-escala.js';document.body.appendChild(s2);
+}
+// Coleta anonima carrega SEMPRE (inclusive no modo painel)
+var _sc=document.createElement('script');_sc.src='coleta-anonima.js';document.body.appendChild(_sc);
+if(new URLSearchParams(window.location.search).get('d')){var _ac=document.createElement('script');_ac.src='auto-close.js';document.body.appendChild(_ac);}
+</script>
+<div style="text-align:center;padding:15px;color:#999;font-size:0.75em;margin-top:20px;">Dados an&#244;nimos e n&#227;o-identific&#225;veis podem ser utilizados para fins de pesquisa e normatiza&#231;&#227;o.</div>
+</body>
+</html>
