@@ -5107,27 +5107,62 @@
       try {
         var resp = await fetch(API_URL + '/get-results?email=' + encodeURIComponent(currentUser) + '&tipo=tte');
         var data = await resp.json();
-        _tteResultCache = data.results || [];
-        if (_tteResultCache.length === 0) { el.innerHTML = '<p>Nenhum resultado TTE encontrado.</p>'; return; }
-        var html = '<h3>Resultados TTE</h3><table style="width:100%;border-collapse:collapse;font-size:0.85em;"><tr><th style="padding:6px;border-bottom:2px solid #00695c;">Data</th><th style="text-align:left;padding:6px;border-bottom:2px solid #00695c;">Paciente</th><th style="padding:6px;border-bottom:2px solid #00695c;">Tempo A</th><th style="padding:6px;border-bottom:2px solid #00695c;">Erros A</th><th style="padding:6px;border-bottom:2px solid #00695c;">Tempo B</th><th style="padding:6px;border-bottom:2px solid #00695c;">Erros B</th><th style="padding:6px;border-bottom:2px solid #00695c;">B/A</th></tr>';
-        for (var i = 0; i < _tteResultCache.length; i++) {
-          var r = _tteResultCache[i];
-          var d = r.data || {};
-          var pA = d.parteA || {};
-          var pB = d.parteB || {};
-          html += '<tr>';
-          html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (d.date ? new Date(d.date).toLocaleString('pt-BR') : '') + '</td>';
-          html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + ((d.formData && d.formData.patientName) || '') + '</td>';
-          html += '<td style="padding:5px;border-bottom:1px solid #eee;text-align:center;font-weight:bold;">' + (pA.tempoSegundos || '-') + 's</td>';
-          html += '<td style="padding:5px;border-bottom:1px solid #eee;text-align:center;">' + (pA.erros || 0) + '</td>';
-          html += '<td style="padding:5px;border-bottom:1px solid #eee;text-align:center;font-weight:bold;">' + (pB.tempoSegundos || '-') + 's</td>';
-          html += '<td style="padding:5px;border-bottom:1px solid #eee;text-align:center;">' + (pB.erros || 0) + '</td>';
-          html += '<td style="padding:5px;border-bottom:1px solid #eee;text-align:center;">' + (d.razaoBsobreA || '-') + '</td>';
-          html += '</tr>';
+        _tteResultCache = [];
+        if (data.results && data.results.length > 0) {
+          var html = '<h3>Resultados TTE</h3><div style="margin-bottom:10px;"><button class="btn btn-red" style="padding:5px 12px;font-size:12px;" onclick="deleteTteSelected()">Apagar Selecionados</button></div>';
+          html += '<table class="results-table"><tr><th><input type="checkbox" id="tteSelectAll" onclick="toggleTteSelectAll(this)"></th><th>Data</th><th>Paciente</th><th>ID</th><th>Tempo A</th><th>Tempo B</th><th>B/A</th><th>Erros</th></tr>';
+          data.results.forEach(function(r) {
+            var d = r.data || {};
+            if (d.status === 'aguardando') return;
+            var date = d.date ? new Date(d.date).toLocaleString('pt-BR') : '-';
+            var fd = d.formData || {};
+            var nome = fd.patientName || fd.nome || '-';
+            var idPac = fd.id || (nome !== '-' && fd.birthDate ? gerarIdPacienteHash(nome, fd.birthDate) : '-');
+            var pA = d.parteA || {};
+            var pB = d.parteB || {};
+            var tempoA = pA.tempoSegundos ? pA.tempoSegundos + 's' : '-';
+            var tempoB = pB.tempoSegundos ? pB.tempoSegundos + 's' : '-';
+            var razao = d.razaoBsobreA || '-';
+            var errosTotal = ((pA.erros || 0) + (pB.erros || 0));
+            html += '<tr>';
+            html += '<td><input type="checkbox" class="tte-result-check" data-idx="' + _tteResultCache.length + '"></td>';
+            html += '<td>' + date + '</td>';
+            html += '<td>' + nome + '</td>';
+            html += '<td style="font-size:10px;font-family:monospace;color:#2e7d32;">' + idPac + '</td>';
+            html += '<td style="text-align:center;font-weight:bold;">' + tempoA + '</td>';
+            html += '<td style="text-align:center;font-weight:bold;">' + tempoB + '</td>';
+            html += '<td style="text-align:center;">' + razao + '</td>';
+            html += '<td style="text-align:center;">' + errosTotal + '</td>';
+            html += '</tr>';
+            _tteResultCache.push(r);
+          });
+          html += '</table>';
+          el.innerHTML = html;
+        } else {
+          el.innerHTML = '<p>Nenhum resultado TTE encontrado.</p>';
         }
-        html += '</table>';
-        el.innerHTML = html;
       } catch(e) { el.innerHTML = '<p>Erro ao carregar resultados.</p>'; }
+    }
+
+    function toggleTteSelectAll(master) {
+      document.querySelectorAll('.tte-result-check').forEach(function(cb) { cb.checked = master.checked; });
+    }
+
+    async function deleteTteSelected() {
+      var checks = document.querySelectorAll('.tte-result-check:checked');
+      if (checks.length === 0) { alert('Selecione ao menos um resultado.'); return; }
+      if (!confirm('Deseja apagar ' + checks.length + ' resultado(s) selecionado(s)?')) return;
+      var errors = 0;
+      for (var i = 0; i < checks.length; i++) {
+        var idx = parseInt(checks[i].dataset.idx);
+        var r = _tteResultCache[idx];
+        if (!r) continue;
+        try {
+          await fetch(API_URL + '/delete-result', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({sessionId:r.sessionId || r.id, email:currentUser, tipo:'tte'}) });
+        } catch(e) { errors++; }
+      }
+      if (errors > 0) alert(errors + ' erro(s) ao apagar.');
+      loadTteResults();
     }
 
     // ===== FIM FUNCOES TTE =====
