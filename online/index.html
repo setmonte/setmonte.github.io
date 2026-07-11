@@ -5110,7 +5110,7 @@
         _tteResultCache = [];
         if (data.results && data.results.length > 0) {
           var html = '<h3>Resultados TTE</h3><div style="margin-bottom:10px;"><button class="btn btn-red" style="padding:5px 12px;font-size:12px;" onclick="deleteTteSelected()">Apagar Selecionados</button></div>';
-          html += '<table class="results-table"><tr><th><input type="checkbox" id="tteSelectAll" onclick="toggleTteSelectAll(this)"></th><th>Data</th><th>Paciente</th><th>ID</th><th>Tempo A</th><th>Tempo B</th><th>B/A</th><th>Erros</th></tr>';
+          html += '<table class="results-table"><tr><th><input type="checkbox" id="tteSelectAll" onclick="toggleTteSelectAll(this)"></th><th>Data</th><th>Paciente</th><th>ID</th><th>Tempo A</th><th>Tempo B</th><th>B/A</th><th>Erros</th><th>PDF</th></tr>';
           data.results.forEach(function(r) {
             var d = r.data || {};
             if (d.status === 'aguardando') return;
@@ -5133,6 +5133,7 @@
             html += '<td style="text-align:center;font-weight:bold;">' + tempoB + '</td>';
             html += '<td style="text-align:center;">' + razao + '</td>';
             html += '<td style="text-align:center;">' + errosTotal + '</td>';
+            html += '<td><button class="btn btn-green" style="padding:5px 12px;font-size:12px;" data-idx="' + _tteResultCache.length + '" onclick="this.textContent=\'Gerando...\';this.disabled=true;var btn=this;generateTtePDF(this.dataset.idx).finally(function(){btn.textContent=\'PDF\';btn.disabled=false;});">PDF</button></td>';
             html += '</tr>';
             _tteResultCache.push(r);
           });
@@ -5163,6 +5164,175 @@
       }
       if (errors > 0) alert(errors + ' erro(s) ao apagar.');
       loadTteResults();
+    }
+
+    async function generateTtePDF(idx) {
+      var r = _tteResultCache[idx];
+      if (!r) { alert('Resultado nao encontrado'); return; }
+      var d = r.data || {};
+      var fd = d.formData || {};
+      var pA = d.parteA || {};
+      var pB = d.parteB || {};
+      var nome = fd.patientName || fd.nome || 'Paciente';
+      var idPac = fd.id || (nome && fd.birthDate ? gerarIdPacienteHash(nome, fd.birthDate) : '-');
+      var idade = fd.birthDate ? calcularIdadeStr(fd.birthDate) : '-';
+      var sexo = fd.sex || fd.sexo || '-';
+      var escolaridade = fd.education || fd.escolaridade || '-';
+      var dataAval = d.date ? new Date(d.date).toLocaleDateString('pt-BR') : '-';
+
+      var tempoA = pA.tempoSegundos ? parseFloat(pA.tempoSegundos) : 0;
+      var tempoB = pB.tempoSegundos ? parseFloat(pB.tempoSegundos) : 0;
+      var errosA = pA.erros || 0;
+      var errosB = pB.erros || 0;
+      var razao = d.razaoBsobreA || (tempoA > 0 ? (tempoB / tempoA).toFixed(2) : '-');
+      var diferenca = d.diferencaBmenosA || (tempoB - tempoA) * 1000;
+      var diferencaSeg = (diferenca / 1000).toFixed(1);
+
+      // Classificacao baseada em normas provisorias
+      function classificarTempo(t, parte) {
+        if (parte === 'A') {
+          if (t <= 29) return 'Acima da media';
+          if (t <= 40) return 'Media';
+          if (t <= 60) return 'Abaixo da media';
+          return 'Prejuizo significativo';
+        } else {
+          if (t <= 60) return 'Acima da media';
+          if (t <= 90) return 'Media';
+          if (t <= 120) return 'Abaixo da media';
+          return 'Prejuizo significativo';
+        }
+      }
+      function classificarRazao(r) {
+        if (r <= 2.0) return 'Adequada';
+        if (r <= 3.0) return 'Limiar';
+        return 'Elevada (possivel dificuldade em flexibilidade)';
+      }
+
+      var classA = classificarTempo(tempoA, 'A');
+      var classB = classificarTempo(tempoB, 'B');
+      var classRazao = classificarRazao(parseFloat(razao) || 0);
+
+      // Gerar PDF com jsPDF
+      var jsPDF = window.jspdf ? window.jspdf.jsPDF : null;
+      if (!jsPDF) {
+        var s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+        document.head.appendChild(s);
+        await new Promise(function(res) { s.onload = res; });
+        jsPDF = window.jspdf.jsPDF;
+      }
+      var doc = new jsPDF();
+      var y = 15;
+
+      // Cabecalho
+      doc.setFillColor(21, 101, 192);
+      doc.rect(0, 0, 210, 32, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(18);
+      doc.text('TTE - Teste de Trilhas Eletronico', 105, 14, {align:'center'});
+      doc.setFontSize(10);
+      doc.text('Trail Making Test - Versao Digital | Sistema THEDUGA', 105, 22, {align:'center'});
+      doc.text('Avaliacao Neuropsicologica Online', 105, 28, {align:'center'});
+      y = 40;
+
+      // Dados do paciente
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(12);
+      doc.setFont(undefined, 'bold');
+      doc.text('DADOS DO PACIENTE', 15, y); y += 8;
+      doc.setFont(undefined, 'normal');
+      doc.setFontSize(10);
+      doc.text('Nome: ' + nome, 15, y); y += 6;
+      doc.text('ID: ' + idPac, 15, y); y += 6;
+      doc.text('Idade: ' + idade + '  |  Sexo: ' + sexo + '  |  Escolaridade: ' + escolaridade, 15, y); y += 6;
+      doc.text('Data da avaliacao: ' + dataAval, 15, y); y += 12;
+
+      // Resultados
+      doc.setFontSize(12);
+      doc.setFont(undefined, 'bold');
+      doc.text('RESULTADOS', 15, y); y += 10;
+
+      // Tabela de resultados
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'bold');
+      doc.setFillColor(224, 242, 241);
+      doc.rect(15, y - 5, 180, 8, 'F');
+      doc.text('Parte', 20, y);
+      doc.text('Tempo (s)', 60, y);
+      doc.text('Erros', 100, y);
+      doc.text('Classificacao', 130, y);
+      y += 8;
+      doc.setFont(undefined, 'normal');
+      doc.text('Parte A (numeros)', 20, y);
+      doc.text(tempoA.toFixed(1), 65, y);
+      doc.text(String(errosA), 105, y);
+      doc.text(classA, 130, y);
+      y += 7;
+      doc.text('Parte B (numeros + letras)', 20, y);
+      doc.text(tempoB.toFixed(1), 65, y);
+      doc.text(String(errosB), 105, y);
+      doc.text(classB, 130, y);
+      y += 12;
+
+      // Indices derivados
+      doc.setFont(undefined, 'bold');
+      doc.text('INDICES DERIVADOS', 15, y); y += 8;
+      doc.setFont(undefined, 'normal');
+      doc.text('Razao B/A: ' + razao + ' (' + classRazao + ')', 15, y); y += 6;
+      doc.text('Diferenca B-A: ' + diferencaSeg + 's', 15, y); y += 12;
+
+      // Interpretacao
+      doc.setFont(undefined, 'bold');
+      doc.text('INTERPRETACAO', 15, y); y += 8;
+      doc.setFont(undefined, 'normal');
+      doc.setFontSize(9);
+      var interp = [];
+      interp.push('Parte A avalia velocidade de processamento visual e busca sequencial.');
+      interp.push('Parte B avalia flexibilidade cognitiva (alternancia entre categorias).');
+      interp.push('A razao B/A indica o custo cognitivo da alternancia: valores > 3.0 sugerem dificuldade.');
+      interp.push('');
+      interp.push('Resultado Parte A: ' + classA + ' (tempo: ' + tempoA.toFixed(1) + 's, ' + errosA + ' erros)');
+      interp.push('Resultado Parte B: ' + classB + ' (tempo: ' + tempoB.toFixed(1) + 's, ' + errosB + ' erros)');
+      interp.push('Flexibilidade cognitiva (B/A): ' + classRazao);
+      for (var li = 0; li < interp.length; li++) {
+        doc.text(interp[li], 15, y); y += 5;
+      }
+      y += 8;
+
+      // Disclaimer
+      doc.setFontSize(8);
+      doc.setTextColor(100, 100, 100);
+      doc.text('NOTA: Classificacoes baseadas em normas provisorias. Resultados devem ser interpretados', 15, y); y += 4;
+      doc.text('no contexto clinico por profissional qualificado. Nao constitui diagnostico isolado.', 15, y); y += 8;
+
+      // Referencias
+      doc.setFontSize(8);
+      doc.setTextColor(80, 80, 80);
+      doc.text('REFERENCIAS:', 15, y); y += 4;
+      doc.text('REITAN, R. M. Validity of the Trail Making Test as an indicator of organic brain damage. Perceptual and Motor Skills, v. 8, p. 271-276, 1958.', 15, y); y += 4;
+      doc.text('TOMBAUGH, T. N. Trail Making Test A and B: normative data. Archives of Clinical Neuropsychology, v. 19, n. 2, p. 203-214, 2004.', 15, y); y += 4;
+      doc.text('HAMDAN, A. C.; HAMDAN, E. M. L. R. Teste de Trilhas: normas para amostra brasileira. Psicologia: Teoria e Pesquisa, v. 25, p. 399-405, 2009.', 15, y); y += 4;
+      doc.text('STRAUSS, E.; SHERMAN, E. M. S.; SPREEN, O. A compendium of neuropsychological tests. 3. ed. New York: Oxford, 2006.', 15, y);
+
+      // Rodape
+      doc.setFontSize(7);
+      doc.setTextColor(150, 150, 150);
+      doc.text('Relatorio gerado em: ' + new Date().toLocaleString('pt-BR') + ' | Sistema THEDUGA', 15, 287);
+
+      // Salvar
+      var ts = new Date();
+      var tsStr = ts.getFullYear() + String(ts.getMonth()+1).padStart(2,'0') + String(ts.getDate()).padStart(2,'0');
+      doc.save('TTE_' + nome.replace(/\s+/g,'_') + '_' + tsStr + '.pdf');
+    }
+
+    function calcularIdadeStr(dataNascimento) {
+      if (!dataNascimento) return '-';
+      var nascimento = new Date(dataNascimento + 'T00:00:00');
+      var hoje = new Date(); hoje.setHours(0,0,0,0);
+      var anos = hoje.getFullYear() - nascimento.getFullYear();
+      var meses = hoje.getMonth() - nascimento.getMonth();
+      if (meses < 0 || (meses === 0 && hoje.getDate() < nascimento.getDate())) anos--;
+      return anos + ' anos';
     }
 
     // ===== FIM FUNCOES TTE =====
