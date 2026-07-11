@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-QY1N9587DG"></script>
+    <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-QY1N9587DG');</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>TTE — Teste de Trilhas Eletronico</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'Segoe UI',Arial,sans-serif; background:linear-gradient(135deg,#1565c0 0%,#0097a7 50%,#00897b 100%); min-height:100vh; padding:20px; line-height:1.6; }
+    .container { max-width:1000px; margin:0 auto; background:#fff; border-radius:16px; box-shadow:0 20px 60px rgba(0,0,0,0.15); overflow:hidden; }
+    header { background:linear-gradient(135deg,#0d47a1,#1565c0,#00838f); color:#fff; padding:30px; text-align:center; }
+    header .logo { font-size:2.8em; font-weight:bold; margin-bottom:10px; letter-spacing:3px; }
+    header h1 { font-size:1.6em; font-weight:300; margin-bottom:8px; }
+    header p { font-size:1em; opacity:0.85; }
+    .page { display:none; }
+    .page.active { display:block; animation:fadeIn 0.4s ease-out; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(15px)} to{opacity:1;transform:translateY(0)} }
+    .secao { padding:35px; }
+    .secao h2 { color:#0d47a1; margin-bottom:15px; font-size:1.6em; border-bottom:3px solid #0097a7; padding-bottom:10px; }
+    .descricao-secao { color:#616161; margin-bottom:25px; font-size:1.05em; }
+    .instrucoes-box { background:#e0f7fa; border:2px solid #4dd0e1; border-radius:12px; padding:25px; margin:20px 0; line-height:1.8; }
+    .instrucoes-box p { margin-bottom:10px; color:#004d40; }
+    .botoes { text-align:center; margin-top:30px; display:flex; justify-content:center; gap:15px; flex-wrap:wrap; }
+    .btn-primary { background:linear-gradient(135deg,#1565c0,#0097a7); color:#fff; border:none; padding:14px 28px; border-radius:8px; font-size:16px; font-weight:600; cursor:pointer; transition:all 0.3s; min-width:48px; min-height:48px; }
+    .btn-primary:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(21,101,192,0.4); }
+    .btn-primary:disabled { background:#bdbdbd; cursor:not-allowed; transform:none; box-shadow:none; }
+    .btn-danger { background:linear-gradient(135deg,#e53935,#ef5350); color:#fff; border:none; padding:14px 28px; border-radius:8px; font-size:16px; font-weight:600; cursor:pointer; transition:all 0.3s; min-width:48px; min-height:48px; }
+    .btn-danger:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(229,57,53,0.4); }
+    .progresso-container { background:#e0f2f1; padding:15px 25px; border-bottom:1px solid #b2dfdb; }
+    .progresso-barra { width:100%; height:6px; background:#b2dfdb; border-radius:3px; overflow:hidden; margin-bottom:10px; }
+    .progresso-preenchido { height:100%; background:linear-gradient(90deg,#1565c0,#00897b); border-radius:3px; width:11%; transition:width 0.5s ease; }
+    .cronometro-container { text-align:center; margin-bottom:25px; }
+    .cronometro { display:inline-flex; align-items:center; gap:10px; background:linear-gradient(135deg,#0d47a1,#00695c); color:#fff; padding:12px 25px; border-radius:30px; font-size:1.1em; box-shadow:0 4px 15px rgba(13,71,161,0.3); }
+    .cronometro-tempo { font-family:'Courier New',monospace; font-size:1.8em; font-weight:bold; min-width:80px; text-align:center; }
+    .canvas-container { position:relative; width:100%; max-width:800px; margin:0 auto; aspect-ratio:4/3; background:#fafafa; border:2px solid #b2dfdb; border-radius:12px; touch-action:none; user-select:none; -webkit-user-select:none; }
+    .canvas-container canvas { position:absolute; top:0; left:0; width:100%; height:100%; border-radius:12px; }
+    .circulo-trilha { position:absolute; width:44px; height:44px; border-radius:50%; background:#fff; border:3px solid #1565c0; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:14px; color:#0d47a1; cursor:pointer; transition:transform 0.15s,box-shadow 0.15s; z-index:10; user-select:none; -webkit-user-select:none; }
+    .circulo-trilha:hover { transform:scale(1.1); box-shadow:0 4px 12px rgba(21,101,192,0.3); }
+    .circulo-trilha.ativo { background:#e3f2fd; border-color:#0d47a1; box-shadow:0 0 12px rgba(13,71,161,0.5); transform:scale(1.15); }
+    .circulo-trilha.correto { background:#c8e6c9; border-color:#2e7d32; color:#1b5e20; }
+    .circulo-trilha.erro { background:#ffcdd2; border-color:#c62828; color:#b71c1c; animation:shake 0.4s; }
+    @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
+    .trilha-feedback { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); padding:20px 40px; border-radius:12px; font-size:1.5em; font-weight:bold; z-index:1000; pointer-events:none; opacity:0; transition:opacity 0.3s; }
+    .trilha-feedback.visivel { opacity:1; }
+    .trilha-feedback.sucesso { background:#c8e6c9; color:#1b5e20; border:2px solid #43a047; }
+    .trilha-feedback.falha { background:#ffcdd2; color:#b71c1c; border:2px solid #e53935; }
+    .concluido { text-align:center; padding:60px 30px; }
+    .concluido h2 { color:#2e7d32; font-size:2em; margin-bottom:15px; }
+    .concluido p { color:#555; font-size:1.2em; }
+    @media (max-width:768px) {
+      body { padding:10px; }
+      .secao { padding:20px 15px; }
+      .canvas-container { aspect-ratio:1/1; }
+      .circulo-trilha { width:38px; height:38px; font-size:12px; }
+      .botoes { flex-direction:column; align-items:center; }
+      .btn-primary,.btn-danger { width:100%; max-width:300px; }
+    }
+    @media (max-width:400px) {
+      .circulo-trilha { width:32px; height:32px; font-size:11px; border-width:2px; }
+    }
+    :fullscreen body, :-webkit-full-screen body, :-ms-fullscreen body { background:#1a2a3a; padding:0; }
+    :fullscreen .container, :-webkit-full-screen .container, :-ms-fullscreen .container { max-width:100%; width:100%; min-height:100vh; border-radius:0; box-shadow:none; display:flex; flex-direction:column; }
+    :fullscreen .secao, :-webkit-full-screen .secao, :-ms-fullscreen .secao { flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; }
+    :fullscreen .secao > *, :-webkit-full-screen .secao > *, :-ms-fullscreen .secao > * { width:100%; max-width:900px; }
+    :fullscreen .canvas-container, :-webkit-full-screen .canvas-container, :-ms-fullscreen .canvas-container { max-width:90vmin; max-height:70vmin; }
+    :fullscreen header, :-webkit-full-screen header, :-ms-fullscreen header { padding:15px; }
+    :fullscreen .progresso-container, :-webkit-full-screen .progresso-container, :-ms-fullscreen .progresso-container { position:fixed; top:0; left:0; right:0; z-index:100; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">TTE</div>
+      <h1>Teste de Trilhas Eletronico</h1>
+      <p>Sistema THEDUGA - Avaliacao Neuropsicologica Online</p>
+    </header>
+
+    <div class="progresso-container">
+      <div class="progresso-barra">
+        <div class="progresso-preenchido" id="progresso-preenchido"></div>
+      </div>
+    </div>
+
+    <!-- PAGINA: DADOS DO PACIENTE (auto-preenchido via URL) -->
+    <div class="page active" id="pagina-dados">
+      <div class="secao">
+        <h2>Dados do Paciente</h2>
+        <p id="info-paciente" style="text-align:center;color:#1565c0;font-weight:600;padding:15px;background:#e3f2fd;border-radius:8px;font-size:1.1em;margin:20px 0;"></p>
+        <p class="descricao-secao" style="text-align:center;">Os dados foram carregados automaticamente. Clique em iniciar quando estiver pronto.</p>
+        <div class="botoes">
+          <button class="btn-primary" onclick="iniciarTeste()">Iniciar Teste</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGINA: INSTRUCOES PARTE A -->
+    <div class="page" id="pagina-instrucoes-a">
+      <div class="secao">
+        <h2>Parte A - Instrucoes</h2>
+        <div class="instrucoes-box">
+          <p><strong>Instrucoes:</strong></p>
+          <p>Na tela a seguir, voce vera circulos numerados de 1 a 25.</p>
+          <p>Sua tarefa e conectar os circulos em ordem crescente: 1, 2, 3, 4... ate o 25.</p>
+          <p>Para conectar, <strong>arraste o dedo (ou mouse) de um circulo ate o proximo</strong>.</p>
+          <p>Tente fazer o mais rapido possivel, sem pular nenhum numero.</p>
+          <p><em>Primeiro voce fara um treino com poucos numeros para entender.</em></p>
+        </div>
+        <div class="botoes">
+          <button class="btn-primary" onclick="iniciarTreinoA()">Iniciar Treino</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGINA: TREINO A -->
+    <div class="page" id="pagina-treino-a">
+      <div class="secao">
+        <h2>Treino - Parte A</h2>
+        <p class="descricao-secao">Conecte os numeros em ordem: 1, 2, 3... ate o 8</p>
+        <div class="canvas-container" id="canvas-treino-a"></div>
+        <div class="botoes" id="botoes-treino-a" style="display:none;">
+          <button class="btn-primary" onclick="iniciarInstrucoesTesteA()">Entendi! Iniciar Parte A</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGINA: TESTE A -->
+    <div class="page" id="pagina-teste-a">
+      <div class="secao">
+        <h2>Parte A - Teste</h2>
+        <div class="cronometro-container">
+          <div class="cronometro">
+            <span>&#9201;</span>
+            <span class="cronometro-tempo" id="tempo-a">00:00</span>
+          </div>
+        </div>
+        <p class="descricao-secao">Conecte os numeros em ordem: 1, 2, 3... ate o 25</p>
+        <div class="canvas-container" id="canvas-teste-a"></div>
+      </div>
+    </div>
+
+    <!-- PAGINA: INSTRUCOES PARTE B -->
+    <div class="page" id="pagina-instrucoes-b">
+      <div class="secao">
+        <h2>Parte B - Instrucoes</h2>
+        <div class="instrucoes-box">
+          <p><strong>Instrucoes:</strong></p>
+          <p>Agora voce vera circulos com numeros E letras.</p>
+          <p>Sua tarefa e conectar alternando entre numero e letra: 1, A, 2, B, 3, C...</p>
+          <p>Para conectar, <strong>arraste o dedo (ou mouse) de um circulo ate o proximo</strong>.</p>
+          <p>Tente fazer o mais rapido possivel, sem errar a sequencia.</p>
+          <p><em>Primeiro voce fara um treino para entender a alternancia.</em></p>
+        </div>
+        <div class="botoes">
+          <button class="btn-primary" onclick="iniciarTreinoB()">Iniciar Treino</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGINA: TREINO B -->
+    <div class="page" id="pagina-treino-b">
+      <div class="secao">
+        <h2>Treino - Parte B</h2>
+        <p class="descricao-secao">Conecte alternando: 1, A, 2, B, 3, C, 4, D</p>
+        <div class="canvas-container" id="canvas-treino-b"></div>
+        <div class="botoes" id="botoes-treino-b" style="display:none;">
+          <button class="btn-primary" onclick="iniciarInstrucoesTesteB()">Entendi! Iniciar Parte B</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGINA: TESTE B -->
+    <div class="page" id="pagina-teste-b">
+      <div class="secao">
+        <h2>Parte B - Teste</h2>
+        <div class="cronometro-container">
+          <div class="cronometro">
+            <span>&#9201;</span>
+            <span class="cronometro-tempo" id="tempo-b">00:00</span>
+          </div>
+        </div>
+        <p class="descricao-secao">Conecte alternando: 1, A, 2, B, 3, C...</p>
+        <div class="canvas-container" id="canvas-teste-b"></div>
+      </div>
+    </div>
+
+    <!-- PAGINA: CONCLUIDO -->
+    <div class="page" id="pagina-concluido">
+      <div class="concluido">
+        <h2>&#10004; Teste concluido!</h2>
+        <p>Voce pode fechar esta janela.</p>
+        <p style="margin-top:20px;font-size:0.9em;color:#777;">Os resultados foram enviados para o avaliador.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="trilha-feedback" id="feedback-msg"></div>
+
+
+  <script>
+    // ===== CONFIGURACAO =====
+    var API_URL = 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
+    var sessionData = null;
+
+    // ===== ESTADO GLOBAL =====
+    var estado = {
+      paciente: { nome:'', dataNascimento:'', idade:{anos:0,meses:0,dias:0}, escolaridade:'', dataTeste:'' },
+      faseAtual: 'dados',
+      parteA: { tempo:0, erros:0, sequenciaCliques:[], timestamps:[], iniciou:false, terminou:false },
+      parteB: { tempo:0, erros:0, sequenciaCliques:[], timestamps:[], iniciou:false, terminou:false },
+      treinoA: { erros:0, completo:false },
+      treinoB: { erros:0, completo:false },
+      cronometroId: null,
+      tempoInicio: 0
+    };
+
+    // ===== POSICOES PRE-DEFINIDAS (baseadas no TMT classico) =====
+    // Posicoes em porcentagem do canvas (x%, y%) para evitar sobreposicao
+    var POSICOES_A_25 = [
+      [22,12],[78,8],[50,18],[35,30],[65,28],[15,42],[85,38],[42,45],[58,42],[28,55],
+      [72,52],[10,65],[50,60],[90,62],[35,70],[65,68],[20,78],[80,75],[45,82],[55,78],
+      [30,90],[70,88],[12,92],[88,90],[50,95]
+    ];
+    var POSICOES_B_25 = [
+      [25,10],[75,12],[50,15],[18,28],[82,25],[40,32],[60,30],[30,45],[70,42],[50,48],
+      [15,55],[85,52],[38,60],[62,58],[25,68],[75,65],[45,72],[55,70],[12,80],[88,78],
+      [35,85],[65,82],[50,90],[22,95],[78,92]
+    ];
+    var POSICOES_TREINO = [
+      [20,15],[80,15],[50,30],[25,50],[75,50],[35,70],[65,70],[50,90]
+    ];
+
+    // Sequencias
+    var SEQ_A = ['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18','19','20','21','22','23','24','25'];
+    var SEQ_B = ['1','A','2','B','3','C','4','D','5','E','6','F','7','G','8','H','9','I','10','J','11','K','12','L','13'];
+    var SEQ_TREINO_A = ['1','2','3','4','5','6','7','8'];
+    var SEQ_TREINO_B = ['1','A','2','B','3','C','4','D'];
+
+    // ===== PARSE SESSION DATA FROM URL =====
+    (function() {
+      var params = new URLSearchParams(window.location.search);
+      var d = params.get('d');
+      if (d) {
+        try { sessionData = JSON.parse(atob(decodeURIComponent(d))); } catch(e) { sessionData = null; }
+      }
+      if (!sessionData) {
+        document.querySelector('.container').innerHTML = '<div style="padding:60px;text-align:center;"><h2 style="color:#c62828;">Link invalido</h2><p>Este link nao contem dados validos. Solicite um novo link ao avaliador.</p></div>';
+        return;
+      }
+      estado.paciente.nome = sessionData.patientName || '';
+      estado.paciente.dataNascimento = sessionData.birthDate || '';
+      estado.paciente.escolaridade = sessionData.education || '';
+      estado.paciente.dataTeste = new Date().toISOString().slice(0,10);
+      if (sessionData.birthDate) {
+        estado.paciente.idade = calcularIdadeDetalhada(sessionData.birthDate);
+      }
+      var infoEl = document.getElementById('info-paciente');
+      if (infoEl) {
+        var idade = estado.paciente.idade;
+        infoEl.textContent = estado.paciente.nome + ' | ' + idade.anos + ' anos, ' + idade.meses + ' meses | ' + (estado.paciente.escolaridade || 'Escolaridade nao informada');
+      }
+    })();
+
+    // ===== FUNCOES AUXILIARES =====
+    function calcularIdadeDetalhada(dataNascimento) {
+      var nascimento = new Date(dataNascimento + 'T00:00:00');
+      var hoje = new Date(); hoje.setHours(0,0,0,0);
+      var anos = hoje.getFullYear() - nascimento.getFullYear();
+      var meses = hoje.getMonth() - nascimento.getMonth();
+      var dias = hoje.getDate() - nascimento.getDate();
+      if (dias < 0) { meses--; var mesAnt = new Date(hoje.getFullYear(), hoje.getMonth(), 0); dias += mesAnt.getDate(); }
+      if (meses < 0) { anos--; meses += 12; }
+      return { anos:anos, meses:meses, dias:dias };
+    }
+
+    function formatarTempo(ms) {
+      var seg = Math.floor(ms / 1000);
+      var min = Math.floor(seg / 60);
+      seg = seg % 60;
+      return (min < 10 ? '0' : '') + min + ':' + (seg < 10 ? '0' : '') + seg;
+    }
+
+    function mostrarFeedback(texto, tipo) {
+      var el = document.getElementById('feedback-msg');
+      if (!el) return;
+      el.textContent = texto;
+      el.className = 'trilha-feedback visivel ' + tipo;
+      setTimeout(function() { el.className = 'trilha-feedback'; }, 1200);
+    }
+
+    // ===== NAVEGACAO =====
+    function navegarPara(idPagina) {
+      document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
+      var alvo = document.getElementById(idPagina);
+      if (alvo) alvo.classList.add('active');
+      window.scrollTo(0,0);
+      var mapa = {'pagina-dados':1,'pagina-instrucoes-a':2,'pagina-treino-a':3,'pagina-teste-a':4,'pagina-instrucoes-b':5,'pagina-treino-b':6,'pagina-teste-b':7,'pagina-concluido':8};
+      var etapa = mapa[idPagina] || 1;
+      var barra = document.getElementById('progresso-preenchido');
+      if (barra) barra.style.width = (etapa/8*100) + '%';
+    }
+
+    // ===== CRONOMETRO =====
+    function pararCronometro() {
+      if (estado.cronometroId) { clearInterval(estado.cronometroId); estado.cronometroId = null; }
+    }
+
+    function iniciarCronometro(idElemento) {
+      estado.tempoInicio = Date.now();
+      var el = document.getElementById(idElemento);
+      estado.cronometroId = setInterval(function() {
+        var elapsed = Date.now() - estado.tempoInicio;
+        if (el) el.textContent = formatarTempo(elapsed);
+      }, 100);
+    }
+
+    // ===== FLUXO PRINCIPAL =====
+    function iniciarTeste() {
+      var el = document.documentElement;
+      if (el.requestFullscreen) el.requestFullscreen();
+      else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+      else if (el.msRequestFullscreen) el.msRequestFullscreen();
+      navegarPara('pagina-instrucoes-a');
+    }
+
+    function iniciarTreinoA() {
+      navegarPara('pagina-treino-a');
+      montarTrilha('canvas-treino-a', SEQ_TREINO_A, POSICOES_TREINO, 'treino-a');
+    }
+
+    function iniciarInstrucoesTesteA() {
+      navegarPara('pagina-teste-a');
+      estado.parteA.iniciou = true;
+      iniciarCronometro('tempo-a');
+      montarTrilha('canvas-teste-a', SEQ_A, embaralharPosicoes(POSICOES_A_25), 'teste-a');
+    }
+
+    function iniciarTreinoB() {
+      navegarPara('pagina-treino-b');
+      montarTrilha('canvas-treino-b', SEQ_TREINO_B, POSICOES_TREINO, 'treino-b');
+    }
+
+    function iniciarInstrucoesTesteB() {
+      navegarPara('pagina-teste-b');
+      estado.parteB.iniciou = true;
+      iniciarCronometro('tempo-b');
+      montarTrilha('canvas-teste-b', SEQ_B, embaralharPosicoes(POSICOES_B_25), 'teste-b');
+    }
+
+    // ===== EMBARALHAR POSICOES (leve variacao para nao ser identico toda vez) =====
+    function embaralharPosicoes(posBase) {
+      var resultado = [];
+      for (var i = 0; i < posBase.length; i++) {
+        var vx = (Math.random() - 0.5) * 6;
+        var vy = (Math.random() - 0.5) * 6;
+        var nx = Math.max(5, Math.min(95, posBase[i][0] + vx));
+        var ny = Math.max(5, Math.min(95, posBase[i][1] + vy));
+        resultado.push([nx, ny]);
+      }
+      return resultado;
+    }
+
+    // ===== MOTOR DE TRILHA (renderiza circulos e gerencia arraste) =====
+    var trilhaAtiva = null;
+
+    function montarTrilha(containerId, sequencia, posicoes, modo) {
+      var container = document.getElementById(containerId);
+      if (!container) return;
+      container.innerHTML = '';
+      container.style.position = 'relative';
+
+      // Canvas para linhas
+      var canvas = document.createElement('canvas');
+      canvas.id = containerId + '-canvas';
+      canvas.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;border-radius:12px;pointer-events:none;z-index:5;';
+      container.appendChild(canvas);
+
+      // Estado da trilha
+      trilhaAtiva = {
+        containerId: containerId,
+        sequencia: sequencia,
+        posicoes: posicoes,
+        modo: modo,
+        indiceAtual: 0,
+        linhas: [],
+        arrastando: false,
+        ultimoPonto: null,
+        canvas: canvas,
+        container: container
+      };
+
+      // Criar circulos
+      for (var i = 0; i < sequencia.length; i++) {
+        var div = document.createElement('div');
+        div.className = 'circulo-trilha';
+        div.setAttribute('data-idx', i);
+        div.setAttribute('data-label', sequencia[i]);
+        div.textContent = sequencia[i];
+        div.style.left = 'calc(' + posicoes[i][0] + '% - 22px)';
+        div.style.top = 'calc(' + posicoes[i][1] + '% - 22px)';
+        container.appendChild(div);
+      }
+
+      // Marcar primeiro como ativo
+      var primeiro = container.querySelector('[data-idx="0"]');
+      if (primeiro) primeiro.classList.add('ativo');
+
+      // Ajustar canvas size
+      ajustarCanvas(trilhaAtiva);
+
+      // Event listeners para arraste
+      container.addEventListener('pointerdown', onPointerDown, {passive:false});
+      container.addEventListener('pointermove', onPointerMove, {passive:false});
+      container.addEventListener('pointerup', onPointerUp, {passive:false});
+      container.addEventListener('pointercancel', onPointerUp, {passive:false});
+
+      // Resize observer
+      var ro = new ResizeObserver(function() { ajustarCanvas(trilhaAtiva); redesenharLinhas(trilhaAtiva); });
+      ro.observe(container);
+    }
+
+    function ajustarCanvas(t) {
+      if (!t || !t.canvas || !t.container) return;
+      var rect = t.container.getBoundingClientRect();
+      t.canvas.width = rect.width;
+      t.canvas.height = rect.height;
+    }
+
+    // ===== EVENTOS DE ARRASTE =====
+    function getCentroCirculo(t, idx) {
+      var circ = t.container.querySelector('[data-idx="' + idx + '"]');
+      if (!circ) return null;
+      var cRect = t.container.getBoundingClientRect();
+      var eRect = circ.getBoundingClientRect();
+      return { x: eRect.left - cRect.left + eRect.width/2, y: eRect.top - cRect.top + eRect.height/2 };
+    }
+
+    function getCirculoSobPonto(t, px, py) {
+      var circulos = t.container.querySelectorAll('.circulo-trilha');
+      for (var i = 0; i < circulos.length; i++) {
+        var rect = circulos[i].getBoundingClientRect();
+        var cx = rect.left + rect.width/2;
+        var cy = rect.top + rect.height/2;
+        var dist = Math.sqrt((px - cx)*(px - cx) + (py - cy)*(py - cy));
+        if (dist < rect.width * 0.7) return parseInt(circulos[i].getAttribute('data-idx'));
+      }
+      return -1;
+    }
+
+    function onPointerDown(e) {
+      if (!trilhaAtiva) return;
+      e.preventDefault();
+      var t = trilhaAtiva;
+      var idx = getCirculoSobPonto(t, e.clientX, e.clientY);
+      if (idx === t.indiceAtual) {
+        t.arrastando = true;
+        t.ultimoPonto = getCentroCirculo(t, idx);
+        t.container.setPointerCapture(e.pointerId);
+        // Desenhar linha temporaria
+        desenharLinhaTemp(t, t.ultimoPonto, t.ultimoPonto);
+      }
+    }
+
+    function onPointerMove(e) {
+      if (!trilhaAtiva || !trilhaAtiva.arrastando) return;
+      e.preventDefault();
+      var t = trilhaAtiva;
+      var cRect = t.container.getBoundingClientRect();
+      var pontoAtual = { x: e.clientX - cRect.left, y: e.clientY - cRect.top };
+      redesenharLinhas(t);
+      // Linha temporaria do ultimo ponto ate o cursor
+      var ctx = t.canvas.getContext('2d');
+      ctx.beginPath();
+      ctx.moveTo(t.ultimoPonto.x, t.ultimoPonto.y);
+      ctx.lineTo(pontoAtual.x, pontoAtual.y);
+      ctx.strokeStyle = '#1565c0';
+      ctx.lineWidth = 3;
+      ctx.setLineDash([6,4]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    function onPointerUp(e) {
+      if (!trilhaAtiva || !trilhaAtiva.arrastando) return;
+      e.preventDefault();
+      var t = trilhaAtiva;
+      t.arrastando = false;
+      try { t.container.releasePointerCapture(e.pointerId); } catch(ex) {}
+
+      var idxAlvo = getCirculoSobPonto(t, e.clientX, e.clientY);
+      var esperado = t.indiceAtual + 1;
+
+      if (idxAlvo === esperado) {
+        // ACERTO
+        registrarAcerto(t, idxAlvo);
+      } else if (idxAlvo >= 0 && idxAlvo !== t.indiceAtual) {
+        // ERRO - soltou em circulo errado
+        registrarErro(t, idxAlvo);
+      }
+      // Se soltou fora de qualquer circulo, simplesmente cancela
+      redesenharLinhas(t);
+    }
+
+    // ===== LOGICA DE ACERTO/ERRO =====
+    function registrarAcerto(t, idxAlvo) {
+      var agora = Date.now();
+      // Guardar linha permanente
+      var de = getCentroCirculo(t, t.indiceAtual);
+      var para = getCentroCirculo(t, idxAlvo);
+      t.linhas.push({ de:de, para:para });
+
+      // Marcar circulo anterior como correto e novo como ativo
+      var anterior = t.container.querySelector('[data-idx="' + t.indiceAtual + '"]');
+      if (anterior) { anterior.classList.remove('ativo'); anterior.classList.add('correto'); }
+      var novo = t.container.querySelector('[data-idx="' + idxAlvo + '"]');
+      if (novo) { novo.classList.add('ativo'); }
+
+      t.indiceAtual = idxAlvo;
+
+      // Registrar timestamp
+      if (t.modo === 'teste-a') {
+        estado.parteA.sequenciaCliques.push(t.sequencia[idxAlvo]);
+        estado.parteA.timestamps.push(agora);
+      } else if (t.modo === 'teste-b') {
+        estado.parteB.sequenciaCliques.push(t.sequencia[idxAlvo]);
+        estado.parteB.timestamps.push(agora);
+      }
+
+      // Verificar se completou
+      if (idxAlvo === t.sequencia.length - 1) {
+        // Marcar ultimo como correto
+        if (novo) { novo.classList.remove('ativo'); novo.classList.add('correto'); }
+        completarFase(t);
+      }
+    }
+
+    function registrarErro(t, idxErrado) {
+      var circ = t.container.querySelector('[data-idx="' + idxErrado + '"]');
+      if (circ) {
+        circ.classList.add('erro');
+        setTimeout(function() { circ.classList.remove('erro'); }, 600);
+      }
+      mostrarFeedback('Incorreto! Volte ao ' + t.sequencia[t.indiceAtual], 'falha');
+
+      if (t.modo === 'teste-a') {
+        estado.parteA.erros++;
+      } else if (t.modo === 'teste-b') {
+        estado.parteB.erros++;
+      } else if (t.modo === 'treino-a') {
+        estado.treinoA.erros++;
+      } else if (t.modo === 'treino-b') {
+        estado.treinoB.erros++;
+      }
+    }
+
+    function completarFase(t) {
+      if (t.modo === 'treino-a') {
+        estado.treinoA.completo = true;
+        mostrarFeedback('Muito bem! Treino concluido!', 'sucesso');
+        var btn = document.getElementById('botoes-treino-a');
+        if (btn) btn.style.display = 'flex';
+      } else if (t.modo === 'treino-b') {
+        estado.treinoB.completo = true;
+        mostrarFeedback('Muito bem! Treino concluido!', 'sucesso');
+        var btn = document.getElementById('botoes-treino-b');
+        if (btn) btn.style.display = 'flex';
+      } else if (t.modo === 'teste-a') {
+        pararCronometro();
+        estado.parteA.tempo = Date.now() - estado.tempoInicio;
+        estado.parteA.terminou = true;
+        mostrarFeedback('Parte A concluida!', 'sucesso');
+        setTimeout(function() { navegarPara('pagina-instrucoes-b'); }, 1500);
+      } else if (t.modo === 'teste-b') {
+        pararCronometro();
+        estado.parteB.tempo = Date.now() - estado.tempoInicio;
+        estado.parteB.terminou = true;
+        mostrarFeedback('Parte B concluida!', 'sucesso');
+        setTimeout(function() { finalizarTeste(); }, 1500);
+      }
+      // Desabilitar interacao
+      t.container.removeEventListener('pointerdown', onPointerDown);
+      t.container.removeEventListener('pointermove', onPointerMove);
+      t.container.removeEventListener('pointerup', onPointerUp);
+      trilhaAtiva = null;
+    }
+
+    // ===== DESENHO DE LINHAS =====
+    function redesenharLinhas(t) {
+      if (!t || !t.canvas) return;
+      ajustarCanvas(t);
+      var ctx = t.canvas.getContext('2d');
+      ctx.clearRect(0, 0, t.canvas.width, t.canvas.height);
+      // Recalcular posicoes dos centros (caso resize)
+      for (var i = 0; i < t.linhas.length; i++) {
+        var de = getCentroCirculo(t, i);
+        var para = getCentroCirculo(t, i + 1);
+        if (de && para) {
+          ctx.beginPath();
+          ctx.moveTo(de.x, de.y);
+          ctx.lineTo(para.x, para.y);
+          ctx.strokeStyle = '#2e7d32';
+          ctx.lineWidth = 3;
+          ctx.stroke();
+        }
+      }
+    }
+
+    function desenharLinhaTemp(t, de, para) {
+      if (!t || !t.canvas) return;
+      var ctx = t.canvas.getContext('2d');
+      ctx.beginPath();
+      ctx.moveTo(de.x, de.y);
+      ctx.lineTo(para.x, para.y);
+      ctx.strokeStyle = '#1565c0';
+      ctx.lineWidth = 3;
+      ctx.setLineDash([6,4]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // ===== FINALIZAR E ENVIAR RESULTADOS =====
+    async function finalizarTeste() {
+      // Restaurar tela
+      if (document.exitFullscreen) document.exitFullscreen();
+      else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+      else if (document.msExitFullscreen) document.msExitFullscreen();
+
+      navegarPara('pagina-concluido');
+
+      // Auto-fechar aba
+      var _s = document.createElement('script');
+      _s.src = 'auto-close.js';
+      _s.onload = function() { if (window._autoFechar) _autoFechar(); };
+      document.body.appendChild(_s);
+
+      // Coleta anonima
+      window._escalaDados = {
+        escala: 'TTE',
+        escore: estado.parteA.tempo + estado.parteB.tempo,
+        classificacao: 'A:' + formatarTempo(estado.parteA.tempo) + ' B:' + formatarTempo(estado.parteB.tempo),
+        dominios: {
+          ParteA: { tempo: estado.parteA.tempo, erros: estado.parteA.erros },
+          ParteB: { tempo: estado.parteB.tempo, erros: estado.parteB.erros },
+          Razao: estado.parteA.tempo > 0 ? (estado.parteB.tempo / estado.parteA.tempo).toFixed(2) : 0
+        }
+      };
+
+      // Enviar resultados ao servidor
+      var resultData = {
+        formData: sessionData,
+        status: 'finalizado',
+        date: new Date().toISOString(),
+        parteA: {
+          tempo: estado.parteA.tempo,
+          tempoSegundos: (estado.parteA.tempo / 1000).toFixed(1),
+          erros: estado.parteA.erros,
+          sequenciaCliques: estado.parteA.sequenciaCliques,
+          timestamps: estado.parteA.timestamps
+        },
+        parteB: {
+          tempo: estado.parteB.tempo,
+          tempoSegundos: (estado.parteB.tempo / 1000).toFixed(1),
+          erros: estado.parteB.erros,
+          sequenciaCliques: estado.parteB.sequenciaCliques,
+          timestamps: estado.parteB.timestamps
+        },
+        razaoBsobreA: estado.parteA.tempo > 0 ? (estado.parteB.tempo / estado.parteA.tempo).toFixed(2) : 0,
+        diferencaBmenosA: estado.parteB.tempo - estado.parteA.tempo,
+        treino: {
+          parteA: { erros: estado.treinoA.erros },
+          parteB: { erros: estado.treinoB.erros }
+        }
+      };
+
+      try {
+        await fetch(API_URL + '/save-result', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId: sessionData.sessionId,
+            email: sessionData.email,
+            tipo: 'tte',
+            data: resultData
+          })
+        });
+      } catch(e) { console.error('Erro ao salvar resultado:', e); }
+    }
+  </script>
+<script src="coleta-anonima.js"></script>
+</body>
+</html>
