@@ -5179,153 +5179,106 @@
       var sexo = fd.sex || fd.sexo || '-';
       var escolaridade = fd.education || fd.escolaridade || '-';
       var dataAval = d.date ? new Date(d.date).toLocaleDateString('pt-BR') : '-';
-
       var tempoA = pA.tempoSegundos ? parseFloat(pA.tempoSegundos) : 0;
       var tempoB = pB.tempoSegundos ? parseFloat(pB.tempoSegundos) : 0;
       var errosA = pA.erros || 0;
       var errosB = pB.erros || 0;
       var razao = d.razaoBsobreA || (tempoA > 0 ? (tempoB / tempoA).toFixed(2) : '-');
-      var diferenca = d.diferencaBmenosA || (tempoB - tempoA) * 1000;
-      var diferencaSeg = (diferenca / 1000).toFixed(1);
-
-      // Classificacao baseada em normas provisorias (Tombaugh 2004, Hamdan & Hamdan 2009)
+      var diferenca = (tempoB - tempoA).toFixed(1);
       function classificarTempo(t, parte) {
-        if (parte === 'A') {
-          if (t <= 30) return 'Superior';
-          if (t <= 42) return 'Media-alta';
-          if (t <= 55) return 'Media';
-          if (t <= 78) return 'Media-baixa';
-          return 'Prejuizo significativo';
-        } else {
-          if (t <= 58) return 'Superior';
-          if (t <= 85) return 'Media-alta';
-          if (t <= 120) return 'Media';
-          if (t <= 180) return 'Media-baixa';
-          return 'Prejuizo significativo';
-        }
+        if (parte === 'A') { if (t <= 30) return 'Superior'; if (t <= 42) return 'Media-alta'; if (t <= 55) return 'Media'; if (t <= 78) return 'Media-baixa'; return 'Prejuizo significativo'; }
+        else { if (t <= 58) return 'Superior'; if (t <= 85) return 'Media-alta'; if (t <= 120) return 'Media'; if (t <= 180) return 'Media-baixa'; return 'Prejuizo significativo'; }
       }
-      function classificarRazao(r) {
-        if (r <= 2.0) return 'Adequada';
-        if (r <= 2.5) return 'Limiar';
-        if (r <= 3.0) return 'Elevada';
-        return 'Muito elevada (possivel dificuldade em flexibilidade)';
-      }
-
+      function classificarRazao(r) { if (r <= 2.0) return 'Adequada'; if (r <= 2.5) return 'Limiar'; if (r <= 3.0) return 'Elevada'; return 'Muito elevada'; }
       var classA = classificarTempo(tempoA, 'A');
       var classB = classificarTempo(tempoB, 'B');
       var classRazao = classificarRazao(parseFloat(razao) || 0);
-
-      // Gerar PDF com jsPDF
+      // Tempos inter-segmentos
+      var temposSegA = []; var temposSegB = [];
+      var tsA = pA.timestamps || []; var tsB = pB.timestamps || [];
+      for (var i = 1; i < tsA.length; i++) temposSegA.push((tsA[i] - tsA[i-1]) / 1000);
+      for (var i = 1; i < tsB.length; i++) temposSegB.push((tsB[i] - tsB[i-1]) / 1000);
+      // === CHAMAR IA ===
+      var laudoIA = null;
+      try {
+        var aiPrompt = 'Voce e um neuropsicologo experiente em funcoes executivas.\nGere um LAUDO CLINICO breve (max 10 linhas) do TTE (Trail Making Test digital).\n\nPACIENTE: Idade: ' + idade + ' | Sexo: ' + sexo + ' | Escolaridade: ' + escolaridade + '\n\nRESULTADOS:\nParte A: ' + tempoA.toFixed(1) + 's, ' + errosA + ' erros (' + classA + ')\nParte B: ' + tempoB.toFixed(1) + 's, ' + errosB + ' erros (' + classB + ')\nRazao B/A: ' + razao + ' (' + classRazao + ')\nDiferenca B-A: ' + diferenca + 's\n\nNORMAS (Tombaugh 2004, adultos):\nA: Superior<=30s, Media<=55s, Baixa<=78s, Prejuizo>78s\nB: Superior<=58s, Media<=120s, Baixa<=180s, Prejuizo>180s\nB/A normal: 1.5-2.5\n\nINTERPRETE: velocidade de processamento (A), flexibilidade cognitiva (B e razao), atencao visual, erros. Considere idade/escolaridade.\nPortugues brasileiro. Linguagem tecnica acessivel. NAO repita numeros brutos.';
+        var aiTimeout = new Promise(function(_, reject) { setTimeout(function() { reject('timeout'); }, 30000); });
+        var aiCall = fetch(API_URL + '/generate-ai', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({prompt:aiPrompt}) }).then(function(r){return r.json();}).then(function(d){return (d.text||'').trim();});
+        laudoIA = await Promise.race([aiCall, aiTimeout]);
+      } catch(e) { laudoIA = null; }
+      // === GRAFICO EM CANVAS ===
+      var canvasG = document.createElement('canvas'); canvasG.width = 700; canvasG.height = 260;
+      var cx = canvasG.getContext('2d');
+      cx.fillStyle = '#fff'; cx.fillRect(0, 0, 700, 260);
+      // Grafico 1: barras tempo total
+      var maxVal = Math.max(tempoA, tempoB, 60) * 1.2;
+      cx.fillStyle = '#333'; cx.font = 'bold 13px Segoe UI'; cx.textAlign = 'center';
+      cx.fillText('Tempo Total por Parte', 175, 18);
+      var gh = 180; var gy0 = 35;
+      for (var n = 0; n <= 4; n++) { var yy = gy0 + gh - (n/4)*gh; cx.strokeStyle='#ddd'; cx.beginPath(); cx.moveTo(80,yy); cx.lineTo(300,yy); cx.stroke(); cx.fillStyle='#888'; cx.font='9px Segoe UI'; cx.textAlign='right'; cx.fillText(Math.round(maxVal*n/4)+'s',75,yy+3); }
+      var barsData = [{v:tempoA,c:'#1565c0',l:'Parte A'},{v:tempoB,c:'#00897b',l:'Parte B'}];
+      for (var b=0;b<2;b++) { var bx=110+b*100; var bh=(barsData[b].v/maxVal)*gh; var by=gy0+gh-bh; cx.fillStyle=barsData[b].c; cx.fillRect(bx,by,60,bh); cx.fillStyle='#333'; cx.font='bold 11px Segoe UI'; cx.textAlign='center'; cx.fillText(barsData[b].v.toFixed(1)+'s',bx+30,by-5); cx.fillStyle='#555'; cx.font='10px Segoe UI'; cx.fillText(barsData[b].l,bx+30,gy0+gh+15); }
+      // Grafico 2: linhas inter-segmentos
+      cx.fillStyle = '#333'; cx.font = 'bold 13px Segoe UI'; cx.textAlign = 'center';
+      cx.fillText('Tempos Entre Conexoes (s)', 530, 18);
+      var g2x = 380; var g2w = 290; var g2h = 180; var g2y = 35;
+      if (temposSegA.length > 1 || temposSegB.length > 1) {
+        var todos = temposSegA.concat(temposSegB); var maxS = Math.max.apply(null, todos) * 1.2 || 5;
+        var nPts = Math.max(temposSegA.length, temposSegB.length);
+        cx.strokeStyle='#ddd'; cx.lineWidth=1;
+        for (var n=0;n<=3;n++){var yy=g2y+g2h-(n/3)*g2h;cx.beginPath();cx.moveTo(g2x,yy);cx.lineTo(g2x+g2w,yy);cx.stroke();cx.fillStyle='#888';cx.font='9px Segoe UI';cx.textAlign='right';cx.fillText((maxS*n/3).toFixed(1),g2x-3,yy+3);}
+        if (temposSegA.length > 1) { cx.beginPath(); cx.strokeStyle='#1565c0'; cx.lineWidth=2; for(var i=0;i<temposSegA.length;i++){var px=g2x+10+(i/(nPts-1))*(g2w-20);var py=g2y+g2h-(temposSegA[i]/maxS)*g2h;if(i===0)cx.moveTo(px,py);else cx.lineTo(px,py);}cx.stroke(); }
+        if (temposSegB.length > 1) { cx.beginPath(); cx.strokeStyle='#00897b'; cx.lineWidth=2; for(var i=0;i<temposSegB.length;i++){var px=g2x+10+(i/(nPts-1))*(g2w-20);var py=g2y+g2h-(temposSegB[i]/maxS)*g2h;if(i===0)cx.moveTo(px,py);else cx.lineTo(px,py);}cx.stroke(); }
+        cx.fillStyle='#1565c0';cx.fillRect(g2x+10,g2y+g2h+8,15,3);cx.fillStyle='#333';cx.font='10px Segoe UI';cx.textAlign='left';cx.fillText('Parte A',g2x+30,g2y+g2h+12);
+        cx.fillStyle='#00897b';cx.fillRect(g2x+110,g2y+g2h+8,15,3);cx.fillStyle='#333';cx.fillText('Parte B',g2x+130,g2y+g2h+12);
+        cx.fillStyle='#888';cx.font='9px Segoe UI';cx.textAlign='center';cx.fillText('Segmentos',g2x+g2w/2,g2y+g2h+25);
+      } else { cx.fillStyle='#999';cx.font='11px Segoe UI';cx.textAlign='center';cx.fillText('Dados de timestamps nao disponiveis',g2x+g2w/2,g2y+g2h/2); }
+      var imgGrafico = canvasG.toDataURL('image/png');
+      // === GERAR PDF ===
       var jsPDF = window.jspdf ? window.jspdf.jsPDF : null;
-      if (!jsPDF) {
-        var s = document.createElement('script');
-        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-        document.head.appendChild(s);
-        await new Promise(function(res) { s.onload = res; });
-        jsPDF = window.jspdf.jsPDF;
-      }
-      var doc = new jsPDF();
-      var y = 15;
-
+      if (!jsPDF) { var s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';document.head.appendChild(s);await new Promise(function(res){s.onload=res;});jsPDF=window.jspdf.jsPDF; }
+      var doc = new jsPDF(); var y = 15; var ml = 15; var lu = 180;
       // Cabecalho
-      doc.setFillColor(21, 101, 192);
-      doc.rect(0, 0, 210, 32, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(18);
-      doc.text('TTE - Teste de Trilhas Eletronico', 105, 14, {align:'center'});
-      doc.setFontSize(10);
-      doc.text('Trail Making Test - Versao Digital | Sistema THEDUGA', 105, 22, {align:'center'});
-      doc.text('Avaliacao Neuropsicologica Online', 105, 28, {align:'center'});
-      y = 40;
-
-      // Dados do paciente
-      doc.setTextColor(0, 0, 0);
-      doc.setFontSize(12);
-      doc.setFont(undefined, 'bold');
-      doc.text('DADOS DO PACIENTE', 15, y); y += 8;
-      doc.setFont(undefined, 'normal');
-      doc.setFontSize(10);
-      doc.text('Nome: ' + nome, 15, y); y += 6;
-      doc.text('ID: ' + idPac, 15, y); y += 6;
-      doc.text('Idade: ' + idade + '  |  Sexo: ' + sexo + '  |  Escolaridade: ' + escolaridade, 15, y); y += 6;
-      doc.text('Data da avaliacao: ' + dataAval, 15, y); y += 12;
-
-      // Resultados
-      doc.setFontSize(12);
-      doc.setFont(undefined, 'bold');
-      doc.text('RESULTADOS', 15, y); y += 10;
-
-      // Tabela de resultados
-      doc.setFontSize(10);
-      doc.setFont(undefined, 'bold');
-      doc.setFillColor(224, 242, 241);
-      doc.rect(15, y - 5, 180, 8, 'F');
-      doc.text('Parte', 20, y);
-      doc.text('Tempo (s)', 60, y);
-      doc.text('Erros', 100, y);
-      doc.text('Classificacao', 130, y);
-      y += 8;
-      doc.setFont(undefined, 'normal');
-      doc.text('Parte A (numeros)', 20, y);
-      doc.text(tempoA.toFixed(1), 65, y);
-      doc.text(String(errosA), 105, y);
-      doc.text(classA, 130, y);
-      y += 7;
-      doc.text('Parte B (numeros + letras)', 20, y);
-      doc.text(tempoB.toFixed(1), 65, y);
-      doc.text(String(errosB), 105, y);
-      doc.text(classB, 130, y);
-      y += 12;
-
-      // Indices derivados
-      doc.setFont(undefined, 'bold');
-      doc.text('INDICES DERIVADOS', 15, y); y += 8;
-      doc.setFont(undefined, 'normal');
-      doc.text('Razao B/A: ' + razao + ' (' + classRazao + ')', 15, y); y += 6;
-      doc.text('Diferenca B-A: ' + diferencaSeg + 's', 15, y); y += 12;
-
-      // Interpretacao
-      doc.setFont(undefined, 'bold');
-      doc.text('INTERPRETACAO', 15, y); y += 8;
-      doc.setFont(undefined, 'normal');
-      doc.setFontSize(9);
-      var interp = [];
-      interp.push('Parte A avalia velocidade de processamento visual e busca sequencial.');
-      interp.push('Parte B avalia flexibilidade cognitiva (alternancia entre categorias).');
-      interp.push('A razao B/A indica o custo cognitivo da alternancia: valores > 3.0 sugerem dificuldade.');
-      interp.push('');
-      interp.push('Resultado Parte A: ' + classA + ' (tempo: ' + tempoA.toFixed(1) + 's, ' + errosA + ' erros)');
-      interp.push('Resultado Parte B: ' + classB + ' (tempo: ' + tempoB.toFixed(1) + 's, ' + errosB + ' erros)');
-      interp.push('Flexibilidade cognitiva (B/A): ' + classRazao);
-      for (var li = 0; li < interp.length; li++) {
-        doc.text(interp[li], 15, y); y += 5;
+      doc.setFillColor(21, 101, 192); doc.rect(0, 0, 210, 28, 'F');
+      doc.setTextColor(255,255,255); doc.setFontSize(16); doc.text('TTE - Teste de Trilhas Eletronico', 105, 12, {align:'center'});
+      doc.setFontSize(9); doc.text('Trail Making Test Digital | Sistema THEDUGA', 105, 19, {align:'center'});
+      doc.text('Avaliacao Neuropsicologica Online', 105, 24, {align:'center'}); y = 35;
+      // Dados paciente
+      doc.setTextColor(0,0,0); doc.setFontSize(10); doc.setFont(undefined,'bold'); doc.text('DADOS DO PACIENTE', ml, y); y += 6;
+      doc.setFont(undefined,'normal'); doc.setFontSize(9);
+      doc.text('Nome: ' + nome + '   |   ID: ' + idPac, ml, y); y += 5;
+      doc.text('Idade: ' + idade + '   |   Sexo: ' + sexo + '   |   Escolaridade: ' + escolaridade, ml, y); y += 5;
+      doc.text('Data: ' + dataAval, ml, y); y += 8;
+      // Tabela resultados
+      doc.setFontSize(10); doc.setFont(undefined,'bold'); doc.text('RESULTADOS', ml, y); y += 6;
+      doc.setFontSize(9); doc.setFillColor(224,242,241); doc.rect(ml, y-4, lu, 6, 'F');
+      doc.text('Parte', ml+2, y); doc.text('Tempo', ml+62, y); doc.text('Erros', ml+88, y); doc.text('Classificacao', ml+112, y); y += 6;
+      doc.setFont(undefined,'normal');
+      doc.text('Parte A (numeros)', ml+2, y); doc.text(tempoA.toFixed(1)+'s', ml+62, y); doc.text(String(errosA), ml+92, y); doc.text(classA, ml+112, y); y += 5;
+      doc.text('Parte B (num+letras)', ml+2, y); doc.text(tempoB.toFixed(1)+'s', ml+62, y); doc.text(String(errosB), ml+92, y); doc.text(classB, ml+112, y); y += 8;
+      // Indices
+      doc.setFont(undefined,'bold'); doc.text('INDICES DERIVADOS', ml, y); y += 5;
+      doc.setFont(undefined,'normal'); doc.text('Razao B/A: ' + razao + ' (' + classRazao + ')    |    Diferenca B-A: ' + diferenca + 's', ml, y); y += 8;
+      // Grafico
+      doc.setFont(undefined,'bold'); doc.text('PERFIL GRAFICO', ml, y); y += 3;
+      doc.addImage(imgGrafico, 'PNG', ml, y, lu, 66); y += 70;
+      // Analise IA
+      if (laudoIA) {
+        doc.setFont(undefined,'bold'); doc.setFontSize(10); doc.text('ANALISE CLINICA (IA)', ml, y); y += 5;
+        doc.setFont(undefined,'normal'); doc.setFontSize(9);
+        var linhasIA = doc.splitTextToSize(laudoIA, lu);
+        for (var li=0;li<linhasIA.length;li++){if(y>272){doc.addPage();y=15;}doc.text(linhasIA[li],ml,y);y+=4.2;}
+        y += 4;
       }
-      y += 8;
-
-      // Disclaimer
-      doc.setFontSize(8);
-      doc.setTextColor(100, 100, 100);
-      doc.text('NOTA: Classificacoes baseadas em normas provisorias. Resultados devem ser interpretados', 15, y); y += 4;
-      doc.text('no contexto clinico por profissional qualificado. Nao constitui diagnostico isolado.', 15, y); y += 8;
-
-      // Referencias
-      doc.setFontSize(8);
-      doc.setTextColor(80, 80, 80);
-      doc.text('REFERENCIAS:', 15, y); y += 4;
-      doc.text('REITAN, R. M. Validity of the Trail Making Test as an indicator of organic brain damage. Perceptual and Motor Skills, v. 8, p. 271-276, 1958.', 15, y); y += 4;
-      doc.text('TOMBAUGH, T. N. Trail Making Test A and B: normative data. Archives of Clinical Neuropsychology, v. 19, n. 2, p. 203-214, 2004.', 15, y); y += 4;
-      doc.text('HAMDAN, A. C.; HAMDAN, E. M. L. R. Teste de Trilhas: normas para amostra brasileira. Psicologia: Teoria e Pesquisa, v. 25, p. 399-405, 2009.', 15, y); y += 4;
-      doc.text('STRAUSS, E.; SHERMAN, E. M. S.; SPREEN, O. A compendium of neuropsychological tests. 3. ed. New York: Oxford, 2006.', 15, y);
-
-      // Rodape
-      doc.setFontSize(7);
-      doc.setTextColor(150, 150, 150);
-      doc.text('Relatorio gerado em: ' + new Date().toLocaleString('pt-BR') + ' | Sistema THEDUGA', 15, 287);
-
-      // Salvar
-      var ts = new Date();
-      var tsStr = ts.getFullYear() + String(ts.getMonth()+1).padStart(2,'0') + String(ts.getDate()).padStart(2,'0');
-      doc.save('TTE_' + nome.replace(/\s+/g,'_') + '_' + tsStr + '.pdf');
+      // Disclaimer + referencias
+      if (y > 255) { doc.addPage(); y = 15; }
+      doc.setFontSize(7.5); doc.setTextColor(100,100,100);
+      doc.text('NOTA: Normas provisorias (Tombaugh 2004; Hamdan & Hamdan 2009). Analise IA auxiliar, nao substitui julgamento profissional.', ml, y); y += 6;
+      doc.setFontSize(7.5); doc.setTextColor(80,80,80); doc.setFont(undefined,'bold'); doc.text('REFERENCIAS:', ml, y); y += 4; doc.setFont(undefined,'normal');
+      var refs = ['REITAN, R. M. Validity of the Trail Making Test as an indicator of organic brain damage. Perceptual and Motor Skills, v. 8, p. 271-276, 1958.','TOMBAUGH, T. N. Trail Making Test A and B: normative data. Archives of Clinical Neuropsychology, v. 19, n. 2, p. 203-214, 2004.','HAMDAN, A. C.; HAMDAN, E. M. L. R. Teste de Trilhas: normas para amostra brasileira. Psicologia: Teoria e Pesquisa, v. 25, p. 399-405, 2009.','STRAUSS, E.; SHERMAN, E. M. S.; SPREEN, O. A compendium of neuropsychological tests. 3. ed. New York: Oxford, 2006.'];
+      for (var ri=0;ri<refs.length;ri++){if(y>282){doc.addPage();y=15;}var rl=doc.splitTextToSize(refs[ri],lu);for(var rr=0;rr<rl.length;rr++){doc.text(rl[rr],ml,y);y+=3.5;}y+=1;}
+      doc.setFontSize(7);doc.setTextColor(150,150,150);doc.text('Relatorio gerado em: '+new Date().toLocaleString('pt-BR')+' | Sistema THEDUGA - TTE v1.0',ml,287);
+      var ts=new Date();doc.save('TTE_'+nome.replace(/\s+/g,'_')+'_'+ts.getFullYear()+String(ts.getMonth()+1).padStart(2,'0')+String(ts.getDate()).padStart(2,'0')+'.pdf');
     }
 
     function calcularIdadeStr(dataNascimento) {
