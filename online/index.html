@@ -259,6 +259,23 @@
               <option value="Masculino">Masculino</option>
               <option value="Feminino">Feminino</option>
             </select>
+            <label style="font-size:0.85em;color:#555;">Escolaridade:</label>
+            <select id="escalaEscolaridade" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+              <option value="">Selecione...</option>
+              <option value="1o ano">1o ano</option>
+              <option value="2o ano">2o ano</option>
+              <option value="3o ano">3o ano</option>
+              <option value="4o ano">4o ano</option>
+              <option value="5o ano">5o ano</option>
+              <option value="6o ano">6o ano</option>
+              <option value="7o ano">7o ano</option>
+              <option value="8o ano">8o ano</option>
+              <option value="9o ano">9o ano</option>
+              <option value="Ensino Medio">Ensino Medio</option>
+              <option value="Superior Incompleto">Superior Incompleto</option>
+              <option value="Superior Completo">Superior Completo</option>
+              <option value="Pos-graduacao">Pos-graduacao</option>
+            </select>
             <label style="font-size:0.85em;color:#555;">Respondente (se aplicavel):</label>
             <select id="escalaRespondente" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:12px;">
               <option value="">N/A (proprio paciente)</option>
@@ -3506,7 +3523,8 @@
       if (campoSexo && opt.dataset.sexo) campoSexo.value = opt.dataset.sexo;
       // Preencher escolaridade se disponivel
       var campoEsc = null;
-      if (tipo === 'corsi') campoEsc = document.getElementById('corsiEscolaridade');
+      if (tipo === 'escala') campoEsc = document.getElementById('escalaEscolaridade');
+      else if (tipo === 'corsi') campoEsc = document.getElementById('corsiEscolaridade');
       else if (tipo === 'tte') campoEsc = document.getElementById('tteEscolaridade');
       else if (tipo === 'trmv') campoEsc = document.getElementById('trmvEscolaridade');
       else if (tipo === 'taav') campoEsc = document.getElementById('taavEscolaridade');
@@ -5403,7 +5421,7 @@
         var resp = await fetch(API_URL + '/save-session', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ email: currentUser, patientName: nome, birthDate: dn, sex: sexo, escala: escala, pacienteId: document.getElementById('escalaSelPac').value || '' })
+          body: JSON.stringify({ email: currentUser, patientName: nome, birthDate: dn, sex: sexo, escala: escala, education: document.getElementById('escalaEscolaridade').value || '', pacienteId: document.getElementById('escalaSelPac').value || '' })
         });
         var result = await resp.json();
         if (result.ok && result.id) {
@@ -5441,7 +5459,7 @@
         var resp = await fetch(API_URL + '/save-session', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ email: currentUser, patientName: nome, birthDate: dn, sex: sexo, escala: escala, pacienteId: document.getElementById('escalaSelPac').value || '' })
+          body: JSON.stringify({ email: currentUser, patientName: nome, birthDate: dn, sex: sexo, escala: escala, education: document.getElementById('escalaEscolaridade').value || '', pacienteId: document.getElementById('escalaSelPac').value || '' })
         });
         var result = await resp.json();
         if (result.ok && result.id) {
