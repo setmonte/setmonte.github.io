@@ -5262,6 +5262,84 @@
       // Grafico
       doc.setFont(undefined,'bold'); doc.text('PERFIL GRAFICO', ml, y); y += 3;
       doc.addImage(imgGrafico, 'PNG', ml, y, lu, 66); y += 70;
+      // === MAPA DE EXECUCAO ===
+      var posA = pA.posicoes || []; var posB = pB.posicoes || [];
+      var seqA = pA.sequencia || []; var seqB = pB.sequencia || [];
+      var errosDetA = pA.errosDetalhados || []; var errosDetB = pB.errosDetalhados || [];
+      if (posA.length > 0 || posB.length > 0) {
+        doc.addPage();
+        y = 15;
+        doc.setFontSize(11); doc.setFont(undefined,'bold'); doc.setTextColor(0,0,0);
+        doc.text('MAPA DE EXECUCAO', ml, y); y += 6;
+        doc.setFontSize(8); doc.setFont(undefined,'normal');
+        doc.text('Verde = caminho correto  |  Vermelho = tentativa errada (de onde tentou ir para onde)', ml, y); y += 8;
+        // Funcao para desenhar um mapa
+        function desenharMapa(docRef, posics, seq, errosDet, titulo, ox, oy, larg, alt) {
+          docRef.setFontSize(9); docRef.setFont(undefined,'bold'); docRef.text(titulo, ox + larg/2, oy, {align:'center'}); oy += 5;
+          docRef.setDrawColor(200,200,200); docRef.rect(ox, oy, larg, alt);
+          // Desenhar linhas corretas (verdes)
+          docRef.setDrawColor(46,125,50); docRef.setLineWidth(0.5);
+          for (var i = 0; i < posics.length - 1; i++) {
+            var x1 = ox + (posics[i][0]/100) * larg; var y1 = oy + (posics[i][1]/100) * alt;
+            var x2 = ox + (posics[i+1][0]/100) * larg; var y2 = oy + (posics[i+1][1]/100) * alt;
+            docRef.line(x1, y1, x2, y2);
+          }
+          // Desenhar erros (vermelhos, tracejados)
+          if (errosDet.length > 0) {
+            docRef.setDrawColor(198,40,40); docRef.setLineWidth(0.4);
+            for (var e = 0; e < errosDet.length; e++) {
+              var de = errosDet[e].de; var para = errosDet[e].para;
+              if (de < posics.length && para < posics.length) {
+                var ex1 = ox + (posics[de][0]/100) * larg; var ey1 = oy + (posics[de][1]/100) * alt;
+                var ex2 = ox + (posics[para][0]/100) * larg; var ey2 = oy + (posics[para][1]/100) * alt;
+                docRef.setLineDashPattern([1,1],0); docRef.line(ex1, ey1, ex2, ey2); docRef.setLineDashPattern([],0);
+              }
+            }
+          }
+          // Desenhar circulos com labels
+          for (var i = 0; i < posics.length; i++) {
+            var cx = ox + (posics[i][0]/100) * larg; var cy = oy + (posics[i][1]/100) * alt;
+            // Verificar se este circulo foi destino de erro
+            var foiErro = false;
+            for (var e = 0; e < errosDet.length; e++) { if (errosDet[e].para === i) { foiErro = true; break; } }
+            if (foiErro) { docRef.setFillColor(255,205,210); docRef.setDrawColor(198,40,40); }
+            else { docRef.setFillColor(255,255,255); docRef.setDrawColor(21,101,192); }
+            docRef.circle(cx, cy, 3, 'FD');
+            docRef.setFontSize(5.5); docRef.setFont(undefined,'bold'); docRef.setTextColor(0,0,0);
+            var lbl = seq[i] || String(i+1);
+            docRef.text(lbl, cx, cy + 1.5, {align:'center'});
+          }
+          docRef.setDrawColor(0,0,0); docRef.setLineWidth(0.2);
+        }
+        // Parte A
+        if (posA.length > 0) {
+          desenharMapa(doc, posA, seqA, errosDetA, 'Parte A (numeros)', ml, y, 85, 100);
+        }
+        // Parte B
+        if (posB.length > 0) {
+          desenharMapa(doc, posB, seqB, errosDetB, 'Parte B (numeros + letras)', ml + 95, y, 85, 100);
+        }
+        y += 108;
+        // Legenda de erros
+        if (errosDetA.length > 0 || errosDetB.length > 0) {
+          doc.setFontSize(9); doc.setFont(undefined,'bold'); doc.setTextColor(0,0,0);
+          doc.text('DETALHAMENTO DOS ERROS:', ml, y); y += 5;
+          doc.setFont(undefined,'normal'); doc.setFontSize(8);
+          if (errosDetA.length > 0) {
+            doc.text('Parte A:', ml, y); y += 4;
+            for (var e = 0; e < errosDetA.length; e++) {
+              doc.text('  - Estava em ' + errosDetA[e].deLabel + ', tentou ir para ' + errosDetA[e].paraLabel + ' (correto seria o proximo da sequencia)', ml, y); y += 4;
+            }
+            y += 2;
+          }
+          if (errosDetB.length > 0) {
+            doc.text('Parte B:', ml, y); y += 4;
+            for (var e = 0; e < errosDetB.length; e++) {
+              doc.text('  - Estava em ' + errosDetB[e].deLabel + ', tentou ir para ' + errosDetB[e].paraLabel + ' (correto seria o proximo da sequencia)', ml, y); y += 4;
+            }
+          }
+        }
+      }
       // Analise IA
       if (laudoIA) {
         doc.setFont(undefined,'bold'); doc.setFontSize(10); doc.text('ANALISE CLINICA (IA)', ml, y); y += 5;

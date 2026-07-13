@@ -208,8 +208,8 @@
     var estado = {
       paciente: { nome:'', dataNascimento:'', idade:{anos:0,meses:0,dias:0}, escolaridade:'', dataTeste:'' },
       faseAtual: 'dados',
-      parteA: { tempo:0, erros:0, sequenciaCliques:[], timestamps:[], iniciou:false, terminou:false },
-      parteB: { tempo:0, erros:0, sequenciaCliques:[], timestamps:[], iniciou:false, terminou:false },
+      parteA: { tempo:0, erros:0, sequenciaCliques:[], timestamps:[], errosDetalhados:[], posicoes:[], iniciou:false, terminou:false },
+      parteB: { tempo:0, erros:0, sequenciaCliques:[], timestamps:[], errosDetalhados:[], posicoes:[], iniciou:false, terminou:false },
       treinoA: { erros:0, completo:false },
       treinoB: { erros:0, completo:false },
       cronometroId: null,
@@ -334,7 +334,9 @@
       navegarPara('pagina-teste-a');
       estado.parteA.iniciou = true;
       iniciarCronometro('tempo-a');
-      montarTrilha('canvas-teste-a', SEQ_A, embaralharPosicoes(POSICOES_A_25), 'teste-a');
+      var posA = embaralharPosicoes(POSICOES_A_25);
+      estado.parteA.posicoes = posA;
+      montarTrilha('canvas-teste-a', SEQ_A, posA, 'teste-a');
     }
 
     function iniciarTreinoB() {
@@ -346,7 +348,9 @@
       navegarPara('pagina-teste-b');
       estado.parteB.iniciou = true;
       iniciarCronometro('tempo-b');
-      montarTrilha('canvas-teste-b', SEQ_B, embaralharPosicoes(POSICOES_B_25), 'teste-b');
+      var posB = embaralharPosicoes(POSICOES_B_25);
+      estado.parteB.posicoes = posB;
+      montarTrilha('canvas-teste-b', SEQ_B, posB, 'teste-b');
     }
 
     // ===== EMBARALHAR POSICOES (leve variacao para nao ser identico toda vez) =====
@@ -546,8 +550,10 @@
 
       if (t.modo === 'teste-a') {
         estado.parteA.erros++;
+        estado.parteA.errosDetalhados.push({de:t.indiceAtual, para:idxErrado, deLabel:t.sequencia[t.indiceAtual], paraLabel:t.sequencia[idxErrado], tempo:Date.now()});
       } else if (t.modo === 'teste-b') {
         estado.parteB.erros++;
+        estado.parteB.errosDetalhados.push({de:t.indiceAtual, para:idxErrado, deLabel:t.sequencia[t.indiceAtual], paraLabel:t.sequencia[idxErrado], tempo:Date.now()});
       } else if (t.modo === 'treino-a') {
         estado.treinoA.erros++;
       } else if (t.modo === 'treino-b') {
@@ -657,14 +663,20 @@
           tempoSegundos: (estado.parteA.tempo / 1000).toFixed(1),
           erros: estado.parteA.erros,
           sequenciaCliques: estado.parteA.sequenciaCliques,
-          timestamps: estado.parteA.timestamps
+          timestamps: estado.parteA.timestamps,
+          errosDetalhados: estado.parteA.errosDetalhados,
+          posicoes: estado.parteA.posicoes,
+          sequencia: SEQ_A
         },
         parteB: {
           tempo: estado.parteB.tempo,
           tempoSegundos: (estado.parteB.tempo / 1000).toFixed(1),
           erros: estado.parteB.erros,
           sequenciaCliques: estado.parteB.sequenciaCliques,
-          timestamps: estado.parteB.timestamps
+          timestamps: estado.parteB.timestamps,
+          errosDetalhados: estado.parteB.errosDetalhados,
+          posicoes: estado.parteB.posicoes,
+          sequencia: SEQ_B
         },
         razaoBsobreA: estado.parteA.tempo > 0 ? (estado.parteB.tempo / estado.parteA.tempo).toFixed(2) : 0,
         diferencaBmenosA: estado.parteB.tempo - estado.parteA.tempo,
