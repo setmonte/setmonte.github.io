@@ -258,49 +258,96 @@ function gerarRelatorioPDF() {
     var sexo = document.getElementById('sexo').value;
     var dataAval = document.getElementById('data').value || new Date().toLocaleDateString('pt-BR');
     var idPac = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
-
-    var jsPDF = window.jspdf.jsPDF;
-    var doc = new jsPDF();
-    doc.setFillColor(26,35,126); doc.rect(0,0,210,35,'F');
+    var canvasG = document.createElement('canvas'); canvasG.width = 700; canvasG.height = 292;
+    var cx = canvasG.getContext('2d');
+    cx.fillStyle = '#fff'; cx.fillRect(0, 0, 700, 292);
+    cx.fillStyle = '#333'; cx.font = 'bold 12px Segoe UI'; cx.textAlign = 'left';
+    cx.fillText('Perfil dos Criterios (media por criterio, escala 1-5)', 10, 15);
+    var nomes = []; var valores = [];
+    for (var c = 1; c <= 9; c++) { nomes.push(CRITERIOS[c]); valores.push(cr[c].media); }
+    var bh = 22; var gap = 4; var startY = 28; var maxW = 350; var labelW = 180;
+    for (var i = 0; i < nomes.length; i++) {
+        var by = startY + i * (bh + gap);
+        var pct = valores[i] / 5; var bw = pct * maxW;
+        var cor = valores[i] < 2 ? '#4caf50' : valores[i] < 3 ? '#ffb300' : valores[i] < 3.5 ? '#ff9800' : '#e53935';
+        cx.fillStyle = '#555'; cx.font = '11px Segoe UI'; cx.textAlign = 'right';
+        cx.fillText(nomes[i], labelW - 5, by + 15);
+        cx.fillStyle = cor; cx.fillRect(labelW, by, bw, bh);
+        cx.fillStyle = '#333'; cx.font = 'bold 11px Segoe UI'; cx.textAlign = 'left';
+        cx.fillText(valores[i].toFixed(2), labelW + bw + 5, by + 15);
+        if (i === 0) { var limX = labelW + (3.5/5)*maxW; cx.strokeStyle = '#c62828'; cx.setLineDash([4,3]); cx.lineWidth = 1.5; cx.beginPath(); cx.moveTo(limX, startY - 5); cx.lineTo(limX, startY + nomes.length*(bh+gap)); cx.stroke(); cx.setLineDash([]); cx.fillStyle = '#c62828'; cx.font = '9px Segoe UI'; cx.textAlign = 'center'; cx.fillText('Limiar 3.5', limX, startY - 8); }
+    }
+    var ly = startY + nomes.length*(bh+gap) + 10;
+    var cores = [['#4caf50','Minimo (<2)'],['#ffb300','Leve (2-3)'],['#ff9800','Moderado (3-3.5)'],['#e53935','Significativo (>=3.5)']];
+    cx.font = '10px Segoe UI'; cx.textAlign = 'left';
+    for (var li = 0; li < cores.length; li++) { cx.fillStyle = cores[li][0]; cx.fillRect(labelW + li*130, ly, 12, 12); cx.fillStyle = '#555'; cx.fillText(cores[li][1], labelW + li*130 + 15, ly + 10); }
+    var imgGrafico = canvasG.toDataURL('image/png');
+    var jsPDF = window.jspdf.jsPDF; var doc = new jsPDF(); var ml = 15; var lu = 180;
+    doc.setFillColor(26,35,126); doc.rect(0,0,210,32,'F');
     doc.setTextColor(255,255,255); doc.setFontSize(14); doc.setFont(undefined,'bold');
-    doc.text('ERT-PN - RELATORIO DE AVALIACAO', 105, 15, {align:'center'});
+    doc.text('ERT-PN - RELATORIO DE AVALIACAO', 105, 13, {align:'center'});
     doc.setFontSize(9); doc.setFont(undefined,'normal');
-    doc.text('Escala de Rastreio para Tracos de Personalidade Narcisista (DSM-5-TR)', 105, 23, {align:'center'});
-
-    var y = 42;
-    doc.setFillColor(248,249,250); doc.rect(15,y,180,20,'F');
+    doc.text('Escala de Rastreio para Tracos de Personalidade Narcisista (DSM-5-TR)', 105, 21, {align:'center'});
+    doc.text('Sistema SYM - Avaliacao Neuropsicologica', 105, 27, {align:'center'});
+    var y = 38;
+    doc.setFillColor(248,249,250); doc.rect(ml,y,lu,18,'F');
+    doc.setDrawColor(26,35,126); doc.setLineWidth(0.8); doc.line(ml,y,ml,y+18);
     doc.setTextColor(26,35,126); doc.setFontSize(10); doc.setFont(undefined,'bold');
-    doc.text('DADOS PESSOAIS', 20, y+6);
+    doc.text('DADOS DO AVALIANDO', ml+4, y+6);
     doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont(undefined,'normal');
-    doc.text('Nome: ' + nome + '   |   Sexo: ' + sexo, 20, y+12);
-    doc.text('Idade: ' + idade + '   |   Data: ' + dataAval + (idPac ? '   |   ID: ' + idPac : ''), 20, y+17);
-
-    y = 68;
+    doc.text('Nome: ' + nome + '   |   Sexo: ' + sexo + (idPac ? '   |   ID: ' + idPac : ''), ml+4, y+12);
+    doc.text('Idade: ' + idade + '   |   Data: ' + dataAval, ml+4, y+17);
+    y = 62;
     if (cp >= 5) { doc.setFillColor(255,205,210); doc.setTextColor(198,40,40); }
     else { doc.setFillColor(200,230,201); doc.setTextColor(46,125,50); }
-    doc.rect(15,y,180,10,'F');
-    doc.setFontSize(10); doc.setFont(undefined,'bold');
-    doc.text((cp >= 5 ? 'RASTREIO POSITIVO' : 'RASTREIO NEGATIVO') + ' - ' + cp + '/9 criterios (limiar: 5) | Media: ' + mg.toFixed(2), 105, y+7, {align:'center'});
-
-    y = 84;
-    doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont(undefined,'bold');
-    doc.text('CRITERIOS:', 20, y); y += 6;
-    doc.setFont(undefined,'normal');
+    doc.rect(ml,y,lu,12,'F');
+    doc.setFontSize(11); doc.setFont(undefined,'bold');
+    doc.text((cp >= 5 ? 'RASTREIO POSITIVO' : 'RASTREIO NEGATIVO') + ' - ' + cp + '/9 criterios presentes (limiar >= 5)', 105, y+8, {align:'center'});
+    doc.setFontSize(9); doc.setFont(undefined,'normal'); doc.setTextColor(0,0,0);
+    y += 15; doc.text('Media geral: ' + mg.toFixed(2) + '/5.00', ml+4, y); y += 8;
+    doc.setFont(undefined,'bold'); doc.setFontSize(10);
+    doc.text('PERFIL GRAFICO DOS CRITERIOS', ml, y); y += 3;
+    var imgH = Math.min(80, 56);
+    doc.addImage(imgGrafico, 'PNG', ml, y, lu, imgH); y += imgH + 4;
+    doc.setFont(undefined,'bold'); doc.setFontSize(10); doc.setTextColor(26,35,126);
+    doc.text('DOMINIOS', ml, y); y += 6;
+    doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont(undefined,'normal');
+    var domKeys = Object.keys(DOMINIOS);
+    for (var di = 0; di < domKeys.length; di++) {
+        var dk = domKeys[di]; var crits = DOMINIOS[dk];
+        var somaDom = 0; for (var ci = 0; ci < crits.length; ci++) { somaDom += cr[crits[ci]].media; }
+        var mediaDom = somaDom / crits.length;
+        var classDom = mediaDom < 2 ? 'Minimo' : mediaDom < 3 ? 'Leve' : mediaDom < 3.5 ? 'Moderado' : 'Significativo';
+        var barW = (mediaDom/5) * 80;
+        var corDom = mediaDom < 2 ? [76,175,80] : mediaDom < 3 ? [255,179,0] : mediaDom < 3.5 ? [255,152,0] : [229,57,53];
+        doc.setFillColor(240,240,240); doc.rect(ml, y-3, lu, 8, 'F');
+        doc.setFillColor(corDom[0],corDom[1],corDom[2]); doc.rect(ml+100, y-2, barW, 5, 'F');
+        doc.setFont(undefined,'bold'); doc.text(dk + ':', ml+2, y+2);
+        doc.setFont(undefined,'normal'); doc.text(mediaDom.toFixed(2) + ' - ' + classDom, ml+100+barW+3, y+2);
+        y += 10;
+    }
+    y += 5;
+    doc.setFont(undefined,'bold'); doc.setFontSize(10); doc.setTextColor(26,35,126);
+    doc.text('CRITERIOS DETALHADOS', ml, y); y += 6;
+    doc.setTextColor(0,0,0); doc.setFontSize(8.5); doc.setFont(undefined,'normal');
     for (var c = 1; c <= 9; c++) {
-        doc.text(CRITERIOS[c] + ': ' + cr[c].media + (cr[c].presente ? ' (PRESENTE)' : ''), 22, y);
+        if (y > 265) { doc.addPage(); y = 20; }
+        var status = cr[c].presente ? 'PRESENTE' : (cr[c].media >= 2.5 ? 'Subclinico' : 'Ausente');
+        var corTxt = cr[c].presente ? [198,40,40] : (cr[c].media >= 2.5 ? [255,152,0] : [46,125,50]);
+        doc.setTextColor(0,0,0); doc.text('C' + c + '. ' + CRITERIOS[c] + ': ' + cr[c].media.toFixed(2), ml+2, y);
+        doc.setTextColor(corTxt[0],corTxt[1],corTxt[2]); doc.text(' [' + status + ']', ml + 2 + doc.getTextWidth('C' + c + '. ' + CRITERIOS[c] + ': ' + cr[c].media.toFixed(2)), y);
         y += 5;
     }
-
-    y += 5;
-    doc.setFillColor(255,248,235); doc.rect(15,y,180,14,'F');
-    doc.setTextColor(180,90,0); doc.setFontSize(7);
-    doc.text('IMPORTANTE: Instrumento de rastreio. Nao substitui avaliacao clinica profissional.', 20, y+5);
-    doc.text('Resultados devem ser interpretados por profissional qualificado.', 20, y+10);
-
-    doc.setFillColor(80,80,80); doc.rect(0,285,210,12,'F');
+    y += 6;
+    if (y > 265) { doc.addPage(); y = 20; }
+    doc.setFillColor(255,248,235); doc.rect(ml,y,lu,12,'F');
+    doc.setDrawColor(200,150,50); doc.setLineWidth(0.5); doc.line(ml,y,ml,y+12);
+    doc.setTextColor(150,80,0); doc.setFontSize(7); doc.setFont(undefined,'bold');
+    doc.text('IMPORTANTE:', ml+3, y+4); doc.setFont(undefined,'normal');
+    doc.text('Instrumento de rastreio sem validacao empirica formal. Nao substitui avaliacao clinica.', ml+3, y+8);
+    doc.setFillColor(50,50,50); doc.rect(0,285,210,12,'F');
     doc.setTextColor(200,200,200); doc.setFontSize(7);
-    doc.text('Relatorio gerado em: ' + new Date().toLocaleString('pt-BR'), 105, 291, {align:'center'});
-
+    doc.text('SYM Online  |  ' + dataAval + '  |  Gerado em ' + new Date().toLocaleString('pt-BR'), 105, 291, {align:'center'});
     var ts = new Date();
     var tsStr = ts.getFullYear() + String(ts.getMonth()+1).padStart(2,'0') + String(ts.getDate()).padStart(2,'0') + String(ts.getHours()).padStart(2,'0') + String(ts.getMinutes()).padStart(2,'0');
     doc.save('ERT-PN_' + nome.replace(/\s+/g,'_') + '_' + tsStr + '.pdf');
