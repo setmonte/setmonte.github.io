@@ -2985,6 +2985,61 @@
       } catch(e) { alert('Erro de conexao: ' + e.message); }
     }
 
+    function editarPaciente(pacId) {
+      var pac = _pacientesCache.filter(function(p) { return p.id === pacId; })[0];
+      if (!pac) { alert('Paciente nao encontrado.'); return; }
+      var el = document.getElementById('pacientesList');
+      var html = '<div class="card" style="margin:10px 0;padding:20px;">';
+      html += '<h3 style="color:#2e7d32;margin-bottom:15px;">Editar Paciente</h3>';
+      html += '<label style="font-size:0.85em;color:#555;">Nome completo:</label>';
+      html += '<input type="text" id="editPacNome" value="' + (pac.nome || '') + '" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">';
+      html += '<div style="display:flex;gap:10px;flex-wrap:wrap;">';
+      html += '<div style="flex:1;min-width:150px;"><label style="font-size:0.85em;color:#555;">Data Nasc:</label><input type="date" id="editPacDN" value="' + (pac.dataNascimento || '') + '" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;"></div>';
+      html += '<div style="flex:1;min-width:120px;"><label style="font-size:0.85em;color:#555;">Sexo:</label><select id="editPacSexo" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;"><option value="">--</option><option value="Masculino"' + (pac.sexo === 'Masculino' ? ' selected' : '') + '>Masculino</option><option value="Feminino"' + (pac.sexo === 'Feminino' ? ' selected' : '') + '>Feminino</option></select></div>';
+      html += '<div style="flex:1;min-width:150px;"><label style="font-size:0.85em;color:#555;">Escolaridade:</label><select id="editPacEsc" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;"><option value="">--</option><option value="1o ano"' + (pac.escolaridade === '1o ano' ? ' selected' : '') + '>1o ano</option><option value="2o ano"' + (pac.escolaridade === '2o ano' ? ' selected' : '') + '>2o ano</option><option value="3o ano"' + (pac.escolaridade === '3o ano' ? ' selected' : '') + '>3o ano</option><option value="4o ano"' + (pac.escolaridade === '4o ano' ? ' selected' : '') + '>4o ano</option><option value="5o ano"' + (pac.escolaridade === '5o ano' ? ' selected' : '') + '>5o ano</option><option value="6o ano"' + (pac.escolaridade === '6o ano' ? ' selected' : '') + '>6o ano</option><option value="7o ano"' + (pac.escolaridade === '7o ano' ? ' selected' : '') + '>7o ano</option><option value="8o ano"' + (pac.escolaridade === '8o ano' ? ' selected' : '') + '>8o ano</option><option value="9o ano"' + (pac.escolaridade === '9o ano' ? ' selected' : '') + '>9o ano</option><option value="Ensino Medio"' + (pac.escolaridade === 'Ensino Medio' ? ' selected' : '') + '>Ensino Medio</option><option value="Superior Incompleto"' + (pac.escolaridade === 'Superior Incompleto' ? ' selected' : '') + '>Superior Incompleto</option><option value="Superior Completo"' + (pac.escolaridade === 'Superior Completo' ? ' selected' : '') + '>Superior Completo</option><option value="Pos-graduacao"' + (pac.escolaridade === 'Pos-graduacao' ? ' selected' : '') + '>Pos-graduacao</option></select></div>';
+      html += '<div style="flex:1;min-width:120px;"><label style="font-size:0.85em;color:#555;">Lateralidade:</label><select id="editPacLat" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;"><option value="">--</option><option value="Destro"' + (pac.lateralidade === 'Destro' ? ' selected' : '') + '>Destro</option><option value="Canhoto"' + (pac.lateralidade === 'Canhoto' ? ' selected' : '') + '>Canhoto</option><option value="Ambidestro"' + (pac.lateralidade === 'Ambidestro' ? ' selected' : '') + '>Ambidestro</option></select></div>';
+      html += '</div>';
+      html += '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;">';
+      html += '<div style="flex:1;min-width:150px;"><label style="font-size:0.85em;color:#555;">CPF (opcional):</label><input type="text" id="editPacCPF" value="' + (pac.cpf || '') + '" maxlength="14" oninput="maskCPF(this)" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;"></div>';
+      html += '<div style="flex:1;min-width:180px;"><label style="font-size:0.85em;color:#555;">Email:</label><input type="email" id="editPacEmail" value="' + (pac.pacienteEmail || '') + '" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;"></div>';
+      html += '<div style="flex:1;min-width:150px;"><label style="font-size:0.85em;color:#555;">WhatsApp:</label><input type="tel" id="editPacWhats" value="' + (pac.whatsapp || '') + '" placeholder="(XX) XXXXX-XXXX" maxlength="15" oninput="maskTelefone(this)" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;"></div>';
+      html += '</div>';
+      html += '<div style="margin-top:15px;display:flex;gap:10px;">';
+      html += '<button class="btn btn-green" onclick="salvarEdicaoPaciente(\'' + pacId + '\')">Salvar</button>';
+      html += '<button class="btn btn-blue" onclick="loadPacientes()">Cancelar</button>';
+      html += '</div></div>';
+      el.innerHTML = html;
+    }
+
+    async function salvarEdicaoPaciente(pacId) {
+      var nome = document.getElementById('editPacNome').value.trim();
+      var dn = document.getElementById('editPacDN').value;
+      if (!nome || !dn) { alert('Nome e data de nascimento sao obrigatorios.'); return; }
+      try {
+        var resp = await fetch(API_URL + '/save-paciente', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({
+            email: currentUser,
+            id: pacId,
+            nome: nome,
+            dataNascimento: dn,
+            sexo: document.getElementById('editPacSexo').value,
+            escolaridade: document.getElementById('editPacEsc').value,
+            lateralidade: document.getElementById('editPacLat').value,
+            cpf: document.getElementById('editPacCPF').value,
+            pacienteEmail: document.getElementById('editPacEmail').value.trim(),
+            whatsapp: document.getElementById('editPacWhats').value.trim()
+          })
+        });
+        var r = await resp.json();
+        if (r.ok) {
+          alert('Paciente atualizado com sucesso!');
+          await loadPacientes();
+        } else { alert('Erro: ' + (r.error || 'tente novamente')); }
+      } catch(e) { alert('Erro de conexao: ' + e.message); }
+    }
+
     async function vincularHistoricoRetroativo(nome, dn) {
       try {
         var resp = await fetch(API_URL + '/get-results?email=' + encodeURIComponent(currentUser));
@@ -3069,7 +3124,7 @@
             html += '<td>' + (p.cpf || '-') + '</td>';
             html += '<td>' + (p.sexo || '-') + '</td>';
             html += '<td>' + contato + '</td>';
-            html += '<td><button class="btn btn-blue" style="padding:4px 10px;font-size:11px;" onclick="verHistoricoPaciente(\'' + p.id + '\',\'' + p.nome.replace(/'/g,'') + '\')">Ver</button></td>';
+            html += '<td><button class="btn btn-blue" style="padding:4px 10px;font-size:11px;" onclick="verHistoricoPaciente(\'' + p.id + '\',\'' + p.nome.replace(/'/g,'') + '\')">Ver</button> <button class="btn btn-orange" style="padding:4px 10px;font-size:11px;" onclick="editarPaciente(\'' + p.id + '\')">Editar</button></td>';
             html += '<td><button class="btn btn-red" style="padding:4px 10px;font-size:11px;" onclick="deletePaciente(\'' + p.id + '\')">X</button></td>';
             html += '</tr>';
           });
