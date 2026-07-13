@@ -246,45 +246,85 @@ function mostrarResultados(resultados, totalGeral, mediaGeral, sexo) {
 
 function gerarRelatorioPDF() {
     if (!window._escalaDados) { calcularResultados(); if (!window._escalaDados) return; }
-    var jsPDF = window.jspdf.jsPDF;
-    var doc = new jsPDF();
-    doc.setFillColor(74,144,226); doc.rect(0,0,210,30,'F');
-    doc.setTextColor(255,255,255); doc.setFontSize(16); doc.setFont(undefined,'bold');
-    doc.text('BAPQ - RELATORIO DE AVALIACAO', 105, 15, {align:'center'});
-    doc.setFontSize(10); doc.text('Broader Autism Phenotype Questionnaire', 105, 23, {align:'center'});
-    doc.setTextColor(0,0,0); doc.setFont(undefined,'normal'); doc.setFontSize(10);
-    var y = 40;
-    doc.text('Nome: ' + document.getElementById('nome').value, 20, y);
-    var idEl = document.getElementById('idPaciente');
-    if (idEl && idEl.value) doc.text('ID: ' + idEl.value, 140, y);
-    y += 6; doc.text('Idade: ' + (document.getElementById('idadeCalculada').value || ''), 20, y);
-    doc.text('Sexo: ' + (document.getElementById('sexo').value || ''), 120, y);
-    y += 6; doc.text('Data: ' + (document.getElementById('data').value || new Date().toLocaleDateString()), 20, y);
-    y += 12;
-    doc.setFont(undefined,'bold'); doc.setFontSize(12);
-    doc.text('RESULTADOS POR DOMINIO:', 20, y); y += 8;
-    doc.setFont(undefined,'normal'); doc.setFontSize(10);
     var dados = window._escalaDados;
+    var nome = document.getElementById('nome').value || 'Paciente';
+    var idade = document.getElementById('idadeCalculada').value || '';
+    var sexo = document.getElementById('sexo').value || '';
+    var dataAval = document.getElementById('data').value || new Date().toLocaleDateString('pt-BR');
+    var idPac = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
     var blocos = Object.keys(dados.dominios);
+    // Grafico
+    var canvasG = document.createElement('canvas'); canvasG.width = 600; canvasG.height = 30 + blocos.length * 40 + 20;
+    var cx = canvasG.getContext('2d');
+    cx.fillStyle = '#fff'; cx.fillRect(0, 0, 600, canvasG.height);
+    cx.fillStyle = '#333'; cx.font = 'bold 12px Segoe UI'; cx.textAlign = 'left';
+    cx.fillText('Perfil por Dominio BAPQ (escala 1-6, corte: 3.15)', 10, 15);
+    for (var bi = 0; bi < blocos.length; bi++) {
+        var d = dados.dominios[blocos[bi]];
+        var by = 28 + bi * 38;
+        var media = parseFloat(d.media) || 0;
+        var pct = media / 6;
+        var bw = pct * 300;
+        var cor = media < 2.5 ? '#4caf50' : media < 3.15 ? '#ffb300' : media < 4 ? '#ff9800' : '#e53935';
+        cx.fillStyle = '#555'; cx.font = '11px Segoe UI'; cx.textAlign = 'right';
+        cx.fillText(blocos[bi], 165, by + 16);
+        cx.fillStyle = '#eee'; cx.fillRect(175, by, 300, 28);
+        cx.fillStyle = cor; cx.fillRect(175, by, bw, 28);
+        cx.fillStyle = '#333'; cx.font = 'bold 11px Segoe UI'; cx.textAlign = 'left';
+        cx.fillText(media.toFixed(2), 175 + bw + 5, by + 18);
+    }
+    var limX = 175 + (3.15/6)*300;
+    cx.strokeStyle = '#c62828'; cx.setLineDash([4,3]); cx.lineWidth = 1.5;
+    cx.beginPath(); cx.moveTo(limX, 22); cx.lineTo(limX, 28 + blocos.length*38); cx.stroke();
+    cx.setLineDash([]); cx.fillStyle = '#c62828'; cx.font = '9px Segoe UI'; cx.textAlign = 'center';
+    cx.fillText('Corte 3.15', limX, 20);
+    var imgGrafico = canvasG.toDataURL('image/png');
+    // PDF
+    var jsPDF = window.jspdf.jsPDF; var doc = new jsPDF(); var ml = 15; var lu = 180;
+    doc.setFillColor(74,144,226); doc.rect(0,0,210,30,'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(14); doc.setFont(undefined,'bold');
+    doc.text('BAPQ - RELATORIO DE AVALIACAO', 105, 12, {align:'center'});
+    doc.setFontSize(9); doc.setFont(undefined,'normal');
+    doc.text('Broader Autism Phenotype Questionnaire | Prata et al. (2019)', 105, 20, {align:'center'});
+    doc.text('Sistema SYM - Avaliacao Neuropsicologica', 105, 26, {align:'center'});
+    var y = 36;
+    doc.setFillColor(248,249,250); doc.rect(ml,y,lu,16,'F');
+    doc.setDrawColor(74,144,226); doc.setLineWidth(0.8); doc.line(ml,y,ml,y+16);
+    doc.setTextColor(74,144,226); doc.setFontSize(10); doc.setFont(undefined,'bold');
+    doc.text('DADOS DO AVALIANDO', ml+4, y+5);
+    doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont(undefined,'normal');
+    doc.text('Nome: '+nome+'  |  Sexo: '+sexo+(idPac?'  |  ID: '+idPac:''), ml+4, y+11);
+    doc.text('Idade: '+idade+'  |  Data: '+dataAval, ml+4, y+15);
+    y = 57;
+    var positivo = parseFloat(dados.media) >= 3.15;
+    if (positivo) { doc.setFillColor(255,205,210); doc.setTextColor(198,40,40); }
+    else { doc.setFillColor(200,230,201); doc.setTextColor(46,125,50); }
+    doc.rect(ml,y,lu,10,'F'); doc.setFontSize(10); doc.setFont(undefined,'bold');
+    doc.text('Media Geral: '+dados.media+' | '+(positivo?'PROVAVEL PRESENCA DE BAP':'AUSENCIA DE BAP SIGNIFICATIVO'), 105, y+7, {align:'center'});
+    y = 72;
+    doc.setTextColor(0,0,0); doc.setFont(undefined,'bold'); doc.setFontSize(10);
+    doc.text('PERFIL POR DOMINIO', ml, y); y += 3;
+    var imgH = Math.min(70, 10 + blocos.length * 12);
+    doc.addImage(imgGrafico, 'PNG', ml, y, lu, imgH); y += imgH + 5;
+    doc.setFont(undefined,'normal'); doc.setFontSize(9);
     for (var b = 0; b < blocos.length; b++) {
         var d = dados.dominios[blocos[b]];
-        doc.text(blocos[b] + ': Media ' + d.media, 25, y); y += 6;
+        doc.text(blocos[b]+': Media '+d.media+' ('+d.pontuacao+' pts, '+d.itens+' itens)', ml+2, y); y += 5;
     }
     y += 5;
-    doc.setFillColor(227,242,253); doc.rect(15,y-4,180,12,'F');
-    doc.setFont(undefined,'bold');
-    doc.text('MEDIA GERAL: ' + dados.media + ' | CLASSIFICACAO: ' + dados.classificacao, 20, y+4);
-    y += 20;
-    doc.setFont(undefined,'normal'); doc.setFontSize(9);
-    doc.text('Ponto de corte brasileiro (PRATA et al., 2019): >= 3,15', 20, y); y += 5;
-    doc.text('Sensibilidade: 78% | Especificidade: 74%', 20, y); y += 10;
-    doc.setFontSize(8); doc.setFont(undefined,'italic'); doc.setTextColor(100,100,100);
-    doc.text('Referencias:', 20, y); y += 4;
-    doc.text('HURLEY, R. S. E. et al. J Autism Dev Disord, v.37, n.9, p.1679-1690, 2007.', 20, y); y += 4;
-    doc.text('PRATA, J. C. et al. Psicologia: Reflexao e Critica, v.32, n.1, 2019.', 20, y);
-    doc.setTextColor(150,150,150); doc.text('Documento gerado em ' + new Date().toLocaleString(), 105, 285, {align:'center'});
-    var ts = new Date(); var nome = document.getElementById('nome').value || 'Paciente';
-    doc.save('BAPQ_' + nome + '_' + ts.getFullYear() + String(ts.getMonth()+1).padStart(2,'0') + String(ts.getDate()).padStart(2,'0') + '.pdf');
+    doc.setFontSize(8); doc.text('Ponto de corte brasileiro (PRATA et al., 2019): >= 3,15 | Sensibilidade: 78% | Especificidade: 74%', ml, y); y += 8;
+    doc.setFillColor(255,248,235); doc.rect(ml,y,lu,10,'F');
+    doc.setTextColor(150,80,0); doc.setFontSize(7);
+    doc.text('IMPORTANTE: Instrumento de triagem. Nao substitui avaliacao profissional.', ml+3, y+6);
+    y += 14;
+    doc.setTextColor(80,80,80); doc.setFontSize(7.5);
+    doc.text('HURLEY, R. S. E. et al. J Autism Dev Disord, v.37, n.9, p.1679-1690, 2007.', ml, y); y += 4;
+    doc.text('PRATA, J. C. et al. Psicologia: Reflexao e Critica, v.32, n.1, 2019.', ml, y);
+    doc.setFillColor(50,50,50); doc.rect(0,285,210,12,'F');
+    doc.setTextColor(200,200,200); doc.setFontSize(7);
+    doc.text('SYM Online  |  '+dataAval+'  |  Gerado em '+new Date().toLocaleString('pt-BR'), 105, 291, {align:'center'});
+    var ts = new Date();
+    doc.save('BAPQ_'+nome.replace(/\s+/g,'_')+'_'+ts.getFullYear()+String(ts.getMonth()+1).padStart(2,'0')+String(ts.getDate()).padStart(2,'0')+'.pdf');
 }
 
 function limparDados() {

@@ -276,10 +276,36 @@ function gerarRelatorioPDF() {
     doc.setFontSize(10); doc.setFont(undefined,'bold');
     doc.text('PARTE A: ' + (rastreioPositivo ? 'RASTREIO POSITIVO' : 'RASTREIO NEGATIVO') + ' (' + parteAPositivos + '/6 itens acima do corte, limiar: 4)', 105, y+7, {align:'center'});
 
-    // --- DOMINIOS ---
+    // --- GRAFICO DE DOMINIOS ---
     y = 84;
-    doc.setTextColor(21,101,192); doc.setFontSize(10); doc.setFont(undefined,'bold');
-    doc.text('DOMINIOS', 20, y); y += 7;
+    var canvasG = document.createElement('canvas'); canvasG.width = 600; canvasG.height = 140;
+    var cx = canvasG.getContext('2d');
+    cx.fillStyle = '#fff'; cx.fillRect(0, 0, 600, 140);
+    cx.fillStyle = '#333'; cx.font = 'bold 12px Segoe UI'; cx.textAlign = 'left';
+    cx.fillText('Perfil por Dominio', 10, 15);
+    var barras = [{nome:'Desatencao',val:somaD,max:nD*4,media:somaD/nD},{nome:'Hiperatividade/Impulsividade',val:somaHI,max:nHI*4,media:somaHI/nHI}];
+    var maxMedia = 4;
+    for (var bi = 0; bi < barras.length; bi++) {
+        var by = 30 + bi * 45;
+        var pct = barras[bi].media / maxMedia;
+        var bw = pct * 300;
+        var cor = barras[bi].media < 1.5 ? '#4caf50' : barras[bi].media < 2.5 ? '#ffb300' : barras[bi].media < 3 ? '#ff9800' : '#e53935';
+        cx.fillStyle = '#555'; cx.font = '11px Segoe UI'; cx.textAlign = 'right';
+        cx.fillText(barras[bi].nome, 195, by + 15);
+        cx.fillStyle = '#eee'; cx.fillRect(200, by, 300, 28);
+        cx.fillStyle = cor; cx.fillRect(200, by, bw, 28);
+        cx.fillStyle = '#333'; cx.font = 'bold 11px Segoe UI'; cx.textAlign = 'left';
+        cx.fillText(barras[bi].media.toFixed(2) + '/4 (' + barras[bi].val + '/' + barras[bi].max + ' pts)', 200 + bw + 5, by + 18);
+    }
+    // Legenda
+    cx.font = '9px Segoe UI'; cx.textAlign = 'left'; cx.fillStyle = '#888';
+    cx.fillText('Itens acima do corte: D=' + ITENS.filter(function(it,i){return it.dom==="D"&&respostas[i]>=it.corte;}).length + '/' + nD + '  |  H/I=' + ITENS.filter(function(it,i){return it.dom==="HI"&&respostas[i]>=it.corte;}).length + '/' + nHI + '  |  Total: ' + totalAcima + '/18', 200, 125);
+    var imgGrafico = canvasG.toDataURL('image/png');
+    doc.setFont(undefined,'bold'); doc.setFontSize(10); doc.setTextColor(21,101,192);
+    doc.text('PERFIL POR DOMINIO', 20, y); y += 3;
+    doc.addImage(imgGrafico, 'PNG', 15, y, 180, 42); y += 46;
+
+    // --- DOMINIOS TEXTO ---
     doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont(undefined,'normal');
     var dAcima = ITENS.filter(function(it,i){return it.dom==='D'&&respostas[i]>=it.corte;}).length;
     var hiAcima = ITENS.filter(function(it,i){return it.dom==='HI'&&respostas[i]>=it.corte;}).length;

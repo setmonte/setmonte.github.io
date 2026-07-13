@@ -293,14 +293,38 @@ function gerarRelatorioPDF() {
     doc.setTextColor(255,255,255); doc.setFontSize(12); doc.setFont(undefined,'bold');
     doc.text('Classifica\u00e7\u00e3o: ' + classif.texto + '  |  Escore: ' + escore + '/40', 105, y+9, {align:'center'});
 
-    // Dominios
+    // Grafico de dominios
     y = 90;
+    var canvasG = document.createElement('canvas'); canvasG.width = 600; canvasG.height = 160;
+    var cx = canvasG.getContext('2d');
+    cx.fillStyle = '#fff'; cx.fillRect(0, 0, 600, 160);
+    cx.fillStyle = '#333'; cx.font = 'bold 12px Segoe UI'; cx.textAlign = 'left';
+    cx.fillText('Perfil por Dominio AUDIT', 10, 15);
+    var domBarras = [{nome:'Consumo (1-3)',val:consumo,max:12},{nome:'Dependencia (4-6)',val:dependencia,max:12},{nome:'Consequencias (7-10)',val:consequencias,max:16}];
+    for (var bi = 0; bi < domBarras.length; bi++) {
+        var by = 28 + bi * 40;
+        var pct = domBarras[bi].val / domBarras[bi].max;
+        var bw = pct * 300;
+        var cor = pct < 0.3 ? '#4caf50' : pct < 0.5 ? '#ffb300' : pct < 0.7 ? '#ff9800' : '#e53935';
+        cx.fillStyle = '#555'; cx.font = '11px Segoe UI'; cx.textAlign = 'right';
+        cx.fillText(domBarras[bi].nome, 170, by + 18);
+        cx.fillStyle = '#eee'; cx.fillRect(180, by, 300, 30);
+        cx.fillStyle = cor; cx.fillRect(180, by, bw, 30);
+        cx.fillStyle = '#333'; cx.font = 'bold 12px Segoe UI'; cx.textAlign = 'left';
+        cx.fillText(domBarras[bi].val + '/' + domBarras[bi].max, 180 + bw + 8, by + 20);
+    }
+    var imgGrafico = canvasG.toDataURL('image/png');
+    doc.setTextColor(27,94,32); doc.setFontSize(10); doc.setFont(undefined,'bold');
+    doc.text('PERFIL POR DOMINIO', 20, y); y += 3;
+    doc.addImage(imgGrafico, 'PNG', 15, y, 180, 48); y += 52;
+
+    // Dominios texto
     doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont(undefined,'bold');
-    doc.text('DOM\u00cdNIOS:', 20, y); y += 7;
+    doc.text('DOMINIOS:', 20, y); y += 7;
     doc.setFont(undefined,'normal');
     doc.text('Consumo (itens 1-3): ' + consumo + '/12', 22, y); y += 5;
-    doc.text('Depend\u00eancia (itens 4-6): ' + dependencia + '/12', 22, y); y += 5;
-    doc.text('Consequ\u00eancias (itens 7-10): ' + consequencias + '/16', 22, y); y += 10;
+    doc.text('Dependencia (itens 4-6): ' + dependencia + '/12', 22, y); y += 5;
+    doc.text('Consequencias (itens 7-10): ' + consequencias + '/16', 22, y); y += 10;
 
     // Pontuacao por item
     doc.setFont(undefined,'bold');
