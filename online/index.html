@@ -3564,59 +3564,47 @@
       var sel = document.getElementById(tipo + 'SelPac');
       if (!sel) return;
       var opt = sel.options[sel.selectedIndex];
-      if (!opt || !opt.dataset || !opt.dataset.nome) return;
-      var prefixo = tipo === 'tecfe' ? 'on' : tipo;
-      var campoNome = document.getElementById(prefixo + 'PatientName') || document.getElementById(prefixo + 'PatientName');
-      var campoDN = document.getElementById(prefixo + 'BirthDate') || document.getElementById(prefixo + 'BirthDate');
-      var campoCPF = document.getElementById(prefixo + 'Cpf') || document.getElementById(prefixo + 'Cpf');
+      if (!opt || sel.selectedIndex === 0) return;
+      // Buscar paciente completo do cache
+      var pacId = opt.value || '';
+      var pac = null;
+      if (pacId && window._pacientesCache) {
+        for (var i = 0; i < _pacientesCache.length; i++) {
+          if (_pacientesCache[i].id === pacId) { pac = _pacientesCache[i]; break; }
+        }
+      }
+      if (!pac) pac = { nome: opt.dataset.nome||'', dataNascimento: opt.dataset.dn||'', cpf: opt.dataset.cpf||'', sexo: opt.dataset.sexo||'', escolaridade: opt.dataset.esc||'', lateralidade: opt.dataset.lat||'' };
+      // Mapear campos por tipo
+      var campoNome = null; var campoDN = null; var campoCPF = null;
       if (tipo === 'tecfe') { campoNome = document.getElementById('onPatientName'); campoDN = document.getElementById('onBirthDate'); campoCPF = document.getElementById('onCpf'); }
       else if (tipo === 'bae') { campoNome = document.getElementById('baePatientName'); campoDN = document.getElementById('baeBirthDate'); campoCPF = document.getElementById('baeCpf'); }
       else if (tipo === 'trmv') { campoNome = document.getElementById('trmvPatientName'); campoDN = document.getElementById('trmvBirthDate'); campoCPF = document.getElementById('trmvCpf'); }
-      else if (tipo === 'escala') { campoNome = document.getElementById('escalaNome'); campoDN = document.getElementById('escalaDn'); campoCPF = null; }
-      else if (tipo === 'tflod') { campoNome = document.getElementById('tflodNome'); campoDN = document.getElementById('tflodDn'); campoCPF = null; }
-      else if (tipo === 'corsi') { campoNome = document.getElementById('corsiNome'); campoDN = document.getElementById('corsiDn'); campoCPF = null; }
-      else if (tipo === 'tte') { campoNome = document.getElementById('tteNome'); campoDN = document.getElementById('tteDn'); campoCPF = null; }
-      else if (tipo === 'tref') { campoNome = document.getElementById('trefNome'); campoDN = document.getElementById('trefDn'); campoCPF = null; }
       else if (tipo === 'taav') { campoNome = document.getElementById('taavPatientName'); campoDN = document.getElementById('taavBirthDate'); campoCPF = document.getElementById('taavCpf'); }
+      else if (tipo === 'escala') { campoNome = document.getElementById('escalaNome'); campoDN = document.getElementById('escalaDn'); }
+      else if (tipo === 'tflod') { campoNome = document.getElementById('tflodNome'); campoDN = document.getElementById('tflodDn'); }
+      else if (tipo === 'corsi') { campoNome = document.getElementById('corsiNome'); campoDN = document.getElementById('corsiDn'); }
+      else if (tipo === 'tte') { campoNome = document.getElementById('tteNome'); campoDN = document.getElementById('tteDn'); }
+      else if (tipo === 'tref') { campoNome = document.getElementById('trefNome'); campoDN = document.getElementById('trefDn'); }
       else if (tipo === 'anamnese') { campoNome = document.getElementById('anamneseNome'); campoDN = document.getElementById('anamneseDn'); campoCPF = document.getElementById('anamneseCpf'); }
-      else if (tipo === 'agenda') { campoNome = document.getElementById('agendaNome'); campoDN = null; campoCPF = null; }
-      else if (tipo === 'reocupa') { campoNome = document.getElementById('reocupaNome'); campoDN = document.getElementById('reocupaDn'); campoCPF = null; }
-      else if (tipo === 'pfister') { campoNome = document.getElementById('pfisterNome'); campoDN = document.getElementById('pfisterDn'); campoCPF = null; }
-      else if (tipo === 'neo') { campoNome = document.getElementById('neoNome'); campoDN = document.getElementById('neoDn'); campoCPF = null; }
-      else if (tipo === 'prontuario') { campoNome = null; campoDN = null; campoCPF = null; if(document.getElementById('prontuarioNomeManual'))document.getElementById('prontuarioNomeManual').value=''; }
-      if (campoNome) campoNome.value = opt.dataset.nome || '';
-      if (campoDN) campoDN.value = opt.dataset.dn || '';
-      if (campoCPF) campoCPF.value = opt.dataset.cpf || '';
-      // Preencher sexo se disponivel
-      var campoSexo = null;
-      if (tipo === 'anamnese') campoSexo = document.getElementById('anamneseSexo');
-      else if (tipo === 'escala') campoSexo = document.getElementById('escalaSexo');
-      else if (tipo === 'reocupa') campoSexo = document.getElementById('reocupaSexo');
-      else if (tipo === 'corsi') campoSexo = document.getElementById('corsiSexo');
-      else if (tipo === 'tte') campoSexo = document.getElementById('tteSexo');
-      else if (tipo === 'tflod') campoSexo = document.getElementById('tflodSexo');
-      else if (tipo === 'tref') campoSexo = document.getElementById('trefSexo');
-      else if (tipo === 'pfister') campoSexo = document.getElementById('pfisterSexo');
-      else if (tipo === 'neo') campoSexo = document.getElementById('neoSexo');
-      if (campoSexo && opt.dataset.sexo) campoSexo.value = opt.dataset.sexo;
-      // Preencher escolaridade se disponivel
-      var campoEsc = null;
-      if (tipo === 'escala') campoEsc = document.getElementById('escalaEscolaridade');
-      else if (tipo === 'tflod') campoEsc = document.getElementById('tflodEscolaridade');
-      else if (tipo === 'corsi') campoEsc = document.getElementById('corsiEscolaridade');
-      else if (tipo === 'tte') campoEsc = document.getElementById('tteEscolaridade');
-      else if (tipo === 'trmv') campoEsc = document.getElementById('trmvEscolaridade');
-      else if (tipo === 'taav') campoEsc = document.getElementById('taavEscolaridade');
-      else if (tipo === 'tref') campoEsc = document.getElementById('trefEscolaridade');
-      else if (tipo === 'bae') campoEsc = document.getElementById('baeEscolaridade');
-      if (campoEsc && opt.dataset.esc) campoEsc.value = opt.dataset.esc;
-      // Preencher lateralidade se disponivel
-      var campoLat = null;
-      if (tipo === 'escala') campoLat = document.getElementById('escalaLateralidade');
-      else if (tipo === 'tflod') campoLat = document.getElementById('tflodLateralidade');
-      else if (tipo === 'corsi') campoLat = document.getElementById('corsiLateralidade');
-      else if (tipo === 'tte') campoLat = document.getElementById('tteLateralidade');
-      if (campoLat && opt.dataset.lat) campoLat.value = opt.dataset.lat;
+      else if (tipo === 'agenda') { campoNome = document.getElementById('agendaNome'); }
+      else if (tipo === 'reocupa') { campoNome = document.getElementById('reocupaNome'); campoDN = document.getElementById('reocupaDn'); }
+      else if (tipo === 'pfister') { campoNome = document.getElementById('pfisterNome'); campoDN = document.getElementById('pfisterDn'); }
+      else if (tipo === 'neo') { campoNome = document.getElementById('neoNome'); campoDN = document.getElementById('neoDn'); }
+      // Preencher campos basicos
+      if (campoNome) campoNome.value = pac.nome || '';
+      if (campoDN) campoDN.value = pac.dataNascimento || '';
+      if (campoCPF) campoCPF.value = pac.cpf || '';
+      // Sexo
+      var campoSexo = document.getElementById(tipo + 'Sexo') || document.getElementById('escala' === tipo ? 'escalaSexo' : tipo + 'Sexo');
+      if (!campoSexo && tipo === 'anamnese') campoSexo = document.getElementById('anamneseSexo');
+      if (!campoSexo && tipo === 'reocupa') campoSexo = document.getElementById('reocupaSexo');
+      if (campoSexo && pac.sexo) campoSexo.value = pac.sexo;
+      // Escolaridade
+      var campoEsc = document.getElementById(tipo + 'Escolaridade') || document.getElementById('escala' === tipo ? 'escalaEscolaridade' : tipo + 'Escolaridade');
+      if (campoEsc && pac.escolaridade) campoEsc.value = pac.escolaridade;
+      // Lateralidade
+      var campoLat = document.getElementById(tipo + 'Lateralidade') || document.getElementById('escala' === tipo ? 'escalaLateralidade' : tipo + 'Lateralidade');
+      if (campoLat && pac.lateralidade) campoLat.value = pac.lateralidade;
     }
 
     // === REOCUPA - Funcoes do painel ===
