@@ -3565,12 +3565,23 @@
       if (!sel) return;
       var opt = sel.options[sel.selectedIndex];
       if (!opt || sel.selectedIndex === 0) return;
-      // Buscar paciente completo do cache
+      // Buscar paciente completo do cache por ID ou por indice
       var pacId = opt.value || '';
       var pac = null;
-      if (pacId && window._pacientesCache) {
-        for (var i = 0; i < _pacientesCache.length; i++) {
-          if (_pacientesCache[i].id === pacId) { pac = _pacientesCache[i]; break; }
+      if (window._pacientesCache) {
+        // Tentar por ID
+        if (pacId) {
+          for (var i = 0; i < _pacientesCache.length; i++) {
+            if (_pacientesCache[i].id === pacId) { pac = _pacientesCache[i]; break; }
+          }
+        }
+        // Fallback: buscar por nome + data nascimento (dos data attributes)
+        if (!pac && opt.dataset.nome) {
+          var buscaNome = opt.dataset.nome;
+          var buscaDn = opt.dataset.dn || '';
+          for (var i = 0; i < _pacientesCache.length; i++) {
+            if (_pacientesCache[i].nome === buscaNome && (_pacientesCache[i].dataNascimento || '') === buscaDn) { pac = _pacientesCache[i]; break; }
+          }
         }
       }
       if (!pac) pac = { nome: opt.dataset.nome||'', dataNascimento: opt.dataset.dn||'', cpf: opt.dataset.cpf||'', sexo: opt.dataset.sexo||'', escolaridade: opt.dataset.esc||'', lateralidade: opt.dataset.lat||'' };
