@@ -286,32 +286,68 @@ function calcularResultados() {
 
 function gerarRelatorioPDF() {
     if (!window._escalaDados) { calcularResultados(); if (!window._escalaDados) return; }
+    var dados = window._escalaDados;
+    // Gerar grafico em canvas (18 esquemas)
+    var canvasG = document.createElement('canvas'); canvasG.width = 700; canvasG.height = 420;
+    var cx = canvasG.getContext('2d');
+    cx.fillStyle = '#fff'; cx.fillRect(0, 0, 700, 420);
+    cx.fillStyle = '#333'; cx.font = 'bold 12px Segoe UI'; cx.textAlign = 'left';
+    cx.fillText('Perfil YSQ-S3 - 18 Esquemas Iniciais Desadaptativos (5-30 cada)', 10, 15);
+    var bh = 16; var gap = 3; var startY = 28; var maxW = 250; var labelW = 280;
+    for (var gi = 0; gi < dados.esquemas.length; gi++) {
+        var e = dados.esquemas[gi];
+        var by = startY + gi * (bh + gap);
+        var pct = e.total / 30;
+        var bw = pct * maxW;
+        var cor = e.pct < 40 ? '#4caf50' : e.pct < 70 ? '#ff9800' : '#f44336';
+        cx.fillStyle = '#555'; cx.font = '10px Segoe UI'; cx.textAlign = 'right';
+        cx.fillText(e.nome, labelW - 5, by + 12);
+        cx.fillStyle = cor; cx.fillRect(labelW, by, bw, bh);
+        cx.fillStyle = '#333'; cx.font = 'bold 10px Segoe UI'; cx.textAlign = 'left';
+        cx.fillText(e.total + '/30', labelW + bw + 4, by + 12);
+    }
+    var ly = startY + dados.esquemas.length*(bh+gap) + 5;
+    var cores = [['#4caf50','Baixa (<40%)'],['#ff9800','Media (40-70%)'],['#f44336','Alta (>=70%)']];
+    cx.font = '10px Segoe UI'; cx.textAlign = 'left';
+    for (var li = 0; li < cores.length; li++) { cx.fillStyle = cores[li][0]; cx.fillRect(labelW + li*120, ly, 12, 12); cx.fillStyle = '#555'; cx.fillText(cores[li][1], labelW + li*120 + 15, ly + 10); }
+    var imgGrafico = canvasG.toDataURL('image/png');
+
     var jsPDF = window.jspdf.jsPDF; var doc = new jsPDF();
     doc.setFillColor(44,62,80); doc.rect(0,0,210,30,'F');
     doc.setTextColor(255,255,255); doc.setFontSize(16); doc.setFont(undefined,'bold');
     doc.text('YSQ-S3 - RELATORIO', 105, 15, {align:'center'});
     doc.setFontSize(10); doc.text('Questionario de Esquemas de Young - Versao Breve', 105, 23, {align:'center'});
     doc.setTextColor(0,0,0); doc.setFont(undefined,'normal'); doc.setFontSize(10);
-    var y = 40;
+    var y = 38;
     doc.text('Nome: ' + document.getElementById('nome').value, 20, y);
     var idEl = document.getElementById('idPaciente');
     if (idEl && idEl.value) doc.text('ID: ' + idEl.value, 140, y);
     y += 6; doc.text('Idade: ' + (document.getElementById('idadeCalculada').value || ''), 20, y);
     doc.text('Sexo: ' + (document.getElementById('sexo').value || ''), 120, y);
-    y += 12;
-    doc.setFont(undefined,'bold'); doc.setFontSize(11);
-    doc.text('ESQUEMAS:', 20, y); y += 8;
-    doc.setFont(undefined,'normal'); doc.setFontSize(9);
-    var dados = window._escalaDados;
+    y += 10;
+    // Grafico
+    doc.setTextColor(44,62,80); doc.setFontSize(10); doc.setFont(undefined,'bold');
+    doc.text('PERFIL GRAFICO DOS ESQUEMAS', 20, y); y += 3;
+    doc.addImage(imgGrafico, 'PNG', 10, y, 190, 110); y += 114;
+    // Esquemas texto
+    doc.setFont(undefined,'bold'); doc.setFontSize(9); doc.setTextColor(0,0,0);
+    doc.text('ESQUEMAS:', 20, y); y += 6;
+    doc.setFont(undefined,'normal'); doc.setFontSize(8);
     for (var i = 0; i < dados.esquemas.length; i++) {
         var e = dados.esquemas[i];
-        doc.text(e.nome + ': ' + e.total + '/30 (' + e.nivel + ')', 25, y); y += 5;
-        if (y > 270) { doc.addPage(); y = 20; }
+        if (y > 275) { doc.addPage(); y = 20; }
+        doc.text(e.nome + ': ' + e.total + '/30 (' + e.nivel + ')', 25, y); y += 4.5;
     }
-    doc.setTextColor(150,150,150); doc.setFontSize(8); doc.setFont(undefined,'italic');
-    doc.text('Documento gerado em ' + new Date().toLocaleString(), 105, 285, {align:'center'});
+    if (dados.esquemasMaisAltos && dados.esquemasMaisAltos.length > 0) {
+        y += 4;
+        doc.setFont(undefined,'bold'); doc.setFontSize(9);
+        doc.text('ESQUEMAS MAIS ELEVADOS: ' + dados.esquemasMaisAltos.join(', '), 20, y);
+    }
+    doc.setFillColor(80,80,80); doc.rect(0,285,210,12,'F');
+    doc.setTextColor(200,200,200); doc.setFontSize(7);
+    doc.text('Relatorio gerado em: ' + new Date().toLocaleString('pt-BR'), 105, 291, {align:'center'});
     var ts = new Date();
-    doc.save('YSQ-S3_' + (document.getElementById('nome').value||'Paciente') + '_' + ts.getFullYear() + String(ts.getMonth()+1).padStart(2,'0') + String(ts.getDate()).padStart(2,'0') + '.pdf');
+    doc.save('YSQ-S3_' + (document.getElementById('nome').value||'Paciente').replace(/\s+/g,'_') + '_' + ts.getFullYear() + String(ts.getMonth()+1).padStart(2,'0') + String(ts.getDate()).padStart(2,'0') + '.pdf');
 }
 
 function limparDados() {

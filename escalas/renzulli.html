@@ -231,24 +231,54 @@ function calcularResultados() {
 
 function gerarRelatorioPDF() {
     if (!window._escalaDados) { calcularResultados(); if (!window._escalaDados) return; }
+    var dados = window._escalaDados;
+    var blocos = Object.keys(dados.dominios);
+    // Gerar grafico em canvas
+    var canvasG = document.createElement('canvas'); canvasG.width = 700; canvasG.height = 180;
+    var cx = canvasG.getContext('2d');
+    cx.fillStyle = '#fff'; cx.fillRect(0, 0, 700, 180);
+    cx.fillStyle = '#333'; cx.font = 'bold 12px Segoe UI'; cx.textAlign = 'left';
+    cx.fillText('Perfil por Dominio Renzulli (media 1-5)', 10, 15);
+    var bh = 26; var gap = 8; var startY = 30; var maxW = 300; var labelW = 230;
+    for (var gi = 0; gi < blocos.length; gi++) {
+        var d = dados.dominios[blocos[gi]];
+        var by = startY + gi * (bh + gap);
+        var pct = d.media / 5;
+        var bw = pct * maxW;
+        var cor = d.media >= 4.5 ? '#4caf50' : d.media >= 4.0 ? '#8bc34a' : d.media >= 3.5 ? '#ff9800' : d.media >= 3.0 ? '#ff5722' : '#f44336';
+        cx.fillStyle = '#555'; cx.font = '11px Segoe UI'; cx.textAlign = 'right';
+        cx.fillText(blocos[gi], labelW - 5, by + 17);
+        cx.fillStyle = cor; cx.fillRect(labelW, by, bw, bh);
+        cx.fillStyle = '#333'; cx.font = 'bold 11px Segoe UI'; cx.textAlign = 'left';
+        cx.fillText(d.media.toFixed(1) + '/5', labelW + bw + 5, by + 17);
+    }
+    var ly = startY + blocos.length*(bh+gap) + 8;
+    var cores = [['#4caf50','Muito Alto (>=4.5)'],['#8bc34a','Alto (4.0-4.5)'],['#ff9800','Moderado (3.5-4.0)'],['#ff5722','Baixo Mod. (3.0-3.5)'],['#f44336','Baixo (<3.0)']];
+    cx.font = '9px Segoe UI'; cx.textAlign = 'left';
+    for (var li = 0; li < cores.length; li++) { cx.fillStyle = cores[li][0]; cx.fillRect(10 + li*130, ly, 10, 10); cx.fillStyle = '#555'; cx.fillText(cores[li][1], 10 + li*130 + 13, ly + 9); }
+    var imgGrafico = canvasG.toDataURL('image/png');
+
     var jsPDF = window.jspdf.jsPDF; var doc = new jsPDF();
     doc.setFillColor(255,107,53); doc.rect(0,0,210,30,'F');
     doc.setTextColor(255,255,255); doc.setFontSize(16); doc.setFont(undefined,'bold');
     doc.text('ESCALA DE RENZULLI (SRBCSS-R)', 105, 15, {align:'center'});
     doc.setFontSize(10); doc.text('Altas Habilidades / Superdotacao', 105, 23, {align:'center'});
     doc.setTextColor(0,0,0); doc.setFont(undefined,'normal'); doc.setFontSize(10);
-    var y = 40;
+    var y = 38;
     doc.text('Nome: ' + document.getElementById('nome').value, 20, y);
     var idEl = document.getElementById('idPaciente');
     if (idEl && idEl.value) doc.text('ID: ' + idEl.value, 140, y);
     y += 6; doc.text('Idade: ' + (document.getElementById('idade').value || ''), 20, y);
     doc.text('Sexo: ' + (document.getElementById('sexo').value || ''), 120, y);
     y += 6; doc.text('Respondente: ' + (document.getElementById('respondente').value || ''), 20, y);
-    y += 12;
-    var dados = window._escalaDados;
-    doc.setFont(undefined,'bold'); doc.text('RESULTADOS POR DOMINIO:', 20, y); y += 8;
+    y += 10;
+    // Grafico
+    doc.setTextColor(255,107,53); doc.setFontSize(10); doc.setFont(undefined,'bold');
+    doc.text('PERFIL GRAFICO DOS DOMINIOS', 20, y); y += 3;
+    doc.addImage(imgGrafico, 'PNG', 15, y, 180, 48); y += 52;
+    // Dominios texto
+    doc.setTextColor(0,0,0); doc.setFont(undefined,'bold'); doc.text('RESULTADOS POR DOMINIO:', 20, y); y += 8;
     doc.setFont(undefined,'normal');
-    var blocos = Object.keys(dados.dominios);
     for (var b = 0; b < blocos.length; b++) {
         var d = dados.dominios[blocos[b]];
         doc.text(blocos[b] + ': ' + d.pontuacao + '/50 (Media: ' + d.media + ')', 25, y); y += 6;
@@ -260,10 +290,11 @@ function gerarRelatorioPDF() {
     doc.setFont(undefined,'normal'); doc.setFontSize(9);
     var linhas = doc.splitTextToSize(dados.classificacao, 170);
     for (var l = 0; l < linhas.length; l++) { doc.text(linhas[l], 20, y); y += 5; }
-    doc.setTextColor(150,150,150); doc.setFontSize(8); doc.setFont(undefined,'italic');
-    doc.text('Documento gerado em ' + new Date().toLocaleString(), 105, 285, {align:'center'});
+    doc.setFillColor(80,80,80); doc.rect(0,285,210,12,'F');
+    doc.setTextColor(200,200,200); doc.setFontSize(7);
+    doc.text('Relatorio gerado em: ' + new Date().toLocaleString('pt-BR'), 105, 291, {align:'center'});
     var ts = new Date();
-    doc.save('Renzulli_' + (document.getElementById('nome').value||'Paciente') + '_' + ts.getFullYear() + String(ts.getMonth()+1).padStart(2,'0') + String(ts.getDate()).padStart(2,'0') + '.pdf');
+    doc.save('Renzulli_' + (document.getElementById('nome').value||'Paciente').replace(/\s+/g,'_') + '_' + ts.getFullYear() + String(ts.getMonth()+1).padStart(2,'0') + String(ts.getDate()).padStart(2,'0') + '.pdf');
 }
 
 function limparDados() {

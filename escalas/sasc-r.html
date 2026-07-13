@@ -286,6 +286,33 @@ function gerarRelatorioPDF() {
     var dataAval=document.getElementById('data').value||new Date().toLocaleDateString('pt-BR');
     var idPac=document.getElementById('idPaciente')?document.getElementById('idPaciente').value:'';
 
+    // Gerar grafico em canvas
+    var canvasG = document.createElement('canvas'); canvasG.width = 700; canvasG.height = 160;
+    var cx = canvasG.getContext('2d');
+    cx.fillStyle = '#fff'; cx.fillRect(0, 0, 700, 160);
+    cx.fillStyle = '#333'; cx.font = 'bold 12px Segoe UI'; cx.textAlign = 'left';
+    cx.fillText('Perfil SASC-R por Subscala (percentual do maximo)', 10, 15);
+    var nomesG = ['FNE - Medo Avaliacao Negativa', 'SAD-N - Desconforto Sit. Novas', 'SAD-G - Desconforto Social Geral'];
+    var valoresG = [fne, sadn, sadg];
+    var maxG = [40, 30, 20];
+    var bh = 26; var gap = 10; var startY = 30; var maxW = 280; var labelW = 280;
+    for (var gi = 0; gi < nomesG.length; gi++) {
+        var by = startY + gi * (bh + gap);
+        var pct = valoresG[gi] / maxG[gi];
+        var bw = pct * maxW;
+        var cor = pct < 0.4 ? '#4caf50' : pct < 0.6 ? '#8bc34a' : pct < 0.75 ? '#ff9800' : '#f44336';
+        cx.fillStyle = '#555'; cx.font = '11px Segoe UI'; cx.textAlign = 'right';
+        cx.fillText(nomesG[gi], labelW - 5, by + 17);
+        cx.fillStyle = cor; cx.fillRect(labelW, by, bw, bh);
+        cx.fillStyle = '#333'; cx.font = 'bold 11px Segoe UI'; cx.textAlign = 'left';
+        cx.fillText(valoresG[gi] + '/' + maxG[gi] + ' (' + Math.round(pct*100) + '%)', labelW + bw + 5, by + 17);
+    }
+    var ly = startY + nomesG.length*(bh+gap) + 8;
+    var cores = [['#4caf50','Normal (<40%)'],['#8bc34a','Medio (40-60%)'],['#ff9800','Elevado (60-75%)'],['#f44336','Muito elevado (>=75%)']];
+    cx.font = '10px Segoe UI'; cx.textAlign = 'left';
+    for (var li = 0; li < cores.length; li++) { cx.fillStyle = cores[li][0]; cx.fillRect(labelW + li*110, ly, 12, 12); cx.fillStyle = '#555'; cx.fillText(cores[li][1], labelW + li*110 + 15, ly + 10); }
+    var imgGrafico = canvasG.toDataURL('image/png');
+
     var jsPDF=window.jspdf.jsPDF; var doc=new jsPDF();
     doc.setFillColor(26,60,110); doc.rect(0,0,210,35,'F');
     doc.setTextColor(255,255,255); doc.setFontSize(14); doc.setFont(undefined,'bold');
@@ -301,13 +328,19 @@ function gerarRelatorioPDF() {
     doc.text('Nome: '+nome+'   |   Sexo: '+(sexo==='M'?'Masculino':'Feminino'), 20, y+12);
     doc.text('Idade: '+idade+'   |   Data: '+dataAval+(idPac?'   |   ID: '+idPac:''), 20, y+17);
 
+    // Grafico
     y=66;
+    doc.setTextColor(26,60,110); doc.setFontSize(10); doc.setFont(undefined,'bold');
+    doc.text('PERFIL GRAFICO DAS SUBSCALAS', 20, y); y += 3;
+    doc.addImage(imgGrafico, 'PNG', 15, y, 180, 42); y += 46;
+
+    // Resultados
     doc.setTextColor(26,60,110); doc.setFontSize(11); doc.setFont(undefined,'bold');
     doc.text('RESULTADOS', 20, y); y+=8;
     doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont(undefined,'normal');
-    doc.text('FNE (Medo Avaliacao Negativa): '+fne+' pts', 20, y); y+=6;
-    doc.text('SAD-N (Desconforto Situacoes Novas): '+sadn+' pts', 20, y); y+=6;
-    doc.text('SAD-G (Desconforto Social Geral): '+sadg+' pts', 20, y); y+=6;
+    doc.text('FNE (Medo Avaliacao Negativa): '+fne+' pts (z='+((fne-ref.fne.m)/ref.fne.dp).toFixed(2)+')', 20, y); y+=6;
+    doc.text('SAD-N (Desconforto Situacoes Novas): '+sadn+' pts (z='+((sadn-ref.sadn.m)/ref.sadn.dp).toFixed(2)+')', 20, y); y+=6;
+    doc.text('SAD-G (Desconforto Social Geral): '+sadg+' pts (z='+((sadg-ref.sadg.m)/ref.sadg.dp).toFixed(2)+')', 20, y); y+=6;
     doc.text('TOTAL: '+total+' pts | z = '+zTotal, 20, y); y+=10;
 
     doc.setFont(undefined,'bold');

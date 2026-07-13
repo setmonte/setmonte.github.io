@@ -276,6 +276,34 @@ function gerarRelatorioPDF() {
     var obs = document.getElementById('observacoes').value;
     var idPac = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
 
+    // Gerar grafico em canvas
+    var canvasG = document.createElement('canvas'); canvasG.width = 700; canvasG.height = 200;
+    var cx = canvasG.getContext('2d');
+    cx.fillStyle = '#fff'; cx.fillRect(0, 0, 700, 200);
+    cx.fillStyle = '#333'; cx.font = 'bold 12px Segoe UI'; cx.textAlign = 'left';
+    cx.fillText('Perfil SDQ por Subescala (pontuacao 0-10)', 10, 15);
+    var nomesG = ['Sintomas Emocionais (E)', 'Problemas de Conduta (C)', 'Hiperatividade (H)', 'Problemas com Colegas (P)', 'Comportamento Pro-social (S)'];
+    var valoresG = [subs.E, subs.C, subs.H, subs.P, subs.S];
+    var bh = 22; var gap = 6; var startY = 28; var maxW = 250; var labelW = 280;
+    for (var gi = 0; gi < nomesG.length; gi++) {
+        var by = startY + gi * (bh + gap);
+        var pct = valoresG[gi] / 10;
+        var bw = pct * maxW;
+        var cor;
+        if (gi === 4) { cor = valoresG[gi] >= 6 ? '#4caf50' : valoresG[gi] >= 4 ? '#ff9800' : '#f44336'; }
+        else { cor = valoresG[gi] <= 3 ? '#4caf50' : valoresG[gi] <= 5 ? '#ff9800' : '#f44336'; }
+        cx.fillStyle = '#555'; cx.font = '11px Segoe UI'; cx.textAlign = 'right';
+        cx.fillText(nomesG[gi], labelW - 5, by + 15);
+        cx.fillStyle = cor; cx.fillRect(labelW, by, bw, bh);
+        cx.fillStyle = '#333'; cx.font = 'bold 11px Segoe UI'; cx.textAlign = 'left';
+        cx.fillText(valoresG[gi] + '/10', labelW + bw + 5, by + 15);
+    }
+    var ly = startY + nomesG.length*(bh+gap) + 8;
+    var cores = [['#4caf50','Normal'],['#ff9800','Limiar'],['#f44336','Anormal']];
+    cx.font = '10px Segoe UI'; cx.textAlign = 'left';
+    for (var li = 0; li < cores.length; li++) { cx.fillStyle = cores[li][0]; cx.fillRect(labelW + li*100, ly, 12, 12); cx.fillStyle = '#555'; cx.fillText(cores[li][1], labelW + li*100 + 15, ly + 10); }
+    var imgGrafico = canvasG.toDataURL('image/png');
+
     var jsPDF = window.jspdf.jsPDF;
     var doc = new jsPDF();
 
@@ -304,7 +332,13 @@ function gerarRelatorioPDF() {
     doc.setTextColor(255,255,255); doc.setFontSize(12); doc.setFont(undefined,'bold');
     doc.text('Classificacao: ' + classif.texto + '  |  Total Dificuldades: ' + totalDif + '/40', 105, y+9, {align:'center'});
 
-    y = 96;
+    // Grafico
+    y = 94;
+    doc.setTextColor(0,105,92); doc.setFontSize(10); doc.setFont(undefined,'bold');
+    doc.text('PERFIL GRAFICO DAS SUBESCALAS', 20, y); y += 3;
+    doc.addImage(imgGrafico, 'PNG', 15, y, 180, 52); y += 56;
+
+    // Subescalas
     doc.setTextColor(0,0,0); doc.setFontSize(10); doc.setFont(undefined,'bold');
     doc.text('SUBESCALAS:', 20, y); y += 8;
     doc.setFont(undefined,'normal');

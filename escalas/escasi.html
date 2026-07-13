@@ -240,6 +240,36 @@ function gerarRelatorioPDF() {
     }
     var nivel = dados.classificacao;
 
+    // Gerar grafico em canvas
+    var nFisica=0,nCognitiva=0,nEmocional=0,nAmbiental=0;
+    for(var ci=0;ci<ITENS.length;ci++){if(ITENS[ci].cat==='fisica')nFisica++;else if(ITENS[ci].cat==='cognitiva')nCognitiva++;else if(ITENS[ci].cat==='emocional')nEmocional++;else nAmbiental++;}
+    var canvasG = document.createElement('canvas'); canvasG.width = 700; canvasG.height = 180;
+    var cx = canvasG.getContext('2d');
+    cx.fillStyle = '#fff'; cx.fillRect(0, 0, 700, 180);
+    cx.fillStyle = '#333'; cx.font = 'bold 12px Segoe UI'; cx.textAlign = 'left';
+    cx.fillText('Perfil por Dominio de Ansiedade', 10, 15);
+    var nomesG = ['Ansiedade Fisica', 'Ansiedade Cognitiva', 'Ansiedade Emocional', 'Ansiedade Ambiental'];
+    var valoresG = [scores.fisica, scores.cognitiva, scores.emocional, scores.ambiental];
+    var maxG = [nFisica*4, nCognitiva*4, nEmocional*4, nAmbiental*4];
+    var bh = 26; var gap = 8; var startY = 28; var maxW = 320; var labelW = 200;
+    for (var gi = 0; gi < nomesG.length; gi++) {
+        var by = startY + gi * (bh + gap);
+        var pct = valoresG[gi] / maxG[gi];
+        var bw = pct * maxW;
+        var cor = pct < 0.35 ? '#4caf50' : pct < 0.55 ? '#ffb300' : pct < 0.75 ? '#ff9800' : '#e53935';
+        cx.fillStyle = '#555'; cx.font = '11px Segoe UI'; cx.textAlign = 'right';
+        cx.fillText(nomesG[gi], labelW - 5, by + 17);
+        cx.fillStyle = cor; cx.fillRect(labelW, by, bw, bh);
+        cx.fillStyle = '#333'; cx.font = 'bold 11px Segoe UI'; cx.textAlign = 'left';
+        cx.fillText(valoresG[gi] + '/' + maxG[gi] + ' (' + Math.round(pct*100) + '%)', labelW + bw + 5, by + 17);
+    }
+    // Legenda
+    var ly = startY + nomesG.length*(bh+gap) + 8;
+    var cores = [['#4caf50','Minimo (<35%)'],['#ffb300','Leve (35-55%)'],['#ff9800','Moderado (55-75%)'],['#e53935','Grave (>=75%)']];
+    cx.font = '10px Segoe UI'; cx.textAlign = 'left';
+    for (var li = 0; li < cores.length; li++) { cx.fillStyle = cores[li][0]; cx.fillRect(labelW + li*130, ly, 12, 12); cx.fillStyle = '#555'; cx.fillText(cores[li][1], labelW + li*130 + 15, ly + 10); }
+    var imgGrafico = canvasG.toDataURL('image/png');
+
     var jsPDF = window.jspdf.jsPDF; var doc = new jsPDF();
     doc.setFillColor(106,27,154); doc.rect(0,0,210,35,'F');
     doc.setTextColor(255,255,255); doc.setFontSize(14); doc.setFont(undefined,'bold');
@@ -264,6 +294,11 @@ function gerarRelatorioPDF() {
     else if (scores.total > 45) corNivel = '#8bc34a';
     doc.setTextColor(106,27,154); doc.setFontSize(10); doc.setFont(undefined,'bold');
     doc.text('RESULTADO: ' + nivel + ' (Total: ' + scores.total + '/120)', 20, y); y += 10;
+
+    // --- GRAFICO ---
+    doc.setTextColor(106,27,154); doc.setFontSize(10); doc.setFont(undefined,'bold');
+    doc.text('PERFIL GRAFICO DOS DOMINIOS', 20, y); y += 3;
+    doc.addImage(imgGrafico, 'PNG', 15, y, 180, 48); y += 52;
 
     // --- DOMINIOS ---
     doc.setTextColor(106,27,154); doc.setFontSize(10); doc.setFont(undefined,'bold');

@@ -241,6 +241,41 @@ function gerarRelatorioPDF() {
     var obs = document.getElementById('observacoes').value;
     var idPac = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
 
+    // Gerar grafico em canvas (falhas por item)
+    var canvasG = document.createElement('canvas'); canvasG.width = 700; canvasG.height = 180;
+    var cx = canvasG.getContext('2d');
+    cx.fillStyle = '#fff'; cx.fillRect(0, 0, 700, 180);
+    cx.fillStyle = '#333'; cx.font = 'bold 12px Segoe UI'; cx.textAlign = 'left';
+    cx.fillText('Mapa de Itens M-CHAT-R (verde=OK, vermelho=FALHA)', 10, 15);
+    var cellW = 28; var cellH = 28; var cols = 10; var startX = 80; var startY = 35;
+    for (var gi = 0; gi < 20; gi++) {
+        var row = Math.floor(gi / cols); var col = gi % cols;
+        var cx1 = startX + col * (cellW + 4); var cy1 = startY + row * (cellH + 4);
+        cx.fillStyle = r[gi] === 1 ? '#f44336' : '#4caf50';
+        cx.fillRect(cx1, cy1, cellW, cellH);
+        cx.fillStyle = '#fff'; cx.font = 'bold 12px Segoe UI'; cx.textAlign = 'center';
+        cx.fillText((gi+1).toString(), cx1 + cellW/2, cy1 + 18);
+    }
+    var ly = startY + 2*(cellH+4) + 15;
+    cx.fillStyle = '#333'; cx.font = '11px Segoe UI'; cx.textAlign = 'left';
+    cx.fillText('Total de falhas: ' + escore + '/20 - ' + classif.texto, startX, ly);
+    // Barra resumo
+    ly += 15;
+    var barW = 300; var pctFalha = escore/20;
+    cx.fillStyle = '#e0e0e0'; cx.fillRect(startX, ly, barW, 18);
+    cx.fillStyle = escore <= 2 ? '#4caf50' : escore <= 7 ? '#ff9800' : '#f44336';
+    cx.fillRect(startX, ly, pctFalha*barW, 18);
+    cx.fillStyle = '#333'; cx.font = 'bold 11px Segoe UI'; cx.textAlign = 'left';
+    cx.fillText(Math.round(pctFalha*100) + '%', startX + pctFalha*barW + 5, ly + 13);
+    // Marcas de corte
+    var c3 = startX + (3/20)*barW; var c8 = startX + (8/20)*barW;
+    cx.strokeStyle = '#333'; cx.setLineDash([3,2]); cx.lineWidth = 1;
+    cx.beginPath(); cx.moveTo(c3, ly-3); cx.lineTo(c3, ly+21); cx.stroke();
+    cx.beginPath(); cx.moveTo(c8, ly-3); cx.lineTo(c8, ly+21); cx.stroke(); cx.setLineDash([]);
+    cx.font = '8px Segoe UI'; cx.textAlign = 'center';
+    cx.fillText('3', c3, ly+28); cx.fillText('8', c8, ly+28);
+    var imgGrafico = canvasG.toDataURL('image/png');
+
     var jsPDF = window.jspdf.jsPDF;
     var doc = new jsPDF();
 
@@ -271,8 +306,13 @@ function gerarRelatorioPDF() {
     doc.setTextColor(255,255,255); doc.setFontSize(12); doc.setFont(undefined,'bold');
     doc.text('Classifica\u00e7\u00e3o: ' + classif.texto + '  |  Falhas: ' + escore + '/20', 105, y+9, {align:'center'});
 
+    // Grafico
+    y = 88;
+    doc.setTextColor(198,40,40); doc.setFontSize(10); doc.setFont(undefined,'bold');
+    doc.text('MAPA VISUAL DOS ITENS', 20, y); y += 3;
+    doc.addImage(imgGrafico, 'PNG', 15, y, 180, 48); y += 52;
+
     // Pontuacao por item
-    y = 90;
     doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont(undefined,'bold');
     doc.text('RESULTADO POR ITEM:', 20, y); y += 7;
     doc.setFont(undefined,'normal');

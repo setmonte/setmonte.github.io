@@ -245,29 +245,63 @@ function calcularResultados() {
 
 function gerarRelatorioPDF() {
     if (!window._escalaDados) { calcularResultados(); if (!window._escalaDados) return; }
+    var dados = window._escalaDados;
+    var domMax = {S:120, M:48, R:45, L:27};
+    var domNomes = {S:'Relacao Social', M:'Sensorial/Motor', R:'Interesses Restritos', L:'Linguagem'};
+    var domKeys = ['S','M','R','L'];
+    // Gerar grafico em canvas
+    var canvasG = document.createElement('canvas'); canvasG.width = 700; canvasG.height = 180;
+    var cx = canvasG.getContext('2d');
+    cx.fillStyle = '#fff'; cx.fillRect(0, 0, 700, 180);
+    cx.fillStyle = '#333'; cx.font = 'bold 12px Segoe UI'; cx.textAlign = 'left';
+    cx.fillText('Perfil por Dominio RAADS-R (percentual do maximo)', 10, 15);
+    var bh = 26; var gap = 8; var startY = 30; var maxW = 320; var labelW = 200;
+    for (var gi = 0; gi < domKeys.length; gi++) {
+        var k = domKeys[gi];
+        var by = startY + gi * (bh + gap);
+        var pct = dados.dominios[k] / domMax[k];
+        var bw = pct * maxW;
+        var cor = pct < 0.3 ? '#4caf50' : pct < 0.5 ? '#8bc34a' : pct < 0.7 ? '#ff9800' : '#f44336';
+        cx.fillStyle = '#555'; cx.font = '11px Segoe UI'; cx.textAlign = 'right';
+        cx.fillText(domNomes[k], labelW - 5, by + 17);
+        cx.fillStyle = cor; cx.fillRect(labelW, by, bw, bh);
+        cx.fillStyle = '#333'; cx.font = 'bold 11px Segoe UI'; cx.textAlign = 'left';
+        cx.fillText(dados.dominios[k] + '/' + domMax[k] + ' (' + Math.round(pct*100) + '%)', labelW + bw + 5, by + 17);
+    }
+    // Linha corte (65/240 total ~27%)
+    var limX = labelW + 0.27*maxW; cx.strokeStyle = '#c62828'; cx.setLineDash([4,3]); cx.lineWidth = 1.5;
+    cx.beginPath(); cx.moveTo(limX, startY - 5); cx.lineTo(limX, startY + domKeys.length*(bh+gap)); cx.stroke(); cx.setLineDash([]);
+    cx.fillStyle = '#c62828'; cx.font = '9px Segoe UI'; cx.textAlign = 'center'; cx.fillText('Corte (~27%)', limX, startY - 8);
+    var ly = startY + domKeys.length*(bh+gap) + 8;
+    var cores = [['#4caf50','Baixo (<30%)'],['#8bc34a','Moderado (30-50%)'],['#ff9800','Elevado (50-70%)'],['#f44336','Muito elevado (>=70%)']];
+    cx.font = '10px Segoe UI'; cx.textAlign = 'left';
+    for (var li = 0; li < cores.length; li++) { cx.fillStyle = cores[li][0]; cx.fillRect(labelW + li*130, ly, 12, 12); cx.fillStyle = '#555'; cx.fillText(cores[li][1], labelW + li*130 + 15, ly + 10); }
+    var imgGrafico = canvasG.toDataURL('image/png');
+
     var jsPDF = window.jspdf.jsPDF; var doc = new jsPDF();
     doc.setFillColor(26,35,126); doc.rect(0,0,210,30,'F');
     doc.setTextColor(255,255,255); doc.setFontSize(16); doc.setFont(undefined,'bold');
     doc.text('RAADS-R - RELATORIO', 105, 15, {align:'center'});
     doc.setFontSize(10); doc.text('Ritvo Autism Asperger Diagnostic Scale - Revised', 105, 23, {align:'center'});
     doc.setTextColor(0,0,0); doc.setFont(undefined,'normal'); doc.setFontSize(10);
-    var y = 40;
+    var y = 38;
     doc.text('Nome: ' + document.getElementById('nome').value, 20, y);
     var idEl = document.getElementById('idPaciente');
     if (idEl && idEl.value) doc.text('ID: ' + idEl.value, 140, y);
     y += 6; doc.text('Idade: ' + (document.getElementById('idadeCalculada').value || ''), 20, y);
     doc.text('Sexo: ' + (document.getElementById('sexo').value || ''), 120, y);
-    y += 12;
-    var dados = window._escalaDados;
+    y += 10;
     doc.setFillColor(232,234,246); doc.rect(15,y-4,180,15,'F');
     doc.setFont(undefined,'bold'); doc.setFontSize(14);
     doc.text('TOTAL: ' + dados.escore + ' pontos - ' + dados.classificacao, 105, y+6, {align:'center'});
-    y += 22;
+    y += 18;
+    // Grafico
+    doc.setTextColor(26,35,126); doc.setFontSize(10); doc.setFont(undefined,'bold');
+    doc.text('PERFIL GRAFICO DOS DOMINIOS', 20, y); y += 3;
+    doc.addImage(imgGrafico, 'PNG', 15, y, 180, 48); y += 52;
+    // Dominios texto
     doc.setFontSize(11); doc.text('DOMINIOS:', 20, y); y += 8;
-    doc.setFont(undefined,'normal'); doc.setFontSize(10);
-    var domMax = {S:120, M:48, R:45, L:27};
-    var domNomes = {S:'Relacao Social', M:'Sensorial/Motor', R:'Interesses Restritos', L:'Linguagem'};
-    var domKeys = ['S','M','R','L'];
+    doc.setFont(undefined,'normal'); doc.setFontSize(10); doc.setTextColor(0,0,0);
     for (var d = 0; d < domKeys.length; d++) {
         var k = domKeys[d];
         doc.text(domNomes[k] + ': ' + dados.dominios[k] + '/' + domMax[k], 25, y); y += 6;
@@ -275,10 +309,11 @@ function gerarRelatorioPDF() {
     y += 5;
     doc.setFontSize(9); doc.text('Ponto de corte: >= 65 (Sensibilidade: 97%, Especificidade: 100%)', 20, y); y += 5;
     doc.text('Referencia: Ritvo et al. (2011). J Autism Dev Disord, 41(8), 1076-1085.', 20, y);
-    doc.setTextColor(150,150,150); doc.setFontSize(8); doc.setFont(undefined,'italic');
-    doc.text('Documento gerado em ' + new Date().toLocaleString(), 105, 285, {align:'center'});
+    doc.setFillColor(80,80,80); doc.rect(0,285,210,12,'F');
+    doc.setTextColor(200,200,200); doc.setFontSize(7);
+    doc.text('Relatorio gerado em: ' + new Date().toLocaleString('pt-BR'), 105, 291, {align:'center'});
     var ts = new Date();
-    doc.save('RAADS_' + (document.getElementById('nome').value||'Paciente') + '_' + ts.getFullYear() + String(ts.getMonth()+1).padStart(2,'0') + String(ts.getDate()).padStart(2,'0') + '.pdf');
+    doc.save('RAADS_' + (document.getElementById('nome').value||'Paciente').replace(/\s+/g,'_') + '_' + ts.getFullYear() + String(ts.getMonth()+1).padStart(2,'0') + String(ts.getDate()).padStart(2,'0') + '.pdf');
 }
 
 function limparDados() {

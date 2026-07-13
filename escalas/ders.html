@@ -298,6 +298,32 @@ function gerarRelatorioPDF() {
         dominiosResultados[domNome] = soma;
     }
 
+    // Gerar grafico em canvas
+    var canvasG = document.createElement('canvas'); canvasG.width = 700; canvasG.height = 240;
+    var cx = canvasG.getContext('2d');
+    cx.fillStyle = '#fff'; cx.fillRect(0, 0, 700, 240);
+    cx.fillStyle = '#333'; cx.font = 'bold 12px Segoe UI'; cx.textAlign = 'left';
+    cx.fillText('Perfil das Subescalas DERS (percentual do maximo)', 10, 15);
+    var bh = 22; var gap = 6; var startY = 28; var maxW = 320; var labelW = 200;
+    for (var gi = 0; gi < chaves.length; gi++) {
+        var domNome = chaves[gi]; var nItens = DOMINIOS[domNome].length;
+        var maxDom = nItens * 5; var pct = dominiosResultados[domNome] / maxDom;
+        var by = startY + gi * (bh + gap);
+        var bw = pct * maxW;
+        var cor = pct < 0.44 ? '#4caf50' : pct < 0.56 ? '#ffb300' : pct < 0.72 ? '#ff9800' : '#e53935';
+        cx.fillStyle = '#555'; cx.font = '11px Segoe UI'; cx.textAlign = 'right';
+        cx.fillText(domNome, labelW - 5, by + 15);
+        cx.fillStyle = cor; cx.fillRect(labelW, by, bw, bh);
+        cx.fillStyle = '#333'; cx.font = 'bold 11px Segoe UI'; cx.textAlign = 'left';
+        cx.fillText(dominiosResultados[domNome] + '/' + maxDom + ' (' + Math.round(pct*100) + '%)', labelW + bw + 5, by + 15);
+    }
+    // Legenda
+    var ly = startY + chaves.length*(bh+gap) + 8;
+    var cores = [['#4caf50','Baixo (<44%)'],['#ffb300','Moderado (44-56%)'],['#ff9800','Elevado (56-72%)'],['#e53935','Muito elevado (>=72%)']];
+    cx.font = '10px Segoe UI'; cx.textAlign = 'left';
+    for (var li = 0; li < cores.length; li++) { cx.fillStyle = cores[li][0]; cx.fillRect(labelW + li*135, ly, 12, 12); cx.fillStyle = '#555'; cx.fillText(cores[li][1], labelW + li*135 + 15, ly + 10); }
+    var imgGrafico = canvasG.toDataURL('image/png');
+
     var jsPDF = window.jspdf.jsPDF;
     var doc = new jsPDF();
 
@@ -329,8 +355,13 @@ function gerarRelatorioPDF() {
     doc.setTextColor(255,255,255); doc.setFontSize(12); doc.setFont(undefined,'bold');
     doc.text('Classifica\u00e7\u00e3o: ' + classif.texto + '  |  Escore: ' + escore + '/180', 105, y+9, {align:'center'});
 
+    // Grafico
+    y = 88;
+    doc.setTextColor(173,20,87); doc.setFontSize(10); doc.setFont(undefined,'bold');
+    doc.text('PERFIL GRAFICO DAS SUBESCALAS', 20, y); y += 3;
+    doc.addImage(imgGrafico, 'PNG', 15, y, 180, 60); y += 64;
+
     // Dominios
-    y = 90;
     doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont(undefined,'bold');
     doc.text('PONTUA\u00c7\u00c3O POR SUBESCALA:', 20, y); y += 7;
     doc.setFont(undefined,'normal');

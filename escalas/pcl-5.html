@@ -280,6 +280,37 @@ function gerarRelatorioPDF() {
         clusterScores[key] = soma;
     }
 
+    // Gerar grafico em canvas (clusters)
+    var clusterNomes = ['B - Intrusao', 'C - Evitacao', 'D - Cognicao/Humor', 'E - Reatividade'];
+    var clusterMax = [20, 8, 28, 24];
+    var clusterVals = [clusterScores['B - Intrus\u00e3o'], clusterScores['C - Evita\u00e7\u00e3o'], clusterScores['D - Cogni\u00e7\u00e3o/Humor negativo'], clusterScores['E - Reatividade']];
+    var canvasG = document.createElement('canvas'); canvasG.width = 700; canvasG.height = 180;
+    var cx = canvasG.getContext('2d');
+    cx.fillStyle = '#fff'; cx.fillRect(0, 0, 700, 180);
+    cx.fillStyle = '#333'; cx.font = 'bold 12px Segoe UI'; cx.textAlign = 'left';
+    cx.fillText('Perfil por Cluster TEPT (percentual do maximo)', 10, 15);
+    var bh = 26; var gap = 8; var startY = 30; var maxW = 320; var labelW = 220;
+    for (var gi = 0; gi < clusterNomes.length; gi++) {
+        var by = startY + gi * (bh + gap);
+        var pct = clusterVals[gi] / clusterMax[gi];
+        var bw = pct * maxW;
+        var cor = pct < 0.3 ? '#4caf50' : pct < 0.5 ? '#8bc34a' : pct < 0.7 ? '#ff9800' : '#f44336';
+        cx.fillStyle = '#555'; cx.font = '11px Segoe UI'; cx.textAlign = 'right';
+        cx.fillText(clusterNomes[gi], labelW - 5, by + 17);
+        cx.fillStyle = cor; cx.fillRect(labelW, by, bw, bh);
+        cx.fillStyle = '#333'; cx.font = 'bold 11px Segoe UI'; cx.textAlign = 'left';
+        cx.fillText(clusterVals[gi] + '/' + clusterMax[gi] + ' (' + Math.round(pct*100) + '%)', labelW + bw + 5, by + 17);
+    }
+    // Linha corte proporcional
+    var limX = labelW + (33/80)*maxW; cx.strokeStyle = '#c62828'; cx.setLineDash([4,3]); cx.lineWidth = 1.5;
+    cx.beginPath(); cx.moveTo(limX, startY - 5); cx.lineTo(limX, startY + clusterNomes.length*(bh+gap)); cx.stroke(); cx.setLineDash([]);
+    cx.fillStyle = '#c62828'; cx.font = '9px Segoe UI'; cx.textAlign = 'center'; cx.fillText('Corte (41%)', limX, startY - 8);
+    var ly = startY + clusterNomes.length*(bh+gap) + 8;
+    var cores = [['#4caf50','Baixo (<30%)'],['#8bc34a','Leve (30-50%)'],['#ff9800','Moderado (50-70%)'],['#f44336','Grave (>=70%)']];
+    cx.font = '10px Segoe UI'; cx.textAlign = 'left';
+    for (var li = 0; li < cores.length; li++) { cx.fillStyle = cores[li][0]; cx.fillRect(labelW + li*125, ly, 12, 12); cx.fillStyle = '#555'; cx.fillText(cores[li][1], labelW + li*125 + 15, ly + 10); }
+    var imgGrafico = canvasG.toDataURL('image/png');
+
     var jsPDF = window.jspdf.jsPDF;
     var doc = new jsPDF();
 
@@ -308,8 +339,13 @@ function gerarRelatorioPDF() {
     doc.setTextColor(255,255,255); doc.setFontSize(12); doc.setFont(undefined,'bold');
     doc.text(classifTexto + '  |  Escore: ' + escore + '/80', 105, y+9, {align:'center'});
 
+    // Grafico
+    y = 88;
+    doc.setTextColor(55,71,79); doc.setFontSize(10); doc.setFont(undefined,'bold');
+    doc.text('PERFIL GRAFICO DOS CLUSTERS', 20, y); y += 3;
+    doc.addImage(imgGrafico, 'PNG', 15, y, 180, 48); y += 52;
+
     // Clusters
-    y = 90;
     doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont(undefined,'bold');
     doc.text('ESCORES POR CLUSTER:', 20, y); y += 7;
     doc.setFont(undefined,'normal');

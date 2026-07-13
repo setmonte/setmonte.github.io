@@ -230,6 +230,32 @@ function gerarRelatorioPDF() {
     var dataAval = document.getElementById('data').value || new Date().toLocaleDateString('pt-BR');
     var idPac = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
     var jsPDF = window.jspdf.jsPDF; var doc = new jsPDF();
+    // Gerar grafico em canvas
+    var canvasG = document.createElement('canvas'); canvasG.width = 700; canvasG.height = 150;
+    var cx = canvasG.getContext('2d');
+    cx.fillStyle = '#fff'; cx.fillRect(0, 0, 700, 150);
+    cx.fillStyle = '#333'; cx.font = 'bold 12px Segoe UI'; cx.textAlign = 'left';
+    cx.fillText('Perfil TDI - Percentual de Dificuldades por Dominio', 10, 15);
+    var nomesG = ['Conceitual', 'Social', 'Pratico'];
+    var valoresG = [parseInt(dados.dominios.Conceitual.pct), parseInt(dados.dominios.Social.pct), parseInt(dados.dominios.Pratico.pct)];
+    var bh = 28; var gap = 10; var startY = 30; var maxW = 300; var labelW = 180;
+    for (var gi = 0; gi < nomesG.length; gi++) {
+        var by = startY + gi * (bh + gap);
+        var pct = valoresG[gi] / 100;
+        var bw = pct * maxW;
+        var cor = valoresG[gi] <= 20 ? '#4caf50' : valoresG[gi] <= 40 ? '#8bc34a' : valoresG[gi] <= 60 ? '#ff9800' : '#f44336';
+        cx.fillStyle = '#555'; cx.font = '12px Segoe UI'; cx.textAlign = 'right';
+        cx.fillText(nomesG[gi], labelW - 5, by + 18);
+        cx.fillStyle = cor; cx.fillRect(labelW, by, bw, bh);
+        cx.fillStyle = '#333'; cx.font = 'bold 12px Segoe UI'; cx.textAlign = 'left';
+        cx.fillText(valoresG[gi] + '%', labelW + bw + 5, by + 18);
+    }
+    var ly = startY + nomesG.length*(bh+gap) + 5;
+    var cores = [['#4caf50','Adequado (0-20%)'],['#8bc34a','Leve (21-40%)'],['#ff9800','Moderado (41-60%)'],['#f44336','Significativo (>60%)']];
+    cx.font = '10px Segoe UI'; cx.textAlign = 'left';
+    for (var li = 0; li < cores.length; li++) { cx.fillStyle = cores[li][0]; cx.fillRect(labelW + li*135, ly, 12, 12); cx.fillStyle = '#555'; cx.fillText(cores[li][1], labelW + li*135 + 15, ly + 10); }
+    var imgGrafico = canvasG.toDataURL('image/png');
+
     doc.setFillColor(55,71,79); doc.rect(0,0,210,35,'F');
     doc.setTextColor(255,255,255); doc.setFontSize(14); doc.setFont(undefined,'bold');
     doc.text('TDI - RELATORIO', 105, 15, {align:'center'});
@@ -245,7 +271,12 @@ function gerarRelatorioPDF() {
     y = 66;
     doc.setFontSize(11); doc.setFont(undefined,'bold');
     doc.text('Classificacao: '+dados.classificacao, 20, y); y += 10;
-    doc.setFontSize(9); doc.setFont(undefined,'normal');
+    // Grafico
+    doc.setTextColor(55,71,79); doc.setFontSize(10); doc.setFont(undefined,'bold');
+    doc.text('PERFIL GRAFICO DOS DOMINIOS', 20, y); y += 3;
+    doc.addImage(imgGrafico, 'PNG', 15, y, 180, 42); y += 46;
+    // Dominios texto
+    doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont(undefined,'normal');
     doc.text('Conceitual: '+dados.dominios.Conceitual.dificuldades+'/'+dados.dominios.Conceitual.total+' ('+dados.dominios.Conceitual.pct+'%)', 20, y); y += 6;
     doc.text('Social: '+dados.dominios.Social.dificuldades+'/'+dados.dominios.Social.total+' ('+dados.dominios.Social.pct+'%)', 20, y); y += 6;
     doc.text('Pratico: '+dados.dominios.Pratico.dificuldades+'/'+dados.dominios.Pratico.total+' ('+dados.dominios.Pratico.pct+'%)', 20, y); y += 12;

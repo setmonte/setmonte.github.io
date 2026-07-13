@@ -239,6 +239,38 @@ function gerarRelatorioPDF() {
     var total = somaC + somaM + somaA;
     var positivo = total >= 124;
 
+    // Gerar grafico em canvas
+    var mediaC = somaC/nC, mediaM = somaM/nM, mediaA = somaA/nA;
+    var canvasG = document.createElement('canvas'); canvasG.width = 700; canvasG.height = 160;
+    var cx = canvasG.getContext('2d');
+    cx.fillStyle = '#fff'; cx.fillRect(0, 0, 700, 160);
+    cx.fillStyle = '#333'; cx.font = 'bold 12px Segoe UI'; cx.textAlign = 'left';
+    cx.fillText('Perfil por Subscala (media, escala 1-7)', 10, 15);
+    var nomes = ['Compensacao (C)', 'Mascaramento (M)', 'Assimilacao (A)'];
+    var valores = [mediaC, mediaM, mediaA];
+    var bh = 28; var gap = 8; var startY = 30; var maxW = 350; var labelW = 180;
+    for (var gi = 0; gi < nomes.length; gi++) {
+        var by = startY + gi * (bh + gap);
+        var pct = valores[gi] / 7;
+        var bw = pct * maxW;
+        var cor = valores[gi] < 3 ? '#4caf50' : valores[gi] < 4.5 ? '#ffb300' : valores[gi] < 5.5 ? '#ff9800' : '#e53935';
+        cx.fillStyle = '#555'; cx.font = '11px Segoe UI'; cx.textAlign = 'right';
+        cx.fillText(nomes[gi], labelW - 5, by + 18);
+        cx.fillStyle = cor; cx.fillRect(labelW, by, bw, bh);
+        cx.fillStyle = '#333'; cx.font = 'bold 11px Segoe UI'; cx.textAlign = 'left';
+        cx.fillText(valores[gi].toFixed(1), labelW + bw + 5, by + 18);
+    }
+    // Linha corte (media 4.96 = 124/25)
+    var limX = labelW + (4.96/7)*maxW; cx.strokeStyle = '#c62828'; cx.setLineDash([4,3]); cx.lineWidth = 1.5;
+    cx.beginPath(); cx.moveTo(limX, startY - 5); cx.lineTo(limX, startY + nomes.length*(bh+gap)); cx.stroke(); cx.setLineDash([]);
+    cx.fillStyle = '#c62828'; cx.font = '9px Segoe UI'; cx.textAlign = 'center'; cx.fillText('Corte (4.96)', limX, startY - 8);
+    // Legenda
+    var ly = startY + nomes.length*(bh+gap) + 8;
+    var cores = [['#4caf50','Baixo (<3)'],['#ffb300','Moderado (3-4.5)'],['#ff9800','Elevado (4.5-5.5)'],['#e53935','Muito elevado (>=5.5)']];
+    cx.font = '10px Segoe UI'; cx.textAlign = 'left';
+    for (var li = 0; li < cores.length; li++) { cx.fillStyle = cores[li][0]; cx.fillRect(labelW + li*135, ly, 12, 12); cx.fillStyle = '#555'; cx.fillText(cores[li][1], labelW + li*135 + 15, ly + 10); }
+    var imgGrafico = canvasG.toDataURL('image/png');
+
     var jsPDF = window.jspdf.jsPDF; var doc = new jsPDF();
     doc.setFillColor(74,20,140); doc.rect(0,0,210,35,'F');
     doc.setTextColor(255,255,255); doc.setFontSize(14); doc.setFont(undefined,'bold');
@@ -263,8 +295,13 @@ function gerarRelatorioPDF() {
     doc.setFontSize(10); doc.setFont(undefined,'bold');
     doc.text((positivo ? 'CAMUFLAGEM SIGNIFICATIVA' : 'CAMUFLAGEM NAO SIGNIFICATIVA') + ' - Total: ' + total + '/175 (corte: 124)', 105, y+7, {align:'center'});
 
+    // --- GRAFICO ---
+    y = 82;
+    doc.setTextColor(74,20,140); doc.setFontSize(10); doc.setFont(undefined,'bold');
+    doc.text('PERFIL GRAFICO DAS SUBSCALAS', 20, y); y += 3;
+    doc.addImage(imgGrafico, 'PNG', 15, y, 180, 42); y += 46;
+
     // --- DOMINIOS ---
-    y = 84;
     doc.setTextColor(74,20,140); doc.setFontSize(10); doc.setFont(undefined,'bold');
     doc.text('DOMINIOS', 20, y); y += 7;
     doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont(undefined,'normal');
