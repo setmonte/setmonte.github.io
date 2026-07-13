@@ -688,10 +688,12 @@
               <label>Data Nasc: <input type="date" id="pacDN"></label>
               <label>CPF (opcional): <input type="text" id="pacCPF" placeholder="XXX.XXX.XXX-XX" maxlength="14" oninput="maskCPF(this)"></label>
               <label>Sexo: <select id="pacSexo" style="width:120px;"><option value="">--</option><option value="Masculino">Masculino</option><option value="Feminino">Feminino</option></select></label>
+              <label>Escolaridade: <select id="pacEscolaridade" style="width:160px;"><option value="">--</option><option value="1o ano">1o ano</option><option value="2o ano">2o ano</option><option value="3o ano">3o ano</option><option value="4o ano">4o ano</option><option value="5o ano">5o ano</option><option value="6o ano">6o ano</option><option value="7o ano">7o ano</option><option value="8o ano">8o ano</option><option value="9o ano">9o ano</option><option value="Ensino Medio">Ensino Medio</option><option value="Superior Incompleto">Superior Incompleto</option><option value="Superior Completo">Superior Completo</option><option value="Pos-graduacao">Pos-graduacao</option></select></label>
+              <label>Lateralidade: <select id="pacLateralidade" style="width:120px;"><option value="">--</option><option value="Destro">Destro</option><option value="Canhoto">Canhoto</option><option value="Ambidestro">Ambidestro</option></select></label>
             </div>
             <div class="form-row" style="margin-top:8px;">
               <label>Email (opcional): <input type="email" id="pacEmail" placeholder="paciente@email.com" style="width:220px;"></label>
-              <label>WhatsApp (opcional): <input type="tel" id="pacWhats" placeholder="67 9 9999-9999" style="width:160px;"></label>
+              <label>WhatsApp (opcional): <input type="tel" id="pacWhats" placeholder="(XX) XXXXX-XXXX" style="width:160px;"></label>
             </div>
             <button class="btn btn-green" style="margin-top:10px;padding:8px 20px;font-size:13px;" onclick="cadastrarPaciente()">+ Cadastrar Paciente</button>
           </div>
@@ -2941,12 +2943,14 @@
       var nome = document.getElementById('pacNome').value.trim();
       var dn = document.getElementById('pacDN').value;
       var sexo = document.getElementById('pacSexo').value;
+      var escolaridade = document.getElementById('pacEscolaridade').value;
+      var lateralidade = document.getElementById('pacLateralidade').value;
       if (!nome || !dn) { alert('Preencha pelo menos o nome e a data de nascimento.'); return; }
       try {
         var resp = await fetch(API_URL + '/save-paciente', {
           method: 'POST',
           headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({ email: currentUser, nome: nome, dataNascimento: dn, cpf: document.getElementById('pacCPF').value, sexo: sexo, pacienteEmail: document.getElementById('pacEmail').value.trim(), whatsapp: document.getElementById('pacWhats').value.trim() })
+          body: JSON.stringify({ email: currentUser, nome: nome, dataNascimento: dn, cpf: document.getElementById('pacCPF').value, sexo: sexo, escolaridade: escolaridade, lateralidade: lateralidade, pacienteEmail: document.getElementById('pacEmail').value.trim(), whatsapp: document.getElementById('pacWhats').value.trim() })
         });
         var r = await resp.json();
         if (r.ok) {
@@ -2954,10 +2958,11 @@
           document.getElementById('pacDN').value = '';
           document.getElementById('pacCPF').value = '';
           document.getElementById('pacSexo').value = '';
+          document.getElementById('pacEscolaridade').value = '';
+          document.getElementById('pacLateralidade').value = '';
           document.getElementById('pacEmail').value = '';
           document.getElementById('pacWhats').value = '';
           await loadPacientes();
-          // Vinculacao retroativa: buscar resultados anteriores com nome parecido
           await vincularHistoricoRetroativo(nome, dn);
         } else { alert('Erro: ' + (r.error || 'tente novamente')); }
       } catch(e) { alert('Erro de conexao: ' + e.message); }
@@ -3457,7 +3462,7 @@
         var val = sel.value;
         sel.innerHTML = '<option value="">-- Digitar manualmente --</option>';
         _pacientesCache.forEach(function(p) {
-          sel.innerHTML += '<option value="' + p.id + '" data-nome="' + p.nome + '" data-dn="' + (p.dataNascimento||'') + '" data-cpf="' + (p.cpf||'') + '" data-sexo="' + (p.sexo||'') + '">' + p.nome + ' (' + (p.dataNascimento||'?') + ')</option>';
+          sel.innerHTML += '<option value="' + p.id + '" data-nome="' + p.nome + '" data-dn="' + (p.dataNascimento||'') + '" data-cpf="' + (p.cpf||'') + '" data-sexo="' + (p.sexo||'') + '" data-esc="' + (p.escolaridade||'') + '" data-lat="' + (p.lateralidade||'') + '">' + p.nome + ' (' + (p.dataNascimento||'?') + ')</option>';
         });
         sel.value = val;
       });
@@ -3499,6 +3504,15 @@
       else if (tipo === 'pfister') campoSexo = document.getElementById('pfisterSexo');
       else if (tipo === 'neo') campoSexo = document.getElementById('neoSexo');
       if (campoSexo && opt.dataset.sexo) campoSexo.value = opt.dataset.sexo;
+      // Preencher escolaridade se disponivel
+      var campoEsc = null;
+      if (tipo === 'corsi') campoEsc = document.getElementById('corsiEscolaridade');
+      else if (tipo === 'tte') campoEsc = document.getElementById('tteEscolaridade');
+      else if (tipo === 'trmv') campoEsc = document.getElementById('trmvEscolaridade');
+      else if (tipo === 'taav') campoEsc = document.getElementById('taavEscolaridade');
+      else if (tipo === 'tref') campoEsc = document.getElementById('trefEscolaridade');
+      else if (tipo === 'bae') campoEsc = document.getElementById('baeEscolaridade');
+      if (campoEsc && opt.dataset.esc) campoEsc.value = opt.dataset.esc;
     }
 
     // === REOCUPA - Funcoes do painel ===
