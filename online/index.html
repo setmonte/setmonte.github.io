@@ -2625,6 +2625,7 @@
     var _agendaCache = [];
     var _agendaMesCal = new Date();
     var _agendaDiaSel = new Date();
+    var _agendaEditandoId = null;
     var _agendaDuracoes = { 'Avaliacao neuropsicologica': 90, 'Retorno': 45, 'Devolutiva': 60, 'Sessao de reabilitacao': 60, 'Consulta inicial': 60, 'Outro': 60 };
 
     function agendaAplicarDuracao() {
@@ -2633,12 +2634,17 @@
     }
 
     function abrirNovaConsulta() {
+      _agendaEditandoId = null;
       var sec = document.getElementById('novaConsultaSection');
       sec.classList.toggle('hidden');
       if (!sec.classList.contains('hidden')) {
         document.getElementById('agendaData').value = _agendaDiaSel.toISOString().split('T')[0];
         popularDropdownsPacientes();
       }
+      var titulo = sec.querySelector('p');
+      if (titulo) titulo.innerHTML = '&#128221; Nova Consulta';
+      var btnSalvar = sec.querySelector('.btn-green');
+      if (btnSalvar) btnSalvar.textContent = 'Agendar';
     }
 
     async function loadAgendaConsultas() {
@@ -2721,6 +2727,7 @@
         if (status === 'agendado' || status === 'confirmado') {
           html += '<button class="btn btn-green" style="padding:3px 8px;font-size:11px;" onclick="iniciarConsultaAgenda(\'' + c.sessionId + '\')">&#9654; Iniciar</button>';
           html += '<button class="btn btn-blue" style="padding:3px 8px;font-size:11px;" onclick="confirmarConsultaAgenda(\'' + c.sessionId + '\')">&#10003;</button>';
+          html += '<button class="btn btn-orange" style="padding:3px 8px;font-size:11px;" onclick="editarConsultaAgenda(\'' + c.sessionId + '\')">&#9998;</button>';
           html += '<button class="btn btn-red" style="padding:3px 8px;font-size:11px;" onclick="cancelarConsultaAgenda(\'' + c.sessionId + '\')">&#10007;</button>';
         }
         if (fd.whatsapp) {
@@ -2744,7 +2751,7 @@
       var recorrenciaQtd = document.getElementById('agendaRecorrenciaQtd') ? parseInt(document.getElementById('agendaRecorrenciaQtd').value) || 1 : 1;
       if (!nome || !data || !hora) { alert('Preencha nome, data e hora.'); return; }
       // Validacao de conflito de horario
-      var conflito = verificarConflitoHorario(data, hora, duracao, null);
+      var conflito = verificarConflitoHorario(data, hora, duracao, _agendaEditandoId);
       if (conflito) { alert('Conflito de horario! Ja existe uma consulta nesse periodo:\n\n' + conflito.nome + ' - ' + conflito.hora + ' (' + conflito.duracao + ' min)\n\nEscolha outro horario.'); return; }
       // Buscar dados do paciente selecionado
       var pacInfo = _pacientesCache.filter(function(p) { return p.id === pacId; })[0];
@@ -2763,53 +2770,82 @@
       }
       // Verificar conflito em todas as datas recorrentes
       for (var ci = 1; ci < datas.length; ci++) {
-        var conflitoRec = verificarConflitoHorario(datas[ci], hora, duracao, null);
+        var conflitoRec = verificarConflitoHorario(datas[ci], hora, duracao, _agendaEditandoId);
         if (conflitoRec) { alert('Conflito na data ' + datas[ci] + ':\n' + conflitoRec.nome + ' - ' + conflitoRec.hora + ' (' + conflitoRec.duracao + ' min)\n\nAjuste a recorrencia.'); return; }
       }
       // Salvar todas as consultas (original + recorrentes)
       try {
-        for (var di = 0; di < datas.length; di++) {
-          var sessionId = 'agenda-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-          var dadosConsulta = {
-            email: currentUser,
-            tipo: 'agenda',
-            sessionId: sessionId,
-            data: {
-              status: 'agendado',
-              formData: {
-                nome: nome,
-                dataConsulta: datas[di],
-                horaConsulta: hora,
-                tipoConsulta: tipo,
-                duracao: duracao,
-                obs: obs,
-                pacienteId: pacId,
-                pacienteEmail: pacEmail,
-                whatsapp: pacWhats
-              }
-            }
-          };
+        if (_agendaEditandoId) {
+          // Modo edicao: atualizar consulta existente
           await fetch(API_URL + '/save-result', {
             method: 'POST',
             headers: {'Content-Type':'application/json'},
-            body: JSON.stringify(dadosConsulta)
+            body: JSON.stringify({
+              email: currentUser,
+              tipo: 'agenda',
+              sessionId: _agendaEditandoId,
+              data: {
+                status: 'agendado',
+                formData: {
+                  nome: nome,
+                  dataConsulta: data,
+                  horaConsulta: hora,
+                  tipoConsulta: tipo,
+                  duracao: duracao,
+                  obs: obs,
+                  pacienteId: pacId,
+                  whatsapp: pacWhats,
+                  dataNasc: pacInfo ? pacInfo.birthDate : ''
+                }
+              }
+            })
           });
-          // Google Calendar (apenas tentativa)
-          try {
-            var dataHoraISO = datas[di] + 'T' + hora + ':00';
-            await fetch(API_URL + '/google-calendar-create', {
+          _agendaEditandoId = null;
+        } else {
+          // Modo novo: criar consultas (com recorrencia se aplicavel)
+          for (var di = 0; di < datas.length; di++) {
+            var sessionId = 'agenda-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+            var dadosConsulta = {
+              email: currentUser,
+              tipo: 'agenda',
+              sessionId: sessionId,
+              data: {
+                status: 'agendado',
+                formData: {
+                  nome: nome,
+                  dataConsulta: datas[di],
+                  horaConsulta: hora,
+                  tipoConsulta: tipo,
+                  duracao: duracao,
+                  obs: obs,
+                  pacienteId: pacId,
+                  pacienteEmail: pacEmail,
+                  whatsapp: pacWhats
+                }
+              }
+            };
+            await fetch(API_URL + '/save-result', {
               method: 'POST',
               headers: {'Content-Type':'application/json'},
-              body: JSON.stringify({
-                email: currentUser,
-                titulo: 'Consulta - ' + nome,
-                descricao: tipo + (obs ? ' | ' + obs : ''),
-                dataHora: dataHoraISO,
-                duracao: duracao,
-                pacienteEmail: pacEmail
-              })
+              body: JSON.stringify(dadosConsulta)
             });
-          } catch(ge) {}
+            // Google Calendar (apenas tentativa)
+            try {
+              var dataHoraISO = datas[di] + 'T' + hora + ':00';
+              await fetch(API_URL + '/google-calendar-create', {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({
+                  email: currentUser,
+                  titulo: 'Consulta - ' + nome,
+                  descricao: tipo + (obs ? ' | ' + obs : ''),
+                  dataHora: dataHoraISO,
+                  duracao: duracao,
+                  pacienteEmail: pacEmail
+                })
+              });
+            } catch(ge) {}
+          }
         }
         document.getElementById('novaConsultaSection').classList.add('hidden');
         document.getElementById('agendaNome').value = '';
@@ -2817,7 +2853,7 @@
         if (document.getElementById('agendaRecorrencia')) document.getElementById('agendaRecorrencia').value = 'nenhuma';
         if (document.getElementById('agendaRecorrenciaQtd')) document.getElementById('agendaRecorrenciaQtd').value = '4';
         loadAgendaConsultas();
-        var msg = datas.length > 1 ? datas.length + ' consultas agendadas com sucesso!' : 'Consulta agendada com sucesso!';
+        var msg = _agendaEditandoId === null && datas.length > 1 ? datas.length + ' consultas agendadas com sucesso!' : 'Consulta salva com sucesso!';
         alert(msg);
       } catch(e) { alert('Erro ao agendar: ' + e.message); }
     }
@@ -2893,6 +2929,30 @@
           alert('Paciente cadastrado com sucesso! Ja selecionado para a consulta.');
         } else { alert('Erro ao cadastrar: ' + (r.error || 'tente novamente')); }
       } catch(e) { alert('Erro de conexao: ' + e.message); }
+    }
+
+    function editarConsultaAgenda(sessionId) {
+      var consulta = _agendaCache.filter(function(c) { return c.sessionId === sessionId; })[0];
+      if (!consulta) { alert('Consulta nao encontrada.'); return; }
+      var d = consulta.data || {};
+      var fd = d.formData || {};
+      _agendaEditandoId = sessionId;
+      document.getElementById('agendaNome').value = fd.nome || '';
+      document.getElementById('agendaData').value = fd.dataConsulta || '';
+      document.getElementById('agendaHora').value = fd.horaConsulta || '';
+      document.getElementById('agendaTipo').value = fd.tipoConsulta || 'Outro';
+      document.getElementById('agendaDuracao').value = fd.duracao || 60;
+      if (document.getElementById('agendaObs')) document.getElementById('agendaObs').value = fd.obs || '';
+      if (fd.pacienteId && document.getElementById('agendaSelPac')) {
+        document.getElementById('agendaSelPac').value = fd.pacienteId;
+      }
+      var sec = document.getElementById('novaConsultaSection');
+      sec.classList.remove('hidden');
+      sec.scrollIntoView({behavior:'smooth'});
+      var titulo = sec.querySelector('p');
+      if (titulo) titulo.innerHTML = '&#9998; Editar Consulta';
+      var btnSalvar = sec.querySelector('.btn-green');
+      if (btnSalvar) btnSalvar.textContent = 'Salvar Alteracoes';
     }
 
     function iniciarConsultaAgenda(sessionId) {
