@@ -2741,6 +2741,7 @@
           html += '<button class="btn btn-blue" style="padding:3px 8px;font-size:11px;" onclick="confirmarConsultaAgenda(\'' + c.sessionId + '\')">&#10003;</button>';
           html += '<button class="btn btn-orange" style="padding:3px 8px;font-size:11px;" onclick="editarConsultaAgenda(\'' + c.sessionId + '\')">&#9998;</button>';
           html += '<button class="btn btn-red" style="padding:3px 8px;font-size:11px;" onclick="cancelarConsultaAgenda(\'' + c.sessionId + '\')">&#10007;</button>';
+          html += '<button class="btn" style="padding:3px 8px;font-size:10px;background:#fce4ec;color:#c62828;border:1px solid #ef9a9a;" onclick="cancelarEstaESeguintes(\'' + c.sessionId + '\')" title="Cancelar esta e todas as seguintes do mesmo paciente/horario">&#128465; Esta+seg.</button>';
         }
         // Botao Historico do paciente
         if (fd.pacienteId) {
@@ -3162,6 +3163,63 @@
         });
         loadAgendaConsultas();
       } catch(e) { alert('Erro: ' + e.message); }
+    }
+
+    async function cancelarEstaESeguintes(sessionId) {
+      // Encontrar a consulta clicada
+      var consulta = _agendaCache.filter(function(c) { return c.sessionId === sessionId; })[0];
+      if (!consulta) { alert('Consulta nao encontrada.'); return; }
+      var d = consulta.data || {};
+      var fd = d.formData || {};
+      var nomePac = fd.nome || '';
+      var horaPac = fd.horaConsulta || '';
+      var dataPac = fd.dataConsulta || '';
+      if (!dataPac) { alert('Data da consulta nao encontrada.'); return; }
+      // Buscar todas as consultas do mesmo paciente e mesmo horario com data >= a selecionada
+      var seguintes = _agendaCache.filter(function(c) {
+        var cd = c.data || {};
+        var cfd = cd.formData || {};
+        if (cd.status === 'cancelado' || cd.status === 'finalizado') return false;
+        if (cfd.nome !== nomePac) return false;
+        if (horaPac && cfd.horaConsulta !== horaPac) return false;
+        var dataC = cfd.dataConsulta || '';
+        return dataC >= dataPac;
+      });
+      if (seguintes.length === 0) { alert('Nenhuma consulta encontrada.'); return; }
+      var acao = prompt(
+        'Encontradas ' + seguintes.length + ' consultas de "' + nomePac + '" a partir de ' + dataPac + ' as ' + horaPac + '.\n\n' +
+        'O que deseja fazer?\n' +
+        '1 = DELETAR todas (remove do banco permanentemente)\n' +
+        '2 = CANCELAR todas (muda status para cancelado)\n\n' +
+        'Digite 1 ou 2 (ou cancele para sair):'
+      );
+      if (acao !== '1' && acao !== '2') return;
+      var textoAcao = acao === '1' ? 'DELETAR' : 'CANCELAR';
+      if (!confirm('Confirma ' + textoAcao + ' ' + seguintes.length + ' consultas de "' + nomePac + '"?\n\nEsta acao nao pode ser desfeita!')) return;
+      var erros = 0;
+      var sucesso = 0;
+      for (var i = 0; i < seguintes.length; i++) {
+        try {
+          if (acao === '1') {
+            // Deletar do banco
+            await fetch(API_URL + '/delete-result', {
+              method: 'POST',
+              headers: {'Content-Type':'application/json'},
+              body: JSON.stringify({ email: currentUser, sessionId: seguintes[i].sessionId })
+            });
+          } else {
+            // Cancelar (mudar status)
+            await fetch(API_URL + '/save-result', {
+              method: 'POST',
+              headers: {'Content-Type':'application/json'},
+              body: JSON.stringify({ email: currentUser, tipo: 'agenda', sessionId: seguintes[i].sessionId, data: { status: 'cancelado' } })
+            });
+          }
+          sucesso++;
+        } catch(e) { erros++; }
+      }
+      alert(sucesso + ' consultas ' + (acao === '1' ? 'deletadas' : 'canceladas') + ' com sucesso!' + (erros > 0 ? ' (' + erros + ' erros)' : ''));
+      loadAgendaConsultas();
     }
 
     async function cancelarConsultaAgenda(sessionId) {
