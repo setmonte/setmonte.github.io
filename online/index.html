@@ -2683,7 +2683,7 @@
       for (var i = 0; i < 42; i++) {
         var dia = new Date(ini); dia.setDate(ini.getDate() + i);
         var key = dia.toISOString().split('T')[0];
-        var temConsulta = _agendaCache.some(function(c) { var d = c.data || {}; return (d.formData && d.formData.dataConsulta === key) || (c.date && c.date.startsWith(key)); });
+        var temConsulta = _agendaCache.some(function(c) { var d = c.data || {}; if (d.status === 'cancelado') return false; return (d.formData && d.formData.dataConsulta === key) || (c.date && c.date.startsWith(key)); });
         var isHoje = dia.getTime() === hoje.getTime();
         var isSel = dia.toISOString().split('T')[0] === _agendaDiaSel.toISOString().split('T')[0];
         var isMes = dia.getMonth() === mes;
@@ -2715,6 +2715,7 @@
       var consultasDia = _agendaCache.filter(function(c) {
         var d = c.data || {};
         var fd = d.formData || {};
+        if (d.status === 'cancelado') return false;
         return (fd.dataConsulta === key) || (c.date && c.date.startsWith(key));
       });
       var el = document.getElementById('agendaConsultasDia');
@@ -2773,6 +2774,7 @@
       var consultasSemana = _agendaCache.filter(function(c) {
         var d = c.data || {};
         var fd = d.formData || {};
+        if (d.status === 'cancelado') return false;
         var dc = fd.dataConsulta || (c.date ? c.date.split('T')[0] : '');
         if (!dc) return false;
         var dataC = new Date(dc + 'T12:00:00');
