@@ -2791,7 +2791,7 @@
         var db = (fb.dataConsulta||'') + (fb.horaConsulta||'');
         return da.localeCompare(db);
       });
-      var html = '';
+      var html = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><label style="font-size:11px;color:#555;cursor:pointer;"><input type="checkbox" id="agendaSelTodos" onchange="agendaToggleSelTodos(this.checked)" style="margin-right:4px;">Selecionar todos</label><button class="btn btn-red" style="padding:3px 10px;font-size:11px;display:none;" id="btnAcaoLoteSemana" onclick="agendaAcaoLote()">&#128465; Deletar selecionados</button></div>';
       var diaAtual = '';
       var hojeKey = hoje.toISOString().split('T')[0];
       consultasSemana.forEach(function(c) {
@@ -2810,6 +2810,7 @@
         var corStatus = status === 'finalizado' ? '#2e7d32' : status === 'cancelado' ? '#c62828' : status === 'confirmado' ? '#1565c0' : '#666';
         var opacidade = status === 'cancelado' ? 'opacity:0.5;text-decoration:line-through;' : '';
         html += '<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid #eee;' + opacidade + '">';
+        html += '<input type="checkbox" class="agenda-sel-check" value="' + c.sessionId + '" onchange="agendaAtualizarBtnLote()" style="cursor:pointer;">';
         html += '<span style="font-weight:bold;color:#2d6a8f;min-width:45px;">' + (fd.horaConsulta || '--:--') + '</span>';
         html += '<span style="flex:1;">' + (fd.nome || '-') + '</span>';
         html += '<span style="font-size:11px;color:#777;min-width:60px;">' + (fd.tipoConsulta || '').substring(0,12) + '</span>';
@@ -2817,6 +2818,42 @@
         html += '</div>';
       });
       el.innerHTML = html;
+    }
+
+    function agendaToggleSelTodos(checked) {
+      var checks = document.querySelectorAll('.agenda-sel-check');
+      checks.forEach(function(ch) { ch.checked = checked; });
+      agendaAtualizarBtnLote();
+    }
+
+    function agendaAtualizarBtnLote() {
+      var checks = document.querySelectorAll('.agenda-sel-check:checked');
+      var btn = document.getElementById('btnAcaoLoteSemana');
+      if (btn) {
+        btn.style.display = checks.length > 0 ? 'inline-block' : 'none';
+        btn.textContent = '\uD83D\uDDD1\uFE0F Deletar ' + checks.length + ' selecionado' + (checks.length > 1 ? 's' : '');
+      }
+    }
+
+    async function agendaAcaoLote() {
+      var checks = document.querySelectorAll('.agenda-sel-check:checked');
+      if (checks.length === 0) { alert('Selecione ao menos uma consulta.'); return; }
+      var ids = [];
+      checks.forEach(function(ch) { ids.push(ch.value); });
+      if (!confirm('Deletar permanentemente ' + ids.length + ' consulta(s) selecionada(s)?\n\nEsta acao nao pode ser desfeita!')) return;
+      var sucesso = 0; var erros = 0;
+      for (var i = 0; i < ids.length; i++) {
+        try {
+          await fetch(API_URL + '/delete-result', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ email: currentUser, sessionId: ids[i] })
+          });
+          sucesso++;
+        } catch(e) { erros++; }
+      }
+      alert(sucesso + ' consultas deletadas!' + (erros > 0 ? ' (' + erros + ' erros)' : ''));
+      loadAgendaConsultas();
     }
 
     function fecharVisuDia() {
