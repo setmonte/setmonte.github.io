@@ -2724,13 +2724,15 @@
         return;
       }
       consultasDia.sort(function(a, b) { var fa = (a.data||{}).formData||{}; var fb = (b.data||{}).formData||{}; return (fa.horaConsulta||'').localeCompare(fb.horaConsulta||''); });
-      var html = '<table class="results-table"><tr><th>Hora</th><th>Paciente</th><th>Tipo</th><th>Duracao</th><th>Status</th><th>Acoes</th></tr>';
+      var html = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><label style="font-size:11px;color:#555;cursor:pointer;"><input type="checkbox" id="agendaDiaSelTodos" onchange="agendaDiaToggleSelTodos(this.checked)" style="margin-right:4px;">Selecionar todos</label><button class="btn btn-red" style="padding:3px 10px;font-size:11px;display:none;" id="btnAcaoLoteDia" onclick="agendaDiaAcaoLote()">&#128465; Deletar selecionados</button></div>';
+      html += '<table class="results-table"><tr><th style="width:30px;"></th><th>Hora</th><th>Paciente</th><th>Tipo</th><th>Duracao</th><th>Status</th><th>Acoes</th></tr>';
       consultasDia.forEach(function(c) {
         var d = c.data || {};
         var fd = d.formData || {};
         var status = d.status || 'agendado';
         var corStatus = status === 'finalizado' ? '#2e7d32' : status === 'cancelado' ? '#c62828' : status === 'confirmado' ? '#1565c0' : '#8a6d00';
         html += '<tr>';
+        html += '<td><input type="checkbox" class="agenda-dia-check" value="' + c.sessionId + '" onchange="agendaDiaAtualizarBtn()" style="cursor:pointer;"></td>';
         html += '<td style="font-weight:bold;">' + (fd.horaConsulta || '--:--') + '</td>';
         html += '<td>' + (fd.nome || '-') + '</td>';
         html += '<td style="font-size:11px;">' + (fd.tipoConsulta || '-') + '</td>';
@@ -2818,6 +2820,42 @@
         html += '</div>';
       });
       el.innerHTML = html;
+    }
+
+    function agendaDiaToggleSelTodos(checked) {
+      var checks = document.querySelectorAll('.agenda-dia-check');
+      checks.forEach(function(ch) { ch.checked = checked; });
+      agendaDiaAtualizarBtn();
+    }
+
+    function agendaDiaAtualizarBtn() {
+      var checks = document.querySelectorAll('.agenda-dia-check:checked');
+      var btn = document.getElementById('btnAcaoLoteDia');
+      if (btn) {
+        btn.style.display = checks.length > 0 ? 'inline-block' : 'none';
+        btn.textContent = '\uD83D\uDDD1\uFE0F Deletar ' + checks.length + ' selecionado' + (checks.length > 1 ? 's' : '');
+      }
+    }
+
+    async function agendaDiaAcaoLote() {
+      var checks = document.querySelectorAll('.agenda-dia-check:checked');
+      if (checks.length === 0) { alert('Selecione ao menos uma consulta.'); return; }
+      var ids = [];
+      checks.forEach(function(ch) { ids.push(ch.value); });
+      if (!confirm('Deletar permanentemente ' + ids.length + ' consulta(s) selecionada(s)?\n\nEsta acao nao pode ser desfeita!')) return;
+      var sucesso = 0; var erros = 0;
+      for (var i = 0; i < ids.length; i++) {
+        try {
+          await fetch(API_URL + '/delete-result', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ email: currentUser, sessionId: ids[i] })
+          });
+          sucesso++;
+        } catch(e) { erros++; }
+      }
+      alert(sucesso + ' consultas deletadas!' + (erros > 0 ? ' (' + erros + ' erros)' : ''));
+      loadAgendaConsultas();
     }
 
     function agendaToggleSelTodos(checked) {
