@@ -3962,8 +3962,16 @@
         var todos = (data.results || []).filter(function(r) {
           var d = r.data || {};
           var fd = d.formData || {};
+          // Match por pacienteId (campo direto)
           if (d.pacienteId === pacId || fd.pacienteId === pacId) return true;
+          // Match por idPaciente hash (gerado pelo id-paciente.js)
           if (pacIdHash && (d.idPaciente === pacIdHash || (fd.id === pacIdHash))) return true;
+          // Fallback para escalas antigas sem pacienteId: match por nome normalizado
+          if (r.tipo === 'escala' && pacInfo && pacInfo.nome) {
+            var nomePac = pacInfo.nome.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+            var nomeEscala = (d.paciente || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+            if (nomePac && nomeEscala && nomePac === nomeEscala) return true;
+          }
           return false;
         });
         // Filtrar registros 'aguardando' quando ja existe um resultado completo com mesmo sessionId
@@ -3995,30 +4003,84 @@
             var date = r.date ? new Date(r.date).toLocaleString('pt-BR') : '-';
             var tipo = r.tipo || 'tecfe';
             var detalhe = '';
-            if (tipo === 'escala') { detalhe = (d.escala||'Escala') + ' - ' + (d.classificacao||d.escore||''); }
+            if (tipo === 'escala') {
+              var escNome = d.escala || 'Escala';
+              var escClass = d.classificacao || '';
+              var domObj = d.dominios || {};
+              var domParts = [];
+              for (var dk in domObj) {
+                if (domObj.hasOwnProperty(dk)) {
+                  var dv = domObj[dk];
+                  if (typeof dv === 'object' && dv !== null) {
+                    domParts.push(dk + ':' + (dv.classificacao || dv.pontuacao || '-') + (dv.pontuacao != null ? '(' + dv.pontuacao + ')' : ''));
+                  } else {
+                    domParts.push(dk + ':' + dv);
+                  }
+                }
+              }
+              if (domParts.length > 0) { detalhe = escNome + ' - ' + domParts.join(' | '); }
+              else { detalhe = escNome + ' - ' + (escClass || d.escore || '-'); }
+            }
             else if (tipo === 'bae') {
               if (d.status === 'completo' || d.concentrada || d.seletiva) {
                 var partes = [];
-                if (d.concentrada) partes.push('Conc:' + (d.concentrada.taxaAcerto||0).toFixed(0) + '%');
-                if (d.seletiva) partes.push('Sel:' + (d.seletiva.taxaAcerto||0).toFixed(0) + '%');
+                if (d.concentrada) partes.push('Conc:' + (d.concentrada.taxaAcerto||0).toFixed(0) + '%(TR:' + (d.concentrada.tempoReacao||0).toFixed(0) + 'ms)');
+                if (d.seletiva) partes.push('Sel:' + (d.seletiva.taxaAcerto||0).toFixed(0) + '%(TR:' + (d.seletiva.tempoReacao||0).toFixed(0) + 'ms)');
                 if (d.dividida) partes.push('Div:' + (d.dividida.taxaAcerto||0).toFixed(0) + '%');
                 if (d.alternada) partes.push('Alt:' + (d.alternada.taxaAcerto||0).toFixed(0) + '%');
                 if (d.sustentada) partes.push('Sus:' + (d.sustentada.taxaAcerto||0).toFixed(0) + '%');
                 detalhe = partes.join(' | ') || 'Completo';
               } else { detalhe = 'Status: ' + (d.status||'-'); }
             }
-            else if (tipo === 'trmv') { detalhe = 'Retencao: ' + (d.indiceRetencao ? Math.round(d.indiceRetencao)+'%' : '-'); }
-            else if (tipo === 'taav') { detalhe = 'Retencao: ' + (d.indiceRetencao ? Math.round(d.indiceRetencao)+'%' : '-') + ' | Status: ' + (d.status||'-'); }
-            else if (tipo === 'tref') { detalhe = 'Status: ' + (d.status||'-'); }
+            else if (tipo === 'trmv') {
+              var trmvP = [];
+              if (d.indiceRetencao) trmvP.push('Ret:' + Math.round(d.indiceRetencao) + '%');
+              if (d.acertos !== undefined) trmvP.push('Ac:' + d.acertos);
+              if (d.erros !== undefined) trmvP.push('Err:' + d.erros);
+              if (d.omissoes !== undefined) trmvP.push('Om:' + d.omissoes);
+              if (d.tempoTotal) trmvP.push('T:' + Math.round(d.tempoTotal/1000) + 's');
+              detalhe = trmvP.length > 0 ? trmvP.join(' | ') : '-';
+            }
+            else if (tipo === 'taav') {
+              var taavP = [];
+              if (d.indiceRetencao) taavP.push('Ret:' + Math.round(d.indiceRetencao) + '%');
+              if (d.acertos !== undefined) taavP.push('Ac:' + d.acertos);
+              if (d.erros !== undefined) taavP.push('Err:' + d.erros);
+              if (d.tempoTotal) taavP.push('T:' + Math.round(d.tempoTotal/1000) + 's');
+              detalhe = taavP.length > 0 ? taavP.join(' | ') : 'Status: ' + (d.status||'-');
+            }
+            else if (tipo === 'tref') {
+              var trefP = [];
+              if (d.tempoExecucao) trefP.push('Tempo:' + d.tempoExecucao + 's');
+              if (d.movimentos) trefP.push('Mov:' + d.movimentos);
+              if (d.erros !== undefined) trefP.push('Err:' + d.erros);
+              detalhe = trefP.length > 0 ? trefP.join(' | ') : 'Status: ' + (d.status||'-');
+            }
             else if (tipo === 'tflod') {
               var res = d.resultados || {};
-              detalhe = res.ppm ? 'PPM: ' + res.ppm + ' | Erros: ' + (res.erros||0) : 'Status: ' + (d.status||'-');
+              var tflP = [];
+              if (res.ppm) tflP.push('PPM:' + res.ppm);
+              if (res.totalPalavras) tflP.push('Palavras:' + res.totalPalavras);
+              if (res.erros !== undefined) tflP.push('Err:' + res.erros);
+              if (res.repeticoes !== undefined) tflP.push('Repet:' + res.repeticoes);
+              detalhe = tflP.length > 0 ? tflP.join(' | ') : 'Status: ' + (d.status||'-');
             }
             else if (tipo === 'agenda') {
               var fd2 = d.formData || {};
               detalhe = '&#128197; ' + (fd2.tipoConsulta||'Consulta') + ' | ' + (fd2.duracao||'-') + ' min | ' + (d.status||'agendado');
             }
-            else { var s=d.stats||{}; detalhe = 'Cat: '+(s.completedCategories||0)+' Erros: '+(s.pctErrors?s.pctErrors.toFixed(1):'0')+'%'; }
+            else {
+              var s = d.stats || {};
+              var tecP = [];
+              tecP.push('Cat:' + (s.completedCategories||0) + '/6');
+              if (s.pctErrors !== undefined) tecP.push('Err:' + Number(s.pctErrors).toFixed(1) + '%');
+              if (s.perseverativeErrors !== undefined) tecP.push('Persev:' + s.perseverativeErrors);
+              if (s.failuresSet !== undefined) tecP.push('FMS:' + s.failuresSet);
+              var tTempo = d.tempo || '';
+              if (!tTempo && s.totalTime) tTempo = Math.floor(Number(s.totalTime)/60) + 'min';
+              if (tTempo) tecP.push('T:' + tTempo);
+              detalhe = tecP.join(' | ');
+            }
             html += '<tr><td>'+date+'</td><td style="text-transform:uppercase;font-weight:bold;">'+tipo+'</td><td>'+detalhe+'</td></tr>';
           });
           html += '</table>';
@@ -4488,8 +4550,16 @@
         var todos = (data.results || []).filter(function(r) {
           var d = r.data || {};
           var fd = d.formData || {};
+          // Match por pacienteId (campo direto)
           if (d.pacienteId === pacId || fd.pacienteId === pacId) return true;
+          // Match por idPaciente hash (gerado pelo id-paciente.js)
           if (pacIdHash && (d.idPaciente === pacIdHash || (fd.id === pacIdHash))) return true;
+          // Fallback para escalas antigas sem pacienteId: match por nome normalizado
+          if (r.tipo === 'escala' && pacInfo && pacInfo.nome) {
+            var nomePac = pacInfo.nome.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+            var nomeEscala = (d.paciente || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+            if (nomePac && nomeEscala && nomePac === nomeEscala) return true;
+          }
           return false;
         });
         // Filtrar registros aguardando
