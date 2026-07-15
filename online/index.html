@@ -2742,6 +2742,14 @@
           html += '<button class="btn btn-orange" style="padding:3px 8px;font-size:11px;" onclick="editarConsultaAgenda(\'' + c.sessionId + '\')">&#9998;</button>';
           html += '<button class="btn btn-red" style="padding:3px 8px;font-size:11px;" onclick="cancelarConsultaAgenda(\'' + c.sessionId + '\')">&#10007;</button>';
         }
+        // Botao Historico do paciente
+        if (fd.pacienteId) {
+          html += '<button class="btn" style="padding:3px 8px;font-size:11px;background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7;" onclick="abrirHistoricoPaciente(\'' + fd.pacienteId + '\',\'' + (fd.nome || '').replace(/'/g,'') + '\')">&#128203; Historico</button>';
+        }
+        // Indicador de prontuario salvo
+        if (d.prontuarioId) {
+          html += '<span style="font-size:10px;color:#2e7d32;background:#c8e6c9;padding:2px 6px;border-radius:4px;display:inline-flex;align-items:center;gap:2px;" title="Prontuario salvo em ' + (d.prontuarioSalvoEm || '').split('T')[0] + '">&#9989; pront.</span>';
+        }
         if (fd.whatsapp) {
           html += '<a class="btn btn-green" style="padding:3px 8px;font-size:11px;text-decoration:none;background:#25d366;color:#fff;border-color:#25d366;" href="https://wa.me/55' + fd.whatsapp.replace(/\D/g,'') + '?text=' + encodeURIComponent('Ola! Lembrete da sua consulta em ' + fd.dataConsulta + ' as ' + fd.horaConsulta + '.') + '" target="_blank">&#128172;</a>';
         }
@@ -3002,6 +3010,101 @@
           alert('Paciente cadastrado com sucesso! Ja selecionado para a consulta.');
         } else { alert('Erro ao cadastrar: ' + (r.error || 'tente novamente')); }
       } catch(e) { alert('Erro de conexao: ' + e.message); }
+    }
+
+    // === HISTORICO DO PACIENTE ===
+    async function abrirHistoricoPaciente(pacienteId, nomePaciente) {
+      // Mostrar modal de historico
+      var modal = document.getElementById('modalHistorico');
+      if (!modal) { criarModalHistorico(); modal = document.getElementById('modalHistorico'); }
+      modal.style.display = 'flex';
+      var conteudo = document.getElementById('modalHistoricoConteudo');
+      conteudo.innerHTML = '<div style="text-align:center;padding:30px;color:#999;">Carregando historico de ' + nomePaciente + '...</div>';
+      document.getElementById('modalHistoricoTitulo').textContent = 'Historico — ' + nomePaciente;
+      try {
+        // Buscar prontuarios
+        var respPront = await fetch(API_URL + '/get-prontuarios?email=' + encodeURIComponent(currentUser) + '&pacienteId=' + encodeURIComponent(pacienteId));
+        var dataPront = await respPront.json();
+        var prontuarios = dataPront.prontuarios || [];
+        // Buscar escalas/resultados
+        var respEsc = await fetch(API_URL + '/get-results?email=' + encodeURIComponent(currentUser));
+        var dataEsc = await respEsc.json();
+        var escalas = (dataEsc.results || []).filter(function(r) {
+          if (r.tipo === 'agenda' || r.tipo === 'session' || r.tipo === 'depoimento' || r.tipo === 'prontuario') return false;
+          var d = r.data || {};
+          return d.pacienteId === pacienteId || d.idPaciente === pacienteId;
+        });
+        // Renderizar
+        var html = '';
+        // Secao Prontuarios
+        html += '<div style="margin-bottom:20px;">';
+        html += '<div style="font-size:14px;font-weight:bold;color:#2d6a8f;margin-bottom:8px;border-bottom:2px solid #2d6a8f;padding-bottom:4px;">&#128203; Prontuarios (' + prontuarios.length + ')</div>';
+        if (prontuarios.length === 0) {
+          html += '<p style="color:#999;font-size:12px;">Nenhum prontuario salvo para este paciente.</p>';
+        } else {
+          prontuarios.forEach(function(p, idx) {
+            var dataFormatada = p.date ? new Date(p.date).toLocaleDateString('pt-BR') : '-';
+            html += '<div style="border:1px solid #ddd;border-radius:8px;margin-bottom:8px;overflow:hidden;">';
+            html += '<div style="display:flex;align-items:center;justify-content:space-between;background:#f0f7fa;padding:8px 12px;cursor:pointer;" onclick="toggleProntuarioDetalhe(' + idx + ')">';
+            html += '<span style="font-size:12px;"><strong>' + dataFormatada + '</strong> — ' + (p.tipoConsulta || 'Consulta') + '</span>';
+            html += '<span style="font-size:10px;color:#2d6a8f;">&#9660; ver</span></div>';
+            html += '<div id="prontuarioDetalhe' + idx + '" style="display:none;padding:10px 12px;font-size:12px;line-height:1.6;">';
+            if (p.resumo && p.resumo.length > 0) {
+              p.resumo.forEach(function(r) {
+                html += '<div style="margin-bottom:6px;"><strong style="color:#2d6a8f;">' + r.topico + ':</strong> ' + (r.conteudo || 'nao mencionado') + '</div>';
+              });
+            }
+            html += '</div></div>';
+          });
+        }
+        html += '</div>';
+        // Secao Escalas
+        html += '<div>';
+        html += '<div style="font-size:14px;font-weight:bold;color:#2e7d32;margin-bottom:8px;border-bottom:2px solid #2e7d32;padding-bottom:4px;">&#128200; Escalas e Testes (' + escalas.length + ')</div>';
+        if (escalas.length === 0) {
+          html += '<p style="color:#999;font-size:12px;">Nenhuma escala aplicada para este paciente.</p>';
+        } else {
+          escalas.sort(function(a, b) { return (b.date || '').localeCompare(a.date || ''); });
+          escalas.forEach(function(e) {
+            var dataFormatada = e.date ? new Date(e.date).toLocaleDateString('pt-BR') : '-';
+            var d = e.data || {};
+            var escala = d.escala || e.tipo || '-';
+            var classificacao = d.classificacao || d.resultado || '';
+            html += '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #eee;font-size:12px;">';
+            html += '<span style="min-width:70px;color:#555;">' + dataFormatada + '</span>';
+            html += '<span style="font-weight:bold;color:#2e7d32;min-width:80px;">' + escala + '</span>';
+            html += '<span style="color:#333;flex:1;">' + classificacao + '</span>';
+            html += '</div>';
+          });
+        }
+        html += '</div>';
+        conteudo.innerHTML = html;
+      } catch(e) {
+        conteudo.innerHTML = '<div style="text-align:center;padding:20px;color:#c62828;">Erro ao carregar historico: ' + e.message + '</div>';
+      }
+    }
+
+    function toggleProntuarioDetalhe(idx) {
+      var el = document.getElementById('prontuarioDetalhe' + idx);
+      if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function fecharModalHistorico() {
+      var modal = document.getElementById('modalHistorico');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function criarModalHistorico() {
+      var modal = document.createElement('div');
+      modal.id = 'modalHistorico';
+      modal.style.cssText = 'display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;padding:20px;';
+      modal.onclick = function(e) { if (e.target === modal) fecharModalHistorico(); };
+      modal.innerHTML = '<div style="background:#fff;border-radius:12px;max-width:650px;width:100%;max-height:80vh;overflow-y:auto;box-shadow:0 10px 40px rgba(0,0,0,0.3);">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;padding:15px 20px;border-bottom:1px solid #eee;position:sticky;top:0;background:#fff;border-radius:12px 12px 0 0;z-index:1;">' +
+        '<span id="modalHistoricoTitulo" style="font-size:15px;font-weight:bold;color:#2d6a8f;">Historico</span>' +
+        '<button onclick="fecharModalHistorico()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#999;padding:0 5px;">&#10005;</button></div>' +
+        '<div id="modalHistoricoConteudo" style="padding:20px;"></div></div>';
+      document.body.appendChild(modal);
     }
 
     function editarConsultaAgenda(sessionId) {

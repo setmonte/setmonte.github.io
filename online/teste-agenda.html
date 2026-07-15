@@ -335,7 +335,9 @@ function renderProntuario(resultados) {
   });
   html += '</div>';
   html += '<div style="display:flex;gap:8px;margin-top:1.5rem;justify-content:center;flex-wrap:wrap;">';
-  html += '<button onclick="salvarComoHTML()" class="btn btn-green">&#128190; Salvar Prontuario (.html)</button>';
+  html += '<button onclick="salvarNoBanco()" class="btn btn-primary" id="btn-salvar-banco">&#128190; Salvar no Sistema</button>';
+  html += '<button onclick="gerarPDF()" class="btn btn-green">&#128196; Gerar PDF</button>';
+  html += '<button onclick="salvarComoHTML()" class="btn btn-outline">&#128190; Salvar .html</button>';
   html += '<button onclick="copiarTudo()" class="btn btn-outline">&#128203; Copiar Texto</button>';
   html += '<button onclick="gerarNovamente()" class="btn btn-outline">&#128260; Gerar Novamente</button>';
   html += '</div></div>';
@@ -408,6 +410,168 @@ function copiarTudo() {
   var texto = '';
   topicosEl.forEach(function(el, i) { texto += el.textContent + ':\n' + (conteudos[i] ? conteudos[i].textContent : '') + '\n\n'; });
   navigator.clipboard.writeText(texto).then(function() { alert('Copiado para a area de transferencia!'); });
+}
+
+// === SALVAR NO BANCO (DynamoDB) ===
+async function salvarNoBanco() {
+  var btn = document.getElementById('btn-salvar-banco');
+  if (!btn) return;
+  // Coletar dados do prontuario gerado
+  var conteudos = document.querySelectorAll('.prontuario-conteudo');
+  var topicosEl = document.querySelectorAll('#step-prontuario div[style*="background:#f0efe9"]');
+  var resumo = [];
+  topicosEl.forEach(function(el, i) {
+    resumo.push({ topico: el.textContent, conteudo: conteudos[i] ? conteudos[i].textContent : '' });
+  });
+  var transcricao = document.getElementById('transcricao').value.trim();
+  var emailAvaliador = sessionInfo.email || '';
+  // Fallback: tentar pegar email do sessionStorage (se veio do painel)
+  if (!emailAvaliador) {
+    try { emailAvaliador = sessionStorage.getItem('tecfe_user_email') || ''; } catch(e) {}
+  }
+  var pacienteId = sessionInfo.pacienteId || '';
+  var pacienteNome = sessionInfo.patientName || 'Paciente';
+  var tipoConsulta = sessionInfo.tipoConsulta || 'Consulta';
+  var agendaSessionId = sessionInfo.sessionId || '';
+  if (!emailAvaliador) {
+    alert('Erro: email do avaliador nao encontrado. Salve como HTML por enquanto.');
+    return;
+  }
+  btn.disabled = true; btn.textContent = 'Salvando...';
+  try {
+    var resp = await fetch(API_URL + '/save-prontuario', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        email: emailAvaliador,
+        pacienteId: pacienteId,
+        pacienteNome: pacienteNome,
+        tipoConsulta: tipoConsulta,
+        topicos: topicosAtuais,
+        resumo: resumo,
+        transcricao: transcricao,
+        agendaSessionId: agendaSessionId
+      })
+    });
+    var data = await resp.json();
+    if (data.ok) {
+      btn.style.background = 'var(--green)';
+      btn.textContent = 'Salvo no sistema!';
+      btn.disabled = true;
+      // Marcar consulta como finalizada se modo agenda
+      if (modoAgenda) salvarMetadados();
+    } else {
+      throw new Error(data.error || 'Erro desconhecido');
+    }
+  } catch(e) {
+    btn.disabled = false; btn.textContent = 'Salvar no Sistema';
+    alert('Erro ao salvar: ' + e.message);
+  }
+}
+
+// === GERAR PDF (jsPDF) ===
+function gerarPDF() {
+  var conteudos = document.querySelectorAll('.prontuario-conteudo');
+  var topicosEl = document.querySelectorAll('#step-prontuario div[style*="background:#f0efe9"]');
+  if (!topicosEl.length) { alert('Gere o prontuario primeiro.'); return; }
+  var jsPDF = window.jspdf ? window.jspdf.jsPDF : null;
+  if (!jsPDF) {
+    // Carregar jsPDF se ainda nao carregou
+    var s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+    s.onload = function() { gerarPDF(); };
+    document.head.appendChild(s);
+    return;
+  }
+  var doc = new jsPDF('p','mm','a4');
+  var nomePac = sessionInfo.patientName || 'Paciente';
+  var dataAtual = new Date().toLocaleDateString('pt-BR');
+  var horaAtual = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
+  var pageW = doc.internal.pageSize.getWidth();
+  var marginL = 15, marginR = 15, maxW = pageW - marginL - marginR;
+  var y = 15;
+  // Cabecalho
+  doc.setFillColor(45, 106, 143);
+  doc.rect(0, 0, pageW, 28, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(16);
+  doc.text('Prontuario Clinico', marginL, 12);
+  doc.setFontSize(10);
+  doc.text('Sergio Teixeira Monte - Neuropsicologo - CRP 14/05739-9', marginL, 20);
+  y = 36;
+  // Dados do paciente
+  doc.setTextColor(0, 0, 0);
+  doc.setFontSize(10);
+  doc.setFont(undefined, 'bold');
+  doc.text('Paciente: ', marginL, y);
+  doc.setFont(undefined, 'normal');
+  doc.text(nomePac, marginL + 22, y);
+  y += 6;
+  doc.setFont(undefined, 'bold');
+  doc.text('Tipo: ', marginL, y);
+  doc.setFont(undefined, 'normal');
+  doc.text(sessionInfo.tipoConsulta || 'Consulta', marginL + 14, y);
+  doc.setFont(undefined, 'bold');
+  doc.text('Data: ', marginL + 80, y);
+  doc.setFont(undefined, 'normal');
+  doc.text(dataAtual, marginL + 93, y);
+  y += 6;
+  if (modoAgenda) {
+    doc.setFont(undefined, 'bold');
+    doc.text('Duracao: ', marginL, y);
+    doc.setFont(undefined, 'normal');
+    doc.text((sessionInfo.duracao || 60) + ' min', marginL + 20, y);
+  } else {
+    doc.setFont(undefined, 'bold');
+    doc.text('Duracao real: ', marginL, y);
+    doc.setFont(undefined, 'normal');
+    doc.text(fmtTempo(segundosDecorridos), marginL + 28, y);
+  }
+  y += 10;
+  // Linha separadora
+  doc.setDrawColor(200, 200, 200);
+  doc.line(marginL, y, pageW - marginR, y);
+  y += 8;
+  // Topicos
+  topicosEl.forEach(function(el, i) {
+    var titulo = el.textContent;
+    var conteudo = conteudos[i] ? conteudos[i].textContent : 'nao mencionado';
+    // Verificar se precisa nova pagina
+    if (y > 260) { doc.addPage(); y = 20; }
+    // Titulo do topico
+    doc.setFillColor(240, 247, 250);
+    doc.rect(marginL, y - 4, maxW, 7, 'F');
+    doc.setDrawColor(45, 106, 143);
+    doc.line(marginL, y - 4, marginL, y + 3);
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(45, 106, 143);
+    doc.text(titulo, marginL + 3, y + 1);
+    y += 9;
+    // Conteudo
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(51, 51, 51);
+    var linhas = doc.splitTextToSize(conteudo, maxW - 4);
+    linhas.forEach(function(linha) {
+      if (y > 275) { doc.addPage(); y = 20; }
+      doc.text(linha, marginL + 3, y);
+      y += 4.5;
+    });
+    y += 5;
+  });
+  // Rodape
+  var totalPages = doc.internal.getNumberOfPages();
+  for (var p = 1; p <= totalPages; p++) {
+    doc.setPage(p);
+    doc.setFontSize(8);
+    doc.setTextColor(150, 150, 150);
+    doc.text('Gerado em ' + dataAtual + ' as ' + horaAtual + ' | SYM Prontuario IA', marginL, 290);
+    doc.text('Pagina ' + p + '/' + totalPages, pageW - marginR - 20, 290);
+  }
+  // Salvar
+  var nomeArquivo = 'Prontuario_' + nomePac.replace(/\s+/g, '_') + '_' + new Date().toISOString().split('T')[0] + '.pdf';
+  doc.save(nomeArquivo);
 }
 
 // Inicializar
