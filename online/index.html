@@ -581,6 +581,34 @@
             <span style="font-size:12px;color:#1565c0;" id="googleCalMsg">&#128279; Google Calendar: verificando...</span>
             <button class="btn btn-blue" style="padding:6px 14px;font-size:12px;" id="btnConectarGoogle" onclick="conectarGoogleCalendar()">Conectar</button>
           </div>
+          <!-- Compartilhamento de agenda -->
+          <div style="background:#f3e5f5;border:1px solid #ce93d8;border-radius:8px;padding:12px;margin:10px 0;">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <span style="font-size:12px;color:#6a1b9a;font-weight:bold;" title="Compartilhe sua agenda com outros profissionais">&#128101; Agenda Compartilhada</span>
+              <button class="btn" style="padding:4px 12px;font-size:11px;background:#e1bee7;color:#6a1b9a;border:1px solid #ce93d8;" onclick="toggleCompartilhamento()" title="Gerenciar profissionais autorizados">Gerenciar</button>
+            </div>
+            <div id="compartilhamentoSection" class="hidden" style="margin-top:10px;">
+              <div style="margin-bottom:8px;">
+                <label style="font-size:11px;color:#555;">Autorizar profissional a ver minha agenda:</label>
+                <div style="display:flex;gap:6px;margin-top:4px;">
+                  <input type="email" id="compNovoEmail" placeholder="email@profissional.com" style="flex:1;padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:12px;">
+                  <button class="btn" style="padding:6px 12px;font-size:11px;background:#7b1fa2;color:#fff;border:none;" onclick="salvarCompartilhamento()" title="Autorizar este email a ver sua agenda">Autorizar</button>
+                </div>
+              </div>
+              <div id="compListaAutorizados" style="font-size:11px;color:#555;"></div>
+              <div style="margin-top:10px;border-top:1px solid #e1bee7;padding-top:8px;">
+                <label style="font-size:11px;color:#555;">Ver agenda de outro profissional:</label>
+                <div id="compListaColegas" style="margin-top:4px;"></div>
+              </div>
+            </div>
+            <div id="agendaColega" style="display:none;margin-top:10px;background:#fff;border:1px solid #e1bee7;border-radius:8px;padding:10px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                <span id="agendaColegaTitulo" style="font-size:12px;font-weight:bold;color:#6a1b9a;"></span>
+                <button style="background:none;border:none;font-size:16px;cursor:pointer;color:#999;" onclick="fecharAgendaColega()">&#10005;</button>
+              </div>
+              <div id="agendaColegaConteudo"></div>
+            </div>
+          </div>
           <!-- Mini calendario -->
           <div style="background:#fff;border:1px solid #ddd;border-radius:10px;padding:15px;margin:10px 0;">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
@@ -2724,7 +2752,7 @@
         return;
       }
       consultasDia.sort(function(a, b) { var fa = (a.data||{}).formData||{}; var fb = (b.data||{}).formData||{}; return (fa.horaConsulta||'').localeCompare(fb.horaConsulta||''); });
-      var html = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><label style="font-size:11px;color:#555;cursor:pointer;"><input type="checkbox" id="agendaDiaSelTodos" onchange="agendaDiaToggleSelTodos(this.checked)" style="margin-right:4px;">Selecionar todos</label><button class="btn btn-red" style="padding:3px 10px;font-size:11px;display:none;" id="btnAcaoLoteDia" onclick="agendaDiaAcaoLote()">&#128465; Deletar selecionados</button></div>';
+      var html = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><label style="font-size:11px;color:#555;cursor:pointer;" title="Marcar/desmarcar todas as consultas do dia"><input type="checkbox" id="agendaDiaSelTodos" onchange="agendaDiaToggleSelTodos(this.checked)" style="margin-right:4px;">Selecionar todos</label><button class="btn btn-red" style="padding:3px 10px;font-size:11px;display:none;" id="btnAcaoLoteDia" onclick="agendaDiaAcaoLote()" title="Deletar permanentemente as consultas marcadas">&#128465; Deletar selecionados</button></div>';
       html += '<table class="results-table"><tr><th style="width:30px;"></th><th>Hora</th><th>Paciente</th><th>Tipo</th><th>Duracao</th><th>Status</th><th>Acoes</th></tr>';
       consultasDia.forEach(function(c) {
         var d = c.data || {};
@@ -2740,22 +2768,22 @@
         html += '<td><span style="color:' + corStatus + ';font-weight:bold;font-size:11px;text-transform:uppercase;">' + status + '</span></td>';
         html += '<td style="display:flex;gap:4px;flex-wrap:wrap;">';
         if (status === 'agendado' || status === 'confirmado') {
-          html += '<button class="btn btn-green" style="padding:3px 8px;font-size:11px;" onclick="iniciarConsultaAgenda(\'' + c.sessionId + '\')">&#9654; Iniciar</button>';
-          html += '<button class="btn btn-blue" style="padding:3px 8px;font-size:11px;" onclick="confirmarConsultaAgenda(\'' + c.sessionId + '\')">&#10003;</button>';
-          html += '<button class="btn btn-orange" style="padding:3px 8px;font-size:11px;" onclick="editarConsultaAgenda(\'' + c.sessionId + '\')">&#9998;</button>';
-          html += '<button class="btn btn-red" style="padding:3px 8px;font-size:11px;" onclick="cancelarConsultaAgenda(\'' + c.sessionId + '\')">&#10007;</button>';
-          html += '<button class="btn" style="padding:3px 8px;font-size:10px;background:#fce4ec;color:#c62828;border:1px solid #ef9a9a;" onclick="cancelarEstaESeguintes(\'' + c.sessionId + '\')" title="Cancelar esta e todas as seguintes do mesmo paciente/horario">&#128465; Esta+seg.</button>';
+          html += '<button class="btn btn-green" style="padding:3px 8px;font-size:11px;" onclick="iniciarConsultaAgenda(\'' + c.sessionId + '\')" title="Iniciar consulta (abre prontuario)">&#9654; Iniciar</button>';
+          html += '<button class="btn btn-blue" style="padding:3px 8px;font-size:11px;" onclick="confirmarConsultaAgenda(\'' + c.sessionId + '\')" title="Confirmar presenca do paciente">&#10003;</button>';
+          html += '<button class="btn btn-orange" style="padding:3px 8px;font-size:11px;" onclick="editarConsultaAgenda(\'' + c.sessionId + '\')" title="Editar dados da consulta">&#9998;</button>';
+          html += '<button class="btn btn-red" style="padding:3px 8px;font-size:11px;" onclick="cancelarConsultaAgenda(\'' + c.sessionId + '\')" title="Cancelar apenas esta consulta">&#10007;</button>';
+          html += '<button class="btn" style="padding:3px 8px;font-size:10px;background:#fff;color:#888;border:1px solid #ccc;" onclick="cancelarEstaESeguintes(\'' + c.sessionId + '\')" title="Deletar esta e todas as seguintes do mesmo paciente/horario">&#10005;&#10005;</button>';
         }
         // Botao Historico do paciente
         if (fd.pacienteId) {
-          html += '<button class="btn" style="padding:3px 8px;font-size:11px;background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7;" onclick="abrirHistoricoPaciente(\'' + fd.pacienteId + '\',\'' + (fd.nome || '').replace(/'/g,'') + '\')">&#128203; Historico</button>';
+          html += '<button class="btn" style="padding:3px 8px;font-size:11px;background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7;" onclick="abrirHistoricoPaciente(\'' + fd.pacienteId + '\',\'' + (fd.nome || '').replace(/'/g,'') + '\')" title="Ver historico do paciente (prontuarios e escalas)">&#128203;</button>';
         }
         // Indicador de prontuario salvo
         if (d.prontuarioId) {
-          html += '<span style="font-size:10px;color:#2e7d32;background:#c8e6c9;padding:2px 6px;border-radius:4px;display:inline-flex;align-items:center;gap:2px;" title="Prontuario salvo em ' + (d.prontuarioSalvoEm || '').split('T')[0] + '">&#9989; pront.</span>';
+          html += '<span style="font-size:10px;color:#2e7d32;background:#c8e6c9;padding:2px 6px;border-radius:4px;display:inline-flex;align-items:center;gap:2px;" title="Prontuario salvo em ' + (d.prontuarioSalvoEm || '').split('T')[0] + '">&#9989;</span>';
         }
         if (fd.whatsapp) {
-          html += '<a class="btn btn-green" style="padding:3px 8px;font-size:11px;text-decoration:none;background:#25d366;color:#fff;border-color:#25d366;" href="https://wa.me/55' + fd.whatsapp.replace(/\D/g,'') + '?text=' + encodeURIComponent('Ola! Lembrete da sua consulta em ' + fd.dataConsulta + ' as ' + fd.horaConsulta + '.') + '" target="_blank">&#128172;</a>';
+          html += '<a class="btn btn-green" style="padding:3px 8px;font-size:11px;text-decoration:none;background:#25d366;color:#fff;border-color:#25d366;" href="https://wa.me/55' + fd.whatsapp.replace(/\D/g,'') + '?text=' + encodeURIComponent('Ola! Lembrete da sua consulta em ' + fd.dataConsulta + ' as ' + fd.horaConsulta + '.') + '" target="_blank" title="Enviar lembrete via WhatsApp">&#128172;</a>';
         }
         html += '</td></tr>';
       });
@@ -2793,7 +2821,7 @@
         var db = (fb.dataConsulta||'') + (fb.horaConsulta||'');
         return da.localeCompare(db);
       });
-      var html = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><label style="font-size:11px;color:#555;cursor:pointer;"><input type="checkbox" id="agendaSelTodos" onchange="agendaToggleSelTodos(this.checked)" style="margin-right:4px;">Selecionar todos</label><button class="btn btn-red" style="padding:3px 10px;font-size:11px;display:none;" id="btnAcaoLoteSemana" onclick="agendaAcaoLote()">&#128465; Deletar selecionados</button></div>';
+      var html = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><label style="font-size:11px;color:#555;cursor:pointer;" title="Marcar/desmarcar todas as consultas da semana"><input type="checkbox" id="agendaSelTodos" onchange="agendaToggleSelTodos(this.checked)" style="margin-right:4px;">Selecionar todos</label><button class="btn btn-red" style="padding:3px 10px;font-size:11px;display:none;" id="btnAcaoLoteSemana" onclick="agendaAcaoLote()" title="Deletar permanentemente as consultas marcadas">&#128465; Deletar selecionados</button></div>';
       var diaAtual = '';
       var hojeKey = hoje.toISOString().split('T')[0];
       consultasSemana.forEach(function(c) {
@@ -3240,6 +3268,134 @@
         });
         loadAgendaConsultas();
       } catch(e) { alert('Erro: ' + e.message); }
+    }
+
+    // === COMPARTILHAMENTO DE AGENDA ===
+    function toggleCompartilhamento() {
+      var sec = document.getElementById('compartilhamentoSection');
+      sec.classList.toggle('hidden');
+      if (!sec.classList.contains('hidden')) carregarCompartilhamentos();
+    }
+
+    async function carregarCompartilhamentos() {
+      try {
+        var resp = await fetch(API_URL + '/get-compartilhamentos?email=' + encodeURIComponent(currentUser));
+        var data = await resp.json();
+        // Quem eu autorizei
+        var listaAuth = document.getElementById('compListaAutorizados');
+        if (data.euAutorizei && data.euAutorizei.length > 0) {
+          var html = '<div style="margin-top:6px;"><span style="font-size:10px;color:#6a1b9a;font-weight:bold;">Quem pode ver minha agenda:</span>';
+          data.euAutorizei.forEach(function(a) {
+            html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f3e5f5;">';
+            html += '<span style="font-size:11px;">' + a.emailAutorizado + '</span>';
+            html += '<button style="background:none;border:none;color:#c62828;cursor:pointer;font-size:14px;" onclick="removerCompartilhamento(\'' + a.emailAutorizado + '\')" title="Remover autorizacao">&#10005;</button>';
+            html += '</div>';
+          });
+          html += '</div>';
+          listaAuth.innerHTML = html;
+        } else {
+          listaAuth.innerHTML = '<p style="font-size:11px;color:#999;margin-top:4px;">Nenhum profissional autorizado ainda.</p>';
+        }
+        // Quem me autorizou (posso ver agenda deles)
+        var listaColegas = document.getElementById('compListaColegas');
+        if (data.meAutorizaram && data.meAutorizaram.length > 0) {
+          var html2 = '';
+          data.meAutorizaram.forEach(function(c) {
+            html2 += '<button class="btn" style="padding:4px 10px;font-size:11px;background:#e1bee7;color:#6a1b9a;border:1px solid #ce93d8;margin:2px;" onclick="verAgendaColega(\'' + c.emailDono + '\')" title="Ver agenda de ' + c.emailDono + '">&#128197; ' + c.emailDono.split('@')[0] + '</button>';
+          });
+          listaColegas.innerHTML = html2;
+        } else {
+          listaColegas.innerHTML = '<p style="font-size:11px;color:#999;">Nenhum profissional compartilhou a agenda com voce ainda.</p>';
+        }
+      } catch(e) {
+        document.getElementById('compListaAutorizados').innerHTML = '<p style="color:#c62828;font-size:11px;">Erro ao carregar: ' + e.message + '</p>';
+      }
+    }
+
+    async function salvarCompartilhamento() {
+      var emailAuth = document.getElementById('compNovoEmail').value.trim().toLowerCase();
+      if (!emailAuth || !emailAuth.includes('@')) { alert('Digite um email valido.'); return; }
+      try {
+        var resp = await fetch(API_URL + '/save-compartilhamento', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ email: currentUser, emailAutorizado: emailAuth })
+        });
+        var data = await resp.json();
+        if (data.ok) {
+          document.getElementById('compNovoEmail').value = '';
+          alert('Profissional ' + emailAuth + ' autorizado a ver sua agenda!');
+          carregarCompartilhamentos();
+        } else { alert('Erro: ' + (data.error || 'tente novamente')); }
+      } catch(e) { alert('Erro: ' + e.message); }
+    }
+
+    async function removerCompartilhamento(emailAuth) {
+      if (!confirm('Remover autorizacao de ' + emailAuth + '?')) return;
+      try {
+        await fetch(API_URL + '/remove-compartilhamento', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ email: currentUser, emailAutorizado: emailAuth })
+        });
+        carregarCompartilhamentos();
+      } catch(e) { alert('Erro: ' + e.message); }
+    }
+
+    async function verAgendaColega(emailDono) {
+      var sec = document.getElementById('agendaColega');
+      sec.style.display = 'block';
+      document.getElementById('agendaColegaTitulo').textContent = 'Agenda de ' + emailDono.split('@')[0];
+      document.getElementById('agendaColegaConteudo').innerHTML = '<p style="color:#999;font-size:11px;text-align:center;">Carregando...</p>';
+      try {
+        var resp = await fetch(API_URL + '/get-agenda-compartilhada?email=' + encodeURIComponent(currentUser) + '&emailDono=' + encodeURIComponent(emailDono));
+        var data = await resp.json();
+        if (data.error) { document.getElementById('agendaColegaConteudo').innerHTML = '<p style="color:#c62828;font-size:11px;">' + data.error + '</p>'; return; }
+        var consultas = (data.results || []).filter(function(c) {
+          var d = c.data || {};
+          return d.status !== 'cancelado';
+        });
+        // Mostrar proximas consultas (da data de hoje em diante)
+        var hoje = new Date().toISOString().split('T')[0];
+        var proximas = consultas.filter(function(c) {
+          var fd = (c.data || {}).formData || {};
+          return (fd.dataConsulta || '') >= hoje;
+        });
+        proximas.sort(function(a, b) {
+          var fa = (a.data||{}).formData||{};
+          var fb = (b.data||{}).formData||{};
+          return (fa.dataConsulta + fa.horaConsulta).localeCompare(fb.dataConsulta + fb.horaConsulta);
+        });
+        if (proximas.length === 0) {
+          document.getElementById('agendaColegaConteudo').innerHTML = '<p style="color:#999;font-size:11px;text-align:center;">Nenhuma consulta futura encontrada.</p>';
+          return;
+        }
+        var html = '<div style="max-height:250px;overflow-y:auto;">';
+        var diaAnt = '';
+        proximas.slice(0, 30).forEach(function(c) {
+          var fd = (c.data || {}).formData || {};
+          var dc = fd.dataConsulta || '';
+          if (dc !== diaAnt) {
+            diaAnt = dc;
+            var dObj = new Date(dc + 'T12:00:00');
+            html += '<div style="margin-top:6px;padding:3px 6px;background:#f3e5f5;border-radius:4px;font-size:10px;font-weight:bold;color:#6a1b9a;">' + dObj.getDate() + '/' + String(dObj.getMonth()+1).padStart(2,'0') + '/' + dObj.getFullYear() + '</div>';
+          }
+          html += '<div style="display:flex;align-items:center;gap:8px;padding:4px 6px;border-bottom:1px solid #f5f5f5;font-size:11px;">';
+          html += '<span style="font-weight:bold;color:#6a1b9a;min-width:40px;">' + (fd.horaConsulta || '--:--') + '</span>';
+          html += '<span style="flex:1;">' + (fd.nome || '-') + '</span>';
+          html += '<span style="color:#888;font-size:10px;">' + (fd.tipoConsulta || '').substring(0,15) + '</span>';
+          html += '</div>';
+        });
+        html += '</div>';
+        if (proximas.length > 30) html += '<p style="font-size:10px;color:#999;text-align:center;margin-top:4px;">Mostrando 30 de ' + proximas.length + ' consultas</p>';
+        document.getElementById('agendaColegaConteudo').innerHTML = html;
+      } catch(e) {
+        document.getElementById('agendaColegaConteudo').innerHTML = '<p style="color:#c62828;font-size:11px;">Erro: ' + e.message + '</p>';
+      }
+    }
+
+    function fecharAgendaColega() {
+      document.getElementById('agendaColega').style.display = 'none';
     }
 
     async function cancelarEstaESeguintes(sessionId) {
