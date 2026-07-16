@@ -2874,6 +2874,8 @@
       var ids = [];
       checks.forEach(function(ch) { ids.push(ch.value); });
       if (!confirm('Deletar permanentemente ' + ids.length + ' consulta(s) selecionada(s)?\n\nEsta acao nao pode ser desfeita!')) return;
+      var btn = document.getElementById('btnAcaoLoteDia');
+      if (btn) { btn.disabled = true; btn.textContent = 'Deletando... 0/' + ids.length; }
       var sucesso = 0; var erros = 0;
       for (var i = 0; i < ids.length; i++) {
         try {
@@ -2883,6 +2885,7 @@
             body: JSON.stringify({ email: currentUser, sessionId: ids[i] })
           });
           sucesso++;
+          if (btn) btn.textContent = 'Deletando... ' + sucesso + '/' + ids.length;
         } catch(e) { erros++; }
       }
       alert(sucesso + ' consultas deletadas!' + (erros > 0 ? ' (' + erros + ' erros)' : ''));
@@ -2913,6 +2916,8 @@
       var ids = [];
       checks.forEach(function(ch) { ids.push(ch.value); });
       if (!confirm('Deletar permanentemente ' + ids.length + ' consulta(s) selecionada(s)?\n\nEsta acao nao pode ser desfeita!')) return;
+      var btn = document.getElementById('btnAcaoLoteSemana');
+      if (btn) { btn.disabled = true; btn.textContent = 'Deletando... 0/' + ids.length; }
       var sucesso = 0; var erros = 0;
       for (var i = 0; i < ids.length; i++) {
         try {
@@ -2922,6 +2927,7 @@
             body: JSON.stringify({ email: currentUser, sessionId: ids[i] })
           });
           sucesso++;
+          if (btn) btn.textContent = 'Deletando... ' + sucesso + '/' + ids.length;
         } catch(e) { erros++; }
       }
       alert(sucesso + ' consultas deletadas!' + (erros > 0 ? ' (' + erros + ' erros)' : ''));
@@ -2943,6 +2949,9 @@
       var recorrencia = document.getElementById('agendaRecorrencia') ? document.getElementById('agendaRecorrencia').value : 'nenhuma';
       var recorrenciaQtd = document.getElementById('agendaRecorrenciaQtd') ? parseInt(document.getElementById('agendaRecorrenciaQtd').value) || 1 : 1;
       if (!nome || !data || !hora) { alert('Preencha nome, data e hora.'); return; }
+      // Desabilitar botao para evitar cliques multiplos
+      var btnSalvar = document.querySelector('#novaConsultaSection .btn-green');
+      if (btnSalvar) { btnSalvar.disabled = true; btnSalvar.textContent = 'Salvando...'; btnSalvar.style.opacity = '0.6'; }
       // Validacao de conflito de horario
       var conflito = verificarConflitoHorario(data, hora, duracao, _agendaEditandoId);
       if (conflito) { alert('Conflito de horario! Ja existe uma consulta nesse periodo:\n\n' + conflito.nome + ' - ' + conflito.hora + ' (' + conflito.duracao + ' min)\n\nEscolha outro horario.'); return; }
@@ -3047,8 +3056,12 @@
         if (document.getElementById('agendaRecorrenciaQtd')) document.getElementById('agendaRecorrenciaQtd').value = '4';
         loadAgendaConsultas();
         var msg = _agendaEditandoId === null && datas.length > 1 ? datas.length + ' consultas agendadas com sucesso!' : 'Consulta salva com sucesso!';
+        if (btnSalvar) { btnSalvar.disabled = false; btnSalvar.textContent = 'Agendar'; btnSalvar.style.opacity = '1'; }
         alert(msg);
-      } catch(e) { alert('Erro ao agendar: ' + e.message); }
+      } catch(e) {
+        if (btnSalvar) { btnSalvar.disabled = false; btnSalvar.textContent = 'Agendar'; btnSalvar.style.opacity = '1'; }
+        alert('Erro ao agendar: ' + e.message);
+      }
     }
 
     function verificarConflitoHorario(dataCheck, horaCheck, duracaoCheck, ignorarSessionId) {
