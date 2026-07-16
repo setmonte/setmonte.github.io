@@ -6544,6 +6544,44 @@
         });
         y += 4;
       }
+      // RESPOSTAS INDIVIDUAIS DO PACIENTE — tabela color-coded
+      if (d.respostas && Array.isArray(d.respostas) && d.respostas.length > 0) {
+        doc.addPage();
+        var yr = 15;
+        doc.setFillColor(46,125,50); doc.rect(0,0,210,20,'F');
+        doc.setTextColor(255,255,255); doc.setFontSize(11); doc.setFont(undefined,'bold');
+        doc.text('RESPOSTAS DO PACIENTE', 105, 13, {align:'center'});
+        yr = 28;
+        doc.setTextColor(80,80,80); doc.setFontSize(7.5); doc.setFont(undefined,'bold');
+        doc.text('#', 17, yr); doc.text('Item', 25, yr); doc.text('Resposta', 170, yr);
+        doc.setFont(undefined,'normal'); yr += 3;
+        doc.setDrawColor(180,180,180); doc.line(15,yr,195,yr); yr += 5;
+        d.respostas.forEach(function(resp) {
+          if (yr > 275) { doc.addPage(); yr = 15; }
+          var val = resp.valor != null ? resp.valor : 0;
+          var maxVal = 4;
+          if (d.escala && d.escala.indexOf('HDSI') >= 0) maxVal = 4;
+          var corFundo;
+          if (val >= maxVal) corFundo = [255,205,210];
+          else if (val >= maxVal - 1) corFundo = [255,243,224];
+          else if (val >= Math.ceil(maxVal/2)) corFundo = [255,249,196];
+          else corFundo = [200,230,201];
+          doc.setFillColor(corFundo[0], corFundo[1], corFundo[2]);
+          doc.rect(15, yr-3, 180, 7, 'F');
+          doc.setTextColor(0,0,0); doc.setFontSize(7);
+          doc.setFont(undefined,'bold');
+          doc.text(String(resp.item || ''), 17, yr+1);
+          doc.setFont(undefined,'normal');
+          var textoItem = sanitize(resp.texto || '');
+          if (textoItem.length > 80) textoItem = textoItem.substring(0, 80) + '...';
+          doc.text(textoItem, 25, yr+1);
+          doc.setFont(undefined,'bold');
+          var txtResp = sanitize(resp.resposta || String(val));
+          doc.text(txtResp, 195, yr+1, {align:'right'});
+          doc.setFont(undefined,'normal');
+          yr += 8;
+        });
+      }
       // Rodape profissional
       var totalPages = doc.internal.getNumberOfPages();
       for (var pg = 1; pg <= totalPages; pg++) {
