@@ -930,6 +930,18 @@
             <div id="adminUserResult" style="margin-top:10px;"></div>
           </div>
 
+          <!-- Deletar usuario -->
+          <div style="background:#ffebee;border:2px solid #c62828;border-radius:10px;padding:15px;margin:10px 0;">
+            <p style="font-size:13px;font-weight:bold;color:#c62828;margin-bottom:8px;">🗑️ Deletar Usuário</p>
+            <p style="font-size:11px;color:#666;margin-bottom:8px;">Remove o usuario do DynamoDB (creditos, dados) e opcionalmente do Cognito (login).</p>
+            <div class="form-row">
+              <label>Email: <input type="text" id="adminDeleteUserEmail" placeholder="email@exemplo.com" style="width:250px;"></label>
+              <button class="btn btn-red" style="padding:8px 16px;font-size:12px;margin-top:18px;" onclick="adminDeletarUsuario()">Deletar</button>
+            </div>
+            <label style="font-size:11px;color:#555;cursor:pointer;margin-top:6px;display:block;"><input type="checkbox" id="adminDeleteCognito" checked> Deletar tambem do Cognito (login)</label>
+            <p id="adminDeleteUserMsg" style="font-size:11px;color:#555;margin-top:5px;"></p>
+          </div>
+
           <!-- Adicionar creditos -->
           <div style="background:#e8f5e9;border:2px solid #2e7d32;border-radius:10px;padding:15px;margin:10px 0;">
             <p style="font-size:13px;font-weight:bold;color:#2e7d32;margin-bottom:8px;">💰 Adicionar Créditos</p>
@@ -3821,6 +3833,32 @@
         html += '</div>';
         el.innerHTML = html;
       } catch(e) { el.innerHTML = '<p style="color:red;">Erro: ' + e.message + '</p>'; }
+    }
+
+    async function adminDeletarUsuario() {
+      var email = document.getElementById('adminDeleteUserEmail').value.trim().toLowerCase();
+      if (!email) { alert('Digite o email do usuario.'); return; }
+      if (email === currentUser) { alert('Voce nao pode deletar a si mesmo!'); return; }
+      var deletarCognito = document.getElementById('adminDeleteCognito').checked;
+      var msg = 'Tem certeza que deseja DELETAR o usuario:\n\n' + email + '\n\n';
+      msg += deletarCognito ? '(DynamoDB + Cognito)' : '(Apenas DynamoDB)';
+      msg += '\n\nEssa acao NAO pode ser desfeita!';
+      if (!confirm(msg)) return;
+      var el = document.getElementById('adminDeleteUserMsg');
+      el.innerHTML = '<span style="color:#c62828;">Deletando...</span>';
+      try {
+        var resp = await fetch(API_URL + '/delete-user', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ email: currentUser, targetEmail: email, deleteCognito: deletarCognito })
+        });
+        var data = await resp.json();
+        if (data.ok) {
+          el.innerHTML = '<span style="color:#2e7d32;">Usuario ' + email + ' deletado com sucesso!</span>';
+        } else {
+          el.innerHTML = '<span style="color:#c62828;">Erro: ' + (data.error || 'desconhecido') + '</span>';
+        }
+      } catch(e) { el.innerHTML = '<span style="color:#c62828;">Erro: ' + e.message + '</span>'; }
     }
 
     function toggleFreeMode(el) {
