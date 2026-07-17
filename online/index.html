@@ -680,6 +680,7 @@
                 <option value="Devolutiva">Devolutiva</option>
                 <option value="Sessao de reabilitacao">Sessao de reabilitacao</option>
                 <option value="Consulta inicial">Consulta inicial</option>
+                <option value="Consulta psicologica">Consulta psicologica</option>
                 <option value="Outro">Outro</option>
               </select></label>
               <label>Duracao (min): <input type="number" id="agendaDuracao" value="90" min="15" max="240" step="15" style="width:70px;"></label>
@@ -2684,7 +2685,7 @@
     var _agendaMesCal = new Date();
     var _agendaDiaSel = new Date();
     var _agendaEditandoId = null;
-    var _agendaDuracoes = { 'Avaliacao neuropsicologica': 90, 'Retorno': 45, 'Devolutiva': 60, 'Sessao de reabilitacao': 60, 'Consulta inicial': 60, 'Outro': 60 };
+    var _agendaDuracoes = { 'Avaliacao neuropsicologica': 90, 'Retorno': 45, 'Devolutiva': 60, 'Sessao de reabilitacao': 60, 'Consulta inicial': 60, 'Consulta psicologica': 60, 'Outro': 60 };
 
     function agendaAplicarDuracao() {
       var tipo = document.getElementById('agendaTipo').value;
@@ -2711,10 +2712,39 @@
         var data = await resp.json();
         _agendaCache = (data.results || []).filter(function(r) { return r.tipo === 'agenda'; });
         _agendaCache.sort(function(a, b) { return (b.date || '').localeCompare(a.date || ''); });
+        // Auto-finalizar consultas passadas
+        autoFinalizarConsultas();
       } catch(e) { _agendaCache = []; }
       renderAgendaCalendario();
       renderAgendaConsultasSemana();
       renderAgendaConsultasDia();
+    }
+
+    function autoFinalizarConsultas() {
+      var agora = new Date();
+      _agendaCache.forEach(function(c) {
+        var d = c.data || {};
+        var fd = d.formData || {};
+        var status = d.status || 'agendado';
+        if (status !== 'agendado' && status !== 'confirmado') return;
+        if (!fd.dataConsulta || !fd.horaConsulta) return;
+        var duracao = parseInt(fd.duracao) || 60;
+        var fimConsulta = new Date(fd.dataConsulta + 'T' + fd.horaConsulta + ':00');
+        fimConsulta.setMinutes(fimConsulta.getMinutes() + duracao);
+        if (agora > fimConsulta) {
+          c.data.status = 'finalizado';
+          fetch(API_URL + '/save-result', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({
+              email: currentUser,
+              tipo: 'agenda',
+              sessionId: c.sessionId,
+              data: { status: 'finalizado', formData: fd }
+            })
+          }).catch(function(){});
+        }
+      });
     }
 
     function renderAgendaCalendario() {
