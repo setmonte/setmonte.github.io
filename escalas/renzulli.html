@@ -89,6 +89,7 @@
         <div id="questionario"></div>
         <div class="botoes">
             <button class="btn btn-primary" onclick="calcularResultados()">Calcular Resultados</button>
+            <button class="btn" style="background:linear-gradient(135deg,#1565c0,#42a5f5);color:white" onclick="calcularComIA()">Resultados + An&#225;lise IA</button>
             <button class="btn btn-secondary" onclick="gerarRelatorioPDF()">Gerar PDF</button>
             <button class="btn btn-danger" onclick="limparDados()">Limpar Dados</button>
         </div>
@@ -293,6 +294,27 @@ function gerarRelatorioPDF() {
     doc.setFillColor(80,80,80); doc.rect(0,285,210,12,'F');
     doc.setTextColor(200,200,200); doc.setFontSize(7);
     doc.text('Relatorio gerado em: ' + new Date().toLocaleString('pt-BR'), 105, 291, {align:'center'});
+    // Pagina 2: Analise IA (se disponivel)
+    if (_analiseIATexto) {
+        doc.addPage();
+        doc.setFillColor(21,101,192); doc.rect(0,0,210,20,'F');
+        doc.setTextColor(255,255,255); doc.setFontSize(12); doc.setFont(undefined,'bold');
+        doc.text('ANALISE CLINICA (IA) — Escala de Renzulli', 105, 13, {align:'center'});
+        doc.setTextColor(0,0,0); doc.setFont(undefined,'normal'); doc.setFontSize(9);
+        var yIA = 30;
+        var linhasIA = doc.splitTextToSize(_analiseIATexto, 170);
+        for (var li = 0; li < linhasIA.length; li++) {
+            if (yIA > 270) { doc.addPage(); yIA = 20; }
+            doc.text(linhasIA[li], 20, yIA); yIA += 5;
+        }
+        yIA += 10;
+        if (yIA > 275) { doc.addPage(); yIA = 20; }
+        doc.setFontSize(7.5); doc.setTextColor(120,120,120);
+        doc.text('Nota: Analise auxiliar gerada por IA. Nao substitui julgamento clinico profissional.', 20, yIA);
+        doc.setFillColor(80,80,80); doc.rect(0,285,210,12,'F');
+        doc.setTextColor(200,200,200); doc.setFontSize(7);
+        doc.text('Relatorio gerado em: ' + new Date().toLocaleString('pt-BR'), 105, 291, {align:'center'});
+    }
     var ts = new Date();
     doc.save('Renzulli_' + (document.getElementById('nome').value||'Paciente').replace(/\s+/g,'_') + '_' + ts.getFullYear() + String(ts.getMonth()+1).padStart(2,'0') + String(ts.getDate()).padStart(2,'0') + '.pdf');
 }
@@ -304,6 +326,73 @@ function limparDados() {
     document.getElementById('sexo').value = '';
     document.getElementById('resultados').style.display = 'none';
     window._escalaDados = null;
+    _analiseIATexto = null;
+}
+
+// ===== ANALISE IA =====
+var _analiseIATexto = null;
+
+async function calcularComIA() {
+    // Primeiro calcula os resultados normalmente
+    calcularResultados();
+    if (!window._escalaDados) return;
+    var dados = window._escalaDados;
+    // Mostrar loading abaixo dos resultados
+    var container = document.getElementById('resultados');
+    var loadingHtml = '<div id="ia-loading" style="background:#e3f2fd;border:2px solid #1565c0;border-radius:10px;padding:20px;margin-top:15px;text-align:center;">';
+    loadingHtml += '<p style="font-size:14px;color:#1565c0;font-weight:bold;">Analisando resultados com IA...</p>';
+    loadingHtml += '<p style="font-size:12px;color:#777;margin-top:5px;">Aguarde, a IA esta interpretando o perfil.</p></div>';
+    container.innerHTML += loadingHtml;
+    // Montar prompt
+    var prompt = 'Voce e um neuropsicologo experiente em avaliacao de Altas Habilidades/Superdotacao.\n';
+    prompt += 'Analise os resultados abaixo da Escala de Renzulli (SRBCSS-R) e forneca uma interpretacao clinica breve (max 15 linhas).\n\n';
+    prompt += 'DADOS DEMOGRAFICOS:\n';
+    prompt += '- Idade: ' + (document.getElementById('idade').value || 'N/I') + '\n';
+    prompt += '- Sexo: ' + (document.getElementById('sexo').value || 'N/I') + '\n';
+    prompt += '- Escolaridade: ' + (document.getElementById('escolaridade').value || 'N/I') + '\n';
+    prompt += '- Respondente: ' + (document.getElementById('respondente').value || 'N/I') + '\n\n';
+    prompt += 'ESCALA: Renzulli SRBCSS-R (40 itens, 4 dominios, Likert 1-5)\n';
+    prompt += 'TOTAL: ' + dados.escore + '/200 | MEDIA GERAL: ' + dados.media + '\n\n';
+    prompt += 'DOMINIOS:\n';
+    var blocos = Object.keys(dados.dominios);
+    for (var i = 0; i < blocos.length; i++) {
+        var d = dados.dominios[blocos[i]];
+        prompt += '- ' + blocos[i] + ': ' + d.pontuacao + '/50 (media=' + d.media + ')\n';
+    }
+    prompt += '\nCLASSIFICACAO: ' + dados.classificacao + '\n\n';
+    prompt += 'INSTRUCOES:\n';
+    prompt += '- Escreva em portugues brasileiro, linguagem tecnica mas acessivel\n';
+    prompt += '- Interprete o perfil considerando indicadores de AH/SD\n';
+    prompt += '- Analise quais dominios se destacam e o que isso sugere\n';
+    prompt += '- Considere a perspectiva do respondente (professor, pai, etc.)\n';
+    prompt += '- NAO repita os numeros brutos, interprete-os clinicamente\n';
+    prompt += '- NAO faca diagnostico, apenas levante hipoteses\n';
+    prompt += '- Termine com sugestoes de proximos passos avaliativos';
+    try {
+        var resp = await fetch(_API_URL + '/generate-ai', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({prompt: prompt})
+        });
+        var aiData = await resp.json();
+        var texto = (aiData.text || '').trim();
+        _analiseIATexto = texto;
+        // Remover loading e exibir resultado
+        var loadEl = document.getElementById('ia-loading');
+        if (loadEl) loadEl.remove();
+        var iaHtml = '<div id="ia-resultado" style="background:#f1f8e9;border:2px solid #66bb6a;border-radius:10px;padding:20px;margin-top:15px;">';
+        iaHtml += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">';
+        iaHtml += '<span style="font-size:14px;font-weight:bold;color:#2e7d32;">Analise Clinica (IA)</span>';
+        iaHtml += '<button onclick="document.getElementById(\'ia-resultado\').remove()" style="background:none;border:none;font-size:18px;cursor:pointer;color:#999;">&#10005;</button></div>';
+        iaHtml += '<div style="font-size:13px;line-height:1.7;color:#333;white-space:pre-wrap;">' + texto + '</div>';
+        iaHtml += '<div style="margin-top:12px;font-size:11px;color:#999;border-top:1px solid #ddd;padding-top:8px;">Nota: Analise auxiliar gerada por IA. Nao substitui julgamento clinico profissional.</div>';
+        iaHtml += '</div>';
+        container.innerHTML += iaHtml;
+    } catch(e) {
+        var loadEl2 = document.getElementById('ia-loading');
+        if (loadEl2) loadEl2.remove();
+        container.innerHTML += '<div style="background:#ffebee;border:1px solid #ef5350;border-radius:8px;padding:12px;margin-top:15px;font-size:13px;color:#c62828;">Erro ao gerar analise IA: ' + e.message + '</div>';
+    }
 }
 
 // ===== MODO PAINEL =====
