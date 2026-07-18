@@ -1674,6 +1674,7 @@
   <script src="libs/jspdf.umd.min.js"></script>
   <script src="libs/jspdf.plugin.autotable.min.js"></script>
   <script src="libs/xlsx.min.js"></script>
+  <script src="anonimizador.js"></script>
   <script src="tecfe-v7-cards.js"></script>
   <script src="tecfe-v7-ui.js"></script>
   <script src="tecfe-v7-engine.js"></script>
@@ -2132,11 +2133,15 @@
               'Portugues brasileiro. Interprete clinicamente. NAO repita numeros.\n' +
               'OBRIGATORIO na ULTIMA LINHA: ESTRATEGIA: [tipo] - [descricao]\n' +
               'Tipos: Sistematica, Sistematica por eliminacao, Parcialmente sistematica, Tentativa e erro, Perseverativa, Aleatoria, Impulsiva';
+            // === ANONIMIZACAO INVISIVEL ===
+            var anonTECFE = (typeof Anonimizador !== 'undefined') ? Anonimizador.mascararPrompt(aiPrompt, {}) : { textoLimpo: aiPrompt, mapa: {} };
+            var promptSeguroTECFE = anonTECFE.textoLimpo;
+            // === FIM ANONIMIZACAO ===
             var aiTimeout = new Promise(function(_, reject) { setTimeout(function() { reject('timeout'); }, 30000); });
             var aiCall = fetch(API_URL + '/generate-ai', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ prompt: aiPrompt })
+              body: JSON.stringify({ prompt: promptSeguroTECFE })
             }).then(function(r) { return r.json(); }).then(function(d) {
               return (d.text || '').trim();
             });
@@ -5129,11 +5134,16 @@
         prompt += 'O campo status pode ser: "reabilitacao" (funcao deficitaria), "manutencao" (funcao preservada a manter) ou "monitoramento" (acompanhar evolucao).\n';
         prompt += 'Baseie-se nos resultados reais. Se um teste mostra deficit, proponha reabilitacao. Se esta preservado, proponha manutencao.\n';
         prompt += 'Responda APENAS o JSON, sem explicacoes extras.';
+        // === ANONIMIZACAO INVISIVEL ===
+        var anonReab = (typeof Anonimizador !== 'undefined') ? Anonimizador.mascararPrompt(prompt, { paciente: nome || '' }) : { textoLimpo: prompt, mapa: {} };
+        var promptSeguro = anonReab.textoLimpo;
+        var mapaReab = anonReab.mapa;
+        // === FIM ANONIMIZACAO ===
         // Chamar /generate-ai
         var aiResp = await fetch(API_URL + '/generate-ai', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ prompt: prompt })
+          body: JSON.stringify({ prompt: promptSeguro })
         });
         var aiData = await aiResp.json();
         if (aiData.error) {
@@ -5142,6 +5152,11 @@
         }
         // Parsear JSON da resposta
         var texto = aiData.text || '';
+        // === DESANONIMIZACAO INVISIVEL ===
+        if (typeof Anonimizador !== 'undefined' && mapaReab && Object.keys(mapaReab).length > 0) {
+          texto = Anonimizador.desmascarar(texto, mapaReab);
+        }
+        // === FIM DESANONIMIZACAO ===
         var jsonLimpo = texto.replace(/```json/g, '').replace(/```/g, '').trim();
         var resultado;
         try {
@@ -6025,8 +6040,12 @@
       var laudoIA = null;
       try {
         var aiPrompt = 'Voce e um neuropsicologo experiente em funcoes executivas.\nGere um LAUDO CLINICO breve (max 10 linhas) do TTE (Trail Making Test digital).\n\nPACIENTE: Idade: ' + idade + ' | Sexo: ' + sexo + ' | Escolaridade: ' + escolaridade + '\n\nRESULTADOS:\nParte A: ' + tempoA.toFixed(1) + 's, ' + errosA + ' erros (' + classA + ')\nParte B: ' + tempoB.toFixed(1) + 's, ' + errosB + ' erros (' + classB + ')\nRazao B/A: ' + razao + ' (' + classRazao + ')\nDiferenca B-A: ' + diferenca + 's\n\nNORMAS (Tombaugh 2004, adultos):\nA: Superior<=30s, Media<=55s, Baixa<=78s, Prejuizo>78s\nB: Superior<=58s, Media<=120s, Baixa<=180s, Prejuizo>180s\nB/A normal: 1.5-2.5\n\nINTERPRETE: velocidade de processamento (A), flexibilidade cognitiva (B e razao), atencao visual, erros. Considere idade/escolaridade.\nPortugues brasileiro. Linguagem tecnica acessivel. NAO repita numeros brutos.';
+        // === ANONIMIZACAO INVISIVEL ===
+        var anonTTE = (typeof Anonimizador !== 'undefined') ? Anonimizador.mascararPrompt(aiPrompt, {}) : { textoLimpo: aiPrompt, mapa: {} };
+        var promptSeguroTTE = anonTTE.textoLimpo;
+        // === FIM ANONIMIZACAO ===
         var aiTimeout = new Promise(function(_, reject) { setTimeout(function() { reject('timeout'); }, 30000); });
-        var aiCall = fetch(API_URL + '/generate-ai', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({prompt:aiPrompt}) }).then(function(r){return r.json();}).then(function(d){return (d.text||'').trim();});
+        var aiCall = fetch(API_URL + '/generate-ai', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({prompt:promptSeguroTTE}) }).then(function(r){return r.json();}).then(function(d){return (d.text||'').trim();});
         laudoIA = await Promise.race([aiCall, aiTimeout]);
       } catch(e) { laudoIA = null; }
       // === GRAFICO EM CANVAS ===
@@ -6286,7 +6305,7 @@
         var data = await resp.json();
         _escalasResultCache = [];
         if (data.results && data.results.length > 0) {
-          var html = '<table class="results-table"><tr><th><input type="checkbox" onclick="toggleEscalasSelectAll(this)"></th><th>Data</th><th>Escala</th><th>Paciente</th><th>ID</th><th>Escore</th><th>Classificacao</th><th>PDF</th></tr>';
+          var html = '<table class="results-table"><tr><th><input type="checkbox" onclick="toggleEscalasSelectAll(this)"></th><th>Data</th><th>Escala</th><th>Paciente</th><th>ID</th><th>Escore</th><th>Classificacao</th><th>PDF</th><th>IA</th></tr>';
           data.results.forEach(function(r) {
             var d = r.data || {};
             var date = r.date ? new Date(r.date).toLocaleString('pt-BR') : (d.data ? new Date(d.data).toLocaleString('pt-BR') : '-');
@@ -6299,6 +6318,7 @@
             html += '<td>' + (d.escore != null ? d.escore : '-') + '</td>';
             html += '<td>' + (d.classificacao || '-') + '</td>';
             html += '<td><button class="btn btn-green" style="padding:3px 8px;font-size:11px;" onclick="gerarPDFEscala(' + _escalasResultCache.length + ')">PDF</button></td>';
+            html += '<td><button class="btn btn-blue" style="padding:3px 8px;font-size:11px;" onclick="analisarEscalaComIA(' + _escalasResultCache.length + ')">&#129504;</button></td>';
             html += '</tr>';
             _escalasResultCache.push(r);
           });
@@ -6309,6 +6329,119 @@
         }
       } catch(e) {
         document.getElementById('escalasResultsList').innerHTML = '<p style="color:#777;">Erro ao carregar.</p>';
+      }
+    }
+
+    // === ANALISE DE ESCALA COM IA (anonimizada) ===
+    async function analisarEscalaComIA(idx) {
+      var r = _escalasResultCache[idx];
+      if (!r) { alert('Resultado nao encontrado.'); return; }
+      var d = r.data || {};
+      var nomePaciente = d.paciente || '';
+      var escala = d.escala || 'Escala';
+      var escore = d.escore != null ? d.escore : 'N/I';
+      var classificacao = d.classificacao || 'N/I';
+      var sexo = d.sexo || 'N/I';
+      var idade = d.idade || 'N/I';
+      var observacoes = d.observacoes || '';
+      var dominios = d.dominios || {};
+
+      // Montar prompt com dados clinicos
+      var prompt = 'Voce e um neuropsicologo experiente em avaliacao psicologica.\n';
+      prompt += 'Analise os resultados abaixo de uma escala de rastreio e forneca uma interpretacao clinica breve (max 12 linhas).\n\n';
+      prompt += 'DADOS DEMOGRAFICOS:\n';
+      prompt += '- Idade: ' + idade + '\n';
+      prompt += '- Sexo: ' + sexo + '\n\n';
+      prompt += 'ESCALA APLICADA: ' + escala + '\n';
+      prompt += 'ESCORE TOTAL: ' + escore + '\n';
+      prompt += 'CLASSIFICACAO: ' + classificacao + '\n\n';
+
+      // Dominios/subescalas
+      var chavesDom = Object.keys(dominios);
+      if (chavesDom.length > 0) {
+        prompt += 'DOMINIOS/SUBESCALAS:\n';
+        for (var di = 0; di < chavesDom.length; di++) {
+          var k = chavesDom[di];
+          var v = dominios[k];
+          if (typeof v === 'object') {
+            prompt += '- ' + k + ': ';
+            if (v.media != null) prompt += 'media=' + v.media;
+            if (v.pontuacao != null) prompt += ' pts=' + v.pontuacao;
+            if (v.positivo === true) prompt += ' (POSITIVO)';
+            else if (v.positivo === false) prompt += ' (Negativo)';
+            prompt += '\n';
+          } else {
+            prompt += '- ' + k + ': ' + v + '\n';
+          }
+        }
+        prompt += '\n';
+      }
+
+      if (observacoes) {
+        prompt += 'OBSERVACOES CLINICAS:\n' + observacoes + '\n\n';
+      }
+
+      prompt += 'INSTRUCOES:\n';
+      prompt += '- Escreva em portugues brasileiro, linguagem tecnica mas acessivel\n';
+      prompt += '- Interprete o escore total e a classificacao no contexto da escala\n';
+      prompt += '- Se houver dominios, analise o perfil (quais elevados, quais preservados)\n';
+      prompt += '- Relacione os achados com possiveis hipoteses clinicas\n';
+      prompt += '- NAO repita os numeros brutos, interprete-os clinicamente\n';
+      prompt += '- NAO faca diagnostico, apenas levante hipoteses e sugestoes de investigacao\n';
+      prompt += '- Termine com uma sintese e sugestoes de proximos passos avaliativos';
+
+      // === ANONIMIZACAO INVISIVEL ===
+      var contextoAnon = { paciente: nomePaciente };
+      var anonResult = (typeof Anonimizador !== 'undefined') ? Anonimizador.mascarar(prompt, contextoAnon) : { textoLimpo: prompt, mapa: {} };
+      var promptSeguro = anonResult.textoLimpo;
+      var mapaAnon = anonResult.mapa;
+      // === FIM ANONIMIZACAO ===
+
+      // Mostrar loading
+      var container = document.getElementById('escalasResultsList');
+      var loadingDiv = document.createElement('div');
+      loadingDiv.id = 'escala-ia-loading';
+      loadingDiv.style.cssText = 'background:#e3f2fd;border:1px solid #90caf9;border-radius:10px;padding:20px;margin:15px 0;text-align:center;';
+      loadingDiv.innerHTML = '<p style="font-size:14px;color:#1565c0;font-weight:bold;">&#129504; Analisando ' + escala + '...</p><p style="font-size:12px;color:#777;margin-top:5px;">A IA esta interpretando os resultados.</p>';
+      // Remover analise anterior se existir
+      var anterior = document.getElementById('escala-ia-resultado');
+      if (anterior) anterior.remove();
+      var loadingAnterior = document.getElementById('escala-ia-loading');
+      if (loadingAnterior) loadingAnterior.remove();
+      container.parentNode.insertBefore(loadingDiv, container.nextSibling);
+
+      try {
+        var resp = await fetch(API_URL + '/generate-ai', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: promptSeguro })
+        });
+        var aiData = await resp.json();
+        loadingDiv.remove();
+
+        if (aiData.error) throw new Error(aiData.error);
+        var texto = (aiData.text || '').trim();
+
+        // === DESANONIMIZACAO INVISIVEL ===
+        if (typeof Anonimizador !== 'undefined' && mapaAnon && Object.keys(mapaAnon).length > 0) {
+          texto = Anonimizador.desmascarar(texto, mapaAnon);
+        }
+        // === FIM DESANONIMIZACAO ===
+
+        // Exibir resultado
+        var resultDiv = document.createElement('div');
+        resultDiv.id = 'escala-ia-resultado';
+        resultDiv.style.cssText = 'background:#f1f8e9;border:2px solid #66bb6a;border-radius:10px;padding:20px;margin:15px 0;';
+        resultDiv.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">' +
+          '<span style="font-size:14px;font-weight:bold;color:#2e7d32;">&#129504; Analise IA — ' + escala + ' (' + (nomePaciente || 'Paciente') + ')</span>' +
+          '<button onclick="this.parentNode.parentNode.remove()" style="background:none;border:none;font-size:18px;cursor:pointer;color:#999;">&#10005;</button></div>' +
+          '<div style="font-size:13px;line-height:1.7;color:#333;white-space:pre-wrap;">' + texto + '</div>' +
+          '<div style="margin-top:12px;font-size:11px;color:#999;border-top:1px solid #ddd;padding-top:8px;">Nota: Analise auxiliar gerada por IA. Nao substitui julgamento clinico profissional. Dados anonimizados durante o processamento.</div>';
+        container.parentNode.insertBefore(resultDiv, container.nextSibling);
+        resultDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } catch(e) {
+        loadingDiv.remove();
+        alert('Erro ao analisar: ' + e.message);
       }
     }
 
@@ -6921,11 +7054,15 @@
           'Relacione alarmes falsos com discriminacao (perirrinal), omissoes com codificacao (parietal/occipital), ' +
           'queda no 2o reconhecimento com decaimento da MT (pre-frontal/parietal). ' +
           'Considere idade e escolaridade. NAO repita numeros, interprete-os.';
+        // === ANONIMIZACAO INVISIVEL ===
+        var anonTRMV = (typeof Anonimizador !== 'undefined') ? Anonimizador.mascararPrompt(aiPrompt, {}) : { textoLimpo: aiPrompt, mapa: {} };
+        var promptSeguroTRMV = anonTRMV.textoLimpo;
+        // === FIM ANONIMIZACAO ===
         var aiTimeout = new Promise(function(_, reject) { setTimeout(function() { reject('timeout'); }, 30000); });
         var aiCall = fetch(API_URL + '/generate-ai', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt: aiPrompt })
+          body: JSON.stringify({ prompt: promptSeguroTRMV })
         }).then(function(r) { return r.json(); }).then(function(d) {
           return (d.text || '').trim();
         });
@@ -8000,11 +8137,15 @@
           '- NAO repita numeros brutos, interprete-os clinicamente.\n' +
           '- NAO diagnostique dislexia apenas por substituicoes semanticas.';
 
+        // === ANONIMIZACAO INVISIVEL ===
+        var anonTFLOD = (typeof Anonimizador !== 'undefined') ? Anonimizador.mascararPrompt(aiPrompt, {}) : { textoLimpo: aiPrompt, mapa: {} };
+        var promptSeguroTFLOD = anonTFLOD.textoLimpo;
+        // === FIM ANONIMIZACAO ===
         var aiTimeout = new Promise(function(_, reject) { setTimeout(function() { reject('timeout'); }, 45000); });
         var aiCall = fetch(API_URL + '/generate-ai', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt: aiPrompt })
+          body: JSON.stringify({ prompt: promptSeguroTFLOD })
         }).then(function(r) { return r.json(); }).then(function(d) {
           return (d.text || '').trim();
         });

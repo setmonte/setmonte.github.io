@@ -67,10 +67,16 @@ var TECFEAI = (function () {
     return new Promise(function (resolve, reject) {
       var prompt = buildPrompt(formData, stats, abandoned);
 
+      // === ANONIMIZACAO INVISIVEL ===
+      var anonResult = (typeof Anonimizador !== 'undefined') ? Anonimizador.mascararPrompt(prompt, { paciente: formData.nome || '' }) : { textoLimpo: prompt, mapa: {} };
+      var promptSeguro = anonResult.textoLimpo;
+      var mapaAnon = anonResult.mapa;
+      // === FIM ANONIMIZACAO ===
+
       fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: prompt })
+        body: JSON.stringify({ prompt: promptSeguro })
       })
       .then(function (response) {
         if (!response.ok) throw new Error('HTTP ' + response.status);
@@ -78,6 +84,11 @@ var TECFEAI = (function () {
       })
       .then(function (data) {
         var text = (data.text || '').trim();
+        // === DESANONIMIZACAO INVISIVEL ===
+        if (typeof Anonimizador !== 'undefined' && mapaAnon && Object.keys(mapaAnon).length > 0) {
+          text = Anonimizador.desmascarar(text, mapaAnon);
+        }
+        // === FIM DESANONIMIZACAO ===
         var estrategia = '';
         var laudo = text;
         var idx = text.indexOf('ESTRATEGIA:');

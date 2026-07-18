@@ -38,6 +38,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 <div id="topicos-section"></div>
 <div id="consulta-area"></div>
 </div>
+<script src="anonimizador.js"></script>
 </body>
 </html>
 
@@ -309,14 +310,27 @@ async function gerarProntuario() {
   stepPront.style.display = 'block';
   stepPront.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text3);">Gerando prontuario por topicos...</div>';
   try {
+    // === ANONIMIZACAO INVISIVEL ===
+    var contextoAnon = { paciente: sessionInfo.patientName || '' };
+    var anonResult = (typeof Anonimizador !== 'undefined') ? Anonimizador.mascarar(transcricao, contextoAnon) : { textoLimpo: transcricao, mapa: {} };
+    var transcricaoSegura = anonResult.textoLimpo;
+    var mapaAnon = anonResult.mapa;
+    // === FIM ANONIMIZACAO ===
     var resp = await fetch(API_URL + '/generate-prontuario', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ transcricao: transcricao, topicos: topicosAtuais })
+      body: JSON.stringify({ transcricao: transcricaoSegura, topicos: topicosAtuais })
     });
     var data = await resp.json();
     if (data.error) throw new Error(data.error);
     var resultados = data.resultados || [];
+    // === DESANONIMIZACAO INVISIVEL ===
+    if (typeof Anonimizador !== 'undefined' && mapaAnon && Object.keys(mapaAnon).length > 0) {
+      resultados = resultados.map(function(r) {
+        return { topico: r.topico, conteudo: Anonimizador.desmascarar(r.conteudo || '', mapaAnon) };
+      });
+    }
+    // === FIM DESANONIMIZACAO ===
     renderProntuario(resultados);
   } catch(e) {
     stepPront.innerHTML = '<div style="background:var(--red-light);border:1px solid #e8a8a8;border-radius:8px;padding:12px;color:var(--red);">Erro: ' + e.message + '</div>';
