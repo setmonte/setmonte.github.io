@@ -4522,14 +4522,17 @@
     }
 
     function popularDropdownsPacientes() {
+      // Construir HTML uma vez e reutilizar em todos os dropdowns
+      var opcoesHtml = '<option value="">-- Digitar manualmente --</option>';
+      var listaOrdenada = _pacientesCache.slice().sort(function(a, b) { return (a.nome || '').localeCompare(b.nome || '', 'pt-BR'); });
+      listaOrdenada.forEach(function(p) {
+        opcoesHtml += '<option value="' + p.id + '" data-nome="' + (p.nome||'').replace(/"/g,'') + '" data-dn="' + (p.dataNascimento||'') + '" data-cpf="' + (p.cpf||'') + '" data-sexo="' + (p.sexo||'') + '" data-esc="' + (p.escolaridade||'') + '" data-lat="' + (p.lateralidade||'') + '">' + (p.nome||'') + ' (' + (p.dataNascimento||'?') + ')</option>';
+      });
       ['baeSelPac','trmvSelPac','taavSelPac','tecfeSelPac','trefSelPac','tflodSelPac','corsiSelPac','tteSelPac','escalaSelPac','anamneseSelPac','reocupaSelPac','pfisterSelPac','neoSelPac','agendaSelPac','prontuarioSelPac'].forEach(function(id) {
         var sel = document.getElementById(id);
         if (!sel) return;
         var val = sel.value;
-        sel.innerHTML = '<option value="">-- Digitar manualmente --</option>';
-        _pacientesCache.forEach(function(p) {
-          sel.innerHTML += '<option value="' + p.id + '" data-nome="' + p.nome + '" data-dn="' + (p.dataNascimento||'') + '" data-cpf="' + (p.cpf||'') + '" data-sexo="' + (p.sexo||'') + '" data-esc="' + (p.escolaridade||'') + '" data-lat="' + (p.lateralidade||'') + '">' + p.nome + ' (' + (p.dataNascimento||'?') + ')</option>';
-        });
+        sel.innerHTML = opcoesHtml;
         sel.value = val;
       });
     }
