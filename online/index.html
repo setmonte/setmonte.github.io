@@ -930,8 +930,15 @@
         <!-- === ABA ADMIN === -->
         <div id="adminTab" class="tab-content">
           <div style="text-align:center;padding:10px 0;">
-            <p style="font-size:15px;color:#c62828;font-weight:bold;">⚙️ Painel Administrativo</p>
+            <p style="font-size:15px;color:#c62828;font-weight:bold;">&#9881;&#65039; Painel Administrativo</p>
             <p style="font-size:12px;color:#555;margin-top:5px;">Gerenciamento completo do sistema</p>
+          </div>
+
+          <!-- Ultimas Vendas -->
+          <div style="background:#e8f5e9;border:2px solid #2e7d32;border-radius:10px;padding:15px;margin:10px 0;">
+            <p style="font-size:13px;font-weight:bold;color:#2e7d32;margin-bottom:8px;">&#128176; Ultimas Vendas de Creditos</p>
+            <button class="btn btn-green" style="padding:6px 14px;font-size:12px;margin-bottom:10px;" onclick="carregarVendas()">Atualizar</button>
+            <div id="adminVendasList" style="font-size:12px;color:#555;">Clique em "Atualizar" para ver as vendas.</div>
           </div>
 
           <!-- Buscar usuario -->
@@ -4026,6 +4033,31 @@
     }
 
     // ===== FUNCOES ADMIN =====
+    async function carregarVendas() {
+      var el = document.getElementById('adminVendasList');
+      el.innerHTML = '<p style="color:#555;">Carregando...</p>';
+      try {
+        var resp = await fetch(API_URL + '/get-vendas');
+        var data = await resp.json();
+        var vendas = data.vendas || [];
+        if (vendas.length === 0) { el.innerHTML = '<p style="color:#888;">Nenhuma venda registrada.</p>'; return; }
+        var html = '<table class="results-table"><tr><th>Data</th><th>Comprador</th><th>Teste</th><th>Creditos</th><th>Valor</th></tr>';
+        vendas.forEach(function(v) {
+          var d = v.data || {};
+          var dataStr = v.date ? new Date(v.date).toLocaleString('pt-BR', {timeZone:'America/Sao_Paulo'}) : '-';
+          html += '<tr>';
+          html += '<td>' + dataStr + '</td>';
+          html += '<td>' + (d.comprador || '-') + '</td>';
+          html += '<td style="text-transform:uppercase;">' + (d.teste || '-') + '</td>';
+          html += '<td style="font-weight:bold;color:#2e7d32;">' + (d.creditos || '-') + '</td>';
+          html += '<td>R$ ' + (d.valor ? parseFloat(d.valor).toFixed(2) : '-') + '</td>';
+          html += '</tr>';
+        });
+        html += '</table>';
+        el.innerHTML = html;
+      } catch(e) { el.innerHTML = '<p style="color:#c62828;">Erro ao carregar vendas.</p>'; }
+    }
+
     async function adminBuscarUsuario() {
       var email = document.getElementById('adminBuscaEmail').value.trim().toLowerCase();
       if (!email) { alert('Digite um email.'); return; }
