@@ -3762,14 +3762,36 @@
     var _pacLetraAtiva = '';
 
     async function loadPacientes() {
+      // Tentar cache local primeiro (instantaneo)
+      var cacheKey = 'pacientes_' + currentUser;
+      var cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        try {
+          _pacientesCache = JSON.parse(cached);
+          popularDropdownsPacientes();
+          _renderizarPacientesComAbas();
+        } catch(e) {}
+      }
+      // Buscar do servidor em background
       try {
         var resp = await fetch(API_URL + '/get-pacientes?email=' + encodeURIComponent(currentUser));
         var data = await resp.json();
-        _pacientesCache = data.pacientes || [];
-        popularDropdownsPacientes();
-        _renderizarPacientesComAbas();
+        var novos = data.pacientes || [];
+        // So atualizar se mudou
+        if (JSON.stringify(novos) !== JSON.stringify(_pacientesCache)) {
+          _pacientesCache = novos;
+          localStorage.setItem(cacheKey, JSON.stringify(novos));
+          popularDropdownsPacientes();
+          _renderizarPacientesComAbas(_pacLetraAtiva || undefined);
+        } else if (!cached) {
+          // Primeiro acesso sem cache
+          _pacientesCache = novos;
+          localStorage.setItem(cacheKey, JSON.stringify(novos));
+          popularDropdownsPacientes();
+          _renderizarPacientesComAbas();
+        }
       } catch(e) {
-        document.getElementById('pacientesList').innerHTML = '<p style="color:#777;">Erro ao carregar.</p>';
+        if (!cached) document.getElementById('pacientesList').innerHTML = '<p style="color:#777;">Erro ao carregar.</p>';
       }
     }
 
