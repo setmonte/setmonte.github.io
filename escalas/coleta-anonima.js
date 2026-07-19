@@ -10,6 +10,12 @@
     var _jaEnviou = false;
 
     function _extrairEmailProfissional() {
+        // Modo demo (amostra publica) - marcar com [AMOSTRA]
+        if (window._demoMode) {
+            var demoEmail = window._demoEmail || '';
+            if (demoEmail) return '[AMOSTRA] ' + demoEmail;
+            return '[AMOSTRA] Publ.';
+        }
         if (window._sessionInfo && window._sessionInfo.email) return window._sessionInfo.email;
         if (window.sessionData && window.sessionData.email) return window.sessionData.email;
         if (window.sessionInfo && window.sessionInfo.email) return window.sessionInfo.email;

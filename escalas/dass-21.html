@@ -238,7 +238,16 @@ function calcularResultados() {
     el.scrollIntoView({behavior:'smooth'});
 
     window._escalaDados = {escala:'DASS-21', paciente:nome, escore:escD+escA+escE, classificacao:'D:'+classD+' / A:'+classA+' / E:'+classE, dominios:{Depressao:{pontuacao:escD,classificacao:classD},Ansiedade:{pontuacao:escA,classificacao:classA},Estresse:{pontuacao:escE,classificacao:classE}}, sexo:sexo, idPaciente:(document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''), idade:idade, data:new Date().toISOString()};
-    if (window.injetarBotaoSalvar) injetarBotaoSalvar('resultados');
+    if (window._demoMode) {
+        // Analise textual no modo demo
+        el.innerHTML += _gerarAnaliseDemo(escD, escA, escE, classD, classA, classE);
+        // Convite ao painel apos resultado no modo demo
+        var convite = document.createElement('div');
+        convite.style.cssText = 'background:linear-gradient(135deg,#e8f5e9,#c8e6c9);border:2px solid #2e7d32;border-radius:12px;padding:20px;margin-top:20px;text-align:center;';
+        convite.innerHTML = '<p style="font-size:1.1em;color:#2e7d32;font-weight:bold;margin-bottom:8px;">Profissional da sa\u00fade?</p><p style="color:#555;font-size:0.9em;margin-bottom:12px;">Acesse o Painel S\u03a8M Online gratuitamente para aplicar escalas nos seus pacientes, receber resultados e gerar relat\u00f3rios em PDF.</p><a href="../online/" style="display:inline-block;padding:12px 28px;background:#2e7d32;color:white;text-decoration:none;border-radius:25px;font-weight:bold;font-size:0.95em;">Acessar Painel Gratuito</a>';
+        el.appendChild(convite);
+    }
+    if (window.injetarBotaoSalvar && !window._demoMode) injetarBotaoSalvar('resultados');
 }
 
 function gerarRelatorioPDF() {
@@ -349,6 +358,75 @@ function limparDados() {
     document.getElementById('data').value=new Date().toISOString().split('T')[0];
 }
 
+// ===== ANALISE TEXTUAL DEMO =====
+function _gerarAnaliseDemo(escD, escA, escE, classD, classA, classE) {
+    // Textos interpretativos por dominio e nivel
+    var textosDep = {
+        'Normal': 'Seus indicadores de humor est\u00e3o dentro da faixa esperada. Isso sugere que, na \u00faltima semana, voc\u00ea conseguiu manter sentimentos positivos, motiva\u00e7\u00e3o e senso de prop\u00f3sito em n\u00edveis saud\u00e1veis.',
+        'Leve': 'H\u00e1 indicadores leves de humor rebaixado. Pode ser que voc\u00ea tenha sentido alguma dificuldade de motiva\u00e7\u00e3o ou momentos de desinteresse na \u00faltima semana, o que \u00e9 comum em per\u00edodos de maior demanda.',
+        'Moderado': 'Os indicadores apontam para humor moderadamente rebaixado. Isso pode se manifestar como dificuldade de sentir prazer, falta de energia, sentimentos de inadequa\u00e7\u00e3o ou desesperan\u00e7a em rela\u00e7\u00e3o ao futuro.',
+        'Grave': 'Os indicadores sugerem humor significativamente rebaixado. Sintomas como perda de interesse, dificuldade de se sentir valorizado(a) e falta de perspectiva podem estar impactando seu dia a dia de forma importante.',
+        'Muito Grave': 'Os indicadores apontam para um rebaixamento intenso do humor. Isso pode incluir sentimentos persistentes de vazio, desesperan\u00e7a e dificuldade em encontrar sentido. \u00c9 fortemente recomendado buscar apoio profissional.'
+    };
+    var textosAns = {
+        'Normal': 'Seus n\u00edveis de ansiedade est\u00e3o na faixa esperada. As rea\u00e7\u00f5es fisiol\u00f3gicas (como batimentos card\u00edacos, respira\u00e7\u00e3o e tremores) parecem estar sob controle.',
+        'Leve': 'H\u00e1 indicadores leves de ansiedade. Talvez voc\u00ea tenha percebido algumas rea\u00e7\u00f5es f\u00edsicas (boca seca, respira\u00e7\u00e3o alterada) ou preocupa\u00e7\u00f5es pontuais que n\u00e3o chegaram a ser limitantes.',
+        'Moderado': 'Os indicadores apontam ansiedade moderada. Sintomas como palpita\u00e7\u00f5es, sensa\u00e7\u00e3o de p\u00e2nico, tremores ou medo sem motivo aparente podem estar presentes com alguma frequ\u00eancia.',
+        'Grave': 'Os indicadores sugerem ansiedade significativa. Rea\u00e7\u00f5es f\u00edsicas intensas e preocupa\u00e7\u00f5es persistentes podem estar interferindo nas suas atividades di\u00e1rias e no seu bem-estar.',
+        'Muito Grave': 'Os indicadores apontam para ansiedade intensa. Sintomas f\u00edsicos frequentes e medo intenso podem estar prejudicando significativamente sua qualidade de vida. Recomenda-se avalia\u00e7\u00e3o profissional.'
+    };
+    var textosEst = {
+        'Normal': 'Seu n\u00edvel de estresse est\u00e1 dentro do esperado. Voc\u00ea parece estar conseguindo lidar com as demandas di\u00e1rias sem sobrecarga excessiva.',
+        'Leve': 'H\u00e1 indicadores leves de estresse. Pode ser que voc\u00ea tenha se sentido um pouco mais irritado(a) ou com dificuldade de relaxar, o que \u00e9 comum em semanas mais puxadas.',
+        'Moderado': 'Os indicadores apontam estresse moderado. Dificuldade de relaxar, irrita\u00e7\u00e3o excessiva e sensa\u00e7\u00e3o de estar sempre \u201cno limite\u201d podem estar presentes no seu cotidiano.',
+        'Grave': 'Os indicadores sugerem n\u00edvel de estresse elevado. Agita\u00e7\u00e3o, intoler\u00e2ncia, rea\u00e7\u00f5es exageradas e dificuldade de se acalmar podem estar comprometendo suas rela\u00e7\u00f5es e produtividade.',
+        'Muito Grave': 'Os indicadores apontam para sobrecarga intensa de estresse. O sistema nervoso pode estar em estado de hiperativa\u00e7\u00e3o constante, afetando sono, humor e sa\u00fade f\u00edsica. Acompanhamento profissional \u00e9 recomendado.'
+    };
+    // Dicas por nivel geral
+    var nivelGeral = Math.max(['Normal','Leve','Moderado','Grave','Muito Grave'].indexOf(classD), ['Normal','Leve','Moderado','Grave','Muito Grave'].indexOf(classA), ['Normal','Leve','Moderado','Grave','Muito Grave'].indexOf(classE));
+    var dicas = '';
+    if (nivelGeral <= 1) {
+        dicas = '<strong>Dicas para manter o equil\u00edbrio:</strong> Continue cultivando h\u00e1bitos saud\u00e1veis como atividade f\u00edsica regular, sono adequado e momentos de lazer. A preven\u00e7\u00e3o \u00e9 sempre o melhor caminho.';
+    } else if (nivelGeral === 2) {
+        dicas = '<strong>Sugest\u00f5es:</strong> Considere dedicar mais tempo a atividades prazerosas, t\u00e9cnicas de respira\u00e7\u00e3o ou relaxamento, e avaliar se algum fator espec\u00edfico est\u00e1 gerando sobrecarga. Conversar com algu\u00e9m de confian\u00e7a pode ajudar.';
+    } else {
+        dicas = '<strong>Recomenda\u00e7\u00e3o:</strong> Os indicadores sugerem que voc\u00ea pode se beneficiar de acompanhamento profissional (psic\u00f3logo ou psiquiatra). N\u00e3o hesite em buscar ajuda \u2014 cuidar da sa\u00fade mental \u00e9 t\u00e3o importante quanto cuidar da sa\u00fade f\u00edsica.';
+    }
+    // Montar HTML visual
+    var html = '<div style="margin-top:25px;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.1);">';
+    // Cabecalho da analise
+    html += '<div style="background:linear-gradient(135deg,#1a237e,#00695c);padding:20px;text-align:center;">';
+    html += '<p style="color:white;font-size:1.2em;font-weight:bold;margin:0;">An\u00e1lise Interpretativa</p>';
+    html += '<p style="color:rgba(255,255,255,0.8);font-size:0.85em;margin-top:5px;">Baseada nos seus escores da \u00faltima semana</p>';
+    html += '</div>';
+    // Card Depressao
+    html += '<div style="padding:18px 20px;border-bottom:1px solid #eee;background:white;">';
+    html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;"><span style="font-size:1.4em;">&#128546;</span><strong style="color:#1565c0;font-size:1.05em;">Depress\u00e3o \u2014 ' + classD + '</strong></div>';
+    html += '<p style="color:#444;font-size:0.9em;line-height:1.7;margin:0;">' + textosDep[classD] + '</p>';
+    html += '</div>';
+    // Card Ansiedade
+    html += '<div style="padding:18px 20px;border-bottom:1px solid #eee;background:white;">';
+    html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;"><span style="font-size:1.4em;">&#128552;</span><strong style="color:#c62828;font-size:1.05em;">Ansiedade \u2014 ' + classA + '</strong></div>';
+    html += '<p style="color:#444;font-size:0.9em;line-height:1.7;margin:0;">' + textosAns[classA] + '</p>';
+    html += '</div>';
+    // Card Estresse
+    html += '<div style="padding:18px 20px;border-bottom:1px solid #eee;background:white;">';
+    html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;"><span style="font-size:1.4em;">&#128548;</span><strong style="color:#e65100;font-size:1.05em;">Estresse \u2014 ' + classE + '</strong></div>';
+    html += '<p style="color:#444;font-size:0.9em;line-height:1.7;margin:0;">' + textosEst[classE] + '</p>';
+    html += '</div>';
+    // Dicas
+    html += '<div style="padding:18px 20px;background:#f8f9fa;">';
+    html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;"><span style="font-size:1.4em;">&#128161;</span><strong style="color:#2e7d32;font-size:1.05em;">Orienta\u00e7\u00f5es</strong></div>';
+    html += '<p style="color:#444;font-size:0.9em;line-height:1.7;margin:0;">' + dicas + '</p>';
+    html += '</div>';
+    // Disclaimer
+    html += '<div style="padding:12px 20px;background:#fff8e1;border-top:1px solid #ffe082;">';
+    html += '<p style="color:#e65100;font-size:0.78em;line-height:1.5;margin:0;"><strong>Aviso:</strong> Esta an\u00e1lise \u00e9 gerada automaticamente e tem car\u00e1ter informativo. N\u00e3o substitui avalia\u00e7\u00e3o profissional. Para um diagn\u00f3stico adequado, consulte um psic\u00f3logo ou psiquiatra.</p>';
+    html += '</div>';
+    html += '</div>';
+    return html;
+}
+
 // ===== MODO PAINEL =====
 var _sessionInfo = null;
 var _API_URL = 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
@@ -417,6 +495,71 @@ async function _enviarResultadosPainel() {
     }
 }
 
+// === MODO DEMO (amostra publica) ===
+function _iniciarModoDemo() {
+    window._demoMode = true;
+    // Esconder info tecnica
+    var els = document.querySelectorAll('.info-tecnica');
+    els.forEach(function(el) { el.style.display = 'none'; });
+    // Esconder dados pessoais e questionario inicialmente
+    var dadosPessoais = document.querySelector('.dados-pessoais');
+    var instrucoes = document.querySelector('.instrucoes');
+    var questionario = document.getElementById('questionario');
+    var botoes = document.querySelector('.botoes');
+    if (dadosPessoais) dadosPessoais.style.display = 'none';
+    if (instrucoes) instrucoes.style.display = 'none';
+    if (questionario) questionario.style.display = 'none';
+    if (botoes) botoes.style.display = 'none';
+    // Criar formulario de entrada demo
+    var container = document.querySelector('.content');
+    var demoDiv = document.createElement('div');
+    demoDiv.id = 'demoIntro';
+    demoDiv.style.cssText = 'background:#e8f5e9;border:2px solid #2e7d32;border-radius:12px;padding:25px;margin-bottom:25px;text-align:center;';
+    demoDiv.innerHTML = '<h2 style="color:#2e7d32;margin-bottom:8px;">Experimente a DASS-21</h2>'
+        + '<p style="color:#555;font-size:0.92em;margin-bottom:18px;line-height:1.6;">Responda a escala e veja seu resultado na tela. Seus dados ser\u00e3o utilizados de forma an\u00f4nima para pesquisa e normatiza\u00e7\u00e3o.<br>Nenhum dado pessoal identific\u00e1vel ser\u00e1 armazenado.</p>'
+        + '<div style="max-width:400px;margin:0 auto;text-align:left;">'
+        + '<label style="display:block;margin-bottom:5px;font-weight:600;color:#555;font-size:0.9em;">Data de Nascimento: <span style="color:#c62828;">*</span></label>'
+        + '<input type="date" id="demoNasc" style="width:100%;padding:10px;border:2px solid #ccc;border-radius:8px;font-size:15px;margin-bottom:12px;">'
+        + '<label style="display:block;margin-bottom:5px;font-weight:600;color:#555;font-size:0.9em;">Sexo: <span style="color:#c62828;">*</span></label>'
+        + '<select id="demoSexo" style="width:100%;padding:10px;border:2px solid #ccc;border-radius:8px;font-size:15px;margin-bottom:12px;"><option value="">Selecione</option><option value="Masculino">Masculino</option><option value="Feminino">Feminino</option></select>'
+        + '<label style="display:block;margin-bottom:5px;font-weight:600;color:#555;font-size:0.9em;">E-mail (opcional):</label>'
+        + '<input type="email" id="demoEmail" placeholder="Seu e-mail (opcional)" style="width:100%;padding:10px;border:2px solid #ccc;border-radius:8px;font-size:15px;margin-bottom:18px;">'
+        + '<p style="font-size:0.78em;color:#888;margin-bottom:15px;line-height:1.5;">* Campos obrigat\u00f3rios para fins de pesquisa. O e-mail \u00e9 opcional e serve apenas para identifica\u00e7\u00e3o na amostra.</p>'
+        + '<button onclick="_iniciarEscalaDemo()" style="width:100%;padding:14px;background:linear-gradient(135deg,#2e7d32,#43a047);color:white;border:none;border-radius:25px;font-size:16px;font-weight:bold;cursor:pointer;">Iniciar Escala</button>'
+        + '</div>';
+    container.insertBefore(demoDiv, container.firstChild);
+}
+
+function _iniciarEscalaDemo() {
+    var nasc = document.getElementById('demoNasc').value;
+    var sexo = document.getElementById('demoSexo').value;
+    if (!nasc || !sexo) { alert('Preencha data de nascimento e sexo para continuar.'); return; }
+    var email = document.getElementById('demoEmail').value.trim();
+    // Guardar email demo para coleta anonima
+    window._demoEmail = email || '';
+    // Preencher campos da escala
+    document.getElementById('dataNascimento').value = nasc;
+    document.getElementById('sexo').value = sexo;
+    calcularIdade();
+    document.getElementById('nome').value = 'Amostra';
+    // Mostrar escala
+    var instrucoes = document.querySelector('.instrucoes');
+    var questionario = document.getElementById('questionario');
+    var botoes = document.querySelector('.botoes');
+    if (instrucoes) instrucoes.style.display = '';
+    if (questionario) questionario.style.display = '';
+    if (botoes) {
+        botoes.style.display = '';
+        // Trocar botoes: so Calcular e Limpar (sem PDF, sem enviar ao profissional)
+        botoes.innerHTML = '<button class="btn btn-primary" onclick="calcularResultados()">Calcular Resultados</button><button class="btn btn-danger" onclick="limparDados()">Limpar Dados</button>';
+    }
+    // Remover formulario demo
+    var demoDiv = document.getElementById('demoIntro');
+    if (demoDiv) demoDiv.remove();
+    // Scroll para instrucoes
+    if (instrucoes) instrucoes.scrollIntoView({behavior:'smooth'});
+}
+
 // === INICIALIZACAO ===
 gerarQuestionario();
 document.getElementById('questionario').addEventListener('change',function(e){if(e.target.type==='radio'){var item=e.target.closest('.item');if(item){item.style.backgroundColor='#f1f8e9';item.style.borderLeft='4px solid #4caf50';}if(item&&item.nextElementSibling){item.nextElementSibling.scrollIntoView({behavior:'smooth',block:'center'});}}});
@@ -426,6 +569,8 @@ if (params.get('s')) {
     fetch(_API_URL + '/get-session?id=' + params.get('s')).then(function(r){if(r.status===410){document.body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#e8f5e9,#c8e6c9);text-align:center;padding:20px;"><h1 style="color:#c62828;font-size:24px;margin-bottom:10px;">Este link j\u00e1 foi utilizado.</h1><p style="font-size:16px;color:#555;">Solicite um novo link ao seu avaliador.</p></div>';throw new Error("link_usado");}return r.json();}).then(function(data){if(data.sessionId){_sessionInfo=data;var nomeEl=document.getElementById('nome');var nascEl=document.getElementById('dataNascimento');var sexoEl=document.getElementById('sexo');if(nomeEl&&data.patientName)nomeEl.value=data.patientName;if(nascEl&&data.birthDate)nascEl.value=data.birthDate;if(sexoEl&&data.sex)sexoEl.value=data.sex;if(typeof calcularIdade==='function')calcularIdade();if(nomeEl)nomeEl.dispatchEvent(new Event('input'));if(nascEl)nascEl.dispatchEvent(new Event('change'));var botoes=document.querySelector('.botoes');if(botoes){botoes.innerHTML='<button class="btn btn-primary" style="padding:15px 30px;border:none;border-radius:25px;font-size:16px;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#2e7d32,#43a047);color:white;" onclick="_enviarResultadosPainel()">Enviar Resultados ao Profissional</button>';}var els=document.querySelectorAll('.info-tecnica');els.forEach(function(el){el.style.display='none';});}}).catch(function(){});
 } else if (params.get('d')) {
     _decodificarURL();
+} else if (params.get('demo')) {
+    _iniciarModoDemo();
 } else if (params.get('print')) {
     var els = document.querySelectorAll('.info-tecnica');
     els.forEach(function(el) { el.style.display = 'none'; });
