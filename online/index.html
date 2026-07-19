@@ -4040,7 +4040,8 @@
         var resp = await fetch(API_URL + '/get-vendas');
         var data = await resp.json();
         var vendas = data.vendas || [];
-        if (vendas.length === 0) { el.innerHTML = '<p style="color:#888;">Nenhuma venda registrada.</p>'; return; }
+        if (vendas.length === 0) { el.innerHTML = '<p style="color:#888;">Nenhuma venda nova.</p>'; return; }
+        window._vendasIds = vendas.map(function(v) { return v.sessionId; });
         var html = '<table class="results-table"><tr><th>Data</th><th>Comprador</th><th>Teste</th><th>Creditos</th><th>Valor</th></tr>';
         vendas.forEach(function(v) {
           var d = v.data || {};
@@ -4054,8 +4055,19 @@
           html += '</tr>';
         });
         html += '</table>';
+        html += '<button class="btn btn-red" style="margin-top:10px;padding:6px 14px;font-size:12px;" onclick="limparVendas()">Marcar como lidas (apagar)</button>';
         el.innerHTML = html;
       } catch(e) { el.innerHTML = '<p style="color:#c62828;">Erro ao carregar vendas.</p>'; }
+    }
+
+    async function limparVendas() {
+      if (!window._vendasIds || window._vendasIds.length === 0) return;
+      if (!confirm('Apagar ' + window._vendasIds.length + ' registro(s) de venda?')) return;
+      try {
+        await fetch(API_URL + '/clear-vendas', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ids: window._vendasIds}) });
+        document.getElementById('adminVendasList').innerHTML = '<p style="color:#2e7d32;">Vendas limpas com sucesso.</p>';
+        window._vendasIds = [];
+      } catch(e) { alert('Erro ao limpar.'); }
     }
 
     async function adminBuscarUsuario() {
