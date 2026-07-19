@@ -3906,39 +3906,112 @@
       var reader = new FileReader();
       reader.onload = async function(e) {
         var texto = e.target.result;
+        // Remover BOM se existir
+        if (texto.charCodeAt(0) === 0xFEFF) texto = texto.slice(1);
         var linhas = texto.split(/\r?\n/).filter(function(l) { return l.trim(); });
         if (linhas.length < 2) { alert('Arquivo vazio ou sem dados.'); return; }
-        // Detectar separador (;  ou ,)
-        var sep = linhas[0].indexOf(';') !== -1 ? ';' : ',';
-        var cabecalho = linhas[0].split(sep).map(function(c) { return c.replace(/"/g,'').trim().toLowerCase(); });
-        // Mapear colunas
-        var iNome = -1, iDN = -1, iCPF = -1, iSexo = -1, iEsc = -1, iLat = -1, iEmail = -1, iWhats = -1;
+        // Detectar separador (; ou ,) — contar qual aparece mais no cabecalho
+        var sepPV = (linhas[0].match(/;/g) || []).length;
+        var sepV = (linhas[0].match(/,/g) || []).length;
+        var sep = sepPV >= sepV ? ';' : ',';
+        // Parser CSV basico que respeita aspas
+        function parseLinha(linha, separador) {
+          var cols = []; var atual = ''; var dentroAspas = false;
+          for (var k = 0; k < linha.length; k++) {
+            var ch = linha[k];
+            if (ch === '"') { dentroAspas = !dentroAspas; }
+            else if (ch === separador && !dentroAspas) { cols.push(atual.trim()); atual = ''; }
+            else { atual += ch; }
+          }
+          cols.push(atual.trim());
+          return cols;
+        }
+        var cabecalho = parseLinha(linhas[0], sep).map(function(c) { return c.replace(/"/g,'').trim().toLowerCase(); });
+        // Mapear colunas (aceita portugues E ingles)
+        var iNome = -1, iSobrenome = -1, iDN = -1, iCPF = -1, iSexo = -1, iEsc = -1, iLat = -1, iEmail = -1, iWhats = -1;
         cabecalho.forEach(function(c, i) {
-          if (c.indexOf('nome') !== -1) iNome = i;
-          if (c.indexOf('nasc') !== -1 || c.indexOf('birth') !== -1 || c.indexOf('data') !== -1) iDN = i;
-          if (c.indexOf('cpf') !== -1) iCPF = i;
-          if (c.indexOf('sexo') !== -1 || c.indexOf('genero') !== -1) iSexo = i;
-          if (c.indexOf('escol') !== -1) iEsc = i;
+          // Nome
+          if (c === 'nome' || c === 'name' || c === 'first name' || c === 'nome completo' || c === 'paciente') iNome = i;
+          // Sobrenome (para juntar com nome)
+          if (c === 'sobrenome' || c === 'last name' || c === 'surname') iSobrenome = i;
+          // Data nascimento
+          if (c.indexOf('nasc') !== -1 || c === 'date of birth' || c === 'birth' || c === 'birthdate' || c === 'data nascimento' || c === 'dn') iDN = i;
+          // CPF / documento
+          if (c === 'cpf' || c === 'document' || c === 'documento' || c === 'cpf/rg') iCPF = i;
+          // Sexo / genero
+          if (c === 'sexo' || c === 'gender' || c === 'genero' || c === 'sex') iSexo = i;
+          // Escolaridade
+          if (c.indexOf('escol') !== -1 || c === 'education') iEsc = i;
+          // Lateralidade
           if (c.indexOf('later') !== -1) iLat = i;
-          if (c.indexOf('email') !== -1 || c.indexOf('mail') !== -1) iEmail = i;
-          if (c.indexOf('whats') !== -1 || c.indexOf('telefone') !== -1 || c.indexOf('fone') !== -1 || c.indexOf('celular') !== -1) iWhats = i;
+          // Email
+          if (c === 'email' || c === 'e-mail' || c === 'mail') iEmail = i;
+          // Telefone / WhatsApp
+          if (c === 'whatsapp' || c === 'telefone' || c === 'fone' || c === 'celular' || c === 'phone' || c === 'additional phone') { if (iWhats === -1) iWhats = i; }
         });
-        if (iNome === -1) { alert('Coluna "Nome" nao encontrada no CSV. Verifique o cabecalho.'); return; }
-        var importados = 0, erros = 0;
-        var totalLinhas = linhas.length - 1;
-        if (!confirm('Importar ' + totalLinhas + ' pacientes do CSV?')) { event.target.value = ''; return; }
+        if (iNome === -1) { alert('Coluna de nome nao encontrada no CSV.\nO sistema aceita: "Nome", "First Name", "Paciente", "Name".\nVerifique o cabecalho do arquivo.'); event.target.value = ''; return; }
+        // Processar linhas
+        var pacientesParaImportar = [];
         for (var i = 1; i < linhas.length; i++) {
-          var cols = linhas[i].split(sep).map(function(c) { return c.replace(/^"|"$/g,'').trim(); });
-          var nome = cols[iNome] || '';
+          var cols = parseLinha(linhas[i], sep);
+          var nome = (cols[iNome] || '').replace(/"/g,'').trim();
           if (!nome) continue;
-          var dn = iDN !== -1 ? (cols[iDN] || '') : '';
-          var payload = { email: currentUser, nome: nome, dataNascimento: dn };
-          if (iCPF !== -1 && cols[iCPF]) payload.cpf = cols[iCPF];
-          if (iSexo !== -1 && cols[iSexo]) payload.sexo = cols[iSexo];
-          if (iEsc !== -1 && cols[iEsc]) payload.escolaridade = cols[iEsc];
-          if (iLat !== -1 && cols[iLat]) payload.lateralidade = cols[iLat];
-          if (iEmail !== -1 && cols[iEmail]) payload.pacienteEmail = cols[iEmail];
-          if (iWhats !== -1 && cols[iWhats]) payload.whatsapp = cols[iWhats];
+          // Juntar sobrenome se existir
+          if (iSobrenome !== -1 && cols[iSobrenome]) {
+            var sobrenome = cols[iSobrenome].replace(/"/g,'').trim();
+            if (sobrenome) nome = nome + ' ' + sobrenome;
+          }
+          // Data nascimento
+          var dn = iDN !== -1 ? (cols[iDN] || '').replace(/"/g,'').trim() : '';
+          // Sexo — traduzir ingles para portugues
+          var sexo = '';
+          if (iSexo !== -1 && cols[iSexo]) {
+            var sexoRaw = cols[iSexo].replace(/"/g,'').trim().toLowerCase();
+            if (sexoRaw === 'male' || sexoRaw === 'm' || sexoRaw === 'masculino') sexo = 'Masculino';
+            else if (sexoRaw === 'female' || sexoRaw === 'f' || sexoRaw === 'feminino') sexo = 'Feminino';
+            else if (sexoRaw && sexoRaw !== 'undefined' && sexoRaw !== 'other') sexo = cols[iSexo].replace(/"/g,'').trim();
+          }
+          // CPF / documento
+          var cpf = iCPF !== -1 ? (cols[iCPF] || '').replace(/"/g,'').trim() : '';
+          // Email
+          var pacEmail = iEmail !== -1 ? (cols[iEmail] || '').replace(/"/g,'').trim() : '';
+          // WhatsApp — limpar formatacao
+          var whats = '';
+          if (iWhats !== -1 && cols[iWhats]) {
+            whats = cols[iWhats].replace(/"/g,'').replace(/'/g,'').trim();
+            // Remover +55 e formatar se possivel
+            whats = whats.replace(/^\+?55\s*/, '').replace(/[^\d]/g, '');
+            if (whats.length === 11) whats = '(' + whats.slice(0,2) + ') ' + whats.slice(2,7) + '-' + whats.slice(7);
+            else if (whats.length === 10) whats = '(' + whats.slice(0,2) + ') ' + whats.slice(2,6) + '-' + whats.slice(6);
+            else if (cols[iWhats]) whats = cols[iWhats].replace(/"/g,'').replace(/'/g,'').trim();
+          }
+          // Escolaridade
+          var escolaridade = iEsc !== -1 ? (cols[iEsc] || '').replace(/"/g,'').trim() : '';
+          // Lateralidade
+          var lateralidade = iLat !== -1 ? (cols[iLat] || '').replace(/"/g,'').trim() : '';
+          // Filtrar valores inuteis
+          if (escolaridade.toLowerCase() === 'undefined') escolaridade = '';
+          pacientesParaImportar.push({ nome: nome, dataNascimento: dn, cpf: cpf, sexo: sexo, escolaridade: escolaridade, lateralidade: lateralidade, pacienteEmail: pacEmail, whatsapp: whats });
+        }
+        if (pacientesParaImportar.length === 0) { alert('Nenhum paciente valido encontrado no arquivo.'); event.target.value = ''; return; }
+        // Resumo antes de importar
+        var comDN = pacientesParaImportar.filter(function(p) { return p.dataNascimento; }).length;
+        var semDN = pacientesParaImportar.length - comDN;
+        var msg = 'Encontrados ' + pacientesParaImportar.length + ' pacientes no CSV.\n';
+        msg += comDN + ' com data de nascimento, ' + semDN + ' sem.\n\n';
+        msg += 'Deseja importar todos?';
+        if (!confirm(msg)) { event.target.value = ''; return; }
+        // Enviar ao servidor
+        var importados = 0, erros = 0, pulados = 0;
+        for (var j = 0; j < pacientesParaImportar.length; j++) {
+          var p = pacientesParaImportar[j];
+          var payload = { email: currentUser, nome: p.nome, dataNascimento: p.dataNascimento || '' };
+          if (p.cpf) payload.cpf = p.cpf;
+          if (p.sexo) payload.sexo = p.sexo;
+          if (p.escolaridade) payload.escolaridade = p.escolaridade;
+          if (p.lateralidade) payload.lateralidade = p.lateralidade;
+          if (p.pacienteEmail) payload.pacienteEmail = p.pacienteEmail;
+          if (p.whatsapp) payload.whatsapp = p.whatsapp;
           try {
             var resp = await fetch(API_URL + '/save-paciente', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
             var r = await resp.json();
