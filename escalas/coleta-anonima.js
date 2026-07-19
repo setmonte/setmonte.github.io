@@ -257,6 +257,17 @@
             };
             window._pde_interceptado = true;
         }
+
+        // 9. enviarResultados (BAE online)
+        if (typeof window.enviarResultados === 'function' && !window._er_interceptado) {
+            var _orig_er = window.enviarResultados;
+            window.enviarResultados = function() {
+                var result = _orig_er.apply(this, arguments);
+                setTimeout(_enviarDadosAnonimos, 1500);
+                return result;
+            };
+            window._er_interceptado = true;
+        }
     }
 
     // Tenta interceptar varias vezes (scripts carregam async)
