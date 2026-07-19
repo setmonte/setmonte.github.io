@@ -3915,7 +3915,22 @@
         var texto = e.target.result;
         // Remover BOM se existir
         if (texto.charCodeAt(0) === 0xFEFF) texto = texto.slice(1);
-        var linhas = texto.split(/\r?\n/).filter(function(l) { return l.trim(); });
+        // Parser de linhas que respeita quebras dentro de aspas
+        function splitLinhasCSV(txt) {
+          var linhas = []; var atual = ''; var dentroAspas = false;
+          for (var k = 0; k < txt.length; k++) {
+            var ch = txt[k];
+            if (ch === '"') { dentroAspas = !dentroAspas; atual += ch; }
+            else if ((ch === '\n' || ch === '\r') && !dentroAspas) {
+              if (ch === '\r' && txt[k+1] === '\n') k++;
+              if (atual.trim()) linhas.push(atual);
+              atual = '';
+            } else { atual += ch; }
+          }
+          if (atual.trim()) linhas.push(atual);
+          return linhas;
+        }
+        var linhas = splitLinhasCSV(texto);
         if (linhas.length < 2) { alert('Arquivo vazio ou sem dados.'); return; }
         // Detectar separador (; ou ,) — contar qual aparece mais no cabecalho
         var sepPV = (linhas[0].match(/;/g) || []).length;
