@@ -77,18 +77,18 @@ function neoGerarPDF(idx) {
   // Cores por dominio
   var dominiosCores = {
     'Neuroticismo': [220, 53, 69],
-    'Extroversao': [255, 152, 0],
+    'Extrovers\u00e3o': [255, 152, 0],
     'Abertura': [76, 175, 80],
     'Amabilidade': [156, 39, 176],
     'Conscienciosidade': [33, 150, 243]
   };
 
-  var dominiosOrdem = ['Neuroticismo', 'Extroversao', 'Abertura', 'Amabilidade', 'Conscienciosidade'];
+  var dominiosOrdem = ['Neuroticismo', 'Extrovers\u00e3o', 'Abertura', 'Amabilidade', 'Conscienciosidade'];
 
   doc.setFont(undefined, 'normal');
   for (var di = 0; di < dominiosOrdem.length; di++) {
     var nomeDom = dominiosOrdem[di];
-    var dadosDom = dom[nomeDom] || {};
+    var dadosDom = dom[nomeDom] || (nomeDom === 'Extrovers\u00e3o' ? dom['Extroversao'] : undefined) || {};
     var cor = dominiosCores[nomeDom] || [100, 100, 100];
     var escT = dadosDom.escoreT != null ? dadosDom.escoreT : '-';
     var classif = dadosDom.classificacao || '-';
