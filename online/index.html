@@ -5363,6 +5363,8 @@
       window.open('https://wa.me/?text=' + encodeURIComponent('Acesse o inventario NEO PI-R: ' + link), '_blank');
     }
 
+    var _neoResultCache = [];
+
     async function loadNeoResults() {
       var el = document.getElementById('neoResultsSection');
       if (!el) return;
@@ -5371,8 +5373,9 @@
         var resp = await fetch(API_URL + '/get-results?email=' + encodeURIComponent(currentUser) + '&tipo=neo-pi-r');
         var data = await resp.json();
         var results = data.results || [];
+        _neoResultCache = results;
         if (results.length === 0) { el.innerHTML = '<p>Nenhum resultado NEO PI-R encontrado.</p>'; return; }
-        var html = '<h3 style="color:#4a148c;">Resultados NEO PI-R</h3><table style="width:100%;border-collapse:collapse;font-size:0.85em;"><tr><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">Data</th><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">Paciente</th><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">N</th><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">E</th><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">O</th><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">A</th><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">C</th></tr>';
+        var html = '<h3 style="color:#4a148c;">Resultados NEO PI-R</h3><table style="width:100%;border-collapse:collapse;font-size:0.85em;"><tr><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">Data</th><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">Paciente</th><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">N</th><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">E</th><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">O</th><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">A</th><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">C</th><th style="text-align:center;padding:6px;border-bottom:2px solid #4a148c;">PDF</th></tr>';
         for (var i = 0; i < results.length; i++) {
           var r = results[i];
           var d = r.data || {};
@@ -5385,6 +5388,7 @@
           html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (dom.Abertura ? dom.Abertura.escoreT : '-') + '</td>';
           html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (dom.Amabilidade ? dom.Amabilidade.escoreT : '-') + '</td>';
           html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (dom.Conscienciosidade ? dom.Conscienciosidade.escoreT : '-') + '</td>';
+          html += '<td style="padding:5px;border-bottom:1px solid #eee;text-align:center;"><button onclick="neoGerarPDF('+i+')" style="padding:4px 12px;border:none;border-radius:12px;background:#4a148c;color:white;font-size:11px;cursor:pointer;font-weight:600;">PDF</button></td>';
           html += '</tr>';
         }
         html += '</table>';
@@ -8724,6 +8728,7 @@
       if (btnEl) { btnEl.disabled = false; btnEl.innerHTML = 'PDF'; }
     }
   </script>
+  <script src="neo-pdf.js"></script>
   <script src="bvrt-correcao.js"></script>
 </body>
 </html>
