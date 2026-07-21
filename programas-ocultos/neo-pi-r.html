@@ -45,20 +45,29 @@ body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;line-height:1.6;col
 .btn-secondary:hover{transform:translateY(-2px);box-shadow:0 10px 20px rgba(40,167,69,.3)}
 .btn-danger{background:linear-gradient(135deg,#dc3545 0%,#fd7e14 100%);color:#fff}
 .btn-danger:hover{transform:translateY(-2px);box-shadow:0 10px 20px rgba(220,53,69,.3)}
-.resultados{background:#f8f9fa;padding:30px;border-radius:10px;margin-top:30px;border-left:5px solid #4a148c;display:none}
+.resultados{background:#fff;padding:30px;border-radius:10px;margin-top:30px;display:none}
 .resultados h2{color:#4a148c;margin-bottom:20px;text-align:center}
 .total-geral{background:linear-gradient(135deg,#1a237e 0%,#4a148c 100%);color:#fff;padding:25px;border-radius:10px;text-align:center;margin:20px 0}
-.dominio-card{background:#fff;padding:20px;border-radius:10px;margin-bottom:15px;box-shadow:0 3px 10px rgba(0,0,0,.08);border-left:4px solid #4a148c}
-.dominio-card h4{color:#4a148c;margin-bottom:8px}
-.faceta-item{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f0f0f0;font-size:.9em}
-.faceta-item:last-child{border-bottom:none}
+.vetor-section{margin-bottom:40px;border-bottom:2px solid #e0e0e0;padding-bottom:30px}
+.vetor-section:last-child{border-bottom:none}
+.vetor-section-title{text-align:center;font-size:1.3em;font-weight:bold;margin-bottom:20px;padding:8px;border-bottom:3px solid currentColor}
+.vetor-row{display:grid;grid-template-columns:1fr 1.2fr 1fr;gap:15px;align-items:center;margin-bottom:25px;padding:15px 0;border-bottom:1px solid #f0f0f0}
+.vetor-row:last-child{border-bottom:none}
+.vetor-row-title{text-align:center;font-weight:bold;font-size:0.95em;margin-bottom:8px;grid-column:1/-1}
+.vetor-polo{font-size:0.82em;line-height:1.5;color:#555;padding:5px}
+.vetor-polo-baixo{text-align:left}
+.vetor-polo-alto{text-align:right}
+.vetor-barra-container{position:relative;padding:15px 0}
+.vetor-barra{position:relative;height:14px;background:#e8e8e8;border-radius:7px;overflow:visible}
+.vetor-barra-fill{height:100%;border-radius:7px;transition:width 0.5s}
+.vetor-barra-marcas{display:flex;justify-content:space-between;margin-top:4px;font-size:0.65em;color:#888}
+.vetor-barra-marcas span{text-align:center}
+.vetor-escore-label{position:absolute;top:-18px;transform:translateX(-50%);font-size:0.75em;font-weight:bold;color:#333;background:#fff;padding:1px 5px;border-radius:3px;border:1px solid #ccc;white-space:nowrap}
 .badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:.8em;font-weight:600;color:#fff}
-.progress-bar{height:8px;background:#e0e0e0;border-radius:4px;overflow:hidden;margin-top:5px}
-.progress-fill{height:100%;border-radius:4px;transition:width .3s}
 .disclaimer{background:#fff3e0;padding:15px;border-radius:8px;margin-top:20px;border-left:4px solid #ff9800;font-size:.85em;color:#e65100;line-height:1.6}
 .btn-imprimir{position:absolute;top:20px;right:20px;padding:10px 20px;background:linear-gradient(135deg,#4a148c 0%,#6a1b9a 100%);color:#fff;border:none;border-radius:20px;font-size:14px;font-weight:600;cursor:pointer}
 @media print{body{background:#fff!important;padding:0!important}.botoes,.btn,.btn-imprimir{display:none!important}.container{box-shadow:none!important;max-width:100%!important}.info-tecnica{display:none!important}.resultados{display:none!important}.item{page-break-inside:avoid}}
-@media(max-width:768px){.container{margin:10px;border-radius:10px}.header{padding:20px}.header h1{font-size:1.6em}.content{padding:15px}.form-row{flex-direction:column}.opcoes{flex-direction:column;align-items:center}.botoes{flex-direction:column}.btn{width:100%}}
+@media(max-width:768px){.container{margin:10px;border-radius:10px}.header{padding:20px}.header h1{font-size:1.6em}.content{padding:15px}.form-row{flex-direction:column}.opcoes{flex-direction:column;align-items:center}.botoes{flex-direction:column}.btn{width:100%}.vetor-row{grid-template-columns:1fr;gap:10px}.vetor-polo-baixo,.vetor-polo-alto{text-align:center}}
 </style>
 </head>
 <body>
@@ -105,6 +114,16 @@ body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;line-height:1.6;col
 <p>Leia cada afirma&#231;&#227;o com aten&#231;&#227;o e marque a op&#231;&#227;o que melhor descreve a sua maneira habitual de ser. N&#227;o existem respostas certas ou erradas. Responda de forma honesta e espont&#226;nea, indicando o quanto voc&#234; concorda ou discorda de cada afirma&#231;&#227;o.</p>
 </div>
 <div id="questionario"></div>
+<div style="background:#f5f5f5;padding:20px;border-radius:10px;margin:20px 0;border:2px solid #e0e0e0;">
+<h3 style="color:#4a148c;margin-bottom:10px;font-size:1.1em;">&#128203; Respostas (exportar/importar)</h3>
+<p style="font-size:0.85em;color:#666;margin-bottom:10px;">As respostas aparecem aqui conforme voc&#234; clica. Para importar, cole os n&#250;meros e clique "Importar".</p>
+<textarea id="boxRespostas" rows="4" style="width:100%;font-family:monospace;font-size:14px;padding:10px;border:2px solid #ccc;border-radius:8px;resize:vertical;" placeholder="Ex: 4;1;2;5;3;4;2;1;5;3;..."></textarea>
+<div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;">
+<button onclick="importarRespostas()" style="padding:10px 20px;background:#4a148c;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">Importar Respostas</button>
+<button onclick="document.getElementById('boxRespostas').select();document.execCommand('copy');" style="padding:10px 20px;background:#1565c0;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">Copiar</button>
+<span id="contadorRespostas" style="align-self:center;font-size:0.9em;color:#666;">0/240 respondidas</span>
+</div>
+</div>
 <div class="botoes">
 <button class="btn btn-primary" onclick="calcularResultados()">Calcular Resultados</button>
 <button class="btn btn-secondary" onclick="gerarRelatorioPDF()">Gerar Relat&#243;rio PDF</button>
@@ -506,6 +525,13 @@ if(t<=65) return {texto:'Alto',cor:'#ff9800'};
 return {texto:'Muito Alto',cor:'#f44336'};
 }
 
+// Cores por dominio (estilo Vetor) - GLOBAL
+var CORES_DOM={N:'#d32f2f',E:'#ef6c00',O:'#388e3c',A:'#7b1fa2',C:'#1565c0'};
+// Descricoes dos polos para dominios - GLOBAL
+var DESC_DOM={N:{baixo:'Apresenta maior estabilidade emocional e tende a enfrentar as press\u00f5es do dia a dia de forma mais moderada e bem estruturada.',alto:'Apresenta menor capacidade de tolerar frustra\u00e7\u00f5es e de conter seus impulsos; pode ser mais inst\u00e1vel e desajustado emocionalmente diante de situa\u00e7\u00f5es de estresse.'},E:{baixo:'Tende a manter uma postura reservada e n\u00e3o impositiva quanto a seu ponto de vista. Tem prefer\u00eancia em ficar sozinho e busca em menor grau a estimula\u00e7\u00e3o social.',alto:'Tem prefer\u00eancia por grupos e busca, em maior grau, a estimula\u00e7\u00e3o social. Tende a manter uma postura soci\u00e1vel e assertiva com rela\u00e7\u00e3o \u00e0s pessoas.'},O:{baixo:'Apresenta maior prefer\u00eancia por atividade rotineira e que lhe \u00e9 familiar. Tende a ter uma gama mais limitada de interesses e a manter uma postura mais conservadora e convencional.',alto:'Apresenta maior interesse pela variedade e por tarefas e ideias novas. Tende a manter uma postura curiosa, com maior diversidade de interesses e aceita mais facilmente mudan\u00e7as.'},A:{baixo:'Tende a ser mais voltado para si e a ser autocentrado(a). Pode demonstrar maior desconfian\u00e7a e a manter uma postura mais c\u00e9tica em rela\u00e7\u00e3o \u00e0s demais pessoas.',alto:'\u00c9 propenso a manter uma postura simp\u00e1tica e cordial com as pessoas. Maior anseio em ajudar e cooperar e maior preocupa\u00e7\u00e3o com o bem-estar alheio.'},C:{baixo:'Apresenta menor grau de escrupulosidade; tende a ser menos exigente consigo mesmo com rela\u00e7\u00e3o \u00e0s obriga\u00e7\u00f5es e a ser menos obstinado a atingir os objetivos.',alto:'Tende a ser mais propositado e escrupuloso em rela\u00e7\u00e3o aos compromissos profissionais e pessoais. Maior grau de responsabilidade e de determina\u00e7\u00e3o para atingir os objetivos.'}};
+// Descricoes dos polos para facetas - GLOBAL
+var DESC_FAC={N1:{nome:'Ansiedade',baixo:'\u00c9 menos propenso(a) a estados emocionais negativos e a se preocupar com o futuro; tende a se apresentar de forma calma.',alto:'Maior propens\u00e3o a se preocupar com o futuro; tende a ser mais preocupado(a) e apreensivo(a).'},N2:{nome:'Raiva',baixo:'Apresenta menor propens\u00e3o a expressar raiva e irrita\u00e7\u00e3o.',alto:'Tende a expressar raiva e irritabilidade e a demonstrar frustra\u00e7\u00e3o com mais frequ\u00eancia.'},N3:{nome:'Depress\u00e3o',baixo:'Tem menor tend\u00eancia a sentir tristeza, desesperan\u00e7a e desencorajamento.',alto:'Tem maior disposi\u00e7\u00e3o para sentir desesperan\u00e7a, solid\u00e3o e tristeza. Desencoraja-se e desanima-se mais facilmente.'},N4:{nome:'Embara\u00e7o',baixo:'Sente-se confort\u00e1vel em situa\u00e7\u00f5es sociais e lida com menos ang\u00fastia com situa\u00e7\u00f5es constrangedoras.',alto:'Apresenta maior propens\u00e3o a sentir constrangimento em situa\u00e7\u00f5es sociais e a ficar desconfort\u00e1vel ante outras pessoas.'},N5:{nome:'Impulsividade',baixo:'Apresenta uma postura mais comedida em rela\u00e7\u00e3o aos pr\u00f3prios impulsos e maior toler\u00e2ncia \u00e0s frustra\u00e7\u00f5es.',alto:'Tem maior dificuldade em resistir a seus impulsos e menor toler\u00e2ncia \u00e0s frustra\u00e7\u00f5es.'},N6:{nome:'Vulnerabilidade',baixo:'Sente maior grau de seguran\u00e7a para lidar com situa\u00e7\u00f5es de press\u00e3o e para tomar decis\u00f5es.',alto:'Sente maior grau de inseguran\u00e7a para tomar decis\u00f5es sob press\u00e3o e para lidar com situa\u00e7\u00f5es de estresse.'},E1:{nome:'Acolhimento',baixo:'Apresenta maior n\u00edvel de formalidade, tende a ser reservado(a) e n\u00e3o cria v\u00ednculos pr\u00f3ximos com facilidade.',alto:'Apresenta maior facilidade em estabelecer v\u00ednculos sociais e mant\u00e9m uma postura simp\u00e1tica com as pessoas.'},E2:{nome:'Gregarismo',baixo:'Prefere desenvolver atividades em lugares tranquilos com poucas pessoas ou ent\u00e3o sozinho(a).',alto:'Prefere interagir e desenvolver atividades com grande n\u00famero de pessoas ao mesmo tempo e aprecia a companhia dos outros.'},E3:{nome:'Assertividade',baixo:'Tende a n\u00e3o se posicionar de maneira afirmativa, pode hesitar para falar e prefere receber orienta\u00e7\u00e3o a fornec\u00ea-la.',alto:'Tende a se posicionar de maneira afirmativa e a manter uma postura dominante, preferindo fornecer comandos e orienta\u00e7\u00f5es aos outros.'},E4:{nome:'Atividade',baixo:'\u00c9 propenso(a) a manter uma postura calma e prefere desenvolver as atividades de forma vagarosa.',alto:'Tende a manter uma postura entusiasmada e din\u00e2mica para desenvolver as atividades.'},E5:{nome:'Busca de Sensa\u00e7\u00f5es',baixo:'Aprecia a tranquilidade, evita experi\u00eancias intensas e prefere um estilo de vida mais sereno.',alto:'Prefere atividades animadas e mais agitadas e tende a ter um estilo de vida mais agitado.'},E6:{nome:'Emo\u00e7\u00f5es Positivas',baixo:'Tende a ser menos otimista e menos bem humorado(a). Tem menor propens\u00e3o para ver o lado bom das coisas.',alto:'Tende a ser alegre e positivo(a). \u00c9 mais propenso(a) a ser otimista e a ver o lado positivo das coisas.'},O1:{nome:'Fantasia',baixo:'Prefere lidar com atividades concretas que n\u00e3o exijam maior grau de imagina\u00e7\u00e3o.',alto:'Prefere lidar com atividades nas quais seja necess\u00e1rio maior grau de criatividade e imagina\u00e7\u00e3o.'},O2:{nome:'Est\u00e9tica',baixo:'Apresenta menor tend\u00eancia a se sensibilizar pelas artes e menor interesse pelas formas de express\u00e3o est\u00e9tica.',alto:'Tende a se sensibilizar pelas artes e maior interesse pelas formas de express\u00e3o est\u00e9tica.'},O3:{nome:'Sentimentos',baixo:'Tende a atribuir pouca import\u00e2ncia aos sentimentos e expressa as emo\u00e7\u00f5es com menor intensidade.',alto:'Atribui maior import\u00e2ncia aos sentimentos e experiencia as emo\u00e7\u00f5es de forma mais intensa.'},O4:{nome:'A\u00e7\u00f5es Variadas',baixo:'Tem maior apego \u00e0 rotina e por situa\u00e7\u00f5es familiares. Pode apresentar resist\u00eancia \u00e0s mudan\u00e7as.',alto:'\u00c9 menos interessado(a) em manter uma rotina e tende a se engajar em novas atividades.'},O5:{nome:'Ideias',baixo:'Apresenta uma gama mais limitada de interesses intelectuais e menor grau de curiosidade para ideias abstratas.',alto:'Tem maior interesse para ideias abstratas e apresenta mais curiosidade intelectual.'},O6:{nome:'Valores',baixo:'Tende a ser mais tradicionalista e conservador(a). Pode ser mais resistente a mudan\u00e7as quanto aos pr\u00f3prios valores sociais, religiosos ou morais.',alto:'Apresenta maior abertura a reavaliar a pr\u00f3pria postura e valores sociais, religiosos ou morais.'},A1:{nome:'Confian\u00e7a',baixo:'Tem maior tend\u00eancia ao ceticismo e a desconfiar das inten\u00e7\u00f5es alheias e de atitudes de outros no \u00e2mbito social e do trabalho.',alto:'\u00c9 mais propenso(a) a acreditar que as pessoas s\u00e3o bem intencionadas e tende a confiar nelas no \u00e2mbito social e do trabalho.'},A2:{nome:'Franqueza',baixo:'Prefere adular, apresenta maior resist\u00eancia em expressar suas reais opini\u00f5es e tende a ser mais comedido(a) em expor seu ponto de vista.',alto:'Tende a expressar mais abertamente seu ponto de vista e a expor com maior franqueza sua opini\u00e3o.'},A3:{nome:'Altru\u00edsmo',baixo:'Apresenta maior resist\u00eancia em se envolver nos problemas alheios e tende a ser mais autocentrado(a) na forma de desenvolver as atividades.',alto:'Apresenta maior disposi\u00e7\u00e3o para ajudar aos outros e maior predom\u00ednio de uma postura atenciosa e cordial com as pessoas.'},A4:{nome:'Complac\u00eancia',baixo:'Tem maior disposi\u00e7\u00e3o a ficar ressentido(a) e pode ter mais dificuldade para inibir a ofensa, assim como pode utilizar o sarcasmo e a ironia ao se expressar.',alto:'Tende a ser compreensivo(a) com as pessoas e a inibir e a se esquecer da ofensa.'},A5:{nome:'Mod\u00e9stia',baixo:'Tem uma postura mais vaidosa, podendo transmitir uma imagem arrogante e presun\u00e7osa aos outros.',alto:'\u00c9 inclinado(a) a ter uma postura mais humilde e comedida e busca menos o reconhecimento das pessoas ao redor.'},A6:{nome:'Sensibilidade',baixo:'Apresenta menor disposi\u00e7\u00e3o a considerar as necessidades alheias e a ser movido(a) pela compaix\u00e3o; tende a ser mais realista nas a\u00e7\u00f5es.',alto:'Tem maior disposi\u00e7\u00e3o a considerar as necessidades alheias e a ser movido(a) pela compaix\u00e3o.'},C1:{nome:'Compet\u00eancia',baixo:'Tende a se sentir despreparado(a) para a realiza\u00e7\u00e3o das tarefas e inseguro(a) quanto a sua efici\u00eancia.',alto:'Apresenta maior prud\u00eancia na busca de informa\u00e7\u00e3o e se sente mais confiante em sua efici\u00eancia para tomar decis\u00f5es e para realizar suas atividades.'},C2:{nome:'Ordem',baixo:'Apresenta menor exig\u00eancia quanto \u00e0 organiza\u00e7\u00e3o e tende a ser menos met\u00f3dico(a) na realiza\u00e7\u00e3o das atividades. Pode n\u00e3o planejar suas a\u00e7\u00f5es com anteced\u00eancia e com detalhes.',alto:'Tende a ser mais organizado(a) e met\u00f3dico(a) na realiza\u00e7\u00e3o das tarefas. Planeja antecipadamente e com detalhes suas atividades.'},C3:{nome:'Senso de Dever',baixo:'Demonstra menor apego \u00e0s suas obriga\u00e7\u00f5es e responsabilidades. Pode ser displicente quanto \u00e0s quest\u00f5es morais e \u00e9ticas.',alto:'Tende a ser confi\u00e1vel no cumprimento de seus compromissos e responsabilidades. Tem maior preocupa\u00e7\u00e3o com princ\u00edpios \u00e9ticos e morais em sua atua\u00e7\u00e3o.'},C4:{nome:'Esfor\u00e7o por Realiza\u00e7\u00f5es',baixo:'Tem menor determina\u00e7\u00e3o no alcance das metas e com as quest\u00f5es profissionais. Pode demonstrar menor ambi\u00e7\u00e3o no trabalho.',alto:'\u00c9 mais determinado(a) no trabalho e tende a ser mais motivado(a) para atingir as metas. Pode demonstrar maior ambi\u00e7\u00e3o no trabalho.'},C5:{nome:'Autodisciplina',baixo:'Apresenta menor disciplina, pode procrastinar o in\u00edcio de uma atividade e se sentir mais facilmente desencorajado(a) a finalizar projetos que inicia.',alto:'Tem maior grau de disciplina para realizar os projetos que inicia at\u00e9 sua finaliza\u00e7\u00e3o e dificilmente tende a desistir do que realiza.'},C6:{nome:'Pondera\u00e7\u00e3o',baixo:'Investe menor tempo na an\u00e1lise dos fatos e pode tomar decis\u00f5es mais precipitadas. Tende a ser espont\u00e2neo(a) e capaz de arriscar, n\u00e3o sendo paralisado(a) diante do imprevisto.',alto:'Despende tempo para analisar todas as vari\u00e1veis antes de tomar uma decis\u00e3o sendo cauteloso(a) em suas a\u00e7\u00f5es. Procura agir preventivamente e evita riscos e contratempos.'}};
+
 function calcularResultados(){
 var nome=document.getElementById('nome').value;
 var idade=document.getElementById('idadeCalculada').value;
@@ -555,29 +581,61 @@ var fk=keys[k];
 tFacetas[fk]=calcularEscoreT(escoresFacetas[fk],fk,sexo);
 }
 
-// Montar HTML dos resultados
+// Funcao auxiliar para montar barra estilo Vetor
+function montarBarraHTML(escoreT,cor){
+var minT=20;var maxT=80;var range=maxT-minT;
+var pct=Math.max(0,Math.min(100,((escoreT-minT)/range)*100));
+var html='<div class="vetor-barra-container">';
+html+='<div class="vetor-barra" style="position:relative;">';
+html+='<div class="vetor-barra-fill" style="width:'+pct+'%;background:'+cor+';"></div>';
+html+='<div class="vetor-escore-label" style="left:'+pct+'%;">T='+escoreT+'</div>';
+html+='</div>';
+html+='<div class="vetor-barra-marcas"><span>20</span><span>Baixa</span><span>35</span><span>45</span><span>M\u00e9dia 55</span><span>65</span><span>Alta</span><span>80</span></div>';
+html+='</div>';
+return html;
+}
+
+// Montar HTML dos resultados - ESTILO VETOR
 var el=document.getElementById('resultados');
 var h='<h2>Resultados NEO PI-R</h2>';
 h+='<div class="total-geral"><h3>Perfil de Personalidade - Cinco Grandes Fatores</h3>';
-h+='<p style="opacity:0.8;font-size:0.9em;">Normas: '+(sexo==='Masculino'?'Masculino':sexo==='Feminino'?'Feminino':'Amostra Geral')+' (N=160.671)</p></div>';
+h+='<p style="opacity:0.8;font-size:0.9em;">Normas: '+(sexo==='Masculino'?'Masculino':sexo==='Feminino'?'Feminino':'Amostra Geral')+' | Escores padronizados T</p></div>';
 
-// Dominios
+// === SECAO 1: DOMINIOS ===
+h+='<div class="vetor-section">';
+h+='<div class="vetor-section-title" style="color:#4a148c;border-color:#4a148c;">Resultados por Dom\u00ednio</div>';
 for(var d=0;d<dkeys.length;d++){
 var dk=dkeys[d];
 var dom=DOMINIOS[dk];
 var tD=tDominios[dk];
-var clD=classificarT(tD);
-var pct=Math.min(100,Math.max(0,(tD/80)*100));
-h+='<div class="dominio-card">';
-h+='<h4>'+dom.nome+' ('+dk+')</h4>';
-h+='<p>Escore Bruto: <strong>'+escoresDominios[dk]+'</strong> | Escore T: <strong>'+tD+'</strong> | <span class="badge" style="background:'+clD.cor+'">'+clD.texto+'</span></p>';
-h+='<div class="progress-bar"><div class="progress-fill" style="width:'+pct+'%;background:'+clD.cor+'"></div></div>';
-// Facetas do dominio
+var cor=CORES_DOM[dk];
+var desc=DESC_DOM[dk];
+h+='<div class="vetor-row">';
+h+='<div class="vetor-row-title" style="color:'+cor+';">'+dom.nome.toUpperCase()+'</div>';
+h+='<div class="vetor-polo vetor-polo-baixo">'+desc.baixo+'</div>';
+h+='<div>'+montarBarraHTML(tD,cor)+'</div>';
+h+='<div class="vetor-polo vetor-polo-alto">'+desc.alto+'</div>';
+h+='</div>';
+}
+h+='</div>';
+
+// === SECAO 2: FACETAS POR DOMINIO ===
+for(var d=0;d<dkeys.length;d++){
+var dk=dkeys[d];
+var dom=DOMINIOS[dk];
+var cor=CORES_DOM[dk];
+h+='<div class="vetor-section">';
+h+='<div class="vetor-section-title" style="color:'+cor+';border-color:'+cor+';">'+dom.nome.toUpperCase()+'</div>';
 for(var f=0;f<dom.facetas.length;f++){
 var fk=dom.facetas[f];
 var tF=tFacetas[fk];
-var clF=classificarT(tF);
-h+='<div class="faceta-item"><span>'+FACETAS[fk].nome+' ('+fk+')</span><span>Bruto: '+escoresFacetas[fk]+' | T: '+tF+' <span class="badge" style="background:'+clF.cor+';font-size:0.7em;">'+clF.texto+'</span></span></div>';
+var descF=DESC_FAC[fk];
+h+='<div class="vetor-row">';
+h+='<div class="vetor-row-title" style="color:'+cor+';">'+descF.nome.toUpperCase()+'</div>';
+h+='<div class="vetor-polo vetor-polo-baixo">'+descF.baixo+'</div>';
+h+='<div>'+montarBarraHTML(tF,cor)+'</div>';
+h+='<div class="vetor-polo vetor-polo-alto">'+descF.alto+'</div>';
+h+='</div>';
 }
 h+='</div>';
 }
@@ -616,85 +674,79 @@ var dataAval=document.getElementById('data').value||new Date().toLocaleDateStrin
 var idPac=document.getElementById('idPaciente')?document.getElementById('idPaciente').value:'';
 var jsPDF=window.jspdf.jsPDF;
 var doc=new jsPDF();
-var CORES={N:[220,53,69],E:[255,152,0],O:[76,175,80],A:[156,39,176],C:[33,150,243]};
-var DESC={N:{nome:'NEUROTICISMO',cor:CORES.N,baixo:'Apresenta maior estabilidade emocional e tende a lidar com as pressoes do cotidiano de forma moderada e equilibrada.',alto:'Tende a apresentar menor tolerancia a frustracoes e a reagir de forma mais intensa emocionalmente diante de situacoes de estresse.'},E:{nome:'EXTROVERSAO',cor:CORES.E,baixo:'Tende a adotar uma postura mais reservada e discreta. Prefere ambientes tranquilos e busca menor estimulacao social.',alto:'Busca ativamente a interacao social e a estimulacao. Tende a manter uma postura sociavel e assertiva com as pessoas.'},O:{nome:'ABERTURA',cor:CORES.O,baixo:'Apresenta maior preferencia por atividades conhecidas e rotineiras. Tende a manter uma postura mais convencional e pratica.',alto:'Demonstra maior interesse pela novidade e por experiencias diversificadas. Tende a ser curioso(a) e receptivo(a) a mudancas.'},A:{nome:'AMABILIDADE',cor:CORES.A,baixo:'Tende a ser mais centrado(a) em si e a manter uma postura mais critica e questionadora em relacao aos outros.',alto:'Tende a manter uma postura cooperativa e cordial com as pessoas. Demonstra maior disposicao para ajudar e considerar o bem-estar alheio.'},C:{nome:'CONSCIENCIOSIDADE',cor:CORES.C,baixo:'Apresenta menor rigidez quanto a organizacao e planejamento. Tende a ser mais flexivel e espontaneo(a) em suas acoes.',alto:'Tende a ser mais organizado(a) e disciplinado(a) em relacao aos compromissos. Maior grau de determinacao para atingir objetivos.'}};
-var FDESC={'N1':{nome:'ANSIEDADE',baixo:'Tende a experimentar menos estados emocionais negativos e a se apresentar de forma mais calma e tranquila.',alto:'Maior tendencia a vivenciar preocupacao e apreensao. Tende a antecipar problemas com mais frequencia.'},'N2':{nome:'RAIVA',baixo:'Apresenta menor tendencia a expressar irritabilidade e frustracoes no cotidiano.',alto:'Tende a expressar raiva e irritabilidade com maior frequencia e a demonstrar frustracoes mais abertamente.'},'N3':{nome:'DEPRESSAO',baixo:'Tem menor tendencia a vivenciar sentimentos de tristeza, desesperanca e desanimo.',alto:'Apresenta maior disposicao para experimentar sentimentos de tristeza e desesperanca. Desencoraja-se mais facilmente.'},'N4':{nome:'EMBARACO',baixo:'Sente-se confortavel em situacoes sociais e lida com menos angustia em contextos constrangedores.',alto:'Apresenta maior tendencia a sentir constrangimento em situacoes sociais e a ficar desconfortavel diante de outros.'},'N5':{nome:'IMPULSIVIDADE',baixo:'Apresenta uma postura mais comedida em relacao aos proprios impulsos e maior tolerancia a frustracoes.',alto:'Tem maior dificuldade em controlar seus impulsos e menor tolerancia a frustracoes.'},'N6':{nome:'VULNERABILIDADE',baixo:'Sente maior seguranca para lidar com situacoes de pressao e para tomar decisoes.',alto:'Sente maior inseguranca para tomar decisoes sob pressao e para lidar com situacoes de estresse.'},'E1':{nome:'ACOLHIMENTO',baixo:'Apresenta maior nivel de formalidade, tende a ser reservado(a) e nao cria vinculos proximos com facilidade.',alto:'Apresenta maior facilidade em estabelecer vinculos sociais e mantem uma postura simpatica com as pessoas.'},'E2':{nome:'GREGARISMO',baixo:'Prefere desenvolver atividades em lugares tranquilos com poucas pessoas ou entao sozinho(a).',alto:'Prefere interagir e desenvolver atividades com grande numero de pessoas e aprecia a companhia dos outros.'},'E3':{nome:'ASSERTIVIDADE',baixo:'Tende a nao se posicionar de maneira afirmativa, pode hesitar para falar e prefere receber orientacoes.',alto:'Tende a se posicionar de maneira afirmativa e a manter uma postura dominante, preferindo fornecer comandos e orientacoes.'},'E4':{nome:'ATIVIDADE',baixo:'Tende a manter uma postura calma e prefere desenvolver as atividades de forma vagarosa.',alto:'Tende a manter uma postura entusiasmada e dinamica para desenvolver as atividades.'},'E5':{nome:'BUSCA DE SENSACOES',baixo:'Aprecia a tranquilidade, evita experiencias intensas e prefere um estilo de vida mais sereno.',alto:'Prefere atividades animadas e mais agitadas e tende a ter um estilo de vida mais estimulante.'},'E6':{nome:'EMOCOES POSITIVAS',baixo:'Tende a ser menos otimista e menos bem humorado(a). Tem menor tendencia a ver o lado bom das coisas.',alto:'Tende a ser alegre e positivo(a). E mais propenso(a) a ser otimista e a ver o lado positivo das coisas.'},'O1':{nome:'FANTASIA',baixo:'Prefere lidar com atividades concretas que nao exijam maior grau de imaginacao.',alto:'Prefere lidar com atividades nas quais seja necessario maior grau de criatividade e imaginacao.'},'O2':{nome:'ESTETICA',baixo:'Apresenta menor tendencia a se sensibilizar pelas artes e menor interesse pelas formas de expressao estetica.',alto:'Tende a se sensibilizar pelas artes e demonstra maior interesse pelas formas de expressao estetica.'},'O3':{nome:'SENTIMENTOS',baixo:'Tende a atribuir pouca importancia aos sentimentos e expressa as emocoes com menor intensidade.',alto:'Atribui maior importancia aos sentimentos e vivencia as emocoes de forma mais intensa.'},'O4':{nome:'ACOES VARIADAS',baixo:'Tem maior apego a rotina e a situacoes familiares. Pode apresentar resistencia a mudancas.',alto:'Tem menor interesse em manter uma rotina e tende a se engajar em novas atividades.'},'O5':{nome:'IDEIAS',baixo:'Apresenta uma gama mais limitada de interesses intelectuais e menor grau de curiosidade para ideias abstratas.',alto:'Tem maior interesse por ideias abstratas e apresenta maior curiosidade intelectual.'},'O6':{nome:'VALORES',baixo:'Tende a ser mais tradicionalista e conservador(a). Pode ser mais resistente a mudancas quanto aos proprios valores sociais, religiosos ou morais.',alto:'Apresenta maior abertura a reavaliar a propria postura e valores sociais, religiosos ou morais.'},'A1':{nome:'CONFIANCA',baixo:'Tem maior tendencia ao ceticismo e a desconfiar das intencoes alheias e de atitudes de outros.',alto:'E mais propenso(a) a acreditar que as pessoas sao bem intencionadas e tende a confiar nelas.'},'A2':{nome:'FRANQUEZA',baixo:'Tende a ser mais comedido(a) em expressar suas reais opinioes e a ser mais reservado(a) em expor seu ponto de vista.',alto:'Tende a expressar mais abertamente seu ponto de vista e a expor com maior franqueza sua opiniao.'},'A3':{nome:'ALTRUISMO',baixo:'Apresenta maior resistencia em se envolver nos problemas alheios e tende a ser mais autocentrado(a) na forma de desenvolver as atividades.',alto:'Apresenta maior disposicao para ajudar aos outros e maior predominio de uma postura atenciosa e cordial com as pessoas.'},'A4':{nome:'COMPLACENCIA',baixo:'Tem maior disposicao a ficar ressentido(a) e pode ter mais dificuldade para inibir a ofensa, assim como pode utilizar o sarcasmo e a ironia ao se expressar.',alto:'Tende a ser compreensivo(a) com as pessoas e a inibir e a se esquecer da ofensa.'},'A5':{nome:'MODESTIA',baixo:'Tem uma postura mais vaidosa, podendo transmitir uma imagem arrogante e presuncosa aos outros.',alto:'Tende a ter uma postura mais humilde e comedida e busca menos o reconhecimento das pessoas ao redor.'},'A6':{nome:'SENSIBILIDADE',baixo:'Apresenta menor disposicao a considerar as necessidades alheias e a ser movido(a) pela compaixao; tende a ser mais realista nas acoes.',alto:'Tem maior disposicao a considerar as necessidades alheias e a ser movido(a) pela compaixao.'},'C1':{nome:'COMPETENCIA',baixo:'Tende a se sentir menos preparado(a) para a realizacao das tarefas e menos seguro(a) quanto a sua eficiencia.',alto:'Apresenta maior confianca na busca de informacao e se sente mais seguro(a) em sua eficiencia para tomar decisoes e realizar suas atividades.'},'C2':{nome:'ORDEM',baixo:'Apresenta menor exigencia quanto a organizacao e tende a ser menos metodico(a) na realizacao das atividades.',alto:'Tende a ser mais organizado(a) e metodico(a) na realizacao das tarefas. Planeja antecipadamente e com detalhes suas atividades.'},'C3':{nome:'SENSO DE DEVER',baixo:'Demonstra menor apego as suas obrigacoes e responsabilidades. Pode ser displicente quanto as questoes morais e eticas.',alto:'Tende a ser confiavel no cumprimento de seus compromissos e responsabilidades. Tem maior preocupacao com principios eticos e morais em sua atuacao.'},'C4':{nome:'ESFORCO POR REALIZACOES',baixo:'Tem menor determinacao no alcance das metas e com as questoes profissionais. Pode demonstrar menor ambicao no trabalho.',alto:'E mais determinado(a) no trabalho e tende a ser mais motivado(a) para atingir as metas. Pode demonstrar maior ambicao no trabalho.'},'C5':{nome:'AUTODISCIPLINA',baixo:'Apresenta menor disciplina, pode procrastinar o inicio de uma atividade e se sentir mais facilmente desencorajado(a) a finalizar projetos que inicia.',alto:'Tem maior grau de disciplina para realizar os projetos que inicia ate sua finalizacao e dificilmente tende a desistir do que realiza.'},'C6':{nome:'PONDERACAO',baixo:'Investe menor tempo na analise dos fatos e pode tomar decisoes mais precipitadas. Tende a ser espontaneo(a) e capaz de arriscar.',alto:'Despende tempo para analisar todas as variaveis antes de tomar uma decisao sendo cauteloso(a) em suas acoes. Procura agir preventivamente e evita riscos e contratempos.'}};
+var CORES_PDF={N:[211,47,47],E:[239,108,0],O:[56,142,60],A:[123,31,162],C:[21,101,192]};
+var DESC_PDF={N:{nome:'NEUROTICISMO',cor:CORES_PDF.N},E:{nome:'EXTROVERSAO',cor:CORES_PDF.E},O:{nome:'ABERTURA',cor:CORES_PDF.O},A:{nome:'AMABILIDADE',cor:CORES_PDF.A},C:{nome:'CONSCIENCIOSIDADE',cor:CORES_PDF.C}};
 var pag=0;
 function rodape(){doc.setFillColor(80,80,80);doc.rect(0,285,210,12,'F');doc.setTextColor(180,180,180);doc.setFontSize(6.5);doc.setFont(undefined,'normal');doc.text('NEO PI-R - Costa & McCrae (2010) - Normas Vetor Editora (2023) | Relatorio gerado em: '+new Date().toLocaleString('pt-BR'),105,290,{align:'center'});pag++;doc.text(String(pag),200,290);}
 function cabecalho(){doc.setFillColor(74,20,140);doc.rect(0,0,210,24,'F');doc.setTextColor(255,255,255);doc.setFontSize(13);doc.setFont(undefined,'bold');doc.text('NEO PI-R',15,10);doc.setFontSize(7);doc.setFont(undefined,'normal');doc.text('Inventario de Personalidade NEO Revisado',15,16);doc.setFontSize(8);doc.text('Nome: '+nome,80,8);doc.text('Sexo: '+(sexo||'N/I')+'   |   Idade: '+(idade||'N/I'),80,13);doc.text('Data: '+dataAval+(idPac?'   |   ID: '+idPac:''),80,18);}
 function desenharBarra(doc,x,y,w,h,escoreT,cor){var minT=20;var maxT=80;var range=maxT-minT;var pos=Math.max(0,Math.min(1,(escoreT-minT)/range));var barW=pos*w;doc.setDrawColor(200,200,200);doc.setFillColor(240,240,240);doc.rect(x,y,w,h,'FD');doc.setFillColor(cor[0],cor[1],cor[2]);doc.rect(x,y,barW,h,'F');doc.setDrawColor(150,150,150);doc.setFontSize(5.5);doc.setTextColor(100,100,100);doc.setFont(undefined,'normal');var marcas=[{v:20,l:'20'},{v:35,l:'Baixa'},{v:45,l:'45'},{v:55,l:'Media'},{v:65,l:'65'},{v:80,l:'Alta'}];for(var i=0;i<marcas.length;i++){var mx=x+((marcas[i].v-minT)/range)*w;doc.line(mx,y+h,mx,y+h+2);doc.text(marcas[i].l,mx,y+h+5,{align:'center'});}doc.setFontSize(7);doc.setTextColor(0,0,0);doc.setFont(undefined,'bold');doc.text('T='+escoreT,x+barW,y-1.5,{align:'center'});}
 function wrapText(doc,text,maxW){var words=text.split(' ');var lines=[];var line='';for(var i=0;i<words.length;i++){var test=line+(line?' ':'')+words[i];if(doc.getTextWidth(test)>maxW&&line!==''){lines.push(line);line=words[i];}else{line=test;}}if(line)lines.push(line);return lines;}
 
-// Pagina 1 - Cabecalho
-doc.setFillColor(74,20,140);doc.rect(0,0,210,30,'F');
-doc.setTextColor(255,255,255);doc.setFontSize(14);doc.setFont(undefined,'bold');
-doc.text('NEO PI-R - PERFIL DE PERSONALIDADE',105,12,{align:'center'});
-doc.setFontSize(9);doc.setFont(undefined,'normal');
-doc.text('Inventario de Personalidade NEO Revisado - Big Five',105,20,{align:'center'});
-
-var y=38;
-doc.setFillColor(248,249,250);doc.rect(15,y,180,22,'F');
-doc.setTextColor(74,20,140);doc.setFontSize(10);doc.setFont(undefined,'bold');
-doc.text('DADOS PESSOAIS',20,y+6);
-doc.setTextColor(0,0,0);doc.setFontSize(9);doc.setFont(undefined,'normal');
-// ---- PAGINA 1: PERFIL DOS DOMINIOS ----
+// ---- PAGINA 1: DADOS + DOMINIOS ----
 cabecalho();
 var y=30;
-doc.setFillColor(230,230,230);doc.rect(0,y,210,0.5,'F');
-y+=8;
-doc.setTextColor(74,20,140);doc.setFontSize(13);doc.setFont(undefined,'bold');
-doc.text('Resultados',15,y);y+=3;
+doc.setFillColor(248,249,250);doc.rect(10,y,190,20,'F');
+doc.setTextColor(74,20,140);doc.setFontSize(9);doc.setFont(undefined,'bold');
+doc.text('DADOS PESSOAIS',15,y+5);
+doc.setTextColor(0,0,0);doc.setFontSize(8);doc.setFont(undefined,'normal');
+doc.text('Nome: '+nome+'    |    Sexo: '+(sexo||'N/I')+'    |    Idade: '+(idade||'N/I'),15,y+11);
+doc.text('Data: '+dataAval+(idPac?'    |    ID: '+idPac:'')+'    |    Norma: '+(sexo||'Geral'),15,y+16);
+y+=26;
+doc.setFillColor(230,230,230);doc.rect(0,y,210,0.5,'F');y+=6;
+doc.setTextColor(74,20,140);doc.setFontSize(12);doc.setFont(undefined,'bold');
+doc.text('Resultados por Dominio',105,y,{align:'center'});y+=3;
 doc.setDrawColor(74,20,140);doc.line(15,y,195,y);y+=8;
 var dordm=['N','E','O','A','C'];
 var barX=58;var barW=90;var barH=5;
 for(var di=0;di<dordm.length;di++){
 var dk=dordm[di];
-var domInfo=DESC[dk];
+var domInfo=DESC_PDF[dk];
+var domDesc=DESC_DOM[dk];
 var domDados=dados.dominios[DOMINIOS[dk].nome];
 var escoreT=domDados.escoreT;
-doc.setTextColor(50,50,50);doc.setFontSize(9);doc.setFont(undefined,'bold');
-doc.text(domInfo.nome,105,y,{align:'center'});y+=3;
+doc.setTextColor(domInfo.cor[0],domInfo.cor[1],domInfo.cor[2]);doc.setFontSize(9);doc.setFont(undefined,'bold');
+doc.text(domInfo.nome,105,y,{align:'center'});y+=4;
 var txtY=y;
 doc.setFontSize(6.5);doc.setFont(undefined,'normal');doc.setTextColor(80,80,80);
-var linesB=wrapText(doc,domInfo.baixo,50);
-var linesA=wrapText(doc,domInfo.alto,50);
+var linesB=wrapText(doc,domDesc.baixo,48);
+var linesA=wrapText(doc,domDesc.alto,48);
 var maxL=Math.max(linesB.length,linesA.length);
-for(var li=0;li<linesB.length;li++){doc.text(linesB[li],15,txtY+li*4,{maxWidth:50});}
-for(var li2=0;li2<linesA.length;li2++){doc.text(linesA[li2],155,txtY+li2*4,{maxWidth:50});}
-var midY=txtY+(maxL*4/2)-2;
+for(var li=0;li<linesB.length;li++){doc.text(linesB[li],10,txtY+li*3.5,{maxWidth:48});}
+for(var li2=0;li2<linesA.length;li2++){doc.text(linesA[li2],155,txtY+li2*3.5,{maxWidth:48});}
+var midY=txtY+(maxL*3.5/2)-2;
 desenharBarra(doc,barX,midY-barH/2,barW,barH,escoreT,domInfo.cor);
-y=txtY+(maxL*4)+10;
+y=txtY+(maxL*3.5)+8;
 }
 rodape();
 // ---- PAGINAS DE FACETAS (uma por dominio) ----
 for(var di2=0;di2<dordm.length;di2++){
 doc.addPage();cabecalho();
 var dk2=dordm[di2];
-var domInfo2=DESC[dk2];
+var domInfo2=DESC_PDF[dk2];
 y=30;
-doc.setFillColor(230,230,230);doc.rect(0,y,210,0.5,'F');y+=8;
+doc.setFillColor(230,230,230);doc.rect(0,y,210,0.5,'F');y+=6;
 doc.setTextColor(domInfo2.cor[0],domInfo2.cor[1],domInfo2.cor[2]);doc.setFontSize(12);doc.setFont(undefined,'bold');
-doc.text(domInfo2.nome,15,y);y+=3;
+doc.text(domInfo2.nome,105,y,{align:'center'});y+=3;
 doc.setDrawColor(domInfo2.cor[0],domInfo2.cor[1],domInfo2.cor[2]);doc.line(15,y,195,y);y+=8;
-var facOrder=['N1','N2','N3','N4','N5','N6','E1','E2','E3','E4','E5','E6','O1','O2','O3','O4','O5','O6','A1','A2','A3','A4','A5','A6','C1','C2','C3','C4','C5','C6'];
 var domFacs=DOMINIOS[dk2].facetas;
 for(var fi=0;fi<domFacs.length;fi++){
 var fk2=domFacs[fi];
-var fd=FDESC[fk2];
+var fd=DESC_FAC[fk2];
 var facDados=dados.facetas[FACETAS[fk2].nome];
 var escF=facDados.escoreT;
-doc.setTextColor(50,50,50);doc.setFontSize(9);doc.setFont(undefined,'bold');
-doc.text(fd.nome,105,y,{align:'center'});y+=3;
+doc.setTextColor(domInfo2.cor[0],domInfo2.cor[1],domInfo2.cor[2]);doc.setFontSize(8.5);doc.setFont(undefined,'bold');
+doc.text(fd.nome.toUpperCase(),105,y,{align:'center'});y+=4;
 var fTxtY=y;
 doc.setFontSize(6);doc.setFont(undefined,'normal');doc.setTextColor(80,80,80);
-var fLB=wrapText(doc,fd.baixo,48);
-var fLA=wrapText(doc,fd.alto,48);
+var fLB=wrapText(doc,fd.baixo,46);
+var fLA=wrapText(doc,fd.alto,46);
 var fMaxL=Math.max(fLB.length,fLA.length);
-for(var fli=0;fli<fLB.length;fli++){doc.text(fLB[fli],15,fTxtY+fli*3.5,{maxWidth:48});}
-for(var fli2=0;fli2<fLA.length;fli2++){doc.text(fLA[fli2],157,fTxtY+fli2*3.5,{maxWidth:48});}
-var fMidY=fTxtY+(fMaxL*3.5/2)-barH/2;
+for(var fli=0;fli<fLB.length;fli++){doc.text(fLB[fli],10,fTxtY+fli*3.3,{maxWidth:46});}
+for(var fli2=0;fli2<fLA.length;fli2++){doc.text(fLA[fli2],157,fTxtY+fli2*3.3,{maxWidth:46});}
+var fMidY=fTxtY+(fMaxL*3.3/2)-barH/2;
 desenharBarra(doc,barX,fMidY,barW,barH,escF,domInfo2.cor);
-y=fTxtY+(fMaxL*3.5)+8;
+y=fTxtY+(fMaxL*3.3)+8;
+if(y>260&&fi<domFacs.length-1){rodape();doc.addPage();cabecalho();y=30;doc.setFillColor(230,230,230);doc.rect(0,y,210,0.5,'F');y+=6;doc.setTextColor(domInfo2.cor[0],domInfo2.cor[1],domInfo2.cor[2]);doc.setFontSize(12);doc.setFont(undefined,'bold');doc.text(domInfo2.nome+' (cont.)',105,y,{align:'center'});y+=3;doc.setDrawColor(domInfo2.cor[0],domInfo2.cor[1],domInfo2.cor[2]);doc.line(15,y,195,y);y+=8;}
 }
 rodape();
 }
@@ -776,6 +828,60 @@ document.getElementById('data').value=new Date().toISOString().split('T')[0];
 window._escalaDados=null;
 }
 
+// === FUNCAO DE EXPORTAR/IMPORTAR RESPOSTAS ===
+function atualizarBoxRespostas(){
+var valores=[];
+for(var i=0;i<ITENS.length;i++){
+var s=document.querySelector('input[name="q'+i+'"]:checked');
+if(s) valores.push(parseInt(s.value)+1); // Converte 0-4 para 1-5 (escala real)
+else valores.push('');
+}
+var box=document.getElementById('boxRespostas');
+if(box) box.value=valores.join(';');
+var cont=document.getElementById('contadorRespostas');
+var respondidos=valores.filter(function(v){return v!=='';}).length;
+if(cont) cont.textContent=respondidos+'/240 respondidas';
+}
+
+function importarRespostas(){
+var box=document.getElementById('boxRespostas');
+if(!box||!box.value.trim()){alert('Cole as respostas no campo acima.');return;}
+var texto=box.value.trim();
+// Aceita formato "4;1;2;5;3" ou "1-4;2-1;3-2" (ignora o numero do item)
+var partes=texto.split(';');
+var valores=[];
+for(var i=0;i<partes.length;i++){
+var p=partes[i].trim();
+if(!p) continue;
+// Se tem hifen, pega o valor depois do hifen (formato "1-4")
+if(p.indexOf('-')!==-1){
+var pedacos=p.split('-');
+valores.push(parseInt(pedacos[pedacos.length-1].trim()));
+} else {
+valores.push(parseInt(p));
+}
+}
+if(valores.length<240){
+if(!confirm('Foram encontradas apenas '+valores.length+' respostas (esperado: 240). Importar mesmo assim?')) return;
+}
+var preenchidas=0;
+for(var i=0;i<valores.length&&i<ITENS.length;i++){
+var v=valores[i];
+if(isNaN(v)||v<1||v>5) continue;
+// Converter de 1-5 (escala real) para 0-4 (valor do radio)
+var radioVal=v-1;
+var radio=document.querySelector('input[name="q'+i+'"][value="'+radioVal+'"]');
+if(radio){
+radio.checked=true;
+preenchidas++;
+var item=radio.closest('.item');
+if(item){item.style.backgroundColor='#f1f8e9';item.style.borderLeft='4px solid #4caf50';}
+}
+}
+atualizarBoxRespostas();
+alert(preenchidas+' respostas importadas com sucesso!');
+}
+
 // ===== MODO PAINEL =====
 var _sessionInfo=null;
 var _API_URL='https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
@@ -841,7 +947,7 @@ alert('Erro de conexao. Verifique sua internet e tente novamente.');
 
 // === INICIALIZACAO (direta, sem wrapper) ===
 gerarQuestionario();
-document.getElementById('questionario').addEventListener('change',function(e){if(e.target.type==='radio'){var item=e.target.closest('.item');if(item){item.style.backgroundColor='#f1f8e9';item.style.borderLeft='4px solid #4caf50';}if(item&&item.nextElementSibling){item.nextElementSibling.scrollIntoView({behavior:'smooth',block:'center'});}}});
+document.getElementById('questionario').addEventListener('change',function(e){if(e.target.type==='radio'){var item=e.target.closest('.item');if(item){item.style.backgroundColor='#f1f8e9';item.style.borderLeft='4px solid #4caf50';}if(item&&item.nextElementSibling){item.nextElementSibling.scrollIntoView({behavior:'smooth',block:'center'});}atualizarBoxRespostas();}});
 document.getElementById('data').value=new Date().toISOString().split('T')[0];
 var params=new URLSearchParams(window.location.search);
 if(params.get('s')){
