@@ -318,4 +318,27 @@
         }
     }, 2000);
 
+    // ============================================================
+    // REDE DE SEGURANCA: polling em window._escalaDados
+    // Se a interceptacao falhou (timing), mas os dados existem, enviar.
+    // Verifica a cada 3s por ate 2 minutos apos o carregamento.
+    // ============================================================
+    var _pollingCount = 0;
+    var _pollingMax = 40; // 40 x 3s = 120s
+    var _pollingTimer = setInterval(function() {
+        _pollingCount++;
+        if (_jaEnviou || _pollingCount >= _pollingMax) {
+            clearInterval(_pollingTimer);
+            return;
+        }
+        // Se _escalaDados existe, o calculo ja foi feito — tentar enviar
+        if (window._escalaDados && window._escalaDados.escala) {
+            _enviarDadosAnonimos();
+        }
+        // Se resultadosBAE existe com subtestes, tentar enviar
+        if (window.resultadosBAE && (window.resultadosBAE.concentrada || window.resultadosBAE.seletiva || window.resultadosBAE.dividida || window.resultadosBAE.alternada || window.resultadosBAE.sustentada)) {
+            _enviarDadosAnonimos();
+        }
+    }, 3000);
+
 })();
