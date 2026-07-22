@@ -2089,16 +2089,16 @@
         var data = await resp.json();
 
         // Bonus de primeiro acesso: se todos os creditos sao 0, dar 1 de cada
-        var totalCreditos = (data.credits||0) + (data.baeCredits||0) + (data.trmvCredits||0) + (data.trefCredits||0) + (data.taavCredits||0);
+        var totalCreditos = (data.credits||0) + (data.baeCredits||0) + (data.trmvCredits||0) + (data.trefCredits||0) + (data.taavCredits||0) + (data.tflodCredits||0) + (data.prontuarioCredits||0);
         if (totalCreditos === 0 && !localStorage.getItem('bonus_dado_' + currentUser)) {
           localStorage.setItem('bonus_dado_' + currentUser, '1');
-          var tipos = ['tecfe','bae','trmv','tref','taav'];
-          var qtds = [1, 5, 1, 1, 1];
+          var tipos = ['tecfe','bae','trmv','tref','taav','tflod','prontuario'];
+          var qtds = [1, 5, 1, 1, 1, 1, 1];
           for (var bi = 0; bi < tipos.length; bi++) {
             await fetch(API_URL + '/add-credits', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({targetEmail:currentUser,tipo:tipos[bi],amount:qtds[bi]})});
           }
-          data.credits = 1; data.baeCredits = 5; data.trmvCredits = 1; data.trefCredits = 1; data.taavCredits = 1;
-          alert('Bem-vindo! Voce ganhou 1 credito gratuito de cada teste para experimentar.');
+          data.credits = 1; data.baeCredits = 5; data.trmvCredits = 1; data.trefCredits = 1; data.taavCredits = 1; data.tflodCredits = 1; data.prontuarioCredits = 1;
+          alert('Bem-vindo! Voce ganhou creditos gratuitos de cada teste para experimentar.');
         }
 
         document.getElementById('tecfeCreditsCount').textContent = data.credits || 0;
