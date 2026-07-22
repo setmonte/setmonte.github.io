@@ -93,7 +93,8 @@
 
         <!-- TAB BAR -->
         <div class="tab-bar">
-          <button class="tab-btn active" id="tabEscalas" onclick="switchTab('escalas')">Escalas</button>
+          <button class="tab-btn active" id="tabPacientes" onclick="switchTab('pacientes')">Pacientes</button>
+          <button class="tab-btn" id="tabEscalas" onclick="switchTab('escalas')">Escalas</button>
           <button class="tab-btn" id="tabTecfe" onclick="switchTab('tecfe')">TECFE</button>
           <button class="tab-btn" id="tabBae" onclick="switchTab('bae')">BAE</button>
           <button class="tab-btn" id="tabTrmv" onclick="switchTab('trmv')">TRMV</button>
@@ -107,7 +108,6 @@
           <button class="tab-btn" id="tabAnamnese" onclick="switchTab('anamnese')">Anamnese</button>
           <button class="tab-btn" id="tabAgenda" onclick="switchTab('agenda')">Agenda</button>
           <button class="tab-btn" id="tabProntuario" onclick="switchTab('prontuario')">Prontuario</button>
-          <button class="tab-btn" id="tabPacientes" onclick="switchTab('pacientes')">Pacientes</button>
           <button class="tab-btn hidden" id="tabProgramasOcultos" onclick="switchTab('programasOcultos')">Programas Ocultos</button>
           <button class="tab-btn hidden" id="tabDepoimentos" onclick="switchTab('depoimentos')">Depoimentos</button>
           <button class="tab-btn hidden" id="tabAdmin" onclick="switchTab('admin')">⚙️ Admin</button>
@@ -161,7 +161,7 @@
         </div>
 
         <!-- === ABA ESCALAS === -->
-        <div id="escalasTab" class="tab-content active">
+        <div id="escalasTab" class="tab-content">
           <div style="text-align:center;padding:15px 0;">
             <p style="font-size:15px;color:#2e7d32;font-weight:bold;">Escalas — Enviar e Receber Resultados</p>
             <p style="font-size:13px;color:#555;margin-top:5px;">Envie escalas ao paciente e receba os resultados aqui</p>
@@ -808,7 +808,7 @@
         </div>
 
         <!-- === ABA PACIENTES === -->
-        <div id="pacientesTab" class="tab-content">
+        <div id="pacientesTab" class="tab-content active">
           <div style="text-align:center;padding:10px 0;">
             <p style="font-size:15px;color:#2e7d32;font-weight:bold;">Meus Pacientes</p>
             <p style="font-size:12px;color:#555;margin-top:5px;">Cadastre seus pacientes uma vez e selecione ao aplicar testes e escalas.</p>
@@ -845,6 +845,30 @@
           <div id="pacientesList" style="margin-top:15px;"><p style="color:#777;">Carregando...</p></div>
           <div style="margin-top:20px;padding:10px;background:#f5f5f5;border-radius:6px;">
             <p style="font-size:11px;color:#888;text-align:center;">&#128274; Seus dados sao protegidos e acessiveis apenas por voce. O administrador do sistema nao acessa informacoes de pacientes.</p>
+          </div>
+          <!-- ENCERRAR CONTA -->
+          <div id="encerrarContaSection" style="margin-top:30px;padding:15px;border-top:1px solid #eee;text-align:center;">
+            <button id="btnEncerrarConta" onclick="mostrarModalEncerrar()" style="background:none;border:none;color:#999;font-size:11px;cursor:pointer;text-decoration:underline;">Encerrar minha conta e apagar todos os dados</button>
+          </div>
+          <div id="modalEncerrar" style="display:none;margin-top:10px;padding:20px;background:#fff3f3;border:2px solid #c62828;border-radius:10px;text-align:left;">
+            <h4 style="color:#c62828;margin-bottom:10px;">&#9888;&#65039; Encerrar Conta</h4>
+            <p style="font-size:13px;color:#333;margin-bottom:8px;"><strong>Atencao:</strong> Esta acao e irreversivel. Todos os seus dados serao permanentemente apagados:</p>
+            <ul style="font-size:12px;color:#555;margin-bottom:10px;padding-left:20px;">
+              <li>Todos os pacientes cadastrados</li>
+              <li>Todos os resultados de testes e escalas</li>
+              <li>Seu registro de usuario</li>
+              <li>Sua conta de acesso</li>
+            </ul>
+            <p style="font-size:12px;color:#333;margin-bottom:8px;"><strong>Recomendacao:</strong> Exporte seus dados (CSV) antes de encerrar.</p>
+            <p style="font-size:12px;color:#333;margin-bottom:12px;">Em caso de duvidas, entre em contato: <strong>WhatsApp (67) 98423-3444 — Sergio</strong></p>
+            <div style="margin-bottom:10px;">
+              <label style="font-size:12px;color:#c62828;font-weight:bold;">Digite ENCERRAR para confirmar:</label>
+              <input type="text" id="inputConfirmarEncerrar" oninput="validarInputEncerrar()" style="display:block;margin-top:5px;padding:8px 12px;border:2px solid #ccc;border-radius:6px;font-size:14px;width:200px;" placeholder="ENCERRAR">
+            </div>
+            <div style="display:flex;gap:10px;">
+              <button id="btnConfirmarEncerrar" onclick="confirmarEncerrarConta()" disabled style="padding:10px 20px;background:#c62828;color:white;border:none;border-radius:6px;font-size:13px;font-weight:bold;cursor:not-allowed;opacity:0.5;">Encerrar Conta Permanentemente</button>
+              <button onclick="document.getElementById('modalEncerrar').style.display='none'" style="padding:10px 20px;background:#eee;color:#333;border:none;border-radius:6px;font-size:13px;cursor:pointer;">Cancelar</button>
+            </div>
           </div>
         </div>
 
@@ -2144,10 +2168,8 @@
         var prontElErr = document.getElementById('prontuarioCreditsCount');
         if (prontElErr) prontElErr.textContent = '?';
       }
-      // Carregar pacientes para os dropdowns
+      // Carregar pacientes (aba padrao)
       loadPacientes();
-      // Carregar escalas (aba padrao)
-      loadEscalasResults();
     }
 
     function showNewTest() {
@@ -4056,6 +4078,69 @@
       _renderizarPacientesComAbas();
     }
 
+    // ===== ENCERRAR CONTA =====
+    function mostrarModalEncerrar() {
+      if (currentUser === 'setmonte@gmail.com') {
+        alert('Conta administrativa nao pode ser encerrada.');
+        return;
+      }
+      document.getElementById('modalEncerrar').style.display = 'block';
+      document.getElementById('inputConfirmarEncerrar').value = '';
+      document.getElementById('btnConfirmarEncerrar').disabled = true;
+      document.getElementById('btnConfirmarEncerrar').style.opacity = '0.5';
+      document.getElementById('btnConfirmarEncerrar').style.cursor = 'not-allowed';
+    }
+
+    function validarInputEncerrar() {
+      var val = document.getElementById('inputConfirmarEncerrar').value.trim();
+      var btn = document.getElementById('btnConfirmarEncerrar');
+      if (val === 'ENCERRAR') {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.style.cursor = 'pointer';
+      } else {
+        btn.disabled = true;
+        btn.style.opacity = '0.5';
+        btn.style.cursor = 'not-allowed';
+      }
+    }
+
+    async function confirmarEncerrarConta() {
+      if (currentUser === 'setmonte@gmail.com') {
+        alert('Conta administrativa nao pode ser encerrada.');
+        return;
+      }
+      var val = document.getElementById('inputConfirmarEncerrar').value.trim();
+      if (val !== 'ENCERRAR') return;
+      var btn = document.getElementById('btnConfirmarEncerrar');
+      btn.disabled = true;
+      btn.textContent = 'Encerrando...';
+      try {
+        var resp = await fetch(API_URL + '/encerrar-conta', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({email: currentUser})
+        });
+        var data = await resp.json();
+        if (data.ok) {
+          // Limpar sessao local
+          localStorage.clear();
+          sessionStorage.clear();
+          // Redirecionar com mensagem
+          alert('Conta encerrada com sucesso. Todos os seus dados foram apagados.');
+          window.location.href = window.location.pathname + '?msg=conta_encerrada';
+        } else {
+          alert('Erro ao encerrar conta: ' + (data.error || 'tente novamente'));
+          btn.disabled = false;
+          btn.textContent = 'Encerrar Conta Permanentemente';
+        }
+      } catch(e) {
+        alert('Erro de conexao. Verifique sua internet e tente novamente.');
+        btn.disabled = false;
+        btn.textContent = 'Encerrar Conta Permanentemente';
+      }
+    }
+
     // ===== BUSCA UNIVERSAL =====
     function buscarPaciente() {
       var termo = document.getElementById('pacBusca').value.trim().toLowerCase();
@@ -4101,13 +4186,125 @@
     }
 
     // ===== EXPORTAR CSV =====
-    function exportarPacientesCSV() {
+    async function exportarPacientesCSV() {
       if (!_pacientesCache || _pacientesCache.length === 0) { alert('Nenhum paciente para exportar.'); return; }
-      var colunas = ['nome','dataNascimento','cpf','sexo','escolaridade','lateralidade','pacienteEmail','whatsapp'];
-      var cabecalho = ['Nome','Data Nascimento','CPF','Sexo','Escolaridade','Lateralidade','Email','WhatsApp'];
+      // Mostrar loading
+      var btnExp = document.querySelector('[onclick*="exportarPacientesCSV"]');
+      var btnTextoOriginal = '';
+      if (btnExp) { btnTextoOriginal = btnExp.textContent; btnExp.textContent = 'Exportando...'; btnExp.disabled = true; }
+      // Buscar todos os resultados do profissional
+      var todosResultados = [];
+      try {
+        var resp = await fetch(API_URL + '/get-results?email=' + encodeURIComponent(currentUser));
+        var data = await resp.json();
+        todosResultados = (data.results || []).filter(function(r) {
+          var d = r.data || {};
+          if (d.status === 'aguardando') return false;
+          return true;
+        });
+      } catch(e) {}
+      // Pré-computar hashes de todos os pacientes
+      var pacHashes = {};
+      _pacientesCache.forEach(function(p) {
+        if (p.nome && p.dataNascimento) {
+          pacHashes[p.id] = gerarIdPacienteHash(p.nome, p.dataNascimento);
+        }
+      });
+      // Classificar tipo de resultado
+      function classificarTipo(r) {
+        var tipo = r.tipo || 'tecfe';
+        if (tipo === 'escala') return 'escala';
+        if (tipo === 'prontuario' || tipo === 'anamnese') return 'consulta';
+        return 'teste'; // tecfe, bae, trmv, taav, tref, tflod, corsi, tte
+      }
+      // Gerar resumo de resultado
+      function resumoResultado(r) {
+        var d = r.data || {};
+        var tipo = r.tipo || 'tecfe';
+        var dateStr = r.date ? r.date.split('T')[0] : '';
+        if (tipo === 'escala') {
+          var nome = d.escala || 'Escala';
+          var classif = d.classificacao || d.escore || '-';
+          return nome + '(' + dateStr + ':' + classif + ')';
+        }
+        if (tipo === 'bae') {
+          var taxa = d.concentrada ? Math.round(d.concentrada.taxaAcerto || 0) + '%' : '-';
+          return 'BAE(' + dateStr + ':' + taxa + ')';
+        }
+        if (tipo === 'trmv') {
+          var ret = d.indiceRetencao ? Math.round(d.indiceRetencao) + '%' : '-';
+          return 'TRMV(' + dateStr + ':' + ret + ')';
+        }
+        if (tipo === 'taav') {
+          var acc = d.acuracia ? Math.round(d.acuracia) + '%' : (d.acertos !== undefined ? d.acertos + 'ac' : '-');
+          return 'TAAV(' + dateStr + ':' + acc + ')';
+        }
+        if (tipo === 'tref') {
+          var sc = d.escore || d.acertos || '-';
+          return 'TREF(' + dateStr + ':' + sc + ')';
+        }
+        if (tipo === 'tflod') {
+          var fl = d.escore || d.acertos || '-';
+          return 'TFLOD(' + dateStr + ':' + fl + ')';
+        }
+        if (tipo === 'corsi') {
+          var sp = d.span || d.acertos || '-';
+          return 'CORSI(' + dateStr + ':' + sp + ')';
+        }
+        if (tipo === 'tte') {
+          var te = d.escore || '-';
+          return 'TTE(' + dateStr + ':' + te + ')';
+        }
+        if (tipo === 'prontuario' || tipo === 'anamnese') {
+          return tipo.toUpperCase() + '(' + dateStr + ')';
+        }
+        // tecfe
+        var cat = d.categoriasCompletas !== undefined ? d.categoriasCompletas + 'cat' : '-';
+        return 'TECFE(' + dateStr + ':' + cat + ')';
+      }
+      // Match resultados por paciente (mesma logica do historico)
+      function matchResultadosPaciente(pac, resultados) {
+        var pacIdHash = pacHashes[pac.id] || '';
+        var nomeNorm = pac.nome ? pac.nome.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim() : '';
+        return resultados.filter(function(r) {
+          var d = r.data || {};
+          var fd = d.formData || {};
+          if (d.pacienteId === pac.id || fd.pacienteId === pac.id) return true;
+          if (pacIdHash && pacIdHash !== '-' && (d.idPaciente === pacIdHash || fd.id === pacIdHash)) return true;
+          if (r.tipo === 'escala' && nomeNorm) {
+            var nomeEsc = (d.paciente || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+            if (nomeNorm && nomeEsc && nomeNorm === nomeEsc) return true;
+          }
+          return false;
+        });
+      }
+      // Gerar CSV
+      var cabecalho = ['Nome','Data Nascimento','CPF','Sexo','Escolaridade','Lateralidade','Email','WhatsApp','Testes','Escalas','Consultas','Quantidade Total'];
       var linhas = [cabecalho.join(';')];
       _pacientesCache.forEach(function(p) {
-        var linha = colunas.map(function(col) { return '"' + (p[col] || '').replace(/"/g, '""') + '"'; });
+        var matches = matchResultadosPaciente(p, todosResultados);
+        var testes = []; var escalas = []; var consultas = [];
+        matches.forEach(function(r) {
+          var cat = classificarTipo(r);
+          var resumo = resumoResultado(r);
+          if (cat === 'teste') testes.push(resumo);
+          else if (cat === 'escala') escalas.push(resumo);
+          else consultas.push(resumo);
+        });
+        var linha = [
+          '"' + (p.nome || '').replace(/"/g,'""') + '"',
+          '"' + (p.dataNascimento || '').replace(/"/g,'""') + '"',
+          '"' + (p.cpf || '').replace(/"/g,'""') + '"',
+          '"' + (p.sexo || '').replace(/"/g,'""') + '"',
+          '"' + (p.escolaridade || '').replace(/"/g,'""') + '"',
+          '"' + (p.lateralidade || '').replace(/"/g,'""') + '"',
+          '"' + (p.pacienteEmail || '').replace(/"/g,'""') + '"',
+          '"' + (p.whatsapp || '').replace(/"/g,'""') + '"',
+          '"' + testes.join(' | ').replace(/"/g,'""') + '"',
+          '"' + escalas.join(' | ').replace(/"/g,'""') + '"',
+          '"' + consultas.join(' | ').replace(/"/g,'""') + '"',
+          '"' + matches.length + '"'
+        ];
         linhas.push(linha.join(';'));
       });
       var csv = '\uFEFF' + linhas.join('\r\n');
@@ -4118,6 +4315,8 @@
       a.download = 'pacientes_' + new Date().toISOString().split('T')[0] + '.csv';
       a.click();
       URL.revokeObjectURL(url);
+      // Restaurar botao
+      if (btnExp) { btnExp.textContent = btnTextoOriginal; btnExp.disabled = false; }
     }
 
     // ===== IMPORTAR CSV =====
