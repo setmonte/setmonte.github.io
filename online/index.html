@@ -1134,14 +1134,14 @@
           <div style="background:#fce4ec;border:2px solid #c62828;border-radius:10px;padding:15px;margin:10px 0;">
             <p style="font-size:13px;font-weight:bold;color:#c62828;margin-bottom:8px;">📊 Resultados de um Usuário</p>
             <div class="form-row">
-              <label>Email: <input type="text" id="adminResultEmail" placeholder="email@exemplo.com" style="width:200px;"></label>
-              <label>Tipo: <select id="adminResultTipo" style="width:100px;"></select></label>
-              <button class="btn btn-red" style="padding:8px 16px;font-size:12px;margin-top:18px;background:#c62828;" onclick="adminBuscarResultados()">Buscar</button>
+              <label>Email: <input type="text" id="adminResultEmail2" placeholder="email@exemplo.com" style="width:200px;"></label>
+              <label>Tipo: <select id="adminResultTipo2" style="width:100px;"></select></label>
+              <button class="btn btn-red" style="padding:8px 16px;font-size:12px;margin-top:18px;background:#c62828;" onclick="adminBuscarResultados2()">Buscar</button>
             </div>
-            <div id="adminResultsList" style="margin-top:10px;max-height:400px;overflow-y:auto;"></div>
-            <div id="adminResultsActions" style="display:none;margin-top:8px;">
-              <button class="btn btn-red" style="padding:8px 16px;font-size:12px;" onclick="adminDeletarSelecionados()">🗑️ Deletar Selecionados</button>
-              <label style="font-size:11px;margin-left:10px;cursor:pointer;"><input type="checkbox" onclick="adminToggleAll(this)"> Selecionar todos</label>
+            <div id="adminResultsList2" style="margin-top:10px;max-height:400px;overflow-y:auto;"></div>
+            <div id="adminResultsActions2" style="display:none;margin-top:8px;">
+              <button class="btn btn-red" style="padding:8px 16px;font-size:12px;" onclick="adminDeletarSelecionados2()">🗑️ Deletar Selecionados</button>
+              <label style="font-size:11px;margin-left:10px;cursor:pointer;"><input type="checkbox" onclick="adminToggleAll2(this)"> Selecionar todos</label>
             </div>
           </div>
           <div style="background:#ffebee;border:2px solid #b71c1c;border-radius:10px;padding:15px;margin:10px 0;">
@@ -2022,6 +2022,17 @@
         selResult.innerHTML += '<option value="tflod">TFLOD</option>';
         selResult.innerHTML += '<option value="escala">Escalas</option>';
         selResult.innerHTML += '<option value="depoimento">Depoimentos</option>';
+      }
+      // Dropdown de Buscar Resultados - sub-aba Resultados (segundo card)
+      var selResult2 = document.getElementById('adminResultTipo2');
+      if (selResult2) {
+        selResult2.innerHTML = '<option value="">Todos</option>';
+        testes.forEach(function(t) {
+          selResult2.innerHTML += '<option value="' + t.id + '">' + t.nome + '</option>';
+        });
+        selResult2.innerHTML += '<option value="tflod">TFLOD</option>';
+        selResult2.innerHTML += '<option value="escala">Escalas</option>';
+        selResult2.innerHTML += '<option value="depoimento">Depoimentos</option>';
       }
       // Dropdown de Deletar Resultados (com "Todos" + "Escalas" + "TFLOD" + "Depoimentos")
       var selDelete = document.getElementById('adminDeleteTipo');
@@ -4931,6 +4942,61 @@
       }
       alert(ok + ' resultado(s) deletados!');
       adminBuscarResultados();
+    }
+
+    async function adminBuscarResultados2() {
+      var email = document.getElementById('adminResultEmail2').value.trim();
+      var tipo = document.getElementById('adminResultTipo2').value;
+      if (!email) { alert('Digite um email.'); return; }
+      var el = document.getElementById('adminResultsList2');
+      el.innerHTML = '<p style="color:#555;">Buscando...</p>';
+      document.getElementById('adminResultsActions2').style.display = 'none';
+      try {
+        var url = API_URL + '/get-results?email=' + encodeURIComponent(email);
+        if (tipo) url += '&tipo=' + tipo;
+        var resp = await fetch(url);
+        var data = await resp.json();
+        if (data.results && data.results.length > 0) {
+          var html = '<table class="results-table"><tr><th><input type="checkbox" onclick="adminToggleAll2(this)"></th><th>Data</th><th>Tipo</th><th>Resumo</th><th>ID</th></tr>';
+          data.results.forEach(function(r) {
+            var d = r.data || {};
+            var resumo = d.escala || d.status || d.classificacao || '-';
+            if (d.formData && d.formData.nome) resumo = d.formData.nome + ' - ' + (d.status || '');
+            var dataFmt = r.date ? new Date(r.date).toLocaleString('pt-BR') : '-';
+            var idPac = d.idPaciente || (d.data && d.data.idPaciente) || '-';
+            html += '<tr>';
+            html += '<td><input type="checkbox" class="admin-result-check2" data-sid="' + r.sessionId + '"></td>';
+            html += '<td style="font-size:11px;white-space:nowrap;">' + dataFmt + '</td>';
+            html += '<td style="font-size:12px;">' + r.tipo + '</td>';
+            html += '<td style="font-size:11px;">' + resumo.substring(0, 40) + '</td>';
+            html += '<td style="font-size:10px;font-family:monospace;color:#2e7d32;">' + idPac + '</td>';
+            html += '</tr>';
+          });
+          html += '</table><p style="font-size:11px;color:#777;margin-top:5px;">Total: ' + data.results.length + ' resultados</p>';
+          el.innerHTML = html;
+          document.getElementById('adminResultsActions2').style.display = 'block';
+        } else { el.innerHTML = '<p>Nenhum resultado encontrado.</p>'; }
+      } catch(e) { el.innerHTML = '<p style="color:red;">Erro: ' + e.message + '</p>'; }
+    }
+
+    function adminToggleAll2(master) {
+      var checks = document.querySelectorAll('.admin-result-check2');
+      checks.forEach(function(c) { c.checked = master.checked; });
+    }
+
+    async function adminDeletarSelecionados2() {
+      var checks = document.querySelectorAll('.admin-result-check2:checked');
+      if (checks.length === 0) { alert('Selecione pelo menos um resultado.'); return; }
+      if (!confirm('Deletar ' + checks.length + ' resultado(s) selecionados?')) return;
+      var ok = 0;
+      for (var i = 0; i < checks.length; i++) {
+        try {
+          await fetch(API_URL + '/delete-result', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ sessionId: checks[i].dataset.sid }) });
+          ok++;
+        } catch(e) {}
+      }
+      alert(ok + ' resultado(s) deletados!');
+      adminBuscarResultados2();
     }
 
     async function adminBuscarPacientes() {
