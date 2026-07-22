@@ -1020,6 +1020,17 @@
             <div id="adminOpenaiSaldo" style="font-size:12px;color:#555;">Carregando...</div>
           </div>
 
+          <!-- Saldo API OpenAI (manual) -->
+          <div style="background:#fff3e0;border:2px solid #ff6f00;border-radius:10px;padding:15px;margin:10px 0;">
+            <p style="font-size:13px;font-weight:bold;color:#ff6f00;margin-bottom:8px;">&#9889; Saldo API OpenAI (Whisper)</p>
+            <div id="adminApiSaldo" style="font-size:12px;color:#555;">Carregando...</div>
+            <div style="margin-top:10px;display:flex;gap:8px;align-items:center;">
+              <label style="font-size:11px;color:#555;">Definir saldo (USD):</label>
+              <input type="number" id="adminApiSaldoInput" step="0.01" min="0" style="width:80px;padding:4px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px;" placeholder="4.88">
+              <button class="btn btn-orange" style="padding:5px 12px;font-size:11px;" onclick="salvarSaldoOpenAI()">Salvar</button>
+            </div>
+          </div>
+
           <!-- Sub-abas Admin -->
           <div style="margin-top:15px;">
             <div id="adminSubTabs" style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px;padding:8px;background:#f5f5f5;border-radius:8px;">
@@ -2621,6 +2632,7 @@
         document.getElementById('adminTab').classList.add('active');
         document.getElementById('tabAdmin').classList.add('active');
         carregarSaldoOpenAI();
+        carregarSaldoApi();
         carregarVendas();
         verificarVendasNovas();
       }
@@ -4533,6 +4545,47 @@
       var target = document.getElementById('adminSub_' + nome);
       if (target) target.style.display = 'block';
       event.target.classList.add('active');
+    }
+
+    async function carregarSaldoApi() {
+      var el = document.getElementById('adminApiSaldo');
+      if (!el) return;
+      try {
+        var resp = await fetch(API_URL + '/openai-balance?email=' + encodeURIComponent(currentUser));
+        var data = await resp.json();
+        var saldoUSD = data.saldoUSD || 0;
+        var saldoBRL = data.saldoBRL || 0;
+        var usos = data.usos || 0;
+        var recarga = data.ultimaRecarga ? new Date(data.ultimaRecarga).toLocaleDateString('pt-BR') : '-';
+        var cor = data.alerta ? '#c62828' : '#2e7d32';
+        el.innerHTML = '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">' +
+          '<div style="font-size:22px;font-weight:bold;color:' + cor + ';">US$ ' + saldoUSD.toFixed(2) + ' <span style="font-size:14px;color:#777;">(R$ ' + saldoBRL.toFixed(2) + ')</span></div>' +
+          '</div>' +
+          '<p style="font-size:11px;color:#777;margin-top:5px;">Usos desde recarga: ' + usos + ' | Ultima recarga: ' + recarga + '</p>' +
+          (data.alerta ? '<p style="font-size:11px;color:#c62828;font-weight:bold;margin-top:4px;">&#9888; Saldo baixo! Recarregue em platform.openai.com</p>' : '');
+      } catch(e) {
+        el.innerHTML = '<span style="color:#c62828;">Erro ao consultar</span>';
+      }
+    }
+
+    async function salvarSaldoOpenAI() {
+      var input = document.getElementById('adminApiSaldoInput');
+      var valor = parseFloat(input.value);
+      if (isNaN(valor) || valor < 0) { alert('Digite um valor valido em USD.'); return; }
+      try {
+        var resp = await fetch(API_URL + '/openai-balance', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({email: currentUser, saldoUSD: valor})
+        });
+        var data = await resp.json();
+        if (data.ok) {
+          input.value = '';
+          carregarSaldoApi();
+        } else {
+          alert('Erro: ' + (data.error || 'tente novamente'));
+        }
+      } catch(e) { alert('Erro de conexao.'); }
     }
 
     async function carregarSaldoOpenAI() {
