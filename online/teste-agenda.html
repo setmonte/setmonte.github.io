@@ -55,6 +55,11 @@ var bipDado10 = false;
 var bipDadoFinal = false;
 var recognition = null;
 var transcricaoAcumulada = '';
+var restartCount = 0;
+var restartWindowStart = 0;
+var MAX_RESTARTS = 5;
+var RESTART_WINDOW = 10000;
+var RESTART_DELAY = 300;
 var topicosPadrao = ['Nome completo','Idade e data de nascimento','CPF','Nome do pai','Nome da mae','Queixa principal','Desenvolvimento na infancia','Desenvolvimento na adolescencia','Vida adulta','Historico familiar','Medicamentos em uso','Observacoes adicionais'];
 var topicosAtuais = [];
 
@@ -172,7 +177,12 @@ function togglePausa() {
     document.getElementById('btn-pausar').style.borderColor = '#ffcc80';
     document.getElementById('status-gravacao').textContent = 'Gravando... clique para parar';
     // Retomar reconhecimento de voz
+    restartCount = 0;
+    restartWindowStart = Date.now();
     if (recognition) { try { recognition.start(); } catch(e){} }
+    if (window._fallbackMediaRecorder && window._fallbackMediaRecorder.state === 'paused') {
+      try { window._fallbackMediaRecorder.resume(); } catch(e) {}
+    }
     // Retomar timer
     timerInterval = setInterval(function() {
       segundosDecorridos++;
@@ -199,6 +209,9 @@ function togglePausa() {
     document.getElementById('status-gravacao').textContent = 'Pausado. Clique &#9654; para retomar.';
     // Pausar reconhecimento de voz
     if (recognition) { try { recognition.stop(); } catch(e){} }
+    if (window._fallbackMediaRecorder && window._fallbackMediaRecorder.state === 'recording') {
+      try { window._fallbackMediaRecorder.pause(); } catch(e) {}
+    }
     // Pausar timer
     clearInterval(timerInterval);
   }
@@ -211,6 +224,8 @@ function iniciarGravacao() {
   bipDado10 = false;
   bipDadoFinal = false;
   transcricaoAcumulada = '';
+  restartCount = 0;
+  restartWindowStart = Date.now();
   document.getElementById('btn-gravar').style.background = '#e24b4a';
   document.getElementById('btn-gravar').style.borderColor = '#e24b4a';
   document.getElementById('btn-gravar').innerHTML = '&#9632;';
@@ -228,6 +243,7 @@ function iniciarGravacao() {
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.onresult = function(e) {
+      restartCount = 0;
       var interim = '';
       for (var i = e.resultIndex; i < e.results.length; i++) {
         if (e.results[i].isFinal) transcricaoAcumulada += e.results[i][0].transcript + ' ';
@@ -236,10 +252,103 @@ function iniciarGravacao() {
       document.getElementById('transcricao').value = transcricaoAcumulada + interim;
     };
     recognition.onerror = function(e) { document.getElementById('status-gravacao').textContent = 'Erro: ' + e.error + '. Verifique permissao do microfone.'; };
-    recognition.onend = function() { if (gravando && !pausado) { try { recognition.start(); } catch(er){} } };
+    recognition.onend = function() {
+      if (gravando && !pausado) {
+        var agora = Date.now();
+        if (agora - restartWindowStart > RESTART_WINDOW) {
+          restartCount = 0;
+          restartWindowStart = agora;
+        }
+        restartCount++;
+        if (restartCount > MAX_RESTARTS) {
+          document.getElementById('status-gravacao').textContent = 'Reconhecimento de voz reiniciou muitas vezes. Clique no microfone para tentar novamente.';
+          document.getElementById('btn-gravar').style.background = '#fff3e0';
+          document.getElementById('btn-gravar').style.borderColor = '#ff9800';
+          document.getElementById('btn-gravar').innerHTML = '&#127908;';
+          document.getElementById('btn-gravar').style.color = '#ff9800';
+          gravando = false;
+          return;
+        }
+        setTimeout(function() {
+          if (gravando && !pausado) {
+            try { recognition.start(); } catch(er) {}
+          }
+        }, RESTART_DELAY);
+      }
+    };
     recognition.start();
+  } else if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    // FALLBACK: usar MediaRecorder + Whisper API para navegadores sem SpeechRecognition
+    document.getElementById('status-gravacao').textContent = 'Transcrevendo via IA (pode haver delay de alguns segundos)...';
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
+      var mimeType = 'audio/webm;codecs=opus';
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = 'audio/webm';
+        if (!MediaRecorder.isTypeSupported(mimeType)) {
+          mimeType = 'audio/ogg;codecs=opus';
+          if (!MediaRecorder.isTypeSupported(mimeType)) {
+            mimeType = '';
+          }
+        }
+      }
+      if (!mimeType) {
+        document.getElementById('status-gravacao').textContent = 'Navegador nao suporta gravacao de audio. Cole o texto manualmente.';
+        gravando = false;
+        return;
+      }
+      var mediaRec = new MediaRecorder(stream, { mimeType: mimeType });
+      window._fallbackMediaRecorder = mediaRec;
+      window._fallbackStream = stream;
+      var chunkQueue = [];
+      var enviando = false;
+      
+      mediaRec.ondataavailable = function(e) {
+        if (e.data.size > 0 && gravando && !pausado) {
+          chunkQueue.push(e.data);
+          processarFilaChunks();
+        }
+      };
+      
+      function processarFilaChunks() {
+        if (enviando || chunkQueue.length === 0) return;
+        enviando = true;
+        var chunk = chunkQueue.shift();
+        var reader = new FileReader();
+        reader.onloadend = function() {
+          var base64 = reader.result.split(',')[1] || '';
+          if (base64.length < 100) {
+            enviando = false;
+            processarFilaChunks();
+            return;
+          }
+          fetch(API_URL + '/transcribe-audio', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ audioBase64: base64 })
+          }).then(function(resp) {
+            return resp.json();
+          }).then(function(data) {
+            if (data.text && data.text.trim()) {
+              transcricaoAcumulada += data.text.trim() + ' ';
+              document.getElementById('transcricao').value = transcricaoAcumulada;
+            }
+            enviando = false;
+            processarFilaChunks();
+          }).catch(function() {
+            enviando = false;
+            processarFilaChunks();
+          });
+        };
+        reader.readAsDataURL(chunk);
+      }
+      
+      mediaRec.start(5000); // Gravar em chunks de 5 segundos
+    }).catch(function(err) {
+      document.getElementById('status-gravacao').textContent = 'Erro ao acessar microfone: ' + err.message;
+      gravando = false;
+    });
   } else {
-    document.getElementById('status-gravacao').textContent = 'Navegador nao suporta reconhecimento de voz. Use Chrome.';
+    document.getElementById('status-gravacao').textContent = 'Navegador nao suporta gravacao. Cole o texto manualmente na caixa abaixo.';
     gravando = false; return;
   }
   // Timer
@@ -265,6 +374,14 @@ function pararGravacao() {
   gravando = false;
   pausado = false;
   if (recognition) { try { recognition.stop(); } catch(e){} }
+  if (window._fallbackMediaRecorder) {
+    try { window._fallbackMediaRecorder.stop(); } catch(e) {}
+    window._fallbackMediaRecorder = null;
+  }
+  if (window._fallbackStream) {
+    window._fallbackStream.getTracks().forEach(function(t) { t.stop(); });
+    window._fallbackStream = null;
+  }
   clearInterval(timerInterval);
   document.getElementById('btn-gravar').style.background = '#fff0f0';
   document.getElementById('btn-gravar').style.borderColor = '#f09595';
