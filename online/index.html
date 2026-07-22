@@ -113,6 +113,12 @@
           <button class="tab-btn hidden" id="tabAdmin" onclick="switchTab('admin')">⚙️ Admin</button>
         </div>
 
+        <!-- Banner de notificacao (vendas novas) -->
+        <div id="notifBanner" style="display:none;background:#c8e6c9;border:2px solid #2e7d32;border-radius:8px;padding:10px 15px;margin:5px 0;font-size:12px;color:#1b5e20;position:relative;">
+          <span id="notifBannerText"></span>
+          <button onclick="document.getElementById('notifBanner').style.display='none'" style="position:absolute;top:5px;right:10px;background:none;border:none;font-size:16px;cursor:pointer;color:#2e7d32;">&times;</button>
+        </div>
+
         <!-- === ABA TECFE === -->
         <div id="tecfeTab" class="tab-content">
           <div class="credits-box">
@@ -981,6 +987,12 @@
             <p style="font-size:13px;font-weight:bold;color:#2e7d32;margin-bottom:8px;">&#128176; Ultimas Vendas de Creditos</p>
             <button class="btn btn-green" style="padding:6px 14px;font-size:12px;margin-bottom:10px;" onclick="carregarVendas()">Atualizar</button>
             <div id="adminVendasList" style="font-size:12px;color:#555;">Clique em "Atualizar" para ver as vendas.</div>
+          </div>
+
+          <!-- Saldo API OpenAI -->
+          <div id="adminOpenaiCard" style="background:#fff3e0;border:2px solid #ff6f00;border-radius:10px;padding:15px;margin:10px 0;">
+            <p style="font-size:13px;font-weight:bold;color:#ff6f00;margin-bottom:8px;">&#9889; Saldo API OpenAI (Whisper/TFLOD)</p>
+            <div id="adminOpenaiSaldo" style="font-size:12px;color:#555;">Carregando...</div>
           </div>
 
           <!-- Buscar usuario -->
@@ -2074,6 +2086,7 @@
         document.getElementById('tabReabilitacao').classList.remove('hidden');
         document.getElementById('tabProgramasOcultos').classList.remove('hidden');
         initFreeModeToggle();
+        verificarVendasNovas();
       }
       // Mostrar aba Reabilitacao para profissional autorizada
       if (currentUser === 'neidegnoronha@gmail.com') {
@@ -2559,6 +2572,8 @@
       } else if (tab === 'admin') {
         document.getElementById('adminTab').classList.add('active');
         document.getElementById('tabAdmin').classList.add('active');
+        carregarSaldoOpenAI();
+        verificarVendasNovas();
       }
     }
 
@@ -4282,6 +4297,56 @@
         document.getElementById('adminVendasList').innerHTML = '<p style="color:#2e7d32;">Vendas limpas com sucesso.</p>';
         window._vendasIds = [];
       } catch(e) { alert('Erro ao limpar.'); }
+    }
+
+    async function carregarSaldoOpenAI() {
+      var el = document.getElementById('adminOpenaiSaldo');
+      if (!el) return;
+      el.textContent = 'Consultando...';
+      try {
+        var resp = await fetch(API_URL + '/openai-balance?email=' + encodeURIComponent(currentUser));
+        var data = await resp.json();
+        if (data.error) {
+          el.innerHTML = '<span style="color:#c62828;">Erro: ' + data.error + '</span>';
+          return;
+        }
+        var cor = data.alerta ? '#c62828' : '#2e7d32';
+        var icone = data.alerta ? '&#9888;' : '&#9989;';
+        el.innerHTML = '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">' +
+          '<div style="font-size:28px;font-weight:bold;color:' + cor + ';">' + icone + ' R$ ' + (data.saldoBRL || 0).toFixed(2) + '</div>' +
+          '<div style="font-size:11px;color:#777;line-height:1.6;">Uso no mes: R$ ' + (data.usadoBRL || 0).toFixed(2) + '<br>Limite: R$ ' + (data.limiteBRL || 0).toFixed(2) + '</div>' +
+          '</div>' +
+          (data.alerta ? '<p style="color:#c62828;font-size:12px;font-weight:bold;margin-top:8px;">&#9888; SALDO BAIXO! Recarregue em platform.openai.com/account/billing</p>' : '') +
+          '<p style="font-size:10px;color:#999;margin-top:5px;">Cotacao aproximada: 1 USD = 5.50 BRL | Atualizado: ' + new Date().toLocaleTimeString('pt-BR') + '</p>';
+      } catch(e) {
+        el.innerHTML = '<span style="color:#c62828;">Erro ao consultar: ' + e.message + '</span>';
+      }
+    }
+
+    async function verificarVendasNovas() {
+      try {
+        var resp = await fetch(API_URL + '/get-vendas?email=' + encodeURIComponent(currentUser));
+        var data = await resp.json();
+        var vendas = data.vendas || [];
+        if (vendas.length === 0) return;
+        var agora = new Date();
+        var ontem = new Date(agora.getTime() - 24 * 60 * 60 * 1000);
+        var novas = vendas.filter(function(v) { return new Date(v.date) > ontem; });
+        if (novas.length > 0) {
+          var banner = document.getElementById('notifBanner');
+          var texto = document.getElementById('notifBannerText');
+          if (banner && texto) {
+            var msg = '&#128176; ' + novas.length + ' venda(s) nas ultimas 24h: ';
+            novas.slice(0, 3).forEach(function(v) {
+              var d = v.data || {};
+              msg += d.comprador + ' (' + (d.creditos || 0) + 'x ' + (d.teste || '').toUpperCase() + ' R$' + (d.valor || 0) + ') ';
+            });
+            if (novas.length > 3) msg += '... e mais ' + (novas.length - 3);
+            texto.innerHTML = msg;
+            banner.style.display = 'block';
+          }
+        }
+      } catch(e) {}
     }
 
     async function adminBuscarUsuario() {
