@@ -1013,9 +1013,9 @@
             <div id="adminVendasList" style="font-size:12px;color:#555;">Clique em "Atualizar" para ver as vendas.</div>
           </div>
 
-          <!-- Saldo API OpenAI -->
-          <div id="adminOpenaiCard" style="background:#fff3e0;border:2px solid #ff6f00;border-radius:10px;padding:15px;margin:10px 0;">
-            <p style="font-size:13px;font-weight:bold;color:#ff6f00;margin-bottom:8px;">&#9889; Saldo API OpenAI (Whisper/TFLOD)</p>
+          <!-- Resumo de Uso (creditos) -->
+          <div id="adminOpenaiCard" style="background:#e3f2fd;border:2px solid #1565c0;border-radius:10px;padding:15px;margin:10px 0;">
+            <p style="font-size:13px;font-weight:bold;color:#1565c0;margin-bottom:8px;">&#128202; Resumo de Uso — Creditos do Sistema</p>
             <div id="adminOpenaiSaldo" style="font-size:12px;color:#555;">Carregando...</div>
           </div>
 
@@ -4503,20 +4503,50 @@
       if (!el) return;
       el.textContent = 'Consultando...';
       try {
-        var resp = await fetch(API_URL + '/openai-balance?email=' + encodeURIComponent(currentUser));
+        // Buscar vendas para calcular receita e creditos distribuidos
+        var resp = await fetch(API_URL + '/get-vendas?email=' + encodeURIComponent(currentUser));
         var data = await resp.json();
-        if (data.error) {
-          el.innerHTML = '<span style="color:#c62828;">Erro: ' + data.error + '</span>';
-          return;
+        var vendas = data.vendas || [];
+        var receitaTotal = 0;
+        var creditosTotal = 0;
+        var porTipo = {};
+        var mesAtual = new Date().toISOString().slice(0, 7);
+        var receitaMes = 0;
+        var creditosMes = 0;
+        vendas.forEach(function(v) {
+          var d = v.data || {};
+          var valor = parseFloat(d.valor) || 0;
+          var creditos = parseInt(d.creditos) || 0;
+          var tipo = (d.teste || 'tecfe').toUpperCase();
+          receitaTotal += valor;
+          creditosTotal += creditos;
+          if (!porTipo[tipo]) porTipo[tipo] = { creditos: 0, receita: 0 };
+          porTipo[tipo].creditos += creditos;
+          porTipo[tipo].receita += valor;
+          if (v.date && v.date.slice(0, 7) === mesAtual) {
+            receitaMes += valor;
+            creditosMes += creditos;
+          }
+        });
+        // Montar exibicao
+        var html = '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">';
+        html += '<div style="font-size:24px;font-weight:bold;color:#1565c0;">R$ ' + receitaTotal.toFixed(2) + '</div>';
+        html += '<div style="font-size:11px;color:#777;line-height:1.6;">Receita total (' + vendas.length + ' vendas)<br>Este mes: R$ ' + receitaMes.toFixed(2) + ' (' + creditosMes + ' creditos)</div>';
+        html += '</div>';
+        // Tabela por tipo
+        var tipos = Object.keys(porTipo).sort();
+        if (tipos.length > 0) {
+          html += '<div style="margin-top:10px;font-size:11px;">';
+          html += '<table style="width:100%;border-collapse:collapse;font-size:11px;">';
+          html += '<tr style="background:#e3f2fd;"><th style="padding:4px 8px;text-align:left;">Tipo</th><th style="padding:4px 8px;text-align:right;">Creditos</th><th style="padding:4px 8px;text-align:right;">Receita</th></tr>';
+          tipos.forEach(function(t) {
+            html += '<tr><td style="padding:3px 8px;">' + t + '</td><td style="padding:3px 8px;text-align:right;">' + porTipo[t].creditos + '</td><td style="padding:3px 8px;text-align:right;">R$ ' + porTipo[t].receita.toFixed(2) + '</td></tr>';
+          });
+          html += '<tr style="font-weight:bold;border-top:1px solid #90caf9;"><td style="padding:3px 8px;">TOTAL</td><td style="padding:3px 8px;text-align:right;">' + creditosTotal + '</td><td style="padding:3px 8px;text-align:right;">R$ ' + receitaTotal.toFixed(2) + '</td></tr>';
+          html += '</table></div>';
         }
-        var cor = data.alerta ? '#c62828' : '#2e7d32';
-        var icone = data.alerta ? '&#9888;' : '&#9989;';
-        el.innerHTML = '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">' +
-          '<div style="font-size:28px;font-weight:bold;color:' + cor + ';">' + icone + ' R$ ' + (data.saldoBRL || 0).toFixed(2) + '</div>' +
-          '<div style="font-size:11px;color:#777;line-height:1.6;">Uso no mes: R$ ' + (data.usadoBRL || 0).toFixed(2) + '<br>Limite: R$ ' + (data.limiteBRL || 0).toFixed(2) + '</div>' +
-          '</div>' +
-          (data.alerta ? '<p style="color:#c62828;font-size:12px;font-weight:bold;margin-top:8px;">&#9888; SALDO BAIXO! Recarregue em platform.openai.com/account/billing</p>' : '') +
-          '<p style="font-size:10px;color:#999;margin-top:5px;">Cotacao aproximada: 1 USD = 5.50 BRL | Atualizado: ' + new Date().toLocaleTimeString('pt-BR') + '</p>';
+        html += '<p style="font-size:10px;color:#999;margin-top:5px;">Atualizado: ' + new Date().toLocaleTimeString('pt-BR') + '</p>';
+        el.innerHTML = html;
       } catch(e) {
         el.innerHTML = '<span style="color:#c62828;">Erro ao consultar: ' + e.message + '</span>';
       }
