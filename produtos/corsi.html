@@ -122,6 +122,12 @@
         .fase-titulo h2 { color: #1a237e; font-size: 1.8em; margin-bottom: 15px; }
         .fase-titulo p { color: #555; font-size: 1.1em; line-height: 1.7; max-width: 600px; margin: 0 auto; }
         .fase-titulo .btn { margin-top: 25px; }
+        /* Fullscreen */
+        body.fullscreen-mode { padding: 0; background: #1a237e; }
+        body.fullscreen-mode .container { max-width: 100%; border-radius: 0; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; }
+        body.fullscreen-mode .content { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+        body.fullscreen-mode .header { border-radius: 0; }
+        body.cursor-hidden, body.cursor-hidden * { cursor: none !important; }
         /* Print */
         @media print { body { background: white !important; padding: 0 !important; } .botoes, .btn, .btn-imprimir { display: none !important; } .container { box-shadow: none !important; max-width: 100% !important; } .info-tecnica { display: none !important; } .mesa-container { display: none !important; } }
         @media (max-width: 768px) { .container { margin: 10px; border-radius: 10px; } .header { padding: 20px; } .header h1 { font-size: 1.6em; } .content { padding: 15px; } .form-row { flex-direction: column; } .mesa-scene { transform: rotateX(20deg) rotateY(0deg) scale(0.6); } .resultado-grid { grid-template-columns: 1fr; } .botoes { flex-direction: column; } .btn { width: 100%; } }
@@ -428,6 +434,12 @@ function iniciarFase(fase) {
     var containerId = fase === 'direta' ? 'mesaDireta' : 'mesaInversa';
     criarCubos(containerId);
     mostrarSecao(fase === 'direta' ? 'secaoTesteDireta' : 'secaoTesteInversa');
+    // Entrar em tela cheia
+    var el = document.documentElement;
+    if (el.requestFullscreen) { el.requestFullscreen().catch(function(){}); }
+    else if (el.webkitRequestFullscreen) { el.webkitRequestFullscreen(); }
+    else if (el.msRequestFullscreen) { el.msRequestFullscreen(); }
+    document.body.classList.add('fullscreen-mode');
     atualizarInfo();
     setTimeout(function() { apresentarSequencia(); }, 3000);
 }
@@ -453,6 +465,8 @@ function apresentarSequencia() {
     habilitarCliques(containerId, false);
     estado.aceitandoCliques = false;
     estado.respostaUsuario = [];
+    // Esconder cursor durante apresentacao
+    document.body.classList.add('cursor-hidden');
     // Pegar sequencia do nivel/tentativa
     var seqIndex = estado.tentativa - 1;
     estado.sequenciaAtual = SEQUENCIAS[estado.nivel][seqIndex].slice();
@@ -522,6 +536,8 @@ function apresentarSequencia() {
                 habilitarCliques(containerId, true);
                 estado.aceitandoCliques = true;
                 estado.tempoInicio = Date.now();
+                // Mostrar cursor novamente
+                document.body.classList.remove('cursor-hidden');
             }, 600);
         }
     }, 1200);
@@ -645,9 +661,19 @@ function avancar(acertou) {
 
 function finalizarFase() {
     if (estado.fase === 'direta') {
+        // Sair de tela cheia entre fases para mostrar instrucoes da inversa
+        if (document.exitFullscreen) { document.exitFullscreen().catch(function(){}); }
+        else if (document.webkitExitFullscreen) { document.webkitExitFullscreen(); }
+        document.body.classList.remove('fullscreen-mode');
+        document.body.classList.remove('cursor-hidden');
         // Ir para instrucoes da ordem inversa
         mostrarSecao('secaoInstrInversa');
     } else {
+        // Sair de tela cheia ao finalizar
+        if (document.exitFullscreen) { document.exitFullscreen().catch(function(){}); }
+        else if (document.webkitExitFullscreen) { document.webkitExitFullscreen(); }
+        document.body.classList.remove('fullscreen-mode');
+        document.body.classList.remove('cursor-hidden');
         // Fim do teste
         if (_sessionInfo) {
             // Modo painel: envia direto sem mostrar resultados ao paciente
