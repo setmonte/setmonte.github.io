@@ -128,6 +128,10 @@
         body.fullscreen-mode .content { flex: 1; display: flex; flex-direction: column; justify-content: center; }
         body.fullscreen-mode .header { border-radius: 0; }
         body.cursor-hidden, body.cursor-hidden * { cursor: none !important; }
+        /* Contagem regressiva */
+        .countdown-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(26,35,126,0.92); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+        .countdown-number { font-size: 12em; font-weight: bold; color: #fff; text-shadow: 0 0 40px rgba(255,255,255,0.5); animation: countPulse 0.8s ease-out; }
+        @keyframes countPulse { 0% { transform: scale(1.5); opacity: 0.3; } 100% { transform: scale(1); opacity: 1; } }
         /* Print */
         @media print { body { background: white !important; padding: 0 !important; } .botoes, .btn, .btn-imprimir { display: none !important; } .container { box-shadow: none !important; max-width: 100% !important; } .info-tecnica { display: none !important; } .mesa-container { display: none !important; } }
         @media (max-width: 768px) { .container { margin: 10px; border-radius: 10px; } .header { padding: 20px; } .header h1 { font-size: 1.6em; } .content { padding: 15px; } .form-row { flex-direction: column; } .mesa-scene { transform: rotateX(20deg) rotateY(0deg) scale(0.6); } .resultado-grid { grid-template-columns: 1fr; } .botoes { flex-direction: column; } .btn { width: 100%; } }
@@ -441,7 +445,26 @@ function iniciarFase(fase) {
     else if (el.msRequestFullscreen) { el.msRequestFullscreen(); }
     document.body.classList.add('fullscreen-mode');
     atualizarInfo();
-    setTimeout(function() { apresentarSequencia(); }, 3000);
+    // Contagem regressiva visual
+    mostrarContagem(3, function() { apresentarSequencia(); });
+}
+
+function mostrarContagem(segundos, callback) {
+    var overlay = document.createElement('div');
+    overlay.className = 'countdown-overlay';
+    overlay.innerHTML = '<span class="countdown-number">' + segundos + '</span>';
+    document.body.appendChild(overlay);
+    var restante = segundos;
+    var intervalo = setInterval(function() {
+        restante--;
+        if (restante <= 0) {
+            clearInterval(intervalo);
+            document.body.removeChild(overlay);
+            callback();
+        } else {
+            overlay.innerHTML = '<span class="countdown-number">' + restante + '</span>';
+        }
+    }, 1000);
 }
 
 function atualizarInfo() {
