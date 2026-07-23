@@ -6826,7 +6826,7 @@
         var data = await resp.json();
         _corsiResultCache = data.results || [];
         if (_corsiResultCache.length === 0) { el.innerHTML = '<p>Nenhum resultado CORSI encontrado.</p>'; return; }
-        var html = '<h3>Resultados CORSI</h3><table style="width:100%;border-collapse:collapse;font-size:0.85em;"><tr><th style="padding:6px;border-bottom:2px solid #4a148c;">Data</th><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">Paciente</th><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">ID</th><th style="padding:6px;border-bottom:2px solid #4a148c;">Span D</th><th style="padding:6px;border-bottom:2px solid #4a148c;">Span I</th><th style="padding:6px;border-bottom:2px solid #4a148c;">Total</th><th style="padding:6px;border-bottom:2px solid #4a148c;">Class.</th></tr>';
+        var html = '<h3>Resultados CORSI</h3><table style="width:100%;border-collapse:collapse;font-size:0.85em;"><tr><th style="padding:6px;border-bottom:2px solid #4a148c;">Data</th><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">Paciente</th><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">ID</th><th style="padding:6px;border-bottom:2px solid #4a148c;">Span D</th><th style="padding:6px;border-bottom:2px solid #4a148c;">Span I</th><th style="padding:6px;border-bottom:2px solid #4a148c;">Total</th><th style="padding:6px;border-bottom:2px solid #4a148c;">Class.</th><th style="padding:6px;border-bottom:2px solid #4a148c;">PDF</th></tr>';
         for (var i = 0; i < _corsiResultCache.length; i++) {
           var r = _corsiResultCache[i];
           var d = r.data || {};
@@ -6838,11 +6838,177 @@
           html += '<td style="padding:5px;border-bottom:1px solid #eee;text-align:center;font-weight:bold;">' + (d.spanInverso || '-') + '</td>';
           html += '<td style="padding:5px;border-bottom:1px solid #eee;text-align:center;">' + (d.pontuacaoTotal || '-') + '</td>';
           html += '<td style="padding:5px;border-bottom:1px solid #eee;font-size:0.8em;">' + (d.classificacaoDireto || '') + ' / ' + (d.classificacaoInverso || '') + '</td>';
+          html += '<td style="padding:5px;border-bottom:1px solid #eee;text-align:center;"><button class="btn btn-green" style="padding:5px 12px;font-size:12px;" onclick="generateCorsiPDF(' + i + ')">PDF</button></td>';
           html += '</tr>';
         }
         html += '</table>';
         el.innerHTML = html;
       } catch(e) { el.innerHTML = '<p>Erro ao carregar resultados.</p>'; }
+    }
+
+    // ===== PDF CORSI =====
+    function generateCorsiPDF(idx) {
+      var r = _corsiResultCache[idx];
+      if (!r || !r.data) { alert('Dados insuficientes para gerar PDF.'); return; }
+      var d = r.data;
+      var jsPDF = window.jspdf.jsPDF;
+      var doc = new jsPDF();
+      var nome = d.paciente || 'Nao informado';
+      var idade = d.idade || '';
+      var sexo = d.sexo || '';
+      var escolaridade = d.escolaridade || '';
+      var idPaciente = d.idPaciente || '';
+      var dataAval = d.data ? new Date(d.data).toLocaleDateString('pt-BR') : '';
+      var spanD = d.spanDireto || 0;
+      var spanI = d.spanInverso || 0;
+      var total = d.pontuacaoTotal || 0;
+      var classD = d.classificacaoDireto || '-';
+      var classI = d.classificacaoInverso || '-';
+      var zD = d.zDireto != null ? Number(d.zDireto).toFixed(2) : '-';
+      var zI = d.zInverso != null ? Number(d.zInverso).toFixed(2) : '-';
+      var acertosD = d.acertosDireto || 0;
+      var tentD = d.tentativasDireto || 0;
+      var acertosI = d.acertosInverso || 0;
+      var tentI = d.tentativasInverso || 0;
+      // === PAGINA 1 ===
+      doc.setFillColor(26, 35, 126);
+      doc.rect(0, 0, 210, 30, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(16);
+      doc.setFont(undefined, 'bold');
+      doc.text('TESTE DE CORSI', 105, 12, {align: 'center'});
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'normal');
+      doc.text('Avaliacao da Memoria de Trabalho Visuoespacial', 105, 20, {align: 'center'});
+      doc.text('Ordem Direta e Inversa', 105, 26, {align: 'center'});
+      // Dados pessoais
+      var y = 40;
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'bold');
+      doc.text('DADOS DO AVALIANDO', 20, y); y += 7;
+      doc.setFont(undefined, 'normal');
+      doc.setFontSize(9);
+      doc.text('Nome: ' + nome, 20, y); y += 5;
+      doc.text('Idade: ' + idade + '     Sexo: ' + sexo, 20, y); y += 5;
+      doc.text('Escolaridade: ' + escolaridade, 20, y); y += 5;
+      doc.text('Data da Avaliacao: ' + dataAval + '     ID: ' + idPaciente, 20, y); y += 12;
+      // Resultados principais
+      doc.setFont(undefined, 'bold');
+      doc.setFontSize(10);
+      doc.text('RESULTADOS', 20, y); y += 8;
+      doc.setFontSize(9);
+      doc.setFont(undefined, 'normal');
+      doc.setFillColor(232, 234, 246);
+      doc.rect(20, y - 4, 170, 30, 'F');
+      doc.text('Span Direto: ' + spanD + ' blocos', 25, y + 2);
+      doc.text('Classificacao: ' + classD + '   (z = ' + zD + ')', 25, y + 7);
+      doc.text('Span Inverso: ' + spanI + ' blocos', 25, y + 14);
+      doc.text('Classificacao: ' + classI + '   (z = ' + zI + ')', 25, y + 19);
+      doc.text('Pontuacao Total: ' + total + ' sequencias corretas', 25, y + 25);
+      y += 36;
+      doc.text('Acertos Direto: ' + acertosD + '/' + tentD + '    Acertos Inverso: ' + acertosI + '/' + tentI, 25, y);
+      y += 12;
+      // Tabela de tentativas - Direta
+      var histD = d.historicoDireto || [];
+      var histI = d.historicoInverso || [];
+      if (histD.length > 0) {
+        doc.setFont(undefined, 'bold');
+        doc.setFontSize(9);
+        doc.text('DETALHAMENTO - ORDEM DIRETA', 20, y); y += 6;
+        doc.setFont(undefined, 'normal');
+        doc.setFontSize(8);
+        doc.setFillColor(26, 35, 126); doc.setTextColor(255, 255, 255);
+        doc.rect(20, y - 3, 170, 5, 'F');
+        doc.text('Nivel', 25, y); doc.text('Tentativa', 50, y); doc.text('Resultado', 80, y); doc.text('Tempo (ms)', 120, y);
+        y += 5; doc.setTextColor(0, 0, 0);
+        for (var i = 0; i < histD.length; i++) {
+          var t = histD[i];
+          if (y > 270) { doc.addPage(); y = 20; }
+          doc.text(String(t.nivel || ''), 25, y);
+          doc.text(String(t.tentativa || ''), 55, y);
+          doc.setTextColor(t.acertou ? 46 : 198, t.acertou ? 125 : 40, t.acertou ? 50 : 40);
+          doc.text(t.acertou ? 'Acerto' : 'Erro', 82, y);
+          doc.setTextColor(0, 0, 0);
+          doc.text(String(t.tempo || ''), 125, y);
+          y += 5;
+        }
+        y += 5;
+      }
+      // Tabela - Inversa
+      if (histI.length > 0) {
+        if (y > 240) { doc.addPage(); y = 20; }
+        doc.setFontSize(9); doc.setFont(undefined, 'bold');
+        doc.text('DETALHAMENTO - ORDEM INVERSA', 20, y); y += 6;
+        doc.setFont(undefined, 'normal');
+        doc.setFontSize(8);
+        doc.setFillColor(26, 35, 126); doc.setTextColor(255, 255, 255);
+        doc.rect(20, y - 3, 170, 5, 'F');
+        doc.text('Nivel', 25, y); doc.text('Tentativa', 50, y); doc.text('Resultado', 80, y); doc.text('Tempo (ms)', 120, y);
+        y += 5; doc.setTextColor(0, 0, 0);
+        for (var j = 0; j < histI.length; j++) {
+          var t2 = histI[j];
+          if (y > 270) { doc.addPage(); y = 20; }
+          doc.text(String(t2.nivel || ''), 25, y);
+          doc.text(String(t2.tentativa || ''), 55, y);
+          doc.setTextColor(t2.acertou ? 46 : 198, t2.acertou ? 125 : 40, t2.acertou ? 50 : 40);
+          doc.text(t2.acertou ? 'Acerto' : 'Erro', 82, y);
+          doc.setTextColor(0, 0, 0);
+          doc.text(String(t2.tempo || ''), 125, y);
+          y += 5;
+        }
+        y += 5;
+      }
+      // === PAGINA 2: Notas e Referencias ===
+      doc.addPage();
+      y = 20;
+      doc.setFontSize(10); doc.setFont(undefined, 'bold');
+      doc.text('NOTAS METODOLOGICAS', 20, y); y += 7;
+      doc.setFont(undefined, 'normal'); doc.setFontSize(8);
+      doc.text('- Versao digital com perspectiva 3D (CSS) e posicoes padrao (Kessels et al., 2000)', 22, y); y += 5;
+      doc.text('- Tempo de apresentacao: 1 segundo aceso / 1 segundo intervalo entre blocos', 22, y); y += 5;
+      doc.text('- Criterio de parada: 2 erros consecutivos no mesmo nivel', 22, y); y += 5;
+      doc.text('- 2 tentativas por nivel de comprimento de sequencia', 22, y); y += 5;
+      doc.text('- Sequencias pre-definidas baseadas na padronizacao classica', 22, y); y += 10;
+      doc.setFillColor(255, 243, 224); doc.rect(20, y - 2, 170, 20, 'F');
+      doc.setTextColor(230, 81, 0); doc.setFontSize(7);
+      doc.text('NORMAS PROVISORIAS: As classificacoes sao baseadas em normas da literatura internacional', 22, y + 3);
+      doc.text('(Piccolo et al., 2006; Orsini et al., 1987; Kessels et al., 2000; Monaco et al., 2013).', 22, y + 7);
+      doc.text('Normas brasileiras para esta versao digital estao em construcao.', 22, y + 11);
+      doc.text('Versoes digitais tendem a produzir desempenho equivalente ou levemente superior (Brunetti et al., 2014).', 22, y + 15);
+      y += 28;
+      doc.setFillColor(255, 248, 235); doc.rect(20, y - 2, 170, 10, 'F');
+      doc.setTextColor(180, 90, 0);
+      doc.text('ATENCAO: Instrumento de avaliacao neuropsicologica. Resultados devem ser interpretados por', 22, y + 2);
+      doc.text('profissional qualificado, dentro do contexto clinico e em conjunto com outros instrumentos.', 22, y + 6);
+      y += 18;
+      // Referencias
+      doc.setTextColor(0, 0, 0); doc.setFontSize(10); doc.setFont(undefined, 'bold');
+      doc.text('REFERENCIAS', 20, y); y += 7;
+      doc.setFont(undefined, 'normal'); doc.setFontSize(7);
+      doc.text('CORSI, P. M. Human memory and the medial temporal region of the brain. Dissertation Abstracts International,', 22, y); y += 4;
+      doc.text('v. 34, n. 2-B, p. 891, 1972.', 22, y); y += 6;
+      doc.text('KESSELS, R. P. C. et al. The Corsi Block-Tapping Task: standardization and normative data. Applied', 22, y); y += 4;
+      doc.text('Neuropsychology, v. 7, n. 4, p. 252-258, 2000.', 22, y); y += 6;
+      doc.text('PICCOLO, L. R. et al. Developmental normative data for the Corsi Block-Tapping Task. Journal of Clinical', 22, y); y += 4;
+      doc.text('and Experimental Neuropsychology, v. 28, p. 1-12, 2006.', 22, y); y += 6;
+      doc.text('BRUNETTI, R. et al. eCorsi: implementation and testing of the Corsi block-tapping task for digital tablets.', 22, y); y += 4;
+      doc.text('Frontiers in Psychology, v. 5, art. 939, 2014.', 22, y); y += 6;
+      doc.text('ORSINI, A. et al. Verbal and spatial immediate memory span: normative data from 1355 adults and 1112', 22, y); y += 4;
+      doc.text('children. Italian Journal of Neurological Sciences, v. 8, p. 539-548, 1987.', 22, y); y += 6;
+      doc.text('MONACO, M. et al. Forward and backward span for verbal and visuo-spatial data: standardization and', 22, y); y += 4;
+      doc.text('normative data from an Italian adult population. Neurological Sciences, v. 34, p. 749-754, 2013.', 22, y); y += 6;
+      doc.text('DIAS, N. M.; MECCA, T. P. Avaliacao neuropsicologica cognitiva: memoria de trabalho. Sao Paulo:', 22, y); y += 4;
+      doc.text('Memnon, 2019. v. 4.', 22, y);
+      // Rodape
+      doc.setFillColor(80, 80, 80); doc.rect(0, 285, 210, 12, 'F');
+      doc.setTextColor(200, 200, 200); doc.setFontSize(7);
+      doc.text('Relatorio gerado em: ' + new Date().toLocaleString('pt-BR'), 105, 291, {align: 'center'});
+      // Salvar
+      var nomeArq = nome.replace(/\s+/g, '_');
+      var ts = new Date();
+      var tsStr = ts.getFullYear() + String(ts.getMonth()+1).padStart(2,'0') + String(ts.getDate()).padStart(2,'0');
+      doc.save('CORSI_' + nomeArq + '_' + tsStr + '.pdf');
     }
 
     // ===== FUNCOES ESCALAS =====
