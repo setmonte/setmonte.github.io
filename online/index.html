@@ -2456,21 +2456,35 @@
       document.querySelectorAll('.result-check').forEach(function(cb) { cb.checked = master.checked; });
     }
 
+    async function _logDeletion(email, tipo, quantidade, detalhes) {
+      try {
+        await fetch(API_URL + '/save-result', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({sessionId: 'log-del-' + Date.now().toString(36) + Math.random().toString(36).slice(2,6), email: 'admin-log@sistema', tipo: 'log-delete', data: {emailUsuario: email, tipoResultado: tipo, quantidade: quantidade, detalhes: detalhes, data: new Date().toISOString()}})
+        });
+      } catch(e) {}
+    }
+
     async function deleteSelected() {
       var checks = document.querySelectorAll('.result-check:checked');
       if (checks.length === 0) { alert('Selecione pelo menos um resultado para apagar.'); return; }
       if (!confirm('Deseja apagar ' + checks.length + ' resultado(s) selecionado(s)? Esta acao nao pode ser desfeita.')) return;
       var errors = 0;
+      var detalhes = [];
       for (var i = 0; i < checks.length; i++) {
         var idx = parseInt(checks[i].dataset.idx);
+        var r = _resultCache[idx];
+        detalhes.push(r.sessionId);
         try {
           await fetch(API_URL + '/delete-result', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sessionId: _resultCache[idx].sessionId, email: currentUser })
+            body: JSON.stringify({ sessionId: r.sessionId, email: currentUser })
           });
         } catch(e) { errors++; }
       }
+      await _logDeletion(currentUser, 'tecfe', checks.length, detalhes.join(', '));
       if (errors > 0) alert(errors + ' resultado(s) nao puderam ser apagados.');
       else alert(checks.length + ' resultado(s) apagado(s).');
       loadResults();
@@ -2788,8 +2802,10 @@
       var checks = document.querySelectorAll('.bae-result-check:checked');
       if (checks.length === 0) { alert('Selecione pelo menos um resultado.'); return; }
       if (!confirm('Apagar ' + checks.length + ' resultado(s)?')) return;
+      var detalhes = [];
       for (var i = 0; i < checks.length; i++) {
         var idx = parseInt(checks[i].dataset.idx);
+        detalhes.push(_baeResultCache[idx].sessionId);
         try {
           await fetch(API_URL + '/delete-result', {
             method: 'POST',
@@ -2798,6 +2814,7 @@
           });
         } catch(e) {}
       }
+      await _logDeletion(currentUser, 'bae', checks.length, detalhes.join(', '));
       loadBaeResults();
     }
 
@@ -5035,6 +5052,25 @@
           html += '<p style="margin-top:10px;font-size:12px;font-weight:bold;">Por tipo:</p>';
           Object.keys(data.porTipo).sort(function(a,b){return data.porTipo[b]-data.porTipo[a];}).forEach(function(t) { html += '<p style="font-size:11px;">\u2022 ' + t.toUpperCase() + ': ' + data.porTipo[t] + '</p>'; });
         }
+        // Buscar logs de deleção
+        try {
+          var respLog = await fetch(API_URL + '/get-results?email=admin-log@sistema&tipo=log-delete');
+          var logData = await respLog.json();
+          var logs = logData.results || [];
+          if (logs.length > 0) {
+            html += '<p style="margin-top:15px;font-size:12px;font-weight:bold;color:#c62828;">Exclusoes recentes (' + logs.length + '):</p>';
+            html += '<div style="max-height:200px;overflow-y:auto;border:1px solid #eee;border-radius:6px;padding:8px;margin-top:5px;">';
+            logs.sort(function(a,b){ return (b.data&&b.data.data||'') > (a.data&&a.data.data||'') ? 1 : -1; });
+            logs.slice(0, 50).forEach(function(l) {
+              var d = l.data || {};
+              var dataFmt = d.data ? new Date(d.data).toLocaleString('pt-BR') : '-';
+              html += '<p style="font-size:10px;color:#555;border-bottom:1px solid #f5f5f5;padding:3px 0;">';
+              html += '<strong>' + dataFmt + '</strong> - ' + (d.emailUsuario || '?') + ' apagou <strong>' + (d.quantidade || '?') + '</strong> ' + (d.tipoResultado || '?').toUpperCase();
+              html += '</p>';
+            });
+            html += '</div>';
+          }
+        } catch(e2) {}
         el.innerHTML = html;
       } catch(e) { el.innerHTML = '<p style="color:red;">Erro: ' + e.message + '</p>'; }
     }
@@ -7129,14 +7165,17 @@
       if (checks.length === 0) { alert('Selecione ao menos um resultado.'); return; }
       if (!confirm('Deseja apagar ' + checks.length + ' resultado(s) selecionado(s)?')) return;
       var errors = 0;
+      var detalhes = [];
       for (var i = 0; i < checks.length; i++) {
         var idx = parseInt(checks[i].dataset.idx);
         var r = _tteResultCache[idx];
         if (!r) continue;
+        detalhes.push(r.sessionId || r.id);
         try {
           await fetch(API_URL + '/delete-result', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({sessionId:r.sessionId || r.id, email:currentUser, tipo:'tte'}) });
         } catch(e) { errors++; }
       }
+      await _logDeletion(currentUser, 'tte', checks.length, detalhes.join(', '));
       if (errors > 0) alert(errors + ' erro(s) ao apagar.');
       loadTteResults();
     }
@@ -7957,7 +7996,9 @@
       var checks = document.querySelectorAll('.escala-result-check:checked');
       if (checks.length === 0) { alert('Selecione pelo menos um resultado.'); return; }
       if (!confirm('Apagar ' + checks.length + ' resultado(s)?')) return;
+      var detalhes = [];
       for (var i = 0; i < checks.length; i++) {
+        detalhes.push(checks[i].dataset.sid);
         try {
           await fetch(API_URL + '/delete-result', {
             method: 'POST',
@@ -7966,6 +8007,7 @@
           });
         } catch(e) {}
       }
+      await _logDeletion(currentUser, 'escalas', checks.length, detalhes.join(', '));
       loadEscalasResults();
     }
 
@@ -8428,8 +8470,10 @@
       var checks = document.querySelectorAll('.taav-result-check:checked');
       if (checks.length === 0) { alert('Selecione pelo menos um resultado.'); return; }
       if (!confirm('Apagar ' + checks.length + ' resultado(s)?')) return;
+      var detalhes = [];
       for (var i = 0; i < checks.length; i++) {
         var idx = parseInt(checks[i].dataset.idx);
+        detalhes.push(_taavResultCache[idx].sessionId);
         try {
           await fetch(API_URL + '/delete-result', {
             method: 'POST',
@@ -8438,6 +8482,7 @@
           });
         } catch(e) {}
       }
+      await _logDeletion(currentUser, 'taav', checks.length, detalhes.join(', '));
       loadTaavResults();
     }
 
@@ -8798,8 +8843,10 @@
       var checks = document.querySelectorAll('.tref-result-check:checked');
       if (checks.length === 0) { alert('Selecione pelo menos um resultado.'); return; }
       if (!confirm('Apagar ' + checks.length + ' resultado(s)?')) return;
+      var detalhes = [];
       for (var i = 0; i < checks.length; i++) {
         var idx = parseInt(checks[i].dataset.idx);
+        detalhes.push(_trefResultCache[idx].sessionId);
         try {
           await fetch(API_URL + '/delete-result', {
             method: 'POST', headers: {'Content-Type':'application/json'},
@@ -8807,6 +8854,7 @@
           });
         } catch(e) {}
       }
+      await _logDeletion(currentUser, 'tref', checks.length, detalhes.join(', '));
       loadTrefResults();
     }
 
