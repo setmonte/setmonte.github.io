@@ -255,12 +255,24 @@
         // 9. enviarResultados (BAE online)
         if (typeof window.enviarResultados === 'function' && !window._er_interceptado) {
             var _orig_er = window.enviarResultados;
-            window.enviarResultados = function() {
-                var result = _orig_er.apply(this, arguments);
+            window.enviarResultados = async function() {
+                var result = await _orig_er.apply(this, arguments);
                 setTimeout(_enviarDadosAnonimos, 1500);
+                setTimeout(_enviarDadosAnonimos, 5000);
                 return result;
             };
             window._er_interceptado = true;
+        }
+
+        // 10. mostrarTelaFinal (BAE online - fallback)
+        if (typeof window.mostrarTelaFinal === 'function' && !window._mtf_interceptado) {
+            var _orig_mtf = window.mostrarTelaFinal;
+            window.mostrarTelaFinal = function() {
+                _orig_mtf.apply(this, arguments);
+                setTimeout(_enviarDadosAnonimos, 2000);
+                setTimeout(_enviarDadosAnonimos, 5000);
+            };
+            window._mtf_interceptado = true;
         }
     }
 
@@ -316,9 +328,12 @@
     // REDE DE SEGURANCA: polling em window._escalaDados
     // Se a interceptacao falhou (timing), mas os dados existem, enviar.
     // Verifica a cada 3s por ate 2 minutos apos o carregamento.
+    // Para BAE (testes longos): polling estendido ate 60 minutos.
     // ============================================================
     var _pollingCount = 0;
-    var _pollingMax = 40; // 40 x 3s = 120s
+    var _isBAE = window.location.pathname.indexOf('teste-bae') !== -1 || document.getElementById('endPage');
+    var _pollingMax = _isBAE ? 600 : 40; // BAE: 600 x 3s = 30min | Escalas: 40 x 3s = 120s
+    var _pollingInterval = _isBAE ? 5000 : 3000; // BAE a cada 5s, escalas a cada 3s
     var _pollingTimer = setInterval(function() {
         _pollingCount++;
         if (_jaEnviou || _pollingCount >= _pollingMax) {
@@ -329,10 +344,14 @@
         if (window._escalaDados && window._escalaDados.escala) {
             _enviarDadosAnonimos();
         }
-        // Se resultadosBAE existe com subtestes, tentar enviar
+        // Se resultadosBAE existe com subtestes E endPage visivel = teste finalizado
         if (window.resultadosBAE && (window.resultadosBAE.concentrada || window.resultadosBAE.seletiva || window.resultadosBAE.dividida || window.resultadosBAE.alternada || window.resultadosBAE.sustentada)) {
-            _enviarDadosAnonimos();
+            var endPageEl = document.getElementById('endPage');
+            var baeTerminou = endPageEl && (endPageEl.style.display === 'block' || endPageEl.style.display === 'flex');
+            if (!_isBAE || baeTerminou) {
+                _enviarDadosAnonimos();
+            }
         }
-    }, 3000);
+    }, _pollingInterval);
 
 })();
