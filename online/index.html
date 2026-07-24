@@ -715,8 +715,11 @@
               </select></label>
               <label>Repetir: <input type="number" id="agendaRecorrenciaQtd" value="4" min="2" max="52" style="width:60px;"> vezes</label>
             </div>
-            <div style="margin-top:12px;display:flex;gap:8px;">
-              <button class="btn btn-green" style="padding:10px 20px;font-size:13px;" onclick="salvarConsultaAgenda()">Agendar</button>
+            <div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center;">
+              <div style="display:flex;gap:8px;">
+                <button class="btn btn-green" style="padding:10px 20px;font-size:13px;" onclick="salvarConsultaAgenda()">Agendar</button>
+                <button class="btn" style="padding:10px 20px;font-size:13px;background:#ffc107;color:#333;font-weight:bold;" onclick="enviarAgendaWhatsApp()">WhatsApp</button>
+              </div>
               <button class="btn btn-orange" style="padding:10px 20px;font-size:13px;" onclick="document.getElementById('novaConsultaSection').classList.add('hidden');">Cancelar</button>
             </div>
           </div>
@@ -3432,6 +3435,31 @@
       } catch(e) {
         if (btnSalvar) { btnSalvar.disabled = false; btnSalvar.textContent = 'Agendar'; btnSalvar.style.opacity = '1'; }
         alert('Erro ao agendar: ' + e.message);
+      }
+    }
+
+    function enviarAgendaWhatsApp() {
+      var nome = document.getElementById('agendaNome').value.trim();
+      var data = document.getElementById('agendaData').value;
+      var hora = document.getElementById('agendaHora').value;
+      var tipo = document.getElementById('agendaTipo').value;
+      if (!nome || !data || !hora) { alert('Preencha nome, data e hora antes de enviar.'); return; }
+      // Buscar whatsapp do paciente selecionado
+      var pacId = document.getElementById('agendaSelPac').value;
+      var pacInfo = pacId ? _pacientesCache.filter(function(p) { return p.id === pacId; })[0] : null;
+      var whats = pacInfo ? (pacInfo.whatsapp || '') : '';
+      // Formatar numero
+      var numLimpo = whats.replace(/\D/g, '');
+      if (numLimpo && numLimpo.length >= 10 && numLimpo.indexOf('55') !== 0) numLimpo = '55' + numLimpo;
+      // Formatar data bonita
+      var partsData = data.split('-');
+      var dataFmt = partsData[2] + '/' + partsData[1] + '/' + partsData[0];
+      // Mensagem
+      var msg = 'Consulta agendada para ' + dataFmt + ' as ' + hora + ' (' + tipo + ').\n\nPara receber lembretes automaticos, clique aqui: https://t.me/stm_agenda_bot?start=' + (pacId || nome.replace(/\s+/g,'_'));
+      if (numLimpo) {
+        window.open('https://wa.me/' + numLimpo + '?text=' + encodeURIComponent(msg), '_blank');
+      } else {
+        window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
       }
     }
 
