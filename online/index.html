@@ -5057,8 +5057,8 @@
           var respLog = await fetch(API_URL + '/get-results?email=admin-log@sistema&tipo=log-delete');
           var logData = await respLog.json();
           var logs = logData.results || [];
+          html += '<p style="margin-top:15px;font-size:12px;font-weight:bold;color:#c62828;">Exclusoes registradas: ' + logs.length + '</p>';
           if (logs.length > 0) {
-            html += '<p style="margin-top:15px;font-size:12px;font-weight:bold;color:#c62828;">Exclusoes recentes (' + logs.length + '):</p>';
             html += '<div style="max-height:200px;overflow-y:auto;border:1px solid #eee;border-radius:6px;padding:8px;margin-top:5px;">';
             logs.sort(function(a,b){ return (b.data&&b.data.data||'') > (a.data&&a.data.data||'') ? 1 : -1; });
             logs.slice(0, 50).forEach(function(l) {
@@ -5069,8 +5069,12 @@
               html += '</p>';
             });
             html += '</div>';
+          } else {
+            html += '<p style="font-size:10px;color:#888;margin-top:4px;">Nenhuma exclusao registrada desde a ativacao do log.</p>';
           }
-        } catch(e2) {}
+        } catch(e2) {
+          html += '<p style="margin-top:15px;font-size:11px;color:#888;">Log de exclusoes: indisponivel</p>';
+        }
         el.innerHTML = html;
       } catch(e) { el.innerHTML = '<p style="color:red;">Erro: ' + e.message + '</p>'; }
     }
