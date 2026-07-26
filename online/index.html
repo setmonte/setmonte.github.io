@@ -106,6 +106,7 @@
           <button class="tab-btn" id="tabCorsi" onclick="switchTab('corsi')">CORSI</button>
           <button class="tab-btn" id="tabTte" onclick="switchTab('tte')">TTE</button>
           <button class="tab-btn" id="tabTetaylor" onclick="switchTab('tetaylor')">TETaylor</button>
+          <button class="tab-btn" id="tabTetaylorsimp" onclick="switchTab('tetaylorsimp')">TETaylorSimp</button>
           <button class="tab-btn" id="tabCorrecao" onclick="switchTab('correcao')">Correcao</button>
           <button class="tab-btn" id="tabReabilitacao" onclick="switchTab('reabilitacao')">Reabilitacao</button>
           <button class="tab-btn" id="tabAnamnese" onclick="switchTab('anamnese')">Anamnese</button>
@@ -1321,6 +1322,22 @@
           </div>
         </div>
 
+        <!-- === ABA TETaylorSimp === -->
+        <div id="tetaylorsimpTab" class="tab-content">
+          <div style="background:#E0F2F1;border:1px solid #80CBC4;border-radius:8px;padding:12px;margin:10px 0;font-size:0.82em;color:#004D40;line-height:1.6;">
+            <strong>&#129504; TETaylorSimp — Teste Eletronico da Figura Simplificada de Taylor</strong><br>
+            Avaliacao da construcao visuoespacial e memoria visual episodica (versao simplificada).<br>
+            O avaliador apresenta a figura na tela e o paciente copia no papel. Depois, reproduz de memoria.<br>
+            <strong>Populacao:</strong> Adultos/Idosos com baixa escolaridade | <strong>Pontuacao:</strong> 12 elementos, 0-24 pontos<br>
+            <strong>Resultado:</strong> Score bruto, Z-score, percentil, classificacao | <strong>Normas:</strong> de Paula et al. (2016, N=100)<br>
+            <strong>Base:</strong> Taylor (1969), de Paula, Costa, Andrade, Avila &amp; Malloy-Diniz (2016)
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-green" id="btnNewTetaylorsimp" onclick="showNewTetaylorsimp()">Nova Aplicacao</button>
+            <button class="btn btn-blue" onclick="showTetaylorsimpResults()">Resultados</button>
+          </div>
+        </div>
+
         <!-- === ABA CORRECAO DE TESTES === -->
         <div id="correcaoTab" class="tab-content">
           <div style="text-align:center;padding:15px 0;">
@@ -1777,6 +1794,38 @@
 
       <!-- RESULTADOS TETaylor -->
       <div id="tetaylorResultsSection" class="card hidden"></div>
+
+      <!-- NOVA APLICACAO TETaylorSimp -->
+      <div id="newTetaylorsimpSection" class="card hidden">
+        <h2>Nova Aplicacao TETaylorSimp</h2>
+        <p style="margin-bottom:10px;color:#555;font-size:0.9em;">Teste Eletronico da Figura Simplificada de Taylor — construcao visuoespacial e memoria visual</p>
+        <label style="font-size:0.85em;color:#555;">Paciente cadastrado:</label>
+        <select id="tetaylorsimpSelPac" onchange="preencherPaciente('tetaylorsimp')" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:10px;">
+          <option value="">-- Selecione ou preencha abaixo --</option>
+        </select>
+        <label style="font-size:0.85em;color:#555;">Nome:</label>
+        <input type="text" id="tetaylorsimpNome" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+        <label style="font-size:0.85em;color:#555;">Data de Nascimento:</label>
+        <input type="date" id="tetaylorsimpDn" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+        <label style="font-size:0.85em;color:#555;">Sexo:</label>
+        <select id="tetaylorsimpSexo" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+          <option value="">Selecione...</option>
+          <option value="Masculino">Masculino</option>
+          <option value="Feminino">Feminino</option>
+        </select>
+        <label style="font-size:0.85em;color:#555;">Escolaridade (anos de estudo):</label>
+        <input type="number" id="tetaylorsimpEsc" min="0" max="26" placeholder="Ex: 8" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+        <label style="font-size:0.85em;color:#555;">Observacoes:</label>
+        <input type="text" id="tetaylorsimpObs" placeholder="Opcional" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:12px;">
+        <button onclick="startTetaylorsimpTest()" class="btn btn-green" style="width:48%;">Aplicar Localmente</button>
+        <div id="tetaylorsimpLinkResult" class="hidden" style="margin-top:15px;padding:12px;background:#e8f5e9;border-radius:8px;">
+          <p style="font-size:0.8em;color:#555;margin-bottom:5px;">Link gerado:</p>
+          <p id="tetaylorsimpSessionLink" style="word-break:break-all;font-size:0.75em;color:#1565c0;"></p>
+        </div>
+      </div>
+
+      <!-- RESULTADOS TETaylorSimp -->
+      <div id="tetaylorsimpResultsSection" class="card hidden"></div>
 
       <!-- NOVA APLICACAO BAE -->
       <div id="newBaeSection" class="card hidden">
@@ -2619,6 +2668,7 @@
       document.getElementById('corsiTab').classList.remove('active');
       document.getElementById('tteTab').classList.remove('active');
       document.getElementById('tetaylorTab').classList.remove('active');
+      document.getElementById('tetaylorsimpTab').classList.remove('active');
       document.getElementById('correcaoTab').classList.remove('active');
       document.getElementById('escalasTab').classList.remove('active');
       document.getElementById('reabilitacaoTab').classList.remove('active');
@@ -2638,6 +2688,7 @@
       document.getElementById('tabCorsi').classList.remove('active');
       document.getElementById('tabTte').classList.remove('active');
       document.getElementById('tabTetaylor').classList.remove('active');
+      document.getElementById('tabTetaylorsimp').classList.remove('active');
       document.getElementById('tabCorrecao').classList.remove('active');
       document.getElementById('tabEscalas').classList.remove('active');
       document.getElementById('tabReabilitacao').classList.remove('active');
@@ -2648,7 +2699,7 @@
       document.getElementById('tabDepoimentos').classList.remove('active');
       document.getElementById('tabAdmin').classList.remove('active');
       document.getElementById('tabProgramasOcultos').classList.remove('active');
-      ['plansSection','newTestSection','resultsSection','baePlansSection','newBaeSection','baeResultsSection','trmvPlansSection','newTrmvSection','trmvResultsSection','taavPlansSection','newTaavSection','taavResultsSection','trefPlansSection','newTrefSection','trefResultsSection','newTflodSection','tflodResultsSection','newCorsiSection','corsiResultsSection','newTteSection','tteResultsSection','newTetaylorSection','tetaylorResultsSection','newPfisterSection','pfisterResultsSection'].forEach(function(id) {
+      ['plansSection','newTestSection','resultsSection','baePlansSection','newBaeSection','baeResultsSection','trmvPlansSection','newTrmvSection','trmvResultsSection','taavPlansSection','newTaavSection','taavResultsSection','trefPlansSection','newTrefSection','trefResultsSection','newTflodSection','tflodResultsSection','newCorsiSection','corsiResultsSection','newTteSection','tteResultsSection','newTetaylorSection','tetaylorResultsSection','newTetaylorsimpSection','tetaylorsimpResultsSection','newPfisterSection','pfisterResultsSection'].forEach(function(id) {
         var el = document.getElementById(id); if (el) el.classList.add('hidden');
       });
       if (tab === 'tecfe') {
@@ -2678,6 +2729,9 @@
       } else if (tab === 'tetaylor') {
         document.getElementById('tetaylorTab').classList.add('active');
         document.getElementById('tabTetaylor').classList.add('active');
+      } else if (tab === 'tetaylorsimp') {
+        document.getElementById('tetaylorsimpTab').classList.add('active');
+        document.getElementById('tabTetaylorsimp').classList.add('active');
       } else if (tab === 'correcao') {
         document.getElementById('correcaoTab').classList.add('active');
         document.getElementById('tabCorrecao').classList.add('active');
@@ -5331,6 +5385,7 @@
       else if (tipo === 'corsi') { campoNome = document.getElementById('corsiNome'); campoDN = document.getElementById('corsiDn'); }
       else if (tipo === 'tte') { campoNome = document.getElementById('tteNome'); campoDN = document.getElementById('tteDn'); }
       else if (tipo === 'tetaylor') { campoNome = document.getElementById('tetaylorNome'); campoDN = document.getElementById('tetaylorDn'); }
+      else if (tipo === 'tetaylorsimp') { campoNome = document.getElementById('tetaylorsimpNome'); campoDN = document.getElementById('tetaylorsimpDn'); }
       else if (tipo === 'tref') { campoNome = document.getElementById('trefNome'); campoDN = document.getElementById('trefDn'); }
       else if (tipo === 'anamnese') { campoNome = document.getElementById('anamneseNome'); campoDN = document.getElementById('anamneseDn'); campoCPF = document.getElementById('anamneseCpf'); }
       else if (tipo === 'agenda') { campoNome = document.getElementById('agendaNome'); }
@@ -7553,6 +7608,78 @@
       if (meses < 0 || (meses === 0 && hoje.getDate() < nascimento.getDate())) anos--;
       return anos + ' anos';
     }
+
+    // ===== FUNCOES TETaylorSimp =====
+    function showNewTetaylorsimp() {
+      document.getElementById('newTetaylorsimpSection').classList.toggle('hidden');
+      if (document.getElementById('tetaylorsimpResultsSection')) document.getElementById('tetaylorsimpResultsSection').classList.add('hidden');
+      populateTetaylorsimpPacientes();
+    }
+
+    function showTetaylorsimpResults() {
+      if (document.getElementById('tetaylorsimpResultsSection')) document.getElementById('tetaylorsimpResultsSection').classList.toggle('hidden');
+      document.getElementById('newTetaylorsimpSection').classList.add('hidden');
+      loadTetaylorsimpResults();
+    }
+
+    function populateTetaylorsimpPacientes() {
+      var sel = document.getElementById('tetaylorsimpSelPac');
+      if (!sel || !window._pacientesCache) return;
+      sel.innerHTML = '<option value="">-- Selecione ou preencha abaixo --</option>';
+      window._pacientesCache.forEach(function(p) {
+        sel.innerHTML += '<option value="' + (p.id || '') + '" data-nome="' + (p.nome || '') + '" data-dn="' + (p.dataNascimento || '') + '" data-sexo="' + (p.sexo || '') + '" data-esc="' + (p.escolaridade || '') + '">' + (p.nome || 'Sem nome') + '</option>';
+      });
+    }
+
+    function startTetaylorsimpTest() {
+      var nome = document.getElementById('tetaylorsimpNome').value.trim();
+      var dn = document.getElementById('tetaylorsimpDn').value;
+      var sexo = document.getElementById('tetaylorsimpSexo').value;
+      var esc = document.getElementById('tetaylorsimpEsc').value;
+      if (!nome || !dn) { alert('Preencha nome e data de nascimento.'); return; }
+      var sessionData = {
+        email: currentUser,
+        sessionId: 'tetaylorsimp-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
+        tipo: 'tetaylorsimp',
+        patientName: nome,
+        birthDate: dn,
+        sex: sexo,
+        education: esc || '',
+        obs: document.getElementById('tetaylorsimpObs').value || '',
+        pacienteId: document.getElementById('tetaylorsimpSelPac').value || ''
+      };
+      var params = safeBtoa(JSON.stringify(sessionData));
+      var link = 'https://setmonte.github.io/online/teste-TETaylorSimp.html?d=' + encodeURIComponent(params);
+      window.open(link, '_blank');
+    }
+
+    var _tetaylorsimpResultCache = [];
+    async function loadTetaylorsimpResults() {
+      var el = document.getElementById('tetaylorsimpResultsSection');
+      if (!el) return;
+      el.innerHTML = '<p>Carregando...</p>';
+      try {
+        var resp = await fetch(API_URL + '/get-results?email=' + encodeURIComponent(currentUser) + '&tipo=tetaylorsimp');
+        var data = await resp.json();
+        _tetaylorsimpResultCache = data.results || [];
+        if (_tetaylorsimpResultCache.length === 0) { el.innerHTML = '<p>Nenhum resultado TETaylorSimp encontrado.</p>'; return; }
+        var html = '<h3>Resultados TETaylorSimp</h3><table style="width:100%;border-collapse:collapse;font-size:0.85em;"><tr><th style="padding:6px;border-bottom:2px solid #00695C;">Data</th><th style="text-align:left;padding:6px;border-bottom:2px solid #00695C;">Paciente</th><th style="padding:6px;border-bottom:2px solid #00695C;">Copia</th><th style="padding:6px;border-bottom:2px solid #00695C;">Mem.</th><th style="padding:6px;border-bottom:2px solid #00695C;">Class.</th></tr>';
+        for (var i = 0; i < _tetaylorsimpResultCache.length; i++) {
+          var r = _tetaylorsimpResultCache[i];
+          var d = r.data || {};
+          html += '<tr>';
+          html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (d.data ? new Date(d.data).toLocaleString('pt-BR') : '') + '</td>';
+          html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (d.paciente || '') + '</td>';
+          html += '<td style="padding:5px;border-bottom:1px solid #eee;text-align:center;">' + (d.rawCopia || '-') + '</td>';
+          html += '<td style="padding:5px;border-bottom:1px solid #eee;text-align:center;">' + (d.rawMemIm || d.rawMemTa || '-') + '</td>';
+          html += '<td style="padding:5px;border-bottom:1px solid #eee;font-size:0.8em;">' + (d.classCopia || '') + '</td>';
+          html += '</tr>';
+        }
+        html += '</table>';
+        el.innerHTML = html;
+      } catch(e) { el.innerHTML = '<p>Erro ao carregar resultados.</p>'; }
+    }
+    // ===== FIM FUNCOES TETaylorSimp =====
 
     // ===== FIM FUNCOES TTE =====
 

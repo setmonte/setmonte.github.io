@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-QY1N9587DG"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-QY1N9587DG');</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TETaylorSimp - Teste Eletr&#244;nico da Figura Simplificada de Taylor</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',sans-serif;background:#f5f5f5;min-height:100vh}
+body.cursor-hidden{cursor:none}
+body.cursor-hidden .btn{cursor:none}
+.tela{display:none;width:100%;min-height:100vh;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+.tela.ativa{display:flex}
+#tela-inicio{background:linear-gradient(135deg,#00695C 0%,#004D40 100%)}
+#tela-inicio h1{color:#fff;font-size:2.2em;margin-bottom:5px}
+#tela-inicio .subtitulo{color:#80CBC4;font-size:0.9em;margin-bottom:20px}
+.form-container{background:#fff;border-radius:12px;padding:25px;width:100%;max-width:550px;box-shadow:0 4px 20px rgba(0,0,0,0.3)}
+.form-container label{display:block;font-size:0.8em;color:#555;margin:8px 0 3px;font-weight:600}
+.form-container input,.form-container select{width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:0.9em}
+.form-container input:focus,.form-container select:focus{outline:none;border-color:#00695C}
+.btn{padding:12px 30px;border:none;border-radius:8px;font-size:1em;font-weight:700;cursor:pointer;margin:5px}
+.btn-primary{background:#00695C;color:#fff}
+.btn-primary:hover{background:#004D40}
+.btn-danger{background:#c62828;color:#fff}
+.btn-danger:hover{background:#b71c1c}
+.btn-green{background:#2e7d32;color:#fff}
+.btn-green:hover{background:#1b5e20}
+.info-tecnica{background:#E0F2F1;border-left:4px solid #00695C;padding:12px;border-radius:0 8px 8px 0;margin-bottom:15px;font-size:0.75em;color:#555}
+.instrucao-box{background:#E0F2F1;border:2px solid #00695C;border-radius:12px;padding:20px;margin:15px 0;text-align:left;max-width:550px;width:100%}
+.instrucao-box p{margin-bottom:12px;color:#004D40;font-size:1.5em;line-height:1.8}
+.instrucao-box h3{color:#004D40;margin-bottom:16px;font-size:1.8em}
+.protocolo-box{background:#fff;border:2px solid #80CBC4;border-radius:10px;padding:15px;margin:10px 0}
+.protocolo-box label{display:block;padding:8px 12px;margin:5px 0;border-radius:6px;cursor:pointer;font-size:0.9em;transition:background 0.2s}
+.protocolo-box label:hover{background:#E0F2F1}
+.protocolo-box input[type="radio"]{margin-right:10px;accent-color:#00695C}
+.hidden{display:none !important}
+</style>
+</head>
+<body>
+
+<!-- TELA 1: DADOS + PROTOCOLO -->
+<div id="tela-inicio" class="tela ativa">
+    <h1>&#129504; TETaylorSimp</h1>
+    <p class="subtitulo">Teste Eletr&#244;nico da Figura Simplificada de Taylor</p>
+    <div class="form-container">
+        <div class="info-tecnica">
+            <strong>Instrumento:</strong> Figura Simplificada de Taylor — sTCFT (Taylor, 1969; de Paula et al., 2016)<br>
+            <strong>Avalia:</strong> Constru&#231;&#227;o visuoespacial e mem&#243;ria visual epis&#243;dica<br>
+            <strong>Pontua&#231;&#227;o:</strong> 12 elementos, 0-24 pontos (c&#243;pia e mem&#243;ria)<br>
+            <strong>Normas:</strong> de Paula, Costa, Andrade, &#193;vila &amp; Malloy-Diniz (2016) — N=100<br>
+            <strong>P&#250;blico:</strong> Adultos e idosos com baixa escolaridade
+        </div>
+        <label>Nome do Avaliando:</label>
+        <input type="text" id="nome" placeholder="Nome completo">
+        <label>Data de Nascimento:</label>
+        <input type="date" id="dataNasc" onchange="calcularIdade()">
+        <label>Idade:</label>
+        <input type="text" id="idade" readonly placeholder="Calculada automaticamente" style="background:#E0F2F1;font-weight:700;color:#00695C">
+        <label>Escolaridade (anos de estudo):</label>
+        <input type="number" id="escolaridade" min="0" max="26" placeholder="Ex: 8">
+        <label>Sexo:</label>
+        <select id="sexo">
+            <option value="">Selecione...</option>
+            <option value="Masculino">Masculino</option>
+            <option value="Feminino">Feminino</option>
+        </select>
+        <label>Data da Avalia&#231;&#227;o:</label>
+        <input type="date" id="dataAval">
+        <div class="protocolo-box">
+            <p style="font-weight:bold;color:#004D40;margin-bottom:8px;">Qual protocolo de mem&#243;ria deseja aplicar?</p>
+            <label><input type="radio" name="protocolo" value="imediata" checked> Apenas Mem&#243;ria Imediata (logo ap&#243;s a c&#243;pia)</label>
+            <label><input type="radio" name="protocolo" value="tardia"> Apenas Mem&#243;ria Tardia (ap&#243;s intervalo de 15-20 min)</label>
+            <label><input type="radio" name="protocolo" value="ambas"> Ambas (Imediata + Tardia)</label>
+        </div>
+        <div style="text-align:center;margin-top:15px;">
+            <button class="btn btn-primary" onclick="irParaInstrucoes()">Pr&#243;ximo &#8594;</button>
+        </div>
+    </div>
+</div>
+
+<!-- TELA 2: INSTRUCOES DE MATERIAL -->
+<div id="tela-instrucoes" class="tela">
+    <h2 style="color:#004D40;margin-bottom:15px;">&#128203; Prepara&#231;&#227;o do Material</h2>
+    <div class="instrucao-box">
+        <h3>Antes de iniciar, certifique-se de ter:</h3>
+        <p>&#9989; <strong>2 a 3 folhas A4</strong> em branco (uma para c&#243;pia, outra(s) para mem&#243;ria)</p>
+        <p>&#9989; <strong>L&#225;pis</strong> (tenha mais de um dispon&#237;vel, caso quebre a ponta)</p>
+        <p>&#9989; <strong>Borracha</strong> (opcional — alguns protocolos n&#227;o permitem apagar)</p>
+        <p style="margin-top:15px;padding-top:10px;border-top:1px solid #80CBC4;">
+            &#128161; <strong>Instru&#231;&#227;o ao paciente (C&#243;pia):</strong><br>
+            <em>"Vou mostrar uma figura na tela. Quero que voc&#234; copie essa figura o mais fielmente poss&#237;vel nesta folha. N&#227;o h&#225; limite de tempo, mas vou cronometrar."</em>
+        </p>
+        <p style="margin-top:10px;">
+            &#128161; <strong>Instru&#231;&#227;o ao paciente (Mem&#243;ria):</strong><br>
+            <em>"Agora, sem olhar a figura, desenhe tudo o que voc&#234; se lembrar dela nesta outra folha."</em>
+        </p>
+    </div>
+    <div style="margin-top:20px;">
+        <button class="btn btn-primary" onclick="iniciarCopia()">Iniciar C&#243;pia &#8594;</button>
+    </div>
+</div>
+
+<!-- TELA 3: COPIA (figura + cronometro) -->
+<div id="tela-copia" class="tela" style="background:#fff;padding:10px;justify-content:flex-start;">
+    <div style="background:#004D40;color:#fff;padding:12px 20px;display:flex;justify-content:space-between;align-items:center;width:100%;border-radius:8px;margin-bottom:10px;">
+        <span style="font-size:0.9em;font-weight:600;">FASE: C&#211;PIA</span>
+        <span id="timerCopia" style="font-size:1.8em;font-weight:bold;font-family:monospace;">00:00</span>
+    </div>
+    <div style="flex:1;display:flex;align-items:center;justify-content:center;width:100%;overflow:auto;">
+        <img src="fig-taylor-simp.png" alt="Figura Simplificada de Taylor" style="max-width:95%;max-height:calc(100vh - 150px);object-fit:contain;">
+    </div>
+    <div style="padding:10px;text-align:center;">
+        <button class="btn btn-danger" onclick="finalizarCopia()" style="font-size:1.1em;padding:15px 40px;">&#9209; Finalizar C&#243;pia</button>
+    </div>
+</div>
+
+<!-- TELA 4: MEMORIA IMEDIATA (tela preta + cronometro grande) -->
+<div id="tela-mem-imediata" class="tela" style="background:#000;justify-content:center;">
+    <p style="color:#aaa;font-size:0.9em;margin-bottom:20px;">FASE: MEM&#211;RIA IMEDIATA</p>
+    <div id="timerMemImediata" style="font-size:5em;font-weight:bold;font-family:monospace;color:#fff;">00:00</div>
+    <p style="color:#80CBC4;font-size:0.85em;margin-top:20px;text-align:center;">Pe&#231;a ao paciente para desenhar o que lembra da figura</p>
+    <div style="margin-top:40px;">
+        <button class="btn btn-danger" onclick="finalizarMemImediata()" style="font-size:1.2em;padding:18px 50px;">&#9209; Finalizar Mem&#243;ria Imediata</button>
+    </div>
+</div>
+
+<!-- TELA 5: ESPERA PARA MEMORIA TARDIA (timer regressivo 15 min) -->
+<div id="tela-espera-tardia" class="tela" style="background:linear-gradient(135deg,#1a1a2e,#16213e);justify-content:center;">
+    <p style="color:#aaa;font-size:0.9em;margin-bottom:10px;">INTERVALO — Aplique tarefas verbais durante este per&#237;odo</p>
+    <div id="timerRegressivo" style="font-size:5em;font-weight:bold;font-family:monospace;color:#fff;transition:color 0.5s;">15:00</div>
+    <p id="msgEspera" style="color:#80CBC4;font-size:0.85em;margin-top:20px;text-align:center;">Aguarde o intervalo ou clique para iniciar a mem&#243;ria tardia quando pronto</p>
+    <div style="margin-top:30px;display:flex;gap:15px;">
+        <button class="btn btn-primary" onclick="iniciarMemTardia()" style="font-size:1em;padding:15px 35px;">Iniciar Mem&#243;ria Tardia Agora</button>
+    </div>
+</div>
+
+<!-- TELA 6: MEMORIA TARDIA (tela preta + cronometro grande) -->
+<div id="tela-mem-tardia" class="tela" style="background:#000;justify-content:center;">
+    <p style="color:#aaa;font-size:0.9em;margin-bottom:20px;">FASE: MEM&#211;RIA TARDIA</p>
+    <div id="timerMemTardia" style="font-size:5em;font-weight:bold;font-family:monospace;color:#fff;">00:00</div>
+    <p style="color:#80CBC4;font-size:0.85em;margin-top:20px;text-align:center;">Pe&#231;a ao paciente para desenhar o que lembra da figura</p>
+    <div style="margin-top:40px;">
+        <button class="btn btn-danger" onclick="finalizarMemTardia()" style="font-size:1.2em;padding:18px 50px;">&#9209; Finalizar Mem&#243;ria Tardia</button>
+    </div>
+</div>
+
+<!-- TELA 7: FICHA DE CORRECAO -->
+<div id="tela-correcao" class="tela" style="background:#f5f5f5;justify-content:flex-start;padding:20px;">
+    <div style="max-width:800px;width:100%;margin:0 auto;">
+        <h2 style="color:#004D40;text-align:center;margin-bottom:5px;">&#128203; Ficha de Corre&#231;&#227;o</h2>
+        <p style="text-align:center;color:#555;font-size:0.85em;margin-bottom:15px;">Figura Simplificada de Taylor — 12 elementos</p>
+        <!-- CABECALHO PREENCHIDO -->
+        <div style="background:#fff;border:1px solid #ddd;border-radius:10px;padding:15px;margin-bottom:12px;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:0.85em;">
+                <span><strong>Paciente:</strong> <span id="corrNome"></span></span>
+                <span><strong>Idade:</strong> <span id="corrIdade"></span></span>
+                <span><strong>Escolaridade:</strong> <span id="corrEsc"></span> anos</span>
+                <span><strong>Data:</strong> <span id="corrData"></span></span>
+                <span><strong>Tempo C&#243;pia:</strong> <span id="corrTempoCopia" style="color:#00695C;font-weight:bold;"></span></span>
+                <span id="corrTempoImSpan"><strong>Tempo Mem. Imediata:</strong> <span id="corrTempoMemIm" style="color:#00695C;font-weight:bold;"></span></span>
+                <span id="corrTempoTaSpan" class="hidden"><strong>Tempo Mem. Tardia:</strong> <span id="corrTempoMemTa" style="color:#00695C;font-weight:bold;"></span></span>
+            </div>
+        </div>
+        <!-- CRITERIOS -->
+        <div style="background:#E0F2F1;border-radius:8px;padding:10px;margin-bottom:12px;font-size:0.75em;color:#004D40;">
+            <strong>Crit&#233;rios:</strong> 2 = Precis&#227;o Boa + Localiza&#231;&#227;o Boa | 1 = Boa/Ruim ou Ruim/Boa | 0.5 = Ruim reconhec&#237;vel + Ruim | 0 = Irreconhec&#237;vel/Ausente
+        </div>
+        <!-- TABELA DE ITENS -->
+        <div style="background:#fff;border:1px solid #ddd;border-radius:10px;padding:10px;overflow-x:auto;">
+            <table id="tabelaCorrecao" style="width:100%;border-collapse:collapse;font-size:0.82em;">
+                <thead>
+                    <tr style="background:#004D40;color:#fff;">
+                        <th style="padding:8px;text-align:center;width:35px;">#</th>
+                        <th style="padding:8px;text-align:left;">Elemento</th>
+                        <th style="padding:8px;text-align:center;width:70px;">C&#243;pia</th>
+                        <th id="colMemIm" style="padding:8px;text-align:center;width:70px;">Mem. Im.</th>
+                        <th id="colMemTa" class="hidden" style="padding:8px;text-align:center;width:70px;">Mem. Ta.</th>
+                    </tr>
+                </thead>
+                <tbody id="tbodyCorrecao"></tbody>
+                <tfoot>
+                    <tr style="background:#E0F2F1;font-weight:bold;">
+                        <td colspan="2" style="padding:8px;text-align:right;">TOTAL:</td>
+                        <td style="padding:8px;text-align:center;" id="totalCopia">0</td>
+                        <td style="padding:8px;text-align:center;" id="totalMemIm">0</td>
+                        <td class="hidden" style="padding:8px;text-align:center;" id="totalMemTa">0</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        <!-- ABORDAGEM -->
+        <div style="background:#fff;border:1px solid #ddd;border-radius:10px;padding:15px;margin-top:12px;">
+            <p style="font-weight:bold;color:#004D40;margin-bottom:8px;">Abordagem de c&#243;pia:</p>
+            <label style="margin-right:20px;"><input type="radio" name="abordagem" value="Global" style="accent-color:#00695C;"> Global</label>
+            <label><input type="radio" name="abordagem" value="Detalhe" style="accent-color:#00695C;"> Detalhe</label>
+        </div>
+        <div style="text-align:center;margin-top:20px;">
+            <button class="btn btn-primary" onclick="calcularResultados()" style="font-size:1.1em;padding:15px 40px;">Calcular Resultados</button>
+        </div>
+    </div>
+</div>
+
+<!-- TELA 8: RESULTADOS -->
+<div id="tela-resultados" class="tela" style="background:#f5f5f5;justify-content:flex-start;padding:20px;">
+    <div style="max-width:700px;width:100%;margin:0 auto;" id="divResultados"></div>
+    <div style="text-align:center;margin-top:20px;" id="divBotoesResultado">
+        <button class="btn btn-green" onclick="gerarPDF()" style="font-size:1.1em;padding:15px 40px;">&#128196; Gerar PDF</button>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+// === DADOS ===
+var ITENS = [
+{n:1, desc:'Ret\u00e2ngulo - arma\u00e7\u00e3o da figura'},
+{n:2, desc:'Tri\u00e2ngulo \u00e0 esquerda'},
+{n:3, desc:'Seta na ponta do tri\u00e2ngulo'},
+{n:4, desc:'Linha vertical, centro do ret\u00e2ngulo'},
+{n:5, desc:'Linha horizontal, centro do ret\u00e2ngulo'},
+{n:6, desc:'Tri\u00e2ngulo inferior'},
+{n:7, desc:'Linha pontilhada'},
+{n:8, desc:'Estrela'},
+{n:9, desc:'X, quadrante superior esquerdo'},
+{n:10, desc:'Linha central, quadrante superior'},
+{n:11, desc:'Ret\u00e2ngulo superior'},
+{n:12, desc:'Seta, quadrante superior direito'}
+];
+
+// Normas de Paula et al. (2016) - N=100 idosos brasileiros
+// Media (DP): Copia=20.3(4.0), Evo.Imediata=14.0(4.3), Evo.Tardia=13.8(4.6)
+var NORMAS = {
+    copia: {media: 20.3, dp: 4.0, percentis: {5:11, 10:16, 25:19, 50:22, 75:23, 90:24, 95:24}},
+    imediata: {media: 14.0, dp: 4.3, percentis: {5:6, 10:8, 25:12, 50:14, 75:17, 90:19, 95:20}},
+    tardia: {media: 13.8, dp: 4.6, percentis: {5:5, 10:8, 25:11, 50:14, 75:17, 90:19, 95:21}}
+};
+
+var DELAY_SEGUNDOS = 7;
+var INTERVALO_TARDIA = 15 * 60;
+var _API_URL = 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
+
+// Estado
+var protocolo = 'imediata';
+var timerInterval = null;
+var segundosCopia = 0;
+var segundosMemIm = 0;
+var segundosMemTa = 0;
+var regressivoInterval = null;
+var segundosRestantes = 0;
+var _sessionInfo = null;
+var _resultados = null;
+
+// === FUNCOES UTILITARIAS ===
+function calcularIdade() {
+    var dn = document.getElementById('dataNasc').value;
+    if (!dn) return;
+    var nasc = new Date(dn);
+    var hoje = new Date();
+    var anos = hoje.getFullYear() - nasc.getFullYear();
+    var m = hoje.getMonth() - nasc.getMonth();
+    if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) anos--;
+    document.getElementById('idade').value = anos + ' anos';
+}
+
+function formatarTempo(seg) {
+    var m = Math.floor(seg / 60);
+    var s = seg % 60;
+    return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+}
+
+function trocarTela(id) {
+    var telas = document.querySelectorAll('.tela');
+    for (var i = 0; i < telas.length; i++) telas[i].classList.remove('ativa');
+    document.getElementById(id).classList.add('ativa');
+}
+
+function getProtocolo() {
+    var radios = document.getElementsByName('protocolo');
+    for (var i = 0; i < radios.length; i++) {
+        if (radios[i].checked) return radios[i].value;
+    }
+    return 'imediata';
+}
+
+function obterPercentil(valor, norma) {
+    var pcs = [95, 90, 75, 50, 25, 10, 5];
+    for (var i = 0; i < pcs.length; i++) {
+        if (valor >= norma.percentis[pcs[i]]) return pcs[i];
+    }
+    return 1;
+}
+
+function classificacaoPercentil(pc) {
+    if (pc >= 90) return 'Acima da M\u00e9dia';
+    if (pc >= 75) return 'M\u00e9dio-Superior';
+    if (pc >= 50) return 'M\u00e9dio';
+    if (pc >= 25) return 'M\u00e9dio-Inferior';
+    if (pc >= 10) return 'Lim\u00edtrofe';
+    return 'Deficit\u00e1rio';
+}
+
+function corPercentil(pc) {
+    if (pc >= 90) return '#1565c0';
+    if (pc >= 75) return '#2e7d32';
+    if (pc >= 50) return '#388e3c';
+    if (pc >= 25) return '#f9a825';
+    if (pc >= 10) return '#e65100';
+    return '#c62828';
+}
+
+// === NAVEGACAO ===
+function irParaInstrucoes() {
+    var nome = document.getElementById('nome').value.trim();
+    var dn = document.getElementById('dataNasc').value;
+    var esc = document.getElementById('escolaridade').value;
+    if (!nome) { alert('Preencha o nome do avaliando.'); return; }
+    if (!dn) { alert('Preencha a data de nascimento.'); return; }
+    if (!esc) { alert('Preencha a escolaridade (anos de estudo).'); return; }
+    protocolo = getProtocolo();
+    trocarTela('tela-instrucoes');
+}
+
+// === COPIA ===
+function iniciarCopia() {
+    segundosCopia = 0;
+    trocarTela('tela-copia');
+    if (document.documentElement.requestFullscreen) { document.documentElement.requestFullscreen().catch(function(){}); }
+    else if (document.documentElement.webkitRequestFullscreen) { document.documentElement.webkitRequestFullscreen(); }
+    ocultarCursor();
+    timerInterval = setInterval(function() {
+        segundosCopia++;
+        document.getElementById('timerCopia').textContent = formatarTempo(segundosCopia);
+    }, 1000);
+}
+
+var _cursorTimer = null;
+function ocultarCursor() {
+    document.body.classList.add('cursor-hidden');
+    document.addEventListener('mousemove', mostrarCursorTemporario);
+}
+function mostrarCursorTemporario() {
+    document.body.classList.remove('cursor-hidden');
+    clearTimeout(_cursorTimer);
+    _cursorTimer = setTimeout(function() {
+        document.body.classList.add('cursor-hidden');
+    }, 2000);
+}
+function restaurarCursor() {
+    document.body.classList.remove('cursor-hidden');
+    document.removeEventListener('mousemove', mostrarCursorTemporario);
+    clearTimeout(_cursorTimer);
+}
+
+function finalizarCopia() {
+    clearInterval(timerInterval);
+    segundosCopia = Math.max(0, segundosCopia - DELAY_SEGUNDOS);
+    if (protocolo === 'imediata' || protocolo === 'ambas') {
+        iniciarMemoriaImediata();
+    } else if (protocolo === 'tardia') {
+        iniciarEsperaTardia();
+    }
+}
+
+// === MEMORIA IMEDIATA ===
+function iniciarMemoriaImediata() {
+    segundosMemIm = 0;
+    trocarTela('tela-mem-imediata');
+    timerInterval = setInterval(function() {
+        segundosMemIm++;
+        document.getElementById('timerMemImediata').textContent = formatarTempo(segundosMemIm);
+    }, 1000);
+}
+
+function finalizarMemImediata() {
+    clearInterval(timerInterval);
+    segundosMemIm = Math.max(0, segundosMemIm - DELAY_SEGUNDOS);
+    if (protocolo === 'ambas') {
+        iniciarEsperaTardia();
+    } else {
+        mostrarFichaCorrecao();
+    }
+}
+
+// === ESPERA PARA TARDIA (cronometro regressivo) ===
+function iniciarEsperaTardia() {
+    segundosRestantes = INTERVALO_TARDIA;
+    trocarTela('tela-espera-tardia');
+    document.getElementById('timerRegressivo').textContent = formatarTempo(segundosRestantes);
+    document.getElementById('timerRegressivo').style.color = '#fff';
+    regressivoInterval = setInterval(function() {
+        segundosRestantes--;
+        document.getElementById('timerRegressivo').textContent = formatarTempo(segundosRestantes);
+        if (segundosRestantes <= 120 && segundosRestantes > 60) {
+            var el = document.getElementById('timerRegressivo');
+            el.style.color = (segundosRestantes % 2 === 0) ? '#FF9800' : '#FFB74D';
+        }
+        if (segundosRestantes <= 60 && segundosRestantes > 0) {
+            var el = document.getElementById('timerRegressivo');
+            el.style.color = (segundosRestantes % 2 === 0) ? '#f44336' : '#ef5350';
+        }
+        if (segundosRestantes <= 0) {
+            clearInterval(regressivoInterval);
+            document.getElementById('timerRegressivo').textContent = '00:00';
+            document.getElementById('timerRegressivo').style.color = '#f44336';
+            document.getElementById('msgEspera').textContent = 'Tempo esgotado! Inicie a mem\u00f3ria tardia.';
+            tocarAlerta(2);
+        }
+    }, 1000);
+}
+
+function tocarAlerta(vezes) {
+    var ctx = new (window.AudioContext || window.webkitAudioContext)();
+    function beep(i) {
+        if (i >= vezes) return;
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = 880;
+        gain.gain.value = 0.3;
+        osc.start(ctx.currentTime + i * 0.4);
+        osc.stop(ctx.currentTime + i * 0.4 + 0.2);
+        beep(i + 1);
+    }
+    beep(0);
+}
+
+// === MEMORIA TARDIA ===
+function iniciarMemTardia() {
+    clearInterval(regressivoInterval);
+    segundosMemTa = 0;
+    trocarTela('tela-mem-tardia');
+    timerInterval = setInterval(function() {
+        segundosMemTa++;
+        document.getElementById('timerMemTardia').textContent = formatarTempo(segundosMemTa);
+    }, 1000);
+}
+
+function finalizarMemTardia() {
+    clearInterval(timerInterval);
+    segundosMemTa = Math.max(0, segundosMemTa - DELAY_SEGUNDOS);
+    mostrarFichaCorrecao();
+}
+
+// === FICHA DE CORRECAO ===
+function mostrarFichaCorrecao() {
+    restaurarCursor();
+    if (document.exitFullscreen) { document.exitFullscreen().catch(function(){}); }
+    else if (document.webkitExitFullscreen) { document.webkitExitFullscreen(); }
+    trocarTela('tela-correcao');
+    document.getElementById('corrNome').textContent = document.getElementById('nome').value;
+    document.getElementById('corrIdade').textContent = document.getElementById('idade').value;
+    document.getElementById('corrEsc').textContent = document.getElementById('escolaridade').value;
+    var da = document.getElementById('dataAval').value;
+    document.getElementById('corrData').textContent = da ? new Date(da + 'T12:00:00').toLocaleDateString('pt-BR') : new Date().toLocaleDateString('pt-BR');
+    document.getElementById('corrTempoCopia').textContent = formatarTempo(segundosCopia);
+    var mostrarIm = (protocolo === 'imediata' || protocolo === 'ambas');
+    var mostrarTa = (protocolo === 'tardia' || protocolo === 'ambas');
+    document.getElementById('colMemIm').className = mostrarIm ? '' : 'hidden';
+    document.getElementById('totalMemIm').className = mostrarIm ? '' : 'hidden';
+    document.getElementById('corrTempoImSpan').className = mostrarIm ? '' : 'hidden';
+    document.getElementById('colMemTa').className = mostrarTa ? '' : 'hidden';
+    document.getElementById('totalMemTa').className = mostrarTa ? '' : 'hidden';
+    document.getElementById('corrTempoTaSpan').className = mostrarTa ? '' : 'hidden';
+    if (mostrarIm) document.getElementById('corrTempoMemIm').textContent = formatarTempo(segundosMemIm);
+    if (mostrarTa) document.getElementById('corrTempoMemTa').textContent = formatarTempo(segundosMemTa);
+    var tbody = document.getElementById('tbodyCorrecao');
+    tbody.innerHTML = '';
+    var opcoes = '<option value="">-</option><option value="0">0</option><option value="0.5">0.5</option><option value="1">1</option><option value="2">2</option>';
+    for (var i = 0; i < ITENS.length; i++) {
+        var tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid #eee';
+        var tdN = '<td style="padding:6px;text-align:center;font-weight:bold;color:#00695C;">' + ITENS[i].n + '</td>';
+        var tdDesc = '<td style="padding:6px;">' + ITENS[i].desc + '</td>';
+        var tdCop = '<td style="padding:6px;text-align:center;"><select id="cop_' + i + '" onchange="atualizarTotais()" style="width:55px;padding:3px;border-radius:4px;border:1px solid #ccc;">' + opcoes + '</select></td>';
+        var tdIm = mostrarIm ? '<td style="padding:6px;text-align:center;"><select id="mim_' + i + '" onchange="atualizarTotais()" style="width:55px;padding:3px;border-radius:4px;border:1px solid #ccc;">' + opcoes + '</select></td>' : '';
+        var tdTa = mostrarTa ? '<td style="padding:6px;text-align:center;"><select id="mta_' + i + '" onchange="atualizarTotais()" style="width:55px;padding:3px;border-radius:4px;border:1px solid #ccc;">' + opcoes + '</select></td>' : '';
+        tr.innerHTML = tdN + tdDesc + tdCop + tdIm + tdTa;
+        tbody.appendChild(tr);
+    }
+}
+
+function atualizarTotais() {
+    var mostrarIm = (protocolo === 'imediata' || protocolo === 'ambas');
+    var mostrarTa = (protocolo === 'tardia' || protocolo === 'ambas');
+    var tCop = 0, tIm = 0, tTa = 0;
+    for (var i = 0; i < ITENS.length; i++) {
+        var vc = document.getElementById('cop_' + i);
+        if (vc && vc.value) tCop += parseFloat(vc.value);
+        if (mostrarIm) { var vi = document.getElementById('mim_' + i); if (vi && vi.value) tIm += parseFloat(vi.value); }
+        if (mostrarTa) { var vt = document.getElementById('mta_' + i); if (vt && vt.value) tTa += parseFloat(vt.value); }
+    }
+    document.getElementById('totalCopia').textContent = tCop.toFixed(1);
+    if (mostrarIm) document.getElementById('totalMemIm').textContent = tIm.toFixed(1);
+    if (mostrarTa) document.getElementById('totalMemTa').textContent = tTa.toFixed(1);
+}
+
+// === CALCULAR RESULTADOS (Normas de Paula et al., 2016) ===
+function calcularResultados() {
+    atualizarTotais();
+    var totalCop = parseFloat(document.getElementById('totalCopia').textContent) || 0;
+    var totalIm = parseFloat(document.getElementById('totalMemIm').textContent) || 0;
+    var totalTa = parseFloat(document.getElementById('totalMemTa').textContent) || 0;
+    var idadeNum = parseInt(document.getElementById('idade').value) || 70;
+    var escNum = parseInt(document.getElementById('escolaridade').value) || 8;
+    var mostrarIm = (protocolo === 'imediata' || protocolo === 'ambas');
+    var mostrarTa = (protocolo === 'tardia' || protocolo === 'ambas');
+    // Calcular Z-score
+    var zCopia = (totalCop - NORMAS.copia.media) / NORMAS.copia.dp;
+    var zMemIm = mostrarIm ? (totalIm - NORMAS.imediata.media) / NORMAS.imediata.dp : null;
+    var zMemTa = mostrarTa ? (totalTa - NORMAS.tardia.media) / NORMAS.tardia.dp : null;
+    // Percentis
+    var pcCopia = obterPercentil(totalCop, NORMAS.copia);
+    var pcMemIm = mostrarIm ? obterPercentil(totalIm, NORMAS.imediata) : null;
+    var pcMemTa = mostrarTa ? obterPercentil(totalTa, NORMAS.tardia) : null;
+    // Abordagem
+    var abordagem = '';
+    var radiosAb = document.getElementsByName('abordagem');
+    for (var i = 0; i < radiosAb.length; i++) { if (radiosAb[i].checked) abordagem = radiosAb[i].value; }
+    // Montar resultados
+    _resultados = {
+        escala: 'TETaylorSimp',
+        paciente: document.getElementById('nome').value,
+        idade: document.getElementById('idade').value,
+        idadeNum: idadeNum,
+        escolaridade: escNum,
+        sexo: document.getElementById('sexo').value,
+        data: document.getElementById('dataAval').value || new Date().toISOString().split('T')[0],
+        protocolo: protocolo,
+        abordagem: abordagem,
+        tempoCopia: segundosCopia,
+        tempoMemIm: segundosMemIm,
+        tempoMemTa: segundosMemTa,
+        rawCopia: totalCop,
+        rawMemIm: totalIm,
+        rawMemTa: totalTa,
+        zCopia: zCopia,
+        zMemIm: zMemIm,
+        zMemTa: zMemTa,
+        pcCopia: pcCopia,
+        pcMemIm: pcMemIm,
+        pcMemTa: pcMemTa,
+        classCopia: classificacaoPercentil(pcCopia),
+        classMemIm: mostrarIm ? classificacaoPercentil(pcMemIm) : null,
+        classMemTa: mostrarTa ? classificacaoPercentil(pcMemTa) : null
+    };
+    window._escalaDados = _resultados;
+    // Exibir resultados
+    var html = '<h2 style="color:#004D40;text-align:center;margin-bottom:15px;">Resultados</h2>';
+    html += '<div style="background:#fff;border:1px solid #ddd;border-radius:10px;padding:20px;">';
+    html += '<p style="font-size:0.9em;color:#555;margin-bottom:15px;"><strong>' + _resultados.paciente + '</strong> | ' + _resultados.idade + ' | Escolaridade: ' + _resultados.escolaridade + ' anos</p>';
+    // Card Copia
+    html += '<div style="background:#E0F2F1;border-left:4px solid #00695C;border-radius:0 8px 8px 0;padding:12px;margin-bottom:10px;">';
+    html += '<strong>C\u00f3pia</strong><br>';
+    html += 'Bruto: ' + totalCop.toFixed(1) + '/24 | Z-score: ' + zCopia.toFixed(2) + ' | Percentil: ' + pcCopia + '<br>';
+    html += '<span style="color:' + corPercentil(pcCopia) + ';font-weight:bold;">' + _resultados.classCopia + '</span>';
+    html += ' | Tempo: ' + formatarTempo(segundosCopia);
+    if (abordagem) html += ' | Abordagem: ' + abordagem;
+    html += '</div>';
+    if (mostrarIm) {
+        html += '<div style="background:#E8F5E9;border-left:4px solid #2e7d32;border-radius:0 8px 8px 0;padding:12px;margin-bottom:10px;">';
+        html += '<strong>Mem\u00f3ria Imediata</strong><br>';
+        html += 'Bruto: ' + totalIm.toFixed(1) + '/24 | Z-score: ' + zMemIm.toFixed(2) + ' | Percentil: ' + pcMemIm + '<br>';
+        html += '<span style="color:' + corPercentil(pcMemIm) + ';font-weight:bold;">' + _resultados.classMemIm + '</span>';
+        html += ' | Tempo: ' + formatarTempo(segundosMemIm);
+        html += '</div>';
+    }
+    if (mostrarTa) {
+        html += '<div style="background:#E3F2FD;border-left:4px solid #1565c0;border-radius:0 8px 8px 0;padding:12px;margin-bottom:10px;">';
+        html += '<strong>Mem\u00f3ria Tardia</strong><br>';
+        html += 'Bruto: ' + totalTa.toFixed(1) + '/24 | Z-score: ' + zMemTa.toFixed(2) + ' | Percentil: ' + pcMemTa + '<br>';
+        html += '<span style="color:' + corPercentil(pcMemTa) + ';font-weight:bold;">' + _resultados.classMemTa + '</span>';
+        html += ' | Tempo: ' + formatarTempo(segundosMemTa);
+        html += '</div>';
+    }
+    html += '<p style="font-size:0.7em;color:#999;margin-top:12px;">Normas: de Paula, Costa, Andrade, \u00c1vila & Malloy-Diniz (2016). N=100 idosos brasileiros (M\u00e9dia 72.7 anos, Escolaridade 0-26 anos)</p>';
+    html += '</div>';
+    document.getElementById('divResultados').innerHTML = html;
+    trocarTela('tela-resultados');
+    if (_sessionInfo) { enviarResultados(); }
+}
+
+// === ANALISE IA (via Lambda) ===
+async function gerarAnaliseIA() {
+    if (!_resultados) return '';
+    var r = _resultados;
+    var prompt = 'Voce e um neuropsicologo experiente. Gere uma ANALISE CLINICA breve (maximo 8 linhas) ' +
+        'baseada nos resultados abaixo do Teste da Figura Simplificada de Taylor (sTCFT - construcao visuoespacial e memoria visual episodica).\n\n' +
+        'DADOS DO PACIENTE:\n' +
+        '- Idade: ' + r.idade + '\n' +
+        '- Escolaridade: ' + r.escolaridade + ' anos\n' +
+        '- Sexo: ' + (r.sexo || 'N/I') + '\n\n' +
+        'RESULTADOS:\n' +
+        '- Protocolo: ' + (r.protocolo === 'ambas' ? 'Imediata + Tardia' : r.protocolo === 'imediata' ? 'Memoria Imediata' : 'Memoria Tardia') + '\n' +
+        '- Copia: Bruto=' + r.rawCopia.toFixed(1) + '/24, Z=' + r.zCopia.toFixed(2) + ', Percentil=' + r.pcCopia + ' (' + r.classCopia + ')\n' +
+        '- Tempo Copia: ' + formatarTempo(r.tempoCopia) + '\n' +
+        '- Abordagem: ' + (r.abordagem || 'N/I') + '\n';
+    if (r.pcMemIm !== null) {
+        prompt += '- Memoria Imediata: Bruto=' + r.rawMemIm.toFixed(1) + '/24, Z=' + r.zMemIm.toFixed(2) + ', Percentil=' + r.pcMemIm + ' (' + r.classMemIm + ')\n';
+        prompt += '- Tempo Mem. Imediata: ' + formatarTempo(r.tempoMemIm) + '\n';
+    }
+    if (r.pcMemTa !== null) {
+        prompt += '- Memoria Tardia: Bruto=' + r.rawMemTa.toFixed(1) + '/24, Z=' + r.zMemTa.toFixed(2) + ', Percentil=' + r.pcMemTa + ' (' + r.classMemTa + ')\n';
+        prompt += '- Tempo Mem. Tardia: ' + formatarTempo(r.tempoMemTa) + '\n';
+    }
+    prompt += '- Normas: de Paula et al. (2016) - N=100 idosos brasileiros\n\n' +
+        'INSTRUCOES:\n' +
+        '- Escreva em portugues brasileiro, linguagem tecnica mas acessivel\n' +
+        '- Interprete os escores em relacao ao esperado para a populacao normativa\n' +
+        '- Mencione habilidades avaliadas: construcao visuoespacial, planejamento visuomotor, memoria visual episodica\n' +
+        '- Compare desempenho na copia vs memoria (se aplicavel)\n' +
+        '- Comente se o tempo de execucao sugere lentificacao ou impulsividade\n' +
+        '- NAO inclua recomendacoes de tratamento\n' +
+        '- NAO repita os numeros brutos, interprete-os clinicamente\n' +
+        '- Termine com uma conclusao sobre o funcionamento visuoespacial e mnesico global';
+    try {
+        var resp = await fetch(_API_URL + '/generate-ai', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt: prompt })
+        });
+        if (!resp.ok) return '';
+        var data = await resp.json();
+        return (data.text || '').trim();
+    } catch(e) {
+        return '';
+    }
+}
+
+// === GERAR PDF ===
+async function gerarPDF() {
+    if (!_resultados) { alert('Calcule os resultados primeiro.'); return; }
+    var textoIA = await gerarAnaliseIA();
+    var jsPDF = window.jspdf.jsPDF;
+    var doc = new jsPDF();
+    var r = _resultados;
+    var y = 0;
+    // PAGINA 1 - Cabecalho
+    doc.setFillColor(0, 105, 92);
+    doc.rect(0, 0, 210, 30, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(14);
+    doc.setFont(undefined, 'bold');
+    doc.text('TESTE ELETRONICO DA FIGURA SIMPLIFICADA DE TAYLOR', 105, 12, {align:'center'});
+    doc.setFontSize(9);
+    doc.setFont(undefined, 'normal');
+    doc.text('Construcao visuoespacial e memoria visual episodica (sTCFT)', 105, 19, {align:'center'});
+    doc.text('Taylor (1969) | de Paula, Costa, Andrade, Avila & Malloy-Diniz (2016)', 105, 25, {align:'center'});
+    // Dados pessoais
+    y = 38;
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'bold');
+    doc.text('DADOS DO AVALIANDO', 20, y); y += 7;
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(9);
+    doc.text('Nome: ' + r.paciente, 20, y); y += 5;
+    doc.text('Idade: ' + r.idade + '     Sexo: ' + (r.sexo || '-'), 20, y); y += 5;
+    doc.text('Escolaridade: ' + r.escolaridade + ' anos', 20, y); y += 5;
+    var dataF = r.data ? new Date(r.data + 'T12:00:00').toLocaleDateString('pt-BR') : '';
+    doc.text('Data da Avaliacao: ' + dataF, 20, y); y += 5;
+    doc.text('Protocolo: ' + (r.protocolo === 'ambas' ? 'Imediata + Tardia' : r.protocolo === 'imediata' ? 'Memoria Imediata' : 'Memoria Tardia'), 20, y); y += 5;
+    if (r.abordagem) { doc.text('Abordagem de copia: ' + r.abordagem, 20, y); y += 5; }
+    y += 7;
+    // Resultados
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(10);
+    doc.text('RESULTADOS', 20, y); y += 8;
+    doc.setFontSize(9);
+    doc.setFont(undefined, 'normal');
+    // Tabela
+    doc.setFillColor(224, 242, 241);
+    doc.rect(20, y, 170, 7, 'F');
+    doc.setFont(undefined, 'bold');
+    doc.text('Medida', 22, y + 5);
+    doc.text('Bruto', 70, y + 5);
+    doc.text('Z-score', 90, y + 5);
+    doc.text('Percentil', 115, y + 5);
+    doc.text('Classificacao', 140, y + 5);
+    y += 9;
+    doc.setFont(undefined, 'normal');
+    doc.text('Copia', 22, y + 5);
+    doc.text(r.rawCopia.toFixed(1) + '/24', 70, y + 5);
+    doc.text(r.zCopia.toFixed(2), 90, y + 5);
+    doc.text('Pc ' + r.pcCopia, 115, y + 5);
+    doc.text(r.classCopia, 140, y + 5);
+    y += 7; doc.line(20, y, 190, y);
+    if (r.pcMemIm !== null) {
+        doc.text('Mem. Imediata', 22, y + 5);
+        doc.text(r.rawMemIm.toFixed(1) + '/24', 70, y + 5);
+        doc.text(r.zMemIm.toFixed(2), 90, y + 5);
+        doc.text('Pc ' + r.pcMemIm, 115, y + 5);
+        doc.text(r.classMemIm, 140, y + 5);
+        y += 7; doc.line(20, y, 190, y);
+    }
+    if (r.pcMemTa !== null) {
+        doc.text('Mem. Tardia', 22, y + 5);
+        doc.text(r.rawMemTa.toFixed(1) + '/24', 70, y + 5);
+        doc.text(r.zMemTa.toFixed(2), 90, y + 5);
+        doc.text('Pc ' + r.pcMemTa, 115, y + 5);
+        doc.text(r.classMemTa, 140, y + 5);
+        y += 7; doc.line(20, y, 190, y);
+    }
+    y += 10;
+    // Tempos
+    doc.setFont(undefined, 'bold');
+    doc.text('TEMPOS DE EXECUCAO', 20, y); y += 7;
+    doc.setFont(undefined, 'normal');
+    doc.text('Copia: ' + formatarTempo(r.tempoCopia), 22, y); y += 5;
+    if (r.tempoMemIm > 0) { doc.text('Memoria Imediata: ' + formatarTempo(r.tempoMemIm), 22, y); y += 5; }
+    if (r.tempoMemTa > 0) { doc.text('Memoria Tardia: ' + formatarTempo(r.tempoMemTa), 22, y); y += 5; }
+    y += 8;
+    // Tabela de percentis
+    doc.setFont(undefined, 'bold');
+    doc.text('TABELA DE PERCENTIS (de Paula et al., 2016, N=100)', 20, y); y += 7;
+    doc.setFontSize(8);
+    doc.setFont(undefined, 'normal');
+    doc.text('Pc      Copia      Evo. Imediata      Evo. Tardia', 22, y); y += 5;
+    doc.text('95       24              20                   21', 22, y); y += 4;
+    doc.text('90       24              19                   19', 22, y); y += 4;
+    doc.text('75       23              17                   17', 22, y); y += 4;
+    doc.text('50       22              14                   14', 22, y); y += 4;
+    doc.text('25       19              12                   11', 22, y); y += 4;
+    doc.text('10       16               8                    8', 22, y); y += 4;
+    doc.text(' 5       11               6                    5', 22, y); y += 8;
+    // Analise IA
+    if (textoIA) {
+        doc.setFontSize(9);
+        doc.setTextColor(0, 0, 0);
+        doc.setFont(undefined, 'bold');
+        doc.text('ANALISE CLINICA (IA)', 22, y); y += 6;
+        doc.setFont(undefined, 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(50, 50, 50);
+        var linhasIA = doc.splitTextToSize(textoIA, 166);
+        for (var li = 0; li < linhasIA.length; li++) {
+            if (y > 275) { doc.addPage(); y = 20; }
+            doc.text(linhasIA[li], 22, y); y += 4;
+        }
+    }
+    // Rodape
+    doc.setFontSize(7);
+    doc.setTextColor(150, 150, 150);
+    doc.text('Gerado em: ' + new Date().toLocaleString('pt-BR') + ' | TETaylorSimp - setmonte.github.io', 105, 287, {align:'center'});
+    // PAGINA 2 - Referencias
+    doc.addPage();
+    y = 20;
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'bold');
+    doc.text('REFERENCIAS', 20, y); y += 8;
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(8);
+    var refs = [
+        'DE PAULA, J. J.; COSTA, M. V.; ANDRADE, G. D. F. D.; AVILA, R. T.; MALLOY-DINIZ, L. F. Validity and',
+        '   reliability of a \"simplified\" version of the Taylor Complex Figure Test for the assessment of older',
+        '   adults with low formal education. Dementia & Neuropsychologia, v. 10, n. 1, p. 52-57, 2016.',
+        '   DOI: 10.1590/S1980-5764-2016DN1001009',
+        '',
+        'TAYLOR, L. B. Localization of cerebral lesions by psychological testing. Clinical Neurosurgery,',
+        '   v. 16, p. 269-287, 1969.',
+        '',
+        'SPREEN, E.; STRAUSS, E. M. S.; SHERMAN, O. A Compendium of Neuropsychological Tests: Administration,',
+        '   Norms, and Commentary. 3rd ed. New York: Oxford University Press, 2006.'
+    ];
+    for (var i = 0; i < refs.length; i++) {
+        doc.text(refs[i], 20, y); y += 4;
+    }
+    // Salvar
+    var ts = new Date();
+    var nomeArq = 'TETaylorSimp_' + r.paciente.replace(/\s+/g, '_') + '_' + ts.getFullYear() + String(ts.getMonth()+1).padStart(2,'0') + String(ts.getDate()).padStart(2,'0') + String(ts.getHours()).padStart(2,'0') + String(ts.getMinutes()).padStart(2,'0') + '.pdf';
+    doc.save(nomeArq);
+}
+
+// === ENVIAR RESULTADOS AO PAINEL ===
+async function enviarResultados() {
+    if (!_resultados) return;
+    if (!_sessionInfo) return;
+    var dados = _resultados;
+    dados.idPaciente = '';
+    dados.pacienteId = _sessionInfo.pacienteId || '';
+    var divBtn = document.getElementById('divBotoesResultado');
+    try {
+        var resp = await fetch(_API_URL + '/save-escala', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({sessionId: _sessionInfo.sessionId, email: _sessionInfo.email, data: dados, originalSessionId: _sessionInfo.sessionId})
+        });
+        var result = await resp.json();
+        if (result.ok || resp.ok) {
+            if (divBtn) divBtn.innerHTML = '<div style="background:#c8e6c9;border:2px solid #2e7d32;border-radius:10px;padding:15px;text-align:center;margin-top:10px;"><p style="color:#2e7d32;font-weight:bold;font-size:1.1em;">Resultados enviados ao painel com sucesso!</p></div>' + '<div style="margin-top:15px;"><button class="btn btn-green" onclick="gerarPDF()" style="font-size:1em;padding:12px 30px;">Gerar PDF</button></div>';
+        }
+    } catch(e) {}
+}
+
+// === MODO PAINEL (decodificar URL) ===
+function _decodificarURL() {
+    var params = new URLSearchParams(window.location.search);
+    var d = params.get('d');
+    if (!d) return;
+    try {
+        var dados = JSON.parse(atob(d));
+        _sessionInfo = dados;
+        if (dados.patientName) document.getElementById('nome').value = dados.patientName;
+        if (dados.birthDate) { document.getElementById('dataNasc').value = dados.birthDate; calcularIdade(); }
+        if (dados.sex) document.getElementById('sexo').value = dados.sex;
+        if (dados.education) document.getElementById('escolaridade').value = dados.education;
+    } catch(e) {}
+}
+
+// === INICIALIZACAO ===
+document.getElementById('dataAval').value = new Date().toISOString().split('T')[0];
+var params = new URLSearchParams(window.location.search);
+if (params.get('s')) {
+    fetch(_API_URL + '/get-session?id=' + params.get('s')).then(function(r){
+        if(r.status===410){
+            document.body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#E0F2F1,#B2DFDB);text-align:center;padding:20px;"><h1 style="color:#c62828;font-size:24px;margin-bottom:10px;">Este link j\u00e1 foi utilizado.</h1><p style="font-size:16px;color:#555;">Solicite um novo link ao seu avaliador.</p></div>';
+            throw new Error('link_usado');
+        }
+        return r.json();
+    }).then(function(data){
+        if(data.sessionId){
+            _sessionInfo=data;
+            if(data.patientName)document.getElementById('nome').value=data.patientName;
+            if(data.birthDate){document.getElementById('dataNasc').value=data.birthDate;calcularIdade();}
+            if(data.sex)document.getElementById('sexo').value=data.sex;
+            if(data.education)document.getElementById('escolaridade').value=data.education;
+            var els=document.querySelectorAll('.info-tecnica');
+            els.forEach(function(el){el.style.display='none';});
+        }
+    }).catch(function(){});
+} else if (params.get('d')) {
+    _decodificarURL();
+}
+
+</script>
+</body>
+</html>
