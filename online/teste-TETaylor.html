@@ -9,6 +9,8 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Segoe UI',sans-serif;background:#f5f5f5;min-height:100vh}
+body.cursor-hidden{cursor:none}
+body.cursor-hidden .btn{cursor:none}
 .tela{display:none;width:100%;min-height:100vh;flex-direction:column;align-items:center;justify-content:center;padding:20px}
 .tela.ativa{display:flex}
 #tela-inicio{background:linear-gradient(135deg,#6A1B9A 0%,#4A148C 100%)}
@@ -27,8 +29,8 @@ body{font-family:'Segoe UI',sans-serif;background:#f5f5f5;min-height:100vh}
 .btn-green:hover{background:#1b5e20}
 .info-tecnica{background:#F3E5F5;border-left:4px solid #6A1B9A;padding:12px;border-radius:0 8px 8px 0;margin-bottom:15px;font-size:0.75em;color:#555}
 .instrucao-box{background:#F3E5F5;border:2px solid #6A1B9A;border-radius:12px;padding:20px;margin:15px 0;text-align:left;max-width:550px;width:100%}
-.instrucao-box p{margin-bottom:8px;color:#4A148C;font-size:0.95em;line-height:1.6}
-.instrucao-box h3{color:#4A148C;margin-bottom:12px}
+.instrucao-box p{margin-bottom:12px;color:#4A148C;font-size:1.5em;line-height:1.8}
+.instrucao-box h3{color:#4A148C;margin-bottom:16px;font-size:1.8em}
 .protocolo-box{background:#fff;border:2px solid #CE93D8;border-radius:10px;padding:15px;margin:10px 0}
 .protocolo-box label{display:block;padding:8px 12px;margin:5px 0;border-radius:6px;cursor:pointer;font-size:0.9em;transition:background 0.2s}
 .protocolo-box label:hover{background:#F3E5F5}
@@ -196,9 +198,8 @@ body{font-family:'Segoe UI',sans-serif;background:#f5f5f5;min-height:100vh}
 <!-- TELA 8: RESULTADOS -->
 <div id="tela-resultados" class="tela" style="background:#f5f5f5;justify-content:flex-start;padding:20px;">
     <div style="max-width:700px;width:100%;margin:0 auto;" id="divResultados"></div>
-    <div style="text-align:center;margin-top:20px;">
+    <div style="text-align:center;margin-top:20px;" id="divBotoesResultado">
         <button class="btn btn-green" onclick="gerarPDF()" style="font-size:1.1em;padding:15px 40px;">&#128196; Gerar PDF</button>
-        <button class="btn btn-primary" onclick="enviarResultados()" style="font-size:1em;padding:12px 30px;">Enviar ao Painel</button>
     </div>
 </div>
 
@@ -289,10 +290,33 @@ function irParaInstrucoes() {
 function iniciarCopia() {
     segundosCopia = 0;
     trocarTela('tela-copia');
+    // Entrar em tela cheia
+    if (document.documentElement.requestFullscreen) { document.documentElement.requestFullscreen().catch(function(){}); }
+    else if (document.documentElement.webkitRequestFullscreen) { document.documentElement.webkitRequestFullscreen(); }
+    // Ocultar cursor
+    ocultarCursor();
     timerInterval = setInterval(function() {
         segundosCopia++;
         document.getElementById('timerCopia').textContent = formatarTempo(segundosCopia);
     }, 1000);
+}
+
+var _cursorTimer = null;
+function ocultarCursor() {
+    document.body.classList.add('cursor-hidden');
+    document.addEventListener('mousemove', mostrarCursorTemporario);
+}
+function mostrarCursorTemporario() {
+    document.body.classList.remove('cursor-hidden');
+    clearTimeout(_cursorTimer);
+    _cursorTimer = setTimeout(function() {
+        document.body.classList.add('cursor-hidden');
+    }, 2000);
+}
+function restaurarCursor() {
+    document.body.classList.remove('cursor-hidden');
+    document.removeEventListener('mousemove', mostrarCursorTemporario);
+    clearTimeout(_cursorTimer);
 }
 
 function finalizarCopia() {
@@ -392,6 +416,10 @@ function finalizarMemTardia() {
 
 // === FICHA DE CORRECAO ===
 function mostrarFichaCorrecao() {
+    // Sair da tela cheia e restaurar cursor
+    restaurarCursor();
+    if (document.exitFullscreen) { document.exitFullscreen().catch(function(){}); }
+    else if (document.webkitExitFullscreen) { document.webkitExitFullscreen(); }
     trocarTela('tela-correcao');
     // Preencher cabecalho
     document.getElementById('corrNome').textContent = document.getElementById('nome').value;
@@ -549,11 +577,62 @@ function calcularResultados() {
     html += '</div>';
     document.getElementById('divResultados').innerHTML = html;
     trocarTela('tela-resultados');
+    // Enviar automaticamente ao painel se veio pelo painel
+    if (_sessionInfo) { enviarResultados(); }
+}
+
+// === ANALISE IA (via Lambda) ===
+async function gerarAnaliseIA() {
+    if (!_resultados) return '';
+    var r = _resultados;
+    var prompt = 'Voce e um neuropsicologo experiente. Gere uma ANALISE CLINICA breve (maximo 8 linhas) ' +
+        'baseada nos resultados abaixo do Teste da Figura Complexa de Taylor (construcao visuoespacial e memoria visual episodica).\n\n' +
+        'DADOS DO PACIENTE:\n' +
+        '- Idade: ' + r.idade + '\n' +
+        '- Escolaridade: ' + r.escolaridade + ' anos\n' +
+        '- Sexo: ' + (r.sexo || 'N/I') + '\n\n' +
+        'RESULTADOS:\n' +
+        '- Protocolo: ' + (r.protocolo === 'ambas' ? 'Imediata + Tardia' : r.protocolo === 'imediata' ? 'Memoria Imediata' : 'Memoria Tardia') + '\n' +
+        '- Copia: Bruto=' + r.rawCopia.toFixed(1) + '/36, Ajustado=' + r.ajCopia.toFixed(2) + ', Escore Eq.=' + r.eqCopia + ' (' + r.classCopia + ')\n' +
+        '- Tempo Copia: ' + formatarTempo(r.tempoCopia) + '\n';
+    if (r.eqMemIm !== null) {
+        prompt += '- Memoria Imediata: Bruto=' + r.rawMemIm.toFixed(1) + '/36, Ajustado=' + r.ajMemIm.toFixed(2) + ', Escore Eq.=' + r.eqMemIm + ' (' + r.classMemIm + ')\n';
+        prompt += '- Tempo Mem. Imediata: ' + formatarTempo(r.tempoMemIm) + '\n';
+    }
+    if (r.eqMemTa !== null) {
+        prompt += '- Memoria Tardia: Bruto=' + r.rawMemTa.toFixed(1) + '/36, Ajustado=' + r.ajMemTa.toFixed(2) + ', Escore Eq.=' + r.eqMemTa + ' (' + r.classMemTa + ')\n';
+        prompt += '- Tempo Mem. Tardia: ' + formatarTempo(r.tempoMemTa) + '\n';
+    }
+    prompt += '- Cut-off Copia: <= 27.66 | Cut-off Memoria: <= 8.4\n' +
+        '- Normas: Casarotti, Papagno & Zarino (2014) - 290 adultos italianos\n\n' +
+        'INSTRUCOES:\n' +
+        '- Escreva em portugues brasileiro, linguagem tecnica mas acessivel\n' +
+        '- Interprete os escores em relacao ao esperado para idade e escolaridade\n' +
+        '- Mencione habilidades avaliadas: construcao visuoespacial, planejamento visuomotor, memoria visual episodica\n' +
+        '- Compare desempenho na copia vs memoria (se aplicavel)\n' +
+        '- Comente se o tempo de execucao sugere lentificacao ou impulsividade\n' +
+        '- NAO inclua recomendacoes de tratamento\n' +
+        '- NAO repita os numeros brutos, interprete-os clinicamente\n' +
+        '- Termine com uma conclusao sobre o funcionamento visuoespacial e mnesico global';
+    try {
+        var resp = await fetch(_API_URL + '/generate-ai', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt: prompt })
+        });
+        if (!resp.ok) return '';
+        var data = await resp.json();
+        return (data.text || '').trim();
+    } catch(e) {
+        return '';
+    }
 }
 
 // === GERAR PDF ===
-function gerarPDF() {
+async function gerarPDF() {
     if (!_resultados) { alert('Calcule os resultados primeiro.'); return; }
+    // Gerar analise IA antes de montar o PDF
+    var textoIA = await gerarAnaliseIA();
     var jsPDF = window.jspdf.jsPDF;
     var doc = new jsPDF();
     var r = _resultados;
@@ -652,6 +731,22 @@ function gerarPDF() {
     doc.text('Copia: ajustado = bruto - [-0.056 x (idade - 54.1)] - [0.249 x (educacao - 12.2586)]', 22, y); y += 4;
     doc.text('Memoria: ajustado = bruto - [-0.115 x (idade - 54.1)] - [0.493 x (educacao - 12.2586)]', 22, y); y += 4;
     doc.text('Cut-off Copia: <= 27.66 | Cut-off Memoria: <= 8.4', 22, y);
+    // Analise IA
+    if (textoIA) {
+        y += 10;
+        doc.setFontSize(9);
+        doc.setTextColor(0, 0, 0);
+        doc.setFont(undefined, 'bold');
+        doc.text('ANALISE CLINICA (IA)', 22, y); y += 6;
+        doc.setFont(undefined, 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(50, 50, 50);
+        var linhasIA = doc.splitTextToSize(textoIA, 166);
+        for (var li = 0; li < linhasIA.length; li++) {
+            if (y > 275) { doc.addPage(); y = 20; }
+            doc.text(linhasIA[li], 22, y); y += 4;
+        }
+    }
     // Rodape
     doc.setFontSize(7);
     doc.setTextColor(150, 150, 150);
@@ -683,17 +778,19 @@ function gerarPDF() {
         doc.text(refs[i], 20, y); y += 4;
     }
     // Salvar
-    var nomeArq = 'TETaylor_' + r.paciente.replace(/\s+/g, '_') + '_' + r.data.replace(/-/g, '') + '.pdf';
+    var ts = new Date();
+    var nomeArq = 'TETaylor_' + r.paciente.replace(/\s+/g, '_') + '_' + ts.getFullYear() + String(ts.getMonth()+1).padStart(2,'0') + String(ts.getDate()).padStart(2,'0') + String(ts.getHours()).padStart(2,'0') + String(ts.getMinutes()).padStart(2,'0') + '.pdf';
     doc.save(nomeArq);
 }
 
 // === ENVIAR RESULTADOS AO PAINEL ===
 async function enviarResultados() {
-    if (!_resultados) { alert('Calcule os resultados primeiro.'); return; }
-    if (!_sessionInfo) { alert('Este teste nao foi iniciado pelo painel.'); return; }
+    if (!_resultados) return;
+    if (!_sessionInfo) return;
     var dados = _resultados;
     dados.idPaciente = '';
     dados.pacienteId = _sessionInfo.pacienteId || '';
+    var divBtn = document.getElementById('divBotoesResultado');
     try {
         var resp = await fetch(_API_URL + '/save-escala', {
             method: 'POST',
@@ -702,13 +799,9 @@ async function enviarResultados() {
         });
         var result = await resp.json();
         if (result.ok || resp.ok) {
-            alert('Resultados enviados com sucesso!');
-        } else {
-            alert('Erro ao enviar. Tente novamente.');
+            if (divBtn) divBtn.innerHTML = '<div style="background:#c8e6c9;border:2px solid #2e7d32;border-radius:10px;padding:15px;text-align:center;margin-top:10px;"><p style="color:#2e7d32;font-weight:bold;font-size:1.1em;">Resultados enviados ao painel com sucesso!</p></div>' + '<div style="margin-top:15px;"><button class="btn btn-green" onclick="gerarPDF()" style="font-size:1em;padding:12px 30px;">Gerar PDF</button></div>';
         }
-    } catch(e) {
-        alert('Erro de conexao. Verifique sua internet.');
-    }
+    } catch(e) {}
 }
 
 // === MODO PAINEL (decodificar URL) ===
