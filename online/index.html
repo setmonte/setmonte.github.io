@@ -7588,6 +7588,13 @@
         var resp = await fetch(API_URL + '/get-results?email=' + encodeURIComponent(currentUser) + '&tipo=tetaylor');
         var data = await resp.json();
         _tetaylorResultCache = data.results || [];
+        // Fallback: buscar em tipo=escala se nao achou
+        if (_tetaylorResultCache.length === 0) {
+          var resp2 = await fetch(API_URL + '/get-results?email=' + encodeURIComponent(currentUser) + '&tipo=escala');
+          var data2 = await resp2.json();
+          var all = data2.results || [];
+          _tetaylorResultCache = all.filter(function(r) { return r.data && r.data.escala === 'TETaylor'; });
+        }
         if (_tetaylorResultCache.length === 0) { el.innerHTML = '<p>Nenhum resultado TETaylor encontrado.</p>'; return; }
         var html = '<h3>Resultados TETaylor</h3><table style="width:100%;border-collapse:collapse;font-size:0.85em;"><tr><th style="padding:6px;border-bottom:2px solid #6A1B9A;">Data</th><th style="text-align:left;padding:6px;border-bottom:2px solid #6A1B9A;">Paciente</th><th style="padding:6px;border-bottom:2px solid #6A1B9A;">Copia</th><th style="padding:6px;border-bottom:2px solid #6A1B9A;">Mem.</th><th style="padding:6px;border-bottom:2px solid #6A1B9A;">Class.</th></tr>';
         for (var i = 0; i < _tetaylorResultCache.length; i++) {
@@ -7669,6 +7676,13 @@
         var resp = await fetch(API_URL + '/get-results?email=' + encodeURIComponent(currentUser) + '&tipo=tetaylorsimp');
         var data = await resp.json();
         _tetaylorsimpResultCache = data.results || [];
+        // Fallback: buscar em tipo=escala se nao achou
+        if (_tetaylorsimpResultCache.length === 0) {
+          var resp2 = await fetch(API_URL + '/get-results?email=' + encodeURIComponent(currentUser) + '&tipo=escala');
+          var data2 = await resp2.json();
+          var all = data2.results || [];
+          _tetaylorsimpResultCache = all.filter(function(r) { return r.data && r.data.escala === 'TETaylorSimp'; });
+        }
         if (_tetaylorsimpResultCache.length === 0) { el.innerHTML = '<p>Nenhum resultado TETaylorSimp encontrado.</p>'; return; }
         var html = '<h3>Resultados TETaylorSimp</h3><table style="width:100%;border-collapse:collapse;font-size:0.85em;"><tr><th style="padding:6px;border-bottom:2px solid #00695C;">Data</th><th style="text-align:left;padding:6px;border-bottom:2px solid #00695C;">Paciente</th><th style="padding:6px;border-bottom:2px solid #00695C;">Copia</th><th style="padding:6px;border-bottom:2px solid #00695C;">Mem.</th><th style="padding:6px;border-bottom:2px solid #00695C;">Class.</th></tr>';
         for (var i = 0; i < _tetaylorsimpResultCache.length; i++) {
