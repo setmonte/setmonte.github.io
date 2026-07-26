@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-QY1N9587DG"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-QY1N9587DG');</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TETaylor - Teste Eletr&#244;nico da Figura Complexa de Taylor</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',sans-serif;background:#f5f5f5;min-height:100vh}
+.tela{display:none;width:100%;min-height:100vh;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+.tela.ativa{display:flex}
+#tela-inicio{background:linear-gradient(135deg,#6A1B9A 0%,#4A148C 100%)}
+#tela-inicio h1{color:#fff;font-size:2.2em;margin-bottom:5px}
+#tela-inicio .subtitulo{color:#CE93D8;font-size:0.9em;margin-bottom:20px}
+.form-container{background:#fff;border-radius:12px;padding:25px;width:100%;max-width:550px;box-shadow:0 4px 20px rgba(0,0,0,0.3)}
+.form-container label{display:block;font-size:0.8em;color:#555;margin:8px 0 3px;font-weight:600}
+.form-container input,.form-container select{width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:0.9em}
+.form-container input:focus,.form-container select:focus{outline:none;border-color:#6A1B9A}
+.btn{padding:12px 30px;border:none;border-radius:8px;font-size:1em;font-weight:700;cursor:pointer;margin:5px}
+.btn-primary{background:#6A1B9A;color:#fff}
+.btn-primary:hover{background:#4A148C}
+.btn-danger{background:#c62828;color:#fff}
+.btn-danger:hover{background:#b71c1c}
+.btn-green{background:#2e7d32;color:#fff}
+.btn-green:hover{background:#1b5e20}
+.info-tecnica{background:#F3E5F5;border-left:4px solid #6A1B9A;padding:12px;border-radius:0 8px 8px 0;margin-bottom:15px;font-size:0.75em;color:#555}
+.instrucao-box{background:#F3E5F5;border:2px solid #6A1B9A;border-radius:12px;padding:20px;margin:15px 0;text-align:left;max-width:550px;width:100%}
+.instrucao-box p{margin-bottom:8px;color:#4A148C;font-size:0.95em;line-height:1.6}
+.instrucao-box h3{color:#4A148C;margin-bottom:12px}
+.protocolo-box{background:#fff;border:2px solid #CE93D8;border-radius:10px;padding:15px;margin:10px 0}
+.protocolo-box label{display:block;padding:8px 12px;margin:5px 0;border-radius:6px;cursor:pointer;font-size:0.9em;transition:background 0.2s}
+.protocolo-box label:hover{background:#F3E5F5}
+.protocolo-box input[type="radio"]{margin-right:10px;accent-color:#6A1B9A}
+</style>
+</head>
+<body>
+
+<!-- TELA 1: DADOS + PROTOCOLO -->
+<div id="tela-inicio" class="tela ativa">
+    <h1>&#129504; TETaylor</h1>
+    <p class="subtitulo">Teste Eletr&#244;nico da Figura Complexa de Taylor</p>
+    <div class="form-container">
+        <div class="info-tecnica">
+            <strong>Instrumento:</strong> Figura Complexa de Taylor (Taylor, 1969; Spreen, Sherman &amp; Strauss, 2006)<br>
+            <strong>Avalia:</strong> Constru&#231;&#227;o visuoespacial e mem&#243;ria visual epis&#243;dica<br>
+            <strong>Pontua&#231;&#227;o:</strong> 18 elementos, 0-36 pontos (c&#243;pia e mem&#243;ria)<br>
+            <strong>Normas:</strong> Casarotti, Papagno &amp; Zarino (2014) — 290 adultos<br>
+            <strong>P&#250;blico:</strong> Adultos (19-98 anos)
+        </div>
+        <label>Nome do Avaliando:</label>
+        <input type="text" id="nome" placeholder="Nome completo">
+        <label>Data de Nascimento:</label>
+        <input type="date" id="dataNasc" onchange="calcularIdade()">
+        <label>Idade:</label>
+        <input type="text" id="idade" readonly placeholder="Calculada automaticamente" style="background:#F3E5F5;font-weight:700;color:#6A1B9A">
+        <label>Escolaridade (anos de estudo):</label>
+        <input type="number" id="escolaridade" min="1" max="25" placeholder="Ex: 12">
+        <label>Sexo:</label>
+        <select id="sexo">
+            <option value="">Selecione...</option>
+            <option value="Masculino">Masculino</option>
+            <option value="Feminino">Feminino</option>
+        </select>
+        <label>Data da Avalia&#231;&#227;o:</label>
+        <input type="date" id="dataAval">
+        <div class="protocolo-box">
+            <p style="font-weight:bold;color:#4A148C;margin-bottom:8px;">Qual protocolo de mem&#243;ria deseja aplicar?</p>
+            <label><input type="radio" name="protocolo" value="imediata" checked> Apenas Mem&#243;ria Imediata (logo ap&#243;s a c&#243;pia)</label>
+            <label><input type="radio" name="protocolo" value="tardia"> Apenas Mem&#243;ria Tardia (ap&#243;s intervalo de 15-20 min)</label>
+            <label><input type="radio" name="protocolo" value="ambas"> Ambas (Imediata + Tardia)</label>
+        </div>
+        <div style="text-align:center;margin-top:15px;">
+            <button class="btn btn-primary" onclick="irParaInstrucoes()">Pr&#243;ximo &#8594;</button>
+        </div>
+    </div>
+</div>
+
+<!-- TELA 2: INSTRUCOES DE MATERIAL -->
+<div id="tela-instrucoes" class="tela">
+    <h2 style="color:#4A148C;margin-bottom:15px;">&#128203; Prepara&#231;&#227;o do Material</h2>
+    <div class="instrucao-box">
+        <h3>Antes de iniciar, certifique-se de ter:</h3>
+        <p>&#9989; <strong>2 a 3 folhas A4</strong> em branco (uma para c&#243;pia, outra(s) para mem&#243;ria)</p>
+        <p>&#9989; <strong>L&#225;pis</strong> (tenha mais de um dispon&#237;vel, caso quebre a ponta)</p>
+        <p>&#9989; <strong>Borracha</strong> (opcional — alguns protocolos n&#227;o permitem apagar)</p>
+        <p style="margin-top:15px;padding-top:10px;border-top:1px solid #CE93D8;">
+            &#128161; <strong>Instru&#231;&#227;o ao paciente (C&#243;pia):</strong><br>
+            <em>"Vou mostrar uma figura na tela. Quero que voc&#234; copie essa figura o mais fielmente poss&#237;vel nesta folha. N&#227;o h&#225; limite de tempo, mas vou cronometrar."</em>
+        </p>
+        <p style="margin-top:10px;">
+            &#128161; <strong>Instru&#231;&#227;o ao paciente (Mem&#243;ria):</strong><br>
+            <em>"Agora, sem olhar a figura, desenhe tudo o que voc&#234; se lembrar dela nesta outra folha."</em>
+        </p>
+    </div>
+    <div style="margin-top:20px;">
+        <button class="btn btn-primary" onclick="iniciarCopia()">Iniciar C&#243;pia &#8594;</button>
+    </div>
+</div>
+
+<!-- TELA 3: COPIA (figura + cronometro) -->
+<div id="tela-copia" class="tela" style="background:#fff;padding:10px;justify-content:flex-start;">
+    <div style="background:#4A148C;color:#fff;padding:12px 20px;display:flex;justify-content:space-between;align-items:center;width:100%;border-radius:8px;margin-bottom:10px;">
+        <span style="font-size:0.9em;font-weight:600;">FASE: C&#211;PIA</span>
+        <span id="timerCopia" style="font-size:1.8em;font-weight:bold;font-family:monospace;">00:00</span>
+    </div>
+    <div style="flex:1;display:flex;align-items:center;justify-content:center;width:100%;overflow:auto;">
+        <img src="fig-taylor.png" alt="Figura Complexa de Taylor" style="max-width:95%;max-height:calc(100vh - 150px);object-fit:contain;">
+    </div>
+    <div style="padding:10px;text-align:center;">
+        <button class="btn btn-danger" onclick="finalizarCopia()" style="font-size:1.1em;padding:15px 40px;">&#9209; Finalizar C&#243;pia</button>
+    </div>
+</div>
+
+<!-- TELA 4: MEMORIA IMEDIATA (tela preta + cronometro grande) -->
+<div id="tela-mem-imediata" class="tela" style="background:#000;justify-content:center;">
+    <p style="color:#aaa;font-size:0.9em;margin-bottom:20px;">FASE: MEM&#211;RIA IMEDIATA</p>
+    <div id="timerMemImediata" style="font-size:5em;font-weight:bold;font-family:monospace;color:#fff;">00:00</div>
+    <p style="color:#CE93D8;font-size:0.85em;margin-top:20px;text-align:center;">Pe&#231;a ao paciente para desenhar o que lembra da figura</p>
+    <div style="margin-top:40px;">
+        <button class="btn btn-danger" onclick="finalizarMemImediata()" style="font-size:1.2em;padding:18px 50px;">&#9209; Finalizar Mem&#243;ria Imediata</button>
+    </div>
+</div>
+
+<!-- TELA 5: ESPERA PARA MEMORIA TARDIA (timer regressivo 15 min) -->
+<div id="tela-espera-tardia" class="tela" style="background:linear-gradient(135deg,#1a1a2e,#16213e);justify-content:center;">
+    <p style="color:#aaa;font-size:0.9em;margin-bottom:10px;">INTERVALO — Aplique tarefas verbais durante este per&#237;odo</p>
+    <div id="timerRegressivo" style="font-size:5em;font-weight:bold;font-family:monospace;color:#fff;transition:color 0.5s;">15:00</div>
+    <p id="msgEspera" style="color:#CE93D8;font-size:0.85em;margin-top:20px;text-align:center;">Aguarde o intervalo ou clique para iniciar a mem&#243;ria tardia quando pronto</p>
+    <div style="margin-top:30px;display:flex;gap:15px;">
+        <button class="btn btn-primary" onclick="iniciarMemTardia()" style="font-size:1em;padding:15px 35px;">Iniciar Mem&#243;ria Tardia Agora</button>
+    </div>
+</div>
+
+<!-- TELA 6: MEMORIA TARDIA (tela preta + cronometro grande) -->
+<div id="tela-mem-tardia" class="tela" style="background:#000;justify-content:center;">
+    <p style="color:#aaa;font-size:0.9em;margin-bottom:20px;">FASE: MEM&#211;RIA TARDIA</p>
+    <div id="timerMemTardia" style="font-size:5em;font-weight:bold;font-family:monospace;color:#fff;">00:00</div>
+    <p style="color:#CE93D8;font-size:0.85em;margin-top:20px;text-align:center;">Pe&#231;a ao paciente para desenhar o que lembra da figura</p>
+    <div style="margin-top:40px;">
+        <button class="btn btn-danger" onclick="finalizarMemTardia()" style="font-size:1.2em;padding:18px 50px;">&#9209; Finalizar Mem&#243;ria Tardia</button>
+    </div>
+</div>
+
+<!-- TELA 7: FICHA DE CORRECAO -->
+<div id="tela-correcao" class="tela" style="background:#f5f5f5;justify-content:flex-start;padding:20px;">
+    <div style="max-width:800px;width:100%;margin:0 auto;">
+        <h2 style="color:#4A148C;text-align:center;margin-bottom:5px;">&#128203; Ficha de Corre&#231;&#227;o</h2>
+        <p style="text-align:center;color:#555;font-size:0.85em;margin-bottom:15px;">Figura Complexa de Taylor — 18 elementos</p>
+        <!-- CABECALHO PREENCHIDO -->
+        <div style="background:#fff;border:1px solid #ddd;border-radius:10px;padding:15px;margin-bottom:12px;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:0.85em;">
+                <span><strong>Paciente:</strong> <span id="corrNome"></span></span>
+                <span><strong>Idade:</strong> <span id="corrIdade"></span></span>
+                <span><strong>Escolaridade:</strong> <span id="corrEsc"></span> anos</span>
+                <span><strong>Data:</strong> <span id="corrData"></span></span>
+                <span><strong>Tempo C&#243;pia:</strong> <span id="corrTempoCopia" style="color:#6A1B9A;font-weight:bold;"></span></span>
+                <span id="corrTempoImSpan"><strong>Tempo Mem. Imediata:</strong> <span id="corrTempoMemIm" style="color:#6A1B9A;font-weight:bold;"></span></span>
+                <span id="corrTempoTaSpan" class="hidden"><strong>Tempo Mem. Tardia:</strong> <span id="corrTempoMemTa" style="color:#6A1B9A;font-weight:bold;"></span></span>
+            </div>
+        </div>
+        <!-- CRITERIOS -->
+        <div style="background:#F3E5F5;border-radius:8px;padding:10px;margin-bottom:12px;font-size:0.75em;color:#4A148C;">
+            <strong>Crit&#233;rios:</strong> 2 = Precis&#227;o Boa + Localiza&#231;&#227;o Boa | 1 = Boa/Ruim ou Ruim/Boa | 0.5 = Ruim reconhec&#237;vel + Ruim | 0 = Irreconhec&#237;vel/Ausente
+        </div>
+        <!-- TABELA DE ITENS -->
+        <div style="background:#fff;border:1px solid #ddd;border-radius:10px;padding:10px;overflow-x:auto;">
+            <table id="tabelaCorrecao" style="width:100%;border-collapse:collapse;font-size:0.82em;">
+                <thead>
+                    <tr style="background:#4A148C;color:#fff;">
+                        <th style="padding:8px;text-align:center;width:35px;">#</th>
+                        <th style="padding:8px;text-align:left;">Elemento</th>
+                        <th style="padding:8px;text-align:center;width:70px;">C&#243;pia</th>
+                        <th id="colMemIm" style="padding:8px;text-align:center;width:70px;">Mem. Im.</th>
+                        <th id="colMemTa" class="hidden" style="padding:8px;text-align:center;width:70px;">Mem. Ta.</th>
+                    </tr>
+                </thead>
+                <tbody id="tbodyCorrecao"></tbody>
+                <tfoot>
+                    <tr style="background:#F3E5F5;font-weight:bold;">
+                        <td colspan="2" style="padding:8px;text-align:right;">TOTAL:</td>
+                        <td style="padding:8px;text-align:center;" id="totalCopia">0</td>
+                        <td style="padding:8px;text-align:center;" id="totalMemIm">0</td>
+                        <td class="hidden" style="padding:8px;text-align:center;" id="totalMemTa">0</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        <div style="text-align:center;margin-top:20px;">
+            <button class="btn btn-primary" onclick="calcularResultados()" style="font-size:1.1em;padding:15px 40px;">Calcular Resultados</button>
+        </div>
+    </div>
+</div>
+
+<!-- TELA 8: RESULTADOS -->
+<div id="tela-resultados" class="tela" style="background:#f5f5f5;justify-content:flex-start;padding:20px;">
+    <div style="max-width:700px;width:100%;margin:0 auto;" id="divResultados"></div>
+    <div style="text-align:center;margin-top:20px;">
+        <button class="btn btn-green" onclick="gerarPDF()" style="font-size:1.1em;padding:15px 40px;">&#128196; Gerar PDF</button>
+        <button class="btn btn-primary" onclick="enviarResultados()" style="font-size:1em;padding:12px 30px;">Enviar ao Painel</button>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+// === DADOS ===
+var ITENS = [
+{n:1, desc:'Seta vertical'},
+{n:2, desc:'Dois lados do tri\u00e2ngulo \u00e0 esquerda'},
+{n:3, desc:'Quadrado grande'},
+{n:4, desc:'Linha horizontal'},
+{n:5, desc:'Linha vertical'},
+{n:6, desc:'Linha horizontal do ret\u00e2ngulo superior'},
+{n:7, desc:'Linhas diagonais do quadrante superior'},
+{n:8, desc:'Quadrado do quadrante superior esquerdo'},
+{n:9, desc:'C\u00edrculo do quadrante superior esquerdo'},
+{n:10, desc:'Ret\u00e2ngulo da parte superior esquerda'},
+{n:11, desc:'Seta diagonal'},
+{n:12, desc:'Semi-c\u00edrculo'},
+{n:13, desc:'Tri\u00e2ngulo na metade direita do quadrado'},
+{n:14, desc:'Fila de pontos'},
+{n:15, desc:'Linha horizontal do quadrante inferior direito'},
+{n:16, desc:'Tri\u00e2ngulo equil\u00e1tero fora do quadrado'},
+{n:17, desc:'Linha sinuosa com barras transversais'},
+{n:18, desc:'Asterisco'}
+];
+
+var DELAY_SEGUNDOS = 7;
+var INTERVALO_TARDIA = 15 * 60; // 15 minutos em segundos
+var _API_URL = 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
+
+// Estado
+var protocolo = 'imediata';
+var timerInterval = null;
+var segundosCopia = 0;
+var segundosMemIm = 0;
+var segundosMemTa = 0;
+var regressivoInterval = null;
+var segundosRestantes = 0;
+var _sessionInfo = null;
+var _resultados = null;
+
+// === FUNCOES UTILITARIAS ===
+function calcularIdade() {
+    var dn = document.getElementById('dataNasc').value;
+    if (!dn) return;
+    var nasc = new Date(dn);
+    var hoje = new Date();
+    var anos = hoje.getFullYear() - nasc.getFullYear();
+    var m = hoje.getMonth() - nasc.getMonth();
+    if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) anos--;
+    document.getElementById('idade').value = anos + ' anos';
+}
+
+function formatarTempo(seg) {
+    var m = Math.floor(seg / 60);
+    var s = seg % 60;
+    return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+}
+
+function trocarTela(id) {
+    var telas = document.querySelectorAll('.tela');
+    for (var i = 0; i < telas.length; i++) telas[i].classList.remove('ativa');
+    document.getElementById(id).classList.add('ativa');
+}
+
+function getProtocolo() {
+    var radios = document.getElementsByName('protocolo');
+    for (var i = 0; i < radios.length; i++) {
+        if (radios[i].checked) return radios[i].value;
+    }
+    return 'imediata';
+}
+
+// === NAVEGACAO ===
+function irParaInstrucoes() {
+    var nome = document.getElementById('nome').value.trim();
+    var dn = document.getElementById('dataNasc').value;
+    var esc = document.getElementById('escolaridade').value;
+    if (!nome) { alert('Preencha o nome do avaliando.'); return; }
+    if (!dn) { alert('Preencha a data de nascimento.'); return; }
+    if (!esc) { alert('Preencha a escolaridade (anos de estudo).'); return; }
+    protocolo = getProtocolo();
+    trocarTela('tela-instrucoes');
+}
+
+// === COPIA ===
+function iniciarCopia() {
+    segundosCopia = 0;
+    trocarTela('tela-copia');
+    timerInterval = setInterval(function() {
+        segundosCopia++;
+        document.getElementById('timerCopia').textContent = formatarTempo(segundosCopia);
+    }, 1000);
+}
+
+function finalizarCopia() {
+    clearInterval(timerInterval);
+    // Descontar delay
+    segundosCopia = Math.max(0, segundosCopia - DELAY_SEGUNDOS);
+    if (protocolo === 'imediata' || protocolo === 'ambas') {
+        iniciarMemoriaImediata();
+    } else if (protocolo === 'tardia') {
+        iniciarEsperaTardia();
+    }
+}
+
+// === MEMORIA IMEDIATA ===
+function iniciarMemoriaImediata() {
+    segundosMemIm = 0;
+    trocarTela('tela-mem-imediata');
+    timerInterval = setInterval(function() {
+        segundosMemIm++;
+        document.getElementById('timerMemImediata').textContent = formatarTempo(segundosMemIm);
+    }, 1000);
+}
+
+function finalizarMemImediata() {
+    clearInterval(timerInterval);
+    segundosMemIm = Math.max(0, segundosMemIm - DELAY_SEGUNDOS);
+    if (protocolo === 'ambas') {
+        iniciarEsperaTardia();
+    } else {
+        mostrarFichaCorrecao();
+    }
+}
+
+// === ESPERA PARA TARDIA (cronometro regressivo) ===
+function iniciarEsperaTardia() {
+    segundosRestantes = INTERVALO_TARDIA;
+    trocarTela('tela-espera-tardia');
+    document.getElementById('timerRegressivo').textContent = formatarTempo(segundosRestantes);
+    document.getElementById('timerRegressivo').style.color = '#fff';
+    regressivoInterval = setInterval(function() {
+        segundosRestantes--;
+        document.getElementById('timerRegressivo').textContent = formatarTempo(segundosRestantes);
+        // Faltando 2 minutos: piscar laranja
+        if (segundosRestantes <= 120 && segundosRestantes > 60) {
+            var el = document.getElementById('timerRegressivo');
+            el.style.color = (segundosRestantes % 2 === 0) ? '#FF9800' : '#FFB74D';
+        }
+        // Faltando 1 minuto: piscar vermelho
+        if (segundosRestantes <= 60 && segundosRestantes > 0) {
+            var el = document.getElementById('timerRegressivo');
+            el.style.color = (segundosRestantes % 2 === 0) ? '#f44336' : '#ef5350';
+        }
+        // Zerou: 2 toques sonoros
+        if (segundosRestantes <= 0) {
+            clearInterval(regressivoInterval);
+            document.getElementById('timerRegressivo').textContent = '00:00';
+            document.getElementById('timerRegressivo').style.color = '#f44336';
+            document.getElementById('msgEspera').textContent = 'Tempo esgotado! Inicie a mem\u00f3ria tardia.';
+            tocarAlerta(2);
+        }
+    }, 1000);
+}
+
+function tocarAlerta(vezes) {
+    var ctx = new (window.AudioContext || window.webkitAudioContext)();
+    function beep(i) {
+        if (i >= vezes) return;
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = 880;
+        gain.gain.value = 0.3;
+        osc.start(ctx.currentTime + i * 0.4);
+        osc.stop(ctx.currentTime + i * 0.4 + 0.2);
+        beep(i + 1);
+    }
+    beep(0);
+}
+
+// === MEMORIA TARDIA ===
+function iniciarMemTardia() {
+    clearInterval(regressivoInterval);
+    segundosMemTa = 0;
+    trocarTela('tela-mem-tardia');
+    timerInterval = setInterval(function() {
+        segundosMemTa++;
+        document.getElementById('timerMemTardia').textContent = formatarTempo(segundosMemTa);
+    }, 1000);
+}
+
+function finalizarMemTardia() {
+    clearInterval(timerInterval);
+    segundosMemTa = Math.max(0, segundosMemTa - DELAY_SEGUNDOS);
+    mostrarFichaCorrecao();
+}
+
+// === FICHA DE CORRECAO ===
+function mostrarFichaCorrecao() {
+    trocarTela('tela-correcao');
+    // Preencher cabecalho
+    document.getElementById('corrNome').textContent = document.getElementById('nome').value;
+    document.getElementById('corrIdade').textContent = document.getElementById('idade').value;
+    document.getElementById('corrEsc').textContent = document.getElementById('escolaridade').value;
+    var da = document.getElementById('dataAval').value;
+    document.getElementById('corrData').textContent = da ? new Date(da + 'T12:00:00').toLocaleDateString('pt-BR') : new Date().toLocaleDateString('pt-BR');
+    document.getElementById('corrTempoCopia').textContent = formatarTempo(segundosCopia);
+    // Mostrar/ocultar colunas conforme protocolo
+    var mostrarIm = (protocolo === 'imediata' || protocolo === 'ambas');
+    var mostrarTa = (protocolo === 'tardia' || protocolo === 'ambas');
+    document.getElementById('colMemIm').className = mostrarIm ? '' : 'hidden';
+    document.getElementById('totalMemIm').className = mostrarIm ? '' : 'hidden';
+    document.getElementById('corrTempoImSpan').className = mostrarIm ? '' : 'hidden';
+    document.getElementById('colMemTa').className = mostrarTa ? '' : 'hidden';
+    document.getElementById('totalMemTa').className = mostrarTa ? '' : 'hidden';
+    document.getElementById('corrTempoTaSpan').className = mostrarTa ? '' : 'hidden';
+    if (mostrarIm) document.getElementById('corrTempoMemIm').textContent = formatarTempo(segundosMemIm);
+    if (mostrarTa) document.getElementById('corrTempoMemTa').textContent = formatarTempo(segundosMemTa);
+    // Gerar linhas da tabela
+    var tbody = document.getElementById('tbodyCorrecao');
+    tbody.innerHTML = '';
+    var opcoes = '<option value="">-</option><option value="0">0</option><option value="0.5">0.5</option><option value="1">1</option><option value="2">2</option>';
+    for (var i = 0; i < ITENS.length; i++) {
+        var tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid #eee';
+        var tdN = '<td style="padding:6px;text-align:center;font-weight:bold;color:#6A1B9A;">' + ITENS[i].n + '</td>';
+        var tdDesc = '<td style="padding:6px;">' + ITENS[i].desc + '</td>';
+        var tdCop = '<td style="padding:6px;text-align:center;"><select id="cop_' + i + '" onchange="atualizarTotais()" style="width:55px;padding:3px;border-radius:4px;border:1px solid #ccc;">' + opcoes + '</select></td>';
+        var tdIm = mostrarIm ? '<td style="padding:6px;text-align:center;"><select id="mim_' + i + '" onchange="atualizarTotais()" style="width:55px;padding:3px;border-radius:4px;border:1px solid #ccc;">' + opcoes + '</select></td>' : '';
+        var tdTa = mostrarTa ? '<td style="padding:6px;text-align:center;"><select id="mta_' + i + '" onchange="atualizarTotais()" style="width:55px;padding:3px;border-radius:4px;border:1px solid #ccc;">' + opcoes + '</select></td>' : '';
+        tr.innerHTML = tdN + tdDesc + tdCop + tdIm + tdTa;
+        tbody.appendChild(tr);
+    }
+}
+
+function atualizarTotais() {
+    var mostrarIm = (protocolo === 'imediata' || protocolo === 'ambas');
+    var mostrarTa = (protocolo === 'tardia' || protocolo === 'ambas');
+    var tCop = 0, tIm = 0, tTa = 0;
+    for (var i = 0; i < ITENS.length; i++) {
+        var vc = document.getElementById('cop_' + i);
+        if (vc && vc.value) tCop += parseFloat(vc.value);
+        if (mostrarIm) { var vi = document.getElementById('mim_' + i); if (vi && vi.value) tIm += parseFloat(vi.value); }
+        if (mostrarTa) { var vt = document.getElementById('mta_' + i); if (vt && vt.value) tTa += parseFloat(vt.value); }
+    }
+    document.getElementById('totalCopia').textContent = tCop.toFixed(1);
+    if (mostrarIm) document.getElementById('totalMemIm').textContent = tIm.toFixed(1);
+    if (mostrarTa) document.getElementById('totalMemTa').textContent = tTa.toFixed(1);
+}
+
+// === CALCULAR RESULTADOS (Normas Casarotti et al., 2014) ===
+function calcularResultados() {
+    atualizarTotais();
+    var totalCop = parseFloat(document.getElementById('totalCopia').textContent) || 0;
+    var totalIm = parseFloat(document.getElementById('totalMemIm').textContent) || 0;
+    var totalTa = parseFloat(document.getElementById('totalMemTa').textContent) || 0;
+    var idadeNum = parseInt(document.getElementById('idade').value) || 54;
+    var escNum = parseInt(document.getElementById('escolaridade').value) || 12;
+    // Formulas de ajuste (Casarotti et al., 2014)
+    // Copia: ajustado = raw - [-0.056 * (idade - 54.1)] - [0.249 * (educacao - 12.2586)]
+    var ajCopia = totalCop - (-0.056 * (idadeNum - 54.1)) - (0.249 * (escNum - 12.2586));
+    // Memoria (usa formula de delayed recall): ajustado = raw - [-0.115 * (idade - 54.1)] - [0.493 * (educacao - 12.2586)]
+    var ajMemIm = totalIm - (-0.115 * (idadeNum - 54.1)) - (0.493 * (escNum - 12.2586));
+    var ajMemTa = totalTa - (-0.115 * (idadeNum - 54.1)) - (0.493 * (escNum - 12.2586));
+    // Escores equivalentes - Copia
+    function eqCopia(s) {
+        if (s <= 27.66) return 0;
+        if (s <= 30.97) return 1;
+        if (s <= 32.64) return 2;
+        if (s <= 33.92) return 3;
+        return 4;
+    }
+    // Escores equivalentes - Memoria
+    function eqMem(s) {
+        if (s <= 8.4) return 0;
+        if (s <= 11.37) return 1;
+        if (s <= 14.29) return 2;
+        if (s <= 16.89) return 3;
+        return 4;
+    }
+    function classificacao(eq) {
+        if (eq === 0) return 'Patol\u00f3gico (< percentil 5)';
+        if (eq === 1) return 'Lim\u00edtrofe';
+        if (eq === 2) return 'M\u00e9dio-Inferior';
+        if (eq === 3) return 'M\u00e9dio';
+        return 'Acima da M\u00e9dia';
+    }
+    function corClassificacao(eq) {
+        if (eq === 0) return '#c62828';
+        if (eq === 1) return '#e65100';
+        if (eq === 2) return '#f9a825';
+        if (eq === 3) return '#2e7d32';
+        return '#1565c0';
+    }
+    var mostrarIm = (protocolo === 'imediata' || protocolo === 'ambas');
+    var mostrarTa = (protocolo === 'tardia' || protocolo === 'ambas');
+    var eqC = eqCopia(ajCopia);
+    var eqI = mostrarIm ? eqMem(ajMemIm) : null;
+    var eqT = mostrarTa ? eqMem(ajMemTa) : null;
+    // Montar resultados
+    _resultados = {
+        escala: 'TETaylor',
+        paciente: document.getElementById('nome').value,
+        idade: document.getElementById('idade').value,
+        idadeNum: idadeNum,
+        escolaridade: escNum,
+        sexo: document.getElementById('sexo').value,
+        data: document.getElementById('dataAval').value || new Date().toISOString().split('T')[0],
+        protocolo: protocolo,
+        tempoCopia: segundosCopia,
+        tempoMemIm: segundosMemIm,
+        tempoMemTa: segundosMemTa,
+        rawCopia: totalCop,
+        rawMemIm: totalIm,
+        rawMemTa: totalTa,
+        ajCopia: ajCopia,
+        ajMemIm: ajMemIm,
+        ajMemTa: ajMemTa,
+        eqCopia: eqC,
+        eqMemIm: eqI,
+        eqMemTa: eqT,
+        classCopia: classificacao(eqC),
+        classMemIm: mostrarIm ? classificacao(eqI) : null,
+        classMemTa: mostrarTa ? classificacao(eqT) : null
+    };
+    // Exibir
+    var html = '<h2 style="color:#4A148C;text-align:center;margin-bottom:15px;">Resultados</h2>';
+    html += '<div style="background:#fff;border:1px solid #ddd;border-radius:10px;padding:20px;">';
+    html += '<p style="font-size:0.9em;color:#555;margin-bottom:15px;"><strong>' + _resultados.paciente + '</strong> | ' + _resultados.idade + ' | Escolaridade: ' + _resultados.escolaridade + ' anos</p>';
+    // Card Copia
+    html += '<div style="background:#F3E5F5;border-left:4px solid #6A1B9A;border-radius:0 8px 8px 0;padding:12px;margin-bottom:10px;">';
+    html += '<strong>C\u00f3pia</strong><br>';
+    html += 'Bruto: ' + totalCop.toFixed(1) + '/36 | Ajustado: ' + ajCopia.toFixed(2) + ' | Escore Eq.: ' + eqC + '<br>';
+    html += '<span style="color:' + corClassificacao(eqC) + ';font-weight:bold;">' + _resultados.classCopia + '</span>';
+    html += ' | Tempo: ' + formatarTempo(segundosCopia);
+    html += '</div>';
+    if (mostrarIm) {
+        html += '<div style="background:#E8F5E9;border-left:4px solid #2e7d32;border-radius:0 8px 8px 0;padding:12px;margin-bottom:10px;">';
+        html += '<strong>Mem\u00f3ria Imediata</strong><br>';
+        html += 'Bruto: ' + totalIm.toFixed(1) + '/36 | Ajustado: ' + ajMemIm.toFixed(2) + ' | Escore Eq.: ' + eqI + '<br>';
+        html += '<span style="color:' + corClassificacao(eqI) + ';font-weight:bold;">' + _resultados.classMemIm + '</span>';
+        html += ' | Tempo: ' + formatarTempo(segundosMemIm);
+        html += '</div>';
+    }
+    if (mostrarTa) {
+        html += '<div style="background:#E3F2FD;border-left:4px solid #1565c0;border-radius:0 8px 8px 0;padding:12px;margin-bottom:10px;">';
+        html += '<strong>Mem\u00f3ria Tardia</strong><br>';
+        html += 'Bruto: ' + totalTa.toFixed(1) + '/36 | Ajustado: ' + ajMemTa.toFixed(2) + ' | Escore Eq.: ' + eqT + '<br>';
+        html += '<span style="color:' + corClassificacao(eqT) + ';font-weight:bold;">' + _resultados.classMemTa + '</span>';
+        html += ' | Tempo: ' + formatarTempo(segundosMemTa);
+        html += '</div>';
+    }
+    html += '<p style="font-size:0.7em;color:#999;margin-top:12px;">Normas: Casarotti, Papagno & Zarino (2014). Cut-off C\u00f3pia \u2264 27.66 | Cut-off Mem\u00f3ria \u2264 8.4</p>';
+    html += '</div>';
+    document.getElementById('divResultados').innerHTML = html;
+    trocarTela('tela-resultados');
+}
+
+// === GERAR PDF ===
+function gerarPDF() {
+    if (!_resultados) { alert('Calcule os resultados primeiro.'); return; }
+    var jsPDF = window.jspdf.jsPDF;
+    var doc = new jsPDF();
+    var r = _resultados;
+    var y = 0;
+    // PAGINA 1 - Cabecalho
+    doc.setFillColor(106, 27, 154);
+    doc.rect(0, 0, 210, 30, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(15);
+    doc.setFont(undefined, 'bold');
+    doc.text('TESTE ELETRONICO DA FIGURA COMPLEXA DE TAYLOR', 105, 12, {align:'center'});
+    doc.setFontSize(9);
+    doc.setFont(undefined, 'normal');
+    doc.text('Construcao visuoespacial e memoria visual episodica', 105, 19, {align:'center'});
+    doc.text('Taylor (1969) | Spreen, Sherman & Strauss (2006) | Normas: Casarotti et al. (2014)', 105, 25, {align:'center'});
+    // Dados pessoais
+    y = 38;
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'bold');
+    doc.text('DADOS DO AVALIANDO', 20, y); y += 7;
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(9);
+    doc.text('Nome: ' + r.paciente, 20, y); y += 5;
+    doc.text('Idade: ' + r.idade + '     Sexo: ' + (r.sexo || '-'), 20, y); y += 5;
+    doc.text('Escolaridade: ' + r.escolaridade + ' anos', 20, y); y += 5;
+    var dataF = r.data ? new Date(r.data + 'T12:00:00').toLocaleDateString('pt-BR') : '';
+    doc.text('Data da Avaliacao: ' + dataF, 20, y); y += 5;
+    doc.text('Protocolo: ' + (r.protocolo === 'ambas' ? 'Imediata + Tardia' : r.protocolo === 'imediata' ? 'Memoria Imediata' : 'Memoria Tardia'), 20, y); y += 12;
+    // Resultados
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(10);
+    doc.text('RESULTADOS', 20, y); y += 8;
+    doc.setFontSize(9);
+    doc.setFont(undefined, 'normal');
+    // Tabela de resultados
+    doc.setFillColor(243, 229, 245);
+    doc.rect(20, y, 170, 7, 'F');
+    doc.setFont(undefined, 'bold');
+    doc.text('Medida', 22, y + 5);
+    doc.text('Bruto', 72, y + 5);
+    doc.text('Ajustado', 92, y + 5);
+    doc.text('Escore Eq.', 120, y + 5);
+    doc.text('Classificacao', 148, y + 5);
+    y += 9;
+    doc.setFont(undefined, 'normal');
+    // Copia
+    doc.text('Copia', 22, y + 5);
+    doc.text(r.rawCopia.toFixed(1), 72, y + 5);
+    doc.text(r.ajCopia.toFixed(2), 92, y + 5);
+    doc.text(String(r.eqCopia), 125, y + 5);
+    doc.text(r.classCopia, 148, y + 5);
+    y += 7;
+    doc.line(20, y, 190, y);
+    if (r.eqMemIm !== null) {
+        doc.text('Mem. Imediata', 22, y + 5);
+        doc.text(r.rawMemIm.toFixed(1), 72, y + 5);
+        doc.text(r.ajMemIm.toFixed(2), 92, y + 5);
+        doc.text(String(r.eqMemIm), 125, y + 5);
+        doc.text(r.classMemIm, 148, y + 5);
+        y += 7;
+        doc.line(20, y, 190, y);
+    }
+    if (r.eqMemTa !== null) {
+        doc.text('Mem. Tardia', 22, y + 5);
+        doc.text(r.rawMemTa.toFixed(1), 72, y + 5);
+        doc.text(r.ajMemTa.toFixed(2), 92, y + 5);
+        doc.text(String(r.eqMemTa), 125, y + 5);
+        doc.text(r.classMemTa, 148, y + 5);
+        y += 7;
+        doc.line(20, y, 190, y);
+    }
+    y += 10;
+    // Tempos
+    doc.setFont(undefined, 'bold');
+    doc.text('TEMPOS DE EXECUCAO', 20, y); y += 7;
+    doc.setFont(undefined, 'normal');
+    doc.text('Copia: ' + formatarTempo(r.tempoCopia), 22, y); y += 5;
+    if (r.tempoMemIm > 0) { doc.text('Memoria Imediata: ' + formatarTempo(r.tempoMemIm), 22, y); y += 5; }
+    if (r.tempoMemTa > 0) { doc.text('Memoria Tardia: ' + formatarTempo(r.tempoMemTa), 22, y); y += 5; }
+    y += 10;
+    // Interpretacao
+    doc.setFont(undefined, 'bold');
+    doc.text('INTERPRETACAO DOS ESCORES EQUIVALENTES', 20, y); y += 7;
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(8);
+    doc.text('0 = Patologico (abaixo do percentil 5)', 22, y); y += 4;
+    doc.text('1 = Limitrofe', 22, y); y += 4;
+    doc.text('2 = Medio-Inferior', 22, y); y += 4;
+    doc.text('3 = Medio', 22, y); y += 4;
+    doc.text('4 = Acima da Media', 22, y); y += 10;
+    // Formulas
+    doc.setFontSize(7);
+    doc.setTextColor(100, 100, 100);
+    doc.text('Formulas de ajuste (Casarotti et al., 2014):', 22, y); y += 4;
+    doc.text('Copia: ajustado = bruto - [-0.056 x (idade - 54.1)] - [0.249 x (educacao - 12.2586)]', 22, y); y += 4;
+    doc.text('Memoria: ajustado = bruto - [-0.115 x (idade - 54.1)] - [0.493 x (educacao - 12.2586)]', 22, y); y += 4;
+    doc.text('Cut-off Copia: <= 27.66 | Cut-off Memoria: <= 8.4', 22, y);
+    // Rodape
+    doc.setFontSize(7);
+    doc.setTextColor(150, 150, 150);
+    doc.text('Gerado em: ' + new Date().toLocaleString('pt-BR') + ' | TETaylor - setmonte.github.io', 105, 287, {align:'center'});
+    // PAGINA 2 - Referencias
+    doc.addPage();
+    y = 20;
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'bold');
+    doc.text('REFERENCIAS', 20, y); y += 8;
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(8);
+    var refs = [
+        'CASAROTTI, A.; PAPAGNO, C.; ZARINO, B. Modified Taylor Complex Figure: Normative data from 290 adults.',
+        '   Journal of Neuropsychology, v. 8, p. 186-198, 2014. DOI: 10.1111/jnp.12019',
+        '',
+        'HUBLEY, A. M.; JASSAL, S. Comparability of the Rey-Osterrieth and Modified Taylor Complex Figures Using',
+        '   Total Scores, Completion Times, and Construct Validation. Journal of Clinical and Experimental',
+        '   Neuropsychology, v. 28, n. 8, p. 1482-1497, 2006. DOI: 10.1080/13803390500434441',
+        '',
+        'SPREEN, E.; STRAUSS, E. M. S.; SHERMAN, O. A Compendium of Neuropsychological Tests: Administration,',
+        '   Norms, and Commentary. 3rd ed. New York: Oxford University Press, 2006.',
+        '',
+        'TAYLOR, L. B. Localization of cerebral lesions by psychological testing. Clinical Neurosurgery,',
+        '   v. 16, p. 269-287, 1969.'
+    ];
+    for (var i = 0; i < refs.length; i++) {
+        doc.text(refs[i], 20, y); y += 4;
+    }
+    // Salvar
+    var nomeArq = 'TETaylor_' + r.paciente.replace(/\s+/g, '_') + '_' + r.data.replace(/-/g, '') + '.pdf';
+    doc.save(nomeArq);
+}
+
+// === ENVIAR RESULTADOS AO PAINEL ===
+async function enviarResultados() {
+    if (!_resultados) { alert('Calcule os resultados primeiro.'); return; }
+    if (!_sessionInfo) { alert('Este teste nao foi iniciado pelo painel.'); return; }
+    var dados = _resultados;
+    dados.idPaciente = '';
+    dados.pacienteId = _sessionInfo.pacienteId || '';
+    try {
+        var resp = await fetch(_API_URL + '/save-escala', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({sessionId: _sessionInfo.sessionId, email: _sessionInfo.email, data: dados, originalSessionId: _sessionInfo.sessionId})
+        });
+        var result = await resp.json();
+        if (result.ok || resp.ok) {
+            alert('Resultados enviados com sucesso!');
+        } else {
+            alert('Erro ao enviar. Tente novamente.');
+        }
+    } catch(e) {
+        alert('Erro de conexao. Verifique sua internet.');
+    }
+}
+
+// === MODO PAINEL (decodificar URL) ===
+function _decodificarURL() {
+    var params = new URLSearchParams(window.location.search);
+    var d = params.get('d');
+    if (!d) return;
+    try {
+        var dados = JSON.parse(atob(d));
+        _sessionInfo = dados;
+        if (dados.patientName) document.getElementById('nome').value = dados.patientName;
+        if (dados.birthDate) { document.getElementById('dataNasc').value = dados.birthDate; calcularIdade(); }
+        if (dados.sex) document.getElementById('sexo').value = dados.sex;
+        if (dados.education) document.getElementById('escolaridade').value = dados.education;
+    } catch(e) {}
+}
+
+// === INICIALIZACAO ===
+document.getElementById('dataAval').value = new Date().toISOString().split('T')[0];
+var params = new URLSearchParams(window.location.search);
+if (params.get('d')) {
+    _decodificarURL();
+}
+
+</script>
+<style>.hidden{display:none !important}</style>
+</body>
+</html>
