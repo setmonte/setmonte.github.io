@@ -4244,11 +4244,18 @@
         });
         barHtml += '</div>';
       }
-      // Filtrar
-      var pacientesFiltrados = filtroLetra ? (grupos[filtroLetra] || []) : [];
+      // Filtrar — se so tem 1 letra, mostrar todos diretamente
+      var pacientesFiltrados;
+      if (filtroLetra) {
+        pacientesFiltrados = grupos[filtroLetra] || [];
+      } else if (letras.length === 1) {
+        pacientesFiltrados = grupos[letras[0]] || [];
+      } else {
+        pacientesFiltrados = [];
+      }
       // Renderizar
-      if (!filtroLetra) {
-        // Sem letra selecionada: mostrar apenas abas
+      if (!filtroLetra && letras.length > 1) {
+        // Varias letras e nenhuma selecionada: mostrar apenas barra de letras
         document.getElementById('pacientesList').innerHTML = barHtml;
       } else if (pacientesFiltrados.length > 0) {
         var html = barHtml;
