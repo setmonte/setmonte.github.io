@@ -49,6 +49,12 @@
     .admin-sub-btn { padding:6px 14px; border:none; border-radius:6px; font-size:12px; font-weight:bold; cursor:pointer; background:#e0e0e0; color:#555; transition:all 0.2s; }
     .admin-sub-btn.active { background:#1565c0; color:#fff; }
     .tab-btn:not(.active):hover { background:#c8e6c9; }
+    .sub-tab-bar { display:flex; gap:4px; margin-bottom:12px; padding:8px; background:#f5f5f5; border-radius:8px; flex-wrap:wrap; }
+    .sub-tab-btn { padding:6px 14px; border:none; border-radius:6px; font-size:12px; font-weight:bold; cursor:pointer; background:#e0e0e0; color:#555; transition:all 0.2s; }
+    .sub-tab-btn.active { background:#2e7d32; color:#fff; }
+    .sub-tab-btn:not(.active):hover { background:#c8e6c9; }
+    .sub-tab-content { display:none; }
+    .sub-tab-content.active { display:block; }
     .tab-content { display:none; }
     .tab-content.active { display:block; }
     input[type="text"], input[type="date"], select { padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
@@ -97,7 +103,7 @@
         <div class="tab-bar">
           <button class="tab-btn active" id="tabPacientes" onclick="switchTab('pacientes')">Pacientes</button>
           <button class="tab-btn" id="tabEscalas" onclick="switchTab('escalas')">Escalas</button>
-          <button class="tab-btn" id="tabTecfe" onclick="switchTab('tecfe')">TECFE</button>
+          <button class="tab-btn" id="tabFuncExec" onclick="switchTab('funcExec')">Fun&#231;&#245;es Executivas</button>
           <button class="tab-btn" id="tabBae" onclick="switchTab('bae')">BAE</button>
           <button class="tab-btn" id="tabTrmv" onclick="switchTab('trmv')">TRMV</button>
           <button class="tab-btn" id="tabTaav" onclick="switchTab('taav')">TAAV</button>
@@ -123,24 +129,30 @@
           <button onclick="document.getElementById('notifBanner').style.display='none'" style="position:absolute;top:5px;right:10px;background:none;border:none;font-size:16px;cursor:pointer;color:#2e7d32;">&times;</button>
         </div>
 
-        <!-- === ABA TECFE === -->
-        <div id="tecfeTab" class="tab-content">
-          <div class="credits-box">
-            <div class="number" id="tecfeCreditsCount">-</div>
-            <div class="label">creditos TECFE disponiveis</div>
+        <!-- === ABA FUNCOES EXECUTIVAS (categoria) === -->
+        <div id="funcExecTab" class="tab-content">
+          <div class="sub-tab-bar">
+            <button class="sub-tab-btn active" id="subTabTecfe" onclick="switchSubTab('funcExec','tecfe')">TECFE</button>
           </div>
-          <div style="background:#e8f5e9;border:1px solid #a5d6a7;border-radius:8px;padding:12px;margin:10px 0;font-size:0.82em;color:#1b5e20;line-height:1.6;">
-            <strong>&#129504; TECFE — Teste de Emparelhamento de Cartas com Feedback Estrategico</strong><br>
-            Rastreio experimental de funcoes executivas: flexibilidade cognitiva, formacao de conceitos e controle inibitorio.<br>
-            O paciente classifica cartas por cor, forma ou numero, descobrindo a regra pelo feedback. A regra muda sem aviso apos acertos consecutivos.<br>
-            <strong>Administracao:</strong> 128 cartas (2 baralhos de 64). O teste encerra ao completar 6 categorias ou esgotar as 128 cartas.<br>
-            <strong>Faixa etaria:</strong> 6,5 a 89 anos (mesma administracao, normas diferenciadas por idade).<br>
-            <strong>Duracao:</strong> ~8-15 min | <strong>Metricas:</strong> categorias completas, erros perseverativos, falhas em manter set | <strong>Base:</strong> Inspirado no WCST (Heaton, 1993)
-          </div>
-          <div class="btn-row">
-            <button class="btn btn-green" id="btnNewTest" onclick="showNewTest()">Nova Aplicacao</button>
-            <button class="btn btn-blue" onclick="showResults()">Resultados</button>
-            <a href="#" class="btn btn-orange" onclick="document.getElementById('plansSection').classList.toggle('hidden');return false;">Comprar Creditos</a>
+          <!-- Sub-aba TECFE -->
+          <div id="subTecfeContent" class="sub-tab-content active">
+            <div class="credits-box">
+              <div class="number" id="tecfeCreditsCount">-</div>
+              <div class="label">creditos TECFE disponiveis</div>
+            </div>
+            <div style="background:#e8f5e9;border:1px solid #a5d6a7;border-radius:8px;padding:12px;margin:10px 0;font-size:0.82em;color:#1b5e20;line-height:1.6;">
+              <strong>&#129504; TECFE — Teste de Emparelhamento de Cartas com Feedback Estrategico</strong><br>
+              Rastreio experimental de funcoes executivas: flexibilidade cognitiva, formacao de conceitos e controle inibitorio.<br>
+              O paciente classifica cartas por cor, forma ou numero, descobrindo a regra pelo feedback. A regra muda sem aviso apos acertos consecutivos.<br>
+              <strong>Administracao:</strong> 128 cartas (2 baralhos de 64). O teste encerra ao completar 6 categorias ou esgotar as 128 cartas.<br>
+              <strong>Faixa etaria:</strong> 6,5 a 89 anos (mesma administracao, normas diferenciadas por idade).<br>
+              <strong>Duracao:</strong> ~8-15 min | <strong>Metricas:</strong> categorias completas, erros perseverativos, falhas em manter set | <strong>Base:</strong> Inspirado no WCST (Heaton, 1993)
+            </div>
+            <div class="btn-row">
+              <button class="btn btn-green" id="btnNewTest" onclick="showNewTest()">Nova Aplicacao</button>
+              <button class="btn btn-blue" onclick="showResults()">Resultados</button>
+              <a href="#" class="btn btn-orange" onclick="document.getElementById('plansSection').classList.toggle('hidden');return false;">Comprar Creditos</a>
+            </div>
           </div>
         </div>
 
@@ -2659,7 +2671,7 @@
 
     // ===== FUNCOES BAE =====
     function switchTab(tab) {
-      document.getElementById('tecfeTab').classList.remove('active');
+      document.getElementById('funcExecTab').classList.remove('active');
       document.getElementById('baeTab').classList.remove('active');
       document.getElementById('trmvTab').classList.remove('active');
       document.getElementById('taavTab').classList.remove('active');
@@ -2679,7 +2691,7 @@
       document.getElementById('depoimentosTab').classList.remove('active');
       document.getElementById('adminTab').classList.remove('active');
       document.getElementById('programasOcultosTab').classList.remove('active');
-      document.getElementById('tabTecfe').classList.remove('active');
+      document.getElementById('tabFuncExec').classList.remove('active');
       document.getElementById('tabBae').classList.remove('active');
       document.getElementById('tabTrmv').classList.remove('active');
       document.getElementById('tabTaav').classList.remove('active');
@@ -2702,9 +2714,9 @@
       ['plansSection','newTestSection','resultsSection','baePlansSection','newBaeSection','baeResultsSection','trmvPlansSection','newTrmvSection','trmvResultsSection','taavPlansSection','newTaavSection','taavResultsSection','trefPlansSection','newTrefSection','trefResultsSection','newTflodSection','tflodResultsSection','newCorsiSection','corsiResultsSection','newTteSection','tteResultsSection','newTetaylorSection','tetaylorResultsSection','newTetaylorsimpSection','tetaylorsimpResultsSection','newPfisterSection','pfisterResultsSection'].forEach(function(id) {
         var el = document.getElementById(id); if (el) el.classList.add('hidden');
       });
-      if (tab === 'tecfe') {
-        document.getElementById('tecfeTab').classList.add('active');
-        document.getElementById('tabTecfe').classList.add('active');
+      if (tab === 'funcExec') {
+        document.getElementById('funcExecTab').classList.add('active');
+        document.getElementById('tabFuncExec').classList.add('active');
       } else if (tab === 'bae') {
         document.getElementById('baeTab').classList.add('active');
         document.getElementById('tabBae').classList.add('active');
@@ -2781,6 +2793,19 @@
         carregarVendas();
         verificarVendasNovas();
       }
+    }
+
+    function switchSubTab(category, subTab) {
+      var container = document.getElementById(category + 'Tab');
+      if (!container) return;
+      var subs = container.querySelectorAll('.sub-tab-content');
+      var btns = container.querySelectorAll('.sub-tab-btn');
+      for (var i = 0; i < subs.length; i++) { subs[i].classList.remove('active'); }
+      for (var i = 0; i < btns.length; i++) { btns[i].classList.remove('active'); }
+      var content = document.getElementById('sub' + subTab.charAt(0).toUpperCase() + subTab.slice(1) + 'Content');
+      var btn = document.getElementById('subTab' + subTab.charAt(0).toUpperCase() + subTab.slice(1));
+      if (content) content.classList.add('active');
+      if (btn) btn.classList.add('active');
     }
 
     function showNewBae() {
