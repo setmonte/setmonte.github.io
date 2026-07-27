@@ -104,7 +104,7 @@
           <button class="tab-btn active" id="tabPacientes" onclick="switchTab('pacientes')">Pacientes</button>
           <button class="tab-btn" id="tabEscalas" onclick="switchTab('escalas')">Escalas</button>
           <button class="tab-btn" id="tabFuncExec" onclick="switchTab('funcExec')">Fun&#231;&#245;es Executivas</button>
-          <button class="tab-btn" id="tabBae" onclick="switchTab('bae')">BAE</button>
+          <button class="tab-btn" id="tabAtencao" onclick="switchTab('atencao')">Aten&#231;&#227;o</button>
           <button class="tab-btn" id="tabTrmv" onclick="switchTab('trmv')">TRMV</button>
           <button class="tab-btn" id="tabTaav" onclick="switchTab('taav')">TAAV</button>
           <button class="tab-btn" id="tabPercepcao" onclick="switchTab('percepcao')">Percep&#231;&#227;o</button>
@@ -171,23 +171,29 @@
           </div>
         </div>
 
-        <!-- === ABA BAE === -->
-        <div id="baeTab" class="tab-content">
-          <div class="credits-box" style="border-color:#1565c0;background:#e3f2fd;">
-            <div class="number" id="baeCreditsCount" style="color:#1565c0;">-</div>
-            <div class="label">creditos BAE disponiveis</div>
+        <!-- === ABA ATENCAO (categoria) === -->
+        <div id="atencaoTab" class="tab-content">
+          <div class="sub-tab-bar">
+            <button class="sub-tab-btn active" id="subTabBae" onclick="switchSubTab('atencao','bae')">BAE</button>
           </div>
-          <div style="background:#e3f2fd;border:1px solid #90caf9;border-radius:8px;padding:12px;margin:10px 0;font-size:0.82em;color:#0d47a1;line-height:1.6;">
-            <strong>&#129504; BAE — Bateria de Atencao Eletronica</strong><br>
-            Rastreio experimental de 5 tipos atencionais: concentrada, sustentada, alternada, dividida e seletiva.<br>
-            O paciente responde a estimulos visuais em cada subteste, com registro de acertos, erros e tempo de reacao.<br>
-            <strong>Subtestes:</strong> Concentrada (cancelamento) | Sustentada (vigilancia 5min) | Alternada (troca de regra) | Dividida (dupla tarefa) | Seletiva (inibicao de distratores).<br>
-            <strong>Duracao:</strong> ~20-30 min | <strong>Metricas:</strong> acertos, omissoes, comissoes, TR medio, variabilidade
-          </div>
-          <div class="btn-row">
-            <button class="btn btn-green" id="btnNewBae" onclick="showNewBae()">Nova Aplicacao BAE</button>
-            <button class="btn btn-blue" onclick="showBaeResults()">Resultados BAE</button>
-            <a href="#" class="btn btn-orange" onclick="document.getElementById('baePlansSection').classList.toggle('hidden');return false;">Comprar Creditos</a>
+          <!-- Sub-aba BAE -->
+          <div id="subBaeContent" class="sub-tab-content active">
+            <div class="credits-box" style="border-color:#1565c0;background:#e3f2fd;">
+              <div class="number" id="baeCreditsCount" style="color:#1565c0;">-</div>
+              <div class="label">creditos BAE disponiveis</div>
+            </div>
+            <div style="background:#e3f2fd;border:1px solid #90caf9;border-radius:8px;padding:12px;margin:10px 0;font-size:0.82em;color:#0d47a1;line-height:1.6;">
+              <strong>&#129504; BAE — Bateria de Atencao Eletronica</strong><br>
+              Rastreio experimental de 5 tipos atencionais: concentrada, sustentada, alternada, dividida e seletiva.<br>
+              O paciente responde a estimulos visuais em cada subteste, com registro de acertos, erros e tempo de reacao.<br>
+              <strong>Subtestes:</strong> Concentrada (cancelamento) | Sustentada (vigilancia 5min) | Alternada (troca de regra) | Dividida (dupla tarefa) | Seletiva (inibicao de distratores).<br>
+              <strong>Duracao:</strong> ~20-30 min | <strong>Metricas:</strong> acertos, omissoes, comissoes, TR medio, variabilidade
+            </div>
+            <div class="btn-row">
+              <button class="btn btn-green" id="btnNewBae" onclick="showNewBae()">Nova Aplicacao BAE</button>
+              <button class="btn btn-blue" onclick="showBaeResults()">Resultados BAE</button>
+              <a href="#" class="btn btn-orange" onclick="document.getElementById('baePlansSection').classList.toggle('hidden');return false;">Comprar Creditos</a>
+            </div>
           </div>
         </div>
 
@@ -2300,7 +2306,7 @@
       // Aplicar modo gratuito para qualquer usuario (o toggle so aparece para admin, mas o efeito e global)
       if (isFreeModeActive()) { aplicarFreeMode(true); }
       // BAE visivel para todos
-      document.getElementById('tabBae').classList.remove('hidden');
+      document.getElementById('tabAtencao').classList.remove('hidden');
       // Buscar creditos
       try {
         var resp = await fetch(API_URL + '/credits?email=' + encodeURIComponent(currentUser));
@@ -2683,7 +2689,7 @@
     // ===== FUNCOES BAE =====
     function switchTab(tab) {
       document.getElementById('funcExecTab').classList.remove('active');
-      document.getElementById('baeTab').classList.remove('active');
+      document.getElementById('atencaoTab').classList.remove('active');
       document.getElementById('trmvTab').classList.remove('active');
       document.getElementById('taavTab').classList.remove('active');
       document.getElementById('percepcaoTab').classList.remove('active');
@@ -2702,7 +2708,7 @@
       document.getElementById('adminTab').classList.remove('active');
       document.getElementById('programasOcultosTab').classList.remove('active');
       document.getElementById('tabFuncExec').classList.remove('active');
-      document.getElementById('tabBae').classList.remove('active');
+      document.getElementById('tabAtencao').classList.remove('active');
       document.getElementById('tabTrmv').classList.remove('active');
       document.getElementById('tabTaav').classList.remove('active');
       document.getElementById('tabPercepcao').classList.remove('active');
@@ -2726,9 +2732,9 @@
       if (tab === 'funcExec') {
         document.getElementById('funcExecTab').classList.add('active');
         document.getElementById('tabFuncExec').classList.add('active');
-      } else if (tab === 'bae') {
-        document.getElementById('baeTab').classList.add('active');
-        document.getElementById('tabBae').classList.add('active');
+      } else if (tab === 'atencao') {
+        document.getElementById('atencaoTab').classList.add('active');
+        document.getElementById('tabAtencao').classList.add('active');
       } else if (tab === 'trmv') {
         document.getElementById('trmvTab').classList.add('active');
         document.getElementById('tabTrmv').classList.add('active');
