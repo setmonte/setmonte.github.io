@@ -137,7 +137,7 @@ var PONTUACOES = {
 'Interrogacao': {itens: [26,27,28], nome: 'Tend\u00eancia \u00e0 Interroga\u00e7\u00e3o'}
 };
 var ITENS = [
-{texto:"Sinto que a intimidade f\u00edsica entre n\u00f3s reflete uma conex\u00e3o emocional real, n\u00e3o apenas f\u00edsica.", secao:'pilar', pilar:'Sexual'},
+{texto:"Na \u00faltima vez em que tivemos intimidade f\u00edsica, senti proximidade emocional genu\u00edna \u2014 n\u00e3o apenas rotina ou obriga\u00e7\u00e3o.", secao:'pilar', pilar:'Sexual', temporal:true},
 {texto:"Consigo expressar meus desejos e limites sexuais com meu(minha) parceiro(a) sem medo de julgamento.", secao:'pilar', pilar:'Sexual'},
 {texto:"A frequ\u00eancia da nossa vida sexual \u00e9 satisfat\u00f3ria para mim atualmente.", secao:'pilar', pilar:'Sexual'},
 {texto:"Sinto que meu(minha) parceiro(a) se sente desejado(a) por mim.", secao:'pilar', pilar:'Sexual'},
@@ -148,15 +148,15 @@ var ITENS = [
 {texto:"Conseguimos conversar sobre d\u00edvidas, gastos ou planejamento financeiro sem que vire briga.", secao:'pilar', pilar:'Financeiro'},
 {texto:"Sinto seguran\u00e7a quanto ao futuro financeiro do nosso casal.", secao:'pilar', pilar:'Financeiro'},
 {texto:"Reservamos tempo de qualidade s\u00f3 para n\u00f3s, sem filhos, trabalho ou terceiros.", secao:'pilar', pilar:'Divertimento'},
-{texto:"Ainda encontramos coisas novas e prazerosas para fazer juntos.", secao:'pilar', pilar:'Divertimento'},
+{texto:"Nos \u00faltimos 30 dias, fizemos pelo menos uma atividade nova ou diferente da nossa rotina, s\u00f3 os dois.", secao:'pilar', pilar:'Divertimento', temporal:true},
 {texto:"Rimos juntos com frequ\u00eancia no nosso dia a dia.", secao:'pilar', pilar:'Divertimento'},
 {texto:"Sinto que meu(minha) parceiro(a) \u00e9 tamb\u00e9m meu(minha) parceiro(a) de divers\u00e3o, n\u00e3o s\u00f3 de responsabilidades.", secao:'pilar', pilar:'Divertimento'},
 {texto:"Temos interesses ou atividades compartilhadas que nutrem nossa conex\u00e3o.", secao:'pilar', pilar:'Divertimento'},
 {texto:"Temos uma vis\u00e3o compartilhada de para onde nossa rela\u00e7\u00e3o est\u00e1 indo.", secao:'pilar', pilar:'ProjetoFuturo'},
 {texto:"Conversamos abertamente sobre planos de longo prazo (filhos, moradia, carreira, aposentadoria).", secao:'pilar', pilar:'ProjetoFuturo'},
-{texto:"Sinto que meu(minha) parceiro(a) est\u00e1 comprometido(a) com um futuro junto comigo.", secao:'pilar', pilar:'ProjetoFuturo'},
+{texto:"Na \u00faltima vez que conversamos sobre planos de longo prazo (filhos, casa, aposentadoria, mudan\u00e7a), meu(minha) parceiro(a) participou ativamente da decis\u00e3o, n\u00e3o apenas concordou ou evitou o assunto.", secao:'pilar', pilar:'ProjetoFuturo', temporal:true},
 {texto:"Quando surgem diverg\u00eancias sobre o futuro, conseguimos negociar um caminho comum.", secao:'pilar', pilar:'ProjetoFuturo'},
-{texto:"Acredito que estamos construindo algo que faz sentido para os dois, n\u00e3o s\u00f3 para um.", secao:'pilar', pilar:'ProjetoFuturo'},
+{texto:"Consigo citar uma decis\u00e3o importante dos \u00faltimos 6 meses em que abrimos m\u00e3o de algo que um de n\u00f3s queria, em favor do que fazia sentido pro casal.", secao:'pilar', pilar:'ProjetoFuturo', temporal:true},
 {texto:"Quando discordamos, tendo a encerrar o assunto com uma posi\u00e7\u00e3o fixa, sem muito espa\u00e7o para negocia\u00e7\u00e3o.", secao:'pontuacao', tipo:'Ponto'},
 {texto:"Prefiro afirmar o que penso de forma direta, mesmo que isso feche a conversa.", secao:'pontuacao', tipo:'Ponto'},
 {texto:"Meu(minha) parceiro(a) costuma sentir que \u0022n\u00e3o h\u00e1 mais o que discutir\u0022 depois que eu falo.", secao:'pontuacao', tipo:'Ponto'},
@@ -215,6 +215,9 @@ function gerarQuestionario() {
         for (var j = 0; j < OPCOES.length; j++) {
             h += '<div class="opcao"><input type="radio" id="q' + i + '_' + OPCOES[j].valor + '" name="q' + i + '" value="' + OPCOES[j].valor + '"><label for="q' + i + '_' + OPCOES[j].valor + '">' + OPCOES[j].texto + '</label></div>';
         }
+        if (item.temporal) {
+            h += '<div class="opcao" style="border-left:2px solid #ccc;padding-left:12px;margin-left:5px;"><input type="radio" id="q' + i + '_0" name="q' + i + '" value="0"><label for="q' + i + '_0" style="color:#999;font-style:italic;">N\u00e3o se<br>aplica</label></div>';
+        }
         h += '</div></div>';
     }
     c.innerHTML = h;
@@ -249,14 +252,20 @@ function calcularResultados() {
     // Calcular pilares
     var resultPilares = {};
     var totalPilares = 0;
+    var totalMaximo = 0;
     var pilarKeys = Object.keys(PILARES);
     for (var p = 0; p < pilarKeys.length; p++) {
         var key = pilarKeys[p];
         var soma = 0;
+        var itensValidos = 0;
         var itens = PILARES[key].itens;
-        for (var i = 0; i < itens.length; i++) soma += respostas[itens[i]];
-        resultPilares[key] = {soma: soma, classificacao: classificarPilar(soma)};
-        totalPilares += soma;
+        for (var i = 0; i < itens.length; i++) {
+            if (respostas[itens[i]] > 0) { soma += respostas[itens[i]]; itensValidos++; }
+        }
+        // Se tem itens validos, calcula proporcional a 5 itens (escala original)
+        var somaProporcional = itensValidos > 0 ? Math.round((soma / itensValidos) * 5) : 0;
+        resultPilares[key] = {soma: somaProporcional, somaReal: soma, itensRespondidos: itensValidos, classificacao: classificarPilar(somaProporcional)};
+        totalPilares += somaProporcional;
     }
     var classCorpo = classificarCorpo(totalPilares);
 
@@ -298,7 +307,7 @@ function calcularResultados() {
         var rp = resultPilares[key];
         var pct = Math.round((rp.soma / 25) * 100);
         h += '<div class="dominio-card"><h4>' + nomesPilarExibicao[key] + '</h4>';
-        h += '<p>' + rp.soma + ' / 25 (' + pct + '%) \u2014 <span style="color:' + rp.classificacao.cor + ';font-weight:bold;">' + rp.classificacao.texto + '</span></p>';
+        h += '<p>' + rp.soma + ' / 25 (' + pct + '%) \u2014 <span style="color:' + rp.classificacao.cor + ';font-weight:bold;">' + rp.classificacao.texto + '</span>' + (rp.itensRespondidos < 5 ? ' <span style="font-size:0.8em;color:#999;">('+rp.itensRespondidos+'/5 itens respondidos)</span>' : '') + '</p>';
         h += '<div class="barra-progresso"><div class="barra-preenchida" style="width:' + pct + '%;background:' + rp.classificacao.cor + ';"></div></div></div>';
     }
 
