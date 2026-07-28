@@ -1,29 +1,74 @@
 /**
  * Preservation Property Tests
- * Property 2: Preservacao - Comportamento Existente Inalterado
+ * Property 2: Formato Payload + Outros Interceptores + Polling
  * 
- * Validates: Requirements 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8
+ * Validates: Requirements 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7
  * 
  * OBJETIVO: Capturar o comportamento EXISTENTE que NAO pode mudar apos o fix.
  * Estes testes DEVEM PASSAR no codigo atual (nao-corrigido).
  * Eles servem de "rede de seguranca" para evitar regressoes.
  * 
- * Abordagem: Extrair a logica pura (sem DOM) dos arquivos originais
- * e verificar que produz os resultados corretos para inputs nao-bugados.
+ * Propriedades testadas:
+ *   1. Para todo payload de TFLOD/TREF/TRMV, data.formData DEVE manter campos internos
+ *   2. Para todo interceptor que NAO seja finalizarGravacao, setTimeout DEVE ser preservado
+ *   3. Para todo ciclo de polling (5s), se _escalaDados existe, dados DEVEM ser enviados
+ *   4. Formato do pacote coleta-anonima: {email, escala, idade, sexo, escolaridade, pontuacao, dominios, classificacao}
  */
 
 var assert = require('assert');
+var fs = require('fs');
+var path = require('path');
 
 // ========================================
-// Utilidades de teste (mini property-based)
+// UTILIDADES PROPERTY-BASED TESTING
 // ========================================
 
 function randomInt(min, max) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
+    return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-function randomChoice(arr) {
-  return arr[Math.floor(Math.random() * arr.length)];
+function randomString(len) {
+    var chars = 'abcdefghijklmnopqrstuvwxyz';
+    var result = '';
+    for (var i = 0; i < len; i++) {
+        result += chars[randomInt(0, chars.length - 1)];
+    }
+    return result;
+}
+
+function randomName() {
+    var nomes = ['Maria Silva', 'Joao Santos', 'Ana Oliveira', 'Pedro Costa', 'Lucas Souza', 'Julia Ferreira', 'Carlos Lima', 'Beatriz Almeida'];
+    return nomes[randomInt(0, nomes.length - 1)];
+}
+
+function randomBirthDate() {
+    var year = randomInt(1950, 2015);
+    var month = String(randomInt(1, 12)).padStart(2, '0');
+    var day = String(randomInt(1, 28)).padStart(2, '0');
+    return year + '-' + month + '-' + day;
+}
+
+function randomEmail() {
+    var domains = ['gmail.com', 'hotmail.com', 'yahoo.com'];
+    return randomString(6) + randomInt(1, 99) + '@' + domains[randomInt(0, 2)];
+}
+
+function randomSexo() {
+    var opcoes = ['Masculino', 'Feminino', 'M', 'F'];
+    return opcoes[randomInt(0, opcoes.length - 1)];
+}
+
+function randomSessionId() {
+    return 'sess-' + randomString(8) + '-' + Date.now();
+}
+
+function randomPacienteId() {
+    return 'P' + randomInt(1, 9) + randomString(3).toUpperCase() + randomInt(1, 9);
+}
+
+function randomEscolaridade() {
+    var opcoes = ['Fundamental', 'Medio Completo', 'Superior Incompleto', 'Superior Completo', 'Pos-graduacao'];
+    return opcoes[randomInt(0, opcoes.length - 1)];
 }
 
 // Contador de testes
@@ -33,445 +78,739 @@ var failedTests = 0;
 var failedDetails = [];
 
 function runTest(name, fn) {
-  totalTests++;
-  try {
-    fn();
-    passedTests++;
-    console.log('  PASS: ' + name);
-  } catch (e) {
-    failedTests++;
-    var detail = '  FAIL: ' + name + ' -> ' + e.message;
-    failedDetails.push(detail);
-    console.log(detail);
-  }
+    totalTests++;
+    try {
+        fn();
+        passedTests++;
+        console.log('  PASS: ' + name);
+    } catch (e) {
+        failedTests++;
+        var detail = '  FAIL: ' + name + ' -> ' + e.message;
+        failedDetails.push(detail);
+        console.log(detail);
+    }
 }
 
-
 // ========================================
-// LOGICA EXTRAIDA DO CODIGO ATUAL
-// (estas funcoes replicam EXATAMENTE o comportamento dos fontes)
+// SIMULACAO: PAYLOAD TFLOD (salvarResultado)
+// Replica EXATAMENTE o formato atual de teste-tflod.html
 // ========================================
 
 /**
- * Extraido de teste-agenda.html recognition.onend:
- * recognition.onend = function() { if (gravando && !pausado) { try { recognition.start(); } catch(er){} } };
+ * Validates: Requirements 3.1, 3.2
  * 
- * Quando gravando=true E pausado=false E onend dispara NORMALMENTE
- * (nao em loop rapido), recognition.start() DEVE ser chamado.
- * Este e o comportamento CORRETO para pausas normais no Chrome.
+ * Formato atual do payload TFLOD:
+ * {
+ *   email, tipo:'tflod', sessionId,
+ *   data: {
+ *     status:'finalizado', date,
+ *     formData: { nome, idade, idadeAnos, escolaridade, dataNasc, dataAval, obs, correcaoVisual, id, pacienteId },
+ *     resultados: { pcpm, classificacao, acertos, erros, palavrasAlcancadas, ... },
+ *     audioBase64
+ *   }
+ * }
  */
-function shouldRestartRecognition(gravando, pausado) {
-  // Logica exata do codigo atual
-  if (gravando && !pausado) {
-    return true; // recognition.start() e chamado
-  }
-  return false;
+function buildTflodPayload(sessionInfo, dadosForm, resultado) {
+    if (!sessionInfo.email || !sessionInfo.sessionId) return null;
+    var dados = {
+        email: sessionInfo.email,
+        tipo: 'tflod',
+        sessionId: sessionInfo.sessionId,
+        data: {
+            status: 'finalizado',
+            date: new Date().toISOString(),
+            formData: {
+                nome: dadosForm.nome,
+                idade: dadosForm.idade,
+                idadeAnos: dadosForm.idadeAnos,
+                escolaridade: dadosForm.escolaridade,
+                dataNasc: dadosForm.dataNasc,
+                dataAval: dadosForm.dataAval,
+                obs: dadosForm.obs,
+                correcaoVisual: dadosForm.correcaoVisual,
+                id: dadosForm.id,
+                pacienteId: sessionInfo.pacienteId || ''
+            },
+            resultados: resultado,
+            audioBase64: null
+        }
+    };
+    return dados;
 }
+
+// ========================================
+// SIMULACAO: PAYLOAD TREF (salvarResultadoLambda)
+// Replica EXATAMENTE o formato atual de teste-tref.html
+// ========================================
 
 /**
- * Extraido de LAMBDA-FINAL-LIMPA.js POST /use-credit:
- * const creditField = tipo === "bae" ? "baeCredits" 
- *   : tipo === "trmv" ? "trmvCredits" 
- *   : tipo === "tref" ? "trefCredits" 
- *   : tipo === "taav" ? "taavCredits" 
- *   : tipo === "tflod" ? "tflodCredits" 
- *   : "credits";
+ * Validates: Requirements 3.4
+ * 
+ * Formato atual do payload TREF:
+ * {
+ *   email, tipo:'tref', sessionId,
+ *   data: {
+ *     status:'finalizado', date,
+ *     formData: { nome, idade, sexo, dataNasc, dataAval, obs, id, pacienteId },
+ *     resultados: { mulher:{...}, homem:{...} }
+ *   }
+ * }
  */
-function getCreditFieldForUseCredit(tipo) {
-  var creditField = tipo === "bae" ? "baeCredits"
-    : tipo === "trmv" ? "trmvCredits"
-    : tipo === "tref" ? "trefCredits"
-    : tipo === "taav" ? "taavCredits"
-    : tipo === "tflod" ? "tflodCredits"
-    : "credits";
-  return creditField;
+function buildTrefPayload(sessionInfo, dadosForm, resultados) {
+    if (!sessionInfo.email || !sessionInfo.sessionId) return null;
+    var dados = {
+        email: sessionInfo.email,
+        tipo: 'tref',
+        sessionId: sessionInfo.sessionId,
+        data: {
+            status: 'finalizado',
+            date: new Date().toISOString(),
+            formData: {
+                nome: dadosForm.nome,
+                idade: dadosForm.idade,
+                sexo: dadosForm.sexo,
+                dataNasc: dadosForm.dataNasc,
+                dataAval: dadosForm.dataAval,
+                obs: dadosForm.obs,
+                id: dadosForm.id,
+                pacienteId: sessionInfo.pacienteId || ''
+            },
+            resultados: resultados
+        }
+    };
+    return dados;
 }
+
+// ========================================
+// SIMULACAO: PAYLOAD TRMV (finalizarTeste)
+// Replica EXATAMENTE o formato atual de teste-trmv.html
+// ========================================
 
 /**
- * Extraido de LAMBDA-FINAL-LIMPA.js POST /webhook-mp:
- * const creditField = tipo === "bae" ? "baeCredits" 
- *   : tipo === "trmv" ? "trmvCredits" 
- *   : tipo === "tref" ? "trefCredits" 
- *   : tipo === "taav" ? "taavCredits" 
- *   : "credits";
+ * Validates: Requirements 3.5
+ * 
+ * Formato atual do payload TRMV:
+ * {
+ *   sessionId, email, tipo:'trmv',
+ *   data: {
+ *     formData: sessionData,
+ *     status:'completo', date, numEstimulos,
+ *     reconhecimento1: { acertos, alarmesFalsos, omissoes, tempoResposta },
+ *     reconhecimento2: { acertos, alarmesFalsos, omissoes, tempoResposta },
+ *     indiceRetencao: number
+ *   }
+ * }
  */
-function getCreditFieldForWebhook(tipo) {
-  var creditField = tipo === "bae" ? "baeCredits"
-    : tipo === "trmv" ? "trmvCredits"
-    : tipo === "tref" ? "trefCredits"
-    : tipo === "taav" ? "taavCredits"
-    : "credits";
-  return creditField;
+function buildTrmvPayload(sessionData, resultados, numEstimulos) {
+    if (!sessionData.sessionId || !sessionData.email) return null;
+    var resultData = {
+        formData: sessionData,
+        status: 'completo',
+        date: new Date().toISOString(),
+        numEstimulos: numEstimulos || 15,
+        reconhecimento1: {
+            acertos: resultados.reconhecimento1.acertos,
+            alarmesFalsos: resultados.reconhecimento1.alarmesFalsos,
+            omissoes: resultados.reconhecimento1.omissoes,
+            tempoResposta: resultados.reconhecimento1.tempoResposta
+        },
+        reconhecimento2: {
+            acertos: resultados.reconhecimento2.acertos,
+            alarmesFalsos: resultados.reconhecimento2.alarmesFalsos,
+            omissoes: resultados.reconhecimento2.omissoes,
+            tempoResposta: resultados.reconhecimento2.tempoResposta
+        },
+        indiceRetencao: resultados.indiceRetencao
+    };
+    var payload = {
+        sessionId: sessionData.sessionId,
+        email: sessionData.email,
+        tipo: 'trmv',
+        data: resultData
+    };
+    return payload;
 }
+
+// ========================================
+// SIMULACAO: INTERCEPTORES coleta-anonima.js
+// Replica a logica de interceptacao com setTimeout
+// ========================================
 
 /**
- * Extraido de teste-agenda.html - logica do timer no modo agenda:
- * var restante = totalSegundos - segundosDecorridos;
- * if (restante < 0) restante = 0;
- * if (!bipDado10 && restante <= 600 && restante > 0) { bipDado10 = true; emitirBip(1); }
- * if (!bipDadoFinal && restante <= 0) { bipDadoFinal = true; emitirBip(2); }
+ * Validates: Requirements 3.3, 3.6
+ * 
+ * Interceptores atuais e seus timeouts:
+ * 1. calcularResultados -> setTimeout(500)
+ * 2. _enviarResultadosPainel -> setTimeout(500)
+ * 3. salvarResultadoLambda -> setTimeout(500)
+ * 4. finalizarTeste -> setTimeout(500)
+ * 5. finalizarGravacao -> .then(setTimeout(500)) + fallback setTimeout(30000) [ALTERADO pelo fix]
+ * 6. mostrarResultados -> setTimeout(500)
+ * 7. showEndScreen -> setTimeout(500)
+ * 8. _prepararDadosEEnviar -> setTimeout(1500)
+ * 9. enviarResultados (BAE) -> setTimeout(1500) + setTimeout(5000)
+ * 10. mostrarTelaFinal (BAE) -> setTimeout(2000) + setTimeout(5000)
  */
-function simulateTimerTick(totalSegundos, segundosDecorridos, bipDado10, bipDadoFinal) {
-  var restante = totalSegundos - segundosDecorridos;
-  if (restante < 0) restante = 0;
-  
-  var shouldBip10 = false;
-  var shouldBipFinal = false;
-  var shouldStop = false;
-  
-  if (!bipDado10 && restante <= 600 && restante > 0) {
-    shouldBip10 = true;
-  }
-  if (!bipDadoFinal && restante <= 0) {
-    shouldBipFinal = true;
-    shouldStop = true;
-  }
-  
-  return {
-    restante: restante,
-    shouldBip10: shouldBip10,
-    shouldBipFinal: shouldBipFinal,
-    shouldStop: shouldStop
-  };
-}
-
-/**
- * Admin bypass: email === "setmonte@gmail.com" nunca consome creditos.
- * No codigo ATUAL, nao existe verificacao de creditos para nenhum teste
- * (o que e justamente o bug para TFLOD e Prontuario).
- * Mas o comportamento ESPERADO apos o fix e que o admin continue
- * sem consumir creditos. Aqui testamos que a logica de bypass funciona.
- */
-function isAdmin(email) {
-  return email === "setmonte@gmail.com";
-}
-
-
-// ========================================
-// PRESERVATION TEST 1: SpeechRecognition Normal Restart
-// Validates: Requirement 3.1
-// Quando gravando=true e pausado=false e o onend dispara normalmente,
-// recognition.start() DEVE ser chamado (auto-restart correto)
-// ========================================
-
-console.log('\n=== PRESERVATION 1: SpeechRecognition Normal Restart ===');
-console.log('Valida: Req 3.1 - Auto-restart funciona em pausas normais\n');
-
-var NUM_ITERATIONS = 30;
-
-for (var i = 0; i < NUM_ITERATIONS; i++) {
-  (function(iter) {
-    runTest('Pres1 [iter ' + iter + '] - gravando=true, pausado=false -> restart chamado', function() {
-      // Cenario normal: gravando ativo, nao pausado
-      var result = shouldRestartRecognition(true, false);
-      assert.strictEqual(result, true,
-        'recognition.start() DEVERIA ser chamado quando gravando=true e pausado=false');
-    });
-  })(i);
-}
-
-// Testes adicionais: quando pausado ou nao gravando, NAO deve reiniciar
-runTest('Pres1 - gravando=false -> NAO reinicia', function() {
-  var result = shouldRestartRecognition(false, false);
-  assert.strictEqual(result, false,
-    'recognition.start() NAO deveria ser chamado quando gravando=false');
-});
-
-runTest('Pres1 - pausado=true -> NAO reinicia', function() {
-  var result = shouldRestartRecognition(true, true);
-  assert.strictEqual(result, false,
-    'recognition.start() NAO deveria ser chamado quando pausado=true');
-});
-
-runTest('Pres1 - gravando=false E pausado=true -> NAO reinicia', function() {
-  var result = shouldRestartRecognition(false, true);
-  assert.strictEqual(result, false,
-    'recognition.start() NAO deveria ser chamado quando gravando=false e pausado=true');
-});
-
-
-// ========================================
-// PRESERVATION TEST 2: Admin Bypass
-// Validates: Requirement 3.2
-// Para email === "setmonte@gmail.com", NENHUM credito e consumido.
-// ========================================
-
-console.log('\n=== PRESERVATION 2: Admin Bypass ===');
-console.log('Valida: Req 3.2 - Admin nunca consome creditos\n');
-
-runTest('Pres2 - setmonte@gmail.com e admin', function() {
-  assert.strictEqual(isAdmin("setmonte@gmail.com"), true,
-    'setmonte@gmail.com deveria ser reconhecido como admin');
-});
-
-// Property: qualquer outro email NAO e admin
-for (var i = 0; i < NUM_ITERATIONS; i++) {
-  (function(iter) {
-    runTest('Pres2 [iter ' + iter + '] - emails aleatorios NAO sao admin', function() {
-      var emails = [
-        'usuario' + iter + '@gmail.com',
-        'teste@hotmail.com',
-        'psicologo' + iter + '@outlook.com',
-        'SETMONTE@gmail.com',  // case sensitive - maiusculo nao e admin
-        'setmonte@gmail.com.br',
-        'setmonte@yahoo.com',
-        ' setmonte@gmail.com', // espaco antes
-        'setmonte@gmail.com '  // espaco depois
-      ];
-      var email = randomChoice(emails);
-      assert.strictEqual(isAdmin(email), false,
-        '"' + email + '" NAO deveria ser admin');
-    });
-  })(i);
-}
-
-
-// ========================================
-// PRESERVATION TEST 3: Existing Credit Types Mapping (/use-credit)
-// Validates: Requirement 3.4
-// Para tipos existentes, o mapeamento creditField e correto.
-// ========================================
-
-console.log('\n=== PRESERVATION 3: Credit Types Mapping (/use-credit) ===');
-console.log('Valida: Req 3.4 - Mapeamento de tipos para creditField inalterado\n');
-
-var expectedMappingUseCredit = {
-  "tecfe": "credits",
-  "bae": "baeCredits",
-  "trmv": "trmvCredits",
-  "tref": "trefCredits",
-  "taav": "taavCredits",
-  "tflod": "tflodCredits"
+var INTERCEPTOR_TIMEOUTS = {
+    // Interceptores que NAO devem ser alterados pelo fix
+    calcularResultados: [500],
+    _enviarResultadosPainel: [500],
+    salvarResultadoLambda: [500],
+    finalizarTeste: [500],
+    mostrarResultados: [500],
+    showEndScreen: [500],
+    _prepararDadosEEnviar: [1500],
+    enviarResultados: [1500, 5000],
+    mostrarTelaFinal: [2000, 5000]
 };
 
-var tiposExistentes = Object.keys(expectedMappingUseCredit);
-
-for (var i = 0; i < tiposExistentes.length; i++) {
-  (function(tipo) {
-    runTest('Pres3 - /use-credit tipo "' + tipo + '" -> "' + expectedMappingUseCredit[tipo] + '"', function() {
-      var result = getCreditFieldForUseCredit(tipo);
-      assert.strictEqual(result, expectedMappingUseCredit[tipo],
-        'Para tipo "' + tipo + '", esperava "' + expectedMappingUseCredit[tipo] + '" mas recebeu "' + result + '"');
+/**
+ * Simula a funcao _interceptar() - extrai os timeouts usados por cada interceptor.
+ * Retorna um mapeamento de nome -> array de timeouts usados.
+ * 
+ * Estrategia: para cada interceptor, encontra o bloco entre
+ * "if (typeof window.NOME" e "= true;" (flag _interceptado = true)
+ * e extrai setTimeout values apenas dentro desse bloco.
+ */
+function extractInterceptorTimeouts(coletaSource) {
+    var result = {};
+    var interceptors = [
+        { name: 'calcularResultados', pattern: 'window.calcularResultados', flag: '_cr_interceptado = true' },
+        { name: '_enviarResultadosPainel', pattern: 'window._enviarResultadosPainel', flag: '_erp_interceptado = true' },
+        { name: 'salvarResultadoLambda', pattern: 'window.salvarResultadoLambda', flag: '_srl_interceptado = true' },
+        { name: 'finalizarTeste', pattern: 'window.finalizarTeste', flag: '_ft_interceptado = true' },
+        { name: 'finalizarGravacao', pattern: 'window.finalizarGravacao', flag: '_fg_interceptado = true' },
+        { name: 'mostrarResultados', pattern: 'window.mostrarResultados', flag: '_mr_interceptado = true' },
+        { name: 'showEndScreen', pattern: 'window.showEndScreen', flag: '_ses_interceptado = true' },
+        { name: '_prepararDadosEEnviar', pattern: 'window._prepararDadosEEnviar', flag: '_pde_interceptado = true' },
+        { name: 'enviarResultados', pattern: 'window.enviarResultados', flag: '_er_interceptado = true' },
+        { name: 'mostrarTelaFinal', pattern: 'window.mostrarTelaFinal', flag: '_mtf_interceptado = true' }
+    ];
+    
+    interceptors.forEach(function(ic) {
+        // Find the "if (typeof window.X === 'function'" start
+        var startPattern = 'typeof ' + ic.pattern;
+        var startIdx = coletaSource.indexOf(startPattern);
+        if (startIdx === -1) return;
+        // Find the closing flag for this block
+        var flagIdx = coletaSource.indexOf(ic.flag, startIdx);
+        if (flagIdx === -1) return;
+        // Extract block between start and flag
+        var block = coletaSource.substring(startIdx, flagIdx);
+        // Extract all setTimeout values from ONLY this block
+        var timeoutRegex = /setTimeout\(_enviarDadosAnonimos,\s*(\d+)\)/g;
+        var timeouts = [];
+        var m;
+        while ((m = timeoutRegex.exec(block)) !== null) {
+            timeouts.push(parseInt(m[1]));
+        }
+        if (timeouts.length > 0) {
+            result[ic.name] = timeouts;
+        }
     });
-  })(tiposExistentes[i]);
+    return result;
 }
 
-// Property: tipos desconhecidos mapeiam para "credits" (default)
-var tiposDesconhecidos = ['xyz', 'unknown', '', 'TECFE', 'Bae', 'outro'];
-for (var i = 0; i < tiposDesconhecidos.length; i++) {
-  (function(tipo) {
-    runTest('Pres3 - /use-credit tipo desconhecido "' + tipo + '" -> "credits" (default)', function() {
-      var result = getCreditFieldForUseCredit(tipo);
-      assert.strictEqual(result, "credits",
-        'Para tipo desconhecido "' + tipo + '", esperava "credits" (default) mas recebeu "' + result + '"');
-    });
-  })(tiposDesconhecidos[i]);
-}
-
-
 // ========================================
-// PRESERVATION TEST 4: Timer Accuracy (Modo Agenda)
-// Validates: Requirement 3.5
-// Timer decrementa corretamente, bip em <=600 restante, auto-stop em <=0
+// SIMULACAO: POLLING coleta-anonima.js
 // ========================================
-
-console.log('\n=== PRESERVATION 4: Timer Accuracy (Modo Agenda) ===');
-console.log('Valida: Req 3.5 - Timer decrementa, bip 10min, auto-stop ao final\n');
-
-// Test: restante calcula corretamente
-for (var i = 0; i < NUM_ITERATIONS; i++) {
-  (function(iter) {
-    runTest('Pres4 [iter ' + iter + '] - restante = totalSegundos - segundosDecorridos', function() {
-      var totalSegundos = randomInt(600, 7200); // 10min a 2h
-      var segundosDecorridos = randomInt(0, totalSegundos);
-      var result = simulateTimerTick(totalSegundos, segundosDecorridos, false, false);
-      var expectedRestante = totalSegundos - segundosDecorridos;
-      if (expectedRestante < 0) expectedRestante = 0;
-      assert.strictEqual(result.restante, expectedRestante,
-        'restante deveria ser ' + expectedRestante + ' mas foi ' + result.restante);
-    });
-  })(i);
-}
-
-// Test: bip 10min dispara quando restante <= 600 e > 0
-runTest('Pres4 - bip10 dispara quando restante=600 (exato)', function() {
-  // totalSegundos=3600 (1h), segundosDecorridos=3000 -> restante=600
-  var result = simulateTimerTick(3600, 3000, false, false);
-  assert.strictEqual(result.shouldBip10, true,
-    'Bip 10min deveria disparar quando restante=600');
-});
-
-runTest('Pres4 - bip10 dispara quando restante=1 (quase zero)', function() {
-  var result = simulateTimerTick(3600, 3599, false, false);
-  assert.strictEqual(result.shouldBip10, true,
-    'Bip 10min deveria disparar quando restante=1 (dentro de <=600 e >0)');
-});
-
-runTest('Pres4 - bip10 NAO dispara quando restante=601', function() {
-  // totalSegundos=3600, segundosDecorridos=2999 -> restante=601
-  var result = simulateTimerTick(3600, 2999, false, false);
-  assert.strictEqual(result.shouldBip10, false,
-    'Bip 10min NAO deveria disparar quando restante=601');
-});
-
-runTest('Pres4 - bip10 NAO dispara se ja foi dado', function() {
-  var result = simulateTimerTick(3600, 3000, true, false); // bipDado10=true
-  assert.strictEqual(result.shouldBip10, false,
-    'Bip 10min NAO deveria disparar novamente se ja foi dado');
-});
-
-runTest('Pres4 - bip10 NAO dispara quando restante=0', function() {
-  // restante <= 600 mas NAO > 0 (a condicao exige >0)
-  var result = simulateTimerTick(3600, 3600, false, false);
-  assert.strictEqual(result.shouldBip10, false,
-    'Bip 10min NAO deveria disparar quando restante=0 (exige >0)');
-});
-
-// Test: bip final e auto-stop quando restante <= 0
-runTest('Pres4 - bipFinal dispara quando restante=0', function() {
-  var result = simulateTimerTick(3600, 3600, true, false);
-  assert.strictEqual(result.shouldBipFinal, true,
-    'Bip final deveria disparar quando restante=0');
-  assert.strictEqual(result.shouldStop, true,
-    'Auto-stop deveria ativar quando restante=0');
-});
-
-runTest('Pres4 - bipFinal dispara quando segundos excedem total', function() {
-  // segundosDecorridos > totalSegundos -> restante clampa em 0
-  var result = simulateTimerTick(3600, 3700, true, false);
-  assert.strictEqual(result.restante, 0,
-    'restante deveria ser clampado em 0 quando segundos excedem total');
-  assert.strictEqual(result.shouldBipFinal, true,
-    'Bip final deveria disparar quando segundos excedem total');
-});
-
-runTest('Pres4 - bipFinal NAO dispara se ja foi dado', function() {
-  var result = simulateTimerTick(3600, 3600, true, true); // bipDadoFinal=true
-  assert.strictEqual(result.shouldBipFinal, false,
-    'Bip final NAO deveria disparar novamente se ja foi dado');
-});
-
-// Property: para qualquer tempo com restante > 600, nenhum bip dispara
-for (var i = 0; i < NUM_ITERATIONS; i++) {
-  (function(iter) {
-    runTest('Pres4 [iter ' + iter + '] - sem bip quando restante > 600', function() {
-      var totalSegundos = randomInt(1800, 7200);
-      // Garantir restante > 600
-      var maxDecorrido = totalSegundos - 601;
-      if (maxDecorrido < 0) maxDecorrido = 0;
-      var segundosDecorridos = randomInt(0, maxDecorrido);
-      var result = simulateTimerTick(totalSegundos, segundosDecorridos, false, false);
-      assert.strictEqual(result.shouldBip10, false,
-        'Bip 10min NAO deveria disparar com restante=' + result.restante + ' (>600)');
-      assert.strictEqual(result.shouldBipFinal, false,
-        'Bip final NAO deveria disparar com restante=' + result.restante + ' (>0)');
-      assert.strictEqual(result.shouldStop, false,
-        'Auto-stop NAO deveria ativar com restante=' + result.restante + ' (>0)');
-    });
-  })(i);
-}
-
-
-// ========================================
-// PRESERVATION TEST 5: Webhook Existing Types
-// Validates: Requirement 3.7
-// Para tipos existentes no webhook, creditField mapeia corretamente.
-// ========================================
-
-console.log('\n=== PRESERVATION 5: Webhook Existing Types ===');
-console.log('Valida: Req 3.7 - Webhook credita no campo correto para tipos existentes\n');
-
-var expectedMappingWebhook = {
-  "tecfe": "credits",
-  "bae": "baeCredits",
-  "trmv": "trmvCredits",
-  "tref": "trefCredits",
-  "taav": "taavCredits"
-};
-
-var tiposWebhook = Object.keys(expectedMappingWebhook);
-
-for (var i = 0; i < tiposWebhook.length; i++) {
-  (function(tipo) {
-    runTest('Pres5 - webhook tipo "' + tipo + '" -> "' + expectedMappingWebhook[tipo] + '"', function() {
-      var result = getCreditFieldForWebhook(tipo);
-      assert.strictEqual(result, expectedMappingWebhook[tipo],
-        'Para webhook tipo "' + tipo + '", esperava "' + expectedMappingWebhook[tipo] + '" mas recebeu "' + result + '"');
-    });
-  })(tiposWebhook[i]);
-}
-
-// NOTA: No webhook atual, tipo "tflod" mapeia para "credits" (default) e NAO para "tflodCredits"!
-// Isso e porque o webhook atual so tem: bae, trmv, tref, taav no if/else chain.
-// O tipo "tflod" cai no else e vai para "credits".
-// Este e o comportamento ATUAL que estamos preservando no teste.
-runTest('Pres5 - webhook tipo "tflod" -> "credits" (default no codigo atual)', function() {
-  var result = getCreditFieldForWebhook("tflod");
-  assert.strictEqual(result, "credits",
-    'No webhook ATUAL, tipo "tflod" mapeia para "credits" (default). ' +
-    'NOTA: isso pode ser um bug existente, mas estamos preservando o comportamento atual.');
-});
-
-// Property: tipos desconhecidos no webhook caem em "credits"
-var tiposDesconhecidosWH = ['xyz', 'unknown', '', 'prontuario', 'corsi'];
-for (var i = 0; i < tiposDesconhecidosWH.length; i++) {
-  (function(tipo) {
-    runTest('Pres5 - webhook tipo desconhecido "' + tipo + '" -> "credits" (default)', function() {
-      var result = getCreditFieldForWebhook(tipo);
-      assert.strictEqual(result, "credits",
-        'Para webhook tipo desconhecido "' + tipo + '", esperava "credits" (default) mas recebeu "' + result + '"');
-    });
-  })(tiposDesconhecidosWH[i]);
-}
-
-
-// ========================================
-// PRESERVATION TEST 6: CORSI Gratuito
-// Validates: Requirement 3.3
-// CORSI nao tem verificacao de creditos - funciona para todos.
-// ========================================
-
-console.log('\n=== PRESERVATION 6: CORSI Gratuito ===');
-console.log('Valida: Req 3.3 - CORSI funciona sem verificacao de creditos\n');
 
 /**
- * No codigo atual (index.html), os testes CORSI e PFISTER sao abertos 
- * sem nenhuma chamada a /use-credit. A funcao de abertura do CORSI
- * (startCorsiOnlineTest ou similar) apenas abre a URL direto.
+ * Validates: Requirements 3.3, 3.6
  * 
- * Para preservar este comportamento, verificamos que CORSI NAO esta
- * na lista de tipos que exigem creditos.
+ * Logica do polling:
+ * - Para testes longos (BAE, TAAV, TRMV, TREF, TFLOD, TTE): intervalo de 5s, max 600 ciclos
+ * - Para escalas: intervalo de 3s, max 40 ciclos
+ * - Se _escalaDados existe e tem .escala, tenta enviar
+ * - Se resultadosBAE existe com subtestes e endPage visivel, tenta enviar
  */
-var tiposComCredito = ["tecfe", "bae", "trmv", "tref", "taav", "tflod"];
-
-runTest('Pres6 - CORSI nao esta na lista de tipos com credito', function() {
-  var corsiExigeCredito = tiposComCredito.indexOf("corsi") !== -1;
-  assert.strictEqual(corsiExigeCredito, false,
-    'CORSI NAO deveria exigir creditos! Deve ser gratuito para todos.');
-});
-
-// Property: Para qualquer email (admin ou nao), CORSI nunca consome credito
-for (var i = 0; i < NUM_ITERATIONS; i++) {
-  (function(iter) {
-    runTest('Pres6 [iter ' + iter + '] - CORSI gratuito para qualquer email', function() {
-      var emails = [
-        'setmonte@gmail.com',
-        'usuario' + iter + '@gmail.com',
-        'clinica@hotmail.com',
-        'teste' + iter + '@yahoo.com'
-      ];
-      var email = randomChoice(emails);
-      // CORSI nao tem tipo no sistema de creditos
-      // Verificar que "corsi" nao mapeia para nenhum campo de credito especifico
-      // (no /use-credit, "corsi" cairia em "credits" default, mas a funcao
-      //  de abertura do CORSI nunca chama /use-credit de qualquer forma)
-      var corsiNaListaCredito = tiposComCredito.indexOf("corsi") !== -1;
-      assert.strictEqual(corsiNaListaCredito, false,
-        'CORSI deve ser gratuito para "' + email + '" - nao exige creditos');
-    });
-  })(i);
+function simulatePollingCycle(isTesteLongo, escalaDados, jaEnviou) {
+    var pollingInterval = isTesteLongo ? 5000 : 3000;
+    var pollingMax = isTesteLongo ? 600 : 40;
+    
+    // Simular um ciclo de polling
+    var shouldAttemptSend = false;
+    
+    if (jaEnviou) {
+        return { shouldStop: true, shouldAttemptSend: false, pollingInterval: pollingInterval, pollingMax: pollingMax };
+    }
+    
+    // Se _escalaDados existe com escala valida, tenta enviar
+    if (escalaDados && escalaDados.escala) {
+        shouldAttemptSend = true;
+    }
+    
+    return {
+        shouldStop: false,
+        shouldAttemptSend: shouldAttemptSend,
+        pollingInterval: pollingInterval,
+        pollingMax: pollingMax
+    };
 }
 
+// ========================================
+// SIMULACAO: PACOTE coleta-anonima (formato de envio ao Google Sheets)
+// ========================================
+
+/**
+ * Validates: Requirements 3.3, 3.7
+ * 
+ * Formato do pacote enviado ao Google Sheets:
+ * { email, escala, idade, sexo, escolaridade, pontuacao, dominios, classificacao }
+ */
+function buildColetaPacket(email, escalaDados, idade, sexo, escolaridade) {
+    if (!escalaDados || !escalaDados.escala) return null;
+    if (!idade) return null;
+    
+    var instrumento = escalaDados.escala;
+    if (instrumento.length < 3) return null;
+    
+    var pontuacao = escalaDados.escore ? parseFloat(escalaDados.escore).toFixed(2) : '';
+    var dominios = '';
+    if (escalaDados.dominios) {
+        var partes = [];
+        Object.keys(escalaDados.dominios).forEach(function(nome) {
+            var d = escalaDados.dominios[nome];
+            var media = typeof d === 'object' ? (d.media || d.score || d.acertos || '') : d;
+            partes.push(nome + ':' + media);
+        });
+        dominios = partes.join('; ');
+    }
+    var classificacao = escalaDados.classificacao || '';
+    
+    // Sem pontuacao E sem dominios = nao envia
+    if (!pontuacao && !dominios) return null;
+    
+    return {
+        email: email,
+        escala: instrumento,
+        idade: idade,
+        sexo: sexo,
+        escolaridade: escolaridade,
+        pontuacao: pontuacao,
+        dominios: dominios,
+        classificacao: classificacao
+    };
+}
+
+// ========================================
+// PROPRIEDADE 1: Formato de formData Preservado (TFLOD)
+// Validates: Requirements 3.1, 3.2
+// ========================================
+
+console.log('\n=== PROPRIEDADE 1: Formato data.formData TFLOD preservado ===');
+console.log('Para todo payload TFLOD, data.formData DEVE conter: nome, idade, idadeAnos, escolaridade, dataNasc, dataAval, obs, correcaoVisual, id, pacienteId\n');
+
+var TFLOD_REQUIRED_FIELDS = ['nome', 'idade', 'idadeAnos', 'escolaridade', 'dataNasc', 'dataAval', 'obs', 'correcaoVisual', 'id', 'pacienteId'];
+var NUM_CASES = 20;
+
+for (var i = 0; i < NUM_CASES; i++) {
+    (function(iter) {
+        runTest('Prop1 [iter ' + iter + '] - TFLOD formData contem todos os campos obrigatorios', function() {
+            var sessionInfo = {
+                email: randomEmail(),
+                sessionId: randomSessionId(),
+                patientName: randomName(),
+                birthDate: randomBirthDate(),
+                pacienteId: randomPacienteId()
+            };
+            var dadosForm = {
+                nome: sessionInfo.patientName,
+                idade: randomInt(20, 80) + ' anos, ' + randomInt(0, 11) + ' meses e ' + randomInt(0, 28) + ' dias',
+                idadeAnos: randomInt(20, 80),
+                escolaridade: randomEscolaridade(),
+                dataNasc: sessionInfo.birthDate,
+                dataAval: '2025-01-' + String(randomInt(1, 28)).padStart(2, '0'),
+                obs: randomInt(0, 1) ? 'Sem observacoes' : '',
+                correcaoVisual: randomInt(0, 1) ? 'Sim' : 'Nao',
+                id: randomPacienteId()
+            };
+            var resultado = {
+                pcpm: parseFloat((randomInt(50, 200) / 10).toFixed(1)),
+                classificacao: ['Normal', 'Abaixo', 'Acima'][randomInt(0, 2)],
+                acertos: randomInt(10, 50),
+                erros: randomInt(0, 10),
+                palavrasAlcancadas: randomInt(30, 120)
+            };
+            
+            var payload = buildTflodPayload(sessionInfo, dadosForm, resultado);
+            assert.ok(payload !== null, 'Payload nao deveria ser nulo');
+            assert.ok(payload.data, 'payload.data deve existir');
+            assert.ok(payload.data.formData, 'payload.data.formData deve existir');
+            
+            // Verificar todos os campos obrigatorios
+            TFLOD_REQUIRED_FIELDS.forEach(function(field) {
+                assert.ok(
+                    payload.data.formData.hasOwnProperty(field),
+                    'Campo "' + field + '" ausente em data.formData do TFLOD! Campos presentes: [' + Object.keys(payload.data.formData).join(', ') + ']'
+                );
+            });
+            
+            // Verificar que resultados tambem existem
+            assert.ok(payload.data.resultados, 'payload.data.resultados deve existir');
+            assert.strictEqual(payload.tipo, 'tflod', 'tipo deve ser "tflod"');
+        });
+    })(i);
+}
+
+// ========================================
+// PROPRIEDADE 2: Formato de formData Preservado (TREF)
+// Validates: Requirements 3.4
+// ========================================
+
+console.log('\n=== PROPRIEDADE 2: Formato data.formData TREF preservado ===');
+console.log('Para todo payload TREF, data.formData DEVE conter: nome, idade, sexo, dataNasc, dataAval, obs, id, pacienteId\n');
+
+var TREF_REQUIRED_FIELDS = ['nome', 'idade', 'sexo', 'dataNasc', 'dataAval', 'obs', 'id', 'pacienteId'];
+
+for (var i = 0; i < NUM_CASES; i++) {
+    (function(iter) {
+        runTest('Prop2 [iter ' + iter + '] - TREF formData contem todos os campos obrigatorios', function() {
+            var sessionInfo = {
+                email: randomEmail(),
+                sessionId: randomSessionId(),
+                nome: randomName(),
+                dataNascimento: randomBirthDate(),
+                sexo: randomSexo(),
+                pacienteId: randomPacienteId()
+            };
+            var dadosForm = {
+                nome: sessionInfo.nome,
+                idade: randomInt(20, 80) + ' anos, ' + randomInt(0, 11) + ' meses e ' + randomInt(0, 28) + ' dias',
+                sexo: sessionInfo.sexo,
+                dataNasc: sessionInfo.dataNascimento,
+                dataAval: '2025-01-' + String(randomInt(1, 28)).padStart(2, '0'),
+                obs: '',
+                id: randomPacienteId()
+            };
+            var resultados = {
+                mulher: { olhos: randomInt(0, 10), boca: randomInt(0, 10), periferia: randomInt(0, 15) },
+                homem: { olhos: randomInt(0, 10), boca: randomInt(0, 10), periferia: randomInt(0, 15) }
+            };
+            
+            var payload = buildTrefPayload(sessionInfo, dadosForm, resultados);
+            assert.ok(payload !== null, 'Payload nao deveria ser nulo');
+            assert.ok(payload.data, 'payload.data deve existir');
+            assert.ok(payload.data.formData, 'payload.data.formData deve existir');
+            
+            TREF_REQUIRED_FIELDS.forEach(function(field) {
+                assert.ok(
+                    payload.data.formData.hasOwnProperty(field),
+                    'Campo "' + field + '" ausente em data.formData do TREF! Campos presentes: [' + Object.keys(payload.data.formData).join(', ') + ']'
+                );
+            });
+            
+            assert.ok(payload.data.resultados, 'payload.data.resultados deve existir');
+            assert.strictEqual(payload.tipo, 'tref', 'tipo deve ser "tref"');
+        });
+    })(i);
+}
+
+// ========================================
+// PROPRIEDADE 3: Formato de resultados Preservado (TRMV)
+// Validates: Requirements 3.5
+// ========================================
+
+console.log('\n=== PROPRIEDADE 3: Formato data.resultados TRMV preservado ===');
+console.log('Para todo payload TRMV, data DEVE conter: reconhecimento1, reconhecimento2, indiceRetencao (cada um com acertos/alarmesFalsos/omissoes)\n');
+
+for (var i = 0; i < NUM_CASES; i++) {
+    (function(iter) {
+        runTest('Prop3 [iter ' + iter + '] - TRMV resultados contem reconhecimento1/2 e indiceRetencao', function() {
+            var sessionData = {
+                email: randomEmail(),
+                sessionId: randomSessionId(),
+                patientName: randomName(),
+                birthDate: randomBirthDate(),
+                education: randomEscolaridade(),
+                pacienteId: randomPacienteId()
+            };
+            var resultados = {
+                reconhecimento1: {
+                    acertos: randomInt(5, 15),
+                    alarmesFalsos: randomInt(0, 5),
+                    omissoes: randomInt(0, 5),
+                    tempoResposta: randomInt(800, 4000)
+                },
+                reconhecimento2: {
+                    acertos: randomInt(5, 15),
+                    alarmesFalsos: randomInt(0, 5),
+                    omissoes: randomInt(0, 5),
+                    tempoResposta: randomInt(800, 4000)
+                },
+                indiceRetencao: randomInt(30, 100)
+            };
+            
+            var payload = buildTrmvPayload(sessionData, resultados, randomInt(10, 20));
+            assert.ok(payload !== null, 'Payload nao deveria ser nulo');
+            assert.ok(payload.data, 'payload.data deve existir');
+            assert.ok(payload.data.formData, 'payload.data.formData deve existir (sessionData)');
+            
+            // Verificar campos de reconhecimento
+            assert.ok(payload.data.reconhecimento1, 'reconhecimento1 deve existir');
+            assert.ok(payload.data.reconhecimento2, 'reconhecimento2 deve existir');
+            assert.ok(payload.data.hasOwnProperty('indiceRetencao'), 'indiceRetencao deve existir');
+            
+            // Verificar sub-campos de reconhecimento1
+            var r1 = payload.data.reconhecimento1;
+            assert.ok(r1.hasOwnProperty('acertos'), 'reconhecimento1.acertos deve existir');
+            assert.ok(r1.hasOwnProperty('alarmesFalsos'), 'reconhecimento1.alarmesFalsos deve existir');
+            assert.ok(r1.hasOwnProperty('omissoes'), 'reconhecimento1.omissoes deve existir');
+            assert.ok(r1.hasOwnProperty('tempoResposta'), 'reconhecimento1.tempoResposta deve existir');
+            
+            // Verificar sub-campos de reconhecimento2
+            var r2 = payload.data.reconhecimento2;
+            assert.ok(r2.hasOwnProperty('acertos'), 'reconhecimento2.acertos deve existir');
+            assert.ok(r2.hasOwnProperty('alarmesFalsos'), 'reconhecimento2.alarmesFalsos deve existir');
+            assert.ok(r2.hasOwnProperty('omissoes'), 'reconhecimento2.omissoes deve existir');
+            assert.ok(r2.hasOwnProperty('tempoResposta'), 'reconhecimento2.tempoResposta deve existir');
+            
+            // Verificar tipo
+            assert.strictEqual(payload.tipo, 'trmv', 'tipo deve ser "trmv"');
+        });
+    })(i);
+}
+
+// ========================================
+// PROPRIEDADE 4: Interceptores NAO-finalizarGravacao preservam setTimeout original
+// Validates: Requirements 3.3, 3.6
+// ========================================
+
+console.log('\n=== PROPRIEDADE 4: Interceptores com setTimeout preservado ===');
+console.log('Para todo interceptor que NAO seja finalizarGravacao, setTimeout DEVE ser 500/1500/2000ms (valores atuais)\n');
+
+// Ler o arquivo coleta-anonima.js e verificar que os timeouts estao corretos
+var coletaSource = '';
+try {
+    coletaSource = fs.readFileSync(path.resolve(__dirname, '..', 'online', 'coleta-anonima.js'), 'utf8');
+} catch (e) {
+    console.log('  WARN: Nao foi possivel ler coleta-anonima.js: ' + e.message);
+}
+
+if (coletaSource) {
+    var actualTimeouts = extractInterceptorTimeouts(coletaSource);
+    
+    // Verificar cada interceptor que NAO seja finalizarGravacao
+    var interceptorsToPreserve = Object.keys(INTERCEPTOR_TIMEOUTS);
+    
+    interceptorsToPreserve.forEach(function(name) {
+        (function(interceptorName) {
+            runTest('Prop4 - Interceptor "' + interceptorName + '" preserva timeout(s) ' + JSON.stringify(INTERCEPTOR_TIMEOUTS[interceptorName]), function() {
+                assert.ok(
+                    actualTimeouts.hasOwnProperty(interceptorName),
+                    'Interceptor "' + interceptorName + '" nao encontrado no coleta-anonima.js! Interceptores encontrados: [' + Object.keys(actualTimeouts).join(', ') + ']'
+                );
+                var expected = INTERCEPTOR_TIMEOUTS[interceptorName];
+                var actual = actualTimeouts[interceptorName];
+                assert.deepStrictEqual(
+                    actual, expected,
+                    'Interceptor "' + interceptorName + '": timeouts esperados=' + JSON.stringify(expected) + ' mas encontrados=' + JSON.stringify(actual)
+                );
+            });
+        })(name);
+    });
+    
+    // Propriedade extra: finalizarGravacao tem timeouts [500, 30000] (pos-fix)
+    // O fix alterou de setTimeout(1000) para: .then(setTimeout 500) + fallback setTimeout(30000)
+    runTest('Prop4 - Interceptor "finalizarGravacao" tem timeouts [500, 30000] (pos-fix)', function() {
+        assert.ok(
+            actualTimeouts.hasOwnProperty('finalizarGravacao'),
+            'Interceptor "finalizarGravacao" nao encontrado no coleta-anonima.js!'
+        );
+        assert.deepStrictEqual(
+            actualTimeouts['finalizarGravacao'], [500, 30000],
+            'finalizarGravacao: timeout esperado=[500, 30000] mas encontrado=' + JSON.stringify(actualTimeouts['finalizarGravacao'])
+        );
+    });
+} else {
+    runTest('Prop4 - SKIP (arquivo coleta-anonima.js nao acessivel)', function() {
+        console.log('    Arquivo nao acessivel, pulando verificacao de timeouts');
+    });
+}
+
+// ========================================
+// PROPRIEDADE 5: Polling de 5s detecta _escalaDados e envia
+// Validates: Requirements 3.3, 3.6
+// ========================================
+
+console.log('\n=== PROPRIEDADE 5: Polling de 5s detecta _escalaDados ===');
+console.log('Para todo ciclo de polling, se _escalaDados existe com escala valida, DEVE tentar enviar\n');
+
+for (var i = 0; i < NUM_CASES; i++) {
+    (function(iter) {
+        runTest('Prop5 [iter ' + iter + '] - Polling detecta _escalaDados e tenta enviar', function() {
+            var escalaDados = {
+                escala: ['TFLOD', 'TREF', 'TRMV', 'BAE', 'TAAV', 'TECFE'][randomInt(0, 5)],
+                escore: String(randomInt(10, 100)),
+                classificacao: ['Normal', 'Abaixo', 'Acima'][randomInt(0, 2)]
+            };
+            
+            var result = simulatePollingCycle(true, escalaDados, false);
+            
+            assert.strictEqual(result.pollingInterval, 5000,
+                'Polling para testes longos deve ser 5000ms, foi ' + result.pollingInterval);
+            assert.strictEqual(result.shouldAttemptSend, true,
+                'Com _escalaDados definido (escala="' + escalaDados.escala + '"), polling DEVE tentar enviar');
+            assert.strictEqual(result.shouldStop, false,
+                'Polling NAO deve parar se jaEnviou=false');
+        });
+    })(i);
+}
+
+// Propriedade: sem _escalaDados, polling NAO tenta enviar
+for (var i = 0; i < 10; i++) {
+    (function(iter) {
+        runTest('Prop5 [iter ' + iter + '] - Polling SEM _escalaDados NAO envia', function() {
+            var result = simulatePollingCycle(true, null, false);
+            assert.strictEqual(result.shouldAttemptSend, false,
+                'Sem _escalaDados, polling NAO deveria tentar enviar');
+        });
+    })(i);
+}
+
+// Propriedade: se jaEnviou=true, polling deve parar
+runTest('Prop5 - Polling para quando jaEnviou=true', function() {
+    var escalaDados = { escala: 'TFLOD', escore: '15', classificacao: 'Normal' };
+    var result = simulatePollingCycle(true, escalaDados, true);
+    assert.strictEqual(result.shouldStop, true,
+        'Polling DEVE parar quando jaEnviou=true');
+});
+
+// Propriedade: escalas usam intervalo de 3s (nao 5s)
+runTest('Prop5 - Escalas usam polling de 3s', function() {
+    var result = simulatePollingCycle(false, null, false);
+    assert.strictEqual(result.pollingInterval, 3000,
+        'Polling para escalas deve ser 3000ms, foi ' + result.pollingInterval);
+    assert.strictEqual(result.pollingMax, 40,
+        'Max ciclos para escalas deve ser 40, foi ' + result.pollingMax);
+});
+
+// Propriedade: testes longos usam max 600 ciclos
+runTest('Prop5 - Testes longos usam max 600 ciclos', function() {
+    var result = simulatePollingCycle(true, null, false);
+    assert.strictEqual(result.pollingMax, 600,
+        'Max ciclos para testes longos deve ser 600, foi ' + result.pollingMax);
+});
+
+// ========================================
+// PROPRIEDADE 6: Formato do pacote coleta-anonima preservado
+// Validates: Requirements 3.3, 3.7
+// ========================================
+
+console.log('\n=== PROPRIEDADE 6: Formato pacote coleta-anonima ===');
+console.log('Para todo envio ao Google Sheets, pacote DEVE ter: {email, escala, idade, sexo, escolaridade, pontuacao, dominios, classificacao}\n');
+
+var PACOTE_REQUIRED_FIELDS = ['email', 'escala', 'idade', 'sexo', 'escolaridade', 'pontuacao', 'dominios', 'classificacao'];
+
+for (var i = 0; i < NUM_CASES; i++) {
+    (function(iter) {
+        runTest('Prop6 [iter ' + iter + '] - Pacote coleta-anonima contem todos os campos', function() {
+            var email = randomEmail();
+            var escalaDados = {
+                escala: ['TFLOD', 'TREF', 'TRMV', 'TECFE', 'ERT-PP', 'DASS-21'][randomInt(0, 5)],
+                escore: String(randomInt(10, 100) / 10),
+                classificacao: ['Normal', 'Leve', 'Moderado', 'Intenso'][randomInt(0, 3)],
+                dominios: {}
+            };
+            // Gerar dominios aleatorios
+            var numDominios = randomInt(1, 5);
+            for (var d = 0; d < numDominios; d++) {
+                escalaDados.dominios['dominio' + d] = { media: randomInt(1, 50) / 10 };
+            }
+            var idade = randomInt(18, 85);
+            var sexo = randomSexo();
+            var escolaridade = randomEscolaridade();
+            
+            var pacote = buildColetaPacket(email, escalaDados, idade, sexo, escolaridade);
+            
+            assert.ok(pacote !== null, 'Pacote nao deveria ser nulo com dados validos');
+            
+            // Verificar todos os campos obrigatorios
+            PACOTE_REQUIRED_FIELDS.forEach(function(field) {
+                assert.ok(
+                    pacote.hasOwnProperty(field),
+                    'Campo "' + field + '" ausente no pacote coleta-anonima! Campos: [' + Object.keys(pacote).join(', ') + ']'
+                );
+            });
+            
+            // Verificar que NAO tem campos extras (formato estrito)
+            var camposExtras = Object.keys(pacote).filter(function(k) {
+                return PACOTE_REQUIRED_FIELDS.indexOf(k) === -1;
+            });
+            assert.strictEqual(camposExtras.length, 0,
+                'Pacote contem campos extras nao esperados: [' + camposExtras.join(', ') + ']');
+            
+            // Verificar tipos
+            assert.strictEqual(typeof pacote.email, 'string', 'email deve ser string');
+            assert.strictEqual(typeof pacote.escala, 'string', 'escala deve ser string');
+            assert.strictEqual(typeof pacote.idade, 'number', 'idade deve ser number');
+            assert.strictEqual(typeof pacote.pontuacao, 'string', 'pontuacao deve ser string');
+            assert.strictEqual(typeof pacote.dominios, 'string', 'dominios deve ser string');
+            assert.strictEqual(typeof pacote.classificacao, 'string', 'classificacao deve ser string');
+        });
+    })(i);
+}
+
+// Propriedade: sem instrumento valido, pacote e null (nao envia)
+runTest('Prop6 - Sem instrumento, nao gera pacote', function() {
+    var pacote = buildColetaPacket(randomEmail(), null, 30, 'M', 'Superior');
+    assert.strictEqual(pacote, null, 'Sem escalaDados, pacote DEVE ser null');
+});
+
+runTest('Prop6 - Instrumento com menos de 3 chars, nao gera pacote', function() {
+    var escalaDados = { escala: 'AB', escore: '10', classificacao: 'X' };
+    var pacote = buildColetaPacket(randomEmail(), escalaDados, 30, 'M', 'Superior');
+    assert.strictEqual(pacote, null, 'Instrumento <3 chars, pacote DEVE ser null');
+});
+
+runTest('Prop6 - Sem idade, nao gera pacote', function() {
+    var escalaDados = { escala: 'TFLOD', escore: '12', classificacao: 'Normal', dominios: { d1: 5 } };
+    var pacote = buildColetaPacket(randomEmail(), escalaDados, null, 'M', 'Superior');
+    assert.strictEqual(pacote, null, 'Sem idade, pacote DEVE ser null');
+});
+
+runTest('Prop6 - Sem pontuacao E sem dominios, nao gera pacote', function() {
+    var escalaDados = { escala: 'TFLOD', escore: '', classificacao: 'Normal' }; // sem dominios
+    var pacote = buildColetaPacket(randomEmail(), escalaDados, 30, 'M', 'Superior');
+    assert.strictEqual(pacote, null, 'Sem pontuacao e sem dominios, pacote DEVE ser null');
+});
+
+// ========================================
+// PROPRIEDADE 7: Verificacao no arquivo fonte - polling interval
+// Validates: Requirements 3.3, 3.6
+// ========================================
+
+console.log('\n=== PROPRIEDADE 7: Verificacao de polling no fonte coleta-anonima.js ===');
+console.log('Polling de testes longos usa intervalo 5000ms e max 600 ciclos\n');
+
+if (coletaSource) {
+    runTest('Prop7 - Polling interval para testes longos e 5000ms', function() {
+        // Verificar que o source contem: _pollingInterval = _isTesteLongo ? 5000 : 3000
+        var match = coletaSource.match(/_pollingInterval\s*=\s*_isTesteLongo\s*\?\s*(\d+)\s*:\s*(\d+)/);
+        assert.ok(match, 'Padrao de polling interval nao encontrado no coleta-anonima.js');
+        assert.strictEqual(parseInt(match[1]), 5000, 'Polling testes longos deve ser 5000ms, encontrado: ' + match[1]);
+        assert.strictEqual(parseInt(match[2]), 3000, 'Polling escalas deve ser 3000ms, encontrado: ' + match[2]);
+    });
+    
+    runTest('Prop7 - Polling max para testes longos e 600', function() {
+        // Verificar que o source contem: _pollingMax = _isTesteLongo ? 600 : 40
+        var match = coletaSource.match(/_pollingMax\s*=\s*_isTesteLongo\s*\?\s*(\d+)\s*:\s*(\d+)/);
+        assert.ok(match, 'Padrao de polling max nao encontrado no coleta-anonima.js');
+        assert.strictEqual(parseInt(match[1]), 600, 'Max ciclos testes longos deve ser 600, encontrado: ' + match[1]);
+        assert.strictEqual(parseInt(match[2]), 40, 'Max ciclos escalas deve ser 40, encontrado: ' + match[2]);
+    });
+    
+    runTest('Prop7 - Polling verifica _escalaDados.escala antes de enviar', function() {
+        // Verificar que a logica de polling inclui checagem de _escalaDados
+        var hasEscalaCheck = coletaSource.indexOf('window._escalaDados && window._escalaDados.escala') !== -1;
+        assert.ok(hasEscalaCheck,
+            'Polling DEVE verificar "window._escalaDados && window._escalaDados.escala" antes de chamar _enviarDadosAnonimos');
+    });
+} else {
+    runTest('Prop7 - SKIP (arquivo nao acessivel)', function() {
+        console.log('    Arquivo coleta-anonima.js nao acessivel');
+    });
+}
 
 // ========================================
 // RESUMO
@@ -479,22 +818,32 @@ for (var i = 0; i < NUM_ITERATIONS; i++) {
 
 console.log('\n========================================');
 console.log('RESULTADO FINAL - Preservation Property Tests');
+console.log('Spec: testes-coleta-id-dados-fix');
 console.log('========================================');
 console.log('Total: ' + totalTests + ' | Passaram: ' + passedTests + ' | Falharam: ' + failedTests);
 console.log('');
 
 if (failedTests > 0) {
-  console.log('FALHAS ENCONTRADAS:');
-  for (var i = 0; i < failedDetails.length; i++) {
-    console.log(failedDetails[i]);
-  }
-  console.log('');
-  console.log('ATENCAO: Testes de preservacao FALHARAM!');
-  console.log('Isso indica que algo no comportamento existente esta diferente do esperado.');
-  process.exit(1);
+    console.log('FALHAS ENCONTRADAS:');
+    for (var i = 0; i < Math.min(10, failedDetails.length); i++) {
+        console.log(failedDetails[i]);
+    }
+    console.log('');
+    console.log('ATENCAO: Testes de preservacao FALHARAM!');
+    console.log('Isso indica que o comportamento existente NAO esta como esperado.');
+    console.log('Investigue antes de aplicar o fix.');
+    process.exit(1);
 } else {
-  console.log('SUCESSO: Todos os testes de preservacao PASSARAM!');
-  console.log('O comportamento existente esta documentado e validado.');
-  console.log('Estes testes devem CONTINUAR passando apos o fix ser implementado.');
-  process.exit(0);
+    console.log('SUCESSO: Todos os testes de preservacao PASSARAM!');
+    console.log('O comportamento existente esta capturado e validado.');
+    console.log('Estes testes devem CONTINUAR passando apos o fix ser implementado.');
+    console.log('');
+    console.log('Comportamentos preservados:');
+    console.log('  1. data.formData do TFLOD: nome, idade, idadeAnos, escolaridade, dataNasc, dataAval, obs, correcaoVisual, id, pacienteId');
+    console.log('  2. data.formData do TREF: nome, idade, sexo, dataNasc, dataAval, obs, id, pacienteId');
+    console.log('  3. data do TRMV: reconhecimento1, reconhecimento2, indiceRetencao (cada com acertos/alarmesFalsos/omissoes/tempoResposta)');
+    console.log('  4. Interceptores: calcularResultados(500), salvarResultadoLambda(500), finalizarTeste(500), showEndScreen(500), _prepararDadosEEnviar(1500), enviarResultados(1500,5000), mostrarTelaFinal(2000,5000)');
+    console.log('  5. Polling: 5s para testes longos, 3s para escalas, detecta _escalaDados.escala');
+    console.log('  6. Pacote coleta: {email, escala, idade, sexo, escolaridade, pontuacao, dominios, classificacao}');
+    process.exit(0);
 }

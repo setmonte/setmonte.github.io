@@ -789,7 +789,16 @@ async function enviarResultados() {
     if (!_resultados) return;
     if (!_sessionInfo) return;
     var dados = _resultados;
-    dados.idPaciente = '';
+    var _idPac = '';
+    if (_sessionInfo.patientName && _sessionInfo.birthDate) {
+      var _n = _sessionInfo.patientName.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z]/g,'').toLowerCase();
+      var _pref = _n.substring(0, 3);
+      var _raw = _sessionInfo.birthDate + '+' + _pref;
+      var _h = 5381;
+      for (var _i = 0; _i < _raw.length; _i++) _h = ((_h << 5) + _h) + _raw.charCodeAt(_i);
+      _idPac = 'P' + Math.abs(_h).toString(36).toUpperCase();
+    }
+    dados.idPaciente = _idPac;
     dados.pacienteId = _sessionInfo.pacienteId || '';
     var divBtn = document.getElementById('divBotoesResultado');
     try {

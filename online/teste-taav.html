@@ -1082,11 +1082,20 @@
         indiceRetencao: indiceRetencao
       };
 
+      var _idPac = '';
+      if (sessionData.patientName && sessionData.birthDate) {
+        var _n = sessionData.patientName.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z]/g,'').toLowerCase();
+        var _pref = _n.substring(0, 3);
+        var _raw = sessionData.birthDate + '+' + _pref;
+        var _h = 5381;
+        for (var _i = 0; _i < _raw.length; _i++) _h = ((_h << 5) + _h) + _raw.charCodeAt(_i);
+        _idPac = 'P' + Math.abs(_h).toString(36).toUpperCase();
+      }
       try {
         await fetch(API_URL + '/save-result', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sessionId: sessionData.sessionId, email: sessionData.email, tipo: 'taav', data: resultData })
+          body: JSON.stringify({ sessionId: sessionData.sessionId, email: sessionData.email, tipo: 'taav', idPaciente: _idPac, data: resultData })
         });
       } catch(e) {
         console.error('Erro ao salvar resultado:', e);

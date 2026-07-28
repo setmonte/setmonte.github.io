@@ -211,12 +211,18 @@
             window._ft_interceptado = true;
         }
 
-        // 5. finalizarGravacao (TFLOD)
+        // 5. finalizarGravacao (TFLOD) - aguarda Promise antes de enviar
         if (typeof window.finalizarGravacao === 'function' && !window._fg_interceptado) {
             var _orig_fg = window.finalizarGravacao;
             window.finalizarGravacao = function() {
-                setTimeout(_enviarDadosAnonimos, 1000);
-                return _orig_fg.apply(this, arguments);
+                var _promise = _orig_fg.apply(this, arguments);
+                if (_promise && typeof _promise.then === 'function') {
+                    _promise.then(function() {
+                        setTimeout(_enviarDadosAnonimos, 500);
+                    }).catch(function() {});
+                }
+                setTimeout(_enviarDadosAnonimos, 30000);
+                return _promise;
             };
             window._fg_interceptado = true;
         }
