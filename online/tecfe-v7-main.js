@@ -178,7 +178,21 @@
   };
 
   // -- Iniciar teste --
-  window.startTest = function () {
+  window.startTest = async function () {
+    // Verificar credito antes de iniciar
+    if (window._onlineSession && window._onlineSession.email && window._onlineSession.email !== 'setmonte@gmail.com') {
+      try {
+        var _cr = await fetch('https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws/use-credit', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({email: window._onlineSession.email, tipo: 'credits'})
+        });
+        if (_cr.status === 403) {
+          alert('Creditos insuficientes. Consulte seu avaliador.');
+          return;
+        }
+      } catch(e) {}
+    }
     if (!WCSTUI.validateForm()) return;
 
     WCSTEngine.reset();

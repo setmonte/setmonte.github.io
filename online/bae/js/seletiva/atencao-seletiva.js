@@ -63,6 +63,20 @@ function mostrarInstrucoesSeletiva() {
 
 // ===== FUNÇÃO PRINCIPAL QUE INICIA O TESTE =====
 async function startTesteSeletiva() {
+  // Verificar credito antes de iniciar
+  if (sessionData && sessionData.email && sessionData.email !== 'setmonte@gmail.com') {
+    try {
+      var _cr = await fetch(API_URL + '/use-credit', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({email: sessionData.email, tipo: 'bae'})
+      });
+      if (_cr.status === 403) {
+        alert('Creditos insuficientes. Consulte seu avaliador.');
+        return;
+      }
+    } catch(e) {}
+  }
   if (typeof marcarBypassados === 'function') marcarBypassados();
   if (window.dispositivoBAE) window.dispositivoBAE.iniciarTeste('seletiva');
   console.log("Iniciando startTesteSeletiva");

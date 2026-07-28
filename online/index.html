@@ -2444,15 +2444,15 @@
         if (isAdmin) {
           sessionId = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
         } else {
-          var resp = await fetch(API_URL + '/use-credit', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: currentUser })
-          });
-          var data = await resp.json();
-          if (data.error) { alert('Erro: ' + data.error); return; }
-          sessionId = data.sessionId;
-          document.getElementById('tecfeCreditsCount').textContent = data.credits;
+          var respCheck = await fetch(API_URL + '/credits?email=' + encodeURIComponent(currentUser));
+          var dataCheck = await respCheck.json();
+          var disponiveis = dataCheck.credits || 0;
+          if (disponiveis < 1) {
+            alert('Creditos insuficientes. Necessario: 1 | Disponivel: ' + disponiveis);
+            btnReset(btn);
+            return;
+          }
+          sessionId = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
         }
         var sessionData = {
           sessionId: sessionId,
@@ -2849,25 +2849,16 @@
         if (isAdmin) {
           sessionId = 'bae-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
         } else {
-          // Verifica se tem créditos suficientes
+          // Verifica se tem creditos suficientes
           var respCheck = await fetch(API_URL + '/credits?email=' + encodeURIComponent(currentUser));
           var dataCheck = await respCheck.json();
           var creditosDisponiveis = dataCheck.baeCredits || 0;
           if (creditosDisponiveis < creditosNecessarios) {
             alert('Creditos insuficientes. Necessario: ' + creditosNecessarios + ' | Disponivel: ' + creditosDisponiveis);
+            btnReset(btn);
             return;
           }
-          // Consome créditos (1 por teste)
-          for (var i = 0; i < creditosNecessarios; i++) {
-            var resp = await fetch(API_URL + '/use-credit', {
-              method: 'POST', headers: {'Content-Type':'application/json'},
-              body: JSON.stringify({email: currentUser, tipo: 'bae'})
-            });
-            var data = await resp.json();
-            if (data.error) { alert('Erro: ' + data.error); return; }
-            sessionId = data.sessionId;
-          }
-          document.getElementById('baeCreditsCount').textContent = (creditosDisponiveis - creditosNecessarios);
+          sessionId = 'bae-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
         }
         var sessionData = {
           sessionId: sessionId,
@@ -8422,14 +8413,15 @@
         if (isAdmin) {
           sessionId = 'trmv-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
         } else {
-          var resp = await fetch(API_URL + '/use-credit', {
-            method: 'POST', headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({email: currentUser, tipo: 'trmv'})
-          });
-          var data = await resp.json();
-          if (data.error) { alert('Erro: ' + data.error); return; }
-          sessionId = data.sessionId;
-          document.getElementById('trmvCreditsCount').textContent = data.credits;
+          var respCheck = await fetch(API_URL + '/credits?email=' + encodeURIComponent(currentUser));
+          var dataCheck = await respCheck.json();
+          var disponiveis = dataCheck.trmvCredits || 0;
+          if (disponiveis < 1) {
+            alert('Creditos insuficientes. Necessario: 1 | Disponivel: ' + disponiveis);
+            btnReset(btn);
+            return;
+          }
+          sessionId = 'trmv-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
         }
         var sessionData = {
           sessionId: sessionId,
@@ -8727,14 +8719,15 @@
         if (isAdmin) {
           sessionId = 'taav-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
         } else {
-          var resp = await fetch(API_URL + '/use-credit', {
-            method: 'POST', headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({email: currentUser, tipo: 'taav'})
-          });
-          var data = await resp.json();
-          if (data.error) { alert('Erro: ' + data.error); return; }
-          sessionId = data.sessionId;
-          document.getElementById('taavCreditsCount').textContent = data.credits;
+          var respCheck = await fetch(API_URL + '/credits?email=' + encodeURIComponent(currentUser));
+          var dataCheck = await respCheck.json();
+          var disponiveis = dataCheck.taavCredits || 0;
+          if (disponiveis < 1) {
+            alert('Creditos insuficientes. Necessario: 1 | Disponivel: ' + disponiveis);
+            btnReset(btn);
+            return;
+          }
+          sessionId = 'taav-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
         }
         var sessionData = {
           sessionId: sessionId,
@@ -9415,14 +9408,15 @@
       if (currentUser === 'setmonte@gmail.com' || isFreeModeActive()) {
         sessionId = 'tref-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
       } else {
-        var resp = await fetch(API_URL + '/use-credit', {
-          method: 'POST', headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({email: currentUser, tipo: 'tref'})
-        });
-        var data = await resp.json();
-        if (data.error) { alert('Erro: ' + data.error); btnReset(btn); return; }
-        sessionId = data.sessionId;
-        document.getElementById('trefCreditsCount').textContent = data.credits;
+        var respCheck = await fetch(API_URL + '/credits?email=' + encodeURIComponent(currentUser));
+        var dataCheck = await respCheck.json();
+        var disponiveis = dataCheck.trefCredits || 0;
+        if (disponiveis < 1) {
+          alert('Creditos insuficientes. Necessario: 1 | Disponivel: ' + disponiveis);
+          btnReset(btn);
+          return;
+        }
+        sessionId = 'tref-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
       }
       var sessionData = {
         email: currentUser,
@@ -9518,21 +9512,14 @@
       btnLoading(btn);
       try {
       // Verificar creditos (admin nao consome)
-      if (currentUser !== 'setmonte@gmail.com') {
-        var credResp = await fetch(API_URL + '/use-credit', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ email: currentUser, tipo: 'tflod' })
-        });
+      if (currentUser !== 'setmonte@gmail.com' && !isFreeModeActive()) {
+        var credResp = await fetch(API_URL + '/credits?email=' + encodeURIComponent(currentUser));
         var credData = await credResp.json();
-        if (credResp.status === 403 || credData.error) {
-          alert('Voce nao tem creditos TFLOD. Adquira creditos para continuar.');
+        if ((credData.tflodCredits || 0) < 1) {
+          alert('Creditos TFLOD insuficientes. Adquira creditos para continuar.');
           btnReset(btn);
           return;
         }
-        // Atualizar card de creditos
-        var countEl = document.getElementById('tflodCreditsCount');
-        if (countEl) countEl.textContent = credData.credits || 0;
       }
       var sessionId = 'tflod-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
       var sessionData = {

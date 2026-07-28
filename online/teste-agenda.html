@@ -217,7 +217,21 @@ function togglePausa() {
   }
 }
 
-function iniciarGravacao() {
+async function iniciarGravacao() {
+  // Verificar credito antes de iniciar
+  if (sessionInfo && sessionInfo.email && sessionInfo.email !== 'setmonte@gmail.com') {
+    try {
+      var _cr = await fetch(API_URL + '/use-credit', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({email: sessionInfo.email, tipo: 'prontuario'})
+      });
+      if (_cr.status === 403) {
+        alert('Creditos insuficientes. Consulte seu avaliador.');
+        return;
+      }
+    } catch(e) {}
+  }
   gravando = true;
   pausado = false;
   segundosDecorridos = 0;

@@ -1,4 +1,18 @@
-function startTesteConcentrada() {
+async function startTesteConcentrada() {
+  // Verificar credito antes de iniciar
+  if (sessionData && sessionData.email && sessionData.email !== 'setmonte@gmail.com') {
+    try {
+      var _cr = await fetch(API_URL + '/use-credit', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({email: sessionData.email, tipo: 'bae'})
+      });
+      if (_cr.status === 403) {
+        alert('Creditos insuficientes. Consulte seu avaliador.');
+        return;
+      }
+    } catch(e) {}
+  }
   if (typeof marcarBypassados === 'function') marcarBypassados();
   if (window.dispositivoBAE) window.dispositivoBAE.iniciarTeste('concentrada');
   console.log("Iniciando startTesteConcentrada");

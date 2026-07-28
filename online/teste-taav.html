@@ -766,7 +766,21 @@
     // ===== FLUXO DO TESTE =====
 
     // --- TRIAL 1 ---
-    function iniciarTrial1() {
+    async function iniciarTrial1() {
+      // Verificar credito antes de iniciar
+      if (sessionData && sessionData.email && sessionData.email !== 'setmonte@gmail.com') {
+        try {
+          var _cr = await fetch(API_URL + '/use-credit', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({email: sessionData.email, tipo: 'taav'})
+          });
+          if (_cr.status === 403) {
+            alert('Creditos insuficientes. Consulte seu avaliador.');
+            return;
+          }
+        } catch(e) {}
+      }
       estadoTeste.faseAtual = 'instrucoes-t1';
       navegarPara('pagina-instrucoes-t1');
     }
