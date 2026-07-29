@@ -877,6 +877,7 @@
             </div>
             <button class="btn btn-blue" style="padding:8px 14px;font-size:12px;" onclick="exportarPacientesCSV()" title="Exportar lista">&#128229; Exportar CSV</button>
             <button class="btn btn-orange" style="padding:8px 14px;font-size:12px;" onclick="document.getElementById('importCSVInput').click()" title="Importar lista">&#128228; Importar CSV</button>
+            <button class="btn btn-blue" style="padding:8px 14px;font-size:12px;background:#7b1fa2;" onclick="_varrerDuplicatas()" title="Verificar duplicatas na lista">&#128270; Verificar Duplicatas</button>
             <input type="file" id="importCSVInput" accept=".csv" style="display:none;" onchange="importarPacientesCSV(event)">
           </div>
           <!-- RESULTADO DA BUSCA -->
@@ -897,6 +898,10 @@
             </div>
             <button class="btn btn-green" style="margin-top:10px;padding:8px 20px;font-size:13px;" onclick="cadastrarPaciente()">+ Cadastrar Paciente</button>
           </div>
+          <!-- AVISO DE DUPLICATA (tempo real) -->
+          <div id="pacDuplicataAviso" style="display:none;margin:8px 0;padding:12px 15px;background:#fff3e0;border:2px solid #ff9800;border-radius:8px;"></div>
+          <!-- RESULTADO DA VARREDURA DE DUPLICATAS -->
+          <div id="pacDuplicataVarredura" style="display:none;margin:10px 0;"></div>
           <!-- LISTA DE PACIENTES POR LETRA -->
           <div id="pacientesList" style="margin-top:15px;"><p style="color:#777;">Carregando...</p></div>
           <div style="margin-top:20px;padding:10px;background:#f5f5f5;border-radius:6px;">
@@ -4399,6 +4404,238 @@
         btn.textContent = 'Encerrar Conta Permanentemente';
       }
     }
+
+    // ===== DETECCAO DE DUPLICATAS =====
+    function _normalizarTexto(t) {
+      if (!t) return '';
+      return t.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+    }
+    function _normalizarCPF(c) {
+      if (!c) return '';
+      return c.replace(/\D/g,'');
+    }
+    function _similaridadeNome(a, b) {
+      // Retorna um score de 0 a 100 indicando o quanto dois nomes sao parecidos
+      var na = _normalizarTexto(a);
+      var nb = _normalizarTexto(b);
+      if (!na || !nb) return 0;
+      if (na === nb) return 100;
+      // Primeiro nome igual
+      var pa = na.split(/\s+/);
+      var pb = nb.split(/\s+/);
+      if (pa[0] === pb[0] && pa[0].length >= 3) {
+        // Primeiro e ultimo nome iguais
+        if (pa.length > 1 && pb.length > 1 && pa[pa.length-1] === pb[pb.length-1]) return 90;
+        // So primeiro nome igual
+        if (pa[0].length >= 4) return 50;
+      }
+      // Contem um dentro do outro
+      if (na.indexOf(nb) !== -1 || nb.indexOf(na) !== -1) return 70;
+      // Comparacao por palavras em comum
+      var comuns = 0;
+      pa.forEach(function(p) { if (p.length >= 3 && pb.indexOf(p) !== -1) comuns++; });
+      if (pa.length > 0 && comuns > 0) {
+        var score = Math.round((comuns / Math.max(pa.length, pb.length)) * 80);
+        return score;
+      }
+      return 0;
+    }
+    function _detectarDuplicatas(nome, dn, cpf, ignorarId) {
+      // Compara os dados informados com todos os pacientes do cache
+      // Retorna array de { paciente, motivos[], score }
+      var resultados = [];
+      var nomeNorm = _normalizarTexto(nome);
+      var cpfNorm = _normalizarCPF(cpf);
+      _pacientesCache.forEach(function(p) {
+        if (ignorarId && p.id === ignorarId) return;
+        var motivos = [];
+        var score = 0;
+        // Comparar CPF (fortissimo indicador)
+        if (cpfNorm && cpfNorm.length >= 11) {
+          var pCpf = _normalizarCPF(p.cpf);
+          if (pCpf && pCpf === cpfNorm) {
+            motivos.push('CPF identico');
+            score += 95;
+          }
+        }
+        // Comparar nome
+        if (nomeNorm && nomeNorm.length >= 3) {
+          var simNome = _similaridadeNome(nome, p.nome);
+          if (simNome >= 90) { motivos.push('Nome muito similar (' + simNome + '%)'); score += simNome; }
+          else if (simNome >= 50) { motivos.push('Nome parcialmente similar (' + simNome + '%)'); score += simNome * 0.6; }
+        }
+        // Comparar data de nascimento
+        if (dn && p.dataNascimento && dn === p.dataNascimento) {
+          motivos.push('Data de nascimento identica');
+          score += 40;
+        }
+        // Combinacoes que elevam a suspeita
+        if (dn && p.dataNascimento && dn === p.dataNascimento && nomeNorm) {
+          var simComDn = _similaridadeNome(nome, p.nome);
+          if (simComDn >= 50) {
+            score += 30; // bonus por combinar DN + nome parecido
+          }
+        }
+        // So reportar se score minimo atingido
+        if (score >= 40 && motivos.length > 0) {
+          resultados.push({ paciente: p, motivos: motivos, score: score });
+        }
+      });
+      // Ordenar por score decrescente
+      resultados.sort(function(a, b) { return b.score - a.score; });
+      return resultados;
+    }
+
+    var _dupTimer = null;
+    function _verificarDuplicataTempoReal() {
+      // Debounce de 400ms para nao travar enquanto digita
+      if (_dupTimer) clearTimeout(_dupTimer);
+      _dupTimer = setTimeout(function() {
+        var nome = (document.getElementById('pacNome').value || '').trim();
+        var dn = document.getElementById('pacDN').value || '';
+        var cpf = (document.getElementById('pacCPF').value || '').trim();
+        var avisoEl = document.getElementById('pacDuplicataAviso');
+        // So verificar se tem pelo menos algo preenchido
+        if (nome.length < 3 && !dn && _normalizarCPF(cpf).length < 11) {
+          avisoEl.style.display = 'none';
+          return;
+        }
+        var dups = _detectarDuplicatas(nome, dn, cpf, null);
+        if (dups.length === 0) {
+          avisoEl.style.display = 'none';
+          return;
+        }
+        var html = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">';
+        html += '<span style="font-size:18px;">&#9888;&#65039;</span>';
+        html += '<strong style="color:#e65100;font-size:13px;">Poss\u00edvel duplicata detectada!</strong>';
+        html += '</div>';
+        dups.forEach(function(d, i) {
+          if (i >= 3) return; // Mostrar no maximo 3
+          var p = d.paciente;
+          var corBorda = d.score >= 80 ? '#c62828' : '#ff9800';
+          html += '<div style="background:white;border-left:4px solid ' + corBorda + ';padding:8px 12px;margin:6px 0;border-radius:4px;font-size:12px;">';
+          html += '<strong>' + (p.nome || '(sem nome)') + '</strong>';
+          if (p.dataNascimento) html += ' &mdash; Nasc: ' + p.dataNascimento;
+          if (p.cpf) html += ' &mdash; CPF: ' + p.cpf;
+          html += '<br><span style="color:#e65100;font-size:11px;">' + d.motivos.join(' | ') + ' (confian\u00e7a: ' + Math.min(d.score, 100) + '%)</span>';
+          html += '</div>';
+        });
+        html += '<p style="font-size:11px;color:#777;margin-top:6px;">Voc\u00ea ainda pode cadastrar normalmente se souber que n\u00e3o \u00e9 a mesma pessoa.</p>';
+        avisoEl.innerHTML = html;
+        avisoEl.style.display = 'block';
+      }, 400);
+    }
+
+    function _varrerDuplicatas() {
+      // Analisa TODOS os pacientes cadastrados buscando possiveis duplicatas entre si
+      if (!_pacientesCache || _pacientesCache.length < 2) {
+        alert('Voce precisa ter pelo menos 2 pacientes cadastrados para verificar duplicatas.');
+        return;
+      }
+      var grupos = []; // Array de { pacientes: [p1, p2], motivos, score }
+      var jaVerificados = {}; // Evitar reportar A-B e B-A
+      for (var i = 0; i < _pacientesCache.length; i++) {
+        for (var j = i + 1; j < _pacientesCache.length; j++) {
+          var pA = _pacientesCache[i];
+          var pB = _pacientesCache[j];
+          var chave = pA.id + '_' + pB.id;
+          if (jaVerificados[chave]) continue;
+          jaVerificados[chave] = true;
+          var motivos = [];
+          var score = 0;
+          // CPF
+          var cpfA = _normalizarCPF(pA.cpf);
+          var cpfB = _normalizarCPF(pB.cpf);
+          if (cpfA && cpfA.length >= 11 && cpfA === cpfB) {
+            motivos.push('CPF identico');
+            score += 95;
+          }
+          // Nome
+          var simNome = _similaridadeNome(pA.nome, pB.nome);
+          if (simNome >= 90) { motivos.push('Nome muito similar (' + simNome + '%)'); score += simNome; }
+          else if (simNome >= 50) { motivos.push('Nome parcialmente similar (' + simNome + '%)'); score += simNome * 0.6; }
+          // Data nascimento
+          if (pA.dataNascimento && pB.dataNascimento && pA.dataNascimento === pB.dataNascimento) {
+            motivos.push('Mesma data de nascimento');
+            score += 40;
+          }
+          // Bonus combinacao DN + nome
+          if (pA.dataNascimento && pB.dataNascimento && pA.dataNascimento === pB.dataNascimento && simNome >= 50) {
+            score += 30;
+          }
+          if (score >= 40 && motivos.length > 0) {
+            grupos.push({ pA: pA, pB: pB, motivos: motivos, score: score });
+          }
+        }
+      }
+      // Ordenar por score decrescente
+      grupos.sort(function(a, b) { return b.score - a.score; });
+      var el = document.getElementById('pacDuplicataVarredura');
+      if (grupos.length === 0) {
+        el.innerHTML = '<div style="background:#e8f5e9;border:2px solid #43a047;border-radius:10px;padding:15px;text-align:center;">' +
+          '<span style="font-size:20px;">&#9989;</span>' +
+          '<p style="color:#2e7d32;font-weight:bold;margin-top:5px;">Nenhuma duplicata encontrada!</p>' +
+          '<p style="font-size:12px;color:#555;">Todos os ' + _pacientesCache.length + ' pacientes parecem ser registros unicos.</p>' +
+          '<button onclick="document.getElementById(\'pacDuplicataVarredura\').style.display=\'none\'" style="margin-top:10px;padding:6px 16px;border:none;border-radius:6px;background:#ccc;cursor:pointer;font-size:12px;">Fechar</button>' +
+          '</div>';
+        el.style.display = 'block';
+        el.scrollIntoView({behavior:'smooth', block:'center'});
+        return;
+      }
+      var html = '<div style="background:#fff3e0;border:2px solid #ff9800;border-radius:10px;padding:15px;">';
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">';
+      html += '<div><span style="font-size:18px;">&#9888;&#65039;</span> <strong style="color:#e65100;font-size:14px;">' + grupos.length + ' poss\u00edve' + (grupos.length === 1 ? 'l' : 'is') + ' duplicata' + (grupos.length === 1 ? '' : 's') + ' encontrada' + (grupos.length === 1 ? '' : 's') + '</strong></div>';
+      html += '<button onclick="document.getElementById(\'pacDuplicataVarredura\').style.display=\'none\'" style="padding:4px 12px;border:none;border-radius:6px;background:#ccc;cursor:pointer;font-size:11px;">Fechar</button>';
+      html += '</div>';
+      grupos.forEach(function(g, idx) {
+        var corBorda = g.score >= 80 ? '#c62828' : '#ff9800';
+        var labelConf = g.score >= 80 ? 'Alta' : (g.score >= 60 ? 'M\u00e9dia' : 'Baixa');
+        html += '<div style="background:white;border-left:4px solid ' + corBorda + ';padding:12px;margin:8px 0;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,0.1);">';
+        html += '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">';
+        html += '<span style="font-size:11px;background:' + corBorda + ';color:white;padding:2px 8px;border-radius:10px;">Confian\u00e7a: ' + labelConf + ' (' + Math.min(g.score, 100) + '%)</span>';
+        html += '<span style="font-size:11px;color:#777;">' + g.motivos.join(' | ') + '</span>';
+        html += '</div>';
+        // Paciente A
+        html += '<div style="margin-top:8px;padding:6px 10px;background:#f5f5f5;border-radius:4px;font-size:12px;">';
+        html += '<strong>A:</strong> ' + (g.pA.nome || '(sem nome)');
+        if (g.pA.dataNascimento) html += ' | Nasc: ' + g.pA.dataNascimento;
+        if (g.pA.cpf) html += ' | CPF: ' + g.pA.cpf;
+        if (g.pA.pacienteEmail) html += ' | ' + g.pA.pacienteEmail;
+        html += '</div>';
+        // Paciente B
+        html += '<div style="margin-top:4px;padding:6px 10px;background:#f5f5f5;border-radius:4px;font-size:12px;">';
+        html += '<strong>B:</strong> ' + (g.pB.nome || '(sem nome)');
+        if (g.pB.dataNascimento) html += ' | Nasc: ' + g.pB.dataNascimento;
+        if (g.pB.cpf) html += ' | CPF: ' + g.pB.cpf;
+        if (g.pB.pacienteEmail) html += ' | ' + g.pB.pacienteEmail;
+        html += '</div>';
+        // Botoes de acao
+        html += '<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">';
+        html += '<button onclick="editarPaciente(\'' + g.pA.id + '\')" style="padding:4px 10px;font-size:11px;background:#1565c0;color:white;border:none;border-radius:4px;cursor:pointer;">Editar A</button>';
+        html += '<button onclick="editarPaciente(\'' + g.pB.id + '\')" style="padding:4px 10px;font-size:11px;background:#1565c0;color:white;border:none;border-radius:4px;cursor:pointer;">Editar B</button>';
+        html += '<button onclick="deletePaciente(\'' + g.pB.id + '\')" style="padding:4px 10px;font-size:11px;background:#c62828;color:white;border:none;border-radius:4px;cursor:pointer;">Deletar B</button>';
+        html += '<button onclick="deletePaciente(\'' + g.pA.id + '\')" style="padding:4px 10px;font-size:11px;background:#c62828;color:white;border:none;border-radius:4px;cursor:pointer;">Deletar A</button>';
+        html += '</div>';
+        html += '</div>';
+      });
+      html += '<p style="font-size:11px;color:#777;margin-top:10px;">Dica: Edite para corrigir dados ou delete o registro duplicado. Apos deletar, clique novamente em "Verificar Duplicatas" para atualizar.</p>';
+      html += '</div>';
+      el.innerHTML = html;
+      el.style.display = 'block';
+      el.scrollIntoView({behavior:'smooth', block:'start'});
+    }
+
+    // Listeners para deteccao em tempo real
+    (function() {
+      var camposMonitorar = ['pacNome', 'pacDN', 'pacCPF'];
+      camposMonitorar.forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) {
+          el.addEventListener('input', _verificarDuplicataTempoReal);
+          el.addEventListener('change', _verificarDuplicataTempoReal);
+        }
+      });
+    })();
 
     // ===== BUSCA UNIVERSAL =====
     function buscarPaciente() {
