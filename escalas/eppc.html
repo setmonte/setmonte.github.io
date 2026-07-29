@@ -224,9 +224,14 @@ function gerarQuestionario() {
     c.innerHTML = h;
 }
 function classificarPilar(soma) {
-    if (soma <= 11) return {texto: 'Fragilizado', cor: '#f44336', corFundo: '#ffcdd2'};
-    if (soma <= 18) return {texto: 'Inst\u00e1vel', cor: '#ff9800', corFundo: '#fff3e0'};
-    return {texto: 'S\u00f3lido', cor: '#4caf50', corFundo: '#e8f5e9'};
+    if (soma <= 11) return {texto: 'Fragilizado', cor: '#f44336', corFundo: '#ffcdd2', r:244,g:67,b:54};
+    if (soma <= 18) return {texto: 'Inst\u00e1vel', cor: '#ff9800', corFundo: '#fff3e0', r:255,g:152,b:0};
+    return {texto: 'S\u00f3lido', cor: '#4caf50', corFundo: '#e8f5e9', r:76,g:175,b:80};
+}
+function classificarPontuacao(soma) {
+    if (soma <= 6) return {texto: 'Discreto', cor: '#90a4ae', r:144,g:164,b:174};
+    if (soma <= 10) return {texto: 'Moderado', cor: '#7b1fa2', r:123,g:31,b:162};
+    return {texto: 'Expressivo', cor: '#c2185b', r:194,g:24,b:91};
 }
 
 function classificarCorpo(total) {
@@ -362,73 +367,243 @@ function calcularResultados() {
     el.scrollIntoView({behavior: 'smooth'});
 
     // window._escalaDados
-    window._escalaDados = {escala:'EPPC', paciente:nome, escore:totalPilares, classificacao:classCorpo.texto, dominios:{sexual:{escore:resultPilares.Sexual.soma,maximo:25,classificacao:resultPilares.Sexual.classificacao.texto},financeiro:{escore:resultPilares.Financeiro.soma,maximo:25,classificacao:resultPilares.Financeiro.classificacao.texto},divertimento:{escore:resultPilares.Divertimento.soma,maximo:25,classificacao:resultPilares.Divertimento.classificacao.texto},projetoFuturo:{escore:resultPilares.ProjetoFuturo.soma,maximo:25,classificacao:resultPilares.ProjetoFuturo.classificacao.texto},ponto:{escore:resultPontuacoes.Ponto.soma,maximo:15},exclamacao:{escore:resultPontuacoes.Exclamacao.soma,maximo:15},interrogacao:{escore:resultPontuacoes.Interrogacao.soma,maximo:15}}, estiloDominante:maiorPont, idPaciente:document.getElementById('idPaciente')?document.getElementById('idPaciente').value:'', idade:document.getElementById('idadeCalculada').value, sexo:document.getElementById('sexo').value, data:new Date().toISOString()};
+    window._escalaDados = {escala:'EPPC', paciente:nome, escore:totalPilares, classificacao:classCorpo.texto, dominios:{sexual:{pontuacao:resultPilares.Sexual.soma,max:25,classificacao:resultPilares.Sexual.classificacao.texto},financeiro:{pontuacao:resultPilares.Financeiro.soma,max:25,classificacao:resultPilares.Financeiro.classificacao.texto},divertimento:{pontuacao:resultPilares.Divertimento.soma,max:25,classificacao:resultPilares.Divertimento.classificacao.texto},projetoFuturo:{pontuacao:resultPilares.ProjetoFuturo.soma,max:25,classificacao:resultPilares.ProjetoFuturo.classificacao.texto},ponto:{pontuacao:resultPontuacoes.Ponto.soma,max:15,media:resultPontuacoes.Ponto.media,classificacao:classificarPontuacao(resultPontuacoes.Ponto.soma).texto},exclamacao:{pontuacao:resultPontuacoes.Exclamacao.soma,max:15,media:resultPontuacoes.Exclamacao.media,classificacao:classificarPontuacao(resultPontuacoes.Exclamacao.soma).texto},interrogacao:{pontuacao:resultPontuacoes.Interrogacao.soma,max:15,media:resultPontuacoes.Interrogacao.media,classificacao:classificarPontuacao(resultPontuacoes.Interrogacao.soma).texto}}, estiloDominante:maiorPont, idPaciente:document.getElementById('idPaciente')?document.getElementById('idPaciente').value:'', idade:document.getElementById('idadeCalculada').value, sexo:document.getElementById('sexo').value, data:new Date().toISOString()};
     if (window.injetarBotaoSalvar) injetarBotaoSalvar('resultados');
 }
 function gerarRelatorioPDF() {
     if (!window._escalaDados) { alert('Calcule os resultados primeiro.'); return; }
     var d = window._escalaDados;
     var doc = new window.jspdf.jsPDF();
-    var y = 20;
-    // Cabecalho
-    doc.setFillColor(136,14,79); doc.rect(0,0,210,40,'F');
-    doc.setTextColor(255,255,255); doc.setFontSize(16); doc.setFont(undefined,'bold');
-    doc.text('EPPC - Escala de Pilares e Pontuacoes Conjugais', 105, 16, {align:'center'});
+    var W = 210, M = 15, TW = W - 2*M;
+    var y = 0;
+    // === PAGINA 1 ===
+    // Cabecalho gradiente (simulado com 2 rects)
+    doc.setFillColor(136,14,79); doc.rect(0,0,W,42,'F');
+    doc.setFillColor(194,24,91); doc.rect(0,30,W,12,'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(18); doc.setFont(undefined,'bold');
+    doc.text('EPPC - RELATORIO', W/2, 14, {align:'center'});
     doc.setFontSize(10); doc.setFont(undefined,'normal');
-    doc.text('Framework: Terapia do Esquema + Gestalt (Monte, 2025)', 105, 25, {align:'center'});
-    doc.text('Relatorio de Resultados', 105, 33, {align:'center'});
+    doc.text('Escala de Pilares e Pontuacoes Conjugais', W/2, 22, {align:'center'});
+    doc.text('Framework: Terapia do Esquema + Gestalt (Monte, 2025)', W/2, 29, {align:'center'});
+    doc.setFontSize(9);
+    doc.text('Paciente: ' + d.paciente + '  |  Data: ' + new Date().toLocaleDateString('pt-BR') + '  |  Sexo: ' + (d.sexo||'N/I'), W/2, 38, {align:'center'});
     y = 50;
-    // Dados pessoais
-    doc.setTextColor(0,0,0); doc.setFontSize(11);
-    doc.text('Paciente: ' + d.paciente, 15, y); y += 7;
-    doc.text('Idade: ' + d.idade, 15, y); doc.text('Sexo: ' + d.sexo, 110, y); y += 7;
-    doc.text('Data: ' + new Date().toLocaleDateString('pt-BR'), 15, y);
-    if (d.idPaciente) doc.text('ID: ' + d.idPaciente, 110, y);
-    y += 12;
-    // Resultado geral
-    doc.setFontSize(13); doc.setFont(undefined,'bold');
-    doc.text('EIXO 1: OS QUATRO PILARES', 15, y); y += 8;
-    doc.setFontSize(11); doc.setFont(undefined,'normal');
-    doc.text('Pontuacao Total: ' + d.escore + ' / 100 - ' + d.classificacao, 15, y); y += 10;
-    // Pilares individuais
+    // Box dados pessoais
+    doc.setFillColor(252,228,236); doc.rect(M, y, TW, 20, 'F');
+    doc.setDrawColor(136,14,79); doc.setLineWidth(1); doc.line(M, y, M, y+20);
+    doc.setTextColor(136,14,79); doc.setFontSize(10); doc.setFont(undefined,'bold');
+    doc.text('DADOS DO AVALIANDO', M+4, y+6);
+    doc.setTextColor(40,40,40); doc.setFontSize(9); doc.setFont(undefined,'normal');
+    var txtId = 'ID: ' + (d.idPaciente||'N/I') + '    Idade: ' + (d.idade||'N/I') + '    Sexo: ' + (d.sexo||'N/I');
+    doc.text(txtId, M+4, y+12);
+    doc.text('Data: ' + new Date().toLocaleDateString('pt-BR'), M+4, y+17);
+    y += 27;
+    // === ESCORE TOTAL COM GRAFICO ===
+    doc.setFillColor(136,14,79); doc.rect(M, y, TW, 9, 'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(10); doc.setFont(undefined,'bold');
+    doc.text('ESCORE TOTAL DOS PILARES', M+3, y+6);
+    y += 13;
+    // Classificacao corpo
+    var corCorpo = d.classificacao === 'Corpo Fragilizado' ? [244,67,54] : (d.classificacao === 'Corpo em Ajuste' ? [255,152,0] : [76,175,80]);
+    doc.setFillColor(corCorpo[0],corCorpo[1],corCorpo[2]);
+    doc.roundedRect(M, y, TW, 14, 3, 3, 'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(13); doc.setFont(undefined,'bold');
+    doc.text('Escore: ' + d.escore + ' / 100   |   ' + d.classificacao, W/2, y+9, {align:'center'});
+    y += 18;
+    // Barra horizontal total
+    doc.setFillColor(230,230,230); doc.roundedRect(M, y, TW, 6, 2, 2, 'F');
+    var pctTotal = Math.round((d.escore / 100) * TW);
+    doc.setFillColor(corCorpo[0],corCorpo[1],corCorpo[2]); doc.roundedRect(M, y, pctTotal, 6, 2, 2, 'F');
+    doc.setTextColor(80,80,80); doc.setFontSize(7); doc.setFont(undefined,'normal');
+    doc.text('0', M, y+10); doc.text('46', M+Math.round(0.46*TW), y+10); doc.text('73', M+Math.round(0.73*TW), y+10); doc.text('100', M+TW-5, y+10);
+    doc.setFontSize(6);
+    doc.text('Fragilizado', M+5, y+14); doc.text('Em Ajuste', M+Math.round(0.5*TW), y+14); doc.text('Solido', M+Math.round(0.8*TW), y+14);
+    y += 20;
+    // === TABELA + GRAFICOS DOS 4 PILARES ===
+    doc.setFillColor(136,14,79); doc.rect(M, y, TW, 9, 'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(10); doc.setFont(undefined,'bold');
+    doc.text('EIXO 1: OS QUATRO PILARES (Corpo da Entidade Casal)', M+3, y+6);
+    y += 13;
+    // Header tabela
+    doc.setFillColor(248,187,208); doc.rect(M, y, TW, 7, 'F');
+    doc.setTextColor(136,14,79); doc.setFontSize(8); doc.setFont(undefined,'bold');
+    doc.text('Pilar', M+3, y+5); doc.text('Escore', M+55, y+5); doc.text('%', M+80, y+5); doc.text('Classificacao', M+92, y+5); doc.text('Grafico', M+125, y+5);
+    y += 9;
     var pilarNomes = ['Sexual','Financeiro','Divertimento','Projeto Futuro'];
     var pilarChaves = ['sexual','financeiro','divertimento','projetoFuturo'];
     for (var i = 0; i < pilarNomes.length; i++) {
         var pd = d.dominios[pilarChaves[i]];
-        doc.text(pilarNomes[i] + ': ' + pd.escore + '/25 - ' + pd.classificacao, 20, y); y += 6;
+        var pct = Math.round((pd.pontuacao / pd.max) * 100);
+        var cls = classificarPilar(pd.pontuacao);
+        if (i % 2 === 0) { doc.setFillColor(252,228,236); doc.rect(M, y-4, TW, 10, 'F'); }
+        doc.setTextColor(40,40,40); doc.setFontSize(9); doc.setFont(undefined,'normal');
+        doc.text(pilarNomes[i], M+3, y+2);
+        doc.text(pd.pontuacao + ' / ' + pd.max, M+55, y+2);
+        doc.text(pct + '%', M+80, y+2);
+        doc.setTextColor(cls.r, cls.g, cls.b); doc.setFont(undefined,'bold');
+        doc.text(cls.texto, M+92, y+2);
+        // Barra grafico
+        doc.setFillColor(230,230,230); doc.roundedRect(M+125, y-2, 50, 5, 1.5, 1.5, 'F');
+        var barW = Math.round((pct/100)*50);
+        doc.setFillColor(cls.r, cls.g, cls.b); doc.roundedRect(M+125, y-2, barW, 5, 1.5, 1.5, 'F');
+        y += 10;
     }
-    y += 8;
-    // Estilo comunicacional
-    doc.setFontSize(13); doc.setFont(undefined,'bold');
-    doc.text('EIXO 2: ESTILO DE PONTUACAO COMUNICACIONAL', 15, y); y += 8;
-    doc.setFontSize(11); doc.setFont(undefined,'normal');
-    var estiloNomes = {'Ponto':'Ponto (.)','Exclamacao':'Exclamacao (!)','Interrogacao':'Interrogacao (?)'};
+    y += 5;
+    // === TABELA + GRAFICOS DAS PONTUACOES ===
+    doc.setFillColor(136,14,79); doc.rect(M, y, TW, 9, 'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(10); doc.setFont(undefined,'bold');
+    doc.text('EIXO 2: ESTILO DE PONTUACAO COMUNICACIONAL (Alma do Casal)', M+3, y+6);
+    y += 13;
+    // Header tabela
+    doc.setFillColor(248,187,208); doc.rect(M, y, TW, 7, 'F');
+    doc.setTextColor(136,14,79); doc.setFontSize(8); doc.setFont(undefined,'bold');
+    doc.text('Estilo', M+3, y+5); doc.text('Escore', M+55, y+5); doc.text('Media', M+80, y+5); doc.text('Intensidade', M+100, y+5); doc.text('Grafico', M+135, y+5);
+    y += 9;
+    var estNomes = ['Ponto (.)', 'Exclamacao (!)', 'Interrogacao (?)'];
     var estChaves = ['ponto','exclamacao','interrogacao'];
     var estKeys = ['Ponto','Exclamacao','Interrogacao'];
     for (var i = 0; i < estChaves.length; i++) {
         var ed = d.dominios[estChaves[i]];
-        var dom = (estKeys[i] === d.estiloDominante) ? ' [DOMINANTE]' : '';
-        doc.text(estiloNomes[estKeys[i]] + ': ' + ed.escore + '/15' + dom, 20, y); y += 6;
+        var pctE = Math.round((ed.pontuacao / ed.max) * 100);
+        var clsE = classificarPontuacao(ed.pontuacao);
+        var isDom = (estKeys[i] === d.estiloDominante);
+        if (i % 2 === 0) { doc.setFillColor(252,228,236); doc.rect(M, y-4, TW, 10, 'F'); }
+        if (isDom) { doc.setFillColor(255,243,224); doc.rect(M, y-4, TW, 10, 'F'); }
+        doc.setTextColor(40,40,40); doc.setFontSize(9); doc.setFont(undefined,'normal');
+        doc.text(estNomes[i] + (isDom ? ' *' : ''), M+3, y+2);
+        doc.text(ed.pontuacao + ' / ' + ed.max, M+55, y+2);
+        doc.text((ed.pontuacao/3).toFixed(1), M+80, y+2);
+        doc.setTextColor(clsE.r, clsE.g, clsE.b); doc.setFont(undefined,'bold');
+        doc.text(clsE.texto, M+100, y+2);
+        // Barra grafico
+        doc.setFillColor(230,230,230); doc.roundedRect(M+135, y-2, 40, 5, 1.5, 1.5, 'F');
+        var barWe = Math.round((pctE/100)*40);
+        doc.setFillColor(clsE.r, clsE.g, clsE.b); doc.roundedRect(M+135, y-2, barWe, 5, 1.5, 1.5, 'F');
+        y += 10;
     }
-    y += 10;
+    y += 3;
+    doc.setTextColor(136,14,79); doc.setFontSize(8); doc.setFont(undefined,'italic');
+    doc.text('* Estilo comunicacional DOMINANTE', M+3, y); y += 4;
+    doc.setFont(undefined,'normal'); doc.setTextColor(80,80,80); doc.setFontSize(7);
+    doc.text('Discreto (3-6): pouco expressivo | Moderado (7-10): presente | Expressivo (11-15): estilo marcante', M+3, y);
+    y += 8;
     // Disclaimer
-    doc.setFontSize(8); doc.setTextColor(100,100,100);
-    doc.text('Instrumento de construcao propria sem validacao psicometrica formal.', 15, y); y += 4;
-    doc.text('Uso clinico qualitativo. Aplicar individualmente a cada parceiro.', 15, y);
-    // Rodape
-    doc.setFillColor(80,80,80); doc.rect(0,285,210,12,'F');
-    doc.setTextColor(200,200,200); doc.setFontSize(7);
-    doc.text('EPPC | Monte, 2025 | Gerado em ' + new Date().toLocaleString('pt-BR'), 105, 291, {align:'center'});
-    // Pagina 2: Referencias
-    doc.addPage(); y = 20;
-    doc.setTextColor(0,0,0); doc.setFontSize(13); doc.setFont(undefined,'bold');
-    doc.text('Referencias', 15, y); y += 10;
-    doc.setFontSize(9); doc.setFont(undefined,'normal');
-    doc.text('MONTE, S. T. Pilares e Pontuacoes: A Comunicacao como Fundamento nas', 15, y); y += 5;
-    doc.text('Relacoes Afetivas Contemporaneas. 2025. (Artigo teorico).', 15, y); y += 8;
-    doc.text('YOUNG, J. E.; KLOSKO, J. S.; WEISHAAR, M. E. Terapia do Esquema: guia de', 15, y); y += 5;
-    doc.text('tecnicas cognitivo-comportamentais inovadoras. Porto Alegre: Artmed, 2008.', 15, y); y += 8;
-    doc.text('PERLS, F.; HEFFERLINE, R.; GOODMAN, P. Gestalt-terapia. Sao Paulo: Summus, 1997.', 15, y);
+    doc.setFillColor(255,248,235); doc.rect(M, y, TW, 14, 'F');
+    doc.setDrawColor(200,150,50); doc.setLineWidth(0.5); doc.line(M, y, M, y+14);
+    doc.setTextColor(150,80,0); doc.setFontSize(7); doc.setFont(undefined,'bold');
+    doc.text('NOTA TECNICA:', M+4, y+5);
+    doc.setFont(undefined,'normal');
+    doc.text('Instrumento de construcao propria sem validacao psicometrica formal. Uso clinico qualitativo.', M+4, y+9);
+    doc.text('Uso sugerido: aplicar individualmente a cada parceiro e comparar perfis lado a lado.', M+4, y+13);
+    // Rodape pag 1
+    doc.setFillColor(80,80,80); doc.rect(0,285,W,12,'F');
+    doc.setTextColor(200,200,200); doc.setFontSize(7); doc.setFont(undefined,'normal');
+    doc.text('SYM Online | EPPC | Gerado em ' + new Date().toLocaleString('pt-BR') + ' | Pag. 1/3', W/2, 291, {align:'center'});
+    // === PAGINA 2: SINTESE TEXTUAL ===
+    doc.addPage(); y = 15;
+    doc.setFillColor(136,14,79); doc.rect(0,0,W,10,'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(9); doc.setFont(undefined,'bold');
+    doc.text('EPPC - Sintese Integrada', W/2, 7, {align:'center'});
+    y = 18;
+    // Panorama geral
+    doc.setFillColor(252,228,236); doc.rect(M, y, TW, 8, 'F');
+    doc.setTextColor(136,14,79); doc.setFontSize(10); doc.setFont(undefined,'bold');
+    doc.text('Panorama Geral', M+3, y+6); y += 12;
+    doc.setTextColor(40,40,40); doc.setFontSize(9); doc.setFont(undefined,'normal');
+    var txtPan = '';
+    if (d.escore <= 46) txtPan = 'O relacionamento apresenta fragilidade estrutural significativa (escore ' + d.escore + '/100). Multiplos pilares estao comprometidos, indicando que a "entidade Casal" esta sob pressao importante. Recomenda-se intervencao terapeutica com foco nos pilares mais frageis.';
+    else if (d.escore <= 73) txtPan = 'O relacionamento apresenta equilibrio parcial (escore ' + d.escore + '/100). Existem pilares funcionais, mas ha areas que merecem atencao clinica. A "entidade Casal" esta em ajuste - pode evoluir para solidez ou fragilizar-se, dependendo de como os pontos de tensao forem manejados.';
+    else txtPan = 'O relacionamento apresenta estrutura solida (escore ' + d.escore + '/100). Os quatro pilares estao bem sustentados, indicando que a "entidade Casal" possui base funcional saudavel. Foco terapeutico pode ser em manutencao e fortalecimento continuo.';
+    var linhasPan = doc.splitTextToSize(txtPan, TW-6);
+    doc.text(linhasPan, M+3, y); y += linhasPan.length * 4.5 + 6;
+    // Detalhe de cada pilar
+    doc.setFillColor(252,228,236); doc.rect(M, y, TW, 8, 'F');
+    doc.setTextColor(136,14,79); doc.setFontSize(10); doc.setFont(undefined,'bold');
+    doc.text('Analise por Pilar', M+3, y+6); y += 12;
+    var descPilares = {
+        'sexual': 'Pilar Sexual - A intimidade fisica e a conexao sexual. Avalia proximidade emocional, comunicacao de desejos e satisfacao com a frequencia.',
+        'financeiro': 'Pilar Financeiro - Administracao conjunta do dinheiro. Avalia acordo sobre gastos, decisoes compartilhadas e seguranca financeira.',
+        'divertimento': 'Pilar Divertimento - Leveza e prazer compartilhado. Avalia tempo de qualidade, atividades conjuntas e presenca de riso no cotidiano.',
+        'projetoFuturo': 'Pilar Projeto Futuro - Visao compartilhada de futuro. Avalia planejamento conjunto, negociacao de divergencias e sentido de continuidade.'
+    };
+    for (var i = 0; i < pilarChaves.length; i++) {
+        var pk = pilarChaves[i];
+        var pd2 = d.dominios[pk];
+        var cls2 = classificarPilar(pd2.pontuacao);
+        doc.setTextColor(cls2.r, cls2.g, cls2.b); doc.setFontSize(9); doc.setFont(undefined,'bold');
+        doc.text(pilarNomes[i] + ': ' + pd2.pontuacao + '/25 (' + cls2.texto + ')', M+3, y);
+        y += 5;
+        doc.setTextColor(60,60,60); doc.setFont(undefined,'normal'); doc.setFontSize(8);
+        var linhasP = doc.splitTextToSize(descPilares[pk], TW-10);
+        doc.text(linhasP, M+5, y); y += linhasP.length * 3.8 + 5;
+    }
+    y += 4;
+    // Estilo comunicacional textual
+    doc.setFillColor(252,228,236); doc.rect(M, y, TW, 8, 'F');
+    doc.setTextColor(136,14,79); doc.setFontSize(10); doc.setFont(undefined,'bold');
+    doc.text('Estilo Comunicacional Dominante', M+3, y+6); y += 12;
+    doc.setTextColor(40,40,40); doc.setFontSize(9); doc.setFont(undefined,'normal');
+    var txtEst = '';
+    if (d.estiloDominante === 'Ponto') txtEst = 'Predomina o estilo Ponto (.) - comunicacao mais fechada e assertiva unilateral. Tende a encerrar discussoes com posicoes fixas, o que pode gerar no(a) parceiro(a) a sensacao de nao ser ouvido(a). Em terapia, trabalhar a abertura ao dialogo e a tolerancia a ambiguidade.';
+    else if (d.estiloDominante === 'Exclamacao') txtEst = 'Predomina o estilo Exclamacao (!) - comunicacao intensa e emocional. Pode manifestar-se como entusiasmo genuino ou como pressao e cobranca. Avaliar se a intensidade e percebida como calor ou como invasao pelo(a) parceiro(a).';
+    else txtEst = 'Predomina o estilo Interrogacao (?) - comunicacao mais aberta e colaborativa. Ha tendencia a buscar compreender o outro antes de concluir. Segundo o framework teorico, este estilo esta geralmente associado a maior satisfacao relacional.';
+    var linhasEst = doc.splitTextToSize(txtEst, TW-6);
+    doc.text(linhasEst, M+3, y); y += linhasEst.length * 4.5 + 8;
+    // Resumo visual comparativo (mini-grafico de barras verticais)
+    doc.setFillColor(248,248,248); doc.rect(M, y, TW, 45, 'F');
+    doc.setDrawColor(200,200,200); doc.rect(M, y, TW, 45);
+    doc.setTextColor(136,14,79); doc.setFontSize(9); doc.setFont(undefined,'bold');
+    doc.text('Comparativo Visual dos Pilares', W/2, y+8, {align:'center'});
+    // 4 barras verticais
+    var barBaseY = y + 40;
+    var barMaxH = 25;
+    var barSpacing = TW / 5;
+    for (var i = 0; i < 4; i++) {
+        var pd3 = d.dominios[pilarChaves[i]];
+        var cls3 = classificarPilar(pd3.pontuacao);
+        var barH = Math.round((pd3.pontuacao / 25) * barMaxH);
+        var barX = M + barSpacing * (i + 0.7);
+        // Barra fundo
+        doc.setFillColor(230,230,230); doc.rect(barX, barBaseY - barMaxH, 14, barMaxH, 'F');
+        // Barra valor
+        doc.setFillColor(cls3.r, cls3.g, cls3.b); doc.rect(barX, barBaseY - barH, 14, barH, 'F');
+        // Label
+        doc.setTextColor(60,60,60); doc.setFontSize(7); doc.setFont(undefined,'normal');
+        doc.text(pilarNomes[i].substring(0,6), barX+2, barBaseY+5);
+        doc.setTextColor(cls3.r, cls3.g, cls3.b); doc.setFont(undefined,'bold');
+        doc.text(pd3.pontuacao + '', barX+4, barBaseY - barH - 2);
+    }
+    y += 50;
+    // Rodape pag 2
+    doc.setFillColor(80,80,80); doc.rect(0,285,W,12,'F');
+    doc.setTextColor(200,200,200); doc.setFontSize(7); doc.setFont(undefined,'normal');
+    doc.text('SYM Online | EPPC | Gerado em ' + new Date().toLocaleString('pt-BR') + ' | Pag. 2/3', W/2, 291, {align:'center'});
+    // === PAGINA 3: REFERENCIAS ===
+    doc.addPage(); y = 15;
+    doc.setFillColor(136,14,79); doc.rect(0,0,W,10,'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(9); doc.setFont(undefined,'bold');
+    doc.text('EPPC - Referencias Bibliograficas', W/2, 7, {align:'center'});
+    y = 22;
+    doc.setTextColor(40,40,40); doc.setFontSize(9); doc.setFont(undefined,'normal');
+    doc.text('MONTE, S. T. Pilares e Pontuacoes: A Comunicacao como Fundamento nas Relacoes', M, y); y += 5;
+    doc.text('Afetivas Contemporaneas. 2025. (Artigo teorico - framework clinico).', M+5, y); y += 9;
+    doc.text('YOUNG, J. E.; KLOSKO, J. S.; WEISHAAR, M. E. Terapia do Esquema: guia de tecnicas', M, y); y += 5;
+    doc.text('cognitivo-comportamentais inovadoras. Porto Alegre: Artmed, 2008.', M+5, y); y += 9;
+    doc.text('PERLS, F.; HEFFERLINE, R.; GOODMAN, P. Gestalt-terapia. Sao Paulo: Summus, 1997.', M, y); y += 12;
+    // Legenda
+    doc.setFillColor(248,248,248); doc.rect(M, y, TW, 35, 'F');
+    doc.setDrawColor(136,14,79); doc.setLineWidth(0.5); doc.line(M, y, M, y+35);
+    doc.setTextColor(136,14,79); doc.setFontSize(9); doc.setFont(undefined,'bold');
+    doc.text('Legenda de Classificacoes', M+4, y+7);
+    doc.setTextColor(60,60,60); doc.setFontSize(8); doc.setFont(undefined,'normal');
+    doc.text('PILARES: Fragilizado (0-11) | Instavel (12-18) | Solido (19-25)', M+4, y+14);
+    doc.text('CORPO: Fragilizado (0-46) | Em Ajuste (47-73) | Solido (74-100)', M+4, y+20);
+    doc.text('PONTUACAO: Discreto (3-6) | Moderado (7-10) | Expressivo (11-15)', M+4, y+26);
+    doc.text('Estilo DOMINANTE: maior escore entre Ponto/Exclamacao/Interrogacao', M+4, y+32);
+    // Rodape pag 3
+    doc.setFillColor(80,80,80); doc.rect(0,285,W,12,'F');
+    doc.setTextColor(200,200,200); doc.setFontSize(7); doc.setFont(undefined,'normal');
+    doc.text('SYM Online | EPPC | Gerado em ' + new Date().toLocaleString('pt-BR') + ' | Pag. 3/3', W/2, 291, {align:'center'});
     // Salvar
     var nomeArq = 'EPPC_' + d.paciente.replace(/\s+/g,'_') + '_' + new Date().toISOString().slice(0,10).replace(/-/g,'') + '.pdf';
     doc.save(nomeArq);
