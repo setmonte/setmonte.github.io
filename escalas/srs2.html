@@ -337,83 +337,58 @@ for(var k=0;k<keys.length;k++){var key=keys[k];var sub=SUBESCALAS[key];var soma=
 var brutoCIS=brutos.PS+brutos.CS+brutos.COS+brutos.MS;
 var brutoTotal=0;for(var i=0;i<r.length;i++)brutoTotal+=r[i];
 var escoresT={};for(var k=0;k<keys.length;k++){var key=keys[k];escoresT[key]=buscarEscoreT(normas[key],brutos[key]);}
-escoresT.CIS=buscarEscoreT(normas.CIS,brutoCIS);
-escoresT.TOTAL=buscarEscoreT(normas.TOTAL,brutoTotal);
+escoresT.CIS=buscarEscoreT(normas.CIS,brutoCIS);escoresT.TOTAL=buscarEscoreT(normas.TOTAL,brutoTotal);
 var classTot=classificarEscoreT(escoresT.TOTAL);
-
-var jsPDF=window.jspdf.jsPDF;
-var doc=new jsPDF();
-var ml=15;var lu=180;
-
-// Cabecalho
-doc.setFillColor(26,35,126);doc.rect(0,0,210,32,'F');
-doc.setTextColor(255,255,255);doc.setFontSize(14);doc.setFont(undefined,'bold');
-doc.text('SRS-2 - RELATORIO DE AVALIACAO',105,13,{align:'center'});
-doc.setFontSize(9);doc.setFont(undefined,'normal');
-doc.text('Escala de Responsividade Social - 2a Edicao (Formulario Idade Escolar)',105,21,{align:'center'});
-doc.text('Normas Brasileiras | Sistema SYM',105,27,{align:'center'});
-
-var y=38;
-doc.setFillColor(248,249,250);doc.rect(ml,y,lu,22,'F');
-doc.setDrawColor(26,35,126);doc.setLineWidth(0.8);doc.line(ml,y,ml,y+22);
-doc.setTextColor(26,35,126);doc.setFontSize(10);doc.setFont(undefined,'bold');
-doc.text('DADOS DO AVALIANDO',ml+4,y+6);
+var nomeSubs2={"PS":"Percepcao Social","CS":"Cognicao Social","COS":"Comunicacao Social","MS":"Motivacao Social","PRR":"Padroes Restritos e Repetitivos"};
+var allBrutos={'PS':brutos.PS,'CS':brutos.CS,'COS':brutos.COS,'MS':brutos.MS,'PRR':brutos.PRR,'CIS':brutoCIS,'TOTAL':brutoTotal};
+var allScales=[{key:'PS',nome:'Percepcao Social'},{key:'CS',nome:'Cognicao Social'},{key:'COS',nome:'Comunicacao Social'},{key:'MS',nome:'Motivacao Social'},{key:'PRR',nome:'Padroes Restritos e Repetitivos'},{key:'CIS',nome:'Comunicacao e Interacao Social'},{key:'TOTAL',nome:'Escore Total'}];
+var jsPDF=window.jspdf.jsPDF;var doc=new jsPDF();var ml=15;var lu=180;var pw=210;var y=0;
+// P1 CAPA
+doc.setFillColor(26,35,126);doc.rect(0,0,pw,45,'F');doc.setTextColor(255,255,255);doc.setFontSize(22);doc.setFont(undefined,'bold');doc.text('SRS-2',105,20,{align:'center'});doc.setFontSize(11);doc.setFont(undefined,'normal');doc.text('Escala de Responsividade Social - 2a Edicao',105,30,{align:'center'});doc.text('Formulario Idade Escolar | Normas Brasileiras',105,38,{align:'center'});
+y=60;doc.setTextColor(0,0,0);doc.setFontSize(12);doc.setFont(undefined,'bold');doc.text(nome,ml,y);y+=10;doc.setFontSize(10);doc.setFont(undefined,'normal');
+if(idPac){doc.text('ID: '+idPac,ml,y);y+=7;}doc.text('Data da avaliacao: '+dataAval,ml,y);y+=7;doc.text('Idade: '+idade+'   |   Sexo: '+sexo,ml,y);y+=7;doc.text('Respondente: '+resp,ml,y);y+=7;
+doc.setFontSize(7);doc.setTextColor(150,150,150);doc.text('Sistema SYM Online | setmonte.github.io',105,285,{align:'center'});
+// P2 VISAO GERAL
+doc.addPage();doc.setFillColor(26,35,126);doc.rect(0,0,pw,8,'F');doc.setTextColor(26,35,126);doc.setFontSize(16);doc.setFont(undefined,'bold');y=22;doc.text('Visao Geral',ml,y);y+=12;
 doc.setTextColor(0,0,0);doc.setFontSize(9);doc.setFont(undefined,'normal');
-doc.text('Nome: '+nome+(idPac?'   |   ID: '+idPac:''),ml+4,y+12);
-doc.text('Idade: '+idade+'   |   Sexo: '+sexo+'   |   Respondente: '+resp,ml+4,y+18);
-
-y=66;
-doc.setFillColor(classTot.cor==='#4caf50'?200:classTot.cor==='#ffc107'?255:classTot.cor==='#ff9800'?255:255,classTot.cor==='#4caf50'?230:classTot.cor==='#ffc107'?248:classTot.cor==='#ff9800'?224:205,classTot.cor==='#4caf50'?201:classTot.cor==='#ffc107'?225:classTot.cor==='#ff9800'?178:210);
-doc.rect(ml,y,lu,14,'F');
-doc.setTextColor(0,0,0);doc.setFontSize(11);doc.setFont(undefined,'bold');
-doc.text('Pontuacao Total: '+brutoTotal+' | Escore T: '+escoresT.TOTAL+' | '+classTot.texto,105,y+9,{align:'center'});
-
-y=86;
-doc.setTextColor(26,35,126);doc.setFontSize(10);doc.setFont(undefined,'bold');
-doc.text('SUBESCALAS DE INTERVENCAO',ml,y);y+=8;
-doc.setFontSize(9);doc.setFont(undefined,'normal');doc.setTextColor(0,0,0);
-
-var nomeSubs={"PS":"Percepcao Social","CS":"Cognicao Social","COS":"Comunicacao Social","MS":"Motivacao Social","PRR":"Padroes Restritos e Repetitivos"};
-for(var k=0;k<keys.length;k++){
-var key=keys[k];var cl=classificarEscoreT(escoresT[key]);var maxB=SUBESCALAS[key].itens.length*3;
-doc.setFillColor(240,240,240);doc.rect(ml,y-3,lu,9,'F');
-doc.setFont(undefined,'bold');doc.text(nomeSubs[key]+':',ml+2,y+3);
-doc.setFont(undefined,'normal');doc.text('Bruto='+brutos[key]+'/'+maxB+'  |  Escore T='+escoresT[key]+'  |  '+cl.texto,ml+65,y+3);
-y+=11;
-}
-// CIS
-var clCIS=classificarEscoreT(escoresT.CIS);
-doc.setFillColor(224,242,241);doc.rect(ml,y-3,lu,9,'F');
-doc.setFont(undefined,'bold');doc.text('CIS (Comunicacao e Interacao Social):',ml+2,y+3);
-doc.setFont(undefined,'normal');doc.text('Bruto='+brutoCIS+'  |  Escore T='+escoresT.CIS+'  |  '+clCIS.texto,ml+75,y+3);
-y+=15;
-
+var vg=['A SRS-2 mensura sintomas associados ao TEA e os classifica em niveis leve,','moderado ou severo. Agrupa sintomas em 5 Subescalas de Intervencao.','','SUBESCALAS: Percepcao Social, Cognicao Social, Comunicacao Social,','Motivacao Social e Padroes Restritos e Repetitivos.','','ESCALAS DSM-5: Comunicacao e Interacao Social (CIS) + PRR.','','INTERPRETACAO DOS ESCORES T:'];
+for(var vi=0;vi<vg.length;vi++){doc.text(vg[vi],ml,y);y+=5;}
+y+=3;doc.setFillColor(200,230,201);doc.rect(ml,y-3,lu,8,'F');doc.setTextColor(0,0,0);doc.text('Escore T <= 59: DENTRO DOS LIMITES NORMAIS',ml+3,y+2);y+=11;
+doc.setFillColor(255,248,225);doc.rect(ml,y-3,lu,8,'F');doc.text('Escore T 60-65: NIVEL LEVE - interferencia leve a moderada',ml+3,y+2);y+=11;
+doc.setFillColor(255,224,178);doc.rect(ml,y-3,lu,8,'F');doc.text('Escore T 66-75: NIVEL MODERADO - interferencia substancial, tipico de TEA moderado',ml+3,y+2);y+=11;
+doc.setFillColor(255,205,210);doc.rect(ml,y-3,lu,8,'F');doc.text('Escore T >= 76: NIVEL SEVERO - fortemente associado ao TEA (DSM-5)',ml+3,y+2);
+// P3 PERFIL
+doc.addPage();doc.setFillColor(26,35,126);doc.rect(0,0,pw,8,'F');doc.setTextColor(26,35,126);doc.setFontSize(16);doc.setFont(undefined,'bold');y=22;doc.text('Perfil',ml,y);y+=10;
+doc.setFontSize(8);doc.setFont(undefined,'normal');doc.setTextColor(100,100,100);doc.text('Escore T (50+10z) | '+resp+' | '+sexo,ml,y);y+=8;
+var gL=55;var gR=185;var gW=gR-gL;var bH=10;var gp=5;var escMn=20;var escMx=80;
+function xT(t){return gL+((t-escMn)/(escMx-escMn))*gW;}
+doc.setFontSize(7);doc.setTextColor(100,100,100);var tk=[20,30,40,50,60,70,80];for(var ti=0;ti<tk.length;ti++){doc.text(String(tk[ti]),xT(tk[ti]),y,{align:'center'});}y+=3;
+var yS=y;var yE=yS+allScales.length*(bH+gp);
+doc.setFillColor(232,245,233);doc.rect(xT(20),yS,xT(59)-xT(20),yE-yS,'F');
+doc.setFillColor(255,248,225);doc.rect(xT(59),yS,xT(65)-xT(59),yE-yS,'F');
+doc.setFillColor(255,224,178);doc.rect(xT(65),yS,xT(75)-xT(65),yE-yS,'F');
+doc.setFillColor(255,205,210);doc.rect(xT(75),yS,xT(80)-xT(75),yE-yS,'F');
+doc.setDrawColor(200,200,200);doc.setLineWidth(0.2);for(var ti=0;ti<tk.length;ti++){doc.line(xT(tk[ti]),yS,xT(tk[ti]),yE);}
+for(var si=0;si<allScales.length;si++){var sc=allScales[si];var t=escoresT[sc.key];var bY=yS+si*(bH+gp);doc.setFontSize(7);doc.setTextColor(0,0,0);doc.setFont(undefined,'normal');doc.text(sc.nome,ml,bY+bH/2+1);doc.setTextColor(100,100,100);doc.text(String(allBrutos[sc.key]),gL-6,bY+bH/2+1,{align:'center'});var px=xT(Math.min(80,Math.max(20,t)));doc.setFillColor(213,0,0);doc.circle(px,bY+bH/2,2.2,'F');doc.setFontSize(6);doc.setTextColor(213,0,0);doc.setFont(undefined,'bold');doc.text(String(t),px,bY+bH/2-3.5,{align:'center'});}
+y=yE+8;doc.setFontSize(6);doc.setFont(undefined,'normal');doc.setTextColor(0,0,0);doc.text('Verde=Normal  Amarelo=Leve  Laranja=Moderado  Vermelho=Severo',ml,y);
+// P4 TABELA
+doc.addPage();doc.setFillColor(26,35,126);doc.rect(0,0,pw,8,'F');doc.setTextColor(26,35,126);doc.setFontSize(16);doc.setFont(undefined,'bold');y=22;doc.text('Tabela de Escores',ml,y);y+=12;
+doc.setFontSize(9);doc.setFont(undefined,'bold');doc.setTextColor(0,0,0);doc.text('Escala',ml,y);doc.text('Bruto',ml+80,y);doc.text('Escore T',ml+105,y);doc.text('Classificacao',ml+135,y);y+=3;doc.setDrawColor(26,35,126);doc.setLineWidth(0.5);doc.line(ml,y,ml+lu,y);y+=6;
+doc.setFont(undefined,'normal');doc.setFontSize(9);
+for(var si=0;si<allScales.length;si++){var sc=allScales[si];var t=escoresT[sc.key];var cl=classificarEscoreT(t);if(si>=5)doc.setFont(undefined,'bold');else doc.setFont(undefined,'normal');doc.setTextColor(0,0,0);doc.text(sc.nome,ml,y);doc.text(String(allBrutos[sc.key]),ml+85,y);doc.text(String(t),ml+112,y);if(cl.cor==='#4caf50')doc.setTextColor(46,125,50);else if(cl.cor==='#ffc107')doc.setTextColor(180,140,0);else if(cl.cor==='#ff9800')doc.setTextColor(230,120,0);else doc.setTextColor(198,40,40);doc.text(cl.texto,ml+135,y);doc.setTextColor(0,0,0);y+=8;if(si===4){y+=2;doc.setDrawColor(200,200,200);doc.setLineWidth(0.3);doc.line(ml,y-5,ml+lu,y-5);}}
 // Interpretacao
-doc.setTextColor(26,35,126);doc.setFontSize(10);doc.setFont(undefined,'bold');
-doc.text('INTERPRETACAO',ml,y);y+=7;
-doc.setTextColor(0,0,0);doc.setFontSize(9);doc.setFont(undefined,'normal');
-var interp='';
-if(escoresT.TOTAL<=59)interp='Escore T dentro dos limites normais. Sem indicativos de dificuldades significativas.';
-else if(escoresT.TOTAL<=65)interp='Dificuldades leves de responsividade social. Sugere-se acompanhamento.';
-else if(escoresT.TOTAL<=75)interp='Dificuldades moderadas, compativeis com deficits clinicamente significativos. Avaliacao especializada recomendada.';
-else interp='Dificuldades graves, fortemente sugestivo de TEA. Encaminhamento diagnostico recomendado.';
-var lines=doc.splitTextToSize(interp,lu-10);
-doc.text(lines,ml+4,y);y+=lines.length*5+8;
-
-// Disclaimer
-doc.setFillColor(255,248,235);doc.rect(ml,y,lu,12,'F');
-doc.setDrawColor(200,150,50);doc.setLineWidth(0.5);doc.line(ml,y,ml,y+12);
-doc.setTextColor(150,80,0);doc.setFontSize(7);doc.setFont(undefined,'bold');
-doc.text('IMPORTANTE:',ml+3,y+4);doc.setFont(undefined,'normal');
-doc.text('Instrumento de rastreio. Resultados devem ser interpretados por profissional qualificado.',ml+3,y+8);
-
-// Rodape
-doc.setFillColor(50,50,50);doc.rect(0,285,210,12,'F');
-doc.setTextColor(200,200,200);doc.setFontSize(7);
-doc.text('SYM Online | '+dataAval+' | Gerado em '+new Date().toLocaleString('pt-BR'),105,291,{align:'center'});
-
-var ts=new Date();
-var tsStr=ts.getFullYear()+String(ts.getMonth()+1).padStart(2,'0')+String(ts.getDate()).padStart(2,'0')+String(ts.getHours()).padStart(2,'0')+String(ts.getMinutes()).padStart(2,'0');
+y+=8;doc.setTextColor(26,35,126);doc.setFontSize(10);doc.setFont(undefined,'bold');doc.text('Interpretacao do Escore Total',ml,y);y+=7;
+doc.setTextColor(0,0,0);doc.setFontSize(9);doc.setFont(undefined,'normal');var iT='';
+if(escoresT.TOTAL<=59)iT='Pontuacoes neste intervalo nao estao associadas ao TEA clinicamente significativo. Individuos bem ajustados e com funcionalidade adaptativa intacta.';
+else if(escoresT.TOTAL<=65)iT='Prejuizos no comportamento social reciproco clinicamente significativos, com interferencia leve a moderada. Vistos em condicoes do espectro autista leve ou de alto funcionamento, TOC, ansiedade e Transtorno de Comunicacao Social.';
+else if(escoresT.TOTAL<=75)iT='Prejuizos substanciais na reciprocidade social. Tipicos em TEA de gravidade moderada, incluindo Sindrome de Asperger (DSM-IV) e TEA/Transtorno de Comunicacao Social (DSM-5). Comuns tambem em Transtorno de Personalidade Esquizoide.';
+else iT='Prejuizos severos e duradouros nas interacoes sociais cotidianas. Fortemente associados ao Transtorno do Espectro Autista de acordo com o DSM-5.';
+var iLines=doc.splitTextToSize(iT,lu);doc.text(iLines,ml,y);
+// DISCLAIMER
+y+=iLines.length*5+10;doc.setFillColor(255,248,235);doc.rect(ml,y,lu,14,'F');doc.setDrawColor(200,150,50);doc.setLineWidth(0.5);doc.line(ml,y,ml,y+14);doc.setTextColor(150,80,0);doc.setFontSize(7);doc.setFont(undefined,'bold');doc.text('IMPORTANTE:',ml+3,y+5);doc.setFont(undefined,'normal');doc.text('Instrumento de rastreio. Resultados devem ser interpretados por profissional qualificado em avaliacao abrangente.',ml+3,y+10);
+// RODAPE
+doc.setFontSize(6);doc.setTextColor(150,150,150);doc.text('Gerado em '+new Date().toLocaleString('pt-BR')+' | SYM Online',ml,285);
+var ts=new Date();var tsStr=ts.getFullYear()+String(ts.getMonth()+1).padStart(2,'0')+String(ts.getDate()).padStart(2,'0')+String(ts.getHours()).padStart(2,'0')+String(ts.getMinutes()).padStart(2,'0');
 doc.save('SRS2_'+nome.replace(/\s+/g,'_')+'_'+tsStr+'.pdf');
 }
 
