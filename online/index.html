@@ -8489,10 +8489,10 @@
       if (d.classificacao || (d.escore != null && d.escore !== undefined && d.escore !== '')) {
         var corR=46, corG=125, corB=50;
         var cl = (d.classificacao||'').toLowerCase();
-        if (cl.indexOf('grave')>=0||cl.indexOf('elevad')>=0||cl.indexOf('alto')>=0||cl.indexOf('positivo')>=0||cl.indexOf('anormal')>=0||cl.indexOf('muito')>=0) { corR=244; corG=67; corB=54; }
-        else if (cl.indexOf('moderado')>=0||cl.indexOf('risco')>=0||cl.indexOf('nocivo')>=0||cl.indexOf('sublimiar')>=0||cl.indexOf('limítrofe')>=0||cl.indexOf('limitrofe')>=0) { corR=255; corG=152; corB=0; }
-        else if (cl.indexOf('leve')>=0) { corR=139; corG=195; corB=74; }
-        else if (cl.indexOf('minim')>=0||cl.indexOf('baixo')>=0||cl.indexOf('normal')>=0||cl.indexOf('negativo')>=0||cl.indexOf('nenhum')>=0) { corR=76; corG=175; corB=80; }
+        if (cl.indexOf('grave')>=0||cl.indexOf('elevad')>=0||cl.indexOf('alto')>=0||cl.indexOf('positivo')>=0||cl.indexOf('anormal')>=0||cl.indexOf('muito')>=0||cl.indexOf('fragilizado')>=0) { corR=244; corG=67; corB=54; }
+        else if (cl.indexOf('moderado')>=0||cl.indexOf('risco')>=0||cl.indexOf('nocivo')>=0||cl.indexOf('sublimiar')>=0||cl.indexOf('limit')>=0||cl.indexOf('ajuste')>=0||cl.indexOf('instavel')>=0||cl.indexOf('inst\u00e1vel')>=0) { corR=255; corG=152; corB=0; }
+        else if (cl.indexOf('leve')>=0||cl.indexOf('discreto')>=0) { corR=139; corG=195; corB=74; }
+        else if (cl.indexOf('minim')>=0||cl.indexOf('baixo')>=0||cl.indexOf('normal')>=0||cl.indexOf('negativo')>=0||cl.indexOf('nenhum')>=0||cl.indexOf('solido')>=0||cl.indexOf('s\u00f3lido')>=0) { corR=76; corG=175; corB=80; }
         doc.setFillColor(corR, corG, corB); doc.rect(15,y,180,12,'F');
         doc.setTextColor(255,255,255); doc.setFontSize(11); doc.setFont(undefined,'bold');
         var textoClass = '';
@@ -8517,20 +8517,49 @@
           var v = d.dominios[k];
           var linha = k + ': ';
           if (typeof v === 'object' && v !== null) {
-            if (v.pontuacao != null) linha += 'Pontuacao=' + v.pontuacao;
+            if (v.pontuacao != null && v.max != null) linha += v.pontuacao + '/' + v.max;
+            else if (v.pontuacao != null) linha += v.pontuacao;
             if (v.media != null) linha += ' | Media=' + v.media;
             if (v.classificacao) linha += ' | ' + v.classificacao;
             if (v.itens != null) linha += ' (' + v.itens + ' itens)';
-            if (v.max != null) linha += ' / ' + v.max;
           } else { linha += v; }
           if (i % 2 === 0) { doc.setFillColor(245,245,245); doc.rect(15, y-3, 180, 6, 'F'); }
           doc.text(sanitize(linha), 18, y); y += 6;
         });
         y += 4;
         // GRAFICO DE BARRAS para dominios numericos simples (PHQ-9, GAD-7, DIZCALC, etc.)
+        var temPontuacao = keys.some(function(k) { return d.dominios[k] && typeof d.dominios[k] === 'object' && d.dominios[k].pontuacao != null && d.dominios[k].max != null; });
         var temNumerico = keys.some(function(k) { return typeof d.dominios[k] === 'number'; });
         var temMedia = keys.some(function(k) { return d.dominios[k] && typeof d.dominios[k] === 'object' && d.dominios[k].media != null; });
-        if (temNumerico && !temMedia) {
+        if (temPontuacao && !temNumerico) {
+          if (y + 10 + keys.length * 14 > maxY) { doc.addPage(); y = 20; }
+          y += 3;
+          doc.setFillColor(46,125,50); doc.rect(15, y-3, 180, 8, 'F');
+          doc.setTextColor(255,255,255); doc.setFontSize(9); doc.setFont(undefined,'bold');
+          doc.text('REPRESENTACAO GRAFICA', 20, y+2); y += 14;
+          var barX = 65; var barMaxW = 110; var barH = 9; var gap = 5;
+          keys.forEach(function(k) {
+            var v = d.dominios[k];
+            if (!v || v.pontuacao == null || v.max == null) return;
+            if (y > maxY) { doc.addPage(); y = 15; }
+            var pct = Math.round((v.pontuacao / v.max) * 100);
+            var barW = (pct / 100) * barMaxW;
+            var nome = sanitize(k);
+            if (nome.length > 18) nome = nome.substring(0, 18) + '..';
+            doc.setTextColor(0,0,0); doc.setFontSize(7.5); doc.setFont(undefined,'bold');
+            doc.text(nome, 17, y + barH/2 + 1);
+            doc.setFillColor(230,230,230); doc.rect(barX, y, barMaxW, barH, 'F');
+            if (pct >= 76) { doc.setFillColor(76, 175, 80); }
+            else if (pct >= 48) { doc.setFillColor(255, 152, 0); }
+            else { doc.setFillColor(244, 67, 54); }
+            if (barW > 0) doc.rect(barX, y, barW, barH, 'F');
+            doc.setTextColor(50,50,50); doc.setFontSize(7.5); doc.setFont(undefined,'bold');
+            doc.text(v.pontuacao + '/' + v.max + (v.classificacao ? ' ' + sanitize(v.classificacao) : ''), barX + barW + 3, y + barH/2 + 1);
+            y += barH + gap;
+          });
+          y += 6;
+        }
+        else if (temNumerico && !temMedia) {
           if (y + 10 + keys.length * 12 > maxY) { doc.addPage(); y = 20; }
           y += 3;
           doc.setFillColor(33,33,33); doc.rect(15, y-3, 180, 8, 'F');
