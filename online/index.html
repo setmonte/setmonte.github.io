@@ -966,6 +966,7 @@
           <div style="display:flex;gap:0;border-bottom:2px solid #e0e0e0;margin-bottom:15px;">
             <button id="subTabPfister" onclick="switchProgOcultoSubTab('pfister')" style="flex:1;padding:12px 20px;font-size:13px;font-weight:bold;border:none;border-bottom:3px solid #6a1b9a;background:#f3e5f5;color:#6a1b9a;cursor:pointer;border-radius:8px 8px 0 0;">Pfister</button>
             <button id="subTabNeo" onclick="switchProgOcultoSubTab('neo')" style="flex:1;padding:12px 20px;font-size:13px;font-weight:bold;border:none;border-bottom:3px solid transparent;background:#f5f5f5;color:#777;cursor:pointer;border-radius:8px 8px 0 0;">NEO PI-R</button>
+            <button id="subTabSrs2" onclick="switchProgOcultoSubTab('srs2')" style="flex:1;padding:12px 20px;font-size:13px;font-weight:bold;border:none;border-bottom:3px solid transparent;background:#f5f5f5;color:#777;cursor:pointer;border-radius:8px 8px 0 0;">SRS-2</button>
           </div>
 
           <!-- CONTEUDO PFISTER -->
@@ -1069,6 +1070,57 @@
             </div>
             <!-- RESULTADOS NEO -->
             <div id="neoResultsSection" class="card hidden" style="margin-top:15px;"></div>
+          </div>
+
+          <!-- CONTEUDO SRS-2 -->
+          <div id="subSrs2Content" style="display:none;">
+            <div style="background:#e3f2fd;border:2px solid #1565c0;border-radius:10px;padding:20px;margin:10px 0;">
+              <p style="font-size:14px;font-weight:bold;color:#1565c0;margin-bottom:8px;">SRS-2 - Escala de Responsividade Social (Idade Escolar)</p>
+              <p style="font-size:12px;color:#555;line-height:1.6;margin-bottom:12px;">Avalia deficits na reciprocidade social associados ao TEA. 65 itens, 5 subescalas de intervencao. Respondido por pais ou professores. Normas brasileiras com Escore T por sexo. Faixa: 4-18 anos.</p>
+              <div class="btn-row">
+                <button class="btn btn-green" onclick="showNewSrs2()">Nova Aplicacao</button>
+                <button class="btn btn-blue" onclick="showSrs2Results()">Resultados</button>
+              </div>
+            </div>
+            <!-- NOVA APLICACAO SRS-2 -->
+            <div id="newSrs2Section" class="card hidden" style="margin-top:15px;">
+              <h2 style="font-size:16px;color:#1565c0;">Nova Aplicacao SRS-2</h2>
+              <p style="margin-bottom:10px;color:#555;font-size:0.9em;">Escala de Responsividade Social — Formulario Idade Escolar (4-18 anos)</p>
+              <label style="font-size:0.85em;color:#555;">Paciente cadastrado:</label>
+              <select id="srs2SelPac" onchange="preencherPaciente('srs2')" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:10px;">
+                <option value="">-- Selecione ou preencha abaixo --</option>
+              </select>
+              <label style="font-size:0.85em;color:#555;">Nome:</label>
+              <input type="text" id="srs2Nome" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+              <label style="font-size:0.85em;color:#555;">Data de Nascimento:</label>
+              <input type="date" id="srs2Dn" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+              <label style="font-size:0.85em;color:#555;">Sexo:</label>
+              <select id="srs2Sexo" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+                <option value="">Selecione...</option>
+                <option value="Masculino">Masculino</option>
+                <option value="Feminino">Feminino</option>
+              </select>
+              <label style="font-size:0.85em;color:#555;">Respondente:</label>
+              <select id="srs2Respondente" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+                <option value="">Selecione...</option>
+                <option value="Pais">Pais/Responsaveis</option>
+                <option value="Professores">Professores</option>
+              </select>
+              <label style="font-size:0.85em;color:#555;">Observacoes:</label>
+              <input type="text" id="srs2Obs" placeholder="Opcional" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:12px;">
+              <button onclick="startSrs2OnlineTest()" class="btn btn-green" style="width:48%;">Gerar Link</button>
+              <button onclick="startSrs2OnlineTest(true)" class="btn btn-blue" style="width:48%;">Aplicar Aqui</button>
+              <div id="srs2LinkResult" class="hidden" style="margin-top:15px;padding:12px;background:#e3f2fd;border-radius:8px;">
+                <p style="font-size:0.8em;color:#555;margin-bottom:5px;">Link gerado:</p>
+                <p id="srs2SessionLink" style="word-break:break-all;font-size:0.75em;color:#1565c0;"></p>
+                <div style="margin-top:10px;display:flex;gap:8px;">
+                  <button onclick="copySrs2Link()" class="btn btn-blue" style="font-size:0.85em;">Copiar</button>
+                  <button onclick="whatsappSrs2Link()" class="btn btn-green" style="font-size:0.85em;">WhatsApp</button>
+                </div>
+              </div>
+            </div>
+            <!-- RESULTADOS SRS-2 -->
+            <div id="srs2ResultsSection" class="card hidden" style="margin-top:15px;"></div>
           </div>
         </div>
 
@@ -5652,7 +5704,7 @@
       listaOrdenada.forEach(function(p) {
         opcoesHtml += '<option value="' + p.id + '" data-nome="' + (p.nome||'').replace(/"/g,'') + '" data-dn="' + (p.dataNascimento||'') + '" data-cpf="' + (p.cpf||'') + '" data-sexo="' + (p.sexo||'') + '" data-esc="' + (p.escolaridade||'') + '" data-lat="' + (p.lateralidade||'') + '">' + (p.nome||'') + ' (' + (p.dataNascimento||'?') + ')</option>';
       });
-      ['baeSelPac','trmvSelPac','taavSelPac','tecfeSelPac','trefSelPac','tflodSelPac','corsiSelPac','tteSelPac','escalaSelPac','anamneseSelPac','reocupaSelPac','pfisterSelPac','neoSelPac','agendaSelPac','prontuarioSelPac'].forEach(function(id) {
+      ['baeSelPac','trmvSelPac','taavSelPac','tecfeSelPac','trefSelPac','tflodSelPac','corsiSelPac','tteSelPac','escalaSelPac','anamneseSelPac','reocupaSelPac','pfisterSelPac','neoSelPac','agendaSelPac','prontuarioSelPac','srs2SelPac'].forEach(function(id) {
         var sel = document.getElementById(id);
         if (!sel) return;
         var val = sel.value;
@@ -5704,6 +5756,7 @@
       else if (tipo === 'reocupa') { campoNome = document.getElementById('reocupaNome'); campoDN = document.getElementById('reocupaDn'); }
       else if (tipo === 'pfister') { campoNome = document.getElementById('pfisterNome'); campoDN = document.getElementById('pfisterDn'); }
       else if (tipo === 'neo') { campoNome = document.getElementById('neoNome'); campoDN = document.getElementById('neoDn'); }
+      else if (tipo === 'srs2') { campoNome = document.getElementById('srs2Nome'); campoDN = document.getElementById('srs2Dn'); }
       // Preencher campos basicos
       if (campoNome) campoNome.value = pac.nome || '';
       if (campoDN) campoDN.value = pac.dataNascimento || '';
@@ -6224,17 +6277,21 @@
     function switchProgOcultoSubTab(sub) {
       var pfisterContent = document.getElementById('subPfisterContent');
       var neoContent = document.getElementById('subNeoContent');
+      var srs2Content = document.getElementById('subSrs2Content');
       var btnPfister = document.getElementById('subTabPfister');
       var btnNeo = document.getElementById('subTabNeo');
+      var btnSrs2 = document.getElementById('subTabSrs2');
       // Reset all
       pfisterContent.style.display = 'none';
       neoContent.style.display = 'none';
+      if (srs2Content) srs2Content.style.display = 'none';
       btnPfister.style.background = '#f5f5f5';
       btnPfister.style.color = '#777';
       btnPfister.style.borderBottom = '3px solid transparent';
       btnNeo.style.background = '#f5f5f5';
       btnNeo.style.color = '#777';
       btnNeo.style.borderBottom = '3px solid transparent';
+      if (btnSrs2) { btnSrs2.style.background = '#f5f5f5'; btnSrs2.style.color = '#777'; btnSrs2.style.borderBottom = '3px solid transparent'; }
       if (sub === 'pfister') {
         pfisterContent.style.display = 'block';
         btnPfister.style.background = '#f3e5f5';
@@ -6245,6 +6302,10 @@
         btnNeo.style.background = '#ede7f6';
         btnNeo.style.color = '#4a148c';
         btnNeo.style.borderBottom = '3px solid #4a148c';
+      } else if (sub === 'srs2') {
+        if (srs2Content) srs2Content.style.display = 'block';
+        if (btnSrs2) { btnSrs2.style.background = '#e3f2fd'; btnSrs2.style.color = '#1565c0'; btnSrs2.style.borderBottom = '3px solid #1565c0'; }
+        loadSrs2Pacientes();
       }
     }
 
@@ -6436,6 +6497,108 @@
           html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (dom.Amabilidade ? dom.Amabilidade.escoreT : '-') + '</td>';
           html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (dom.Conscienciosidade ? dom.Conscienciosidade.escoreT : '-') + '</td>';
           html += '<td style="padding:5px;border-bottom:1px solid #eee;text-align:center;"><button onclick="neoGerarPDF('+i+')" style="padding:4px 12px;border:none;border-radius:12px;background:#4a148c;color:white;font-size:11px;cursor:pointer;font-weight:600;">PDF</button></td>';
+          html += '</tr>';
+        }
+        html += '</table>';
+        el.innerHTML = html;
+      } catch(e) { el.innerHTML = '<p>Erro ao carregar resultados.</p>'; }
+    }
+
+    // ===== FUNCOES PROGRAMAS OCULTOS - SRS-2 =====
+    function loadSrs2Pacientes() {
+      if (typeof popularDropdownsPacientes === 'function') popularDropdownsPacientes();
+    }
+
+    function showNewSrs2() {
+      document.getElementById('newSrs2Section').classList.toggle('hidden');
+      var res = document.getElementById('srs2ResultsSection');
+      if (res) res.classList.add('hidden');
+    }
+
+    function showSrs2Results() {
+      var res = document.getElementById('srs2ResultsSection');
+      if (res) res.classList.toggle('hidden');
+      document.getElementById('newSrs2Section').classList.add('hidden');
+      loadSrs2Results();
+    }
+
+    var generatedSrs2Link = '';
+
+    async function startSrs2OnlineTest(abrirLocal) {
+      var nome = document.getElementById('srs2Nome').value.trim();
+      var dn = document.getElementById('srs2Dn').value;
+      var sexo = document.getElementById('srs2Sexo').value;
+      if (!nome || !dn) { alert('Preencha nome e data de nascimento.'); return; }
+      if (!sexo) { alert('Selecione o sexo (necessario para as normas).'); return; }
+      var btn = event && event.target ? event.target : null;
+      if (typeof btnLoading === 'function') btnLoading(btn);
+      try {
+        var sessionId = 'srs2-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+        var sessionData = {
+          email: currentUser,
+          sessionId: sessionId,
+          tipo: 'srs2',
+          patientName: nome,
+          birthDate: dn,
+          sex: sexo,
+          respondente: document.getElementById('srs2Respondente').value || '',
+          obs: document.getElementById('srs2Obs').value || '',
+          pacienteId: document.getElementById('srs2SelPac').value || ''
+        };
+        // Salvar sessao no servidor
+        var resp = await fetch(API_URL + '/save-session', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(sessionData)
+        });
+        var result = await resp.json();
+        var link = '';
+        if (result.id) {
+          link = 'https://setmonte.github.io/escalas/srs2.html?s=' + result.id;
+        } else {
+          var params = safeBtoa(JSON.stringify(sessionData));
+          link = 'https://setmonte.github.io/escalas/srs2.html?d=' + encodeURIComponent(params);
+        }
+        generatedSrs2Link = link;
+        if (abrirLocal) { window.open(link, '_blank'); }
+        else { document.getElementById('srs2SessionLink').textContent = link; document.getElementById('srs2LinkResult').classList.remove('hidden'); }
+      } catch(e) { alert('Erro ao gerar link: ' + e.message); }
+      if (typeof btnReset === 'function') btnReset(btn);
+    }
+
+    function copySrs2Link() {
+      var link = document.getElementById('srs2SessionLink').textContent || generatedSrs2Link;
+      navigator.clipboard.writeText(link);
+      alert('Link copiado!');
+    }
+
+    function whatsappSrs2Link() {
+      var link = document.getElementById('srs2SessionLink').textContent || generatedSrs2Link;
+      window.open('https://wa.me/?text=' + encodeURIComponent('Preencha a escala SRS-2: ' + link), '_blank');
+    }
+
+    var _srs2ResultCache = [];
+
+    async function loadSrs2Results() {
+      var el = document.getElementById('srs2ResultsSection');
+      if (!el) return;
+      el.innerHTML = '<p>Carregando...</p>';
+      try {
+        var resp = await fetch(API_URL + '/get-results?email=' + encodeURIComponent(currentUser) + '&tipo=srs2');
+        var data = await resp.json();
+        var results = data.results || [];
+        _srs2ResultCache = results;
+        if (results.length === 0) { el.innerHTML = '<p>Nenhum resultado SRS-2 encontrado.</p>'; return; }
+        var html = '<h3 style="color:#1565c0;">Resultados SRS-2</h3><table style="width:100%;border-collapse:collapse;font-size:0.85em;"><tr><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Data</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Paciente</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Escore T</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Classificacao</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Respondente</th></tr>';
+        for (var i = 0; i < results.length; i++) {
+          var r = results[i];
+          var d = r.data || {};
+          html += '<tr>';
+          html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (d.data ? new Date(d.data).toLocaleDateString('pt-BR') : '') + '</td>';
+          html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (d.paciente || '') + '</td>';
+          html += '<td style="padding:5px;border-bottom:1px solid #eee;font-weight:bold;">' + (d.escore || '-') + '</td>';
+          html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (d.classificacao || '-') + '</td>';
+          html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (d.respondente || '-') + '</td>';
           html += '</tr>';
         }
         html += '</table>';
