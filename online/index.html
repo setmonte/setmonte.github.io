@@ -116,7 +116,7 @@
           <button class="tab-btn" id="tabLinguagem" onclick="switchTab('linguagem')">Linguagem</button>
           <button class="tab-btn" id="tabVisuoconstrutivo" onclick="switchTab('visuoconstrutivo')">Visuoconstrutivo</button>
           <button class="tab-btn" id="tabCorrecao" onclick="switchTab('correcao')">Correcao</button>
-          <button class="tab-btn" id="tabReabilitacao" onclick="switchTab('reabilitacao')">Reabilitacao</button>
+          <button class="tab-btn hidden" id="tabReabilitacao" onclick="switchTab('reabilitacao')">Reabilitacao</button>
           <button class="tab-btn" id="tabAnamnese" onclick="switchTab('anamnese')">Anamnese</button>
           <button class="tab-btn" id="tabAgenda" onclick="switchTab('agenda')">Agenda</button>
           <button class="tab-btn" id="tabProntuario" onclick="switchTab('prontuario')">Prontuario</button>
@@ -1709,8 +1709,8 @@
         <label style="font-size:0.85em;color:#555;">Sexo:</label>
         <select id="trefSexo" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
           <option value="">Selecione...</option>
-          <option value="M">Masculino</option>
-          <option value="F">Feminino</option>
+          <option value="Masculino">Masculino</option>
+          <option value="Feminino">Feminino</option>
         </select>
         <label style="font-size:0.85em;color:#555;">Escolaridade:</label>
         <select id="trefEscolaridade" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
@@ -2319,9 +2319,8 @@
 
     async function comprarCreditos(qtd) {
       try {
-        var btn = event.target;
-        btn.textContent = 'Aguarde...';
-        btn.disabled = true;
+        var btn = (typeof event !== 'undefined' && event && event.target) ? event.target : null;
+        if (btn) { btn.textContent = 'Aguarde...'; btn.disabled = true; }
         var resp = await fetch(API_URL + '/create-payment', {
           method: 'POST',
           headers: {'Content-Type':'application/json'},
@@ -2336,8 +2335,7 @@
       } catch(e) {
         alert('Erro de conexao: ' + e.message);
       } finally {
-        btn.textContent = 'Comprar';
-        btn.disabled = false;
+        if (btn) { btn.textContent = 'Comprar'; btn.disabled = false; }
       }
     }
 
@@ -3570,7 +3568,7 @@
       if (btnSalvar) { btnSalvar.disabled = true; btnSalvar.textContent = 'Salvando...'; btnSalvar.style.opacity = '0.6'; }
       // Validacao de conflito de horario
       var conflito = verificarConflitoHorario(data, hora, duracao, _agendaEditandoId);
-      if (conflito) { alert('Conflito de horario! Ja existe uma consulta nesse periodo:\n\n' + conflito.nome + ' - ' + conflito.hora + ' (' + conflito.duracao + ' min)\n\nEscolha outro horario.'); return; }
+      if (conflito) { if (btnSalvar) { btnSalvar.disabled = false; btnSalvar.textContent = 'Agendar'; btnSalvar.style.opacity = '1'; } alert('Conflito de horario! Ja existe uma consulta nesse periodo:\n\n' + conflito.nome + ' - ' + conflito.hora + ' (' + conflito.duracao + ' min)\n\nEscolha outro horario.'); return; }
       // Buscar dados do paciente selecionado
       var pacInfo = _pacientesCache.filter(function(p) { return p.id === pacId; })[0];
       var pacEmail = pacInfo ? (pacInfo.pacienteEmail || '') : '';
@@ -3589,7 +3587,7 @@
       // Verificar conflito em todas as datas recorrentes
       for (var ci = 1; ci < datas.length; ci++) {
         var conflitoRec = verificarConflitoHorario(datas[ci], hora, duracao, _agendaEditandoId);
-        if (conflitoRec) { alert('Conflito na data ' + datas[ci] + ':\n' + conflitoRec.nome + ' - ' + conflitoRec.hora + ' (' + conflitoRec.duracao + ' min)\n\nAjuste a recorrencia.'); return; }
+        if (conflitoRec) { if (btnSalvar) { btnSalvar.disabled = false; btnSalvar.textContent = 'Agendar'; btnSalvar.style.opacity = '1'; } alert('Conflito na data ' + datas[ci] + ':\n' + conflitoRec.nome + ' - ' + conflitoRec.hora + ' (' + conflitoRec.duracao + ' min)\n\nAjuste a recorrencia.'); return; }
       }
       // Salvar todas as consultas (original + recorrentes)
       try {
@@ -5081,7 +5079,8 @@
       for (var i = 0; i < btns.length; i++) btns[i].classList.remove('active');
       var target = document.getElementById('adminSub_' + nome);
       if (target) target.style.display = 'block';
-      event.target.classList.add('active');
+      var evtBtn = (typeof event !== 'undefined' && event && event.target) ? event.target : null;
+      if (evtBtn) evtBtn.classList.add('active');
     }
 
     async function carregarSaldoApi() {
@@ -5173,6 +5172,8 @@
           html += '</table></div>';
         }
         // Buscar consumo de creditos (resultados finalizados de todos os usuarios)
+        // TODO: Este endpoint retorna apenas resultados do admin. Para ver consumo de TODOS os usuarios,
+        // seria necessario um endpoint /get-all-results ou parametro ?all=true no backend.
         try {
           var respAll = await fetch(API_URL + '/get-results?email=' + encodeURIComponent(currentUser));
           var dataAll = await respAll.json();
@@ -5343,13 +5344,13 @@
       // Esconder/mostrar botoes "Comprar Creditos"
       document.querySelectorAll('a.btn-orange').forEach(function(el) { if (el.textContent.indexOf('Comprar') >= 0) el.style.display = active ? 'none' : ''; });
       // Esconder seções de planos caso estejam abertas
-      ['plansSection','baePlansSection','trmvPlansSection','taavPlansSection','trefPlansSection'].forEach(function(id) {
+      ['plansSection','baePlansSection','trmvPlansSection','taavPlansSection','trefPlansSection','tflodPlansSection'].forEach(function(id) {
         var el = document.getElementById(id);
         if (el && active) el.classList.add('hidden');
       });
       // Reabilitar botoes de nova aplicacao (caso tenham sido desabilitados por falta de credito)
       if (active) {
-        ['btnNewTest','btnNewBae','btnNewTrmv','btnNewTaav','btnNewTref'].forEach(function(id) {
+        ['btnNewTest','btnNewBae','btnNewTrmv','btnNewTaav','btnNewTref','btnNewTflod'].forEach(function(id) {
           var btn = document.getElementById(id);
           if (btn) { btn.disabled = false; btn.textContent = btn.textContent.replace('Sem creditos','Nova Aplicacao'); }
         });
@@ -8879,7 +8880,8 @@
 
     async function comprarCreditosBae(qtd) {
       try {
-        var btn = event.target; btn.textContent = 'Aguarde...'; btn.disabled = true;
+        var btn = (typeof event !== 'undefined' && event && event.target) ? event.target : null;
+        if (btn) { btn.textContent = 'Aguarde...'; btn.disabled = true; }
         var resp = await fetch(API_URL + '/create-payment', {
           method: 'POST', headers: {'Content-Type':'application/json'},
           body: JSON.stringify({email: currentUser, quantidade: qtd, tipo: 'bae'})
@@ -8888,7 +8890,7 @@
         if (data.url) { window.open(data.url, '_blank'); }
         else { alert('Erro ao gerar link de pagamento'); }
       } catch(e) { alert('Erro: ' + e.message); }
-      finally { btn.textContent = 'Comprar'; btn.disabled = false; }
+      finally { if (btn) { btn.textContent = 'Comprar'; btn.disabled = false; } }
     }
 
     async function clearResults() {
@@ -9204,7 +9206,8 @@
 
     async function comprarCreditosTrmv(qtd) {
       try {
-        var btn = event.target; btn.textContent = 'Aguarde...'; btn.disabled = true;
+        var btn = (typeof event !== 'undefined' && event && event.target) ? event.target : null;
+        if (btn) { btn.textContent = 'Aguarde...'; btn.disabled = true; }
         var resp = await fetch(API_URL + '/create-payment', {
           method: 'POST', headers: {'Content-Type':'application/json'},
           body: JSON.stringify({email: currentUser, quantidade: qtd, tipo: 'trmv'})
@@ -9213,7 +9216,7 @@
         if (data.url) { window.open(data.url, '_blank'); }
         else { alert('Erro ao gerar link de pagamento'); }
       } catch(e) { alert('Erro: ' + e.message); }
-      finally { btn.textContent = 'Comprar'; btn.disabled = false; }
+      finally { if (btn) { btn.textContent = 'Comprar'; btn.disabled = false; } }
     }
 
     // ===== FUNCOES TAAV =====
@@ -9624,7 +9627,8 @@
 
     async function comprarCreditosTaav(qtd) {
       try {
-        var btn = event.target; btn.textContent = 'Aguarde...'; btn.disabled = true;
+        var btn = (typeof event !== 'undefined' && event && event.target) ? event.target : null;
+        if (btn) { btn.textContent = 'Aguarde...'; btn.disabled = true; }
         var resp = await fetch(API_URL + '/create-payment', {
           method: 'POST', headers: {'Content-Type':'application/json'},
           body: JSON.stringify({email: currentUser, quantidade: qtd, tipo: 'taav'})
@@ -9633,7 +9637,7 @@
         if (data.url) { window.open(data.url, '_blank'); }
         else { alert('Erro ao gerar link de pagamento'); }
       } catch(e) { alert('Erro: ' + e.message); }
-      finally { btn.textContent = 'Comprar'; btn.disabled = false; }
+      finally { if (btn) { btn.textContent = 'Comprar'; btn.disabled = false; } }
     }
 
     // ===== FUNCOES TREF =====
