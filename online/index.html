@@ -3798,7 +3798,7 @@
         var escalas = (dataEsc.results || []).filter(function(r) {
           if (r.tipo === 'agenda' || r.tipo === 'session' || r.tipo === 'depoimento' || r.tipo === 'prontuario') return false;
           var d = r.data || {};
-          return d.pacienteId === pacienteId || d.idPaciente === pacienteId;
+          return d.pacienteId === pacienteId || d.idPaciente === pacienteId || (d.formData && (d.formData.pacienteId === pacienteId || d.formData.id === pacienteId));
         });
         // Renderizar
         var html = '';
@@ -5172,6 +5172,37 @@
           html += '<tr style="font-weight:bold;border-top:1px solid #90caf9;"><td style="padding:3px 8px;">TOTAL</td><td style="padding:3px 8px;text-align:right;">' + creditosTotal + '</td><td style="padding:3px 8px;text-align:right;">R$ ' + receitaTotal.toFixed(2) + '</td></tr>';
           html += '</table></div>';
         }
+        // Buscar consumo de creditos (resultados finalizados de todos os usuarios)
+        try {
+          var respAll = await fetch(API_URL + '/get-results?email=' + encodeURIComponent(currentUser));
+          var dataAll = await respAll.json();
+          var allResults = dataAll.results || [];
+          var tiposCredito = ['tecfe','bae','trmv','taav','tref','tflod','corsi','tte'];
+          var consumoPorTipo = {};
+          var consumoTotal = 0;
+          allResults.forEach(function(r) {
+            var tipo = (r.tipo || '').toLowerCase();
+            if (tiposCredito.indexOf(tipo) === -1) return;
+            var d = r.data || {};
+            if (d.status === 'erro' || d.status === 'erro_transcricao' || d.status === 'abandonado') return;
+            if (!consumoPorTipo[tipo.toUpperCase()]) consumoPorTipo[tipo.toUpperCase()] = 0;
+            consumoPorTipo[tipo.toUpperCase()]++;
+            consumoTotal++;
+          });
+          html += '<div style="margin-top:12px;padding-top:10px;border-top:1px solid #90caf9;">';
+          html += '<p style="font-size:12px;font-weight:bold;color:#2e7d32;margin-bottom:5px;">Creditos consumidos: ' + consumoTotal + '</p>';
+          var tiposConsumo = Object.keys(consumoPorTipo).sort();
+          if (tiposConsumo.length > 0) {
+            html += '<table style="width:100%;border-collapse:collapse;font-size:11px;">';
+            html += '<tr style="background:#e8f5e9;"><th style="padding:4px 8px;text-align:left;">Tipo</th><th style="padding:4px 8px;text-align:right;">Aplicacoes</th></tr>';
+            tiposConsumo.forEach(function(t) {
+              html += '<tr><td style="padding:3px 8px;">' + t + '</td><td style="padding:3px 8px;text-align:right;">' + consumoPorTipo[t] + '</td></tr>';
+            });
+            html += '<tr style="font-weight:bold;border-top:1px solid #a5d6a7;"><td style="padding:3px 8px;">TOTAL</td><td style="padding:3px 8px;text-align:right;">' + consumoTotal + '</td></tr>';
+            html += '</table>';
+          }
+          html += '</div>';
+        } catch(ec) {}
         html += '<p style="font-size:10px;color:#999;margin-top:5px;">Atualizado: ' + new Date().toLocaleTimeString('pt-BR') + '</p>';
         el.innerHTML = html;
       } catch(e) {

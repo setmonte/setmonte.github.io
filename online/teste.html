@@ -234,6 +234,8 @@
           if (stats) {
             window._escalaDados = {escala:'TECFE', escore:stats.persevErrors, classificacao:stats.completedCategories+' categorias', dominios:{Categorias:stats.completedCategories, Tentativas:stats.trialsPerformed, ErrosPersev:stats.persevErrors, ErrosNaoPersev:stats.nonPersevErrors, NivelConceitual:Math.round(stats.pctConceptual)}};
           }
+          // Coleta anonima via sendBeacon (garante envio antes de showEndScreen destruir DOM)
+          try{var _cUrl='https://script.google.com/macros/s/AKfycbzYl7-ageXnHHyvrKMb6iS_7gX2l6ZBngPpbCHNfj7YYbXylcZ_vQ9iJkrbko8ICPcW/exec';var _idadeVal=null;if(sessionData&&sessionData.birthDate){var _nasc=new Date(sessionData.birthDate);var _hj=new Date();_idadeVal=_hj.getFullYear()-_nasc.getFullYear();if(_hj.getMonth()<_nasc.getMonth()||(_hj.getMonth()===_nasc.getMonth()&&_hj.getDate()<_nasc.getDate()))_idadeVal--;}if(_idadeVal&&window._escalaDados&&window._escalaDados.escala){var _ed=window._escalaDados;var _domStr='Categorias:'+_ed.dominios.Categorias+'; Tentativas:'+_ed.dominios.Tentativas+'; ErrosPersev:'+_ed.dominios.ErrosPersev+'; ErrosNaoPersev:'+_ed.dominios.ErrosNaoPersev+'; NivelConceitual:'+_ed.dominios.NivelConceitual;var _pkt={email:sessionData.email||'',escala:_ed.escala,idade:_idadeVal,sexo:sessionData.sex||'',escolaridade:sessionData.education||'',pontuacao:_ed.escore?parseFloat(_ed.escore).toFixed(2):'',dominios:_domStr,classificacao:_ed.classificacao||''};navigator.sendBeacon(_cUrl,JSON.stringify(_pkt));}}catch(e){}
           var fd = {
             patientName: sessionData.patientName || '',
             birthDate: sessionData.birthDate || '',
