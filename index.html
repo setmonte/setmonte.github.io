@@ -366,6 +366,8 @@ function irParaDepoimento(idx){
     depTimer=setInterval(function(){if(depTotal>0)irParaDepoimento((depAtual+1)%depTotal);},5000);
 }
 
+function _sanitizeHTML(str){if(!str)return '';return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
 function renderDepoimentos(lista){
     if(!lista||lista.length===0)return;
     depTotal=lista.length;
@@ -375,8 +377,8 @@ function renderDepoimentos(lista){
     lista.forEach(function(d){
         var estrelas='\u2605'.repeat(d.nota)+'\u2606'.repeat(5-d.nota);
         var ini=d.nome.split(' ').map(function(p){return p[0];}).join('').toUpperCase().slice(0,2);
-        html+='<div class="depoimento-card"><div class="depoimento-stars">'+estrelas+'</div><p class="depoimento-texto">"\u201c'+d.texto.replace(/\n/g,' ')+'\u201d</p><div class="depoimento-autor"><div class="depoimento-avatar">'+ini+'</div><div class="depoimento-info"><strong>'+d.nome+'</strong><br>'+(d.servico||'')+'</div></div>';
-        if(d.resposta)html+='<div style="margin-top:8px;padding:6px 8px;background:#e8f5e9;border-radius:6px;border-left:3px solid #2e7d32;font-size:0.75rem;"><strong style="color:#2e7d32;">Resposta:</strong> '+d.resposta+'</div>';
+        html+='<div class="depoimento-card"><div class="depoimento-stars">'+estrelas+'</div><p class="depoimento-texto">"\u201c'+_sanitizeHTML(d.texto).replace(/\n/g,' ')+'\u201d</p><div class="depoimento-autor"><div class="depoimento-avatar">'+ini+'</div><div class="depoimento-info"><strong>'+_sanitizeHTML(d.nome)+'</strong><br>'+_sanitizeHTML(d.servico||'')+'</div></div>';
+        if(d.resposta)html+='<div style="margin-top:8px;padding:6px 8px;background:#e8f5e9;border-radius:6px;border-left:3px solid #2e7d32;font-size:0.75rem;"><strong style="color:#2e7d32;">Resposta:</strong> '+_sanitizeHTML(d.resposta)+'</div>';
         html+='</div>';
     });
     document.getElementById('depTrack').innerHTML=html;

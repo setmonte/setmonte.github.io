@@ -2183,6 +2183,11 @@
     // Configuracao
     var API_URL = 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
 
+    function _sanitizeHTML(str) {
+      if (!str) return '';
+      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
     // Utilitario: gerar ID hash do paciente (mesmo algoritmo do id-paciente.js)
     function gerarIdPacienteHash(nome, nascimento) {
       if (!nascimento || !nome || nome.trim().length < 1) return '-';
@@ -5685,12 +5690,12 @@
             html += '<span style="color:#f5a623;font-size:14px;">' + estrelas + '</span>';
             html += '<span style="font-size:11px;color:#999;">' + dataFmt + '</span>';
             html += '</div>';
-            html += '<p style="font-size:13px;color:#444;font-style:italic;line-height:1.5;margin-bottom:8px;">"' + d.texto.replace(/\n/g,' ') + '"</p>';
-            html += '<p style="font-size:12px;color:#555;font-weight:600;">-- ' + d.nome + (d.servico ? ' | ' + d.servico : '') + '</p>';
+            html += '<p style="font-size:13px;color:#444;font-style:italic;line-height:1.5;margin-bottom:8px;">"' + _sanitizeHTML(d.texto).replace(/\n/g,' ') + '"</p>';
+            html += '<p style="font-size:12px;color:#555;font-weight:600;">-- ' + _sanitizeHTML(d.nome) + (d.servico ? ' | ' + _sanitizeHTML(d.servico) : '') + '</p>';
             if (d.resposta) {
               html += '<div style="margin-top:10px;padding:10px;background:#e8f5e9;border-radius:8px;border-left:3px solid #2e7d32;">';
               html += '<p style="font-size:11px;color:#2e7d32;font-weight:bold;margin-bottom:4px;">Sua resposta:</p>';
-              html += '<p style="font-size:12px;color:#333;">' + d.resposta + '</p>';
+              html += '<p style="font-size:12px;color:#333;">' + _sanitizeHTML(d.resposta) + '</p>';
               html += '</div>';
             } else {
               html += '<div style="margin-top:10px;">';
