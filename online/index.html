@@ -2354,6 +2354,7 @@
       sessionStorage.removeItem('tecfe_access_token');
       sessionStorage.removeItem('tecfe_user_email');
       sessionStorage.removeItem('tecfe_id_token');
+      sessionStorage.removeItem('tecfe_refresh_token');
       currentUser = null;
       accessToken = null;
       document.getElementById('loginPage').classList.remove('hidden');
@@ -2384,6 +2385,7 @@
           sessionStorage.setItem('tecfe_access_token', accessToken);
           sessionStorage.setItem('tecfe_user_email', currentUser);
           sessionStorage.setItem('tecfe_id_token', idToken);
+          if (data.refresh_token) sessionStorage.setItem('tecfe_refresh_token', data.refresh_token);
           // Limpar URL
           window.history.replaceState({}, '', REDIRECT_URI.replace('https://setmonte.github.io', ''));
           showDashboard();
@@ -2396,6 +2398,32 @@
         document.getElementById('loadingPage').classList.add('hidden');
         document.getElementById('loginPage').classList.remove('hidden');
       }
+    }
+
+    async function refreshAccessToken() {
+      var refreshToken = sessionStorage.getItem('tecfe_refresh_token');
+      if (!refreshToken) { doLogout(); return false; }
+      try {
+        var resp = await fetch(COGNITO_DOMAIN + '/oauth2/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: 'grant_type=refresh_token&client_id=' + CLIENT_ID + '&refresh_token=' + refreshToken
+        });
+        var data = await resp.json();
+        if (data.access_token) {
+          accessToken = data.access_token;
+          sessionStorage.setItem('tecfe_access_token', accessToken);
+          if (data.id_token) {
+            var payload = JSON.parse(atob(data.id_token.split('.')[1]));
+            currentUser = payload.email;
+            sessionStorage.setItem('tecfe_user_email', currentUser);
+            sessionStorage.setItem('tecfe_id_token', data.id_token);
+          }
+          return true;
+        }
+      } catch(e) {}
+      doLogout();
+      return false;
     }
 
     async function showDashboard() {
@@ -2429,15 +2457,15 @@
 
         // Bonus de primeiro acesso: se todos os creditos sao 0, dar 1 de cada
         var totalCreditos = (data.credits||0) + (data.baeCredits||0) + (data.trmvCredits||0) + (data.trefCredits||0) + (data.taavCredits||0) + (data.tflodCredits||0) + (data.prontuarioCredits||0);
-        if (totalCreditos === 0 && !localStorage.getItem('bonus_dado_' + currentUser)) {
-          localStorage.setItem('bonus_dado_' + currentUser, '1');
-          var tipos = ['tecfe','bae','trmv','tref','taav','tflod','prontuario'];
-          var qtds = [1, 5, 1, 1, 1, 1, 1];
-          for (var bi = 0; bi < tipos.length; bi++) {
-            await fetch(API_URL + '/add-credits', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({targetEmail:currentUser,tipo:tipos[bi],amount:qtds[bi]})});
-          }
-          data.credits = 1; data.baeCredits = 5; data.trmvCredits = 1; data.trefCredits = 1; data.taavCredits = 1; data.tflodCredits = 1; data.prontuarioCredits = 1;
-          alert('Bem-vindo! Voce ganhou creditos gratuitos de cada teste para experimentar.');
+        if (totalCreditos === 0 && !data.bonusRecebido) {
+          try {
+            var bonusResp = await fetch(API_URL + '/give-bonus', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:currentUser})});
+            var bonusData = await bonusResp.json();
+            if (bonusData.ok) {
+              data.credits = 1; data.baeCredits = 5; data.trmvCredits = 1; data.trefCredits = 1; data.taavCredits = 1; data.tflodCredits = 1; data.prontuarioCredits = 1;
+              alert('Bem-vindo! Voce ganhou creditos gratuitos de cada teste para experimentar.');
+            }
+          } catch(bonusErr) {}
         }
 
         document.getElementById('tecfeCreditsCount').textContent = data.credits || 0;
@@ -2471,6 +2499,8 @@
         if (prontElErr) prontElErr.textContent = '?';
       }
       // Carregar pacientes (aba padrao)
+      // Auto-refresh token a cada 50 minutos (antes de expirar em ~60min)
+      setInterval(function() { refreshAccessToken(); }, 50 * 60 * 1000);
       loadPacientes();
     }
 
