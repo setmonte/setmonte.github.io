@@ -5074,7 +5074,7 @@
       var el = document.getElementById('adminVendasList');
       el.innerHTML = '<p style="color:#555;">Carregando...</p>';
       try {
-        var resp = await fetch(API_URL + '/get-vendas');
+        var resp = await fetch(API_URL + '/get-vendas?email=' + encodeURIComponent(currentUser));
         var data = await resp.json();
         var vendas = data.vendas || [];
         if (vendas.length === 0) { el.innerHTML = '<p style="color:#888;">Nenhuma venda nova.</p>'; return; }
@@ -5101,7 +5101,7 @@
       if (!window._vendasIds || window._vendasIds.length === 0) return;
       if (!confirm('Apagar ' + window._vendasIds.length + ' registro(s) de venda?')) return;
       try {
-        await fetch(API_URL + '/clear-vendas', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ids: window._vendasIds}) });
+        await fetch(API_URL + '/clear-vendas', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ids: window._vendasIds, email: currentUser}) });
         document.getElementById('adminVendasList').innerHTML = '<p style="color:#2e7d32;">Vendas limpas com sucesso.</p>';
         window._vendasIds = [];
       } catch(e) { alert('Erro ao limpar.'); }
@@ -5426,7 +5426,7 @@
       var el = document.getElementById('adminUsersList');
       el.innerHTML = '<p style="color:#555;">Carregando DynamoDB...</p>';
       try {
-        var resp = await fetch(API_URL + '/admin-list-users');
+        var resp = await fetch(API_URL + '/admin-list-users?email=' + encodeURIComponent(currentUser));
         var data = await resp.json();
         if (data.users && data.users.length > 0) {
           var agora = new Date();
@@ -5468,7 +5468,7 @@
       var el = document.getElementById('adminUsersList');
       el.innerHTML = '<p style="color:#555;">Carregando Cognito...</p>';
       try {
-        var resp = await fetch(API_URL + '/admin-list-cognito');
+        var resp = await fetch(API_URL + '/admin-list-cognito?email=' + encodeURIComponent(currentUser));
         var data = await resp.json();
         if (data.users && data.users.length > 0) {
           var html = '<p style="font-size:11px;color:#7b1fa2;font-weight:bold;margin-bottom:5px;">Cognito — quem pode LOGAR no painel:</p>';
@@ -5529,7 +5529,7 @@
       var ok = 0;
       for (var i = 0; i < checks.length; i++) {
         try {
-          await fetch(API_URL + '/delete-result', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ sessionId: checks[i].dataset.sid }) });
+          await fetch(API_URL + '/delete-result', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ sessionId: checks[i].dataset.sid, email: currentUser }) });
           ok++;
         } catch(e) {}
       }
@@ -5584,7 +5584,7 @@
       var ok = 0;
       for (var i = 0; i < checks.length; i++) {
         try {
-          await fetch(API_URL + '/delete-result', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ sessionId: checks[i].dataset.sid }) });
+          await fetch(API_URL + '/delete-result', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ sessionId: checks[i].dataset.sid, email: currentUser }) });
           ok++;
         } catch(e) {}
       }
@@ -5616,7 +5616,7 @@
       var el = document.getElementById('adminStats');
       el.innerHTML = '<p style="color:#555;">Calculando...</p>';
       try {
-        var resp = await fetch(API_URL + '/admin-stats');
+        var resp = await fetch(API_URL + '/admin-stats?email=' + encodeURIComponent(currentUser));
         var data = await resp.json();
         var html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">';
         html += '<div style="background:#e8f5e9;padding:10px;border-radius:6px;text-align:center;"><strong style="font-size:20px;color:#2e7d32;">' + (data.totalUsers || 0) + '</strong><br><span style="font-size:11px;">Usuarios</span></div>';
@@ -5666,7 +5666,7 @@
       var ok = 0, erros = 0;
       for (var i = 0; i < sids.length; i++) {
         try {
-          await fetch(API_URL + '/delete-result', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ sessionId: sids[i] }) });
+          await fetch(API_URL + '/delete-result', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ sessionId: sids[i], email: currentUser }) });
           ok++;
         } catch(e) { erros++; }
       }
@@ -5695,7 +5695,7 @@
         var ok = 0;
         for (var i = 0; i < results.length; i++) {
           try {
-            await fetch(API_URL + '/delete-result', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ sessionId: results[i].sessionId }) });
+            await fetch(API_URL + '/delete-result', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ sessionId: results[i].sessionId, email: currentUser }) });
             ok++;
           } catch(e) {}
         }
@@ -5707,7 +5707,7 @@
     // ===== FUNCOES DEPOIMENTOS =====
     async function loadDepoimentos() {
       try {
-        var resp = await fetch(API_URL + '/get-depoimentos');
+        var resp = await fetch(API_URL + '/get-depoimentos?email=' + encodeURIComponent(currentUser));
         var data = await resp.json();
         var deps = data.depoimentos || [];
         if (deps.length > 0) {
@@ -5751,7 +5751,7 @@
       var resposta = textarea.value.trim();
       if (!resposta) { alert('Escreva uma resposta.'); return; }
       try {
-        await fetch(API_URL + '/responder-depoimento', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id, resposta: resposta }) });
+        await fetch(API_URL + '/responder-depoimento', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id, resposta: resposta, email: currentUser }) });
         loadDepoimentos();
       } catch(e) { alert('Erro ao salvar resposta.'); }
     }
@@ -5759,7 +5759,7 @@
     async function deletarDepoimento(id) {
       if (!confirm('Remover este depoimento?')) return;
       try {
-        await fetch(API_URL + '/delete-depoimento', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id }) });
+        await fetch(API_URL + '/delete-depoimento', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id, email: currentUser }) });
         loadDepoimentos();
       } catch(e) { alert('Erro ao remover.'); }
     }
