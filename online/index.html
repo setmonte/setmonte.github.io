@@ -907,6 +907,7 @@
             <div class="form-row" style="margin-top:8px;">
               <label>Email (opcional): <input type="email" id="pacEmail" placeholder="paciente@email.com" style="width:220px;"></label>
               <label>WhatsApp (opcional): <input type="tel" id="pacWhats" placeholder="(XX) XXXXX-XXXX" style="width:160px;" oninput="maskTelefone(this)" maxlength="15"></label>
+              <label>Correcao Visual: <select id="pacCorrecaoVisual" style="width:160px;"><option value="">--</option><option value="Nenhuma">Nenhuma</option><option value="Oculos">Oculos</option><option value="Lente de contato">Lente de contato</option></select></label>
             </div>
             <button class="btn btn-green" style="margin-top:10px;padding:8px 20px;font-size:13px;" onclick="cadastrarPaciente()">+ Cadastrar Paciente</button>
           </div>
@@ -1782,6 +1783,13 @@
           <option value="Destro">Destro</option>
           <option value="Canhoto">Canhoto</option>
           <option value="Ambidestro">Ambidestro</option>
+        </select>
+        <label style="font-size:0.85em;color:#555;">Correcao Visual:</label>
+        <select id="tflodCorrecaoVisual" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+          <option value="">Selecione...</option>
+          <option value="Nenhuma">Nenhuma</option>
+          <option value="Oculos">Oculos</option>
+          <option value="Lente de contato">Lente de contato</option>
         </select>
         <label style="font-size:0.85em;color:#555;">Observacoes:</label>
         <input type="text" id="tflodObs" placeholder="Opcional" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:12px;">
@@ -4227,7 +4235,7 @@
         var resp = await fetch(API_URL + '/save-paciente', {
           method: 'POST',
           headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({ email: currentUser, nome: nome, dataNascimento: dn, cpf: document.getElementById('pacCPF').value, sexo: sexo, escolaridade: escolaridade, lateralidade: lateralidade, pacienteEmail: document.getElementById('pacEmail').value.trim(), whatsapp: document.getElementById('pacWhats').value.trim() })
+          body: JSON.stringify({ email: currentUser, nome: nome, dataNascimento: dn, cpf: document.getElementById('pacCPF').value, sexo: sexo, escolaridade: escolaridade, lateralidade: lateralidade, pacienteEmail: document.getElementById('pacEmail').value.trim(), whatsapp: document.getElementById('pacWhats').value.trim(), correcaoVisual: document.getElementById('pacCorrecaoVisual').value })
         });
         var r = await resp.json();
         if (r.ok) {
@@ -4239,6 +4247,7 @@
           document.getElementById('pacLateralidade').value = '';
           document.getElementById('pacEmail').value = '';
           document.getElementById('pacWhats').value = '';
+          document.getElementById('pacCorrecaoVisual').value = '';
           await loadPacientes();
           await vincularHistoricoRetroativo(nome, dn);
         } else { alert('Erro: ' + (r.error || 'tente novamente')); }
@@ -4263,6 +4272,7 @@
       html += '<div style="flex:1;min-width:150px;"><label style="font-size:0.85em;color:#555;">CPF (opcional):</label><input type="text" id="editPacCPF" value="' + (pac.cpf || '') + '" maxlength="14" oninput="maskCPF(this)" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;"></div>';
       html += '<div style="flex:1;min-width:180px;"><label style="font-size:0.85em;color:#555;">Email:</label><input type="email" id="editPacEmail" value="' + (pac.pacienteEmail || '') + '" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;"></div>';
       html += '<div style="flex:1;min-width:150px;"><label style="font-size:0.85em;color:#555;">WhatsApp:</label><input type="tel" id="editPacWhats" value="' + (pac.whatsapp || '') + '" placeholder="(XX) XXXXX-XXXX" maxlength="15" oninput="maskTelefone(this)" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;"></div>';
+      html += '<div style="flex:1;min-width:150px;"><label style="font-size:0.85em;color:#555;">Correcao Visual:</label><select id="editPacCorrecaoVisual" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;"><option value="">--</option><option value="Nenhuma"' + (pac.correcaoVisual === 'Nenhuma' ? ' selected' : '') + '>Nenhuma</option><option value="Oculos"' + (pac.correcaoVisual === 'Oculos' ? ' selected' : '') + '>Oculos</option><option value="Lente de contato"' + (pac.correcaoVisual === 'Lente de contato' ? ' selected' : '') + '>Lente de contato</option></select></div>';
       html += '</div>';
       html += '<div style="margin-top:15px;display:flex;gap:10px;">';
       html += '<button class="btn btn-green" onclick="salvarEdicaoPaciente(\'' + pacId + '\')">Salvar</button>';
@@ -4289,7 +4299,8 @@
             lateralidade: document.getElementById('editPacLat').value,
             cpf: document.getElementById('editPacCPF').value,
             pacienteEmail: document.getElementById('editPacEmail').value.trim(),
-            whatsapp: document.getElementById('editPacWhats').value.trim()
+            whatsapp: document.getElementById('editPacWhats').value.trim(),
+            correcaoVisual: document.getElementById('editPacCorrecaoVisual').value
           })
         });
         var r = await resp.json();
@@ -5862,6 +5873,9 @@
       var campoLat = document.getElementById(tipo + 'Lateralidade') || document.getElementById(tipo + 'Laterality');
       if (!campoLat && tipo === 'tecfe') campoLat = document.getElementById('onLaterality');
       if (campoLat && pac.lateralidade) campoLat.value = pac.lateralidade;
+      // Correcao Visual
+      var campoCV = document.getElementById(tipo + 'CorrecaoVisual');
+      if (campoCV && pac.correcaoVisual) campoCV.value = pac.correcaoVisual;
     }
 
     // === REOCUPA - Funcoes do painel ===
@@ -10138,7 +10152,8 @@
         education: escolaridade,
         obs: document.getElementById('tflodObs').value || '',
         pacienteId: document.getElementById('tflodSelPac').value || '',
-        sex: document.getElementById('tflodSexo').value || ''
+        sex: document.getElementById('tflodSexo').value || '',
+        correcaoVisual: document.getElementById('tflodCorrecaoVisual').value || ''
       };
       var params = safeBtoa(JSON.stringify(sessionData));
       var link = 'https://setmonte.github.io/online/teste-tflod.html?d=' + encodeURIComponent(params);
