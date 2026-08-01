@@ -2188,6 +2188,22 @@
       return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
 
+    function _validarDataNascimento(dn) {
+      if (!dn) return 'Preencha a data de nascimento.';
+      var partes = dn.split('-');
+      var ano = parseInt(partes[0]);
+      var nasc = new Date(dn + 'T00:00:00');
+      var hoje = new Date();
+      if (isNaN(nasc.getTime())) return 'Data de nascimento invalida.';
+      if (nasc > hoje) return 'Data de nascimento nao pode ser no futuro.';
+      var idade = hoje.getFullYear() - nasc.getFullYear();
+      if (hoje.getMonth() < nasc.getMonth() || (hoje.getMonth() === nasc.getMonth() && hoje.getDate() < nasc.getDate())) idade--;
+      if (idade > 130) return 'Data de nascimento invalida (mais de 130 anos). Verifique o ano digitado.';
+      if (ano < 1890) return 'Ano de nascimento invalido (' + ano + '). Verifique a digitacao.';
+      if (ano > hoje.getFullYear()) return 'Ano de nascimento no futuro (' + ano + '). Verifique a digitacao.';
+      return null;
+    }
+
     // Utilitario: gerar ID hash do paciente (mesmo algoritmo do id-paciente.js)
     function gerarIdPacienteHash(nome, nascimento) {
       if (!nascimento || !nome || nome.trim().length < 1) return '-';
@@ -2569,6 +2585,8 @@
         alert('Preencha pelo menos o nome e a data de nascimento.');
         return;
       }
+      var _dnErr = _validarDataNascimento(birth);
+      if (_dnErr) { alert(_dnErr); return; }
       var btn = event && event.target ? event.target : null;
       btnLoading(btn);
       try {
@@ -2968,6 +2986,8 @@
       var name = document.getElementById('baePatientName').value.trim();
       var birth = document.getElementById('baeBirthDate').value;
       if (!name || !birth) { alert('Preencha pelo menos o nome e a data de nascimento.'); return; }
+      var _dnErr = _validarDataNascimento(birth);
+      if (_dnErr) { alert(_dnErr); return; }
       // Coleta testes selecionados
       var testesSelecionados = [];
       document.querySelectorAll('.baeChkTeste:checked').forEach(function(c) { testesSelecionados.push(c.value); });
@@ -7526,6 +7546,8 @@
       var dn = document.getElementById('corsiDn').value;
       var sexo = document.getElementById('corsiSexo').value;
       if (!nome || !dn) { alert('Preencha nome e data de nascimento.'); return; }
+      var _dnErr = _validarDataNascimento(dn);
+      if (_dnErr) { alert(_dnErr); return; }
       var sessionId = 'corsi-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
       var sessionData = {
         email: currentUser,
@@ -7784,6 +7806,8 @@
       var dn = document.getElementById('tteDn').value;
       var sexo = document.getElementById('tteSexo').value;
       if (!nome || !dn) { alert('Preencha nome e data de nascimento.'); return; }
+      var _dnErr = _validarDataNascimento(dn);
+      if (_dnErr) { alert(_dnErr); return; }
       var sessionId = 'tte-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
       var sessionData = {
         email: currentUser,
@@ -8108,6 +8132,8 @@
       var sexo = document.getElementById('tetaylorSexo').value;
       var esc = document.getElementById('tetaylorEsc').value;
       if (!nome || !dn) { alert('Preencha nome e data de nascimento.'); return; }
+      var _dnErr = _validarDataNascimento(dn);
+      if (_dnErr) { alert(_dnErr); return; }
       var sessionData = {
         email: currentUser,
         sessionId: 'tetaylor-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
@@ -8196,6 +8222,8 @@
       var sexo = document.getElementById('tetaylorsimpSexo').value;
       var esc = document.getElementById('tetaylorsimpEsc').value;
       if (!nome || !dn) { alert('Preencha nome e data de nascimento.'); return; }
+      var _dnErr = _validarDataNascimento(dn);
+      if (_dnErr) { alert(_dnErr); return; }
       var sessionData = {
         email: currentUser,
         sessionId: 'tetaylorsimp-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
@@ -8261,6 +8289,8 @@
       var dn = document.getElementById('escalaDn').value;
       if (!nome) { alert('Preencha o nome do paciente.'); return; }
       if (!dn) { alert('Preencha a data de nascimento.'); return; }
+      var _dnErr = _validarDataNascimento(dn);
+      if (_dnErr) { alert(_dnErr); return; }
       var sexo = document.getElementById('escalaSexo').value || '';
       // Salvar sessao no banco (igual Gerar Link) para garantir uso unico
       try {
@@ -8299,6 +8329,8 @@
       if (!escala) { alert('Selecione uma escala.'); return; }
       if (!nome) { alert('Preencha o nome do paciente.'); return; }
       if (!dn) { alert('Preencha a data de nascimento. O ID do paciente depende desse dado.'); return; }
+      var _dnErr = _validarDataNascimento(dn);
+      if (_dnErr) { alert(_dnErr); return; }
       var sexo = document.getElementById('escalaSexo').value || '';
       // Salvar sessao no banco e obter ID curto
       try {
@@ -8966,6 +8998,8 @@
       var name = document.getElementById('trmvPatientName').value.trim();
       var birth = document.getElementById('trmvBirthDate').value;
       if (!name || !birth) { alert('Preencha pelo menos o nome e a data de nascimento.'); return; }
+      var _dnErr = _validarDataNascimento(birth);
+      if (_dnErr) { alert(_dnErr); return; }
       var btn = event && event.target ? event.target : null;
       btnLoading(btn);
       try {
@@ -9273,6 +9307,8 @@
       var name = document.getElementById('taavPatientName').value.trim();
       var birth = document.getElementById('taavBirthDate').value;
       if (!name || !birth) { alert('Preencha pelo menos o nome e a data de nascimento.'); return; }
+      var _dnErr = _validarDataNascimento(birth);
+      if (_dnErr) { alert(_dnErr); return; }
       var btn = event && event.target ? event.target : null;
       btnLoading(btn);
       try {
@@ -9964,6 +10000,8 @@
       var dn = document.getElementById('trefDn').value;
       var sexo = document.getElementById('trefSexo').value;
       if (!nome || !dn || !sexo) { alert('Preencha nome, data de nascimento e sexo.'); return; }
+      var _dnErr = _validarDataNascimento(dn);
+      if (_dnErr) { alert(_dnErr); return; }
       var btn = event && event.target ? event.target : null;
       btnLoading(btn);
       try {
@@ -10072,6 +10110,8 @@
       var dn = document.getElementById('tflodDn').value;
       var escolaridade = document.getElementById('tflodEscolaridade').value;
       if (!nome || !dn || !escolaridade) { alert('Preencha nome, data de nascimento e escolaridade.'); return; }
+      var _dnErr = _validarDataNascimento(dn);
+      if (_dnErr) { alert(_dnErr); return; }
       var btn = event && event.target ? event.target : null;
       btnLoading(btn);
       try {
