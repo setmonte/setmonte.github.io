@@ -37,6 +37,7 @@ body{font-family:'Segoe UI',sans-serif;background:#f5f5f5;min-height:100vh}
 .progress-bar{height:8px;background:#e0e0e0;border-radius:4px;overflow:hidden}
 .progress-fill{height:100%;background:#1565c0;border-radius:4px;transition:width 0.3s;width:0%}
 .progress-text{text-align:center;margin-top:8px;color:#555;font-size:0.9em}
+body.cursor-hidden, body.cursor-hidden * { cursor: none !important; }
 </style>
 </head>
 <body>
@@ -147,16 +148,40 @@ body{font-family:'Segoe UI',sans-serif;background:#f5f5f5;min-height:100vh}
 </div>
 
 <script>
-// ===== TFLOD v3 - Transcrição via API (OpenAI Whisper large) =====
-// Áudio gravado no navegador → enviado para Lambda → Lambda transcreve via OpenAI
-// Sem download de modelo, sem travamento, precisão máxima
+// ===== TFLOD v3 - Transcricao via API (OpenAI Whisper large) =====
+// Audio gravado no navegador -> enviado para Lambda -> Lambda transcreve via OpenAI
+// Sem download de modelo, sem travamento, precisao maxima
 
 var API_URL = 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
 
-// ===== TEXTOS =====
-var TEXTO_INFANTIL = "Pedro acordou cedo naquela manhã de sol. Ele olhou pela janela e viu que o céu estava muito azul. Seu cachorro Pipoca já esperava na porta, com o rabo balançando. Os dois saíram juntos para o parque que ficava perto de casa. No caminho, Pedro encontrou sua amiga Laura, que também passeava com seu gato. Eles andaram até o lago grande que tinha no meio do parque. Pipoca correu muito rápido e pulou dentro da água. A água estava fria, mas o cachorro não se importou. Ele nadou feliz enquanto Pedro e Laura sentavam na grama verde. Depois de um tempo, Pipoca saiu do lago e se sacudiu todo, molhando as crianças. Todos riram muito. Foi uma manhã divertida no parque.";
+// ===== TEXTOS PARALELOS (5 infantis + 5 adultos) =====
+var TEXTOS_INFANTIS = [
+    // V1 - O menino que aprendeu a esperar
+    "Tom\u00e1s plantou uma semente de girassol no vaso que ficava na varanda de casa. Todo dia ele ia olhar se a planta j\u00e1 tinha nascido. Passaram dois dias e nada aconteceu. Passaram cinco dias e a terra continuava igual. Tom\u00e1s ficou triste e disse para a m\u00e3e que a semente n\u00e3o ia crescer nunca. A m\u00e3e sorriu e disse que as coisas boas precisam de tempo para acontecer. Pediu para ele continuar regando todos os dias sem desistir. Na manh\u00e3 seguinte, Tom\u00e1s viu um broto verde saindo da terra escura. Era t\u00e3o pequeno que quase n\u00e3o dava para ver direito. Mas estava ali, vivo e forte, crescendo no seu pr\u00f3prio ritmo. Tom\u00e1s aprendeu naquele dia que paci\u00eancia \u00e9 como a \u00e1gua que faz a semente virar flor.",
+    // V2 - A semente de coragem
+    "Lu\u00edsa tinha medo de falar na frente da turma toda vez que a professora pedia. Suas m\u00e3os ficavam frias e as palavras sumiam da cabe\u00e7a. Um dia, seu av\u00f4 contou que coragem n\u00e3o \u00e9 deixar de sentir medo. Coragem \u00e9 fazer mesmo sentindo medo por dentro. Lu\u00edsa pensou muito nisso durante a noite toda. Na manh\u00e3 seguinte, quando a professora pediu, ela levantou a m\u00e3o devagar. Seu cora\u00e7\u00e3o batia forte, mas ela come\u00e7ou a falar mesmo assim. As palavras sa\u00edram uma por uma, como uma semente que brota aos poucos. Quando terminou, a turma inteira bateu palmas com alegria. Lu\u00edsa sorriu e sentiu que algo novo tinha nascido dentro dela. \u00c0s vezes, tudo o que precisamos \u00e9 dar o primeiro passo. O resto vem com o tempo.",
+    // V3 - O presente invisivel
+    "Miguel chegou na escola triste porque n\u00e3o tinha trazido presente no dia do amigo. Sua fam\u00edlia n\u00e3o tinha dinheiro para comprar algo na loja. Ele ficou quieto no canto da sala, olhando os outros entregando pacotes coloridos. Ent\u00e3o a professora disse algo que ele nunca esqueceu. Ela disse que os melhores presentes n\u00e3o cabem em caixas de papel. Miguel pensou um pouco e depois caminhou at\u00e9 seu amigo Rafael. Deu um abra\u00e7o forte e disse que ele era muito importante. Rafael abriu um sorriso enorme que iluminou a sala inteira. Naquele momento, todos perceberam que a professora estava certa. As coisas mais valiosas da vida s\u00e3o aquelas que damos com o cora\u00e7\u00e3o. Miguel aprendeu que ser gentil vale mais do que qualquer brinquedo do mundo.",
+    // V4 - A arvore e o vento
+    "No quintal da escola, havia uma \u00e1rvore muito antiga que todos admiravam. Certo dia, uma tempestade forte chegou e o vento soprou com muita for\u00e7a. As crian\u00e7as ficaram preocupadas olhando pela janela da sala de aula. Os galhos balan\u00e7avam de um lado para o outro sem parar. Alguns alunos acharam que a \u00e1rvore ia cair no ch\u00e3o. Mas quando a chuva passou e o sol voltou, a \u00e1rvore continuava firme. A professora ent\u00e3o explicou por que ela tinha resistido \u00e0 tempestade. As ra\u00edzes dela eram profundas e fortes porque cresceram devagar ao longo dos anos. Assim somos n\u00f3s tamb\u00e9m quando enfrentamos os dias mais dif\u00edceis. O que nos mant\u00e9m de p\u00e9 n\u00e3o aparece por fora. S\u00e3o as coisas que cultivamos por dentro que nos d\u00e3o for\u00e7a.",
+    // V5 - Cada um brilha diferente
+    "Na turma do terceiro ano, cada crian\u00e7a era boa em algo diferente. Beatriz desenhava melhor do que qualquer um na escola inteira. Pedro corria mais r\u00e1pido que todos na hora do recreio. Sofia resolvia contas de cabe\u00e7a sem precisar usar os dedos. E Lucas sempre sabia as palavras certas quando algu\u00e9m ficava triste. Um dia a professora pediu que cada um mostrasse seu talento para a turma. No final, ela disse algo muito bonito para todos ouvirem. Disse que o mundo precisa de gente diferente para funcionar bem. Se todos fossem iguais, faltaria cor na vida como um jardim com uma flor s\u00f3. Cada pessoa carrega uma luz que ningu\u00e9m mais consegue repetir. Quando juntamos essas luzes, o mundo inteiro fica mais bonito e mais forte."
+];
 
-var TEXTO_ADULTO = "Marina nunca tinha viajado de trem antes daquele dia. Quando chegou na estação, ficou impressionada com o tamanho do lugar. As pessoas andavam apressadas, carregando malas e mochilas de todos os tamanhos. Ela conferiu o número da plataforma no painel eletrônico e caminhou até o local indicado. O trem já estava parado, esperando os passageiros. Marina encontrou seu vagão e se acomodou na poltrona ao lado da janela. Poucos minutos depois, o trem começou a se mover lentamente. A cidade foi ficando para trás e logo apareceram campos verdes, com algumas vacas pastando. O movimento do trem era suave como um balanço. Marina abriu o livro que tinha trazido, mas não conseguiu ler porque a paisagem era bonita demais. Montanhas apareceram no horizonte, cobertas por uma névoa fina. Um senhor sentado na poltrona da frente puxou conversa e contou que fazia aquela viagem toda semana para visitar os netos. Ele conhecia cada curva do caminho e apontava os lugares mais bonitos. Depois de duas horas, o trem parou numa cidade pequena, cercada por montanhas. Marina desceu na plataforma e respirou o ar fresco da manhã. Sua avó já esperava, com um sorriso largo e os braços abertos. Naquele momento, Marina entendeu por que sua mãe sempre falava com tanto carinho daquela cidade.";
+var TEXTOS_ADULTOS = [
+    // V1 - O que fica quando tudo muda
+    "Aos sessenta anos, Dona L\u00facia resolveu organizar as caixas velhas que estavam guardadas no arm\u00e1rio h\u00e1 muito tempo. Dentro delas, encontrou cartas, fotos amareladas e cadernos com anota\u00e7\u00f5es que j\u00e1 nem lembrava ter escrito. Cada objeto trazia de volta uma parte da vida que parecia distante como um sonho antigo. Ela percebeu que muita coisa tinha mudado ao longo dos anos sem que ela notasse. A casa onde cresceu j\u00e1 n\u00e3o existia mais e algumas pessoas queridas tinham partido para sempre. Mesmo assim, algo dentro dela permanecia inteiro, como uma luz que nenhum vento consegue apagar. L\u00facia entendeu que somos feitos daquilo que vivemos e tamb\u00e9m daquilo que escolhemos lembrar. As perdas fazem parte do caminho tanto quanto as conquistas que celebramos. Naquela tarde, ligou para a filha mais velha e contou hist\u00f3rias que nunca tinha contado antes. Falou sobre medos que teve e sobre alegrias simples que marcaram sua juventude. A filha ouviu tudo em sil\u00eancio e depois disse que nunca tinha se sentido t\u00e3o perto da m\u00e3e. L\u00facia sorriu ao desligar o telefone e olhou pela janela com os olhos calmos. Entendeu que compartilhar nossa hist\u00f3ria \u00e9 uma forma de manter vivo tudo aquilo que importa de verdade.",
+    // V2 - O tempo e as escolhas
+    "Havia um rel\u00f3gio antigo na parede da sala que pertencia ao av\u00f4 de Renato. Toda vez que olhava para ele, Renato se lembrava de algo que o av\u00f4 sempre dizia. Ele dizia que o tempo n\u00e3o volta, mas que isso n\u00e3o \u00e9 motivo para tristeza. \u00c9 motivo para prestar aten\u00e7\u00e3o no que fazemos com cada dia que recebemos. Renato pensava nisso sempre que precisava tomar alguma decis\u00e3o importante na vida. Nem sempre acertou, porque ningu\u00e9m acerta todas as vezes. Mas aprendeu que cada erro carrega dentro de si uma li\u00e7\u00e3o que nenhum livro consegue ensinar. Quando completou quarenta anos, decidiu mudar de cidade para ficar perto dos filhos. Os amigos perguntaram se ele n\u00e3o tinha medo de come\u00e7ar tudo de novo. Ele respondeu que o medo existe para ser atravessado e n\u00e3o para nos parar. Nos primeiros meses, sentiu falta da rotina antiga e dos caminhos que conhecia de cor. Mas aos poucos, foi criando novas mem\u00f3rias que preencheram os espa\u00e7os vazios. Descobriu um parque onde caminhava toda manh\u00e3 e uma padaria onde o dono j\u00e1 sabia seu pedido. Renato entendeu que recome\u00e7ar n\u00e3o \u00e9 perder o que ficou para tr\u00e1s. \u00c9 ter coragem de abrir espa\u00e7o para o que ainda pode florescer.",
+    // V3 - A ponte entre dois mundos
+    "Clara trabalhava como professora numa escola p\u00fablica da periferia h\u00e1 mais de vinte anos. Todas as manh\u00e3s, ela atravessava a cidade de \u00f4nibus para chegar at\u00e9 seus alunos. O trajeto durava quase uma hora, mas ela nunca reclamava daquele tempo. Dizia que usava aqueles minutos para pensar no que ia ensinar e como poderia fazer diferen\u00e7a naquele dia. Muita gente perguntava por que ela n\u00e3o procurava uma escola mais perto de casa. Clara sempre respondia que o lugar onde somos necess\u00e1rios nem sempre \u00e9 o lugar mais confort\u00e1vel. Ela via nos olhos dos alunos algo que n\u00e3o encontrava em nenhum outro lugar. Via a vontade de aprender mesmo quando tudo ao redor parecia dif\u00edcil demais. Um de seus antigos alunos se formou em medicina e voltou ao bairro para montar uma cl\u00ednica. No dia da inaugura\u00e7\u00e3o, ele disse que tudo come\u00e7ou com uma professora que acreditou nele quando ningu\u00e9m mais acreditava. Clara estava na plateia e sentiu os olhos ficarem cheios de l\u00e1grimas. Naquele momento, entendeu que ensinar n\u00e3o \u00e9 apenas passar conhecimento para outra pessoa. \u00c9 plantar algo que pode transformar uma vida inteira. E \u00e0s vezes, sem perceber, transformamos tamb\u00e9m a nossa pr\u00f3pria vida no caminho.",
+    // V4 - O silencio que ensina
+    "Joaquim sempre foi um homem de poucas palavras, diferente da maioria das pessoas que conhecia. Enquanto outros falavam sem parar, ele preferia ouvir com aten\u00e7\u00e3o antes de dizer qualquer coisa. No trabalho, seus colegas \u00e0s vezes achavam que ele n\u00e3o tinha opini\u00e3o sobre os assuntos. Mas quando Joaquim finalmente falava, todos paravam para escutar com respeito. Suas palavras tinham peso porque eram pensadas com cuidado e nasciam do sil\u00eancio. Um dia, seu filho adolescente perguntou por que o pai falava t\u00e3o pouco. Joaquim sorriu e disse que o mundo j\u00e1 tem barulho demais. Disse que escutar \u00e9 um presente que poucas pessoas conseguem oferecer de verdade. Quando ouvimos algu\u00e9m com aten\u00e7\u00e3o, estamos dizendo que aquela pessoa importa para n\u00f3s. O filho ficou pensando naquilo por muitos dias seguidos. Com o tempo, come\u00e7ou a perceber como as pessoas ao redor precisavam ser ouvidas. Percebeu que \u00e0s vezes um amigo n\u00e3o quer conselho nenhum. Quer apenas algu\u00e9m que fique ali, presente, sem pressa de resolver nada. Anos depois, quando j\u00e1 era adulto e formado, o filho disse ao pai que aquela conversa mudou sua forma de ver o mundo. Joaquim apenas sorriu, porque algumas verdades importantes n\u00e3o precisam de muitas palavras para serem ditas.",
+    // V5 - Caminhos que se cruzam
+    "Ningu\u00e9m sabe ao certo como duas pessoas se encontram na hora exata em que precisam uma da outra. Helena pensava nisso enquanto tomava caf\u00e9 na padaria onde ia toda manh\u00e3 antes do trabalho. Anos atr\u00e1s, ela vivia um momento muito dif\u00edcil e n\u00e3o sabia como seguir em frente. Foi quando conheceu Dona Marta, uma senhora que vendia flores na esquina da sua rua. Marta n\u00e3o sabia nada sobre a vida de Helena, mas tinha o costume de conversar com todos que passavam. Num dia de chuva forte, ofereceu abrigo embaixo da barraca de flores e as duas ficaram conversando por quase uma hora. Marta contou que j\u00e1 tinha perdido quase tudo na vida duas vezes. Mesmo assim, continuava acordando cedo para cuidar das suas flores com alegria. Disse que a vida n\u00e3o promete ser f\u00e1cil, mas promete valer a pena para quem n\u00e3o desiste. Aquelas palavras simples ficaram guardadas na mem\u00f3ria de Helena como um tesouro. Sempre que enfrentava alguma dificuldade nova, lembrava da senhora das flores e encontrava for\u00e7a para continuar. Hoje Helena entende que as pessoas mais importantes da nossa vida nem sempre s\u00e3o as que ficam para sempre. \u00c0s vezes s\u00e3o aquelas que aparecem no momento certo e nos lembram de quem somos de verdade."
+];
+
+
 
 // ===== ESTADO GLOBAL =====
 var dadosForm = {};
@@ -167,6 +192,8 @@ var timerInterval = null;
 var tempoRestante = 60;
 var mediaRecorder = null;
 var audioChunks = [];
+var versaoTexto = '';
+var categoriaTexto = '';
 
 // ===== UTILIDADES =====
 function calcularIdade() {
@@ -202,14 +229,120 @@ function trocarTela(mostrar) {
     document.getElementById(mostrar).classList.add('ativa');
 }
 
-function escolherTexto() {
-    var idade = dadosForm.idadeAnos || 0;
-    var escolaridade = document.getElementById('escolaridade').value;
-    var escolaridadesBaixas = ['Analfabeto','1o ano','2o ano','3o ano','4o ano','5o ano','6o ano','7o ano'];
-    if (idade <= 12 || escolaridadesBaixas.indexOf(escolaridade) !== -1) {
-        return TEXTO_INFANTIL;
+async function escolherTexto() {
+    try {
+        // 1. Determinar categoria (mesma logica anterior)
+        var idade = dadosForm.idadeAnos || 0;
+        var escolaridade = document.getElementById('escolaridade').value;
+        var escolaridadesBaixas = ['Analfabeto','1o ano','2o ano','3o ano','4o ano','5o ano','6o ano','7o ano'];
+        var categoria = 'adulto';
+        if (idade <= 12 || escolaridadesBaixas.indexOf(escolaridade) !== -1) {
+            categoria = 'infantil';
+        }
+        var pool = (categoria === 'infantil') ? TEXTOS_INFANTIS : TEXTOS_ADULTOS;
+
+        // 2. Obter pacienteId (sessao ou dados decodificados)
+        var pacienteId = null;
+        if (sessionInfo && sessionInfo.pacienteId) {
+            pacienteId = sessionInfo.pacienteId;
+        } else if (dadosForm && dadosForm.pacienteId) {
+            pacienteId = dadosForm.pacienteId;
+        }
+
+        // 3. Buscar ultimo texto usado (se pacienteId disponivel)
+        var lastTextVersion = null;
+        if (pacienteId) {
+            lastTextVersion = await buscarUltimoTexto(pacienteId);
+        }
+
+        // 4. Montar lista de candidatos (indices 0-4)
+        var candidatos = [];
+        var i;
+        for (i = 0; i < pool.length; i++) {
+            candidatos.push(i);
+        }
+
+        // 5. Validar lastTextVersion e excluir se da mesma categoria
+        var regexVersao = /^(infantil|adulto)_v[1-5]$/;
+        if (lastTextVersion && regexVersao.test(lastTextVersion)) {
+            var partes = lastTextVersion.split('_v');
+            var catAnterior = partes[0];
+            var idxAnterior = parseInt(partes[1], 10) - 1; // v1=0, v2=1, ...
+            if (catAnterior === categoria && idxAnterior >= 0 && idxAnterior < pool.length) {
+                // Excluir o indice anterior dos candidatos
+                var posCandidato = candidatos.indexOf(idxAnterior);
+                if (posCandidato !== -1) {
+                    candidatos.splice(posCandidato, 1);
+                }
+            }
+        }
+
+        // 6. Sortear aleatoriamente entre candidatos restantes
+        var indiceSorteado = candidatos[Math.floor(Math.random() * candidatos.length)];
+
+        // 7. Definir variaveis globais
+        textoEscolhido = pool[indiceSorteado];
+        categoriaTexto = categoria;
+        versaoTexto = categoria + '_v' + (indiceSorteado + 1);
+
+        // 8. Retornar texto
+        return textoEscolhido;
+    } catch (e) {
+        // Fallback: selecao totalmente aleatoria em caso de qualquer erro
+        console.log('[TFLOD] escolherTexto fallback:', e.message || e);
+        var idadeFb = dadosForm.idadeAnos || 0;
+        var escFb = document.getElementById('escolaridade').value;
+        var escBaixasFb = ['Analfabeto','1o ano','2o ano','3o ano','4o ano','5o ano','6o ano','7o ano'];
+        var catFb = 'adulto';
+        if (idadeFb <= 12 || escBaixasFb.indexOf(escFb) !== -1) {
+            catFb = 'infantil';
+        }
+        var poolFb = (catFb === 'infantil') ? TEXTOS_INFANTIS : TEXTOS_ADULTOS;
+        var idxFb = Math.floor(Math.random() * poolFb.length);
+        textoEscolhido = poolFb[idxFb];
+        categoriaTexto = catFb;
+        versaoTexto = catFb + '_v' + (idxFb + 1);
+        return textoEscolhido;
     }
-    return TEXTO_ADULTO;
+}
+
+// Busca o ultimo texto usado pelo paciente no servidor (timeout 3s)
+// Retorna string (ex: "infantil_v3") ou null se erro/timeout/sem historico
+async function buscarUltimoTexto(pacienteId) {
+    try {
+        var controller = null;
+        var signal = null;
+        var timeoutId = null;
+        if (typeof AbortController !== 'undefined') {
+            controller = new AbortController();
+            signal = controller.signal;
+            timeoutId = setTimeout(function() { controller.abort(); }, 3000);
+        }
+        var fetchOptions = {};
+        if (signal) fetchOptions.signal = signal;
+        var resposta;
+        if (signal) {
+            resposta = await fetch(API_URL + '/get-last-text?pacienteId=' + encodeURIComponent(pacienteId) + '&tipo=tflod', fetchOptions);
+        } else {
+            // Fallback para navegadores sem AbortController: race com timeout
+            resposta = await Promise.race([
+                fetch(API_URL + '/get-last-text?pacienteId=' + encodeURIComponent(pacienteId) + '&tipo=tflod'),
+                new Promise(function(_, reject) {
+                    setTimeout(function() { reject(new Error('timeout')); }, 3000);
+                })
+            ]);
+        }
+        if (timeoutId) clearTimeout(timeoutId);
+        if (!resposta.ok) return null;
+        var dados = await resposta.json();
+        if (dados && dados.lastTextVersion) {
+            return dados.lastTextVersion;
+        }
+        return null;
+    } catch (e) {
+        console.log('[TFLOD] buscarUltimoTexto erro:', e.message || e);
+        return null;
+    }
 }
 
 function blobToBase64(blob) {
@@ -229,7 +362,7 @@ function mostrarInstrucoes() {
     var escolaridade = document.getElementById('escolaridade').value;
     var correcaoVisual = document.getElementById('correcaoVisual').value;
     if (!nome || !dataNasc || !escolaridade) { alert('Preencha Nome, Data de Nascimento e Escolaridade!'); return; }
-    if (!correcaoVisual) { alert('Informe se usa ou não correção visual (óculos/lentes). Esta informação é importante para a análise.'); return; }
+    if (!correcaoVisual) { alert('Informe se usa ou n\u00e3o corre\u00e7\u00e3o visual (\u00f3culos/lentes). Esta informa\u00e7\u00e3o \u00e9 importante para a an\u00e1lise.'); return; }
     calcularIdade();
     gerarID();
     dadosForm = {
@@ -241,27 +374,45 @@ function mostrarInstrucoes() {
         dataAval: document.getElementById('dataAval').value || new Date().toISOString().split('T')[0],
         obs: document.getElementById('obs').value,
         correcaoVisual: document.getElementById('correcaoVisual').value,
-        id: document.getElementById('idPaciente').value
+        id: document.getElementById('idPaciente').value,
+        pacienteId: sessionInfo.pacienteId || ''
     };
     trocarTela('tela-instrucoes');
 }
 
 async function iniciarTeste() {
+    // Verificar credito antes de iniciar
+    if (sessionInfo && sessionInfo.email && sessionInfo.email !== 'setmonte@gmail.com') {
+      try {
+        var _cr = await fetch(API_URL + '/use-credit', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({email: sessionInfo.email, tipo: 'tflod'})
+        });
+        if (_cr.status === 403) {
+          alert('Creditos insuficientes. Consulte seu avaliador.');
+          return;
+        }
+      } catch(e) {}
+    }
     // Fullscreen
     var el = document.documentElement;
     if (el.requestFullscreen) el.requestFullscreen();
     else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
     else if (el.msRequestFullscreen) el.msRequestFullscreen();
 
-    // Escolher texto
-    textoEscolhido = escolherTexto();
+    // Esconder mouse durante a leitura
+    document.body.classList.add('cursor-hidden');
+
+    // Escolher texto (agora async - busca historico do paciente)
+    await escolherTexto();
     palavrasTexto = textoEscolhido.split(/\s+/);
 
     // Mostrar texto na tela
     document.getElementById('textoLeitura').textContent = textoEscolhido;
     trocarTela('tela-teste');
 
-    // Iniciar gravação de áudio
+    // Iniciar gravacao de audio
     try {
         var stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         audioChunks = [];
@@ -271,12 +422,12 @@ async function iniciarTeste() {
         };
         mediaRecorder.start(1000);
     } catch (erro) {
-        alert('Não foi possível acessar o microfone. Verifique as permissões do navegador.');
+        alert('N\u00e3o foi poss\u00edvel acessar o microfone. Verifique as permiss\u00f5es do navegador.');
         trocarTela('tela-instrucoes');
         return;
     }
 
-    // Cronômetro
+    // Cronometro
     tempoRestante = 60;
     document.getElementById('timer').textContent = '60';
     timerInterval = setInterval(function() {
@@ -288,16 +439,17 @@ async function iniciarTeste() {
 
 // ===== FINALIZAR E ENVIAR PARA API =====
 async function finalizarGravacao() {
-    // Parar cronômetro
+    // Parar cronometro
     if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
 
-    // Parar gravação
+    // Parar gravacao
     if (mediaRecorder && mediaRecorder.state !== 'inactive') {
         mediaRecorder.stop();
         mediaRecorder.stream.getTracks().forEach(function(t) { t.stop(); });
     }
 
-    // Sair fullscreen
+    // Sair fullscreen e restaurar cursor
+    document.body.classList.remove('cursor-hidden');
     if (document.exitFullscreen) document.exitFullscreen();
     else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
     else if (document.msExitFullscreen) document.msExitFullscreen();
@@ -305,12 +457,12 @@ async function finalizarGravacao() {
     // Tela de processamento
     trocarTela('tela-processando');
     document.getElementById('progressFill').style.width = '10%';
-    document.getElementById('progressText').textContent = 'Preparando áudio...';
+    document.getElementById('progressText').textContent = 'Preparando \u00e1udio...';
 
     // Esperar mediaRecorder finalizar
     await new Promise(function(resolve) { setTimeout(resolve, 500); });
 
-    // Converter áudio para base64
+    // Converter audio para base64
     var audioBlob = new Blob(audioChunks, { type: 'audio/webm;codecs=opus' });
     var audioBase64 = await blobToBase64(audioBlob);
 
@@ -318,7 +470,7 @@ async function finalizarGravacao() {
     document.getElementById('progressText').textContent = 'Transcrevendo com IA (5-10 segundos)...';
 
     try {
-        // Enviar áudio para Lambda que transcreve via OpenAI Whisper
+        // Enviar audio para Lambda que transcreve via OpenAI Whisper
         var resp = await fetch(API_URL + '/transcribe-audio', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -333,21 +485,27 @@ async function finalizarGravacao() {
         // Calcular resultados
         var resultado = calcularResultados(transcricao);
 
+        // Coleta anonima
+        window._escalaDados = {escala:'TFLOD', escore:resultado.pcpm, classificacao:resultado.classificacao, versaoTexto:resultado.versaoTexto, dominios:{PCPM:resultado.pcpm, Acertos:resultado.acertos, Erros:resultado.erros.length, PalavrasAlcancadas:resultado.palavrasAlcancadas}};
+
         document.getElementById('progressFill').style.width = '100%';
         document.getElementById('progressText').textContent = 'Enviando resultados...';
 
-        // Salvar resultados + áudio no banco
+        // Salvar resultados + audio no banco
         await salvarResultado(resultado, audioBase64);
 
-        // Tela final
-        trocarTela('tela-fim');
+        // Coleta anonima via sendBeacon (garante envio antes de fechar aba)
+        try{var _cUrl='https://script.google.com/macros/s/AKfycbzYl7-ageXnHHyvrKMb6iS_7gX2l6ZBngPpbCHNfj7YYbXylcZ_vQ9iJkrbko8ICPcW/exec';var _idadeEl=document.getElementById('idade');var _idadeVal=null;if(_idadeEl&&_idadeEl.value){var _m=_idadeEl.value.match(/(\d+)\s*ano/);if(_m)_idadeVal=parseInt(_m[1]);}if(!_idadeVal&&dadosForm.idadeAnos)_idadeVal=dadosForm.idadeAnos;if(_idadeVal&&window._escalaDados&&window._escalaDados.escala){var _pkt={email:sessionInfo.email||'',escala:window._escalaDados.escala,idade:_idadeVal,sexo:sessionInfo.sex||'',escolaridade:dadosForm.escolaridade||'',pontuacao:window._escalaDados.escore?parseFloat(window._escalaDados.escore).toFixed(2):'',dominios:'PCPM:'+window._escalaDados.dominios.PCPM+'; Acertos:'+window._escalaDados.dominios.Acertos+'; Erros:'+window._escalaDados.dominios.Erros+'; PalavrasAlcancadas:'+window._escalaDados.dominios.PalavrasAlcancadas,classificacao:window._escalaDados.classificacao||''};navigator.sendBeacon(_cUrl,JSON.stringify(_pkt));}}catch(e){}
+
+        // Auto-fechar aba
+        setTimeout(function(){var _s=document.createElement('script');_s.src='auto-close.js';_s.onload=function(){if(window._autoFechar)_autoFechar();};document.body.appendChild(_s);},2000);
 
     } catch (erro) {
-        console.error('Erro na transcrição:', erro);
-        document.getElementById('progressText').textContent = '⚠️ Erro ao processar. Tente novamente.';
+        console.error('Erro na transcri\u00e7\u00e3o:', erro);
+        document.getElementById('progressText').textContent = 'Erro ao processar. Tente novamente.';
         // Tenta salvar o que tem
         await salvarResultadoErro(erro.message);
-        setTimeout(function() { trocarTela('tela-fim'); }, 3000);
+        setTimeout(function() { var _s2=document.createElement('script');_s2.src='auto-close.js';_s2.onload=function(){if(window._autoFechar)_autoFechar();};document.body.appendChild(_s2); }, 3000);
     }
 }
 
@@ -366,12 +524,12 @@ function calcularResultados(transcricao) {
     var tempoUsado = 60 - tempoRestante;
     if (tempoUsado <= 0) tempoUsado = 60;
 
-    // Algoritmo LCS (Longest Common Subsequence) para alinhar as sequências
-    // Encontra as palavras corretas mesmo com inserções/omissões/repetições
+    // Algoritmo LCS (Longest Common Subsequence) para alinhar as sequencias
+    // Encontra as palavras corretas mesmo com insercoes/omissoes/repeticoes
     var m = palavrasOriginal.length;
     var n = palavrasFaladas.length;
 
-    // Matriz LCS (otimizada: só precisa de 2 linhas)
+    // Matriz LCS (otimizada: so precisa de 2 linhas)
     var prev = new Array(n + 1).fill(0);
     var curr = new Array(n + 1).fill(0);
 
@@ -390,7 +548,7 @@ function calcularResultados(transcricao) {
 
     var acertos = prev[n]; // Tamanho da LCS = palavras corretas
 
-    // Reconstruir o alinhamento para identificar erros específicos
+    // Reconstruir o alinhamento para identificar erros especificos
     // Recalcular com matriz completa para backtracking
     var dp = [];
     for (var i = 0; i <= m; i++) {
@@ -415,16 +573,16 @@ function calcularResultados(transcricao) {
             alinhamento.unshift({tipo: 'match', posO: i, posF: j});
             i--; j--;
         } else if (dp[i-1][j] >= dp[i][j-1]) {
-            // Palavra do original foi omitida (não lida)
+            // Palavra do original foi omitida (nao lida)
             alinhamento.unshift({tipo: 'omissao', posO: i, posF: null});
             i--;
         } else {
-            // Palavra extra na fala (inserção/substituição)
+            // Palavra extra na fala (insercao/substituicao)
             alinhamento.unshift({tipo: 'insercao', posO: null, posF: j});
             j--;
         }
     }
-    // Palavras restantes do original não lidas
+    // Palavras restantes do original nao lidas
     while (i > 0) {
         alinhamento.unshift({tipo: 'omissao', posO: i, posF: null});
         i--;
@@ -435,11 +593,11 @@ function calcularResultados(transcricao) {
         j--;
     }
 
-    // Identificar erros significativos (omissões e substituições próximas)
+    // Identificar erros significativos (omissoes e substituicoes proximas)
     for (var k = 0; k < alinhamento.length; k++) {
         var al = alinhamento[k];
         if (al.tipo === 'omissao') {
-            // Verificar se a próxima é uma inserção (= substituição)
+            // Verificar se a proxima e uma insercao (= substituicao)
             if (k + 1 < alinhamento.length && alinhamento[k+1].tipo === 'insercao') {
                 var palavraEsperada = palavrasTexto[al.posO - 1];
                 var palavraLida = palavrasFaladas[alinhamento[k+1].posF - 1];
@@ -449,7 +607,7 @@ function calcularResultados(transcricao) {
                     lida: palavraLida,
                     tipo: classificarErro(palavrasOriginal[al.posO - 1], palavrasFaladas[alinhamento[k+1].posF - 1])
                 });
-                k++; // pular a inserção já tratada
+                k++; // pular a insercao ja tratada
             } else {
                 erros.push({
                     posicao: al.posO,
@@ -459,25 +617,25 @@ function calcularResultados(transcricao) {
                 });
             }
         } else if (al.tipo === 'insercao') {
-            // Palavra extra (repetição, hesitação) — registrar mas como inserção
+            // Palavra extra (repeticao, hesitacao) - registrar mas como insercao
             erros.push({
                 posicao: al.posF,
-                esperada: '—',
+                esperada: '\u2014',
                 lida: palavrasFaladas[al.posF - 1],
                 tipo: 'insercao'
             });
         }
     }
 
-    // Separar erros reais de "palavras não alcançadas" (fim do texto não lido)
-    // Encontrar a última posição do original que foi pareada (match ou substituição)
+    // Separar erros reais de "palavras nao alcancadas" (fim do texto nao lido)
+    // Encontrar a ultima posicao do original que foi pareada (match ou substituicao)
     var ultimaPosAlcancada = 0;
     for (var k = 0; k < alinhamento.length; k++) {
         if (alinhamento[k].posO && (alinhamento[k].tipo === 'match' || alinhamento[k].posF)) {
             ultimaPosAlcancada = Math.max(ultimaPosAlcancada, alinhamento[k].posO);
         }
     }
-    // Palavras após a última alcançada são "não lidas por tempo"
+    // Palavras apos a ultima alcancada sao "nao lidas por tempo"
     var errosReais = [];
     var naoAlcancadas = 0;
     for (var k = 0; k < erros.length; k++) {
@@ -490,15 +648,16 @@ function calcularResultados(transcricao) {
 
     // PCPM = palavras corretas por minuto
     var pcpm = Math.round(acertos * (60 / tempoUsado));
-    var categoria = (textoEscolhido === TEXTO_INFANTIL) ? 'infantil' : 'adulto';
+    var categoria = categoriaTexto || 'adulto';
     var classificacao = classificarDesempenho(pcpm, categoria);
 
-    // Percentual de erros sobre palavras alcançadas
+    // Percentual de erros sobre palavras alcancadas
     var pctErros = ultimaPosAlcancada > 0 ? Math.round((errosReais.length / ultimaPosAlcancada) * 100) : 0;
 
     return {
         textoUsado: textoEscolhido,
         categoria: categoria,
+        versaoTexto: versaoTexto,
         transcricao: transcricao,
         totalPalavrasTexto: palavrasTexto.length,
         totalPalavrasLidas: totalLidas,
@@ -539,50 +698,50 @@ function classificarErro(original, falada) {
 
 function classificarDesempenho(pcpm, categoria) {
     if (categoria === 'infantil') {
-        // Faixas para crianças por escolaridade (baseado em Hasbrouck & Tindal, 2017; Capellini et al., PROLEC)
-        // Usa a escolaridade do formulário para faixas mais precisas
+        // Faixas para criancas por escolaridade (baseado em Hasbrouck & Tindal, 2017; Capellini et al., PROLEC)
+        // Usa a escolaridade do formulario para faixas mais precisas
         var esc = (dadosForm.escolaridade || '').toLowerCase();
         var faixas;
-        if (esc.indexOf('1o') >= 0 || esc.indexOf('1º') >= 0) {
-            // 1º ano: mediana ~53 PCPM
+        if (esc.indexOf('1o') >= 0 || esc.indexOf('1\u00ba') >= 0) {
+            // 1o ano: mediana ~53 PCPM
             faixas = [80, 65, 53, 35, 20];
-        } else if (esc.indexOf('2o') >= 0 || esc.indexOf('2º') >= 0) {
-            // 2º ano: mediana ~72 PCPM
+        } else if (esc.indexOf('2o') >= 0 || esc.indexOf('2\u00ba') >= 0) {
+            // 2o ano: mediana ~72 PCPM
             faixas = [100, 85, 72, 50, 30];
-        } else if (esc.indexOf('3o') >= 0 || esc.indexOf('3º') >= 0) {
-            // 3º ano: mediana ~92 PCPM
+        } else if (esc.indexOf('3o') >= 0 || esc.indexOf('3\u00ba') >= 0) {
+            // 3o ano: mediana ~92 PCPM
             faixas = [120, 107, 92, 70, 45];
-        } else if (esc.indexOf('4o') >= 0 || esc.indexOf('4º') >= 0) {
-            // 4º ano: mediana ~112 PCPM
+        } else if (esc.indexOf('4o') >= 0 || esc.indexOf('4\u00ba') >= 0) {
+            // 4o ano: mediana ~112 PCPM
             faixas = [140, 125, 112, 85, 60];
-        } else if (esc.indexOf('5o') >= 0 || esc.indexOf('5º') >= 0) {
-            // 5º ano: mediana ~127 PCPM
+        } else if (esc.indexOf('5o') >= 0 || esc.indexOf('5\u00ba') >= 0) {
+            // 5o ano: mediana ~127 PCPM
             faixas = [155, 140, 127, 100, 70];
-        } else if (esc.indexOf('6o') >= 0 || esc.indexOf('6º') >= 0) {
-            // 6º ano: mediana ~140 PCPM
+        } else if (esc.indexOf('6o') >= 0 || esc.indexOf('6\u00ba') >= 0) {
+            // 6o ano: mediana ~140 PCPM
             faixas = [165, 150, 140, 110, 80];
-        } else if (esc.indexOf('7o') >= 0 || esc.indexOf('7º') >= 0) {
-            // 7º ano: mediana ~145 PCPM
+        } else if (esc.indexOf('7o') >= 0 || esc.indexOf('7\u00ba') >= 0) {
+            // 7o ano: mediana ~145 PCPM
             faixas = [170, 155, 145, 115, 85];
         } else {
-            // Genérico infantil (analfabeto ou não especificado)
+            // Generico infantil (analfabeto ou nao especificado)
             faixas = [90, 70, 50, 30, 15];
         }
         // faixas = [superior, med_superior, media, med_inferior, limitrofe]
         if (pcpm >= faixas[0]) return 'Superior';
-        if (pcpm >= faixas[1]) return 'Média Superior';
-        if (pcpm >= faixas[2]) return 'Média';
-        if (pcpm >= faixas[3]) return 'Média Inferior';
-        if (pcpm >= faixas[4]) return 'Limítrofe';
+        if (pcpm >= faixas[1]) return 'M\u00e9dia Superior';
+        if (pcpm >= faixas[2]) return 'M\u00e9dia';
+        if (pcpm >= faixas[3]) return 'M\u00e9dia Inferior';
+        if (pcpm >= faixas[4]) return 'Lim\u00edtrofe';
         return 'Insuficiente';
     } else {
-        // Adultos e adolescentes (8º ano em diante): base ~150 PCPM (Hasbrouck & Tindal 8th grade)
-        // Quem está abaixo disso pode ter dificuldades — reteste mostra evolução/involução
+        // Adultos e adolescentes (8o ano em diante): base ~150 PCPM (Hasbrouck & Tindal 8th grade)
+        // Quem esta abaixo disso pode ter dificuldades - reteste mostra evolucao/involucao
         if (pcpm >= 180) return 'Superior';
-        if (pcpm >= 160) return 'Média Superior';
-        if (pcpm >= 140) return 'Média';
-        if (pcpm >= 110) return 'Média Inferior';
-        if (pcpm >= 80) return 'Limítrofe';
+        if (pcpm >= 160) return 'M\u00e9dia Superior';
+        if (pcpm >= 140) return 'M\u00e9dia';
+        if (pcpm >= 110) return 'M\u00e9dia Inferior';
+        if (pcpm >= 80) return 'Lim\u00edtrofe';
         return 'Insuficiente';
     }
 }
@@ -590,7 +749,7 @@ function classificarDesempenho(pcpm, categoria) {
 // ===== ENVIAR RESULTADOS =====
 async function salvarResultado(resultado, audioBase64) {
     if (!sessionInfo.email || !sessionInfo.sessionId) return;
-    // Limitar áudio a 390KB para caber no DynamoDB (400KB max por item)
+    // Limitar audio a 390KB para caber no DynamoDB (400KB max por item)
     var audioParaSalvar = audioBase64;
     if (audioParaSalvar && audioParaSalvar.length > 390000) {
         console.warn('Audio grande (' + Math.round(audioParaSalvar.length/1024) + 'KB), nao salvo.');
@@ -612,12 +771,16 @@ async function salvarResultado(resultado, audioBase64) {
                 dataAval: dadosForm.dataAval,
                 obs: dadosForm.obs,
                 correcaoVisual: dadosForm.correcaoVisual,
-                id: dadosForm.id
+                id: dadosForm.id,
+                pacienteId: sessionInfo.pacienteId || ''
             },
             resultados: resultado,
             audioBase64: audioParaSalvar
         }
     };
+    dados.idPaciente = dadosForm.id || '';
+    dados.data.pacienteId = sessionInfo.pacienteId || '';
+    dados.data.idPaciente = dadosForm.id || '';
     try {
         await fetch(API_URL + '/save-result', {
             method: 'POST',
@@ -666,7 +829,7 @@ window.addEventListener('load', function() {
     decodificarURL();
 });
 
-// Se paciente fechar no meio da gravação
+// Se paciente fechar no meio da gravacao
 window.addEventListener('beforeunload', function() {
     if (mediaRecorder && mediaRecorder.state === 'recording' && sessionInfo.email) {
         navigator.sendBeacon(API_URL + '/save-result', JSON.stringify({
@@ -676,5 +839,6 @@ window.addEventListener('beforeunload', function() {
     }
 });
 </script>
+<script src="coleta-anonima.js"></script>
 </body>
 </html>
