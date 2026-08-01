@@ -53,10 +53,14 @@ body{font-family:'Segoe UI',sans-serif;background:#f5f5f5;min-height:100vh}
 .btn-concluir{position:fixed;bottom:15px;right:15px;z-index:10}
 
 /* TELA PRETA */
-#tela-preta{background:#000}
+#tela-preta{background:#000;cursor:none}
+
+/* TELA EXPOSICAO - cursor escondido para nao distrair */
+#tela-exposicao{background:#000;padding:0;cursor:none}
+#tela-exposicao img{max-width:100vw;max-height:100vh;object-fit:contain}
 
 /* TELA RESULTADOS */
-#tela-resultados{background:#f5f5f5;padding:30px;align-items:flex-start}
+#tela-resultados{background:#f5f5f5;padding:30px;align-items:center}
 .resultado-card{background:#fff;border-radius:12px;padding:20px;margin:10px 0;width:100%;max-width:900px;box-shadow:0 2px 8px rgba(0,0,0,0.1)}
 .resultado-card h3{color:#4a148c;margin-bottom:10px;border-bottom:2px solid #ede7f6;padding-bottom:5px}
 table{width:100%;border-collapse:collapse;font-size:0.8em;margin:10px 0}
@@ -191,7 +195,21 @@ function trocarTela(mostrar) {
 }
 
 // ===== INICIAR TESTE =====
-function iniciarTeste() {
+async function iniciarTeste() {
+    // Verificar credito antes de iniciar
+    if (sessionInfo && sessionInfo.email && sessionInfo.email !== 'setmonte@gmail.com') {
+      try {
+        var _cr = await fetch('https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws/use-credit', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({email: sessionInfo.email, tipo: 'tref'})
+        });
+        if (_cr.status === 403) {
+          alert('Creditos insuficientes. Consulte seu avaliador.');
+          return;
+        }
+      } catch(e) {}
+    }
     var nome = document.getElementById('nome').value.trim();
     var sexo = document.getElementById('sexo').value;
     var dataNasc = document.getElementById('dataNasc').value;
@@ -357,20 +375,142 @@ function concluirReconstrucao() {
 
 // ===== RESULTADOS =====
 function mostrarResultados() {
-    // Sair fullscreen
     if (document.exitFullscreen) document.exitFullscreen();
     else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
-
     trocarTela('tela-resultados');
-    var html = '<div style="text-align:center;padding:60px 30px;">';
-    html += '<h2 style="color:#2e7d32;font-size:2em;margin-bottom:15px;">&#10004; Teste concluido!</h2>';
-    html += '<p style="color:#555;font-size:1.2em;">Voce pode fechar esta janela.</p>';
-    html += '<p style="margin-top:20px;font-size:0.9em;color:#777;">Os resultados foram enviados para o avaliador.</p>';
+    setTimeout(function(){var _s=document.createElement('script');_s.src='auto-close.js';_s.onload=function(){if(window._autoFechar)_autoFechar();};document.body.appendChild(_s);},2000);
+
+    // Calcular metricas por fase
+    var fasesAnalise = [];
+    var totalOlhos = 0, totalBoca = 0, totalPeriferia = 0, totalCliques = 0;
+    for (var i = 0; i < resultados.length; i++) {
+        var r = resultados[i];
+        var olhos = 0, boca = 0, periferia = 0;
+        var primeirosCinco = [];
+        for (var j = 0; j < r.cliques.length; j++) {
+            var c = r.cliques[j];
+            if (c.cat === 'olhos') olhos++;
+            else if (c.cat === 'boca') boca++;
+            else periferia++;
+            if (j < 5) primeirosCinco.push(c.cat);
+        }
+        var totalFase = r.cliques.length;
+        var ifs = totalFase > 0 ? Math.round(((olhos + boca) / totalFase) * 100) : 0;
+        var socialPrimeiros = primeirosCinco.filter(function(c) { return c === 'olhos' || c === 'boca'; }).length;
+        var padraoScan = socialPrimeiros >= 3 ? 'Social-first' : (socialPrimeiros >= 2 ? 'Misto' : 'Periferia-first');
+        var tempoMedio = totalFase > 0 ? Math.round(r.cliques[r.cliques.length - 1].tempo / totalFase) : 0;
+        fasesAnalise.push({rosto: r.rosto, olhos: olhos, boca: boca, periferia: periferia, total: totalFase, totalRegioes: r.totalRegioes, ifs: ifs, padraoScan: padraoScan, socialPrimeiros: socialPrimeiros, tempoTotal: r.tempoTotal, tempoMedio: tempoMedio});
+        totalOlhos += olhos;
+        totalBoca += boca;
+        totalPeriferia += periferia;
+        totalCliques += totalFase;
+    }
+
+    // IFS geral
+    var ifsGeral = totalCliques > 0 ? Math.round(((totalOlhos + totalBoca) / totalCliques) * 100) : 0;
+    var completude = 0;
+    var totalRegioes = 0;
+    for (var k = 0; k < resultados.length; k++) { totalRegioes += resultados[k].totalRegioes; }
+    completude = totalRegioes > 0 ? Math.round((totalCliques / totalRegioes) * 100) : 0;
+
+    // Classificacao baseada no IFS
+    var classificacaoIFS = '';
+    var corIFS = '';
+    if (ifsGeral >= 50) { classificacaoIFS = 'Atencao social adequada'; corIFS = '#2e7d32'; }
+    else if (ifsGeral >= 35) { classificacaoIFS = 'Atencao social moderada'; corIFS = '#f57f17'; }
+    else if (ifsGeral >= 20) { classificacaoIFS = 'Atencao social reduzida'; corIFS = '#e65100'; }
+    else { classificacaoIFS = 'Atencao predominantemente periferica'; corIFS = '#c62828'; }
+
+    // Classificacao do padrao de escaneamento
+    var padraoGeral = '';
+    var socialPrimeirosGeral = 0;
+    if (resultados.length > 0 && resultados[0].cliques.length >= 5) {
+        for (var p = 0; p < Math.min(5, resultados[0].cliques.length); p++) {
+            var cat = resultados[0].cliques[p].cat;
+            if (cat === 'olhos' || cat === 'boca') socialPrimeirosGeral++;
+        }
+    }
+    if (socialPrimeirosGeral >= 3) padraoGeral = 'Social-first (prioriza regiao social)';
+    else if (socialPrimeirosGeral >= 2) padraoGeral = 'Misto (sem preferencia clara)';
+    else padraoGeral = 'Periferia-first (prioriza regiao periferica)';
+
+    // Montar HTML de resultados
+    var html = '';
+    html += '<div class="resultado-card">';
+    html += '<h3 style="color:#4a148c;text-align:center;">Resultado TREF - ' + dadosForm.nome + '</h3>';
+    html += '<p style="text-align:center;color:#555;font-size:0.85em;margin-bottom:15px;">' + dadosForm.idade + ' | ' + (dadosForm.sexo === 'M' ? 'Masculino' : 'Feminino') + ' | ' + dadosForm.dataAval + '</p>';
+
+    // Card principal — IFS
+    html += '<div style="background:linear-gradient(135deg,' + corIFS + '22,' + corIFS + '11);border:2px solid ' + corIFS + ';border-radius:12px;padding:20px;text-align:center;margin:15px 0;">';
+    html += '<p style="font-size:0.8em;color:#555;margin-bottom:5px;">Indice de Fixacao Social (IFS)</p>';
+    html += '<p style="font-size:2.5em;font-weight:bold;color:' + corIFS + ';margin:5px 0;">' + ifsGeral + '%</p>';
+    html += '<p style="font-size:1.1em;font-weight:600;color:' + corIFS + ';">' + classificacaoIFS + '</p>';
+    html += '<p style="font-size:0.75em;color:#777;margin-top:8px;">(olhos + boca) / total de cliques x 100</p>';
+    html += '</div>';
+
+    // Barra visual de distribuicao
+    var pctOlhos = totalCliques > 0 ? Math.round((totalOlhos / totalCliques) * 100) : 0;
+    var pctBoca = totalCliques > 0 ? Math.round((totalBoca / totalCliques) * 100) : 0;
+    var pctPerif = totalCliques > 0 ? Math.round((totalPeriferia / totalCliques) * 100) : 0;
+    html += '<div style="margin:15px 0;">';
+    html += '<p style="font-size:0.85em;font-weight:600;color:#333;margin-bottom:8px;">Distribuicao da atencao visual:</p>';
+    html += '<div style="display:flex;height:30px;border-radius:8px;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,0.1);">';
+    if (pctOlhos > 0) html += '<div style="width:' + pctOlhos + '%;background:#1565c0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:bold;">' + pctOlhos + '%</div>';
+    if (pctBoca > 0) html += '<div style="width:' + pctBoca + '%;background:#c62828;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:bold;">' + pctBoca + '%</div>';
+    if (pctPerif > 0) html += '<div style="width:' + pctPerif + '%;background:#2e7d32;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:bold;">' + pctPerif + '%</div>';
+    html += '</div>';
+    html += '<div style="display:flex;justify-content:space-between;margin-top:5px;font-size:0.75em;color:#555;">';
+    html += '<span><span style="display:inline-block;width:10px;height:10px;background:#1565c0;border-radius:50%;margin-right:4px;"></span>Olhos (' + totalOlhos + ')</span>';
+    html += '<span><span style="display:inline-block;width:10px;height:10px;background:#c62828;border-radius:50%;margin-right:4px;"></span>Boca (' + totalBoca + ')</span>';
+    html += '<span><span style="display:inline-block;width:10px;height:10px;background:#2e7d32;border-radius:50%;margin-right:4px;"></span>Periferia (' + totalPeriferia + ')</span>';
+    html += '</div></div>';
+
+    // Metricas adicionais
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:15px 0;">';
+    html += '<div style="background:#f5f5f5;padding:12px;border-radius:8px;text-align:center;"><p style="font-size:0.75em;color:#777;">Padrao de Escaneamento</p><p style="font-size:0.95em;font-weight:bold;color:#333;">' + padraoGeral + '</p></div>';
+    html += '<div style="background:#f5f5f5;padding:12px;border-radius:8px;text-align:center;"><p style="font-size:0.75em;color:#777;">Completude</p><p style="font-size:0.95em;font-weight:bold;color:#333;">' + totalCliques + '/' + totalRegioes + ' regioes (' + completude + '%)</p></div>';
+    html += '</div>';
+
+    // Detalhes por fase (se mais de 1 rosto)
+    if (fasesAnalise.length > 1) {
+        html += '<div style="margin-top:15px;">';
+        html += '<p style="font-size:0.85em;font-weight:600;color:#333;margin-bottom:8px;">Detalhes por rosto:</p>';
+        html += '<table style="width:100%;border-collapse:collapse;font-size:0.8em;">';
+        html += '<tr style="background:#ede7f6;"><th style="padding:6px;">Rosto</th><th>Olhos</th><th>Boca</th><th>Periferia</th><th>IFS</th><th>Padrao</th><th>Tempo</th></tr>';
+        for (var f = 0; f < fasesAnalise.length; f++) {
+            var fa = fasesAnalise[f];
+            html += '<tr style="border-bottom:1px solid #eee;"><td style="padding:5px;font-weight:600;">' + fa.rosto + '</td>';
+            html += '<td style="text-align:center;">' + fa.olhos + '</td>';
+            html += '<td style="text-align:center;">' + fa.boca + '</td>';
+            html += '<td style="text-align:center;">' + fa.periferia + '</td>';
+            html += '<td style="text-align:center;font-weight:bold;color:' + (fa.ifs >= 50 ? '#2e7d32' : fa.ifs >= 35 ? '#f57f17' : '#c62828') + ';">' + fa.ifs + '%</td>';
+            html += '<td style="text-align:center;">' + fa.padraoScan + '</td>';
+            html += '<td style="text-align:center;">' + Math.round(fa.tempoTotal / 1000) + 's</td></tr>';
+        }
+        html += '</table></div>';
+    }
+
+    // Interpretacao
+    html += '<div style="background:#f3e5f5;border-left:4px solid #7c4dff;padding:12px;border-radius:0 8px 8px 0;margin-top:15px;font-size:0.82em;line-height:1.6;color:#333;">';
+    html += '<strong>Interpretacao:</strong><br>';
+    if (ifsGeral >= 50) html += 'O padrao de escaneamento facial indica atencao preferencial para regioes socialmente relevantes (olhos e boca), compativel com processamento facial tipico.';
+    else if (ifsGeral >= 35) html += 'O padrao de escaneamento facial indica atencao moderada para regioes sociais. Sugere-se acompanhamento e reteste para confirmar o perfil.';
+    else if (ifsGeral >= 20) html += 'O padrao de escaneamento facial indica atencao reduzida para regioes sociais (olhos e boca), com predominancia de fixacao periferica. Este padrao pode estar associado a dificuldades no processamento de informacoes faciais socialmente relevantes.';
+    else html += 'O padrao de escaneamento facial indica predominancia quase exclusiva de fixacao periferica, com atencao minima para olhos e boca. Este perfil e frequentemente associado a padroes atipicos de processamento facial, podendo indicar necessidade de avaliacao complementar.';
+    html += '<br><br><em style="color:#777;">Nota: Este e um instrumento experimental de rastreio. Os resultados devem ser interpretados no contexto de uma avaliacao clinica abrangente.</em>';
+    html += '</div>';
+
     html += '</div>';
     document.getElementById('area-resultados').innerHTML = html;
 
+    // _escalaDados com dados significativos
+    window._escalaDados = {escala:'TREF', escore:ifsGeral, classificacao:classificacaoIFS + ' (IFS:' + ifsGeral + '% | ' + padraoGeral.split(' (')[0] + ')', dominios:{IFS:{pontuacao:ifsGeral,max:100,classificacao:classificacaoIFS},Olhos:{pontuacao:totalOlhos,max:totalRegioes,classificacao:pctOlhos+'%'},Boca:{pontuacao:totalBoca,max:totalRegioes,classificacao:pctBoca+'%'},Periferia:{pontuacao:totalPeriferia,max:totalRegioes,classificacao:pctPerif+'%'},Completude:{pontuacao:totalCliques,max:totalRegioes,classificacao:completude+'%'}}};
+
     // Salvar na Lambda
     salvarResultadoLambda();
+
+    // Coleta anonima via sendBeacon (garante envio antes de fechar aba)
+    try{var _cUrl='https://script.google.com/macros/s/AKfycbzYl7-ageXnHHyvrKMb6iS_7gX2l6ZBngPpbCHNfj7YYbXylcZ_vQ9iJkrbko8ICPcW/exec';var _idadeEl=document.getElementById('idade');var _idadeVal=null;if(_idadeEl&&_idadeEl.value){var _m=_idadeEl.value.match(/(\d+)\s*ano/);if(_m)_idadeVal=parseInt(_m[1]);}if(_idadeVal&&window._escalaDados&&window._escalaDados.escala){var _pkt={email:sessionInfo.email||'',escala:'TREF',idade:_idadeVal,sexo:document.getElementById('sexo')?document.getElementById('sexo').value:'',escolaridade:'',pontuacao:String(ifsGeral),dominios:'IFS:'+ifsGeral+'%; Olhos:'+totalOlhos+' ('+pctOlhos+'%); Boca:'+totalBoca+' ('+pctBoca+'%); Periferia:'+totalPeriferia+' ('+pctPerif+'%); Completude:'+completude+'%',classificacao:classificacaoIFS+' | '+padraoGeral.split(' (')[0]};navigator.sendBeacon(_cUrl,JSON.stringify(_pkt));}}catch(e){}
 }
 
 // ===== DADOS DA URL (versao online) =====
@@ -405,11 +545,15 @@ function salvarResultadoLambda() {
                 dataNasc: dadosForm.dataNasc,
                 dataAval: dadosForm.dataAval,
                 obs: dadosForm.obs,
-                id: dadosForm.id
+                id: dadosForm.id,
+                pacienteId: sessionInfo.pacienteId || ''
             },
             resultados: resultados
         }
     };
+    dados.idPaciente = dadosForm.id || '';
+    dados.data.pacienteId = sessionInfo.pacienteId || '';
+    dados.data.idPaciente = dadosForm.id || '';
     var xhr = new XMLHttpRequest();
     xhr.open('POST', 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws/save-result', true);
     xhr.setRequestHeader('Content-Type', 'application/json');
@@ -426,5 +570,6 @@ window.addEventListener('load', function() {
     decodificarURL();
 });
 </script>
+<script src="coleta-anonima.js"></script>
 </body>
 </html>
