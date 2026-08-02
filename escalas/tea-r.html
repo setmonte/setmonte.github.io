@@ -150,8 +150,6 @@
         </div>
         <div id="questionario"></div>
         <div class="botoes">
-            <button class="btn btn-primary" onclick="calcularResultados()">Calcular Resultados</button>
-            <button class="btn btn-secondary" onclick="gerarRelatorioPDF()">Gerar PDF</button>
             <button class="btn btn-danger" onclick="limparDados()">Limpar Dados</button>
         </div>
         <div id="resultados" class="resultados"></div>
@@ -927,10 +925,8 @@ async function _enviarResultadosPainel() {
         });
         var result = await resp.json();
         if (result.ok || resp.ok) {
-            var container = document.querySelector('.botoes');
-            if (container) container.innerHTML = '<div style="background:#c8e6c9;border:2px solid #2e7d32;border-radius:10px;padding:20px;text-align:center;"><p style="font-size:1.3em;color:#2e7d32;font-weight:bold;">Resultados enviados com sucesso!</p><p style="color:#555;margin-top:8px;">O profissional j\u00e1 pode visualizar seus resultados no painel.</p><p style="color:#777;margin-top:5px;font-size:0.85em;">Voc\u00ea pode fechar esta p\u00e1gina.</p></div>';
-            var res = document.getElementById('resultados');
-            if (res) res.style.display = 'none';
+            document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#e8f5e9,#c8e6c9);text-align:center;padding:30px;"><div style="background:white;border-radius:15px;padding:40px;box-shadow:0 10px 30px rgba(0,0,0,0.1);max-width:500px;"><div style="font-size:60px;margin-bottom:20px;">&#9989;</div><h2 style="color:#2e7d32;font-size:1.6em;margin-bottom:15px;">Respostas enviadas!</h2><p style="color:#555;font-size:1.05em;line-height:1.6;margin-bottom:10px;">Os resultados j\u00e1 est\u00e3o dispon\u00edveis no painel do profissional.</p><p style="color:#888;font-size:0.9em;">Esta p\u00e1gina ser\u00e1 fechada automaticamente em <span id="cntd">5</span> segundos...</p></div></div>';
+            var n=5;var t=setInterval(function(){n--;var el=document.getElementById('cntd');if(el)el.textContent=n;if(n<=0){clearInterval(t);window.close();}},1000);
         } else {
             if (btn) { btn.disabled = false; btn.textContent = 'Enviar Resultados ao Profissional'; }
             alert('Erro ao enviar. Tente novamente.');
