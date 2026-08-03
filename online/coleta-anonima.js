@@ -115,6 +115,39 @@
         return partes.join('; ');
     }
 
+    function _classBaeNivel(taxa) {
+        if (taxa < 50) return 'Muito Baixo';
+        if (taxa < 60) return 'Baixo';
+        if (taxa < 70) return 'Limitrofe';
+        if (taxa < 85) return 'Normal';
+        if (taxa < 95) return 'Acima da Media';
+        return 'Superior';
+    }
+
+    function _classificarBAE() {
+        var r = window.resultadosBAE || {};
+        var testes = ['concentrada', 'seletiva', 'dividida', 'alternada', 'sustentada'];
+        var nomes = {concentrada:'Concentrada', seletiva:'Seletiva', dividida:'Dividida', alternada:'Alternada', sustentada:'Sustentada'};
+        var partes = [];
+        testes.forEach(function(t) {
+            if (r[t]) {
+                var ac = r[t].acertos !== undefined ? r[t].acertos : (r[t].corretas !== undefined ? r[t].corretas : 0);
+                var er = r[t].erros !== undefined ? r[t].erros : 0;
+                var om = r[t].omissoes !== undefined ? r[t].omissoes : 0;
+                var taxa = 0;
+                if (t === 'seletiva') {
+                    var tot = ac + om;
+                    taxa = tot > 0 ? (ac / tot) * 100 : 0;
+                } else {
+                    var tot2 = ac + er + om;
+                    taxa = tot2 > 0 ? (ac / tot2) * 100 : 0;
+                }
+                partes.push(nomes[t] + ':' + _classBaeNivel(taxa));
+            }
+        });
+        return partes.length > 0 ? partes.join('; ') : 'BAE';
+    }
+
     function _enviarDadosAnonimos() {
         if (_jaEnviou) return;
         try {
@@ -138,7 +171,7 @@
                 classificacao = window._escalaDados.classificacao || '';
             } else if (window.resultadosBAE && (window.resultadosBAE.concentrada || window.resultadosBAE.seletiva || window.resultadosBAE.dividida || window.resultadosBAE.alternada || window.resultadosBAE.sustentada)) {
                 dominios = _formatarResultadosBAE();
-                classificacao = 'BAE';
+                classificacao = _classificarBAE();
             }
 
             // Sem pontuacao E sem dominios = teste nao foi calculado, nao enviar
