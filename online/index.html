@@ -5252,35 +5252,67 @@
           html += '<tr style="font-weight:bold;border-top:1px solid #90caf9;"><td style="padding:3px 8px;">TOTAL</td><td style="padding:3px 8px;text-align:right;">' + creditosTotal + '</td><td style="padding:3px 8px;text-align:right;">R$ ' + receitaTotal.toFixed(2) + '</td></tr>';
           html += '</table></div>';
         }
-        // Buscar consumo de creditos (resultados finalizados de todos os usuarios)
-        // TODO: Este endpoint retorna apenas resultados do admin. Para ver consumo de TODOS os usuarios,
-        // seria necessario um endpoint /get-all-results ou parametro ?all=true no backend.
+        // Buscar consumo real de creditos via admin-list-users (saldo restante de todos)
+        // Consumidos = distribuidos (vendas + bonus) - restantes
         try {
-          var respAll = await fetch(API_URL + '/get-results?email=' + encodeURIComponent(currentUser));
-          var dataAll = await respAll.json();
-          var allResults = dataAll.results || [];
-          var tiposCredito = ['tecfe','bae','trmv','taav','tref','tflod','corsi','tte'];
+          var respUsers = await fetch(API_URL + '/admin-list-users?email=' + encodeURIComponent(currentUser));
+          var dataUsers = await respUsers.json();
+          var allUsers = dataUsers.users || [];
+          // Somar saldos restantes de todos os usuarios (exceto admin)
+          var restantePorTipo = {TECFE:0, BAE:0, TRMV:0, TAAV:0, TREF:0, TFLOD:0, PRONTUARIO:0};
+          allUsers.forEach(function(u) {
+            if (u.email === 'setmonte@gmail.com') return;
+            restantePorTipo.TECFE += (u.credits || 0);
+            restantePorTipo.BAE += (u.baeCredits || 0);
+            restantePorTipo.TRMV += (u.trmvCredits || 0);
+            restantePorTipo.TAAV += (u.taavCredits || 0);
+            restantePorTipo.TREF += (u.trefCredits || 0);
+            restantePorTipo.TFLOD += (u.tflodCredits || 0);
+            restantePorTipo.PRONTUARIO += (u.prontuarioCredits || 0);
+          });
+          // Calcular distribuidos por tipo a partir das vendas
+          var distribuidoPorTipo = {TECFE:0, BAE:0, TRMV:0, TAAV:0, TREF:0, TFLOD:0, PRONTUARIO:0};
+          vendas.forEach(function(v) {
+            var d = v.data || {};
+            var tipo = (d.teste || 'tecfe').toUpperCase();
+            var creditos = parseInt(d.creditos) || 0;
+            if (distribuidoPorTipo[tipo] !== undefined) distribuidoPorTipo[tipo] += creditos;
+          });
+          // Somar bonus (cada usuario cadastrado recebe: tecfe:1, bae:5, trmv:1, taav:1, tref:1, tflod:1, prontuario:1)
+          var usersComBonus = allUsers.filter(function(u) { return u.email !== 'setmonte@gmail.com'; }).length;
+          distribuidoPorTipo.TECFE += usersComBonus * 1;
+          distribuidoPorTipo.BAE += usersComBonus * 5;
+          distribuidoPorTipo.TRMV += usersComBonus * 1;
+          distribuidoPorTipo.TAAV += usersComBonus * 1;
+          distribuidoPorTipo.TREF += usersComBonus * 1;
+          distribuidoPorTipo.TFLOD += usersComBonus * 1;
+          distribuidoPorTipo.PRONTUARIO += usersComBonus * 1;
+          // Consumidos = distribuidos - restantes
           var consumoPorTipo = {};
           var consumoTotal = 0;
-          allResults.forEach(function(r) {
-            var tipo = (r.tipo || '').toLowerCase();
-            if (tiposCredito.indexOf(tipo) === -1) return;
-            var d = r.data || {};
-            if (d.status === 'erro' || d.status === 'erro_transcricao' || d.status === 'abandonado') return;
-            if (!consumoPorTipo[tipo.toUpperCase()]) consumoPorTipo[tipo.toUpperCase()] = 0;
-            consumoPorTipo[tipo.toUpperCase()]++;
-            consumoTotal++;
+          Object.keys(distribuidoPorTipo).forEach(function(t) {
+            var consumido = distribuidoPorTipo[t] - (restantePorTipo[t] || 0);
+            if (consumido < 0) consumido = 0;
+            if (consumido > 0) {
+              consumoPorTipo[t] = consumido;
+              consumoTotal += consumido;
+            }
           });
           html += '<div style="margin-top:12px;padding-top:10px;border-top:1px solid #90caf9;">';
-          html += '<p style="font-size:12px;font-weight:bold;color:#2e7d32;margin-bottom:5px;">Creditos consumidos: ' + consumoTotal + '</p>';
+          html += '<p style="font-size:12px;font-weight:bold;color:#2e7d32;margin-bottom:5px;">Creditos consumidos (todos os usuarios): ' + consumoTotal + '</p>';
           var tiposConsumo = Object.keys(consumoPorTipo).sort();
           if (tiposConsumo.length > 0) {
             html += '<table style="width:100%;border-collapse:collapse;font-size:11px;">';
-            html += '<tr style="background:#e8f5e9;"><th style="padding:4px 8px;text-align:left;">Tipo</th><th style="padding:4px 8px;text-align:right;">Aplicacoes</th></tr>';
-            tiposConsumo.forEach(function(t) {
-              html += '<tr><td style="padding:3px 8px;">' + t + '</td><td style="padding:3px 8px;text-align:right;">' + consumoPorTipo[t] + '</td></tr>';
+            html += '<tr style="background:#e8f5e9;"><th style="padding:4px 8px;text-align:left;">Tipo</th><th style="padding:4px 8px;text-align:right;">Distribuidos</th><th style="padding:4px 8px;text-align:right;">Restantes</th><th style="padding:4px 8px;text-align:right;">Consumidos</th></tr>';
+            Object.keys(distribuidoPorTipo).sort().forEach(function(t) {
+              var dist = distribuidoPorTipo[t] || 0;
+              var rest = restantePorTipo[t] || 0;
+              var cons = consumoPorTipo[t] || 0;
+              if (dist > 0 || rest > 0 || cons > 0) {
+                html += '<tr><td style="padding:3px 8px;">' + t + '</td><td style="padding:3px 8px;text-align:right;">' + dist + '</td><td style="padding:3px 8px;text-align:right;">' + rest + '</td><td style="padding:3px 8px;text-align:right;font-weight:bold;color:#2e7d32;">' + cons + '</td></tr>';
+              }
             });
-            html += '<tr style="font-weight:bold;border-top:1px solid #a5d6a7;"><td style="padding:3px 8px;">TOTAL</td><td style="padding:3px 8px;text-align:right;">' + consumoTotal + '</td></tr>';
+            html += '<tr style="font-weight:bold;border-top:1px solid #a5d6a7;"><td style="padding:3px 8px;">TOTAL</td><td style="padding:3px 8px;text-align:right;">' + Object.values(distribuidoPorTipo).reduce(function(a,b){return a+b;},0) + '</td><td style="padding:3px 8px;text-align:right;">' + Object.values(restantePorTipo).reduce(function(a,b){return a+b;},0) + '</td><td style="padding:3px 8px;text-align:right;color:#2e7d32;">' + consumoTotal + '</td></tr>';
             html += '</table>';
           }
           html += '</div>';
