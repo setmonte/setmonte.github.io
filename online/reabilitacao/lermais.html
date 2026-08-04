@@ -566,6 +566,9 @@ function processarFala(transcript) {
     var palavrasFaladas = transcript.toLowerCase().split(/\s+/);
     var agora = Date.now();
 
+    // Resetar timer de silencio (a pessoa falou algo)
+    resetarTimerSilencio();
+
     for (var i = 0; i < palavrasFaladas.length; i++) {
         if (palavraAtualIdx >= palavrasTexto.length) break;
         var falada = palavrasFaladas[i];
@@ -616,11 +619,34 @@ function processarFala(transcript) {
             if (palavraAtualIdx > 0 && palavraAtualIdx % 10 === 0) {
                 gerarPontoGrafico();
             }
+
+            // Verificar se chegou na ultima palavra
+            if (palavraAtualIdx >= palavrasTexto.length) {
+                finalizarLeitura();
+                return;
+            }
         }
         // Se nao encontrou em nenhuma das proximas 5 palavras, IGNORA
-        // (provavelmente e ruido, respiro, ou erro do reconhecimento)
     }
     atualizarMetricas();
+}
+
+// ===== TIMER DE SILENCIO (5 segundos sem fala = finaliza) =====
+var _timerSilencio = null;
+
+function resetarTimerSilencio() {
+    if (_timerSilencio) clearTimeout(_timerSilencio);
+    if (!leituraFinalizada && isListening && palavraAtualIdx > 0) {
+        _timerSilencio = setTimeout(function() {
+            if (!leituraFinalizada && isListening && palavraAtualIdx > 0) {
+                finalizarLeitura();
+            }
+        }, 5000);
+    }
+}
+
+function iniciarTimerSilencio() {
+    resetarTimerSilencio();
 }
 function marcarPalavra(idx, correta) {
     var el = document.getElementById('p' + idx);
@@ -659,11 +685,15 @@ function iniciarLeitura() {
 
     document.getElementById('btnIniciar').style.display = 'none';
     document.getElementById('btnParar').style.display = 'inline-block';
+
+    // Iniciar timer de silencio (so ativa apos primeira palavra detectada)
+    iniciarTimerSilencio();
 }
 
 function finalizarLeitura() {
     leituraFinalizada = true;
     isListening = false;
+    if (_timerSilencio) { clearTimeout(_timerSilencio); _timerSilencio = null; }
     if (recognition) { try { recognition.stop(); } catch(e) {} }
 
     document.getElementById('micIndicator').className = 'mic-indicator parado';
