@@ -854,21 +854,68 @@ function toggleHistorico() {
         area.style.display = 'block';
         return;
     }
-    var html = '<table class="tabela-historico"><tr><th>Data</th><th>Texto</th><th>PPM</th><th>Precisao</th><th>Fluencia</th><th>Indice</th></tr>';
+
+    var html = '';
+
+    // === GRAFICO DE BARRAS DE EVOLUCAO (ultimas 5 sessoes) ===
+    var ultimas = historicoSessoes.slice(-5);
+    html += '<div style="background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:20px;margin-bottom:20px;">';
+    html += '<h3 style="text-align:center;color:#333;margin-bottom:5px;font-size:1em;">Evolu\u00e7\u00e3o do \u00cdndice LERMAIS</h3>';
+    html += '<p style="text-align:center;font-size:0.75em;color:#999;margin-bottom:15px;">\u00daltimas ' + ultimas.length + ' sess\u00f5es | Linha verde = meta (65 pontos)</p>';
+    html += '<div style="position:relative;height:180px;display:flex;align-items:flex-end;justify-content:center;gap:12px;padding:0 10px;border-bottom:2px solid #e0e0e0;">';
+    // Linha meta (65%)
+    var metaPos = ((65 / 100) * 160);
+    html += '<div style="position:absolute;bottom:' + metaPos + 'px;left:0;right:0;border-top:2px dashed #43a047;z-index:1;"></div>';
+    html += '<div style="position:absolute;bottom:' + (metaPos + 2) + 'px;right:5px;font-size:0.65em;color:#43a047;font-weight:bold;">Meta: 65</div>';
+    // Barras
+    for (var i = 0; i < ultimas.length; i++) {
+        var s = ultimas[i];
+        var valor = s.indiceLermais || 0;
+        var altura = Math.max(5, (valor / 100) * 160);
+        var cor = valor >= 65 ? '#43a047' : valor >= 50 ? '#ff9800' : '#e53935';
+        var dataStr = s.data ? new Date(s.data).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : (i + 1) + '\u00aa';
+        html += '<div style="display:flex;flex-direction:column;align-items:center;flex:1;max-width:80px;">';
+        html += '<div style="font-size:0.8em;font-weight:bold;color:' + cor + ';margin-bottom:4px;">' + valor + '</div>';
+        html += '<div style="width:100%;height:' + altura + 'px;background:' + cor + ';border-radius:6px 6px 0 0;min-width:30px;transition:height 0.3s;"></div>';
+        html += '<div style="font-size:0.7em;color:#777;margin-top:6px;text-align:center;">' + dataStr + '</div>';
+        html += '</div>';
+    }
+    html += '</div></div>';
+
+    // === INDICADOR DE TENDENCIA ===
+    if (ultimas.length >= 2) {
+        var primeiro = ultimas[0].indiceLermais || 0;
+        var ultimo = ultimas[ultimas.length - 1].indiceLermais || 0;
+        var diff = ultimo - primeiro;
+        var tendIcon = diff > 0 ? '\u2191' : diff < 0 ? '\u2193' : '\u2192';
+        var tendCor = diff > 0 ? '#2e7d32' : diff < 0 ? '#c62828' : '#ff9800';
+        var tendTexto = diff > 0 ? 'Melhora de ' + diff + ' pontos' : diff < 0 ? 'Queda de ' + Math.abs(diff) + ' pontos' : 'Estavel';
+        html += '<div style="text-align:center;padding:10px;background:' + (diff >= 0 ? '#e8f5e9' : '#ffebee') + ';border-radius:8px;margin-bottom:15px;">';
+        html += '<span style="font-size:1.5em;">' + tendIcon + '</span> ';
+        html += '<span style="font-size:0.95em;font-weight:bold;color:' + tendCor + ';">' + tendTexto + '</span>';
+        html += '<span style="font-size:0.8em;color:#777;"> (da 1\u00aa \u00e0 \u00faltima sess\u00e3o)</span>';
+        html += '</div>';
+    }
+
+    // === TABELA DETALHADA ===
+    html += '<table class="tabela-historico"><tr><th>Sess\u00e3o</th><th>Data</th><th>Texto</th><th>PPM</th><th>Precis\u00e3o</th><th>Flu\u00eancia</th><th>\u00cdndice</th></tr>';
     for (var i = historicoSessoes.length - 1; i >= 0; i--) {
         var s = historicoSessoes[i];
         var dataStr = s.data ? new Date(s.data).toLocaleDateString('pt-BR') : '-';
+        var numSessao = i + 1;
+        var corIdx = (s.indiceLermais || 0) >= 65 ? '#2e7d32' : (s.indiceLermais || 0) >= 50 ? '#ff9800' : '#c62828';
         html += '<tr>';
+        html += '<td>' + numSessao + '\u00aa</td>';
         html += '<td>' + dataStr + '</td>';
-        html += '<td>' + (s.texto || '-') + '</td>';
+        html += '<td style="font-size:0.85em;">' + (s.texto || '-') + '</td>';
         html += '<td>' + (s.ppm || 0) + '</td>';
         html += '<td>' + (s.precisao || 0) + '%</td>';
         html += '<td>' + (s.fluencia || 0) + '/10</td>';
-        html += '<td style="font-weight:bold;color:' + (s.indiceLermais >= 65 ? '#2e7d32' : s.indiceLermais >= 50 ? '#ff9800' : '#c62828') + ';">' + (s.indiceLermais || 0) + '</td>';
+        html += '<td style="font-weight:bold;color:' + corIdx + ';">' + (s.indiceLermais || 0) + '</td>';
         html += '</tr>';
     }
     html += '</table>';
-    html += '<p style="text-align:center;font-size:0.8em;color:#777;margin-top:10px;">Total de sessoes: ' + historicoSessoes.length + '</p>';
+    html += '<p style="text-align:center;font-size:0.8em;color:#777;margin-top:10px;">Total de sess\u00f5es: ' + historicoSessoes.length + '</p>';
     document.getElementById('historicoConteudo').innerHTML = html;
     area.style.display = 'block';
     area.scrollIntoView({ behavior: 'smooth', block: 'center' });
