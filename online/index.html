@@ -5998,7 +5998,17 @@
       var sexo = document.getElementById('lermaisSexo').value;
       if (!nome) { alert('Preencha o nome do paciente.'); return; }
       if (!dn) { alert('Preencha a data de nascimento.'); return; }
-      var dados = { nome: nome, dn: dn, sexo: sexo, email: currentUser || '' };
+      // Buscar pacienteId do cadastro (se existir)
+      var pacienteId = '';
+      if (window._pacientesCache) {
+        for (var i = 0; i < _pacientesCache.length; i++) {
+          if (_pacientesCache[i].nome === nome && _pacientesCache[i].dataNascimento === dn) {
+            pacienteId = _pacientesCache[i].id || '';
+            break;
+          }
+        }
+      }
+      var dados = { nome: nome, dn: dn, sexo: sexo, email: currentUser || '', pacienteId: pacienteId };
       var encoded = safeBtoa(JSON.stringify(dados));
       var url = 'reabilitacao/lermais.html?d=' + encoded;
       window.open(url, '_blank');

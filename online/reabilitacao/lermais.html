@@ -184,6 +184,7 @@ body.tema-neutro{background:linear-gradient(135deg,#e8f5e9 0%,#c8e6c9 50%,#e8f5e
     </div>
 </div>
 
+<script src="../../id-paciente.js"></script>
 <script src="lermais-textos.js"></script>
 <script>
 // ===== VARIAVEIS GLOBAIS =====
@@ -761,6 +762,7 @@ function exibirResultados(r) {
     // Salvar dados para envio ao painel
     window._escalaDados = {
         escala: 'LERMAIS',
+        tipo: 'lermais',
         paciente: r.nome,
         escore: r.indiceLermais,
         classificacao: classificacao,
@@ -770,12 +772,14 @@ function exibirResultados(r) {
             'Fluencia': { pontuacao: r.fluencia, max: 10, classificacao: r.fluencia >= 8 ? 'Fluente' : r.fluencia >= 5 ? 'Moderada' : 'Disfluente' },
             'Completude': { pontuacao: r.completude, max: 100, classificacao: r.completude >= 90 ? 'Completa' : r.completude >= 70 ? 'Parcial' : 'Incompleta' }
         },
-        idPaciente: '',
+        idPaciente: document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '',
         idade: document.getElementById('idadeCalculada').value,
         sexo: r.sexo,
         data: new Date().toISOString(),
         detalhes: { texto: r.texto, tema: r.tema, faixa: r.faixa, tempoSegundos: r.tempoSegundos, pausasLongas: r.pausasLongas, graficoData: r.graficoData }
     };
+    // Salvar na API automaticamente (dupla seguranca, como REOCUPA)
+    salvarNaAPI(r);
 }
 // ===== HISTORICO =====
 function salvarHistorico(resultado) {
@@ -845,6 +849,47 @@ function toggleHistorico() {
     area.style.display = 'block';
     area.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
+// ===== SALVAMENTO NA API (dupla seguranca) =====
+function salvarNaAPI(resultado) {
+    var payload = {
+        tipo: 'lermais',
+        escala: 'LERMAIS',
+        idPaciente: document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '',
+        paciente: resultado.nome || '',
+        ppm: resultado.ppm || 0,
+        precisao: resultado.precisao || 0,
+        fluencia: resultado.fluencia || 0,
+        completude: resultado.completude || 0,
+        indiceLermais: resultado.indiceLermais || 0,
+        texto: resultado.texto || '',
+        tema: resultado.tema || '',
+        faixa: resultado.faixa || '',
+        tempoSegundos: resultado.tempoSegundos || 0,
+        pausasLongas: resultado.pausasLongas || 0,
+        data: new Date().toISOString()
+    };
+    var body = {};
+    if (_sessionInfo && _sessionInfo.sessionId) {
+        body = { sessionId: _sessionInfo.sessionId, email: _sessionInfo.email || '', data: payload };
+    } else if (_sessionInfo && _sessionInfo.email) {
+        body = { email: _sessionInfo.email, data: payload };
+    } else {
+        // Sem sessao e sem email - nao envia para API (apenas localStorage)
+        return;
+    }
+    fetch(_API_URL + '/save-escala', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    }).then(function(resp) { return resp.json(); })
+    .then(function(result) {
+        if (result.ok) { console.log('LERMAIS: sessao salva na API com sucesso'); }
+        else { console.warn('LERMAIS: API retornou erro, dados salvos apenas localmente'); }
+    }).catch(function(err) {
+        console.warn('LERMAIS: falha ao enviar para API:', err.message);
+    });
+}
+
 function novaLeitura() {
     // Reset visual
     document.getElementById('textoArea').style.display = 'none';
@@ -875,18 +920,13 @@ function _decodificarURL() {
         var d = params.get('d');
         if (!d) return;
         var dados = JSON.parse(atob(d));
-        if (dados.nome) document.getElementById('nome').value = dados.nome;
-        if (dados.dn) { document.getElementById('dataNascimento').value = dados.dn; calcularIdade(); }
+        if (dados.nome) { document.getElementById('nome').value = dados.nome; document.getElementById('nome').dispatchEvent(new Event('input')); }
+        if (dados.dn) { document.getElementById('dataNascimento').value = dados.dn; document.getElementById('dataNascimento').dispatchEvent(new Event('change')); calcularIdade(); }
         if (dados.sexo) { document.getElementById('sexo').value = dados.sexo; aplicarTema(); }
-        // Trocar botoes para modo painel
-        var botoesEl = document.getElementById('botoesArea');
-        var btnEnviar = document.createElement('button');
-        btnEnviar.className = 'btn btn-enviar';
-        btnEnviar.textContent = 'Enviar Resultados ao Profissional';
-        btnEnviar.onclick = _enviarResultadosPainel;
-        btnEnviar.id = 'btnEnviarPainel';
-        btnEnviar.style.display = 'none';
-        botoesEl.appendChild(btnEnviar);
+        _sessionInfo = dados;
+        // Esconde info tecnica no modo painel
+        var infoEls = document.querySelectorAll('.instrucoes');
+        infoEls.forEach(function(el) { el.style.display = 'none'; });
     } catch(e) { console.log('Erro decodificar URL:', e); }
 }
 async function _enviarResultadosPainel() {
@@ -895,14 +935,24 @@ async function _enviarResultadosPainel() {
     if (!leituraFinalizada) { alert('Finalize a leitura antes de enviar.'); return; }
     var dados = window._escalaDados || {};
     if (!dados.escala) dados.escala = 'LERMAIS';
+    dados.tipo = 'lermais';
+    dados.idPaciente = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
+    dados.pacienteId = _sessionInfo ? (_sessionInfo.pacienteId || '') : '';
     dados.data = new Date().toISOString();
     var btn = document.getElementById('btnEnviarPainel');
     if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
     try {
+        var body = {};
+        if (_sessionInfo && _sessionInfo.sessionId) {
+            body = { sessionId: _sessionInfo.sessionId, email: _sessionInfo.email || '', data: dados, originalSessionId: _sessionInfo.sessionId };
+        } else {
+            var email = _sessionInfo ? (_sessionInfo.email || '') : '';
+            body = { email: email, data: dados, tipo: 'lermais' };
+        }
         var resp = await fetch(_API_URL + '/save-escala', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sessionId: _sessionInfo ? _sessionInfo.sessionId : '', email: _sessionInfo ? _sessionInfo.email : '', data: dados, originalSessionId: _sessionInfo ? _sessionInfo.sessionId : '' })
+            body: JSON.stringify(body)
         });
         var result = await resp.json();
         if (result.ok || resp.ok) {
@@ -939,25 +989,30 @@ if (params.get('s')) {
             var nomeEl = document.getElementById('nome');
             var nascEl = document.getElementById('dataNascimento');
             var sexoEl = document.getElementById('sexo');
-            if (nomeEl && data.patientName) nomeEl.value = data.patientName;
-            if (nascEl && data.birthDate) { nascEl.value = data.birthDate; calcularIdade(); }
+            if (nomeEl && data.patientName) { nomeEl.value = data.patientName; nomeEl.dispatchEvent(new Event('input')); }
+            if (nascEl && data.birthDate) { nascEl.value = data.birthDate; nascEl.dispatchEvent(new Event('change')); calcularIdade(); }
             if (sexoEl && data.sex) { sexoEl.value = data.sex; aplicarTema(); }
-            // Adicionar botao enviar
-            var btnEnviar = document.createElement('button');
-            btnEnviar.className = 'btn btn-enviar';
-            btnEnviar.textContent = 'Enviar Resultados ao Profissional';
-            btnEnviar.onclick = _enviarResultadosPainel;
-            btnEnviar.id = 'btnEnviarPainel';
-            btnEnviar.style.display = 'none';
-            document.getElementById('botoesArea').appendChild(btnEnviar);
+            _criarBotaoEnviar();
         }
     }).catch(function() {});
 } else if (params.get('d')) {
     _decodificarURL();
+    _criarBotaoEnviar();
 } else if (params.get('print')) {
     // Modo impressao - nao aplicavel para este programa
 } else {
-    // Acesso direto - funciona normalmente (programa pode ser usado standalone)
+    // Acesso direto - funciona normalmente (modo standalone ou "Abrir Direto" do painel)
+}
+
+function _criarBotaoEnviar() {
+    var botoesEl = document.getElementById('botoesArea');
+    var btnEnviar = document.createElement('button');
+    btnEnviar.className = 'btn btn-enviar';
+    btnEnviar.textContent = 'Enviar Resultados ao Profissional';
+    btnEnviar.onclick = _enviarResultadosPainel;
+    btnEnviar.id = 'btnEnviarPainel';
+    btnEnviar.style.display = 'none';
+    botoesEl.appendChild(btnEnviar);
 }
 
 // Evento para mostrar botao enviar apos finalizar (modo painel)
