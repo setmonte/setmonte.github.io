@@ -507,6 +507,12 @@
                   <button onclick="whatsappLermaisLink()" class="btn btn-green" style="padding:8px 16px;font-size:12px;">📱 WhatsApp</button>
                 </div>
               </div>
+              <!-- Botao ver evolucao -->
+              <div style="margin-top:12px;text-align:center;">
+                <button onclick="verEvolucaoLermais()" class="btn btn-blue" style="padding:10px 20px;font-size:12px;">📊 Ver Evolucao do Paciente</button>
+              </div>
+              <!-- Area de evolucao -->
+              <div id="lermaisEvolucaoArea" style="display:none;margin-top:15px;background:#fff;border:1px solid #c5cae9;border-radius:10px;padding:15px;"></div>
             </div>
           </div>
 
@@ -6083,6 +6089,105 @@
     function whatsappLermaisLink() {
       var link = document.getElementById('lermaisSessionLink').textContent || generatedLermaisLink;
       window.open('https://wa.me/?text=' + encodeURIComponent('Leia o texto em voz alta neste link: ' + link), '_blank');
+    }
+
+    async function verEvolucaoLermais() {
+      var nome = document.getElementById('lermaisNome').value.trim();
+      if (!nome) { alert('Selecione um paciente para ver a evolucao.'); return; }
+      var area = document.getElementById('lermaisEvolucaoArea');
+      area.style.display = 'block';
+      area.innerHTML = '<p style="text-align:center;color:#777;">Carregando...</p>';
+      try {
+        var resp = await fetch(API_URL + '/get-results?email=' + encodeURIComponent(currentUser));
+        var data = await resp.json();
+        var todos = data.results || [];
+        // Filtrar resultados LERMAIS deste paciente
+        var nomeNorm = nome.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+        var sessoes = [];
+        for (var i = 0; i < todos.length; i++) {
+          var r = todos[i];
+          var d = r.data || {};
+          if (d.tipo !== 'lermais' && d.escala !== 'LERMAIS') continue;
+          var nPac = (d.paciente || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+          if (nPac === nomeNorm) sessoes.push(d);
+        }
+        if (sessoes.length === 0) {
+          area.innerHTML = '<p style="text-align:center;color:#777;">Nenhuma sessao LERMAIS encontrada para este paciente.</p>';
+          return;
+        }
+        // Ordenar por data
+        sessoes.sort(function(a, b) { return new Date(a.data || 0) - new Date(b.data || 0); });
+        var ultimas = sessoes.slice(-5);
+        var cores = ['#1565c0', '#e91e63', '#ff9800', '#6a1b9a', '#00897b'];
+        var html = '';
+        // TITULO
+        html += '<h3 style="text-align:center;color:#3949ab;margin-bottom:5px;font-size:1em;">Evolucao LERMAIS - ' + nome + '</h3>';
+        html += '<p style="text-align:center;font-size:0.75em;color:#999;margin-bottom:15px;">Ultimas ' + ultimas.length + ' sessoes | Linha verde = meta (65 pontos)</p>';
+        // GRAFICO DE LINHAS HORIZONTAIS
+        html += '<div style="position:relative;padding:10px 0;">';
+        // Linha fixa meta (65%)
+        var metaPct = 65;
+        html += '<div style="position:absolute;top:0;bottom:0;left:' + metaPct + '%;width:2px;background:#43a047;z-index:2;"></div>';
+        html += '<div style="position:absolute;top:-14px;left:' + metaPct + '%;transform:translateX(-50%);font-size:0.65em;color:#43a047;font-weight:bold;">Meta: 65</div>';
+        // Barras horizontais (uma por sessao)
+        for (var i = 0; i < ultimas.length; i++) {
+          var s = ultimas[i];
+          var valor = s.indiceLermais || s.escore || 0;
+          var largura = Math.max(3, Math.min(valor, 100));
+          var cor = cores[i % cores.length];
+          var dataStr = s.data ? new Date(s.data).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : (i + 1) + 'a';
+          html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">';
+          html += '<div style="width:45px;font-size:0.75em;color:#555;text-align:right;">' + dataStr + '</div>';
+          html += '<div style="flex:1;background:#f0f0f0;border-radius:6px;height:24px;position:relative;overflow:hidden;">';
+          html += '<div style="width:' + largura + '%;height:100%;background:' + cor + ';border-radius:6px;transition:width 0.5s;"></div>';
+          html += '</div>';
+          html += '<div style="width:35px;font-size:0.8em;font-weight:bold;color:' + cor + ';">' + valor + '</div>';
+          html += '</div>';
+        }
+        html += '</div>';
+        // LEGENDA DE CORES
+        html += '<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:12px 0;font-size:0.7em;">';
+        for (var i = 0; i < ultimas.length; i++) {
+          var s = ultimas[i];
+          var dataStr = s.data ? new Date(s.data).toLocaleDateString('pt-BR') : (i + 1) + 'a';
+          html += '<span style="display:flex;align-items:center;gap:3px;"><span style="width:10px;height:10px;border-radius:50%;background:' + cores[i % cores.length] + ';"></span>' + dataStr + '</span>';
+        }
+        html += '</div>';
+        // INDICADOR DE TENDENCIA
+        if (ultimas.length >= 2) {
+          var primeiro = ultimas[0].indiceLermais || ultimas[0].escore || 0;
+          var ultimo = ultimas[ultimas.length - 1].indiceLermais || ultimas[ultimas.length - 1].escore || 0;
+          var diff = ultimo - primeiro;
+          var tendIcon = diff > 0 ? '\u2191' : diff < 0 ? '\u2193' : '\u2192';
+          var tendCor = diff > 0 ? '#2e7d32' : diff < 0 ? '#c62828' : '#ff9800';
+          var tendTexto = diff > 0 ? 'Melhora de ' + diff + ' pontos' : diff < 0 ? 'Queda de ' + Math.abs(diff) + ' pontos' : 'Estavel';
+          html += '<div style="text-align:center;padding:8px;background:' + (diff >= 0 ? '#e8f5e9' : '#ffebee') + ';border-radius:8px;margin:10px 0;">';
+          html += '<span style="font-size:1.3em;">' + tendIcon + '</span> ';
+          html += '<span style="font-size:0.9em;font-weight:bold;color:' + tendCor + ';">' + tendTexto + '</span>';
+          html += '</div>';
+        }
+        // TABELA DETALHADA
+        html += '<table style="width:100%;border-collapse:collapse;font-size:0.8em;margin-top:12px;">';
+        html += '<tr style="background:#3949ab;color:white;"><th style="padding:6px;">Sessao</th><th style="padding:6px;">Data</th><th style="padding:6px;">PPM</th><th style="padding:6px;">Precisao</th><th style="padding:6px;">Fluencia</th><th style="padding:6px;">Indice</th></tr>';
+        for (var i = 0; i < sessoes.length; i++) {
+          var s = sessoes[i];
+          var dataStr = s.data ? new Date(s.data).toLocaleDateString('pt-BR') : '-';
+          var valor = s.indiceLermais || s.escore || 0;
+          var corVal = valor >= 65 ? '#2e7d32' : valor >= 50 ? '#ff9800' : '#c62828';
+          html += '<tr style="border-bottom:1px solid #eee;">';
+          html += '<td style="padding:5px;text-align:center;">' + (i + 1) + 'a</td>';
+          html += '<td style="padding:5px;text-align:center;">' + dataStr + '</td>';
+          html += '<td style="padding:5px;text-align:center;">' + (s.ppm || (s.dominios && s.dominios['Velocidade (PPM)'] ? s.dominios['Velocidade (PPM)'].pontuacao : 0)) + '</td>';
+          html += '<td style="padding:5px;text-align:center;">' + (s.precisao || (s.dominios && s.dominios['Precisao'] ? s.dominios['Precisao'].pontuacao : 0)) + '%</td>';
+          html += '<td style="padding:5px;text-align:center;">' + (s.fluencia || (s.dominios && s.dominios['Fluencia'] ? s.dominios['Fluencia'].pontuacao : 0)) + '/10</td>';
+          html += '<td style="padding:5px;text-align:center;font-weight:bold;color:' + corVal + ';">' + valor + '</td>';
+          html += '</tr>';
+        }
+        html += '</table>';
+        area.innerHTML = html;
+      } catch(e) {
+        area.innerHTML = '<p style="text-align:center;color:#c62828;">Erro ao buscar dados: ' + e.message + '</p>';
+      }
     }
 
     function loadLermaisPacientes() {
