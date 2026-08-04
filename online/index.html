@@ -495,7 +495,17 @@
               </div>
               <div style="display:flex;gap:8px;flex-wrap:wrap;">
                 <button onclick="iniciarLermais()" class="btn btn-green" style="flex:1;min-width:120px;padding:12px;font-size:13px;">▶ Iniciar Sessao</button>
-                <button onclick="abrirLermaisDireto()" class="btn btn-blue" style="flex:1;min-width:120px;padding:12px;font-size:13px;">🖥️ Abrir Direto</button>
+                <button onclick="gerarLinkLermais()" class="btn btn-blue" style="flex:1;min-width:120px;padding:12px;font-size:13px;">🔗 Gerar Link</button>
+                <button onclick="gerarLinkLermais(true)" class="btn btn-green" style="flex:1;min-width:120px;padding:12px;font-size:13px;">🖥️ Aplicar Aqui</button>
+              </div>
+              <!-- Area do link gerado -->
+              <div id="lermaisLinkResult" class="hidden" style="margin-top:12px;background:#e8f5e9;border:1px solid #c8e6c9;border-radius:8px;padding:12px;">
+                <p style="font-size:11px;color:#555;margin-bottom:6px;">Link gerado (uso unico):</p>
+                <p id="lermaisSessionLink" style="font-size:11px;word-break:break-all;color:#1565c0;font-family:monospace;background:#fff;padding:8px;border-radius:4px;border:1px solid #ddd;"></p>
+                <div style="display:flex;gap:6px;margin-top:8px;">
+                  <button onclick="copyLermaisLink()" class="btn btn-blue" style="padding:8px 16px;font-size:12px;">📋 Copiar</button>
+                  <button onclick="whatsappLermaisLink()" class="btn btn-green" style="padding:8px 16px;font-size:12px;">📱 WhatsApp</button>
+                </div>
               </div>
             </div>
           </div>
@@ -6015,6 +6025,64 @@
 
     function abrirLermaisDireto() {
       window.open('reabilitacao/lermais.html', '_blank');
+    }
+
+    var generatedLermaisLink = '';
+
+    async function gerarLinkLermais(abrirLocal) {
+      var nome = document.getElementById('lermaisNome').value.trim();
+      var dn = document.getElementById('lermaisDn').value;
+      var sexo = document.getElementById('lermaisSexo').value;
+      if (!nome || !dn) { alert('Preencha nome e data de nascimento.'); return; }
+      // Buscar pacienteId do cadastro
+      var pacienteId = '';
+      if (window._pacientesCache) {
+        for (var i = 0; i < _pacientesCache.length; i++) {
+          if (_pacientesCache[i].nome === nome && _pacientesCache[i].dataNascimento === dn) {
+            pacienteId = _pacientesCache[i].id || '';
+            break;
+          }
+        }
+      }
+      try {
+        var sessionId = 'lermais-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+        var sessionData = {
+          email: currentUser,
+          sessionId: sessionId,
+          tipo: 'lermais',
+          patientName: nome,
+          birthDate: dn,
+          sex: sexo,
+          pacienteId: pacienteId
+        };
+        var resp = await fetch(API_URL + '/save-session', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(sessionData)
+        });
+        var result = await resp.json();
+        var link = '';
+        if (result.id) {
+          link = 'https://setmonte.github.io/online/reabilitacao/lermais.html?s=' + result.id;
+        } else {
+          var params = safeBtoa(JSON.stringify(sessionData));
+          link = 'https://setmonte.github.io/online/reabilitacao/lermais.html?d=' + encodeURIComponent(params);
+        }
+        generatedLermaisLink = link;
+        if (abrirLocal) { window.open(link, '_blank'); }
+        else { document.getElementById('lermaisSessionLink').textContent = link; document.getElementById('lermaisLinkResult').classList.remove('hidden'); }
+      } catch(e) { alert('Erro ao gerar link: ' + e.message); }
+    }
+
+    function copyLermaisLink() {
+      var link = document.getElementById('lermaisSessionLink').textContent || generatedLermaisLink;
+      navigator.clipboard.writeText(link);
+      alert('Link copiado!');
+    }
+
+    function whatsappLermaisLink() {
+      var link = document.getElementById('lermaisSessionLink').textContent || generatedLermaisLink;
+      window.open('https://wa.me/?text=' + encodeURIComponent('Leia o texto em voz alta neste link: ' + link), '_blank');
     }
 
     function loadLermaisPacientes() {
