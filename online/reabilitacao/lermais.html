@@ -569,7 +569,7 @@ function processarFala(transcript) {
     for (var i = 0; i < palavrasFaladas.length; i++) {
         if (palavraAtualIdx >= palavrasTexto.length) break;
         var falada = palavrasFaladas[i];
-        if (!falada || falada.length < 1) continue;
+        if (!falada || falada.length < 2) continue;
 
         // Detectar pausa longa (>3 segundos)
         if (ultimaPalavraTime > 0 && (agora - ultimaPalavraTime) > 3000) {
@@ -577,54 +577,48 @@ function processarFala(transcript) {
         }
         ultimaPalavraTime = agora;
 
-        // Busca a melhor correspondencia (pode pular 1 palavra se for autocorrecao)
-        var achou = false;
-        // Tenta a palavra atual
-        if (compararPalavras(falada, palavrasTexto[palavraAtualIdx])) {
+        // ESTRATEGIA: buscar correspondencia nas proximas 5 palavras do texto
+        // Se encontrar, marca as intermediarias como erro e avanca ate la
+        // Se NAO encontrar, IGNORA a palavra falada (pode ser ruido/erro do mic)
+        var encontrouEm = -1;
+        var janela = Math.min(5, palavrasTexto.length - palavraAtualIdx);
+        for (var j = 0; j < janela; j++) {
+            if (compararPalavras(falada, palavrasTexto[palavraAtualIdx + j])) {
+                encontrouEm = j;
+                break;
+            }
+        }
+
+        if (encontrouEm >= 0) {
+            // Marcar palavras intermediarias como erro (puladas)
+            for (var k = 0; k < encontrouEm; k++) {
+                marcarPalavra(palavraAtualIdx, false);
+                palavrasIncorretas++;
+                palavraAtualIdx++;
+            }
+            // Marcar a palavra encontrada como correta
             marcarPalavra(palavraAtualIdx, true);
             palavrasCorretas++;
             palavraAtualIdx++;
-            achou = true;
-        }
-        // Tenta a proxima (pode ter pulado uma)
-        else if (palavraAtualIdx + 1 < palavrasTexto.length && compararPalavras(falada, palavrasTexto[palavraAtualIdx + 1])) {
-            marcarPalavra(palavraAtualIdx, false);
-            palavrasIncorretas++;
-            palavraAtualIdx++;
-            marcarPalavra(palavraAtualIdx, true);
-            palavrasCorretas++;
-            palavraAtualIdx++;
-            achou = true;
-        }
-        // Nao encontrou - marca como erro e avanca
-        else {
-            marcarPalavra(palavraAtualIdx, false);
-            palavrasIncorretas++;
-            palavraAtualIdx++;
-            achou = true;
-        }
 
-        // Destacar proxima palavra
-        if (palavraAtualIdx < palavrasTexto.length) {
-            var proxEl = document.getElementById('p' + palavraAtualIdx);
-            if (proxEl) proxEl.className = 'palavra atual';
-        }
+            // Destacar proxima palavra
+            if (palavraAtualIdx < palavrasTexto.length) {
+                var proxEl = document.getElementById('p' + palavraAtualIdx);
+                if (proxEl) proxEl.className = 'palavra atual';
+            }
 
-        // Atualizar progresso
-        var progresso = (palavraAtualIdx / palavrasTexto.length) * 100;
-        document.getElementById('barraProgresso').style.width = progresso + '%';
-        document.getElementById('mProgresso').textContent = Math.round(progresso) + '%';
+            // Atualizar progresso
+            var progresso = (palavraAtualIdx / palavrasTexto.length) * 100;
+            document.getElementById('barraProgresso').style.width = progresso + '%';
+            document.getElementById('mProgresso').textContent = Math.round(progresso) + '%';
 
-        // A cada 10 palavras, gerar ponto no grafico
-        if (palavraAtualIdx > 0 && palavraAtualIdx % 10 === 0) {
-            gerarPontoGrafico();
+            // A cada 10 palavras, gerar ponto no grafico
+            if (palavraAtualIdx > 0 && palavraAtualIdx % 10 === 0) {
+                gerarPontoGrafico();
+            }
         }
-
-        // Verificar se terminou
-        if (palavraAtualIdx >= palavrasTexto.length) {
-            finalizarLeitura();
-            return;
-        }
+        // Se nao encontrou em nenhuma das proximas 5 palavras, IGNORA
+        // (provavelmente e ruido, respiro, ou erro do reconhecimento)
     }
     atualizarMetricas();
 }
