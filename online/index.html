@@ -5561,33 +5561,35 @@
 
     async function adminListarUsuarios() {
       var el = document.getElementById('adminUsersList');
-      el.innerHTML = '<p style="color:#555;">Carregando DynamoDB...</p>';
+      el.innerHTML = '<p style="color:#555;">Carregando DynamoDB + Cognito...</p>';
       try {
-        var resp = await fetch(API_URL + '/admin-list-users?email=' + encodeURIComponent(currentUser));
+        var resp = await fetch(API_URL + '/admin-list-users-full?email=' + encodeURIComponent(currentUser));
         var data = await resp.json();
         if (data.users && data.users.length > 0) {
           var agora = new Date();
           var limite40 = new Date(agora.getTime() - 40 * 24 * 60 * 60 * 1000);
           var ativos = data.users.filter(function(u) { return u.lastAccess && new Date(u.lastAccess) > limite40; });
           var inativos = data.users.filter(function(u) { return !u.lastAccess || new Date(u.lastAccess) <= limite40; });
-          var html = '<div style="display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;">';
+          var html = '<div style="display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;align-items:center;">';
           html += '<span style="background:#e8f5e9;border:1px solid #a5d6a7;padding:4px 10px;border-radius:6px;font-size:12px;color:#2e7d32;font-weight:bold;">Ativos (40 dias): ' + ativos.length + '</span>';
           html += '<span style="background:#fdf0f0;border:1px solid #e8a8a8;padding:4px 10px;border-radius:6px;font-size:12px;color:#c62828;font-weight:bold;">Inativos: ' + inativos.length + '</span>';
           html += '<span style="background:#f5f5f5;border:1px solid #ddd;padding:4px 10px;border-radius:6px;font-size:12px;color:#555;">Total: ' + data.users.length + '</span>';
+          html += '<span style="font-size:10px;color:#777;margin-left:8px;">(fonte: DynamoDB + Cognito cruzados)</span>';
           html += '</div>';
           var testes = detectarTestesPagos();
-          html += '<table class="results-table"><tr><th>Email</th><th>Ultimo Acesso</th><th>Status</th>';
+          html += '<table class="results-table"><tr><th><input type="checkbox" onclick="adminToggleInativos(this)"></th><th>Email</th><th>Ultimo Acesso</th><th>Fonte</th><th>Status</th>';
           testes.forEach(function(t) { html += '<th>' + t.nome + '</th>'; });
           html += '</tr>';
-          // Ordenar por ultimo acesso (mais recente primeiro)
-          data.users.sort(function(a, b) { return (b.lastAccess || '').localeCompare(a.lastAccess || ''); });
           data.users.forEach(function(u) {
             var ativo = u.lastAccess && new Date(u.lastAccess) > limite40;
             var lastStr = u.lastAccess ? new Date(u.lastAccess).toLocaleDateString('pt-BR') : 'Nunca';
+            var fonteStr = u.lastAccessSource === 'cognito' ? '<span style="color:#7b1fa2;font-size:9px;">Cognito</span>' : u.lastAccessSource === 'dynamo' ? '<span style="color:#1565c0;font-size:9px;">DynamoDB</span>' : '<span style="color:#999;font-size:9px;">-</span>';
             var statusBadge = ativo ? '<span style="color:#2e7d32;font-weight:bold;font-size:10px;">ATIVO</span>' : '<span style="color:#c62828;font-weight:bold;font-size:10px;">INATIVO</span>';
-            html += '<tr style="' + (ativo ? '' : 'opacity:0.6;') + '">';
+            html += '<tr style="' + (ativo ? '' : 'opacity:0.7;background:#fff8f8;') + '">';
+            html += '<td><input type="checkbox" class="admin-inativo-check" data-email="' + u.email + '" ' + (ativo ? 'disabled' : '') + '></td>';
             html += '<td style="font-size:11px;">' + u.email + '</td>';
             html += '<td style="font-size:10px;">' + lastStr + '</td>';
+            html += '<td>' + fonteStr + '</td>';
             html += '<td>' + statusBadge + '</td>';
             testes.forEach(function(t) {
               var campo = t.id === 'tecfe' ? 'credits' : t.id + 'Credits';
@@ -5596,9 +5598,40 @@
             html += '</tr>';
           });
           html += '</table>';
+          html += '<div style="margin-top:10px;display:flex;gap:10px;align-items:center;">';
+          html += '<button class="btn btn-red" style="padding:8px 16px;font-size:12px;" onclick="adminDeletarInativosSelecionados()">Deletar Selecionados (so DynamoDB)</button>';
+          html += '<span style="font-size:10px;color:#777;">Mantém login no Cognito — se voltar, recupera acesso.</span>';
+          html += '</div>';
           el.innerHTML = html;
         } else { el.innerHTML = '<p>Nenhum usuario encontrado.</p>'; }
       } catch(e) { el.innerHTML = '<p style="color:red;">Erro: ' + e.message + '</p>'; }
+    }
+
+    function adminToggleInativos(master) {
+      var checks = document.querySelectorAll('.admin-inativo-check:not(:disabled)');
+      checks.forEach(function(c) { c.checked = master.checked; });
+    }
+
+    async function adminDeletarInativosSelecionados() {
+      var checks = document.querySelectorAll('.admin-inativo-check:checked');
+      if (checks.length === 0) { alert('Selecione pelo menos um usuario inativo.'); return; }
+      var emails = [];
+      checks.forEach(function(c) { emails.push(c.dataset.email); });
+      if (!confirm('Deletar ' + emails.length + ' usuario(s) do DynamoDB?\\n\\n' + emails.join('\\n') + '\\n\\nO login no Cognito sera mantido.')) return;
+      var ok = 0;
+      for (var i = 0; i < emails.length; i++) {
+        try {
+          var resp = await fetch(API_URL + '/delete-user', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ email: currentUser, targetEmail: emails[i], deleteCognito: false })
+          });
+          var data = await resp.json();
+          if (data.ok) ok++;
+        } catch(e) {}
+      }
+      alert(ok + ' de ' + emails.length + ' usuario(s) removidos do DynamoDB!');
+      adminListarUsuarios();
     }
 
     async function adminListarCognito() {
