@@ -5599,8 +5599,8 @@
           });
           html += '</table>';
           html += '<div style="margin-top:10px;display:flex;gap:10px;align-items:center;">';
-          html += '<button class="btn btn-red" style="padding:8px 16px;font-size:12px;" onclick="adminDeletarInativosSelecionados()">Deletar Selecionados (so DynamoDB)</button>';
-          html += '<span style="font-size:10px;color:#777;">Mantém login no Cognito — se voltar, recupera acesso.</span>';
+          html += '<button class="btn btn-red" style="padding:8px 16px;font-size:12px;" onclick="adminDeletarInativosSelecionados()">Arquivar Selecionados</button>';
+          html += '<span style="font-size:10px;color:#777;">Move para tabela de inativos. Se voltarem, recuperam tudo.</span>';
           html += '</div>';
           el.innerHTML = html;
         } else { el.innerHTML = '<p>Nenhum usuario encontrado.</p>'; }
@@ -5617,20 +5617,20 @@
       if (checks.length === 0) { alert('Selecione pelo menos um usuario inativo.'); return; }
       var emails = [];
       checks.forEach(function(c) { emails.push(c.dataset.email); });
-      if (!confirm('Deletar ' + emails.length + ' usuario(s) do DynamoDB?\\n\\n' + emails.join('\\n') + '\\n\\nO login no Cognito sera mantido.')) return;
+      if (!confirm('Arquivar ' + emails.length + ' usuario(s) inativo(s)?\\n\\n' + emails.join('\\n') + '\\n\\nOs dados serao movidos para a tabela de inativos.\\nSe voltarem, recuperam tudo automaticamente.')) return;
       var ok = 0;
       for (var i = 0; i < emails.length; i++) {
         try {
-          var resp = await fetch(API_URL + '/delete-user', {
+          var resp = await fetch(API_URL + '/archive-user', {
             method: 'POST',
             headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({ email: currentUser, targetEmail: emails[i], deleteCognito: false })
+            body: JSON.stringify({ email: currentUser, targetEmail: emails[i] })
           });
           var data = await resp.json();
           if (data.ok) ok++;
         } catch(e) {}
       }
-      alert(ok + ' de ' + emails.length + ' usuario(s) removidos do DynamoDB!');
+      alert(ok + ' de ' + emails.length + ' usuario(s) arquivados!\\nSe voltarem a logar, recuperam os creditos automaticamente.');
       adminListarUsuarios();
     }
 
