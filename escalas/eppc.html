@@ -78,7 +78,7 @@
                 <p>
                     <strong>Instrumento:</strong> EPPC &#8212; Escala de Pilares e Pontua&#231;&#245;es Conjugais<br>
                     <strong>Base te&#243;rica:</strong> Artigo "Pilares e Pontua&#231;&#245;es: A Comunica&#231;&#227;o como Fundamento nas Rela&#231;&#245;es Afetivas Contempor&#226;neas" (Monte, 2025)<br>
-                    <strong>Estrutura:</strong> 30 itens, 2 eixos (Pilares + Estilo Comunicacional), Likert 5 pontos + op&#231;&#227;o N/A em itens temporais<br>
+                    <strong>Estrutura:</strong> 30 itens, 2 eixos (Pilares + Estilo Comunicacional), Likert 4 pontos + op&#231;&#227;o "N&#227;o aconteceu" em itens temporais<br>
                     <strong>Resultado:</strong> Perfil dos 4 Pilares (Fragilizado/Inst&#225;vel/S&#243;lido) + Estilo de Pontua&#231;&#227;o dominante<br>
                     <strong>Eixo 1 &#8212; Pilares:</strong> Sexual, Financeiro, Divertimento, Projeto Futuro (o "corpo" da entidade Casal)<br>
                     <strong>Eixo 2 &#8212; Pontua&#231;&#227;o:</strong> Ponto, Exclama&#231;&#227;o, Interroga&#231;&#227;o (a "alma" da entidade Casal)<br>
@@ -171,9 +171,8 @@ var ITENS = [
 var OPCOES = [
 {valor:1, texto:"Discordo<br>totalmente"},
 {valor:2, texto:"Discordo<br>em parte"},
-{valor:3, texto:"Neutro"},
-{valor:4, texto:"Concordo<br>em parte"},
-{valor:5, texto:"Concordo<br>totalmente"}
+{valor:3, texto:"Concordo<br>em parte"},
+{valor:4, texto:"Concordo<br>totalmente"}
 ];
 // === FUNCOES ===
 function calcularIdade() {
@@ -201,42 +200,32 @@ function gerarQuestionario() {
         if (i === 21) {
             h += '<div class="secao-titulo"><h3>Parte II \u2014 Estilo de Pontua\u00e7\u00e3o Comunicacional</h3><p>A "alma" da entidade Casal \u2014 pense em como voc\u00eas se comunicam nos momentos de tens\u00e3o ou decis\u00e3o.</p></div>';
         }
-        // Subtitulos de pilar
-        if (item.secao === 'pilar' && item.pilar !== pilarAtual) {
-            pilarAtual = item.pilar;
-            var nomesPilar = {'Sexual':'Pilar Sexual','Financeiro':'Pilar Financeiro','Divertimento':'Pilar Divertimento','ProjetoFuturo':'Pilar Projeto Futuro'};
-            h += '<div style="padding:10px 20px;margin-top:15px;background:#f8bbd0;border-radius:8px;"><strong style="color:#880e4f;">' + nomesPilar[pilarAtual] + '</strong></div>';
-        }
-        if (item.secao === 'pontuacao' && item.tipo !== tipoAtual) {
-            tipoAtual = item.tipo;
-            var nomesTipo = {'Ponto':'Tend\u00eancia ao Ponto (.)','Exclamacao':'Tend\u00eancia \u00e0 Exclama\u00e7\u00e3o (!)','Interrogacao':'Tend\u00eancia \u00e0 Interroga\u00e7\u00e3o (?)'};
-            h += '<div style="padding:10px 20px;margin-top:15px;background:#f8bbd0;border-radius:8px;"><strong style="color:#880e4f;">' + nomesTipo[tipoAtual] + '</strong></div>';
-        }
+        // Subtitulos removidos - apenas Parte I e Parte II
         h += '<div class="item"><div class="item-texto"><span class="item-numero">' + (i + 1) + '.</span> ' + item.texto + '</div><div class="opcoes">';
         for (var j = 0; j < OPCOES.length; j++) {
             h += '<div class="opcao"><input type="radio" id="q' + i + '_' + OPCOES[j].valor + '" name="q' + i + '" value="' + OPCOES[j].valor + '"><label for="q' + i + '_' + OPCOES[j].valor + '">' + OPCOES[j].texto + '</label></div>';
         }
         if (item.temporal) {
-            h += '<div class="opcao" style="border-left:2px solid #ccc;padding-left:12px;margin-left:5px;"><input type="radio" id="q' + i + '_0" name="q' + i + '" value="0"><label for="q' + i + '_0" style="color:#999;font-style:italic;">N\u00e3o se<br>aplica</label></div>';
+            h += '<div class="opcao" style="border-left:2px solid #ccc;padding-left:12px;margin-left:5px;"><input type="radio" id="q' + i + '_0" name="q' + i + '" value="0"><label for="q' + i + '_0" style="color:#999;font-style:italic;">N\u00e3o<br>aconteceu</label></div>';
         }
         h += '</div></div>';
     }
     c.innerHTML = h;
 }
 function classificarPilar(soma) {
-    if (soma <= 11) return {texto: 'Fragilizado', cor: '#f44336', corFundo: '#ffcdd2', r:244,g:67,b:54};
-    if (soma <= 18) return {texto: 'Inst\u00e1vel', cor: '#ff9800', corFundo: '#fff3e0', r:255,g:152,b:0};
+    if (soma <= 9) return {texto: 'Fragilizado', cor: '#f44336', corFundo: '#ffcdd2', r:244,g:67,b:54};
+    if (soma <= 14) return {texto: 'Inst\u00e1vel', cor: '#ff9800', corFundo: '#fff3e0', r:255,g:152,b:0};
     return {texto: 'S\u00f3lido', cor: '#4caf50', corFundo: '#e8f5e9', r:76,g:175,b:80};
 }
 function classificarPontuacao(soma) {
-    if (soma <= 6) return {texto: 'Discreto', cor: '#90a4ae', r:144,g:164,b:174};
-    if (soma <= 10) return {texto: 'Moderado', cor: '#7b1fa2', r:123,g:31,b:162};
+    if (soma <= 5) return {texto: 'Discreto', cor: '#90a4ae', r:144,g:164,b:174};
+    if (soma <= 8) return {texto: 'Moderado', cor: '#7b1fa2', r:123,g:31,b:162};
     return {texto: 'Expressivo', cor: '#c2185b', r:194,g:24,b:91};
 }
 
 function classificarCorpo(total) {
-    if (total <= 46) return {texto: 'Corpo Fragilizado', desc: 'M\u00faltiplos pilares em risco', cor: '#f44336', corFundo: '#ffcdd2'};
-    if (total <= 73) return {texto: 'Corpo em Ajuste', desc: 'Equil\u00edbrio parcial', cor: '#ff9800', corFundo: '#fff3e0'};
+    if (total <= 36) return {texto: 'Corpo Fragilizado', desc: 'M\u00faltiplos pilares em risco', cor: '#f44336', corFundo: '#ffcdd2'};
+    if (total <= 58) return {texto: 'Corpo em Ajuste', desc: 'Equil\u00edbrio parcial', cor: '#ff9800', corFundo: '#fff3e0'};
     return {texto: 'Corpo S\u00f3lido', desc: 'Estrutura bem sustentada', cor: '#4caf50', corFundo: '#e8f5e9'};
 }
 
@@ -268,7 +257,7 @@ function calcularResultados() {
         for (var i = 0; i < itens.length; i++) {
             if (respostas[itens[i]] > 0) { soma += respostas[itens[i]]; itensValidos++; }
         }
-        // Se tem itens validos, calcula proporcional a 5 itens (escala original)
+        // Se tem itens validos, calcula proporcional a 5 itens (escala 1-4, max 20)
         var somaProporcional = itensValidos > 0 ? Math.round((soma / itensValidos) * 5) : 0;
         resultPilares[key] = {soma: somaProporcional, somaReal: soma, itensRespondidos: itensValidos, classificacao: classificarPilar(somaProporcional)};
         totalPilares += somaProporcional;
@@ -303,7 +292,7 @@ function calcularResultados() {
     var h = '<h2>Resultados EPPC</h2>';
 
     // Box classificacao geral do corpo
-    h += '<div class="rastreio-box" style="background:' + classCorpo.corFundo + ';border:3px solid ' + classCorpo.cor + ';color:' + classCorpo.cor + ';padding:20px;border-radius:10px;text-align:center;margin:20px 0;font-size:1.2em;font-weight:700;">' + classCorpo.texto.toUpperCase() + ' \u2014 ' + totalPilares + '/100 pontos<br><span style="font-size:0.75em;font-weight:normal;">' + classCorpo.desc + '</span></div>';
+    h += '<div class="rastreio-box" style="background:' + classCorpo.corFundo + ';border:3px solid ' + classCorpo.cor + ';color:' + classCorpo.cor + ';padding:20px;border-radius:10px;text-align:center;margin:20px 0;font-size:1.2em;font-weight:700;">' + classCorpo.texto.toUpperCase() + ' \u2014 ' + totalPilares + '/80 pontos<br><span style="font-size:0.75em;font-weight:normal;">' + classCorpo.desc + '</span></div>';
 
     // Cards dos pilares
     h += '<h3 style="color:#880e4f;margin:20px 0 10px;">Eixo 1: Os Quatro Pilares</h3>';
@@ -311,9 +300,9 @@ function calcularResultados() {
     for (var p = 0; p < pilarKeys.length; p++) {
         var key = pilarKeys[p];
         var rp = resultPilares[key];
-        var pct = Math.round((rp.soma / 25) * 100);
+        var pct = Math.round((rp.soma / 20) * 100);
         h += '<div class="dominio-card"><h4>' + nomesPilarExibicao[key] + '</h4>';
-        h += '<p>' + rp.soma + ' / 25 (' + pct + '%) \u2014 <span style="color:' + rp.classificacao.cor + ';font-weight:bold;">' + rp.classificacao.texto + '</span>' + (rp.itensRespondidos < PILARES[key].itens.length ? ' <span style="font-size:0.8em;color:#999;">('+rp.itensRespondidos+'/'+PILARES[key].itens.length+' itens respondidos)</span>' : '') + '</p>';
+        h += '<p>' + rp.soma + ' / 20 (' + pct + '%) \u2014 <span style="color:' + rp.classificacao.cor + ';font-weight:bold;">' + rp.classificacao.texto + '</span>' + (rp.itensRespondidos < PILARES[key].itens.length ? ' <span style="font-size:0.8em;color:#999;">('+rp.itensRespondidos+'/'+PILARES[key].itens.length+' itens respondidos)</span>' : '') + '</p>';
         h += '<div class="barra-progresso"><div class="barra-preenchida" style="width:' + pct + '%;background:' + rp.classificacao.cor + ';"></div></div></div>';
     }
 
@@ -324,10 +313,10 @@ function calcularResultados() {
     for (var p = 0; p < pontKeys.length; p++) {
         var key = pontKeys[p];
         var rpt = resultPontuacoes[key];
-        var pct = Math.round((rpt.soma / 15) * 100);
+        var pct = Math.round((rpt.soma / 12) * 100);
         var destaque = (key === maiorPont) ? 'border:2px solid #880e4f;' : '';
         h += '<div class="dominio-card" style="' + destaque + '"><h4>' + nomesPontExibicao[key] + (key === maiorPont ? ' <span style="background:#880e4f;color:white;padding:2px 8px;border-radius:10px;font-size:0.7em;">DOMINANTE</span>' : '') + '</h4>';
-        h += '<p>' + rpt.soma + ' / 15 (m\u00e9dia: ' + rpt.media + ')</p>';
+        h += '<p>' + rpt.soma + ' / 12 (m\u00e9dia: ' + rpt.media + ')</p>';
         h += '<div class="barra-progresso"><div class="barra-preenchida" style="width:' + pct + '%;background:#c2185b;"></div></div></div>';
     }
     // === SINTESE IA ===
@@ -337,18 +326,18 @@ function calcularResultados() {
     // Panorama geral
     analise += '<div style="background:white;border-radius:10px;padding:18px;margin-bottom:15px;border-left:4px solid #c2185b;">';
     analise += '<h4 style="color:#880e4f;margin-bottom:8px;">Panorama Geral</h4><p style="color:#444;line-height:1.7;font-size:0.95em;">';
-    if (totalPilares <= 46) analise += 'O relacionamento apresenta <strong>fragilidade estrutural significativa</strong> (escore ' + totalPilares + '/100). M\u00faltiplos pilares est\u00e3o comprometidos, indicando que a "entidade Casal" est\u00e1 sob press\u00e3o importante. Recomenda-se interven\u00e7\u00e3o terap\u00eautica com foco nos pilares mais fr\u00e1geis.';
-    else if (totalPilares <= 73) analise += 'O relacionamento apresenta <strong>equil\u00edbrio parcial</strong> (escore ' + totalPilares + '/100). Existem pilares funcionais, mas h\u00e1 \u00e1reas que merecem aten\u00e7\u00e3o cl\u00ednica. A "entidade Casal" est\u00e1 em ajuste \u2014 pode evoluir para solidez ou fragilizar-se, dependendo de como os pontos de tens\u00e3o forem manejados.';
-    else analise += 'O relacionamento apresenta <strong>estrutura s\u00f3lida</strong> (escore ' + totalPilares + '/100). Os quatro pilares est\u00e3o bem sustentados, indicando que a "entidade Casal" possui base funcional saud\u00e1vel. Foco terap\u00eautico pode ser em manuten\u00e7\u00e3o e fortalecimento cont\u00ednuo.';
+    if (totalPilares <= 36) analise += 'O relacionamento apresenta <strong>fragilidade estrutural significativa</strong> (escore ' + totalPilares + '/80). M\u00faltiplos pilares est\u00e3o comprometidos, indicando que a "entidade Casal" est\u00e1 sob press\u00e3o importante. Recomenda-se interven\u00e7\u00e3o terap\u00eautica com foco nos pilares mais fr\u00e1geis.';
+    else if (totalPilares <= 58) analise += 'O relacionamento apresenta <strong>equil\u00edbrio parcial</strong> (escore ' + totalPilares + '/80). Existem pilares funcionais, mas h\u00e1 \u00e1reas que merecem aten\u00e7\u00e3o cl\u00ednica. A "entidade Casal" est\u00e1 em ajuste \u2014 pode evoluir para solidez ou fragilizar-se, dependendo de como os pontos de tens\u00e3o forem manejados.';
+    else analise += 'O relacionamento apresenta <strong>estrutura s\u00f3lida</strong> (escore ' + totalPilares + '/80). Os quatro pilares est\u00e3o bem sustentados, indicando que a "entidade Casal" possui base funcional saud\u00e1vel. Foco terap\u00eautico pode ser em manuten\u00e7\u00e3o e fortalecimento cont\u00ednuo.';
     analise += '</p></div>';
 
     // Pilar mais fragil
     analise += '<div style="background:white;border-radius:10px;padding:18px;margin-bottom:15px;border-left:4px solid #ff6f00;">';
     analise += '<h4 style="color:#e65100;margin-bottom:8px;">Pilar que Merece Mais Aten\u00e7\u00e3o</h4><p style="color:#444;line-height:1.7;font-size:0.95em;">';
-    if (pilarMaisFraco === 'Sexual') analise += '<strong>Pilar Sexual (' + resultPilares.Sexual.soma + '/25)</strong> \u2014 A intimidade f\u00edsica e a conex\u00e3o sexual est\u00e3o fragilizadas. Pode haver dificuldade em expressar desejos, insatisfa\u00e7\u00e3o com a frequ\u00eancia ou dist\u00e2ncia emocional na sexualidade. Este pilar frequentemente reflete o estado dos demais.';
-    else if (pilarMaisFraco === 'Financeiro') analise += '<strong>Pilar Financeiro (' + resultPilares.Financeiro.soma + '/25)</strong> \u2014 Quest\u00f5es de dinheiro geram tens\u00e3o no casal. Pode haver falta de acordo, ressentimentos sobre gastos ou aus\u00eancia de planejamento financeiro conjunto. O financeiro \u00e9 frequentemente fonte de conflitos silenciosos.';
-    else if (pilarMaisFraco === 'Divertimento') analise += '<strong>Pilar Divertimento (' + resultPilares.Divertimento.soma + '/25)</strong> \u2014 O casal est\u00e1 funcionando mais como "s\u00f3cios de responsabilidades" do que como parceiros de vida. Faltam momentos de leveza, riso e prazer compartilhado. Este pilar \u00e9 o combust\u00edvel emocional da rela\u00e7\u00e3o.';
-    else analise += '<strong>Pilar Projeto Futuro (' + resultPilares.ProjetoFuturo.soma + '/25)</strong> \u2014 H\u00e1 incerteza sobre a dire\u00e7\u00e3o do relacionamento. Pode existir falta de conversa sobre planos, diverg\u00eancias n\u00e3o negociadas ou sensa\u00e7\u00e3o de que cada um caminha para um lado. Sem projeto futuro compartilhado, o v\u00ednculo perde sentido de continuidade.';
+    if (pilarMaisFraco === 'Sexual') analise += '<strong>Pilar Sexual (' + resultPilares.Sexual.soma + '/20)</strong> \u2014 A intimidade f\u00edsica e a conex\u00e3o sexual est\u00e3o fragilizadas. Pode haver dificuldade em expressar desejos, insatisfa\u00e7\u00e3o com a frequ\u00eancia ou dist\u00e2ncia emocional na sexualidade. Este pilar frequentemente reflete o estado dos demais.';
+    else if (pilarMaisFraco === 'Financeiro') analise += '<strong>Pilar Financeiro (' + resultPilares.Financeiro.soma + '/20)</strong> \u2014 Quest\u00f5es de dinheiro geram tens\u00e3o no casal. Pode haver falta de acordo, ressentimentos sobre gastos ou aus\u00eancia de planejamento financeiro conjunto. O financeiro \u00e9 frequentemente fonte de conflitos silenciosos.';
+    else if (pilarMaisFraco === 'Divertimento') analise += '<strong>Pilar Divertimento (' + resultPilares.Divertimento.soma + '/20)</strong> \u2014 O casal est\u00e1 funcionando mais como "s\u00f3cios de responsabilidades" do que como parceiros de vida. Faltam momentos de leveza, riso e prazer compartilhado. Este pilar \u00e9 o combust\u00edvel emocional da rela\u00e7\u00e3o.';
+    else analise += '<strong>Pilar Projeto Futuro (' + resultPilares.ProjetoFuturo.soma + '/20)</strong> \u2014 H\u00e1 incerteza sobre a dire\u00e7\u00e3o do relacionamento. Pode existir falta de conversa sobre planos, diverg\u00eancias n\u00e3o negociadas ou sensa\u00e7\u00e3o de que cada um caminha para um lado. Sem projeto futuro compartilhado, o v\u00ednculo perde sentido de continuidade.';
     analise += '</p></div>';
 
     // Estilo comunicacional
@@ -367,7 +356,7 @@ function calcularResultados() {
     el.scrollIntoView({behavior: 'smooth'});
 
     // window._escalaDados
-    window._escalaDados = {escala:'EPPC', paciente:nome, escore:totalPilares, classificacao:classCorpo.texto, dominios:{sexual:{pontuacao:resultPilares.Sexual.soma,max:25,classificacao:resultPilares.Sexual.classificacao.texto},financeiro:{pontuacao:resultPilares.Financeiro.soma,max:25,classificacao:resultPilares.Financeiro.classificacao.texto},divertimento:{pontuacao:resultPilares.Divertimento.soma,max:25,classificacao:resultPilares.Divertimento.classificacao.texto},projetoFuturo:{pontuacao:resultPilares.ProjetoFuturo.soma,max:25,classificacao:resultPilares.ProjetoFuturo.classificacao.texto},ponto:{pontuacao:resultPontuacoes.Ponto.soma,max:15,media:resultPontuacoes.Ponto.media,classificacao:classificarPontuacao(resultPontuacoes.Ponto.soma).texto},exclamacao:{pontuacao:resultPontuacoes.Exclamacao.soma,max:15,media:resultPontuacoes.Exclamacao.media,classificacao:classificarPontuacao(resultPontuacoes.Exclamacao.soma).texto},interrogacao:{pontuacao:resultPontuacoes.Interrogacao.soma,max:15,media:resultPontuacoes.Interrogacao.media,classificacao:classificarPontuacao(resultPontuacoes.Interrogacao.soma).texto}}, estiloDominante:maiorPont, idPaciente:document.getElementById('idPaciente')?document.getElementById('idPaciente').value:'', idade:document.getElementById('idadeCalculada').value, sexo:document.getElementById('sexo').value, data:new Date().toISOString()};
+    window._escalaDados = {escala:'EPPC', paciente:nome, escore:totalPilares, classificacao:classCorpo.texto, dominios:{sexual:{pontuacao:resultPilares.Sexual.soma,max:20,classificacao:resultPilares.Sexual.classificacao.texto},financeiro:{pontuacao:resultPilares.Financeiro.soma,max:20,classificacao:resultPilares.Financeiro.classificacao.texto},divertimento:{pontuacao:resultPilares.Divertimento.soma,max:20,classificacao:resultPilares.Divertimento.classificacao.texto},projetoFuturo:{pontuacao:resultPilares.ProjetoFuturo.soma,max:20,classificacao:resultPilares.ProjetoFuturo.classificacao.texto},ponto:{pontuacao:resultPontuacoes.Ponto.soma,max:12,media:resultPontuacoes.Ponto.media,classificacao:classificarPontuacao(resultPontuacoes.Ponto.soma).texto},exclamacao:{pontuacao:resultPontuacoes.Exclamacao.soma,max:12,media:resultPontuacoes.Exclamacao.media,classificacao:classificarPontuacao(resultPontuacoes.Exclamacao.soma).texto},interrogacao:{pontuacao:resultPontuacoes.Interrogacao.soma,max:12,media:resultPontuacoes.Interrogacao.media,classificacao:classificarPontuacao(resultPontuacoes.Interrogacao.soma).texto}}, estiloDominante:maiorPont, idPaciente:document.getElementById('idPaciente')?document.getElementById('idPaciente').value:'', idade:document.getElementById('idadeCalculada').value, sexo:document.getElementById('sexo').value, data:new Date().toISOString()};
     if (window.injetarBotaoSalvar) injetarBotaoSalvar('resultados');
 }
 function gerarRelatorioPDF() {
@@ -408,11 +397,11 @@ function gerarRelatorioPDF() {
     doc.setFillColor(corCorpo[0],corCorpo[1],corCorpo[2]);
     doc.roundedRect(M, y, TW, 14, 3, 3, 'F');
     doc.setTextColor(255,255,255); doc.setFontSize(13); doc.setFont(undefined,'bold');
-    doc.text('Escore: ' + d.escore + ' / 100   |   ' + d.classificacao, W/2, y+9, {align:'center'});
+    doc.text('Escore: ' + d.escore + ' / 80   |   ' + d.classificacao, W/2, y+9, {align:'center'});
     y += 18;
     // Barra horizontal total
     doc.setFillColor(230,230,230); doc.roundedRect(M, y, TW, 6, 2, 2, 'F');
-    var pctTotal = Math.round((d.escore / 100) * TW);
+    var pctTotal = Math.round((d.escore / 80) * TW);
     doc.setFillColor(corCorpo[0],corCorpo[1],corCorpo[2]); doc.roundedRect(M, y, pctTotal, 6, 2, 2, 'F');
     doc.setTextColor(80,80,80); doc.setFontSize(7); doc.setFont(undefined,'normal');
     doc.text('0', M, y+10); doc.text('46', M+Math.round(0.46*TW), y+10); doc.text('73', M+Math.round(0.73*TW), y+10); doc.text('100', M+TW-5, y+10);
@@ -511,9 +500,9 @@ function gerarRelatorioPDF() {
     doc.text('Panorama Geral', M+3, y+6); y += 12;
     doc.setTextColor(40,40,40); doc.setFontSize(9); doc.setFont(undefined,'normal');
     var txtPan = '';
-    if (d.escore <= 46) txtPan = 'O relacionamento apresenta fragilidade estrutural significativa (escore ' + d.escore + '/100). Multiplos pilares estao comprometidos, indicando que a "entidade Casal" esta sob pressao importante. Recomenda-se intervencao terapeutica com foco nos pilares mais frageis.';
-    else if (d.escore <= 73) txtPan = 'O relacionamento apresenta equilibrio parcial (escore ' + d.escore + '/100). Existem pilares funcionais, mas ha areas que merecem atencao clinica. A "entidade Casal" esta em ajuste - pode evoluir para solidez ou fragilizar-se, dependendo de como os pontos de tensao forem manejados.';
-    else txtPan = 'O relacionamento apresenta estrutura solida (escore ' + d.escore + '/100). Os quatro pilares estao bem sustentados, indicando que a "entidade Casal" possui base funcional saudavel. Foco terapeutico pode ser em manutencao e fortalecimento continuo.';
+    if (d.escore <= 36) txtPan = 'O relacionamento apresenta fragilidade estrutural significativa (escore ' + d.escore + '/80). Multiplos pilares estao comprometidos, indicando que a "entidade Casal" esta sob pressao importante. Recomenda-se intervencao terapeutica com foco nos pilares mais frageis.';
+    else if (d.escore <= 58) txtPan = 'O relacionamento apresenta equilibrio parcial (escore ' + d.escore + '/80). Existem pilares funcionais, mas ha areas que merecem atencao clinica. A "entidade Casal" esta em ajuste - pode evoluir para solidez ou fragilizar-se, dependendo de como os pontos de tensao forem manejados.';
+    else txtPan = 'O relacionamento apresenta estrutura solida (escore ' + d.escore + '/80). Os quatro pilares estao bem sustentados, indicando que a "entidade Casal" possui base funcional saudavel. Foco terapeutico pode ser em manutencao e fortalecimento continuo.';
     var linhasPan = doc.splitTextToSize(txtPan, TW-6);
     doc.text(linhasPan, M+3, y); y += linhasPan.length * 4.5 + 6;
     // Detalhe de cada pilar
@@ -531,7 +520,7 @@ function gerarRelatorioPDF() {
         var pd2 = d.dominios[pk];
         var cls2 = classificarPilar(pd2.pontuacao);
         doc.setTextColor(cls2.r, cls2.g, cls2.b); doc.setFontSize(9); doc.setFont(undefined,'bold');
-        doc.text(pilarNomes[i] + ': ' + pd2.pontuacao + '/25 (' + cls2.texto + ')', M+3, y);
+        doc.text(pilarNomes[i] + ': ' + pd2.pontuacao + '/20 (' + cls2.texto + ')', M+3, y);
         y += 5;
         doc.setTextColor(60,60,60); doc.setFont(undefined,'normal'); doc.setFontSize(8);
         var linhasP = doc.splitTextToSize(descPilares[pk], TW-10);
@@ -561,7 +550,7 @@ function gerarRelatorioPDF() {
     for (var i = 0; i < 4; i++) {
         var pd3 = d.dominios[pilarChaves[i]];
         var cls3 = classificarPilar(pd3.pontuacao);
-        var barH = Math.round((pd3.pontuacao / 25) * barMaxH);
+        var barH = Math.round((pd3.pontuacao / 20) * barMaxH);
         var barX = M + barSpacing * (i + 0.7);
         // Barra fundo
         doc.setFillColor(230,230,230); doc.rect(barX, barBaseY - barMaxH, 14, barMaxH, 'F');
@@ -596,9 +585,9 @@ function gerarRelatorioPDF() {
     doc.setTextColor(136,14,79); doc.setFontSize(9); doc.setFont(undefined,'bold');
     doc.text('Legenda de Classificacoes', M+4, y+7);
     doc.setTextColor(60,60,60); doc.setFontSize(8); doc.setFont(undefined,'normal');
-    doc.text('PILARES: Fragilizado (0-11) | Instavel (12-18) | Solido (19-25)', M+4, y+14);
-    doc.text('CORPO: Fragilizado (0-46) | Em Ajuste (47-73) | Solido (74-100)', M+4, y+20);
-    doc.text('PONTUACAO: Discreto (3-6) | Moderado (7-10) | Expressivo (11-15)', M+4, y+26);
+    doc.text('PILARES: Fragilizado (0-9) | Instavel (10-14) | Solido (15-20)', M+4, y+14);
+    doc.text('CORPO: Fragilizado (0-36) | Em Ajuste (37-58) | Solido (59-80)', M+4, y+20);
+    doc.text('PONTUACAO: Discreto (3-5) | Moderado (6-8) | Expressivo (9-12)', M+4, y+26);
     doc.text('Estilo DOMINANTE: maior escore entre Ponto/Exclamacao/Interrogacao', M+4, y+32);
     // Rodape pag 3
     doc.setFillColor(80,80,80); doc.rect(0,285,W,12,'F');
