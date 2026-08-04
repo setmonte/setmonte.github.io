@@ -382,6 +382,7 @@
           <div style="display:flex;gap:0;border-bottom:2px solid #e0e0e0;margin-bottom:15px;">
             <button id="subTabReocupa" onclick="switchReabSubTab('reocupa')" style="flex:1;padding:12px 20px;font-size:13px;font-weight:bold;border:none;border-bottom:3px solid #2e7d32;background:#e8f5e9;color:#2e7d32;cursor:pointer;border-radius:8px 8px 0 0;">REOCUPA</button>
             <button id="subTabSmart" onclick="switchReabSubTab('smart')" style="flex:1;padding:12px 20px;font-size:13px;font-weight:bold;border:none;border-bottom:3px solid transparent;background:#f5f5f5;color:#777;cursor:pointer;border-radius:8px 8px 0 0;">SMART</button>
+            <button id="subTabLermais" onclick="switchReabSubTab('lermais')" style="flex:1;padding:12px 20px;font-size:13px;font-weight:bold;border:none;border-bottom:3px solid transparent;background:#f5f5f5;color:#777;cursor:pointer;border-radius:8px 8px 0 0;display:none;">LERMAIS</button>
           </div>
 
           <!-- CONTEUDO REOCUPA -->
@@ -454,6 +455,48 @@
               </div>
               <!-- Area onde as metas SMART aparecem -->
               <div id="smartResultArea" style="display:none;margin-top:12px;"></div>
+            </div>
+          </div>
+
+          <!-- CONTEUDO LERMAIS -->
+          <div id="subLermaisContent" style="display:none;">
+            <div style="background:#e8eaf6;border:2px solid #3949ab;border-radius:10px;padding:20px;margin:10px 0;">
+              <p style="font-size:14px;font-weight:bold;color:#3949ab;margin-bottom:8px;">📖 LERMAIS — Leitura Motivacional com Analise em Tempo Real</p>
+              <p style="font-size:12px;color:#555;line-height:1.6;margin-bottom:12px;">Programa de fluencia leitora com reconhecimento de voz. Sorteia textos motivacionais sobre relacoes sociais (amizade, familia, limites) adequados a faixa etaria. Monitora velocidade, precisao e fluencia em tempo real com grafico scatter. Ideal para criancas e adolescentes com dificuldades relacionais.</p>
+              <div style="background:#fff3e0;border-left:4px solid #ff9800;border-radius:8px;padding:12px;margin-bottom:12px;">
+                <p style="font-size:13px;font-weight:bold;color:#e65100;margin-bottom:8px;">📋 Como usar:</p>
+                <ol style="font-size:12px;color:#555;line-height:2;margin:0;padding-left:20px;">
+                  <li>Selecione ou preencha os dados do paciente abaixo</li>
+                  <li>Clique em "▶ Iniciar Sessao" — o programa abre em nova aba</li>
+                  <li>O paciente preenche o formulario e clica em "Sortear Texto"</li>
+                  <li>Clica em "Iniciar Leitura" e le o texto em voz alta</li>
+                  <li>O grafico mostra precisao x velocidade em tempo real</li>
+                  <li>Ao final, os resultados sao salvos para comparacao futura</li>
+                </ol>
+              </div>
+              <div style="background:#e8eaf6;border-left:4px solid #3949ab;border-radius:8px;padding:12px;margin-bottom:12px;">
+                <p style="font-size:12px;color:#283593;line-height:1.6;"><strong>Faixas etarias:</strong> 6-12 anos (textos simples) e 13-18 anos (textos reflexivos)<br><strong>Temas:</strong> Amizade, familia, limites, ansiedade social, cooperacao, autenticidade<br><strong>Metricas:</strong> PPM, Precisao, Fluencia, Completude, Indice LERMAIS<br><strong>Visual:</strong> Azul para meninos, rosa para meninas (tematico e sobrio)</p>
+              </div>
+              <div style="background:#fff;border:1px solid #c5cae9;border-radius:8px;padding:12px;margin-bottom:12px;">
+                <label style="font-size:0.85em;color:#555;">Paciente cadastrado:</label>
+                <select id="lermaisSelPac" onchange="preencherPaciente('lermais')" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+                  <option value="">-- Selecione ou preencha abaixo --</option>
+                </select>
+                <label style="font-size:0.85em;color:#555;">Nome:</label>
+                <input type="text" id="lermaisNome" placeholder="Nome completo" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+                <label style="font-size:0.85em;color:#555;">Data de nascimento:</label>
+                <input type="date" id="lermaisDn" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+                <label style="font-size:0.85em;color:#555;">Sexo:</label>
+                <select id="lermaisSexo" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:12px;">
+                  <option value="">Selecione...</option>
+                  <option value="Masculino">Masculino</option>
+                  <option value="Feminino">Feminino</option>
+                </select>
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button onclick="iniciarLermais()" class="btn btn-green" style="flex:1;min-width:120px;padding:12px;font-size:13px;">▶ Iniciar Sessao</button>
+                <button onclick="abrirLermaisDireto()" class="btn btn-blue" style="flex:1;min-width:120px;padding:12px;font-size:13px;">🖥️ Abrir Direto</button>
+              </div>
             </div>
           </div>
 
@@ -2478,6 +2521,7 @@
         document.getElementById('tabAdmin').classList.remove('hidden');
         document.getElementById('tabReabilitacao').classList.remove('hidden');
         document.getElementById('tabProgramasOcultos').classList.remove('hidden');
+        document.getElementById('subTabLermais').style.display = 'block';
         initFreeModeToggle();
         verificarVendasNovas();
       }
@@ -5849,7 +5893,7 @@
       listaOrdenada.forEach(function(p) {
         opcoesHtml += '<option value="' + p.id + '" data-nome="' + (p.nome||'').replace(/"/g,'') + '" data-dn="' + (p.dataNascimento||'') + '" data-cpf="' + (p.cpf||'') + '" data-sexo="' + (p.sexo||'') + '" data-esc="' + (p.escolaridade||'') + '" data-lat="' + (p.lateralidade||'') + '">' + (p.nome||'') + ' (' + (p.dataNascimento||'?') + ')</option>';
       });
-      ['baeSelPac','trmvSelPac','taavSelPac','tecfeSelPac','trefSelPac','tflodSelPac','corsiSelPac','tteSelPac','escalaSelPac','anamneseSelPac','reocupaSelPac','pfisterSelPac','neoSelPac','agendaSelPac','prontuarioSelPac','srs2SelPac'].forEach(function(id) {
+      ['baeSelPac','trmvSelPac','taavSelPac','tecfeSelPac','trefSelPac','tflodSelPac','corsiSelPac','tteSelPac','escalaSelPac','anamneseSelPac','reocupaSelPac','pfisterSelPac','neoSelPac','agendaSelPac','prontuarioSelPac','srs2SelPac','lermaisSelPac'].forEach(function(id) {
         var sel = document.getElementById(id);
         if (!sel) return;
         var val = sel.value;
@@ -5899,6 +5943,7 @@
       else if (tipo === 'anamnese') { campoNome = document.getElementById('anamneseNome'); campoDN = document.getElementById('anamneseDn'); campoCPF = document.getElementById('anamneseCpf'); }
       else if (tipo === 'agenda') { campoNome = document.getElementById('agendaNome'); }
       else if (tipo === 'reocupa') { campoNome = document.getElementById('reocupaNome'); campoDN = document.getElementById('reocupaDn'); }
+      else if (tipo === 'lermais') { campoNome = document.getElementById('lermaisNome'); campoDN = document.getElementById('lermaisDn'); }
       else if (tipo === 'pfister') { campoNome = document.getElementById('pfisterNome'); campoDN = document.getElementById('pfisterDn'); }
       else if (tipo === 'neo') { campoNome = document.getElementById('neoNome'); campoDN = document.getElementById('neoDn'); }
       else if (tipo === 'srs2') { campoNome = document.getElementById('srs2Nome'); campoDN = document.getElementById('srs2Dn'); }
@@ -5944,6 +5989,38 @@
 
     function imprimirReocupa() {
       window.open('reabilitacao/reocupa.html?print=1', '_blank');
+    }
+
+    // === LERMAIS - Funcoes do painel ===
+    function iniciarLermais() {
+      var nome = document.getElementById('lermaisNome').value.trim();
+      var dn = document.getElementById('lermaisDn').value;
+      var sexo = document.getElementById('lermaisSexo').value;
+      if (!nome) { alert('Preencha o nome do paciente.'); return; }
+      if (!dn) { alert('Preencha a data de nascimento.'); return; }
+      var dados = { nome: nome, dn: dn, sexo: sexo, email: currentUser || '' };
+      var encoded = safeBtoa(JSON.stringify(dados));
+      var url = 'reabilitacao/lermais.html?d=' + encoded;
+      window.open(url, '_blank');
+    }
+
+    function abrirLermaisDireto() {
+      window.open('reabilitacao/lermais.html', '_blank');
+    }
+
+    function loadLermaisPacientes() {
+      var sel = document.getElementById('lermaisSelPac');
+      if (!sel) return;
+      sel.innerHTML = '<option value="">-- Selecione ou preencha abaixo --</option>';
+      if (typeof pacientes !== 'undefined' && pacientes.length > 0) {
+        for (var i = 0; i < pacientes.length; i++) {
+          var p = pacientes[i];
+          var opt = document.createElement('option');
+          opt.value = i;
+          opt.textContent = p.nome || p.name || ('Paciente ' + (i + 1));
+          sel.appendChild(opt);
+        }
+      }
     }
 
     // === EDITOR DE PERGUNTAS REOCUPA ===
@@ -6771,24 +6848,31 @@
     function switchReabSubTab(sub) {
       var reocupaContent = document.getElementById('subReocupaContent');
       var smartContent = document.getElementById('subSmartContent');
+      var lermaisContent = document.getElementById('subLermaisContent');
       var btnReocupa = document.getElementById('subTabReocupa');
       var btnSmart = document.getElementById('subTabSmart');
+      var btnLermais = document.getElementById('subTabLermais');
+      // Esconde todos
+      reocupaContent.style.display = 'none';
+      smartContent.style.display = 'none';
+      lermaisContent.style.display = 'none';
+      btnReocupa.style.background = '#f5f5f5'; btnReocupa.style.color = '#777'; btnReocupa.style.borderBottom = '3px solid transparent';
+      btnSmart.style.background = '#f5f5f5'; btnSmart.style.color = '#777'; btnSmart.style.borderBottom = '3px solid transparent';
+      btnLermais.style.background = '#f5f5f5'; btnLermais.style.color = '#777'; btnLermais.style.borderBottom = '3px solid transparent';
       if (sub === 'smart') {
-        reocupaContent.style.display = 'none';
         smartContent.style.display = 'block';
-        btnReocupa.style.background = '#f5f5f5';
-        btnReocupa.style.color = '#777';
-        btnReocupa.style.borderBottom = '3px solid transparent';
         btnSmart.style.background = '#e3f2fd';
         btnSmart.style.color = '#1565c0';
         btnSmart.style.borderBottom = '3px solid #1565c0';
         loadSmartPacientes();
+      } else if (sub === 'lermais') {
+        lermaisContent.style.display = 'block';
+        btnLermais.style.background = '#e8eaf6';
+        btnLermais.style.color = '#3949ab';
+        btnLermais.style.borderBottom = '3px solid #3949ab';
+        loadLermaisPacientes();
       } else {
-        smartContent.style.display = 'none';
         reocupaContent.style.display = 'block';
-        btnSmart.style.background = '#f5f5f5';
-        btnSmart.style.color = '#777';
-        btnSmart.style.borderBottom = '3px solid transparent';
         btnReocupa.style.background = '#e8f5e9';
         btnReocupa.style.color = '#2e7d32';
         btnReocupa.style.borderBottom = '3px solid #2e7d32';
