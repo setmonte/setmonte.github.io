@@ -149,7 +149,8 @@ function displayResults(scores) {
     
     renderChart(scores);
     window.scrollTo(0, 0);
-    window._escalaDados={escala:'YSQ-L3',paciente:document.getElementById('patientName').value,escore:0,classificacao:'Completo',data:new Date().toISOString()};if(window.injetarBotaoSalvar)injetarBotaoSalvar('resultsSection');
+    var _respostasObj={};document.querySelectorAll('input[type="radio"]:checked').forEach(function(el){var n=el.name;if(n&&n.startsWith('q')){_respostasObj[n.substring(1)]=parseInt(el.value);}});
+    window._escalaDados={escala:'YSQ-L3',paciente:document.getElementById('patientName').value,escore:0,classificacao:'Completo',respostas:_respostasObj,data:new Date().toISOString()};if(window.injetarBotaoSalvar)injetarBotaoSalvar('resultsSection');
 }
 
 function renderChart(scores) {
@@ -247,7 +248,8 @@ function resetForm() {
     document.getElementById('resultsSection').style.display = 'none';
     
     window.scrollTo(0, 0);
-    window._escalaDados={escala:'YSQ-L3',paciente:document.getElementById('patientName').value,escore:0,classificacao:'Completo',data:new Date().toISOString()};if(window.injetarBotaoSalvar)injetarBotaoSalvar('resultsSection');
+    var _respostasObj2={};document.querySelectorAll('input[type="radio"]:checked').forEach(function(el){var n=el.name;if(n&&n.startsWith('q')){_respostasObj2[n.substring(1)]=parseInt(el.value);}});
+    window._escalaDados={escala:'YSQ-L3',paciente:document.getElementById('patientName').value,escore:0,classificacao:'Completo',respostas:_respostasObj2,data:new Date().toISOString()};if(window.injetarBotaoSalvar)injetarBotaoSalvar('resultsSection');
 }
 
 const allQuestions = [
