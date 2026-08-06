@@ -12,7 +12,7 @@ var HOMEM = [{"id": "Roupa", "nome": "Roupa", "cat": "periferia", "cor": "#c6e1f
 </script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Segoe UI',sans-serif;background:#f5f5f5;min-height:100vh}
+body{font-family:'Segoe UI',sans-serif;background:#f5f5f5;min-height:100vh;-webkit-user-select:none;user-select:none}
 .tela{display:none;width:100%;min-height:100vh;flex-direction:column;align-items:center;justify-content:center;padding:20px}
 .tela.ativa{display:flex}
 
@@ -49,8 +49,11 @@ body{font-family:'Segoe UI',sans-serif;background:#f5f5f5;min-height:100vh}
 #recon-container svg{position:absolute;top:0;left:0;width:100%;height:100%}
 #recon-container svg path{fill:transparent;stroke:rgba(255,255,255,0.15);stroke-width:1;cursor:pointer;transition:fill 0.3s}
 #recon-container svg path:hover{stroke:rgba(255,255,0,0.4);stroke-width:2}
-#recon-container svg path.pintada{stroke:rgba(255,255,255,0.3);stroke-width:0.5}
+#recon-container svg path.pintada{stroke:rgba(255,255,255,0.3);stroke-width:0.5;cursor:default}
 .btn-concluir{position:fixed;bottom:15px;right:15px;z-index:10}
+img{-webkit-user-drag:none;user-select:none;-webkit-touch-callout:none;pointer-events:none}
+#recon-container img{pointer-events:none}
+svg{-webkit-user-select:none;user-select:none}
 
 /* TELA PRETA */
 #tela-preta{background:#000;cursor:none}
@@ -61,6 +64,20 @@ body{font-family:'Segoe UI',sans-serif;background:#f5f5f5;min-height:100vh}
 
 /* TELA RESULTADOS */
 #tela-resultados{background:#f5f5f5;padding:30px;align-items:center}
+
+/* TELA INSTRUCOES */
+#tela-instrucoes{background:linear-gradient(135deg,#1a237e 0%,#283593 100%)}
+.instrucoes-box{background:#fff;border-radius:14px;padding:30px;max-width:600px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.3);max-height:90vh;overflow-y:auto}
+.instrucoes-box h2{color:#4a148c;text-align:center;margin-bottom:15px;font-size:1.3em}
+.instrucoes-box .secao{background:#f5f5f5;border-left:4px solid #7c4dff;padding:12px 15px;border-radius:0 8px 8px 0;margin:12px 0;font-size:0.88em;line-height:1.7;color:#333}
+.instrucoes-box .secao h3{color:#4a148c;font-size:0.95em;margin-bottom:6px}
+.instrucoes-box .aviso{background:#fff3e0;border-left:4px solid #ff9800;padding:10px 12px;border-radius:0 8px 8px 0;margin:12px 0;font-size:0.82em;color:#e65100}
+
+/* TELA CONTAGEM */
+#tela-contagem{background:#000}
+#tela-contagem .contagem-num{font-size:200px;color:#7c4dff;font-weight:bold;font-family:monospace;text-shadow:0 0 40px rgba(124,77,255,0.5);animation:pulsar 1s ease-in-out infinite}
+#tela-contagem .contagem-texto{color:#b39ddb;font-size:1.2em;margin-top:20px}
+@keyframes pulsar{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
 .resultado-card{background:#fff;border-radius:12px;padding:20px;margin:10px 0;width:100%;max-width:900px;box-shadow:0 2px 8px rgba(0,0,0,0.1)}
 .resultado-card h3{color:#4a148c;margin-bottom:10px;border-bottom:2px solid #ede7f6;padding-bottom:5px}
 table{width:100%;border-collapse:collapse;font-size:0.8em;margin:10px 0}
@@ -111,6 +128,43 @@ td{padding:5px 8px;border-bottom:1px solid #eee}
             <button class="btn btn-primary" onclick="iniciarTeste()">Iniciar Teste</button>
         </div>
     </div>
+</div>
+
+<!-- TELA INSTRUCOES -->
+<div id="tela-instrucoes" class="tela">
+    <div class="instrucoes-box">
+        <h2>&#128220; Instrucoes do Teste</h2>
+        <div class="secao">
+            <h3>&#128105;&#8205;&#9877;&#65039; Para o Aplicador:</h3>
+            1. Certifique-se de que o ambiente esta silencioso e sem distracao.<br>
+            2. O paciente vera um rosto na tela por <strong>30 segundos</strong>. Nao fale durante a exposicao.<br>
+            3. Apos a exposicao, havera uma tela preta por 30 segundos (retencao).<br>
+            4. Na fase de reconstrucao, o paciente deve clicar nas regioes do rosto <strong>na ordem em que se lembra</strong>.<br>
+            5. Criancas (6-12): 1 rosto. Adolescentes/Adultos (13+): 2 rostos.<br>
+            6. Nao induza, nao aponte, nao comente durante o teste.
+        </div>
+        <div class="secao">
+            <h3>&#128100; Para o Avaliando:</h3>
+            1. Voce vai ver um <strong>rosto</strong> na tela por alguns segundos.<br>
+            2. Olhe com atencao e tente memorizar o rosto.<br>
+            3. Depois, a tela ficara preta por um tempo.<br>
+            4. Em seguida, voce vera o contorno do rosto e deve <strong>clicar nas partes que voce se lembra</strong>, na ordem que vier a mente.<br>
+            5. Nao tem certo nem errado — clique onde lembrar primeiro.
+        </div>
+        <div class="aviso">
+            &#9888;&#65039; O teste entrara em tela cheia. Mantenha o dispositivo na horizontal (paisagem) para melhor visualizacao.
+        </div>
+        <div style="text-align:center;margin-top:20px;">
+            <button class="btn btn-primary" onclick="iniciarExposicao()" style="font-size:1.1em;padding:14px 40px;">Iniciar &#9654;</button>
+        </div>
+    </div>
+</div>
+
+<!-- TELA CONTAGEM REGRESSIVA -->
+<div id="tela-contagem" class="tela">
+    <div class="contagem-texto">Prepare-se...</div>
+    <div class="contagem-num" id="contagem-num">3</div>
+    <div class="contagem-texto" id="contagem-sub">O rosto aparecera em instantes</div>
 </div>
 
 <!-- TELA EXPOSICAO -->
@@ -199,7 +253,7 @@ async function iniciarTeste() {
     // Verificar credito antes de iniciar
     if (sessionInfo && sessionInfo.email && sessionInfo.email !== 'setmonte@gmail.com') {
       try {
-        var _cr = await fetch('https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws/use-credit', {
+        var _cr = await fetch(API_URL + '/use-credit', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({email: sessionInfo.email, tipo: 'tref'})
@@ -254,12 +308,34 @@ async function iniciarTeste() {
     resultados = [];
     faseAtual = 0;
 
+    // Mostrar tela de instrucoes
+    trocarTela('tela-instrucoes');
+}
+
+// ===== INICIAR EXPOSICAO (apos instrucoes) =====
+function iniciarExposicao() {
     // Fullscreen
     var el = document.documentElement;
     if (el.requestFullscreen) el.requestFullscreen();
     else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
 
-    executarFase();
+    // Contagem regressiva 3-2-1
+    trocarTela('tela-contagem');
+    var contEl = document.getElementById('contagem-num');
+    var subEl = document.getElementById('contagem-sub');
+    var cont = 3;
+    contEl.textContent = cont;
+    var intervalo = setInterval(function() {
+        cont--;
+        if (cont > 0) {
+            contEl.textContent = cont;
+        } else {
+            clearInterval(intervalo);
+            contEl.textContent = '';
+            subEl.textContent = '';
+            executarFase();
+        }
+    }, 1000);
 }
 
 // ===== EXECUTAR FASES =====
@@ -509,20 +585,49 @@ function mostrarResultados() {
     // Salvar na Lambda
     salvarResultadoLambda();
 
-    // Coleta anonima via sendBeacon (garante envio antes de fechar aba)
-    try{var _cUrl='https://script.google.com/macros/s/AKfycbzYl7-ageXnHHyvrKMb6iS_7gX2l6ZBngPpbCHNfj7YYbXylcZ_vQ9iJkrbko8ICPcW/exec';var _idadeEl=document.getElementById('idade');var _idadeVal=null;if(_idadeEl&&_idadeEl.value){var _m=_idadeEl.value.match(/(\d+)\s*ano/);if(_m)_idadeVal=parseInt(_m[1]);}if(_idadeVal&&window._escalaDados&&window._escalaDados.escala){var _pkt={email:sessionInfo.email||'',escala:'TREF',idade:_idadeVal,sexo:document.getElementById('sexo')?document.getElementById('sexo').value:'',escolaridade:'',pontuacao:String(ifsGeral),dominios:'IFS:'+ifsGeral+'%; Olhos:'+totalOlhos+' ('+pctOlhos+'%); Boca:'+totalBoca+' ('+pctBoca+'%); Periferia:'+totalPeriferia+' ('+pctPerif+'%); Completude:'+completude+'%',classificacao:classificacaoIFS+' | '+padraoGeral.split(' (')[0]};navigator.sendBeacon(_cUrl,JSON.stringify(_pkt));}}catch(e){}
+    // Coleta anonima via sendBeacon (garante envio completo antes de fechar aba)
+    try{var _cUrl='https://script.google.com/macros/s/AKfycbzYl7-ageXnHHyvrKMb6iS_7gX2l6ZBngPpbCHNfj7YYbXylcZ_vQ9iJkrbko8ICPcW/exec';var _idadeVal=null;if(window.sessionInfo&&window.sessionInfo.birthDate){var _n=new Date(window.sessionInfo.birthDate);var _h=new Date();_idadeVal=_h.getFullYear()-_n.getFullYear();if(_h.getMonth()<_n.getMonth()||(_h.getMonth()===_n.getMonth()&&_h.getDate()<_n.getDate()))_idadeVal--;}if(!_idadeVal&&dadosForm.idade){var _m2=dadosForm.idade.match(/(\d+)/);if(_m2)_idadeVal=parseInt(_m2[1]);}if(_idadeVal&&window._escalaDados&&window._escalaDados.escala){var _pkt={email:sessionInfo.email||'',escala:'TREF',idade:_idadeVal,sexo:sessionInfo.sex||dadosForm.sexo||'',escolaridade:sessionInfo.education||'',pontuacao:ifsGeral.toFixed(2),dominios:'IFS:'+ifsGeral.toFixed(0)+'%; Olhos:'+totalOlhos+' ('+pctOlhos.toFixed(0)+'%); Boca:'+totalBoca+' ('+pctBoca.toFixed(0)+'%); Periferia:'+totalPeriferia+' ('+pctPerif.toFixed(0)+'%); Completude:'+completude.toFixed(0)+'%',classificacao:classificacaoIFS+' | '+padraoGeral.split(' (')[0]};navigator.sendBeacon(_cUrl,JSON.stringify(_pkt));window._jaEnviou=true;}}catch(e){}
 }
 
 // ===== DADOS DA URL (versao online) =====
 var sessionInfo = {};
+var API_URL = 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
 function decodificarURL() {
     var params = new URLSearchParams(window.location.search);
+    // Modo 1: Sessao unica (link curto ?s=ID)
+    var s = params.get('s');
+    if (s) {
+        fetch(API_URL + '/get-session?id=' + s).then(function(r) {
+            if (r.status === 410) {
+                document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#e8f5e9,#c8e6c9);text-align:center;padding:20px;"><h1 style="color:#c62828;font-size:24px;margin-bottom:10px;">Este link ja foi utilizado.</h1><p style="font-size:16px;color:#555;">Solicite um novo link ao seu avaliador.</p></div>';
+                throw new Error('link_usado');
+            }
+            return r.json();
+        }).then(function(data) {
+            if (data.sessionId) {
+                sessionInfo = data;
+                if (data.patientName) document.getElementById('nome').value = data.patientName;
+                if (data.nome) document.getElementById('nome').value = data.nome;
+                if (data.birthDate) document.getElementById('dataNasc').value = data.birthDate;
+                if (data.dataNascimento) document.getElementById('dataNasc').value = data.dataNascimento;
+                if (data.sex) document.getElementById('sexo').value = data.sex;
+                if (data.sexo) document.getElementById('sexo').value = data.sexo;
+                calcularIdade();
+                gerarID();
+            }
+        }).catch(function() {});
+        return;
+    }
+    // Modo 2: Dados inline (legado ?d=)
     var d = params.get('d');
     if (d) {
         try { sessionInfo = JSON.parse(atob(decodeURIComponent(d))); } catch(e) {}
         if (sessionInfo.nome) document.getElementById('nome').value = sessionInfo.nome;
+        if (sessionInfo.patientName) document.getElementById('nome').value = sessionInfo.patientName;
         if (sessionInfo.dataNascimento) document.getElementById('dataNasc').value = sessionInfo.dataNascimento;
+        if (sessionInfo.birthDate) document.getElementById('dataNasc').value = sessionInfo.birthDate;
         if (sessionInfo.sexo) document.getElementById('sexo').value = sessionInfo.sexo;
+        if (sessionInfo.sex) document.getElementById('sexo').value = sessionInfo.sex;
         if (sessionInfo.obs) document.getElementById('obs').value = sessionInfo.obs;
         calcularIdade();
         gerarID();
@@ -555,7 +660,7 @@ function salvarResultadoLambda() {
     dados.data.pacienteId = sessionInfo.pacienteId || '';
     dados.data.idPaciente = dadosForm.id || '';
     var xhr = new XMLHttpRequest();
-    xhr.open('POST', 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws/save-result', true);
+    xhr.open('POST', API_URL + '/save-result', true);
     xhr.setRequestHeader('Content-Type', 'application/json');
     xhr.send(JSON.stringify(dados));
 }
