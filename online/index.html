@@ -5410,14 +5410,23 @@
     }
 
     async function adminBuscarUsuario() {
-      var email = document.getElementById('adminBuscaEmail').value.trim().toLowerCase();
+      var email = document.getElementById('adminBuscaEmail').value.trim();
       if (!email) { alert('Digite um email.'); return; }
       var el = document.getElementById('adminUserResult');
       el.innerHTML = '<p style="color:#555;">Buscando...</p>';
       try {
-        // Buscar creditos
+        // Buscar creditos (tentar como digitado, se nao achar tentar variantes)
         var resp = await fetch(API_URL + '/credits?email=' + encodeURIComponent(email));
         var data = await resp.json();
+        // Se nao encontrou creditos, tentar variantes de case
+        var totalCred = (data.credits||0)+(data.baeCredits||0)+(data.trmvCredits||0)+(data.trefCredits||0)+(data.taavCredits||0)+(data.tflodCredits||0)+(data.prontuarioCredits||0);
+        if (totalCred === 0 && !data.name) {
+          var emailAlt = email === email.toLowerCase() ? email.toUpperCase() : email.toLowerCase();
+          var resp2 = await fetch(API_URL + '/credits?email=' + encodeURIComponent(emailAlt));
+          var data2 = await resp2.json();
+          var totalCred2 = (data2.credits||0)+(data2.baeCredits||0)+(data2.trmvCredits||0)+(data2.trefCredits||0)+(data2.taavCredits||0)+(data2.tflodCredits||0)+(data2.prontuarioCredits||0);
+          if (totalCred2 > 0 || data2.name) { data = data2; email = emailAlt; }
+        }
         // Buscar resultados/uso
         var respRes = await fetch(API_URL + '/get-results?email=' + encodeURIComponent(email));
         var dataRes = await respRes.json();
