@@ -94,7 +94,7 @@
         var partes = [];
         Object.keys(dominios).forEach(function(nome) {
             var d = dominios[nome];
-            var media = typeof d === 'object' ? (d.media || d.score || d.acertos || '') : d;
+            var media = typeof d === 'object' ? (d.pontuacao || d.media || d.score || d.acertos || '') : d;
             partes.push(nome + ':' + media);
         });
         return partes.join('; ');
