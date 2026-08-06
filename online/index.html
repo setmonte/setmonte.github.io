@@ -10405,15 +10405,28 @@
         email: currentUser,
         sessionId: sessionId,
         tipo: 'tref',
-        nome: nome,
-        dataNascimento: dn,
-        sexo: sexo,
-        education: document.getElementById('trefEscolaridade').value || '',
+        patientName: nome,
+        birthDate: dn,
+        sex: sexo,
+        education: document.getElementById('trefEscolaridade') ? document.getElementById('trefEscolaridade').value || '' : '',
         obs: document.getElementById('trefObs').value || '',
         pacienteId: document.getElementById('trefSelPac').value || ''
       };
-      var params = safeBtoa(JSON.stringify(sessionData));
-      var link = 'https://setmonte.github.io/online/teste-tref.html?d=' + encodeURIComponent(params);
+      // Salvar sessao no servidor para gerar link curto
+      var respSess = await fetch(API_URL + '/save-session', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(sessionData)
+      });
+      var sessResult = await respSess.json();
+      var link;
+      if (sessResult.id) {
+        link = 'https://setmonte.github.io/online/teste-tref.html?s=' + sessResult.id;
+      } else {
+        // Fallback: modo antigo com ?d=
+        var params = safeBtoa(JSON.stringify(sessionData));
+        link = 'https://setmonte.github.io/online/teste-tref.html?d=' + encodeURIComponent(params);
+      }
       if (abrirLocal) { window.open(link, '_blank'); }
       else { document.getElementById('trefSessionLink').textContent = link; document.getElementById('trefLinkResult').classList.remove('hidden'); }
       } catch(e) { mostrarErro('Erro ao gerar link TREF: ' + e.message); }
