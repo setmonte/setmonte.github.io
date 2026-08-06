@@ -224,6 +224,16 @@
             window._erp_interceptado = true;
         }
 
+        // 2b. enviarResultadosPainel (sem underscore - fallback para escalas legadas)
+        if (typeof window.enviarResultadosPainel === 'function' && !window._erp2_interceptado) {
+            var _orig_erp2 = window.enviarResultadosPainel;
+            window.enviarResultadosPainel = function() {
+                setTimeout(_enviarDadosAnonimos, 500);
+                return _orig_erp2.apply(this, arguments);
+            };
+            window._erp2_interceptado = true;
+        }
+
         // 3. salvarResultadoLambda (TREF)
         if (typeof window.salvarResultadoLambda === 'function' && !window._srl_interceptado) {
             var _orig_srl = window.salvarResultadoLambda;
