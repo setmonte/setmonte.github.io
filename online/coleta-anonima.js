@@ -270,15 +270,8 @@
             window._fg_interceptado = true;
         }
 
-        // 6. mostrarResultados (TREF alternativo)
-        if (typeof window.mostrarResultados === 'function' && !window._mr_interceptado) {
-            var _orig_mr = window.mostrarResultados;
-            window.mostrarResultados = function() {
-                _orig_mr.apply(this, arguments);
-                setTimeout(_enviarDadosAnonimos, 500);
-            };
-            window._mr_interceptado = true;
-        }
+        // 6. mostrarResultados (TREF alternativo) - DESATIVADO: salvarResultadoLambda ja cobre TREF
+        // A interceptacao dupla causava envio duplicado na coleta anonima
 
         // 7. showEndScreen (TECFE)
         if (typeof window.showEndScreen === 'function' && !window._ses_interceptado) {
