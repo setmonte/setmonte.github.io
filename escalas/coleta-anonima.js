@@ -122,7 +122,7 @@
     }
 
     function _enviarDadosAnonimos() {
-        if (_jaEnviou) return;
+        if (_jaEnviou || window._jaEnviou) return;
         try {
             var idade = _extrairIdadeAnos();
             var sexo = _extrairSexo();
