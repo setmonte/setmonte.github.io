@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BVRT - Consulta de Figuras</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
+        .container { max-width: 1100px; margin: 0 auto; }
+        h1 { text-align: center; color: white; margin-bottom: 10px; font-size: 1.8em; }
+        .subtitle { text-align: center; color: rgba(255,255,255,0.85); margin-bottom: 25px; font-size: 0.95em; }
+        .card { background: white; border-radius: 12px; padding: 25px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+
+        /* === SUB-ABAS === */
+        .tabs { display: flex; gap: 0; margin-bottom: 20px; border-bottom: 2px solid #ede7f6; }
+        .tab { flex: 1; padding: 12px 20px; border: none; background: transparent; font-size: 1em; font-weight: 600; color: #777; cursor: pointer; transition: all 0.3s; border-bottom: 3px solid transparent; margin-bottom: -2px; }
+        .tab:hover { color: #4a148c; background: #f5f0ff; }
+        .tab.ativa { color: #4a148c; border-bottom-color: #7c4dff; background: #f5f0ff; }
+
+        /* === BOTOES NUMERICOS === */
+        .botoes-figuras { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 20px; }
+        .btn-fig { width: 48px; height: 48px; border-radius: 50%; border: 2px solid #e0e0e0; background: white; font-size: 1.1em; font-weight: 700; color: #555; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; justify-content: center; }
+        .btn-fig:hover { border-color: #7c4dff; color: #7c4dff; transform: scale(1.1); }
+        .btn-fig.ativo { background: linear-gradient(135deg, #667eea, #764ba2); color: white; border-color: #667eea; transform: scale(1.1); box-shadow: 0 3px 10px rgba(102,126,234,0.4); }
+
+        /* === AREA DE VISUALIZACAO === */
+        .area-visualizacao { display: flex; gap: 25px; margin-bottom: 20px; min-height: 400px; }
+        .painel-figura { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #fafafa; border-radius: 10px; border: 2px dashed #e0e0e0; padding: 20px; min-height: 350px; }
+        .painel-figura img { max-width: 100%; max-height: 450px; object-fit: contain; border-radius: 8px; }
+        .painel-figura .msg-erro { color: #e53935; font-size: 0.9em; text-align: center; padding: 20px; }
+        .painel-figura .titulo-figura { font-size: 1.1em; font-weight: 700; color: #4a148c; margin-bottom: 10px; }
+
+        .painel-codigos { flex: 0 0 380px; background: #f5f0ff; border-radius: 10px; padding: 20px; border: 1px solid #ede7f6; overflow-y: auto; max-height: 550px; }
+        .painel-codigos h3 { color: #4a148c; font-size: 1.05em; margin-bottom: 15px; text-align: center; border-bottom: 2px solid #ede7f6; padding-bottom: 8px; }
+
+        /* === CATEGORIAS DE ERRO === */
+        .categoria-erro { margin-bottom: 12px; padding: 10px; background: white; border-radius: 8px; border-left: 4px solid #7c4dff; }
+        .categoria-erro:nth-child(2) { border-left-color: #e53935; }
+        .categoria-erro:nth-child(3) { border-left-color: #ff9800; }
+        .categoria-erro:nth-child(4) { border-left-color: #43a047; }
+        .categoria-erro:nth-child(5) { border-left-color: #1565c0; }
+        .categoria-erro:nth-child(6) { border-left-color: #6a1b9a; }
+        .categoria-erro .cat-titulo { font-weight: 700; font-size: 0.88em; color: #333; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .categoria-erro .cat-codigos { display: flex; gap: 8px; flex-wrap: wrap; }
+        .codigo-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; background: #ede7f6; border-radius: 12px; font-size: 0.78em; color: #4a148c; font-weight: 600; margin-bottom: 3px; }
+        .codigo-badge .pos { font-weight: 400; color: #777; font-size: 0.85em; }
+
+        /* === NOTA CONTEXTUAL === */
+        .nota-contextual { text-align: center; font-size: 0.85em; color: #666; padding: 8px 15px; background: #fff8e1; border-radius: 8px; border: 1px solid #ffe082; margin-bottom: 15px; }
+
+        /* === NAVEGACAO === */
+        .navegacao { display: flex; align-items: center; justify-content: center; gap: 20px; margin-bottom: 20px; }
+        .btn-nav { padding: 10px 20px; border: 2px solid #7c4dff; border-radius: 25px; background: white; color: #7c4dff; font-size: 0.95em; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+        .btn-nav:hover:not(:disabled) { background: #7c4dff; color: white; transform: translateY(-1px); }
+        .btn-nav:disabled { border-color: #ccc; color: #ccc; cursor: not-allowed; opacity: 0.5; }
+        .indicador-figura { font-size: 0.9em; color: #555; font-weight: 600; }
+
+        /* === LINK CORRECAO === */
+        .link-correcao { text-align: center; margin: 20px 0; }
+        .btn-correcao { display: inline-block; padding: 14px 35px; background: linear-gradient(135deg, #43a047, #66bb6a); color: white; text-decoration: none; border-radius: 25px; font-size: 1em; font-weight: 600; transition: all 0.3s; box-shadow: 0 3px 10px rgba(67,160,71,0.3); }
+        .btn-correcao:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(67,160,71,0.4); }
+
+        /* === NOTA DE USO === */
+        .nota-uso { text-align: center; font-size: 0.75em; color: rgba(255,255,255,0.6); margin-top: 15px; padding: 10px; }
+
+        /* === ORIENTACOES DE CORRECAO === */
+        .orientacoes { background: #fff3e0; border: 1px solid #ffcc80; border-left: 4px solid #ff9800; border-radius: 8px; padding: 15px; margin-top: 15px; font-size: 0.85em; color: #4e342e; line-height: 1.6; }
+        .orientacoes h4 { color: #e65100; font-size: 0.95em; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+        .orientacoes p { margin-bottom: 6px; }
+        .orientacoes .obs { font-style: italic; color: #6d4c41; font-size: 0.92em; margin-top: 4px; }
+
+        /* === RESPONSIVO === */
+        @media (max-width: 768px) {
+            .area-visualizacao { flex-direction: column; }
+            .painel-codigos { flex: none; max-height: none; }
+            .painel-figura { min-height: 250px; }
+            .btn-fig { width: 44px; height: 44px; font-size: 1em; }
+            .tabs { flex-direction: row; }
+            .tab { padding: 10px 15px; font-size: 0.9em; }
+            .navegacao { gap: 10px; }
+            .btn-nav { padding: 8px 15px; font-size: 0.85em; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>&#129504; BVRT - Consulta de Figuras</h1>
+        <p class="subtitle">Teste de Reten&#231;&#227;o Visual de Benton &#8212; Figuras-Est&#237;mulo e C&#243;digos de Erro</p>
+
+        <div class="card">
+            <!-- Sub-abas -->
+            <div class="tabs">
+                <button class="tab ativa" id="tabMemoria" onclick="trocarAba('memoria')">&#129504; Mem&#243;ria (FC)</button>
+                <button class="tab" id="tabCopia" onclick="trocarAba('copia')">&#9999;&#65039; C&#243;pia (FD)</button>
+            </div>
+
+            <!-- Botoes numericos -->
+            <div class="botoes-figuras" id="botoesFiguras"></div>
+
+            <!-- Area de visualizacao -->
+            <div class="area-visualizacao">
+                <!-- Painel da figura -->
+                <div class="painel-figura">
+                    <p class="titulo-figura" id="tituloFigura">Figura 1</p>
+                    <img id="imgFigura" src="" alt="Figura do BVRT">
+                    <p class="msg-erro" id="msgErroImg" style="display:none;"></p>
+                </div>
+
+                <!-- Painel dos codigos de erro -->
+                <div class="painel-codigos">
+                    <h3>C&#243;digos de Erro</h3>
+                    <div id="codigosErro"></div>
+                </div>
+            </div>
+
+            <!-- Nota contextual -->
+            <p class="nota-contextual" id="notaContextual"></p>
+
+            <!-- Orientacoes de correcao -->
+            <div class="orientacoes" id="orientacoes"></div>
+
+            <!-- Navegacao sequencial -->
+            <div class="navegacao">
+                <button class="btn-nav" id="btnAnterior" onclick="navegarAnterior()">&larr; Anterior</button>
+                <span class="indicador-figura" id="indicadorFigura">Figura 1 de 10</span>
+                <button class="btn-nav" id="btnProxima" onclick="navegarProxima()">Pr&#243;xima &rarr;</button>
+            </div>
+        </div>
+
+        <!-- Link para correcao -->
+        <div class="link-correcao">
+            <a href="index.html" class="btn-correcao">Ir para Corre&#231;&#227;o &rarr;</a>
+        </div>
+
+        <!-- Nota de uso restrito -->
+        <p class="nota-uso">As figuras-est&#237;mulo s&#227;o de uso restrito do profissional habilitado. N&#227;o reproduza ou distribua.</p>
+    </div>
+
+    <script>
+// ============================================================
+// DADOS
+// ============================================================
+
+var CATEGORIAS_ERRO = [
+    {nome: 'Omiss\u00f5es (e Adi\u00e7\u00f5es)', codigos: [
+        {sigla: 'M', posicao: 'fig. principal (est. 1 ou 2)'},
+        {sigla: 'MR', posicao: 'fig. principal direita'},
+        {sigla: 'ML', posicao: 'fig. principal esquerda'},
+        {sigla: 'PR', posicao: 'fig. perif\u00e9rica direita'},
+        {sigla: 'PL', posicao: 'fig. perif\u00e9rica esquerda'},
+        {sigla: 'Add', posicao: 'adi\u00e7\u00e3o de figura'}
+    ]},
+    {nome: 'Distor\u00e7\u00f5es', codigos: [
+        {sigla: 'SM', posicao: 'substitui\u00e7\u00e3o simples (est. 1 ou 2)'},
+        {sigla: 'SMR', posicao: 'subst. simples principal direita'},
+        {sigla: 'SML', posicao: 'subst. simples principal esquerda'},
+        {sigla: 'SPR', posicao: 'subst. simples perif\u00e9rica direita'},
+        {sigla: 'SPL', posicao: 'subst. simples perif\u00e9rica esquerda'},
+        {sigla: 'IM', posicao: 'imprecisa principal (est. 1 ou 2)'},
+        {sigla: 'IMR', posicao: 'imprecisa principal direita'},
+        {sigla: 'IML', posicao: 'imprecisa principal esquerda'},
+        {sigla: 'IPR', posicao: 'imprecisa perif\u00e9rica direita'},
+        {sigla: 'IPL', posicao: 'imprecisa perif\u00e9rica esquerda'}
+    ]},
+    {nome: 'Persevera\u00e7\u00f5es', codigos: [
+        {sigla: 'PerM', posicao: 'fig. principal (est. 1 ou 2)'},
+        {sigla: 'PerMR', posicao: 'fig. principal direita'},
+        {sigla: 'PerML', posicao: 'fig. principal esquerda'},
+        {sigla: 'PerPR', posicao: 'fig. perif\u00e9rica direita'},
+        {sigla: 'PerPL', posicao: 'fig. perif\u00e9rica esquerda'}
+    ]},
+    {nome: 'Rota\u00e7\u00f5es', codigos: [
+        {sigla: '180M', posicao: '180\u00b0 principal (est. 1 ou 2)'},
+        {sigla: '90M', posicao: '90\u00b0 principal (est. 1 ou 2)'},
+        {sigla: '45M', posicao: '25-65\u00b0 principal (est. 1 ou 2)'},
+        {sigla: '180MR', posicao: '180\u00b0 principal direita'},
+        {sigla: '180ML', posicao: '180\u00b0 principal esquerda'},
+        {sigla: '90MR', posicao: '90\u00b0 principal direita'},
+        {sigla: '90ML', posicao: '90\u00b0 principal esquerda'},
+        {sigla: '45MR', posicao: '25-65\u00b0 principal direita'},
+        {sigla: '45ML', posicao: '25-65\u00b0 principal esquerda'},
+        {sigla: '180PR', posicao: '180\u00b0 perif\u00e9rica direita'},
+        {sigla: '180PL', posicao: '180\u00b0 perif\u00e9rica esquerda'},
+        {sigla: '90PR', posicao: '90\u00b0 perif\u00e9rica direita'},
+        {sigla: '90PL', posicao: '90\u00b0 perif\u00e9rica esquerda'},
+        {sigla: '45PR', posicao: '25-65\u00b0 perif\u00e9rica direita'},
+        {sigla: '45PL', posicao: '25-65\u00b0 perif\u00e9rica esquerda'},
+        {sigla: 'Mir', posicao: 'espelhada est\u00edmulo inteiro'},
+        {sigla: 'MirMR', posicao: 'espelhada principal direita'},
+        {sigla: 'MirML', posicao: 'espelhada principal esquerda'},
+        {sigla: '180MR(Mir)', posicao: '180\u00b0 ou espelhada dir.'},
+        {sigla: '180ML(Mir)', posicao: '180\u00b0 ou espelhada esq.'},
+        {sigla: '90MR(Mir)', posicao: '90\u00b0 ou espelhada dir.'},
+        {sigla: '90ML(Mir)', posicao: '90\u00b0 ou espelhada esq.'}
+    ]},
+    {nome: 'Trocas de Posi\u00e7\u00e3o', codigos: [
+        {sigla: 'Rev', posicao: 'invers\u00e3o esq-dir das principais'},
+        {sigla: 'NOv', posicao: 'sobreposi\u00e7\u00e3o incorreta'},
+        {sigla: 'Ov', posicao: 'cont\u00edguas como sobrepostas'},
+        {sigla: 'MisPR', posicao: 'troca perif\u00e9rica direita'},
+        {sigla: 'MisPL', posicao: 'troca perif\u00e9rica esquerda'},
+        {sigla: 'UPR', posicao: 'desloc. perif. direita p/ cima'},
+        {sigla: 'UPL', posicao: 'desloc. perif. esquerda p/ cima'},
+        {sigla: 'DPR', posicao: 'desloc. perif. direita p/ baixo'},
+        {sigla: 'DPL', posicao: 'desloc. perif. esquerda p/ baixo'}
+    ]},
+    {nome: 'Erros de Tamanho', codigos: [
+        {sigla: 'SzMR', posicao: 'tamanho fig. principal direita'},
+        {sigla: 'SzML', posicao: 'tamanho fig. principal esquerda'},
+        {sigla: 'SzPR', posicao: 'tamanho fig. perif\u00e9rica direita'},
+        {sigla: 'SzPL', posicao: 'tamanho fig. perif\u00e9rica esquerda'}
+    ]}
+];
+
+var CAMINHOS = {
+    memoria: 'bvrt/FC/c',
+    copia: 'bvrt/FD/d'
+};
+
+// Orientacoes de correcao por figura - MEMORIA (Forma C)
+var ORIENTACOES_MEMORIA = {
+    1: '<p>Qualquer paralelogramo que n\u00e3o seja um quadrado \u00e9 considerado correto. A figura deve ter como base um <strong>lado</strong> e n\u00e3o um v\u00e9rtice. As linhas obl\u00edquas devem seguir a mesma dire\u00e7\u00e3o das linhas do Est\u00edmulo.</p>',
+    2: '<p>O desenho deve ser um <strong>hex\u00e1gono</strong> e ter um <strong>lado como base</strong>. Os lados n\u00e3o precisam ser iguais.</p>',
+    3: '<p>Os c\u00edrculos devem sobrepor-se parcialmente. O quadrado pequeno deve ter um <strong>lado como base</strong> e pelo menos uma por\u00e7\u00e3o sua deve localizar-se na \u00e1rea definida entre o limite superior e inferior das figuras principais.</p>',
+    4: '<p>O tri\u00e2ngulo deve ter um <strong>lado como base</strong> e <strong>n\u00e3o</strong> deve ser um tri\u00e2ngulo ret\u00e2ngulo (com um dos \u00e2ngulos de 90\u00ba). O quadrado pequeno deve ter um lado como base e ao menos uma parte sua deve localizar-se na \u00e1rea definida entre o limite superior e inferior das figuras principais.</p>',
+    5: '<p>O tri\u00e2ngulo deve ter um <strong>lado como base</strong> e <strong>n\u00e3o</strong> deve ser um tri\u00e2ngulo ret\u00e2ngulo. A figura principal direita deve incluir os mesmos detalhes essenciais da figura-est\u00edmulo. Ao menos uma parte do c\u00edrculo pequeno deve localizar-se na \u00e1rea definida entre a linha m\u00e9dia e o limite superior das figuras.</p><p class="obs">Obs: Limites da fig. principal direita n\u00e3o semelhantes = IMR (se propor\u00e7\u00e3o > 10%).</p>',
+    6: '<p>Deve haver <strong>espa\u00e7o entre as figuras principais</strong>. As linhas de dentro de cada figura n\u00e3o devem ultrapassar o centro da mesma. Ao menos uma por\u00e7\u00e3o do c\u00edrculo pequeno deve localizar-se na \u00e1rea definida entre a linha m\u00e9dia e o limite superior das figuras principais.</p><p class="obs">Obs: Se as linhas internas estiverem em outros v\u00e9rtices, o erro \u00e9 configurado como <strong>rota\u00e7\u00e3o</strong>.</p>',
+    7: '<p>A hipotenusa do tri\u00e2ngulo ret\u00e2ngulo (fig. principal esquerda) deve seguir a mesma dire\u00e7\u00e3o geral da figura-est\u00edmulo. O quadrado deve ter um <strong>v\u00e9rtice como base</strong> e sua linha bissetriz deve estar desenhada do v\u00e9rtice superior para o inferior. O tri\u00e2ngulo pequeno deve ter um lado como base, e ao menos uma parte sua deve localizar-se entre a linha m\u00e9dia e o limite inferior das figuras principais.</p><p class="obs">Obs 1: \u00c9 aceit\u00e1vel o desenho de um losango na fig. principal direita.</p><p class="obs">Obs 2: Inclina\u00e7\u00e3o de at\u00e9 15\u00b0 no lado superior do tri\u00e2ngulo esquerdo \u00e9 aceit\u00e1vel.</p><p class="obs">LEMBRETE: Erro de rota\u00e7\u00e3o \u00e9 soberano \u00e0 distor\u00e7\u00e3o. Espelhadas s\u00e3o soberanas.</p>',
+    8: '<p>As pontas da linha curva no quadrado esquerdo devem encontrar ou quase encontrar os <strong>v\u00e9rtices superiores</strong> do quadrado. Todas as tr\u00eas figuras devem ter um <strong>lado como base</strong>. Ao menos uma parte do tri\u00e2ngulo pequeno deve localizar-se entre a linha m\u00e9dia e o limite superior das figuras principais.</p><p class="obs">Obs 1: A curva da fig. principal esquerda n\u00e3o deve ultrapassar o meio do quadrado.</p><p class="obs">Obs 2: Dist\u00e2ncia aceit\u00e1vel pontas-v\u00e9rtices: \u22641/10 do lado (linhas superiores) e \u22642/10 (linhas laterais).</p>',
+    9: '<p>As pontas da linha curva no quadrado grande (fig. principal esquerda) devem encontrar ou quase encontrar os <strong>v\u00e9rtices esquerdos</strong> do quadrado. O lado esquerdo da fig. principal direita deve seguir a mesma dire\u00e7\u00e3o da figura-est\u00edmulo, e o lado direito deve estar pr\u00f3ximo \u00e0 posi\u00e7\u00e3o vertical. O quadrado pequeno deve ter um lado como base e ao menos uma parte entre a linha m\u00e9dia e o limite superior das figuras principais.</p><p class="obs">Obs 1: Curva n\u00e3o deve ultrapassar o meio do quadrado. Dist\u00e2ncia: \u22641/10 (lateral) e \u22642/10 (superior/inferior).</p><p class="obs">Obs 2: \u00c2ngulo reto da fig. principal direita aceit\u00e1vel com inclina\u00e7\u00e3o de at\u00e9 15\u00b0.</p>',
+    10: '<p>O quadrado maior (fig. principal esquerda) deve ter um <strong>v\u00e9rtice como base</strong> e a linha bissetriz deve seguir a mesma dire\u00e7\u00e3o da Figura-Est\u00edmulo. A linha inclinada da fig. principal direita deve originar-se no v\u00e9rtice esquerdo, seguir a mesma dire\u00e7\u00e3o da figura-est\u00edmulo e n\u00e3o se estender mais que 2/3 da dist\u00e2ncia entre o v\u00e9rtice esquerdo e o ponto oposto. Ao menos uma parte do c\u00edrculo pequeno entre a linha m\u00e9dia e o limite inferior das figuras principais.</p><p class="obs">Obs 1: Se desenhar a fig. principal esquerda como dois ret\u00e2ngulos unidos formando um quadrado com v\u00e9rtice como base, n\u00e3o \u00e9 erro.</p><p class="obs">Obs 2: A fig. principal direita deve conter tr\u00eas \u00e2ngulos internos (tr\u00eas v\u00e9rtices).</p>'
+};
+
+// Orientacoes de correcao por figura - COPIA (Forma D)
+var ORIENTACOES_COPIA = {
+    1: '<p>Considera-se como correto qualquer <strong>ret\u00e2ngulo</strong> cujo lado superior servir totalmente como base de um tri\u00e2ngulo. O tri\u00e2ngulo <strong>n\u00e3o</strong> deve ser um tri\u00e2ngulo ret\u00e2ngulo.</p><p class="obs">Obs: Os v\u00e9rtices do tri\u00e2ngulo devem encontrar ou quase encontrar os v\u00e9rtices superiores do ret\u00e2ngulo (toler\u00e2ncia: at\u00e9 1/10 do lado superior).</p>',
+    2: '<p>O desenho deve ser um <strong>hex\u00e1gono</strong> que tenha um <strong>v\u00e9rtice como base</strong>. Os lados n\u00e3o precisam ser iguais.</p><p class="obs">Obs: Necessariamente, a figura deve ter seis \u00e2ngulos internos.</p>',
+    3: '<p>Os dois quadrados devem ter <strong>v\u00e9rtices como base</strong> e devem sobrepor-se parcialmente na mesma jun\u00e7\u00e3o que a da figura-est\u00edmulo. Ao menos uma por\u00e7\u00e3o do c\u00edrculo pequeno deve localizar-se na \u00e1rea definida entre os limites inferior e superior das figuras principais.</p><p class="obs">Obs: \u00c9 aceit\u00e1vel o desenho de dois losangos sobrepostos.</p>',
+    4: '<p>A linha de dentro do c\u00edrculo deve ser predominantemente <strong>vertical</strong> e deve dividir aproximadamente o c\u00edrculo. O tri\u00e2ngulo deve ter um <strong>v\u00e9rtice como base</strong> e n\u00e3o ser um tri\u00e2ngulo ret\u00e2ngulo. O quadrado pequeno deve ter um lado como base e ao menos uma parte entre a linha m\u00e9dia e o limite inferior das figuras principais.</p>',
+    5: '<p>A fig. principal da esquerda deve ter como base um <strong>v\u00e9rtice</strong> formado pelos dois lados inferiores. O quadrado grande deve ter um <strong>lado como base</strong> e sua bissetriz ser aproximadamente horizontal. O tri\u00e2ngulo pequeno deve ter um lado como base e ao menos uma parte entre a linha m\u00e9dia e o limite inferior das figuras principais.</p><p class="obs">Obs 1: A fig. principal esquerda deve conter tr\u00eas \u00e2ngulos internos.</p><p class="obs">Obs 2: Na fig. principal direita, \u00e9 aceit\u00e1vel quando o examinado desenhar uma figura semelhante a dois ret\u00e2ngulos unidos.</p>',
+    6: '<p>As linhas inclinadas dentro do quadrado grande (fig. principal esquerda) devem ter origem pr\u00f3xima do centro da base e as pontas devem encontrar ou quase encontrar os <strong>v\u00e9rtices superiores</strong>. A fig. principal direita deve ser um <strong>arco com abertura voltada para a direita</strong>, similar \u00e0 letra "C". Ao menos uma parte do c\u00edrculo pequeno entre os limites inferior e superior das figuras principais.</p><p class="obs">Obs: Dist\u00e2ncia linhas internas-v\u00e9rtices superiores n\u00e3o pode ser superior a 1/10 do lado do quadrado.</p>',
+    7: '<p>A linha diagonal dentro do quadrado da fig. principal esquerda deve ter origem no <strong>v\u00e9rtice inferior esquerdo</strong>, seguir a mesma dire\u00e7\u00e3o da figura-est\u00edmulo, e n\u00e3o se estender mais do que 2/3 da dist\u00e2ncia em dire\u00e7\u00e3o ao v\u00e9rtice oposto (superior direito). A fig. principal direita deve ter como base um dos <strong>v\u00e9rtices</strong>. O quadrado pequeno deve ter um lado como base e ao menos uma parte entre a linha m\u00e9dia e o limite inferior das figuras principais.</p><p class="obs">Obs: A fig. principal direita deve conter tr\u00eas \u00e2ngulos internos.</p>',
+    8: '<p>A linha de dentro do quadrado da fig. principal esquerda deve ser <strong>curva</strong> e a de dentro do quadrado da fig. principal direita deve ser <strong>reta</strong>. Ambas as linhas devem seguir a mesma dire\u00e7\u00e3o da figura-est\u00edmulo e encontrar ou quase encontrar os v\u00e9rtices superior esquerdo e inferior direito dos quadrados. Todas as tr\u00eas figuras devem ter um <strong>lado como base</strong>. Ao menos uma parte do quadrado pequeno entre os limites inferior e superior das figuras principais.</p><p class="obs">Obs: Ponto de encontro aceit\u00e1vel: \u22641/10 do lado (inferior e lateral direita) e \u22642/10 (superior e lateral esquerda).</p>',
+    9: '<p>As figuras principais esquerda e direita devem incluir os mesmos <strong>detalhes essenciais</strong> presentes na figura-est\u00edmulo. Ao menos uma por\u00e7\u00e3o do c\u00edrculo pequeno deve localizar-se na \u00e1rea definida entre a linha m\u00e9dia e o limite inferior das figuras principais.</p>',
+    10: '<p>A linha horizontal dentro do semic\u00edrculo deve aproximadamente <strong>cortar o centro</strong> dele. O quadrado deve ter um <strong>v\u00e9rtice como base</strong>. Ao menos parte do c\u00edrculo pequeno deve localizar-se na \u00e1rea definida entre os limites superior e inferior das figuras principais.</p>'
+};
+
+// ============================================================
+// ESTADO
+// ============================================================
+
+var abaAtual = 'memoria';
+var figuraAtual = 1;
+
+// ============================================================
+// FUNCOES UTILITARIAS
+// ============================================================
+
+function montarCaminhoImagem(aba, n) {
+    return CAMINHOS[aba] + n + '.png';
+}
+
+function obterNotaContextual(n) {
+    if (n >= 1 && n <= 6) {
+        return 'Figura com elemento principal + perif\u00e9ricas esquerda e direita. Todos os c\u00f3digos posicionais se aplicam.';
+    } else {
+        return 'Figura com 2 elementos maiores. O cl\u00ednico decide quais c\u00f3digos posicionais se aplicam.';
+    }
+}
+
+// ============================================================
+// FUNCOES DE ATUALIZACAO
+// ============================================================
+
+function atualizarImagem() {
+    var img = document.getElementById('imgFigura');
+    var msgErro = document.getElementById('msgErroImg');
+    var titulo = document.getElementById('tituloFigura');
+    var caminho = montarCaminhoImagem(abaAtual, figuraAtual);
+
+    var nomeAba = (abaAtual === 'memoria') ? 'Mem\u00f3ria (FC)' : 'C\u00f3pia (FD)';
+    titulo.innerHTML = 'Figura ' + figuraAtual + ' \u2014 ' + nomeAba;
+
+    img.style.display = 'block';
+    msgErro.style.display = 'none';
+    img.src = caminho;
+    img.onerror = function() {
+        img.style.display = 'none';
+        msgErro.style.display = 'block';
+        msgErro.innerHTML = 'Imagem n\u00e3o encontrada.<br><small>Caminho esperado: ' + caminho + '</small>';
+    };
+}
+
+function atualizarBotoes() {
+    var botoes = document.querySelectorAll('.btn-fig');
+    for (var i = 0; i < botoes.length; i++) {
+        if (i + 1 === figuraAtual) {
+            botoes[i].classList.add('ativo');
+        } else {
+            botoes[i].classList.remove('ativo');
+        }
+    }
+
+    // Navegacao sequencial
+    var btnAnt = document.getElementById('btnAnterior');
+    var btnProx = document.getElementById('btnProxima');
+    btnAnt.disabled = (figuraAtual === 1);
+    btnProx.disabled = (figuraAtual === 10);
+
+    // Indicador
+    document.getElementById('indicadorFigura').textContent = 'Figura ' + figuraAtual + ' de 10';
+}
+
+function atualizarNotaContextual() {
+    document.getElementById('notaContextual').textContent = obterNotaContextual(figuraAtual);
+}
+
+function atualizarOrientacoes() {
+    var container = document.getElementById('orientacoes');
+    var orientacoes = (abaAtual === 'memoria') ? ORIENTACOES_MEMORIA : ORIENTACOES_COPIA;
+    var nomeAba = (abaAtual === 'memoria') ? 'Mem\u00f3ria' : 'C\u00f3pia';
+    var html = '<h4>&#128221; Orienta\u00e7\u00f5es de Corre\u00e7\u00e3o \u2014 Est\u00edmulo ' + figuraAtual + ' (' + nomeAba + ')</h4>';
+    html += orientacoes[figuraAtual] || '<p>Sem orienta\u00e7\u00f5es dispon\u00edveis.</p>';
+    container.innerHTML = html;
+}
+
+function renderizarCodigos() {
+    var container = document.getElementById('codigosErro');
+    var html = '';
+    for (var i = 0; i < CATEGORIAS_ERRO.length; i++) {
+        var cat = CATEGORIAS_ERRO[i];
+        html += '<div class="categoria-erro">';
+        html += '<div class="cat-titulo">' + cat.nome + '</div>';
+        html += '<div class="cat-codigos">';
+        for (var j = 0; j < cat.codigos.length; j++) {
+            var cod = cat.codigos[j];
+            html += '<span class="codigo-badge"><strong>' + cod.sigla + '</strong> <span class="pos">(' + cod.posicao + ')</span></span>';
+        }
+        html += '</div></div>';
+    }
+    container.innerHTML = html;
+}
+
+// ============================================================
+// FUNCOES DE INTERACAO
+// ============================================================
+
+function trocarAba(aba) {
+    if (aba !== 'memoria' && aba !== 'copia') return;
+    abaAtual = aba;
+
+    // Atualizar visual das abas
+    var tabMem = document.getElementById('tabMemoria');
+    var tabCop = document.getElementById('tabCopia');
+    if (aba === 'memoria') {
+        tabMem.classList.add('ativa');
+        tabCop.classList.remove('ativa');
+    } else {
+        tabCop.classList.add('ativa');
+        tabMem.classList.remove('ativa');
+    }
+
+    // Resetar para figura 1
+    figuraAtual = 1;
+    atualizarImagem();
+    atualizarBotoes();
+    atualizarNotaContextual();
+}
+
+function selecionarFigura(n) {
+    if (n < 1 || n > 10) return;
+    figuraAtual = n;
+    atualizarImagem();
+    atualizarBotoes();
+    atualizarNotaContextual();
+    atualizarOrientacoes();
+}
+
+function navegarAnterior() {
+    if (figuraAtual > 1) {
+        selecionarFigura(figuraAtual - 1);
+    }
+}
+
+function navegarProxima() {
+    if (figuraAtual < 10) {
+        selecionarFigura(figuraAtual + 1);
+    }
+}
+
+// ============================================================
+// INICIALIZACAO DIRETA
+// ============================================================
+
+// Gerar os 10 botoes numericos
+var containerBotoes = document.getElementById('botoesFiguras');
+var htmlBotoes = '';
+for (var i = 1; i <= 10; i++) {
+    htmlBotoes += '<button class="btn-fig" onclick="selecionarFigura(' + i + ')">' + i + '</button>';
+}
+containerBotoes.innerHTML = htmlBotoes;
+
+// Renderizar codigos de erro (estatico, sempre os mesmos)
+renderizarCodigos();
+
+// Selecionar figura 1 como estado inicial
+selecionarFigura(1);
+    </script>
+</body>
+</html>
+
