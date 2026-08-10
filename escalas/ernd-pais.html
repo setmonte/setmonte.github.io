@@ -391,12 +391,14 @@ function calcularResultados() {
 
     // Salvar dados para o painel
     var _escoreTotal=0;Object.keys(resultados).forEach(function(k){_escoreTotal+=resultados[k].soma;});
+    var _domObj={};Object.keys(resultados).forEach(function(k){var rv=resultados[k];_domObj[k]={pontuacao:rv.soma,max:45,media:rv.media,classificacao:rv.classificacao.texto+(rv.classificacao.nivel?' - '+rv.classificacao.nivel:'')+(rv.rastreioPositivo?' [POSITIVO]':'')};});
     window._escalaDados = {
         escala: 'ERND-Pais',
         paciente: nome,
         escore: _escoreTotal,
         classificacao: positivos.length > 0 ? 'Rastreio positivo: ' + positivos.join(', ') : 'Rastreio negativo',
-        dominios: resultados,
+        dominios: _domObj,
+        _resultadosCompletos: resultados,
         respostas: (function(){var o={};for(var i=0;i<respostas.length;i++){o[i+1]=respostas[i];}return o;})(),
         idPaciente: document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '',
         idade: idade,
@@ -447,8 +449,9 @@ function gerarRelatorioPDF() {
     y = 70;
     // Rastreio geral
     var positivos = [];
-    Object.keys(dados.dominios).forEach(function(sigla) {
-        if (dados.dominios[sigla].rastreioPositivo) positivos.push(sigla);
+    var _resComp = dados._resultadosCompletos || dados.dominios;
+    Object.keys(_resComp).forEach(function(sigla) {
+        if (_resComp[sigla].rastreioPositivo) positivos.push(sigla);
     });
     if (positivos.length > 0) {
         doc.setFillColor(255,205,210); doc.setTextColor(198,40,40);
@@ -469,7 +472,7 @@ function gerarRelatorioPDF() {
 
     Object.keys(TRANSTORNOS).forEach(function(sigla) {
         var t = TRANSTORNOS[sigla];
-        var r = dados.dominios[sigla];
+        var r = _resComp[sigla];
         var status = r.rastreioPositivo ? '  [POSITIVO]' : '  [negativo]';
         var classif = r.classificacao.texto;
         if (r.classificacao.nivel) classif += ' - ' + r.classificacao.nivel;
@@ -486,7 +489,7 @@ function gerarRelatorioPDF() {
     doc.setTextColor(0,0,0); doc.setFontSize(9);
     Object.keys(TRANSTORNOS).forEach(function(sigla) {
         var t = TRANSTORNOS[sigla];
-        var r = dados.dominios[sigla];
+        var r = _resComp[sigla];
         doc.setFont(undefined,'bold');
         doc.text(sigla + ' - ' + t.nome, 20, y); y += 5;
         doc.setFont(undefined,'normal');
