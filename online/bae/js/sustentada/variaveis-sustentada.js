@@ -30,6 +30,7 @@ let acertosComprometidos = 0; // 651-1000ms
 var negligencias = 0; // 1001-2000ms
 var omissoes = 0; // >2000ms
 var respostasImpulsivas = 0; // Apertar no distrator
+var perseveracoesSustentada = 0; // Toques extras no mesmo estimulo
 
 // ===== ARRAYS DE TEMPOS =====
 var temposReacaoSustentada = [];
@@ -108,6 +109,7 @@ function resetarContadoresSustentada() {
     negligencias = 0;
     omissoes = 0;
     respostasImpulsivas = 0;
+    perseveracoesSustentada = 0;
     respostasOpositorias = 0;
     registroAlvosPorTempo = [];
     temposReacaoSustentada = [];

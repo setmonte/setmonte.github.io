@@ -289,10 +289,14 @@ function showNextAnimal(forceCall = false) {
 function checkResponse(event) {
   if (!isTestRunningSeletiva || event.key !== " ") return;
   
-  // Guard: impede multiplas respostas ao mesmo estimulo
-  if (respondeuAnimalAnterior) return;
-  
   event.preventDefault();
+  
+  // Protecao: se ja respondeu a este estimulo, conta como perseveracao (erro impulsivo)
+  if (respondeuAnimalAnterior) {
+    perseveracoesSeletiva++;
+    console.log(`⚠️ PERSEVERAÇÃO: Toque extra ignorado (${currentAnimal}). Total: ${perseveracoesSeletiva}`);
+    return;
+  }
   
   const reactionTime = performance.now() - startTimeSeletiva;
   var modo = window._ultimaEntradaTouch ? 'touch' : 'teclado';
@@ -390,6 +394,7 @@ function endTesteSeletiva(abandonado = false) {
     acertos: acertosSeletiva,
     erros: errosSeletiva,
     omissoes: omissoesSeletiva,
+    perseveracoes: perseveracoesSeletiva,
     totalLeoes: totalLeoes,
     taxaAcerto: taxaAcerto,
     tempoMedio: avgReactionTime,

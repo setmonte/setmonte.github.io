@@ -29,6 +29,7 @@ var totalErros = 0;          // Total de erros (apertou em não-alvos)
 var totalOmissoes = 0;       // Total de omissões
 var temposReacaoAlternada = [];       // Array com tempos de reação
 var respostasRapidas = 0;    // Respostas < 200ms (reação rápida - alta performance)
+var perseveracoesAlternada = 0; // Toques extras no mesmo estimulo (perseveração)
 
 // ===== CONTROLE DE RESPOSTA =====
 // Linha 30-32: Variáveis de controle de interação

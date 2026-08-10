@@ -279,7 +279,11 @@ function processarRespostaDividida(event) {
 
     if (event.key === ' ') {
         event.preventDefault();
-        if (respostaVisualDetectada) return;
+        if (respostaVisualDetectada) {
+            perseveracoesDividida++;
+            console.log(`⚠️ PERSEVERAÇÃO VISUAL: Toque extra. Total: ${perseveracoesDividida}`);
+            return;
+        }
         respostaVisualDetectada = true;
         var modo = window._ultimaEntradaTouch ? 'touch' : 'teclado';
         window._ultimaEntradaTouch = false;
@@ -295,7 +299,11 @@ function processarRespostaDividida(event) {
         }
     } else if (event.key === 'Enter') {
         event.preventDefault();
-        if (respostaAuditivaDetectada) return;
+        if (respostaAuditivaDetectada) {
+            perseveracoesDividida++;
+            console.log(`⚠️ PERSEVERAÇÃO AUDITIVA: Toque extra. Total: ${perseveracoesDividida}`);
+            return;
+        }
         respostaAuditivaDetectada = true;
         var modoA = window._ultimaEntradaTouch ? 'touch' : 'teclado';
         window._ultimaEntradaTouch = false;
@@ -379,6 +387,7 @@ function finalizarTesteDividida() {
         errosAuditivos: errosAuditivosDividida,
         omissoesVisuais: omissoesVisuaisDividida,
         omissoesAuditivas: omissoesAuditivasDividida,
+        perseveracoes: perseveracoesDividida,
         totalAcertos: acertosVisuaisDividida + acertosAuditivosDividida,
         taxaAcerto: desempenhoGeral,
         tempoMedio: tempoMedio,

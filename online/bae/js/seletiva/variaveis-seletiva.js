@@ -3,6 +3,7 @@ const animais = ["leao", "pato", "elefante", "girafa", "cachorro"];
 var acertosSeletiva = 0;
 var errosSeletiva = 0;
 let omissoesSeletiva = 0;
+var perseveracoesSeletiva = 0;
 var temposReacaoSeletiva = [];
 let currentAnimal;
 let startTimeSeletiva;
@@ -74,6 +75,7 @@ function resetarContadoresSeletiva() {
     acertosSeletiva = 0;
     errosSeletiva = 0;
     omissoesSeletiva = 0;
+    perseveracoesSeletiva = 0;
     temposReacaoSeletiva = [];
     totalLeoes = 0;
     firstCall = true;

@@ -104,6 +104,7 @@ function resetTeste() {
   totalOmissoes = 0;
   temposReacaoAlternada = [];
   respostasRapidas = 0;
+  perseveracoesAlternada = 0;
   
   figuraAtual = { forma1: '', forma2: '', cor1: '', cor2: '' };
   figuraAnterior = { forma1: '', forma2: '', cor1: '', cor2: '' };
@@ -467,11 +468,18 @@ function gerarParNaoAlvo() {
 
 // ===== CONTROLE DE TECLADO =====
 function processarTecla(event) {
-  if (!testeAtivoAlternada || !aguardandoResposta) return;
+  if (!testeAtivoAlternada) return;
   
   if (event.code === 'Space' || event.key === ' ' || event.keyCode === 32) {
     event.preventDefault();
     event.stopImmediatePropagation();
+    
+    // Protecao: se ja respondeu a este estimulo, conta como perseveracao
+    if (!aguardandoResposta) {
+      perseveracoesAlternada++;
+      console.log(`⚠️ PERSEVERAÇÃO: Toque extra no par ${parAtual}. Total: ${perseveracoesAlternada}`);
+      return;
+    }
     
     aguardandoResposta = false;
     
@@ -842,6 +850,7 @@ function salvarResultadosAlternada() {
     omissoes: totalOmissoes,
     omissoesCor: omissoesCor,
     omissoesForma: omissoesForma,
+    perseveracoes: perseveracoesAlternada,
     taxaAcerto: R,
     tempoMedio: tempoMedio,
     temposReacao: temposReacaoAlternada.slice(),

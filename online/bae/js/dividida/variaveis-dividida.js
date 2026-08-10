@@ -12,6 +12,7 @@ var errosVisuaisDividida = 0;
 var errosAuditivosDividida = 0;
 var omissoesVisuaisDividida = 0;
 var omissoesAuditivasDividida = 0;
+var perseveracoesDividida = 0;
 var temposReacaoVisuaisDividida = [];
 var temposReacaoAuditivosDividida = [];
 
@@ -87,6 +88,7 @@ function resetarContadoresDividida() {
     errosAuditivosDividida = 0;
     omissoesVisuaisDividida = 0;
     omissoesAuditivasDividida = 0;
+    perseveracoesDividida = 0;
     temposReacaoVisuaisDividida = [];
     temposReacaoAuditivosDividida = [];
     sequenciaEstimulosDividida = [];

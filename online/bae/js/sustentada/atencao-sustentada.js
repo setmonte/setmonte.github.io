@@ -422,7 +422,11 @@ function processarRespostaSustentada(event) {
     if (event.code === 'Space') {
         event.preventDefault();
         
-        if (respostaDetectadaSustentada) return;
+        if (respostaDetectadaSustentada) {
+            perseveracoesSustentada++;
+            console.log(`⚠️ PERSEVERAÇÃO: Toque extra no estimulo (${tipoEstimuloAtual}). Total: ${perseveracoesSustentada}`);
+            return;
+        }
         
         const tempoReacao = performance.now() - tempoInicioEstimulo;
         var modo = window._ultimaEntradaTouch ? 'touch' : 'teclado';
@@ -684,6 +688,7 @@ function salvarResultadoTesteSustentada() {
         acertos: acertos,
         erros: totalErros,
         omissoes: omissoes,
+        perseveracoes: perseveracoesSustentada,
         totalAlvos: estimulosAlvo,
         tempoMedio: Math.round(tempoMedioReacao * 10) / 10,
         duracaoTeste: Math.floor((fimTeste - inicioTeste) / 1000),
