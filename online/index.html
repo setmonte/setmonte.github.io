@@ -9277,6 +9277,142 @@
           yr += 8;
         });
       }
+      // === GRAFICO CBCL MULTI-INFORMANTE ===
+      if (d.escala && d.escala.indexOf('CBCL') >= 0 && d.dominios && typeof d.dominios === 'object' && !Array.isArray(d.dominios)) {
+        // Sindromes do CBCL (8 escalas)
+        var _cbclSindr = ['Ansiedade/Depressao','Afastamento/Depressao','Queixas Somaticas','Problemas Sociais','Problemas de Pensamento','Problemas de Atencao','Quebrar Regras','Comportamento Agressivo'];
+        var _cbclChaves = Object.keys(d.dominios).filter(function(k) { return k !== 'Internalizante' && k !== 'Externalizante' && k !== 'Outros Problemas'; });
+        // Buscar todas as CBCLs do mesmo paciente no cache
+        var _cbclIdPac = d.idPaciente || '';
+        var _cbclInformantes = [];
+        if (_escalasResultCache && _cbclIdPac) {
+          _escalasResultCache.forEach(function(rc) {
+            var rd = rc.data || {};
+            if (rd.escala && rd.escala.indexOf('CBCL') >= 0 && rd.idPaciente === _cbclIdPac && rd.dominios && typeof rd.dominios === 'object') {
+              var label = rd.nomeRespondente || rd.respondente || 'Respondente';
+              var vals = [];
+              _cbclChaves.forEach(function(k) {
+                var dom = rd.dominios[k];
+                if (dom && dom.pontuacao != null && dom.max != null && dom.max > 0) {
+                  vals.push(Math.round((dom.pontuacao / dom.max) * 1000) / 10);
+                } else { vals.push(0); }
+              });
+              if (vals.length > 0) _cbclInformantes.push({label: label, valores: vals, data: rd.data || ''});
+            }
+          });
+        }
+        // Se nao achou nenhum no cache (ex: unico resultado), usa o proprio
+        if (_cbclInformantes.length === 0) {
+          var _selfLabel = d.nomeRespondente || d.respondente || 'Respondente';
+          var _selfVals = [];
+          _cbclChaves.forEach(function(k) {
+            var dom = d.dominios[k];
+            if (dom && dom.pontuacao != null && dom.max != null && dom.max > 0) {
+              _selfVals.push(Math.round((dom.pontuacao / dom.max) * 1000) / 10);
+            } else { _selfVals.push(0); }
+          });
+          _cbclInformantes.push({label: _selfLabel, valores: _selfVals});
+        }
+        // Desenhar grafico numa nova pagina
+        doc.addPage();
+        var _gy = 15;
+        doc.setFillColor(21,101,192); doc.rect(0,0,210,20,'F');
+        doc.setTextColor(255,255,255); doc.setFontSize(12); doc.setFont(undefined,'bold');
+        doc.text('CBCL 6/18 - Escalas de Sindromes', 105, 13, {align:'center'});
+        _gy = 28;
+        doc.setTextColor(100,100,100); doc.setFontSize(7); doc.setFont(undefined,'normal');
+        doc.text('Paciente: ' + sanitize(d.paciente || '') + '   |   ' + _cbclInformantes.length + ' informante(s)', 105, _gy, {align:'center'});
+        _gy += 8;
+        // Dimensoes do grafico
+        var _gX = 32; var _gW = 160; var _gH = 80;
+        var _gY = _gy; var _yBase = _gY + _gH; var _yTop = _gY;
+        var _y25 = _yBase - (25/100)*_gH;
+        var _y40 = _yBase - (40/100)*_gH;
+        // Faixas coloridas
+        doc.setFillColor(232,245,233); doc.rect(_gX, _y25, _gW, _yBase - _y25, 'F');
+        doc.setFillColor(255,248,225); doc.rect(_gX, _y40, _gW, _y25 - _y40, 'F');
+        doc.setFillColor(255,235,238); doc.rect(_gX, _yTop, _gW, _y40 - _yTop, 'F');
+        // Labels faixas
+        doc.setFontSize(6.5); doc.setFont(undefined,'bold');
+        doc.setTextColor(46,125,50); doc.text('Nao Clinico', _gX - 2, _yBase - 8, {align:'right'});
+        doc.setTextColor(245,127,23); doc.text('Limitrofe', _gX - 2, _y25 - 4, {align:'right'});
+        doc.setTextColor(198,40,40); doc.text('Clinico', _gX - 2, _y40 - 10, {align:'right'});
+        // Linhas de corte tracejadas
+        doc.setDrawColor(255,152,0); doc.setLineWidth(0.3);
+        for (var _lx = _gX; _lx < _gX + _gW; _lx += 4) { doc.line(_lx, _y25, _lx + 2, _y25); }
+        doc.setDrawColor(244,67,54);
+        for (var _lx2 = _gX; _lx2 < _gX + _gW; _lx2 += 4) { doc.line(_lx2, _y40, _lx2 + 2, _y40); }
+        // Eixos
+        doc.setDrawColor(150,150,150); doc.setLineWidth(0.2);
+        doc.line(_gX, _yTop, _gX, _yBase);
+        doc.line(_gX, _yBase, _gX + _gW, _yBase);
+        // Escala Y
+        doc.setFontSize(6); doc.setFont(undefined,'normal'); doc.setTextColor(100,100,100);
+        for (var _pv = 0; _pv <= 100; _pv += 20) {
+          var _yv = _yBase - (_pv/100)*_gH;
+          doc.text(_pv + '%', _gX - 3, _yv + 1, {align:'right'});
+          if (_pv > 0 && _pv < 100) { doc.setDrawColor(220,220,220); doc.line(_gX, _yv, _gX + _gW, _yv); }
+        }
+        // Separadores Internalizante / Externalizante
+        var _sepX1 = _gX + (3/_cbclChaves.length)*_gW;
+        var _sepX2 = _gX + (6/_cbclChaves.length)*_gW;
+        doc.setDrawColor(180,180,180); doc.setLineWidth(0.15);
+        doc.line(_sepX1, _yTop, _sepX1, _yBase);
+        doc.line(_sepX2, _yTop, _sepX2, _yBase);
+        doc.setFontSize(6.5); doc.setFont(undefined,'italic'); doc.setTextColor(120,120,120);
+        doc.text('Internalizante', _gX + (_sepX1 - _gX)/2, _yTop - 2, {align:'center'});
+        doc.text('Externalizante', _sepX2 + (_gX + _gW - _sepX2)/2, _yTop - 2, {align:'center'});
+        // Cores para informantes
+        var _cbclCores = [[21,101,192],[211,47,47],[56,142,60],[156,39,176],[255,111,0],[0,151,167],[121,85,72],[63,81,181]];
+        var _stepX = _gW / (_cbclChaves.length - 1);
+        // Plotar linhas de cada informante
+        for (var _ii = 0; _ii < _cbclInformantes.length; _ii++) {
+          var _inf = _cbclInformantes[_ii];
+          var _cor = _cbclCores[_ii % _cbclCores.length];
+          doc.setDrawColor(_cor[0], _cor[1], _cor[2]); doc.setLineWidth(0.9);
+          for (var _pi = 0; _pi < _inf.valores.length - 1; _pi++) {
+            var _px1 = _gX + _pi * _stepX;
+            var _py1 = _yBase - (_inf.valores[_pi]/100)*_gH;
+            var _px2 = _gX + (_pi+1) * _stepX;
+            var _py2 = _yBase - (_inf.valores[_pi+1]/100)*_gH;
+            doc.line(_px1, _py1, _px2, _py2);
+          }
+          // Pontos
+          doc.setFillColor(_cor[0], _cor[1], _cor[2]);
+          for (var _pp = 0; _pp < _inf.valores.length; _pp++) {
+            var _ppx = _gX + _pp * _stepX;
+            var _ppy = _yBase - (_inf.valores[_pp]/100)*_gH;
+            doc.circle(_ppx, _ppy, 1.3, 'F');
+          }
+        }
+        // Labels eixo X
+        doc.setFontSize(5.5); doc.setFont(undefined,'normal'); doc.setTextColor(50,50,50);
+        var _labX = ['Depr/Ans','Afastam','Queixas\nSomat','Probl\nSociais','Probl\nPensam','Probl\nAtencao','Quebrar\nRegras','Compto\nAgress'];
+        for (var _li = 0; _li < _labX.length && _li < _cbclChaves.length; _li++) {
+          var _lxp = _gX + _li * _stepX;
+          var _partes = _labX[_li].split('\n');
+          for (var _lpi = 0; _lpi < _partes.length; _lpi++) {
+            doc.text(_partes[_lpi], _lxp, _yBase + 4 + _lpi*3.5, {align:'center'});
+          }
+        }
+        // Legenda
+        var _legY = _yBase + 16;
+        doc.setFontSize(7); doc.setFont(undefined,'bold'); doc.setTextColor(50,50,50);
+        doc.text('Informantes:', _gX, _legY); _legY += 5;
+        for (var _lgi = 0; _lgi < _cbclInformantes.length; _lgi++) {
+          var _lgCor = _cbclCores[_lgi % _cbclCores.length];
+          doc.setFillColor(_lgCor[0], _lgCor[1], _lgCor[2]); doc.rect(_gX, _legY - 1.5, 8, 2.5, 'F');
+          doc.setFontSize(7); doc.setFont(undefined,'normal'); doc.setTextColor(50,50,50);
+          var _lgTxt = sanitize(_cbclInformantes[_lgi].label);
+          if (_cbclInformantes[_lgi].data) { var _lgD = new Date(_cbclInformantes[_lgi].data); if (!isNaN(_lgD.getTime())) _lgTxt += ' (' + _lgD.toLocaleDateString('pt-BR') + ')'; }
+          doc.text(_lgTxt, _gX + 10, _legY);
+          _legY += 5;
+        }
+        // Nota de pontos de corte
+        _legY += 3;
+        doc.setFontSize(6); doc.setFont(undefined,'italic'); doc.setTextColor(130,130,130);
+        doc.text('Pontos de corte: Normal <=25% | Limitrofe 25-40% | Clinico >40% (proporcao do escore maximo)', _gX, _legY);
+      }
       // Rodape profissional
       var totalPages = doc.internal.getNumberOfPages();
       for (var pg = 1; pg <= totalPages; pg++) {
