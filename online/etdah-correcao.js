@@ -629,3 +629,56 @@ function etdahGerarPDF() {
     }
   };
 })();
+
+// Atualiza soma total e classificacao em tempo real ao digitar
+function _etdahAtualizarTotal() {
+  var f1 = parseInt(document.getElementById('etdah_f1').value) || 0;
+  var f2 = parseInt(document.getElementById('etdah_f2').value) || 0;
+  var f3 = parseInt(document.getElementById('etdah_f3').value) || 0;
+  var f4 = parseInt(document.getElementById('etdah_f4').value) || 0;
+  var total = f1 + f2 + f3 + f4;
+  var elTotal = document.getElementById('etdah_total');
+  if (elTotal) elTotal.textContent = total > 0 ? total : '0';
+
+  // Buscar tabela pela selecao atual
+  var sexo = document.getElementById('etdahSexo').value;
+  var idade = document.getElementById('etdahIdade').value;
+  var tabela = _etdahSelecionarTabela(sexo, idade);
+
+  // Classificacao de cada fator em tempo real
+  var campos = [
+    {id: 'etdah_f1', campo: 'f1', elClassif: 'etdah_f1_classif', valor: f1},
+    {id: 'etdah_f2', campo: 'f2', elClassif: 'etdah_f2_classif', valor: f2},
+    {id: 'etdah_f3', campo: 'f3', elClassif: 'etdah_f3_classif', valor: f3},
+    {id: 'etdah_f4', campo: 'f4', elClassif: 'etdah_f4_classif', valor: f4}
+  ];
+  for (var i = 0; i < campos.length; i++) {
+    var c = campos[i];
+    var elC = document.getElementById(c.elClassif);
+    if (!elC) continue;
+    if (c.valor > 0) {
+      var perc = _etdahBuscarPercentil(c.valor, tabela, c.campo);
+      var cl = _etdahClassificar(perc);
+      elC.textContent = 'Percentil ' + (perc != null ? perc : '-') + ' | ' + cl.texto;
+      elC.style.color = _etdahCorClassif(cl.classe);
+      elC.style.fontWeight = 'bold';
+    } else {
+      elC.textContent = '\u2014';
+      elC.style.color = '#555';
+      elC.style.fontWeight = 'normal';
+    }
+  }
+  // Total
+  var elTotalC = document.getElementById('etdah_total_classif');
+  if (elTotalC && total > 0) {
+    var percT = _etdahBuscarPercentil(total, tabela, 'g');
+    var clT = _etdahClassificar(percT);
+    elTotalC.textContent = 'Percentil ' + (percT != null ? percT : '-') + ' | ' + clT.texto;
+    elTotalC.style.color = _etdahCorClassif(clT.classe);
+    elTotalC.style.fontWeight = 'bold';
+  } else if (elTotalC) {
+    elTotalC.textContent = '\u2014';
+    elTotalC.style.color = '#555';
+    elTotalC.style.fontWeight = 'normal';
+  }
+}
