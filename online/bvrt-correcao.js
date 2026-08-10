@@ -344,8 +344,8 @@ function bvrtGerarPDF() {
     doc.text(titulo, ml, ty); ty += 5;
 
     // Cabecalho da tabela
-    var cols = [ml, ml+60, ml+82, ml+100, ml+118, ml+140];
-    var colW = [60, 22, 18, 18, 22, 55];
+    var cols = [ml, ml+52, ml+72, ml+88, ml+104, ml+124];
+    var colW = [52, 20, 16, 16, 20, 71];
     doc.setFillColor(74, 20, 140);
     doc.rect(ml, ty-3.5, mr-ml, 5.5, 'F');
     doc.setFontSize(7.5); doc.setFont(undefined,'bold'); doc.setTextColor(255,255,255);
@@ -378,7 +378,7 @@ function bvrtGerarPDF() {
       else if (cls.classe==='alerta') doc.setTextColor(245,127,23);
       else if (cls.classe==='moderado') doc.setTextColor(230,81,0);
       else doc.setTextColor(183,28,28);
-      doc.setFont(undefined,'bold'); doc.setFontSize(7);
+      doc.setFont(undefined,'bold'); doc.setFontSize(6.5);
       doc.text(cls.texto, cols[5]+1, ty);
       doc.setFontSize(7.5); doc.setFont(undefined,'normal');
       doc.setTextColor(33,33,33);
