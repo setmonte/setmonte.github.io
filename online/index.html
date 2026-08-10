@@ -1538,6 +1538,7 @@
           <!-- SUB-ABAS -->
           <div style="display:flex;gap:0;border-bottom:2px solid #e0e0e0;margin-bottom:15px;">
             <button id="subTabBvrt" onclick="switchCorrecaoSubTab('bvrt')" style="flex:1;padding:12px 20px;font-size:13px;font-weight:bold;border:none;border-bottom:3px solid #4a148c;background:#ede7f6;color:#4a148c;cursor:pointer;border-radius:8px 8px 0 0;">BVRT</button>
+            <button id="subTabEtdah" onclick="switchCorrecaoSubTab('etdah')" style="flex:1;padding:12px 20px;font-size:13px;font-weight:bold;border:none;border-bottom:3px solid transparent;background:#f5f5f5;color:#777;cursor:pointer;border-radius:8px 8px 0 0;">ETDAH-PAIS</button>
           </div>
           <!-- CONTEUDO SUB-ABA BVRT -->
           <div id="correcaoBvrt">
@@ -1600,6 +1601,39 @@
               <div id="bvrtTabelaMemoria"></div>
               <div id="bvrtTabelaCopia"></div>
             </div>
+          </div>
+          <!-- CONTEUDO SUB-ABA ETDAH-PAIS -->
+          <div id="correcaoEtdah" style="display:none;">
+            <div style="background:#e3f2fd;border:1px solid #90caf9;border-radius:10px;padding:20px;margin-bottom:15px;">
+              <p style="font-size:14px;font-weight:bold;color:#1565c0;margin-bottom:10px;">&#129504; ETDAH-PAIS &#8212; Escala de Avaliacao de Comportamentos Infantojuvenis no TDAH em Ambiente Familiar</p>
+              <p style="font-size:12px;color:#555;line-height:1.6;">Calculo automatico de percentis e classificacao com base nas tabelas normativas (Benczik, 2018). Insira os escores brutos de cada fator. Permite multiplos respondentes no mesmo grafico.</p>
+              <p style="font-size:11px;color:#777;margin-top:8px;"><strong>Fatores:</strong> F1-Regulacao Emocional (19 itens) | F2-Hiperatividade/Impulsividade (13 itens) | F3-Comportamento Adaptativo (14 itens) | F4-Atencao (12 itens)</p>
+              <p style="font-size:11px;color:#c62828;margin-top:5px;"><strong>Lembrete:</strong> Inverter pontuacao de TODOS os itens do F3 e do item 1 do F4 antes de somar.</p>
+            </div>
+            <div style="background:white;border:1px solid #e0e0e0;border-radius:10px;padding:15px;margin-bottom:12px;">
+              <p style="font-weight:bold;color:#1565c0;margin-bottom:10px;font-size:13px;">Dados do Paciente</p>
+              <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                <label style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:#555;font-weight:600;">Nome<input type="text" id="etdahNome" style="padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-size:12px;width:180px;" placeholder="Nome do paciente"></label>
+                <label style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:#555;font-weight:600;">Idade (anos)<input type="number" id="etdahIdade" min="2" max="17" style="padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-size:12px;width:70px;" placeholder="10"></label>
+                <label style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:#555;font-weight:600;">Sexo<select id="etdahSexo" style="padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-size:12px;"><option value="">Selecione...</option><option value="Masculino">Masculino</option><option value="Feminino">Feminino</option></select></label>
+                <label style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:#555;font-weight:600;">Respondente<input type="text" id="etdahRespondente" style="padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-size:12px;width:120px;" placeholder="Mae, Pai..."></label>
+              </div>
+            </div>
+            <div style="background:white;border:1px solid #e0e0e0;border-radius:10px;padding:15px;margin-bottom:12px;">
+              <p style="font-weight:bold;color:#1565c0;margin-bottom:10px;font-size:13px;">Escores Brutos por Fator</p>
+              <p style="font-size:11px;color:#777;margin-bottom:10px;">Some as pontuacoes de cada fator (ja com inversoes aplicadas) e insira abaixo:</p>
+              <div style="display:grid;grid-template-columns:1fr 90px;gap:8px;align-items:center;font-size:12px;max-width:400px;">
+                <span><strong>F1</strong> - Regulacao Emocional (19-114)</span><input type="number" id="etdah_f1" min="19" max="114" style="padding:6px;border:1px solid #ccc;border-radius:6px;text-align:center;font-size:13px;">
+                <span><strong>F2</strong> - Hiperatividade/Impulsividade (13-78)</span><input type="number" id="etdah_f2" min="13" max="78" style="padding:6px;border:1px solid #ccc;border-radius:6px;text-align:center;font-size:13px;">
+                <span><strong>F3</strong> - Comportamento Adaptativo (14-84)</span><input type="number" id="etdah_f3" min="14" max="84" style="padding:6px;border:1px solid #ccc;border-radius:6px;text-align:center;font-size:13px;">
+                <span><strong>F4</strong> - Atencao (12-72)</span><input type="number" id="etdah_f4" min="12" max="72" style="padding:6px;border:1px solid #ccc;border-radius:6px;text-align:center;font-size:13px;">
+              </div>
+            </div>
+            <div style="text-align:center;margin:15px 0;">
+              <button onclick="etdahCalcular()" style="padding:10px 25px;border:none;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#1565c0,#42a5f5);color:white;">Adicionar Respondente</button>
+              <button onclick="etdahLimpar()" style="padding:10px 25px;border:none;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#e53935,#ef5350);color:white;margin-left:8px;">Limpar Tudo</button>
+            </div>
+            <div id="etdahResultados" style="display:none;background:white;border:2px solid #1565c0;border-radius:10px;padding:20px;margin-top:15px;"></div>
           </div>
         </div>
 
@@ -11002,5 +11036,6 @@
   </script>
   <script src="neo-pdf.js"></script>
   <script src="bvrt-correcao.js"></script>
+  <script src="etdah-correcao.js"></script>
 </body>
 </html>
