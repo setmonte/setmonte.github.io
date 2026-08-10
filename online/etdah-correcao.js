@@ -290,19 +290,27 @@ function etdahGerarQuestionario() {
     for (var i = 0; i < f.itens.length; i++) {
       var item = f.itens[i];
       var invTag = item.invertido ? ' <span style="color:#c62828;font-size:9px;font-weight:bold;">(INV)</span>' : '';
-      html += '<div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid #f0f0f0;font-size:11px;">';
+      html += '<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:1px solid #f0f0f0;font-size:11px;">';
       html += '<span style="min-width:22px;font-weight:bold;color:' + f.cor + ';">' + item.num + '.</span>';
       html += '<span style="flex:1;">' + item.texto + invTag + '</span>';
-      for (var v = 1; v <= 6; v++) {
-        html += '<label style="display:flex;flex-direction:column;align-items:center;cursor:pointer;font-size:9px;color:#777;">' + v;
-        html += '<input type="radio" name="etdah_' + f.id + '_' + i + '" value="' + v + '" onchange="_etdahAtualizarSomas()" style="margin:0;cursor:pointer;">';
-        html += '</label>';
-      }
+      html += '<input type="number" id="etdah_' + f.id + '_' + i + '" min="1" max="6" style="width:36px;padding:4px;border:1px solid #ccc;border-radius:4px;text-align:center;font-size:13px;font-weight:bold;" oninput="_etdahValidarItem(this);_etdahAtualizarSomas()">';
       html += '</div>';
     }
     html += '</div></div>';
   }
   el.innerHTML = html;
+}
+
+// Valida que so aceita 1-6
+function _etdahValidarItem(el) {
+  var v = parseInt(el.value);
+  if (el.value !== '' && (isNaN(v) || v < 1 || v > 6)) {
+    el.style.borderColor = '#f44336';
+    el.style.background = '#ffebee';
+  } else {
+    el.style.borderColor = '#ccc';
+    el.style.background = '';
+  }
 }
 
 // === ATUALIZAR SOMAS EM TEMPO REAL ===
@@ -319,12 +327,14 @@ function _etdahAtualizarSomas() {
     var soma = 0;
     var respondidos = 0;
     for (var i = 0; i < f.itens.length; i++) {
-      var sel = document.querySelector('input[name="etdah_' + f.id + '_' + i + '"]:checked');
-      if (sel) {
-        var val = parseInt(sel.value);
-        if (f.itens[i].invertido) val = _etdahInverter(val);
-        soma += val;
-        respondidos++;
+      var inp = document.getElementById('etdah_' + f.id + '_' + i);
+      if (inp && inp.value !== '') {
+        var val = parseInt(inp.value);
+        if (val >= 1 && val <= 6) {
+          if (f.itens[i].invertido) val = _etdahInverter(val);
+          soma += val;
+          respondidos++;
+        }
       }
     }
     var elSoma = document.getElementById('etdahSoma_' + f.id);
@@ -364,12 +374,14 @@ function etdahCalcular() {
     var soma = 0;
     var resp = 0;
     for (var i = 0; i < f.itens.length; i++) {
-      var sel = document.querySelector('input[name="etdah_' + f.id + '_' + i + '"]:checked');
-      if (sel) {
-        var val = parseInt(sel.value);
-        if (f.itens[i].invertido) val = _etdahInverter(val);
-        soma += val;
-        resp++;
+      var inp = document.getElementById('etdah_' + f.id + '_' + i);
+      if (inp && inp.value !== '') {
+        var val = parseInt(inp.value);
+        if (val >= 1 && val <= 6) {
+          if (f.itens[i].invertido) val = _etdahInverter(val);
+          soma += val;
+          resp++;
+        }
       }
       totalItens++;
     }
@@ -437,9 +449,9 @@ function etdahLimpar() {
   _etdahRespondentes = [];
   var el = document.getElementById('etdahResultados');
   if (el) { el.style.display = 'none'; el.innerHTML = ''; }
-  // Limpar radios
-  var radios = document.querySelectorAll('input[name^="etdah_f"]');
-  for (var i = 0; i < radios.length; i++) radios[i].checked = false;
+  // Limpar inputs numericos
+  var inputs = document.querySelectorAll('#etdahQuestionario input[type="number"]');
+  for (var i = 0; i < inputs.length; i++) { inputs[i].value = ''; inputs[i].style.borderColor = '#ccc'; inputs[i].style.background = ''; }
   _etdahAtualizarSomas();
   var campos = ['etdahNome','etdahIdade','etdahSexo','etdahRespondente'];
   for (var c = 0; c < campos.length; c++) { var inp = document.getElementById(campos[c]); if (inp) inp.value = ''; }
