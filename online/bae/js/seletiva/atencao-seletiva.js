@@ -289,6 +289,9 @@ function showNextAnimal(forceCall = false) {
 function checkResponse(event) {
   if (!isTestRunningSeletiva || event.key !== " ") return;
   
+  // Guard: impede multiplas respostas ao mesmo estimulo
+  if (respondeuAnimalAnterior) return;
+  
   event.preventDefault();
   
   const reactionTime = performance.now() - startTimeSeletiva;
