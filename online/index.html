@@ -7829,6 +7829,12 @@
       var maxY = 275;
       var y = 0;
 
+      // Funcao para remover acentos (jsPDF nao suporta com fonte padrao)
+      function _sa(t) {
+        if (!t) return t;
+        return String(t).normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+      }
+
       // Converter cor hex para RGB
       var cor = cfg.corPDF || '#00695c';
       var corR = parseInt(cor.slice(1,3),16), corG = parseInt(cor.slice(3,5),16), corB = parseInt(cor.slice(5,7),16);
@@ -7868,22 +7874,22 @@
       if (cfg.nomeProfissional) {
         var yh = 9;
         doc.setFontSize(11); doc.setFont(undefined, 'bold');
-        doc.text(cfg.nomeProfissional, logoX, yh); yh += 5;
+        doc.text(_sa(cfg.nomeProfissional), logoX, yh); yh += 5;
         doc.setFontSize(7.5); doc.setFont(undefined, 'normal');
         // Linha 2: CRP + Consultorio
         var linha1 = '';
         if (cfg.crp) linha1 += cfg.crp;
         if (cfg.consultorio) linha1 += (linha1 ? '  |  ' : '') + cfg.consultorio;
-        if (linha1) { doc.text(linha1, logoX, yh); yh += 4; }
+        if (linha1) { doc.text(_sa(linha1), logoX, yh); yh += 4; }
         // Linha 3: Endereco
-        if (cfg.endereco) { doc.text(cfg.endereco, logoX, yh); yh += 4; }
+        if (cfg.endereco) { doc.text(_sa(cfg.endereco), logoX, yh); yh += 4; }
         // Linha 4: Telefone(s) + Email
         var linha3 = '';
         if (cfg.telefone) linha3 += cfg.telefone;
         if (cfg.telefone2) linha3 += (linha3 ? '  |  ' : '') + cfg.telefone2;
         if (cfg.telefone3) linha3 += (linha3 ? '  |  ' : '') + cfg.telefone3;
         if (cfg.email) linha3 += (linha3 ? '  |  ' : '') + cfg.email;
-        if (linha3) { doc.text(linha3, logoX, yh); yh += 4; }
+        if (linha3) { doc.text(_sa(linha3), logoX, yh); yh += 4; }
         // Titulo do documento
         yh += 1;
         doc.setFontSize(9); doc.setFont(undefined, 'bold');
@@ -7897,17 +7903,17 @@
 
       // Dados do paciente
       doc.setFontSize(9); doc.setFont(undefined, 'normal');
-      doc.text('Paciente: ' + (d.paciente || 'N/I') + '   |   Respondente: ' + (d.respondente || '-'), logoX, 32);
+      doc.text(_sa('Paciente: ' + (d.paciente || 'N/I') + '   |   Respondente: ' + (d.respondente || '-')), logoX, 32);
 
       y = 40;
       doc.setFillColor(248, 249, 250); doc.rect(15, y, 180, 18, 'F');
       doc.setTextColor(corR, corG, corB); doc.setFontSize(9); doc.setFont(undefined, 'bold');
       doc.text('DADOS DO PACIENTE', 20, y + 5);
       doc.setTextColor(0, 0, 0); doc.setFontSize(8); doc.setFont(undefined, 'normal');
-      doc.text('Nome: ' + (respostas.nome || d.paciente || '-'), 20, y + 10);
+      doc.text(_sa('Nome: ' + (respostas.nome || d.paciente || '-')), 20, y + 10);
       var dnFormatada = respostas.dataNascimento ? respostas.dataNascimento.split('-').reverse().join('/') : '-';
       var linha2 = 'Data Nasc.: ' + dnFormatada + '   |   Idade: ' + (respostas.idade || '-') + '   |   Sexo: ' + (respostas.sexo || '-') + '   |   CPF: ' + (respostas.cpf || '-');
-      doc.text(linha2, 20, y + 15);
+      doc.text(_sa(linha2), 20, y + 15);
       if (respostas.idPaciente) { doc.text('ID: ' + respostas.idPaciente, 150, y + 15); }
 
       y = 62;
@@ -7917,17 +7923,17 @@
         if (y > maxY) { doc.addPage(); y = 15; }
         doc.setFillColor(corR, corG, corB); doc.rect(15, y - 3, 180, 8, 'F');
         doc.setTextColor(255, 255, 255); doc.setFontSize(9); doc.setFont(undefined, 'bold');
-        doc.text(secao.titulo, 20, y + 2); y += 12;
+        doc.text(_sa(secao.titulo), 20, y + 2); y += 12;
         doc.setTextColor(0, 0, 0); doc.setFontSize(8); doc.setFont(undefined, 'normal');
         secao.campos.forEach(function(campo) {
           var valor = respostas[campo.id];
           if (!valor && valor !== 0) return;
           if (y > maxY) { doc.addPage(); y = 15; }
           doc.setFont(undefined, 'bold');
-          var labelLines = doc.splitTextToSize(campo.label + ':', 170);
+          var labelLines = doc.splitTextToSize(_sa(campo.label + ':'), 170);
           labelLines.forEach(function(l) { doc.text(l, 18, y); y += 4; });
           doc.setFont(undefined, 'normal');
-          var valorLines = doc.splitTextToSize(String(valor), 165);
+          var valorLines = doc.splitTextToSize(_sa(String(valor)), 165);
           valorLines.forEach(function(l) { doc.text(l, 22, y); y += 4; });
           y += 3;
         });
@@ -7942,7 +7948,7 @@
         doc.line(15, 286, 195, 286);
         doc.setTextColor(150, 150, 150); doc.setFontSize(7);
         var rodape = 'Anamnese gerada em: ' + new Date().toLocaleString('pt-BR');
-        if (cfg.nomeProfissional) rodape += ' | ' + cfg.nomeProfissional;
+        if (cfg.nomeProfissional) rodape += ' | ' + _sa(cfg.nomeProfissional);
         doc.text(rodape, 15, 291);
         doc.text('Pag. ' + pg + '/' + totalPags, 195, 291, {align: 'right'});
       }
