@@ -503,8 +503,8 @@ async function finalizarGravacao() {
     } catch (erro) {
         console.error('Erro na transcri\u00e7\u00e3o:', erro);
         document.getElementById('progressText').textContent = 'Erro ao processar. Tente novamente.';
-        // Tenta salvar o que tem
-        await salvarResultadoErro(erro.message);
+        // Tenta salvar o que tem (incluindo audio para reprocessamento)
+        await salvarResultadoErro(erro.message, audioBase64);
         setTimeout(function() { var _s2=document.createElement('script');_s2.src='auto-close.js';_s2.onload=function(){if(window._autoFechar)_autoFechar();};document.body.appendChild(_s2); }, 3000);
     }
 }
@@ -790,7 +790,7 @@ async function salvarResultado(resultado, audioBase64) {
     } catch (e) { console.error('Erro ao enviar:', e); }
 }
 
-async function salvarResultadoErro(mensagemErro) {
+async function salvarResultadoErro(mensagemErro, audioBase64) {
     if (!sessionInfo.email || !sessionInfo.sessionId) return;
     try {
         await fetch(API_URL + '/save-result', {
@@ -800,7 +800,7 @@ async function salvarResultadoErro(mensagemErro) {
                 email: sessionInfo.email,
                 tipo: 'tflod',
                 sessionId: sessionInfo.sessionId,
-                data: { status: 'erro_transcricao', date: new Date().toISOString(), formData: dadosForm, erro: mensagemErro }
+                data: { status: 'erro_transcricao', date: new Date().toISOString(), formData: dadosForm, erro: mensagemErro, audioBase64: audioBase64 || null }
             })
         });
     } catch (e) { console.error('Erro ao enviar:', e); }
