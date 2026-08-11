@@ -293,7 +293,7 @@ function etdahGerarQuestionario() {
       html += '<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:1px solid #f0f0f0;font-size:11px;">';
       html += '<span style="min-width:22px;font-weight:bold;color:' + f.cor + ';">' + item.num + '.</span>';
       html += '<span style="flex:1;">' + item.texto + invTag + '</span>';
-      html += '<input type="text" inputmode="numeric" maxlength="1" id="etdah_' + f.id + '_' + i + '" style="width:28px;height:28px;padding:0;border:1px solid #ccc;border-radius:4px;text-align:center;font-size:14px;font-weight:bold;-moz-appearance:textfield;" oninput="_etdahAutoAvancar(this);_etdahAtualizarSomas()">';
+      html += '<input type="number" id="etdah_' + f.id + '_' + i + '" min="1" max="6" style="width:36px;padding:4px;border:1px solid #ccc;border-radius:4px;text-align:center;font-size:13px;font-weight:bold;" oninput="_etdahValidarItem(this);_etdahAtualizarSomas()">';
       html += '</div>';
     }
     html += '</div></div>';
@@ -301,25 +301,15 @@ function etdahGerarQuestionario() {
   el.innerHTML = html;
 }
 
-// Valida (1-6) e avanca cursor para o proximo campo automaticamente
-function _etdahAutoAvancar(el) {
-  // Permitir apenas 1-6
-  var v = el.value;
-  if (v.length > 1) { el.value = v.charAt(v.length - 1); v = el.value; }
-  if (v !== '' && (v < '1' || v > '6')) {
-    el.value = '';
+// Valida que so aceita 1-6
+function _etdahValidarItem(el) {
+  var v = parseInt(el.value);
+  if (el.value !== '' && (isNaN(v) || v < 1 || v > 6)) {
     el.style.borderColor = '#f44336';
     el.style.background = '#ffebee';
-    return;
-  }
-  el.style.borderColor = '#4caf50';
-  el.style.background = '#f1f8e9';
-  // Avancar para o proximo input se digitou um numero valido
-  if (v >= '1' && v <= '6') {
-    var todos = document.querySelectorAll('#etdahQuestionario input[type="text"]');
-    for (var i = 0; i < todos.length - 1; i++) {
-      if (todos[i] === el) { todos[i + 1].focus(); todos[i + 1].select(); break; }
-    }
+  } else {
+    el.style.borderColor = '#ccc';
+    el.style.background = '';
   }
 }
 
@@ -412,8 +402,6 @@ function etdahCalcular() {
 
   _etdahRespondentes.push({
     respondente: respondente, nome: nome, idade: idade, sexo: sexo,
-    dataNascimento: document.getElementById('etdahDn') ? document.getElementById('etdahDn').value : '',
-    idPaciente: (typeof gerarIdPacienteHash === 'function' && document.getElementById('etdahDn')) ? gerarIdPacienteHash(nome, document.getElementById('etdahDn').value) : '-',
     escores: escores,
     percentis: {f1: pF1, f2: pF2, f3: pF3, f4: pF4, geral: pG},
     classificacoes: {f1: _etdahClassificar(pF1), f2: _etdahClassificar(pF2), f3: _etdahClassificar(pF3), f4: _etdahClassificar(pF4), geral: _etdahClassificar(pG)},
@@ -461,32 +449,12 @@ function etdahLimpar() {
   _etdahRespondentes = [];
   var el = document.getElementById('etdahResultados');
   if (el) { el.style.display = 'none'; el.innerHTML = ''; }
-  // Limpar inputs
-  var inputs = document.querySelectorAll('#etdahQuestionario input[type="text"]');
+  // Limpar inputs numericos
+  var inputs = document.querySelectorAll('#etdahQuestionario input[type="number"]');
   for (var i = 0; i < inputs.length; i++) { inputs[i].value = ''; inputs[i].style.borderColor = '#ccc'; inputs[i].style.background = ''; }
   _etdahAtualizarSomas();
-  var campos = ['etdahNome','etdahIdade','etdahSexo','etdahRespondente','etdahDn'];
+  var campos = ['etdahNome','etdahIdade','etdahSexo','etdahRespondente'];
   for (var c = 0; c < campos.length; c++) { var inp = document.getElementById(campos[c]); if (inp) inp.value = ''; }
-  var sel = document.getElementById('etdahSelPac'); if (sel) sel.value = '';
-}
-
-function etdahNovoRespondente() {
-  // Primeiro calcula o respondente atual se houver itens preenchidos
-  var inputs = document.querySelectorAll('#etdahQuestionario input[type="text"]');
-  var temDados = false;
-  for (var i = 0; i < inputs.length; i++) { if (inputs[i].value !== '') { temDados = true; break; } }
-  if (temDados) {
-    var resp = document.getElementById('etdahRespondente').value.trim();
-    if (!resp) { alert('Preencha o nome do respondente atual antes de adicionar outro.'); return; }
-    etdahCalcular();
-  }
-  // Limpar apenas itens e campo respondente (manter nome/idade/sexo)
-  for (var i = 0; i < inputs.length; i++) { inputs[i].value = ''; inputs[i].style.borderColor = '#ccc'; inputs[i].style.background = ''; }
-  document.getElementById('etdahRespondente').value = '';
-  _etdahAtualizarSomas();
-  // Scroll para o topo do questionario
-  var q = document.getElementById('etdahQuestionario');
-  if (q) q.scrollIntoView({behavior:'smooth',block:'start'});
 }
 
 // === GERAR PDF ===
@@ -497,27 +465,34 @@ function etdahGerarPDF() {
   var doc = new jsPDF('p', 'mm', 'a4');
   var r0 = _etdahRespondentes[0];
 
-  // === PAG 1: CABECALHO (1 linha) + TABELA + GRAFICO ===
-  doc.setFillColor(21,101,192); doc.rect(0,0,210,12,'F');
-  doc.setTextColor(255,255,255); doc.setFontSize(10); doc.setFont(undefined,'bold');
-  doc.text('ETDAH-PAIS — Escala de Avaliacao de Comportamentos Infantojuvenis no TDAH (Benczik, 2018)', 105, 8, {align:'center'});
+  // PAG 1: CABECALHO + TABELA
+  doc.setFillColor(21,101,192); doc.rect(0,0,210,22,'F');
+  doc.setTextColor(255,255,255); doc.setFontSize(14); doc.setFont(undefined,'bold');
+  doc.text('ETDAH-PAIS', 105, 10, {align:'center'});
+  doc.setFontSize(8); doc.setFont(undefined,'normal');
+  doc.text('Escala de Avaliacao de Comportamentos Infantojuvenis no TDAH em Ambiente Familiar (Benczik, 2018)', 105, 16, {align:'center'});
+  doc.text('Versao para Pais', 105, 20, {align:'center'});
 
-  var y = 17;
-  doc.setTextColor(50,50,50); doc.setFontSize(8); doc.setFont(undefined,'normal');
-  doc.text('Paciente: ' + r0.nome + '  |  Idade: ' + r0.idade + ' anos  |  Sexo: ' + r0.sexo + '  |  ID: ' + (r0.idPaciente || '-'), 15, y); y += 4;
-  doc.setFontSize(7); doc.setTextColor(100,100,100);
-  doc.text('Norma: ' + r0.tabelaUsada + (r0.dataNascimento ? '  |  Data Nasc.: ' + r0.dataNascimento : '') + '  |  Data Avaliacao: ' + new Date().toLocaleDateString('pt-BR'), 15, y); y += 6;
+  var y = 30;
+  doc.setTextColor(50,50,50); doc.setFontSize(10); doc.setFont(undefined,'bold');
+  doc.text('Dados do Paciente', 15, y); y += 6;
+  doc.setFont(undefined,'normal'); doc.setFontSize(9);
+  doc.text('Nome: ' + r0.nome, 15, y); y += 5;
+  doc.text('Idade: ' + r0.idade + ' anos   |   Sexo: ' + r0.sexo, 15, y); y += 5;
+  doc.text('Norma: ' + r0.tabelaUsada, 15, y); y += 5;
+  doc.text('Data: ' + new Date().toLocaleDateString('pt-BR'), 15, y); y += 10;
 
-  // Tabela compacta por respondente
+  // Tabela por respondente
   for (var ri = 0; ri < _etdahRespondentes.length; ri++) {
     var resp = _etdahRespondentes[ri];
-    doc.setFontSize(8); doc.setFont(undefined,'bold'); doc.setTextColor(21,101,192);
-    doc.text('Respondente: ' + resp.respondente, 15, y); y += 4;
-    doc.setFillColor(227,242,253); doc.rect(15, y-2.5, 180, 5, 'F');
-    doc.setFontSize(7); doc.setFont(undefined,'bold'); doc.setTextColor(50,50,50);
-    doc.text('Fator', 17, y+0.5); doc.text('Bruto', 100, y+0.5, {align:'center'});
-    doc.text('Percentil', 130, y+0.5, {align:'center'}); doc.text('Classificacao', 170, y+0.5, {align:'center'});
-    y += 5; doc.setFont(undefined,'normal');
+    if (y > 230) { doc.addPage(); y = 20; }
+    doc.setFontSize(10); doc.setFont(undefined,'bold'); doc.setTextColor(21,101,192);
+    doc.text('Respondente: ' + resp.respondente, 15, y); y += 6;
+    doc.setFillColor(227,242,253); doc.rect(15, y-3, 180, 7, 'F');
+    doc.setFontSize(8); doc.setFont(undefined,'bold'); doc.setTextColor(50,50,50);
+    doc.text('Fator', 17, y+1); doc.text('Bruto', 95, y+1, {align:'center'});
+    doc.text('Percentil', 125, y+1, {align:'center'}); doc.text('Classificacao', 165, y+1, {align:'center'});
+    y += 8; doc.setFont(undefined,'normal');
     var lns = [
       ['F1 - Regulacao Emocional', resp.escores.f1, resp.percentis.f1, resp.classificacoes.f1],
       ['F2 - Hiperatividade/Impulsividade', resp.escores.f2, resp.percentis.f2, resp.classificacoes.f2],
@@ -526,22 +501,26 @@ function etdahGerarPDF() {
       ['ESCORE GERAL', resp.escores.geral, resp.percentis.geral, resp.classificacoes.geral]
     ];
     for (var li = 0; li < lns.length; li++) {
-      if (li === 4) { doc.setFont(undefined,'bold'); doc.setFillColor(232,234,246); doc.rect(15,y-2.5,180,5,'F'); }
-      doc.setTextColor(50,50,50); doc.setFontSize(7);
-      doc.text(lns[li][0], 17, y);
-      doc.text(String(lns[li][1]), 100, y, {align:'center'});
-      doc.text(lns[li][2] != null ? String(lns[li][2]) : '-', 130, y, {align:'center'});
-      doc.text(lns[li][3].texto, 170, y, {align:'center'}); y += 5;
+      if (li === 4) { doc.setFont(undefined,'bold'); doc.setFillColor(232,234,246); doc.rect(15,y-3,180,6,'F'); }
+      doc.setTextColor(50,50,50); doc.text(lns[li][0], 17, y);
+      doc.text(String(lns[li][1]), 95, y, {align:'center'});
+      doc.text(lns[li][2] != null ? String(lns[li][2]) : '-', 125, y, {align:'center'});
+      doc.text(lns[li][3].texto, 165, y, {align:'center'}); y += 6;
     }
-    doc.setFont(undefined,'normal'); y += 3;
+    doc.setFont(undefined,'normal'); y += 5;
   }
 
-  // GRAFICO (85mm de altura, mesmo tamanho da versao original)
-  y += 2;
+  // PAG 2: GRAFICO
+  doc.addPage();
+  doc.setFillColor(21,101,192); doc.rect(0,0,210,18,'F');
+  doc.setTextColor(255,255,255); doc.setFontSize(12); doc.setFont(undefined,'bold');
+  doc.text('ETDAH-PAIS - Perfil em Percentis', 105, 12, {align:'center'});
+  var gy = 26;
+  doc.setTextColor(100,100,100); doc.setFontSize(8); doc.setFont(undefined,'normal');
+  doc.text('Paciente: ' + r0.nome + '   |   ' + _etdahRespondentes.length + ' respondente(s)', 105, gy, {align:'center'});
+  gy += 10;
   var gX = 35, gW = 145, gH = 85;
-  var espacoDisp = 275 - y;
-  if (espacoDisp < 100) { doc.addPage(); y = 15; }
-  var yBase = y + gH, yTop = y;
+  var yBase = gy + gH, yTop = gy;
   var y20 = yBase - (20/100)*gH, y40 = yBase - (40/100)*gH;
   var y60 = yBase - (60/100)*gH, y80 = yBase - (80/100)*gH;
   // Faixas
@@ -589,63 +568,58 @@ function etdahGerarPDF() {
       doc.text(String(vals[pp]!=null?vals[pp]:''), px, py-3, {align:'center'});
     }
   }
-  // Legenda compacta (inline)
-  var legY = yBase + 8;
-  doc.setFontSize(7); doc.setFont(undefined,'bold'); doc.setTextColor(50,50,50);
-  var legTxt = 'Respondentes: ';
+  // Legenda
+  var legY = yBase + 14;
+  doc.setFontSize(8); doc.setFont(undefined,'bold'); doc.setTextColor(50,50,50);
+  doc.text('Respondentes:', gX, legY); legY += 5;
   for (var lg = 0; lg < _etdahRespondentes.length; lg++) {
-    if (lg > 0) legTxt += '  |  ';
-    legTxt += _etdahRespondentes[lg].respondente;
+    var lgC = cores[lg % cores.length];
+    doc.setFillColor(lgC[0],lgC[1],lgC[2]); doc.rect(gX, legY-2, 8, 3, 'F');
+    doc.setFontSize(8); doc.setFont(undefined,'normal'); doc.setTextColor(50,50,50);
+    doc.text(_etdahRespondentes[lg].respondente, gX+11, legY); legY += 5;
   }
-  doc.text(legTxt, gX, legY);
-  legY += 4;
-  doc.setFontSize(6); doc.setFont(undefined,'italic'); doc.setTextColor(130,130,130);
-  doc.text('Classificacao: Inferior (P<=20) | Media Inferior (P 21-40) | Media (P 41-60) | Media Superior (P 61-80) | Superior (P>80). Escores altos = prejuizo.', gX, legY);
 
-  // === PAG 2: INTERPRETACAO (sem quebrar texto no meio) ===
+  // PAG 3: INTERPRETACAO TEXTUAL
   doc.addPage();
-  doc.setFillColor(21,101,192); doc.rect(0,0,210,12,'F');
-  doc.setTextColor(255,255,255); doc.setFontSize(10); doc.setFont(undefined,'bold');
-  doc.text('ETDAH-PAIS — Interpretacao dos Resultados', 105, 8, {align:'center'});
-  var iy = 18;
+  doc.setFillColor(21,101,192); doc.rect(0,0,210,18,'F');
+  doc.setTextColor(255,255,255); doc.setFontSize(12); doc.setFont(undefined,'bold');
+  doc.text('ETDAH-PAIS - Interpretacao dos Resultados', 105, 12, {align:'center'});
+  var iy = 28;
+  // Para cada respondente, mostrar interpretacao dos fatores mais evidentes
   for (var ri2 = 0; ri2 < _etdahRespondentes.length; ri2++) {
     var r2 = _etdahRespondentes[ri2];
-    if (iy > 250) { doc.addPage(); iy = 15; }
-    doc.setFontSize(9); doc.setFont(undefined,'bold'); doc.setTextColor(21,101,192);
+    if (iy > 250) { doc.addPage(); iy = 20; }
+    doc.setFontSize(10); doc.setFont(undefined,'bold'); doc.setTextColor(21,101,192);
     doc.text('Respondente: ' + r2.respondente, 15, iy); iy += 7;
+    // Interpretar cada fator
     var fats = [
-      {nome:'F1 - Regulacao Emocional',perc:r2.percentis.f1,cl:r2.classificacoes.f1,alto:_etdahInterpretacoes.f1_alto,baixo:_etdahInterpretacoes.f1_baixo},
-      {nome:'F2 - Hiperatividade/Impulsividade',perc:r2.percentis.f2,cl:r2.classificacoes.f2,alto:_etdahInterpretacoes.f2_alto,baixo:_etdahInterpretacoes.f2_baixo},
-      {nome:'F3 - Comportamento Adaptativo',perc:r2.percentis.f3,cl:r2.classificacoes.f3,alto:_etdahInterpretacoes.f3_alto,baixo:_etdahInterpretacoes.f3_baixo},
-      {nome:'F4 - Atencao',perc:r2.percentis.f4,cl:r2.classificacoes.f4,alto:_etdahInterpretacoes.f4_alto,baixo:_etdahInterpretacoes.f4_baixo}
+      {nome:'F1',perc:r2.percentis.f1,cl:r2.classificacoes.f1,alto:_etdahInterpretacoes.f1_alto,baixo:_etdahInterpretacoes.f1_baixo},
+      {nome:'F2',perc:r2.percentis.f2,cl:r2.classificacoes.f2,alto:_etdahInterpretacoes.f2_alto,baixo:_etdahInterpretacoes.f2_baixo},
+      {nome:'F3',perc:r2.percentis.f3,cl:r2.classificacoes.f3,alto:_etdahInterpretacoes.f3_alto,baixo:_etdahInterpretacoes.f3_baixo},
+      {nome:'F4',perc:r2.percentis.f4,cl:r2.classificacoes.f4,alto:_etdahInterpretacoes.f4_alto,baixo:_etdahInterpretacoes.f4_baixo}
     ];
     for (var fi2 = 0; fi2 < fats.length; fi2++) {
       var ft = fats[fi2];
+      if (iy > 265) { doc.addPage(); iy = 20; }
       var texto = (ft.perc > 60) ? ft.alto : ft.baixo;
-      var linhas = doc.splitTextToSize(texto, 180);
-      // Calcular espaco necessario para este bloco inteiro (titulo + texto)
-      var blocoH = 6 + (linhas.length * 4) + 5;
-      // Se nao cabe na pagina, pula para a proxima (nao quebra no meio)
-      if (iy + blocoH > 275) { doc.addPage(); iy = 15; }
       var corTxt = (ft.perc > 80) ? [198,40,40] : (ft.perc > 60) ? [230,81,0] : [50,50,50];
-      doc.setFontSize(9); doc.setFont(undefined,'bold'); doc.setTextColor(corTxt[0],corTxt[1],corTxt[2]);
-      doc.text(ft.nome + '  (Percentil ' + ft.perc + ' — ' + ft.cl.texto + ')', 15, iy); iy += 6;
-      doc.setFont(undefined,'normal'); doc.setTextColor(50,50,50); doc.setFontSize(8.5);
-      doc.text(linhas, 15, iy); iy += linhas.length * 4 + 5;
+      doc.setFontSize(8); doc.setFont(undefined,'bold'); doc.setTextColor(corTxt[0],corTxt[1],corTxt[2]);
+      doc.text(ft.nome + ' (Percentil ' + ft.perc + ' - ' + ft.cl.texto + '):', 15, iy); iy += 4;
+      doc.setFont(undefined,'normal'); doc.setTextColor(50,50,50); doc.setFontSize(7.5);
+      var linhas = doc.splitTextToSize(texto, 175);
+      doc.text(linhas, 15, iy); iy += linhas.length * 3.5 + 4;
     }
-    iy += 4;
+    iy += 5;
   }
-  // Referencia e disclaimer (sem quebrar)
-  var refH = 25;
-  if (iy + refH > 275) { doc.addPage(); iy = 15; }
-  iy += 3;
-  doc.setDrawColor(200,200,200); doc.line(15, iy, 195, iy); iy += 5;
-  doc.setFontSize(7.5); doc.setFont(undefined,'italic'); doc.setTextColor(100,100,100);
+  // Disclaimer
+  if (iy > 255) { doc.addPage(); iy = 20; }
+  iy += 5;
+  doc.setFontSize(7); doc.setFont(undefined,'italic'); doc.setTextColor(130,130,130);
   doc.text('IMPORTANTE: Escalas nao fazem diagnostico. Sao ferramentas auxiliares de rastreamento.', 15, iy); iy += 4;
-  doc.text('Outros metodos devem ser utilizados para avaliacao completa (entrevistas, observacao, historico clinico).', 15, iy); iy += 7;
-  doc.setFont(undefined,'normal'); doc.setFontSize(7.5); doc.setTextColor(60,60,60);
-  doc.text('BENCZIK, E. B. P. ETDAH-PAIS: Escala de Avaliacao de Comportamentos Infantojuvenis no Transtorno de Deficit', 15, iy); iy += 3.5;
-  doc.text('de Atencao/Hiperatividade em Ambiente Familiar — Versao para Pais. Sao Paulo: Memnon, 2018.', 15, iy);
+  doc.text('Outros metodos devem ser utilizados para avaliacao completa (entrevistas, observacao, historico).', 15, iy); iy += 6;
+  doc.setFont(undefined,'normal'); doc.setTextColor(80,80,80);
+  doc.text('Referencia: BENCZIK, E. B. P. ETDAH-PAIS: Escala de Avaliacao de Comportamentos Infantojuvenis', 15, iy); iy += 3.5;
+  doc.text('no Transtorno de Deficit de Atencao/Hiperatividade em Ambiente Familiar. Sao Paulo: Memnon, 2018.', 15, iy);
 
   // Rodape todas as paginas
   var totalPages = doc.internal.getNumberOfPages();
@@ -678,50 +652,6 @@ function etdahGerarPDF() {
       if (contentEtdah) contentEtdah.style.display='block';
       if (btnEtdah) { btnEtdah.style.background='#e3f2fd'; btnEtdah.style.color='#1565c0'; btnEtdah.style.borderBottom='3px solid #1565c0'; }
       etdahGerarQuestionario();
-      // Calcular idade se data nasc preenchida
-      _etdahCalcIdade();
     }
   };
-})();
-
-// Calcular idade a partir de data de nascimento
-function _etdahCalcIdade() {
-  var dn = document.getElementById('etdahDn');
-  var idadeEl = document.getElementById('etdahIdade');
-  if (!dn || !dn.value || !idadeEl) return;
-  var nasc = new Date(dn.value + 'T00:00:00');
-  var hoje = new Date();
-  var idade = hoje.getFullYear() - nasc.getFullYear();
-  var m = hoje.getMonth() - nasc.getMonth();
-  if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) idade--;
-  if (idade >= 2 && idade <= 17) idadeEl.value = idade;
-}
-
-// Observar mudanca na data de nascimento
-(function() {
-  var _dnObs = setInterval(function() {
-    var el = document.getElementById('etdahDn');
-    if (el) { el.addEventListener('change', _etdahCalcIdade); clearInterval(_dnObs); }
-  }, 500);
-})();
-
-// Apos preencherPaciente('etdah') ser chamado, calcular idade e setar sexo
-(function() {
-  var _selObs = setInterval(function() {
-    var sel = document.getElementById('etdahSelPac');
-    if (sel) {
-      sel.addEventListener('change', function() {
-        setTimeout(function() {
-          _etdahCalcIdade();
-          // Tentar pegar sexo do paciente selecionado
-          var opt = sel.options[sel.selectedIndex];
-          if (opt && opt.dataset && opt.dataset.sexo) {
-            var sexoEl = document.getElementById('etdahSexo');
-            if (sexoEl) sexoEl.value = opt.dataset.sexo;
-          }
-        }, 100);
-      });
-      clearInterval(_selObs);
-    }
-  }, 500);
 })();
