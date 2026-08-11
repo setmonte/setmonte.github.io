@@ -293,7 +293,7 @@ function etdahGerarQuestionario() {
       html += '<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:1px solid #f0f0f0;font-size:11px;">';
       html += '<span style="min-width:22px;font-weight:bold;color:' + f.cor + ';">' + item.num + '.</span>';
       html += '<span style="flex:1;">' + item.texto + invTag + '</span>';
-      html += '<input type="number" id="etdah_' + f.id + '_' + i + '" min="1" max="6" style="width:36px;padding:4px;border:1px solid #ccc;border-radius:4px;text-align:center;font-size:13px;font-weight:bold;" oninput="_etdahValidarItem(this);_etdahAtualizarSomas()">';
+      html += '<input type="number" id="etdah_' + f.id + '_' + i + '" min="1" max="6" style="width:36px;padding:4px;border:1px solid #ccc;border-radius:4px;text-align:center;font-size:13px;font-weight:bold;" oninput="_etdahValidarItem(this);_etdahAtualizarSomas();_etdahAutoScroll(this)">';
       html += '</div>';
     }
     html += '</div></div>';
@@ -310,6 +310,22 @@ function _etdahValidarItem(el) {
   } else {
     el.style.borderColor = '#ccc';
     el.style.background = '';
+  }
+}
+
+// Auto-scroll: ao digitar um valor valido, foco passa para o proximo input
+function _etdahAutoScroll(el) {
+  var v = parseInt(el.value);
+  if (el.value === '' || isNaN(v) || v < 1 || v > 6) return;
+  var todos = document.querySelectorAll('#etdahQuestionario input[type="number"]');
+  for (var i = 0; i < todos.length; i++) {
+    if (todos[i] === el && i < todos.length - 1) {
+      var prox = todos[i + 1];
+      prox.focus();
+      prox.select();
+      prox.scrollIntoView({behavior:'smooth',block:'center'});
+      break;
+    }
   }
 }
 
@@ -632,6 +648,99 @@ function etdahGerarPDF() {
   var ts = new Date();
   var tsStr = ts.getFullYear()+String(ts.getMonth()+1).padStart(2,'0')+String(ts.getDate()).padStart(2,'0');
   doc.save('ETDAH-PAIS_' + r0.nome.replace(/\s+/g,'_') + '_' + tsStr + '.pdf');
+}
+
+// === INTEGRACAO COM ABA PACIENTES ===
+function etdahPreencherPaciente() {
+  var sel = document.getElementById('etdahSelPac');
+  if (!sel || sel.selectedIndex === 0) return;
+  var opt = sel.options[sel.selectedIndex];
+  var pacId = opt.value || '';
+  var pac = null;
+  if (window._pacientesCache && pacId) {
+    for (var i = 0; i < _pacientesCache.length; i++) {
+      if (_pacientesCache[i].id === pacId) { pac = _pacientesCache[i]; break; }
+    }
+  }
+  if (!pac) pac = { nome: opt.dataset.nome||'', dataNascimento: opt.dataset.dn||'', sexo: opt.dataset.sexo||'' };
+  var nomeEl = document.getElementById('etdahNome');
+  var idadeEl = document.getElementById('etdahIdade');
+  var sexoEl = document.getElementById('etdahSexo');
+  if (nomeEl && pac.nome) nomeEl.value = pac.nome;
+  if (sexoEl && pac.sexo) sexoEl.value = pac.sexo;
+  if (idadeEl && pac.dataNascimento) {
+    var partes = pac.dataNascimento.split('/');
+    if (partes.length === 3) {
+      var nasc = new Date(partes[2], partes[1]-1, partes[0]);
+      var hoje = new Date();
+      var idade = hoje.getFullYear() - nasc.getFullYear();
+      if (hoje.getMonth() < nasc.getMonth() || (hoje.getMonth() === nasc.getMonth() && hoje.getDate() < nasc.getDate())) idade--;
+      idadeEl.value = idade;
+    }
+  }
+}
+
+// === ADICIONAR RESPONDENTE (salva dados atuais e limpa para novo respondente) ===
+function etdahAdicionarRespondente() {
+  var nome = document.getElementById('etdahNome').value.trim();
+  var idade = document.getElementById('etdahIdade').value;
+  var sexo = document.getElementById('etdahSexo').value;
+  var respondente = document.getElementById('etdahRespondente').value.trim();
+  if (!nome) { alert('Preencha o nome do paciente.'); return; }
+  if (!idade) { alert('Preencha a idade.'); return; }
+  if (!sexo) { alert('Selecione o sexo.'); return; }
+  if (!respondente) { alert('Preencha quem respondeu (ex: Mae, Pai, Professor).'); return; }
+  // Verificar se todos os itens foram respondidos
+  var fatores = [
+    {itens: _etdahFator1, id: 'f1'},{itens: _etdahFator2, id: 'f2'},
+    {itens: _etdahFator3, id: 'f3'},{itens: _etdahFator4, id: 'f4'}
+  ];
+  var totalResp = 0;
+  var escores = {};
+  for (var fi = 0; fi < fatores.length; fi++) {
+    var f = fatores[fi]; var soma = 0; var resp = 0;
+    for (var i = 0; i < f.itens.length; i++) {
+      var inp = document.getElementById('etdah_' + f.id + '_' + i);
+      if (inp && inp.value !== '') {
+        var val = parseInt(inp.value);
+        if (val >= 1 && val <= 6) {
+          if (f.itens[i].invertido) val = _etdahInverter(val);
+          soma += val; resp++;
+        }
+      }
+    }
+    totalResp += resp; escores[f.id] = soma;
+  }
+  if (totalResp < 58) {
+    if (!confirm('Faltam ' + (58 - totalResp) + ' itens para este respondente. Salvar mesmo assim?')) return;
+  }
+  escores.geral = escores.f1 + escores.f2 + escores.f3 + escores.f4;
+  var tabela = _etdahSelecionarTabela(sexo, idade);
+  var pF1 = _etdahBuscarPercentil(escores.f1, tabela, 'f1');
+  var pF2 = _etdahBuscarPercentil(escores.f2, tabela, 'f2');
+  var pF3 = _etdahBuscarPercentil(escores.f3, tabela, 'f3');
+  var pF4 = _etdahBuscarPercentil(escores.f4, tabela, 'f4');
+  var pG = _etdahBuscarPercentil(escores.geral, tabela, 'g');
+  _etdahRespondentes.push({
+    respondente: respondente, nome: nome, idade: idade, sexo: sexo,
+    escores: escores,
+    percentis: {f1: pF1, f2: pF2, f3: pF3, f4: pF4, geral: pG},
+    classificacoes: {f1: _etdahClassificar(pF1), f2: _etdahClassificar(pF2), f3: _etdahClassificar(pF3), f4: _etdahClassificar(pF4), geral: _etdahClassificar(pG)},
+    tabelaUsada: sexo + ', ' + idade + ' anos',
+    data: new Date().toISOString()
+  });
+  // Atualizar info de respondentes salvos
+  var infoEl = document.getElementById('etdahRespondentesInfo');
+  if (infoEl) {
+    infoEl.style.display = 'block';
+    infoEl.innerHTML = '<strong>' + _etdahRespondentes.length + ' respondente(s) salvo(s):</strong> ' + _etdahRespondentes.map(function(r){return r.respondente;}).join(', ') + ' — <em>Preencha o proximo respondente e clique em "Calcular" para ver a comparacao.</em>';
+  }
+  // Limpar apenas os inputs do questionario e o campo respondente (manter nome/idade/sexo)
+  var inputs = document.querySelectorAll('#etdahQuestionario input[type="number"]');
+  for (var i = 0; i < inputs.length; i++) { inputs[i].value = ''; inputs[i].style.borderColor = '#ccc'; inputs[i].style.background = ''; }
+  document.getElementById('etdahRespondente').value = '';
+  _etdahAtualizarSomas();
+  alert('Respondente "' + respondente + '" salvo! Agora preencha o proximo respondente.');
 }
 
 // === OVERRIDE switchCorrecaoSubTab ===

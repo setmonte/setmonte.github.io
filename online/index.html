@@ -1607,12 +1607,17 @@
           <div id="correcaoEtdah" style="display:none;">
             <div style="background:#e3f2fd;border:1px solid #90caf9;border-radius:10px;padding:15px;margin-bottom:15px;">
               <p style="font-size:14px;font-weight:bold;color:#1565c0;margin-bottom:8px;">&#129504; ETDAH-PAIS &#8212; Escala de Avaliacao de Comportamentos Infantojuvenis no TDAH</p>
-              <p style="font-size:11px;color:#555;line-height:1.5;">Marque a pontuacao de cada item (1 a 6). O sistema aplica as inversoes automaticamente e calcula percentis por sexo/faixa etaria.</p>
+              <p style="font-size:11px;color:#555;line-height:1.6;">Instrumento respondido pelos <strong>pais ou responsaveis</strong> sobre o comportamento da crianca/adolescente. Marque a pontuacao de cada item (1 a 6). O sistema aplica as inversoes automaticamente e calcula percentis por sexo/faixa etaria.</p>
               <p style="font-size:10px;color:#777;margin-top:5px;">Escala: (1) Nunca | (2) Muito Pouco | (3) Pouco | (4) Geralmente | (5) Frequentemente | (6) Muito Frequente</p>
+              <p style="font-size:10px;color:#777;margin-top:3px;">Publico-alvo: 2 a 17 anos | 58 itens | 4 fatores | Normas por sexo e faixa etaria (Benczik, 2018)</p>
+              <p style="font-size:10px;color:#1565c0;margin-top:5px;font-weight:600;">&#128161; Dica: Voce pode adicionar multiplos respondentes (mae, pai, professor) e comparar os perfis lado a lado no resultado.</p>
             </div>
             <div style="background:white;border:1px solid #e0e0e0;border-radius:10px;padding:12px;margin-bottom:12px;">
               <p style="font-weight:bold;color:#1565c0;margin-bottom:8px;font-size:13px;">Dados do Paciente</p>
-              <div style="display:flex;gap:10px;flex-wrap:wrap;">
+              <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+                <label style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:#555;font-weight:600;">Paciente cadastrado<select id="etdahSelPac" onchange="etdahPreencherPaciente()" style="padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-size:12px;width:200px;"><option value="">-- Digitar manualmente --</option></select></label>
+              </div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;">
                 <label style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:#555;font-weight:600;">Nome<input type="text" id="etdahNome" style="padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-size:12px;width:180px;" placeholder="Nome"></label>
                 <label style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:#555;font-weight:600;">Idade<input type="number" id="etdahIdade" min="2" max="17" style="padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-size:12px;width:60px;" placeholder="10"></label>
                 <label style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:#555;font-weight:600;">Sexo<select id="etdahSexo" style="padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-size:12px;"><option value="">...</option><option value="Masculino">Masculino</option><option value="Feminino">Feminino</option></select></label>
@@ -1626,21 +1631,26 @@
             </div>
             <div style="text-align:center;margin:15px 0;">
               <button onclick="etdahCalcular()" style="padding:10px 25px;border:none;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#1565c0,#42a5f5);color:white;">Calcular Resultados</button>
-              <button onclick="etdahLimpar()" style="padding:10px 25px;border:none;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#e53935,#ef5350);color:white;margin-left:8px;">Limpar</button>
+              <button onclick="etdahAdicionarRespondente()" style="padding:10px 25px;border:none;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#2e7d32,#66bb6a);color:white;margin-left:8px;">+ Respondente</button>
+              <button onclick="etdahLimpar()" style="padding:10px 25px;border:none;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#e53935,#ef5350);color:white;margin-left:8px;">Limpar Tudo</button>
             </div>
+            <div id="etdahRespondentesInfo" style="display:none;background:#e8f5e9;border:1px solid #a5d6a7;border-radius:8px;padding:10px;margin-bottom:12px;font-size:11px;color:#2e7d32;"></div>
             <div id="etdahResultados" style="display:none;background:white;border:2px solid #1565c0;border-radius:10px;padding:20px;margin-top:15px;"></div>
           </div>
           <!-- CONTEUDO SUB-ABA ETDAH-CriAd -->
           <div id="correcaoCriad" style="display:none;">
             <div style="background:#fff3e0;border:1px solid #ffcc80;border-radius:10px;padding:15px;margin-bottom:15px;">
               <p style="font-size:14px;font-weight:bold;color:#e65100;margin-bottom:8px;">&#129504; ETDAH-CriAd &#8212; Escala de Autoavaliacao do TDAH (Criancas e Adolescentes)</p>
-              <p style="font-size:11px;color:#555;line-height:1.5;">Instrumento de <strong>autorrelato</strong>: a propria crianca/adolescente responde. Marque a pontuacao de cada item (1 a 4) conforme informado pelo avaliando.</p>
+              <p style="font-size:11px;color:#555;line-height:1.6;">Instrumento de <strong>autorrelato</strong>: a propria crianca/adolescente responde sobre si mesma. O profissional registra aqui as respostas dadas pela crianca/adolescente durante a aplicacao.</p>
               <p style="font-size:10px;color:#777;margin-top:5px;">Escala: (1) Nunca | (2) Um pouco | (3) As vezes | (4) Sempre</p>
               <p style="font-size:10px;color:#777;margin-top:3px;">Publico-alvo: 6 a 15 anos | 22 itens | 2 fatores | Normas por faixa etaria (Benczik, 2018)</p>
             </div>
             <div style="background:white;border:1px solid #e0e0e0;border-radius:10px;padding:12px;margin-bottom:12px;">
               <p style="font-weight:bold;color:#e65100;margin-bottom:8px;font-size:13px;">Dados do Paciente</p>
-              <div style="display:flex;gap:10px;flex-wrap:wrap;">
+              <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+                <label style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:#555;font-weight:600;">Paciente cadastrado<select id="criadSelPac" onchange="criadPreencherPaciente()" style="padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-size:12px;width:200px;"><option value="">-- Digitar manualmente --</option></select></label>
+              </div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;">
                 <label style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:#555;font-weight:600;">Nome<input type="text" id="criadNome" style="padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-size:12px;width:180px;" placeholder="Nome"></label>
                 <label style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:#555;font-weight:600;">Idade (6-15)<input type="number" id="criadIdade" min="6" max="15" style="padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-size:12px;width:70px;" placeholder="10"></label>
                 <label style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:#555;font-weight:600;">Sexo<select id="criadSexo" style="padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-size:12px;"><option value="">...</option><option value="Masculino">Masculino</option><option value="Feminino">Feminino</option></select></label>
@@ -6007,7 +6017,7 @@
       listaOrdenada.forEach(function(p) {
         opcoesHtml += '<option value="' + p.id + '" data-nome="' + (p.nome||'').replace(/"/g,'') + '" data-dn="' + (p.dataNascimento||'') + '" data-cpf="' + (p.cpf||'') + '" data-sexo="' + (p.sexo||'') + '" data-esc="' + (p.escolaridade||'') + '" data-lat="' + (p.lateralidade||'') + '">' + (p.nome||'') + ' (' + (p.dataNascimento||'?') + ')</option>';
       });
-      ['baeSelPac','trmvSelPac','taavSelPac','tecfeSelPac','trefSelPac','tflodSelPac','corsiSelPac','tteSelPac','escalaSelPac','anamneseSelPac','reocupaSelPac','pfisterSelPac','neoSelPac','agendaSelPac','prontuarioSelPac','srs2SelPac','lermaisSelPac'].forEach(function(id) {
+      ['baeSelPac','trmvSelPac','taavSelPac','tecfeSelPac','trefSelPac','tflodSelPac','corsiSelPac','tteSelPac','escalaSelPac','anamneseSelPac','reocupaSelPac','pfisterSelPac','neoSelPac','agendaSelPac','prontuarioSelPac','srs2SelPac','lermaisSelPac','etdahSelPac','criadSelPac'].forEach(function(id) {
         var sel = document.getElementById(id);
         if (!sel) return;
         var val = sel.value;

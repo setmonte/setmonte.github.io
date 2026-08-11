@@ -195,7 +195,7 @@ function criadGerarQuestionario() {
       html += '<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:1px solid #f0f0f0;font-size:11px;">';
       html += '<span style="min-width:22px;font-weight:bold;color:' + f.cor + ';">' + item.num + '.</span>';
       html += '<span style="flex:1;">' + item.texto + '</span>';
-      html += '<input type="number" id="criad_' + f.id + '_' + i + '" min="1" max="4" style="width:36px;padding:4px;border:1px solid #ccc;border-radius:4px;text-align:center;font-size:13px;font-weight:bold;" oninput="_criadValidarItem(this);_criadAtualizarSomas()">';
+      html += '<input type="number" id="criad_' + f.id + '_' + i + '" min="1" max="4" style="width:36px;padding:4px;border:1px solid #ccc;border-radius:4px;text-align:center;font-size:13px;font-weight:bold;" oninput="_criadValidarItem(this);_criadAtualizarSomas();_criadAutoScroll(this)">';
       html += '</div>';
     }
     html += '</div></div>';
@@ -212,6 +212,52 @@ function _criadValidarItem(el) {
   } else {
     el.style.borderColor = '#ccc';
     el.style.background = '';
+  }
+}
+
+// Auto-scroll: ao digitar um valor valido, foco passa para o proximo input
+function _criadAutoScroll(el) {
+  var v = parseInt(el.value);
+  if (el.value === '' || isNaN(v) || v < 1 || v > 4) return;
+  var todos = document.querySelectorAll('#criadQuestionario input[type="number"]');
+  for (var i = 0; i < todos.length; i++) {
+    if (todos[i] === el && i < todos.length - 1) {
+      var prox = todos[i + 1];
+      prox.focus();
+      prox.select();
+      prox.scrollIntoView({behavior:'smooth',block:'center'});
+      break;
+    }
+  }
+}
+
+// === INTEGRACAO COM ABA PACIENTES ===
+function criadPreencherPaciente() {
+  var sel = document.getElementById('criadSelPac');
+  if (!sel || sel.selectedIndex === 0) return;
+  var opt = sel.options[sel.selectedIndex];
+  var pacId = opt.value || '';
+  var pac = null;
+  if (window._pacientesCache && pacId) {
+    for (var i = 0; i < _pacientesCache.length; i++) {
+      if (_pacientesCache[i].id === pacId) { pac = _pacientesCache[i]; break; }
+    }
+  }
+  if (!pac) pac = { nome: opt.dataset.nome||'', dataNascimento: opt.dataset.dn||'', sexo: opt.dataset.sexo||'' };
+  var nomeEl = document.getElementById('criadNome');
+  var idadeEl = document.getElementById('criadIdade');
+  var sexoEl = document.getElementById('criadSexo');
+  if (nomeEl && pac.nome) nomeEl.value = pac.nome;
+  if (sexoEl && pac.sexo) sexoEl.value = pac.sexo;
+  if (idadeEl && pac.dataNascimento) {
+    var partes = pac.dataNascimento.split('/');
+    if (partes.length === 3) {
+      var nasc = new Date(partes[2], partes[1]-1, partes[0]);
+      var hoje = new Date();
+      var idade = hoje.getFullYear() - nasc.getFullYear();
+      if (hoje.getMonth() < nasc.getMonth() || (hoje.getMonth() === nasc.getMonth() && hoje.getDate() < nasc.getDate())) idade--;
+      idadeEl.value = idade;
+    }
   }
 }
 
