@@ -412,6 +412,8 @@ function etdahCalcular() {
 
   _etdahRespondentes.push({
     respondente: respondente, nome: nome, idade: idade, sexo: sexo,
+    dataNascimento: document.getElementById('etdahDn') ? document.getElementById('etdahDn').value : '',
+    idPaciente: (typeof gerarIdPacienteHash === 'function' && document.getElementById('etdahDn')) ? gerarIdPacienteHash(nome, document.getElementById('etdahDn').value) : '-',
     escores: escores,
     percentis: {f1: pF1, f2: pF2, f3: pF3, f4: pF4, geral: pG},
     classificacoes: {f1: _etdahClassificar(pF1), f2: _etdahClassificar(pF2), f3: _etdahClassificar(pF3), f4: _etdahClassificar(pF4), geral: _etdahClassificar(pG)},
@@ -463,8 +465,9 @@ function etdahLimpar() {
   var inputs = document.querySelectorAll('#etdahQuestionario input[type="text"]');
   for (var i = 0; i < inputs.length; i++) { inputs[i].value = ''; inputs[i].style.borderColor = '#ccc'; inputs[i].style.background = ''; }
   _etdahAtualizarSomas();
-  var campos = ['etdahNome','etdahIdade','etdahSexo','etdahRespondente'];
+  var campos = ['etdahNome','etdahIdade','etdahSexo','etdahRespondente','etdahDn'];
   for (var c = 0; c < campos.length; c++) { var inp = document.getElementById(campos[c]); if (inp) inp.value = ''; }
+  var sel = document.getElementById('etdahSelPac'); if (sel) sel.value = '';
 }
 
 function etdahNovoRespondente() {
@@ -501,7 +504,9 @@ function etdahGerarPDF() {
 
   var y = 17;
   doc.setTextColor(50,50,50); doc.setFontSize(8); doc.setFont(undefined,'normal');
-  doc.text('Paciente: ' + r0.nome + '  |  Idade: ' + r0.idade + ' anos  |  Sexo: ' + r0.sexo + '  |  Norma: ' + r0.tabelaUsada + '  |  Data: ' + new Date().toLocaleDateString('pt-BR'), 15, y); y += 7;
+  doc.text('Paciente: ' + r0.nome + '  |  Idade: ' + r0.idade + ' anos  |  Sexo: ' + r0.sexo + '  |  ID: ' + (r0.idPaciente || '-'), 15, y); y += 4;
+  doc.setFontSize(7); doc.setTextColor(100,100,100);
+  doc.text('Norma: ' + r0.tabelaUsada + (r0.dataNascimento ? '  |  Data Nasc.: ' + r0.dataNascimento : '') + '  |  Data Avaliacao: ' + new Date().toLocaleDateString('pt-BR'), 15, y); y += 6;
 
   // Tabela compacta por respondente
   for (var ri = 0; ri < _etdahRespondentes.length; ri++) {
@@ -673,6 +678,50 @@ function etdahGerarPDF() {
       if (contentEtdah) contentEtdah.style.display='block';
       if (btnEtdah) { btnEtdah.style.background='#e3f2fd'; btnEtdah.style.color='#1565c0'; btnEtdah.style.borderBottom='3px solid #1565c0'; }
       etdahGerarQuestionario();
+      // Calcular idade se data nasc preenchida
+      _etdahCalcIdade();
     }
   };
+})();
+
+// Calcular idade a partir de data de nascimento
+function _etdahCalcIdade() {
+  var dn = document.getElementById('etdahDn');
+  var idadeEl = document.getElementById('etdahIdade');
+  if (!dn || !dn.value || !idadeEl) return;
+  var nasc = new Date(dn.value + 'T00:00:00');
+  var hoje = new Date();
+  var idade = hoje.getFullYear() - nasc.getFullYear();
+  var m = hoje.getMonth() - nasc.getMonth();
+  if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) idade--;
+  if (idade >= 2 && idade <= 17) idadeEl.value = idade;
+}
+
+// Observar mudanca na data de nascimento
+(function() {
+  var _dnObs = setInterval(function() {
+    var el = document.getElementById('etdahDn');
+    if (el) { el.addEventListener('change', _etdahCalcIdade); clearInterval(_dnObs); }
+  }, 500);
+})();
+
+// Apos preencherPaciente('etdah') ser chamado, calcular idade e setar sexo
+(function() {
+  var _selObs = setInterval(function() {
+    var sel = document.getElementById('etdahSelPac');
+    if (sel) {
+      sel.addEventListener('change', function() {
+        setTimeout(function() {
+          _etdahCalcIdade();
+          // Tentar pegar sexo do paciente selecionado
+          var opt = sel.options[sel.selectedIndex];
+          if (opt && opt.dataset && opt.dataset.sexo) {
+            var sexoEl = document.getElementById('etdahSexo');
+            if (sexoEl) sexoEl.value = opt.dataset.sexo;
+          }
+        }, 100);
+      });
+      clearInterval(_selObs);
+    }
+  }, 500);
 })();
