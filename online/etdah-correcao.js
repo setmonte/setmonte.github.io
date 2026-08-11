@@ -293,7 +293,7 @@ function etdahGerarQuestionario() {
       html += '<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:1px solid #f0f0f0;font-size:11px;">';
       html += '<span style="min-width:22px;font-weight:bold;color:' + f.cor + ';">' + item.num + '.</span>';
       html += '<span style="flex:1;">' + item.texto + invTag + '</span>';
-      html += '<input type="number" id="etdah_' + f.id + '_' + i + '" min="1" max="6" style="width:36px;padding:4px;border:1px solid #ccc;border-radius:4px;text-align:center;font-size:13px;font-weight:bold;" oninput="_etdahValidarItem(this);_etdahAtualizarSomas()">';
+      html += '<input type="text" inputmode="numeric" maxlength="1" id="etdah_' + f.id + '_' + i + '" style="width:28px;height:28px;padding:0;border:1px solid #ccc;border-radius:4px;text-align:center;font-size:14px;font-weight:bold;-moz-appearance:textfield;" oninput="_etdahAutoAvancar(this);_etdahAtualizarSomas()">';
       html += '</div>';
     }
     html += '</div></div>';
@@ -301,15 +301,25 @@ function etdahGerarQuestionario() {
   el.innerHTML = html;
 }
 
-// Valida que so aceita 1-6
-function _etdahValidarItem(el) {
-  var v = parseInt(el.value);
-  if (el.value !== '' && (isNaN(v) || v < 1 || v > 6)) {
+// Valida (1-6) e avanca cursor para o proximo campo automaticamente
+function _etdahAutoAvancar(el) {
+  // Permitir apenas 1-6
+  var v = el.value;
+  if (v.length > 1) { el.value = v.charAt(v.length - 1); v = el.value; }
+  if (v !== '' && (v < '1' || v > '6')) {
+    el.value = '';
     el.style.borderColor = '#f44336';
     el.style.background = '#ffebee';
-  } else {
-    el.style.borderColor = '#ccc';
-    el.style.background = '';
+    return;
+  }
+  el.style.borderColor = '#4caf50';
+  el.style.background = '#f1f8e9';
+  // Avancar para o proximo input se digitou um numero valido
+  if (v >= '1' && v <= '6') {
+    var todos = document.querySelectorAll('#etdahQuestionario input[type="text"]');
+    for (var i = 0; i < todos.length - 1; i++) {
+      if (todos[i] === el) { todos[i + 1].focus(); todos[i + 1].select(); break; }
+    }
   }
 }
 
@@ -449,8 +459,8 @@ function etdahLimpar() {
   _etdahRespondentes = [];
   var el = document.getElementById('etdahResultados');
   if (el) { el.style.display = 'none'; el.innerHTML = ''; }
-  // Limpar inputs numericos
-  var inputs = document.querySelectorAll('#etdahQuestionario input[type="number"]');
+  // Limpar inputs
+  var inputs = document.querySelectorAll('#etdahQuestionario input[type="text"]');
   for (var i = 0; i < inputs.length; i++) { inputs[i].value = ''; inputs[i].style.borderColor = '#ccc'; inputs[i].style.background = ''; }
   _etdahAtualizarSomas();
   var campos = ['etdahNome','etdahIdade','etdahSexo','etdahRespondente'];
@@ -459,7 +469,7 @@ function etdahLimpar() {
 
 function etdahNovoRespondente() {
   // Primeiro calcula o respondente atual se houver itens preenchidos
-  var inputs = document.querySelectorAll('#etdahQuestionario input[type="number"]');
+  var inputs = document.querySelectorAll('#etdahQuestionario input[type="text"]');
   var temDados = false;
   for (var i = 0; i < inputs.length; i++) { if (inputs[i].value !== '') { temDados = true; break; } }
   if (temDados) {
