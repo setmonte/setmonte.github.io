@@ -457,6 +457,25 @@ function etdahLimpar() {
   for (var c = 0; c < campos.length; c++) { var inp = document.getElementById(campos[c]); if (inp) inp.value = ''; }
 }
 
+function etdahNovoRespondente() {
+  // Primeiro calcula o respondente atual se houver itens preenchidos
+  var inputs = document.querySelectorAll('#etdahQuestionario input[type="number"]');
+  var temDados = false;
+  for (var i = 0; i < inputs.length; i++) { if (inputs[i].value !== '') { temDados = true; break; } }
+  if (temDados) {
+    var resp = document.getElementById('etdahRespondente').value.trim();
+    if (!resp) { alert('Preencha o nome do respondente atual antes de adicionar outro.'); return; }
+    etdahCalcular();
+  }
+  // Limpar apenas itens e campo respondente (manter nome/idade/sexo)
+  for (var i = 0; i < inputs.length; i++) { inputs[i].value = ''; inputs[i].style.borderColor = '#ccc'; inputs[i].style.background = ''; }
+  document.getElementById('etdahRespondente').value = '';
+  _etdahAtualizarSomas();
+  // Scroll para o topo do questionario
+  var q = document.getElementById('etdahQuestionario');
+  if (q) q.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
 // === GERAR PDF ===
 function etdahGerarPDF() {
   if (_etdahRespondentes.length === 0) { alert('Calcule pelo menos um respondente.'); return; }
