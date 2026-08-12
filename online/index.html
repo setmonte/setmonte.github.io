@@ -10849,7 +10849,44 @@
         var data = await resp.json();
         _tflodResultCache = data.results || [];
         if (_tflodResultCache.length === 0) { el.innerHTML = '<p>Nenhum resultado TFLOD encontrado.</p>'; return; }
-        var html = '<h3>Resultados TFLOD</h3><table style="width:100%;border-collapse:collapse;font-size:0.85em;"><tr><th style="padding:6px;border-bottom:2px solid #1565c0;width:30px;"><input type="checkbox" onclick="toggleAllTflod(this)"></th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Data</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Paciente</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">ID</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">PCPM</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Classificacao</th><th style="padding:6px;border-bottom:2px solid #1565c0;">Acoes</th></tr>';
+        // === LIMPEZA AUTOMATICA DE AUDIO (90 dias) + AVISO (80 dias) ===
+        var agora = Date.now();
+        var DIAS_EXPIRA = 90;
+        var DIAS_AVISO = 80;
+        var audiosParaExpirar = [];
+        var audiosComAviso = [];
+        for (var ai = 0; ai < _tflodResultCache.length; ai++) {
+          var rAudio = _tflodResultCache[ai];
+          var dAudio = rAudio.data || {};
+          if (!dAudio.audioBase64 && !dAudio._temAudio) continue;
+          var dataResult = dAudio.date ? new Date(dAudio.date).getTime() : 0;
+          if (!dataResult) continue;
+          var diasPassados = Math.floor((agora - dataResult) / (24*60*60*1000));
+          if (diasPassados >= DIAS_EXPIRA) {
+            audiosParaExpirar.push(rAudio.sessionId);
+          } else if (diasPassados >= DIAS_AVISO) {
+            var diasRestantes = DIAS_EXPIRA - diasPassados;
+            audiosComAviso.push({paciente: (dAudio.formData||{}).nome || '-', dias: diasRestantes, data: dAudio.date});
+          }
+        }
+        // Limpeza silenciosa dos audios expirados
+        if (audiosParaExpirar.length > 0) {
+          audiosParaExpirar.forEach(function(sid) {
+            fetch(API_URL + '/expire-audio', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email:currentUser, sessionId:sid})}).catch(function(){});
+          });
+        }
+        // Aviso para o usuario
+        var htmlAviso = '';
+        if (audiosComAviso.length > 0) {
+          htmlAviso = '<div style="background:#fff3e0;border:1px solid #ffcc80;border-radius:8px;padding:10px;margin-bottom:12px;font-size:11px;">';
+          htmlAviso += '<strong style="color:#e65100;">&#9888;&#65039; Aviso de expiracao de audio</strong><br>';
+          htmlAviso += '<span style="color:#555;">Os audios abaixo serao apagados automaticamente apos 90 dias (os resultados e PDF sao mantidos):</span><br>';
+          audiosComAviso.forEach(function(a) {
+            htmlAviso += '<span>&#128100; ' + a.paciente + ' — <strong>' + a.dias + ' dia(s) restante(s)</strong> (aplicado em ' + new Date(a.data).toLocaleDateString('pt-BR') + ')</span><br>';
+          });
+          htmlAviso += '</div>';
+        }
+        var html = htmlAviso + '<h3>Resultados TFLOD</h3><table style="width:100%;border-collapse:collapse;font-size:0.85em;"><tr><th style="padding:6px;border-bottom:2px solid #1565c0;width:30px;"><input type="checkbox" onclick="toggleAllTflod(this)"></th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Data</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Paciente</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">ID</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">PCPM</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Classificacao</th><th style="padding:6px;border-bottom:2px solid #1565c0;">Acoes</th></tr>';
         for (var i = 0; i < _tflodResultCache.length; i++) {
           var r = _tflodResultCache[i];
           var d = r.data || {};
