@@ -488,3 +488,38 @@ function bvrtGerarPDF() {
   var nomeArq = 'BVRT_' + nome.replace(/[^a-zA-Z0-9]/g,'_') + '_' + new Date().toISOString().slice(0,10).replace(/-/g,'') + '.pdf';
   doc.save(nomeArq);
 }
+
+// === INTEGRACAO COM ABA PACIENTES ===
+function bvrtPreencherPaciente() {
+  var sel = document.getElementById('bvrtSelPac');
+  if (!sel || sel.selectedIndex === 0) return;
+  var opt = sel.options[sel.selectedIndex];
+  var pacId = opt.value || '';
+  var pac = null;
+  if (window._pacientesCache && pacId) {
+    for (var i = 0; i < _pacientesCache.length; i++) {
+      if (_pacientesCache[i].id === pacId) { pac = _pacientesCache[i]; break; }
+    }
+  }
+  if (!pac) pac = { nome: opt.dataset.nome||'', dataNascimento: opt.dataset.dn||'', escolaridade: opt.dataset.esc||'' };
+  var nomeEl = document.getElementById('bvrtNome');
+  var idadeEl = document.getElementById('bvrtIdade');
+  var escEl = document.getElementById('bvrtEscolaridade');
+  if (nomeEl && pac.nome) nomeEl.value = pac.nome;
+  if (idadeEl && pac.dataNascimento) {
+    var partes = pac.dataNascimento.split('/');
+    if (partes.length === 3) {
+      var nasc = new Date(partes[2], partes[1]-1, partes[0]);
+      var hoje = new Date();
+      var idade = hoje.getFullYear() - nasc.getFullYear();
+      if (hoje.getMonth() < nasc.getMonth() || (hoje.getMonth() === nasc.getMonth() && hoje.getDate() < nasc.getDate())) idade--;
+      idadeEl.value = idade;
+    }
+  }
+  if (escEl && pac.escolaridade) {
+    var esc = pac.escolaridade.toLowerCase();
+    if (esc.indexOf('fundamental') !== -1) escEl.value = 'fundamental';
+    else if (esc.indexOf('medio') !== -1 || esc.indexOf('médio') !== -1) escEl.value = 'medio';
+    else if (esc.indexOf('superior') !== -1 || esc.indexOf('pos') !== -1 || esc.indexOf('pós') !== -1) escEl.value = 'superior';
+  }
+}
