@@ -80,6 +80,7 @@ var TEXTOS_LERMAIS = {
 function sortearTextoLermais(idade) {
   var faixa = (idade >= 6 && idade <= 12) ? 'crianca' : 'adolescente';
   var textos = TEXTOS_LERMAIS[faixa];
+  if (!textos || textos.length === 0) textos = TEXTOS_LERMAIS['adolescente'];
   var indice = Math.floor(Math.random() * textos.length);
   return textos[indice];
 }
