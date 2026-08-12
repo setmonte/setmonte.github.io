@@ -150,7 +150,10 @@ function displayResults(scores) {
     renderChart(scores);
     window.scrollTo(0, 0);
     var _respostasObj={};document.querySelectorAll('input[type="radio"]:checked').forEach(function(el){var n=el.name;if(n&&n.startsWith('q')){_respostasObj[n.substring(1)]=parseInt(el.value);}});
-    window._escalaDados={escala:'YSQ-L3',paciente:document.getElementById('patientName').value,escore:0,classificacao:'Completo',respostas:_respostasObj,data:new Date().toISOString()};if(window.injetarBotaoSalvar)injetarBotaoSalvar('resultsSection');
+    var _dominiosYsq={};var _escoreTotal=0;schemas.forEach(function(s){var sc=scores.get(s.code)||0;_escoreTotal+=sc;var pct=Math.round((sc/s.max)*100);var niv=getLevel(pct);_dominiosYsq[s.name]={pontuacao:sc,max:s.max,classificacao:niv};});
+    var _mediaGeral=schemas.length>0?Math.round((_escoreTotal/schemas.length)*10)/10:0;
+    var _classGeral=_mediaGeral>=60?'Alta':_mediaGeral>=40?'Media':'Baixa';
+    window._escalaDados={escala:'YSQ-L3',paciente:document.getElementById('patientName').value,escore:_escoreTotal,classificacao:_classGeral,dominios:_dominiosYsq,respostas:_respostasObj,data:new Date().toISOString()};if(window.injetarBotaoSalvar)injetarBotaoSalvar('resultsSection');
 }
 
 function renderChart(scores) {
@@ -249,7 +252,7 @@ function resetForm() {
     
     window.scrollTo(0, 0);
     var _respostasObj2={};document.querySelectorAll('input[type="radio"]:checked').forEach(function(el){var n=el.name;if(n&&n.startsWith('q')){_respostasObj2[n.substring(1)]=parseInt(el.value);}});
-    window._escalaDados={escala:'YSQ-L3',paciente:document.getElementById('patientName').value,escore:0,classificacao:'Completo',respostas:_respostasObj2,data:new Date().toISOString()};if(window.injetarBotaoSalvar)injetarBotaoSalvar('resultsSection');
+    window._escalaDados=null;
 }
 
 const allQuestions = [

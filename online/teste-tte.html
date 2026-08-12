@@ -641,16 +641,16 @@
       // Coleta anonima
       window._escalaDados = {
         escala: 'TTE',
-        escore: estado.parteA.tempo + estado.parteB.tempo,
+        escore: Math.round((estado.parteA.tempo + estado.parteB.tempo) / 1000),
         classificacao: 'A:' + formatarTempo(estado.parteA.tempo) + ' B:' + formatarTempo(estado.parteB.tempo),
         dominios: {
-          ParteA: { tempo: estado.parteA.tempo, erros: estado.parteA.erros },
-          ParteB: { tempo: estado.parteB.tempo, erros: estado.parteB.erros },
+          ParteA: { pontuacao: Math.round(estado.parteA.tempo / 1000), tempo: estado.parteA.tempo, erros: estado.parteA.erros },
+          ParteB: { pontuacao: Math.round(estado.parteB.tempo / 1000), tempo: estado.parteB.tempo, erros: estado.parteB.erros },
           Razao: estado.parteA.tempo > 0 ? (estado.parteB.tempo / estado.parteA.tempo).toFixed(2) : 0
         }
       };
       // Coleta anonima via sendBeacon (garante envio antes de fechar aba)
-      try{var _cUrl='https://script.google.com/macros/s/AKfycbzYl7-ageXnHHyvrKMb6iS_7gX2l6ZBngPpbCHNfj7YYbXylcZ_vQ9iJkrbko8ICPcW/exec';var _idadeVal=null;if(sessionData&&sessionData.birthDate){var _nasc=new Date(sessionData.birthDate);var _hj=new Date();_idadeVal=_hj.getFullYear()-_nasc.getFullYear();if(_hj.getMonth()<_nasc.getMonth()||(_hj.getMonth()===_nasc.getMonth()&&_hj.getDate()<_nasc.getDate()))_idadeVal--;}if(_idadeVal&&window._escalaDados&&window._escalaDados.escala){var _ed=window._escalaDados;var _domStr='';if(_ed.dominios){var _dk=Object.keys(_ed.dominios);_domStr=_dk.map(function(k){var v=_ed.dominios[k];return k+':'+(typeof v==='object'?(v.pontuacao||v.acertos||v.tempo||''):v);}).join('; ');}var _pkt={email:sessionData.email||'',escala:_ed.escala,idade:_idadeVal,sexo:sessionData.sex||'',escolaridade:sessionData.education||'',pontuacao:_ed.escore?parseFloat(_ed.escore).toFixed(2):'',dominios:_domStr,classificacao:_ed.classificacao||''};navigator.sendBeacon(_cUrl,JSON.stringify(_pkt));window._jaEnviou=true;}}catch(e){}
+      try{var _cUrl='https://script.google.com/macros/s/AKfycbzYl7-ageXnHHyvrKMb6iS_7gX2l6ZBngPpbCHNfj7YYbXylcZ_vQ9iJkrbko8ICPcW/exec';var _idadeVal=null;if(sessionData&&sessionData.birthDate){var _nasc=new Date(sessionData.birthDate);var _hj=new Date();_idadeVal=_hj.getFullYear()-_nasc.getFullYear();if(_hj.getMonth()<_nasc.getMonth()||(_hj.getMonth()===_nasc.getMonth()&&_hj.getDate()<_nasc.getDate()))_idadeVal--;}if(_idadeVal&&window._escalaDados&&window._escalaDados.escala){var _ed=window._escalaDados;var _domStr='';if(_ed.dominios){var _dk=Object.keys(_ed.dominios);_domStr=_dk.map(function(k){var v=_ed.dominios[k];if(typeof v==='object'){if(v.pontuacao!==undefined&&v.pontuacao!==null)return k+':'+v.pontuacao;if(v.tempo!==undefined&&v.tempo!==null)return k+':'+Math.round(v.tempo/1000);return k+':'+(v.acertos||'');}return k+':'+v;}).join('; ');}var _pkt={email:sessionData.email||'',escala:_ed.escala,idade:_idadeVal,sexo:sessionData.sex||'',escolaridade:sessionData.education||'',pontuacao:(_ed.escore!==undefined&&_ed.escore!==null)?parseFloat(_ed.escore).toFixed(2):'',dominios:_domStr,classificacao:_ed.classificacao||''};navigator.sendBeacon(_cUrl,JSON.stringify(_pkt));window._jaEnviou=true;}}catch(e){}
 
       // Enviar resultados ao servidor
       var resultData = {
