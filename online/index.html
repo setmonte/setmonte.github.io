@@ -4619,6 +4619,7 @@
         document.getElementById('pacientesList').innerHTML = html;
       } else if (_pacientesCache.length === 0) {
         document.getElementById('pacientesList').innerHTML = '<p style="color:#777;">Nenhum paciente cadastrado ainda.</p>';
+        _mostrarAvisoCadastroPacientes();
       } else {
         document.getElementById('pacientesList').innerHTML = barHtml + '<p style="color:#777;">Nenhum paciente nesta letra.</p>';
       }
@@ -4632,6 +4633,30 @@
     function _pacMostrarTodos() {
       _pacLetraAtiva = '';
       _renderizarPacientesComAbas();
+    }
+
+    function _mostrarAvisoCadastroPacientes() {
+      // Mostrar apenas 1x por sessao
+      if (window._avisoSemPacJaMostrou) return;
+      window._avisoSemPacJaMostrou = true;
+      var el = document.getElementById('pacientesList');
+      if (!el) return;
+      var html = '<div style="background:linear-gradient(135deg,#e3f2fd,#e8f5e9);border:2px solid #1565c0;border-radius:12px;padding:20px;margin:15px 0;text-align:center;">';
+      html += '<p style="font-size:16px;font-weight:bold;color:#1565c0;margin-bottom:10px;">&#128100; Cadastre seus pacientes para organizar tudo!</p>';
+      html += '<p style="font-size:12px;color:#555;line-height:1.7;text-align:left;max-width:500px;margin:0 auto;">';
+      html += 'Ao cadastrar seus pacientes, voce ganha:<br>';
+      html += '&#10004; Preenchimento automatico em todos os testes e escalas<br>';
+      html += '&#10004; Historico completo de cada paciente em um so lugar<br>';
+      html += '&#10004; Relatorios e PDFs com dados organizados<br>';
+      html += '&#10004; Links de aplicacao vinculados ao paciente</p>';
+      html += '<div style="margin-top:15px;padding:12px;background:#e8f5e9;border-radius:8px;border:1px solid #a5d6a7;">';
+      html += '<p style="font-size:11px;color:#2e7d32;line-height:1.6;">';
+      html += '&#128274; <strong>Sobre a seguranca dos dados:</strong> Os dados dos seus pacientes sao protegidos e acessiveis <strong>apenas por voce</strong>. ';
+      html += 'Nenhum outro usuario, profissional ou administrador tem acesso as informacoes sensiveis dos seus pacientes. ';
+      html += 'Seus dados estao criptografados e armazenados em servidores seguros da AWS (Amazon Web Services).</p>';
+      html += '</div>';
+      html += '</div>';
+      el.innerHTML += html;
     }
 
     // ===== ENCERRAR CONTA =====
