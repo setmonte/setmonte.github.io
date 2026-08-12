@@ -5305,10 +5305,13 @@
         var loginsMultiplos = {};
         var agora = Date.now();
         var limite48h = agora - (48 * 60 * 60 * 1000);
+        var resolvidoEm = localStorage.getItem('adminAlertasResolvidoEm');
+        var limiteResolvido = resolvidoEm ? new Date(resolvidoEm).getTime() : 0;
         resultados.forEach(function(r) {
           var d = r.data || {};
           var ts = d.date ? new Date(d.date).getTime() : (r.timestamp || 0);
           if (ts < limite48h) return;
+          if (ts <= limiteResolvido) return;
           var usuario = r.email || '?';
           var fd = d.formData || {};
           var paciente = fd.nome || d.paciente || '-';
@@ -5384,6 +5387,10 @@
           html = '<p style="color:#2e7d32;font-weight:bold;">&#9989; Tudo certo! Nenhum problema detectado nas ultimas 48h.</p>';
           card.style.borderColor = '#2e7d32';
           card.style.background = '#e8f5e9';
+        } else {
+          html += '<div style="text-align:center;margin-top:10px;padding-top:10px;border-top:1px solid #e0e0e0;">';
+          html += '<button onclick="resolverAlertasAdmin()" style="padding:8px 20px;border:none;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#2e7d32,#66bb6a);color:white;">&#9989; Resolvido — Limpar alertas</button>';
+          html += '</div>';
         }
         el.innerHTML = html;
         card.style.display = 'block';
@@ -5391,6 +5398,14 @@
         // Se a rota nao existe ainda, esconder o card silenciosamente
         card.style.display = 'none';
       }
+    }
+
+    function resolverAlertasAdmin() {
+      localStorage.setItem('adminAlertasResolvidoEm', new Date().toISOString());
+      var card = document.getElementById('adminAlertasCard');
+      var el = document.getElementById('adminAlertasContent');
+      if (el) el.innerHTML = '<p style="color:#2e7d32;font-weight:bold;">&#9989; Tudo certo! Alertas limpos.</p>';
+      if (card) { card.style.borderColor = '#2e7d32'; card.style.background = '#e8f5e9'; }
     }
 
     function adminSubTab(nome) {
