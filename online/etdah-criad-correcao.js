@@ -566,6 +566,8 @@ function criadGerarPDF() {
 // === OVERRIDE switchCorrecaoSubTab para incluir CriAd ===
 (function() {
   window.switchCorrecaoSubTab = function(tab) {
+    // Rastreamento Analytics
+    if (typeof gtag === 'function') gtag('event', 'subaba_visitada', {event_category: 'navegacao', event_label: 'correcao/' + tab, user_email: window.currentUser || ''});
     var btnBvrt = document.getElementById('subTabBvrt');
     var contentBvrt = document.getElementById('correcaoBvrt');
     var btnEtdah = document.getElementById('subTabEtdah');

@@ -3006,6 +3006,8 @@
 
     // ===== FUNCOES BAE =====
     function switchTab(tab) {
+      // Rastreamento Analytics
+      if (typeof gtag === 'function') gtag('event', 'aba_visitada', {event_category: 'navegacao', event_label: tab, user_email: currentUser || ''});
       document.getElementById('funcExecTab').classList.remove('active');
       document.getElementById('atencaoTab').classList.remove('active');
       document.getElementById('memoriaTab').classList.remove('active');
@@ -3112,6 +3114,8 @@
     }
 
     function switchSubTab(category, subTab) {
+      // Rastreamento Analytics
+      if (typeof gtag === 'function') gtag('event', 'subaba_visitada', {event_category: 'navegacao', event_label: category + '/' + subTab, user_email: currentUser || ''});
       var container = document.getElementById(category + 'Tab');
       if (!container) return;
       var subs = container.querySelectorAll('.sub-tab-content');
@@ -11286,5 +11290,31 @@
   <script src="bvrt-correcao.js"></script>
   <script src="etdah-correcao.js"></script>
   <script src="etdah-criad-correcao.js"></script>
+  <script>
+  // === RASTREAMENTO GLOBAL DE ACOES ===
+  (function(){
+    if (typeof gtag !== 'function') return;
+    document.addEventListener('click', function(e) {
+      var btn = e.target.closest('button,a.btn,[onclick]');
+      if (!btn) return;
+      var onclick = btn.getAttribute('onclick') || '';
+      var texto = (btn.textContent || '').trim().slice(0,40);
+      var acao = '';
+      // Detectar acoes importantes
+      if (onclick.indexOf('showNew') !== -1) acao = 'nova_aplicacao';
+      else if (onclick.indexOf('Calcular') !== -1 || onclick.indexOf('calcular') !== -1) acao = 'calcular';
+      else if (onclick.indexOf('GerarPDF') !== -1 || onclick.indexOf('gerarPdf') !== -1 || onclick.indexOf('PDF') !== -1) acao = 'gerar_pdf';
+      else if (onclick.indexOf('showResults') !== -1 || onclick.indexOf('Results') !== -1) acao = 'ver_resultados';
+      else if (onclick.indexOf('comprarCreditos') !== -1) acao = 'comprar_creditos';
+      else if (onclick.indexOf('startTflod') !== -1 || onclick.indexOf('startBae') !== -1 || onclick.indexOf('startTrmv') !== -1 || onclick.indexOf('startTaav') !== -1) acao = 'iniciar_teste';
+      else if (onclick.indexOf('cadastrarPaciente') !== -1) acao = 'cadastrar_paciente';
+      else if (onclick.indexOf('doLogin') !== -1) acao = 'login';
+      else if (onclick.indexOf('doLogout') !== -1) acao = 'logout';
+      if (acao) {
+        gtag('event', acao, {event_category:'uso_painel', event_label: texto, user_email: window.currentUser || ''});
+      }
+    });
+  })();
+  </script>
 </body>
 </html>
