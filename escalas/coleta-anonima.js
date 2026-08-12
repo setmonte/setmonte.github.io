@@ -100,7 +100,17 @@
         var partes = [];
         Object.keys(dominios).forEach(function(nome) {
             var d = dominios[nome];
-            var media = typeof d === 'object' ? (d.pontuacao || d.media || d.score || d.acertos || '') : d;
+            var media;
+            if (typeof d === 'object') {
+                // Verificar explicitamente contra null/undefined (0 e falso sao valores validos)
+                if (d.pontuacao !== undefined && d.pontuacao !== null) media = d.pontuacao;
+                else if (d.media !== undefined && d.media !== null) media = d.media;
+                else if (d.score !== undefined && d.score !== null) media = d.score;
+                else if (d.acertos !== undefined && d.acertos !== null) media = d.acertos;
+                else media = '';
+            } else {
+                media = d;
+            }
             partes.push(nome + ':' + media);
         });
         return partes.join('; ');
@@ -139,7 +149,7 @@
             var classificacao = '';
 
             if (window._escalaDados) {
-                pontuacao = window._escalaDados.escore ? parseFloat(window._escalaDados.escore).toFixed(2) : '';
+                pontuacao = (window._escalaDados.escore !== undefined && window._escalaDados.escore !== null) ? parseFloat(window._escalaDados.escore).toFixed(2) : '';
                 dominios = _formatarDominios(window._escalaDados.dominios);
                 classificacao = window._escalaDados.classificacao || '';
             } else if (window.resultadosBAE && (window.resultadosBAE.concentrada || window.resultadosBAE.seletiva || window.resultadosBAE.dividida || window.resultadosBAE.alternada || window.resultadosBAE.sustentada)) {
