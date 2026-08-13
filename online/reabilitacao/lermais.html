@@ -33,11 +33,7 @@ body.tema-neutro{background:linear-gradient(135deg,#e8f5e9 0%,#c8e6c9 50%,#e8f5e
 .texto-area{background:#fafafa;padding:30px;border-radius:12px;margin-bottom:25px;border:2px solid #e0e0e0;min-height:200px;position:relative}
 .texto-area h3{color:#333;margin-bottom:15px;text-align:center}
 .texto-conteudo{font-size:1.3em;line-height:1.9;color:#222;text-align:justify}
-.texto-conteudo .palavra{display:inline;transition:background 0.2s,color 0.2s;padding:1px 2px;border-radius:3px}
-.texto-conteudo .palavra.correta{background:#c8e6c9;color:#1b5e20}
-.texto-conteudo .palavra.incorreta{background:#ffcdd2;color:#b71c1c}
-.texto-conteudo .palavra.atual{background:#fff9c4;color:#f57f17;font-weight:bold}
-.texto-conteudo .palavra.pendente{color:#666}
+.texto-conteudo .palavra{display:inline;padding:1px 2px;border-radius:3px;color:#222}
 .mic-status{text-align:center;margin:15px 0;font-size:0.95em;color:#555}
 .mic-indicator{display:inline-block;width:14px;height:14px;border-radius:50%;margin-right:6px;vertical-align:middle}
 .mic-indicator.ativo{background:#f44336;animation:pulse 1.2s infinite}
@@ -367,9 +363,7 @@ function sortearTexto() {
     document.getElementById('btnNovo').style.display = 'none';
     document.getElementById('resultadosArea').style.display = 'none';
 
-    // Destacar primeira palavra
-    var primEl = document.getElementById('p0');
-    if (primEl) { primEl.className = 'palavra atual'; }
+    // Sem destaque visual (removido para acessibilidade TDAH)
 
     // Inicializar grafico
     inicializarGrafico();
@@ -593,22 +587,16 @@ function processarFala(transcript) {
         }
 
         if (encontrouEm >= 0) {
-            // Marcar palavras intermediarias como erro (puladas)
+            // Contar palavras intermediarias como erro (puladas)
             for (var k = 0; k < encontrouEm; k++) {
-                marcarPalavra(palavraAtualIdx, false);
                 palavrasIncorretas++;
                 palavraAtualIdx++;
             }
-            // Marcar a palavra encontrada como correta
-            marcarPalavra(palavraAtualIdx, true);
+            // Contar a palavra encontrada como correta
             palavrasCorretas++;
             palavraAtualIdx++;
 
-            // Destacar proxima palavra
-            if (palavraAtualIdx < palavrasTexto.length) {
-                var proxEl = document.getElementById('p' + palavraAtualIdx);
-                if (proxEl) proxEl.className = 'palavra atual';
-            }
+            // Sem destaque visual na proxima palavra (removido para acessibilidade)
 
             // Atualizar progresso
             var progresso = (palavraAtualIdx / palavrasTexto.length) * 100;
@@ -649,9 +637,7 @@ function iniciarTimerSilencio() {
     resetarTimerSilencio();
 }
 function marcarPalavra(idx, correta) {
-    var el = document.getElementById('p' + idx);
-    if (!el) return;
-    el.className = correta ? 'palavra correta' : 'palavra incorreta';
+    // Funcao desativada - acompanhamento visual removido para acessibilidade TDAH
 }
 
 function gerarPontoGrafico() {
