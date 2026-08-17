@@ -1,0 +1,1328 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PRAt &#8212; Programa de Reabilita&#231;&#227;o da Aten&#231;&#227;o</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); min-height: 100vh; }
+        .tela { display: none; }
+        .tela.ativa { display: block; }
+
+        /* === TELA 1: CADASTRO === */
+        .cadastro-container { max-width: 700px; margin: 0 auto; padding: 20px; }
+        .cadastro-header { background: linear-gradient(135deg, #2e7d32, #43a047); color: white; padding: 30px; border-radius: 15px 15px 0 0; text-align: center; }
+        .cadastro-header h1 { font-size: 2em; margin-bottom: 5px; }
+        .cadastro-header .psi { font-size: 2.5em; display: inline-block; margin-right: 10px; border: 3px solid white; border-radius: 50%; width: 55px; height: 55px; line-height: 55px; }
+        .cadastro-header p { opacity: 0.9; font-size: 1em; }
+        .cadastro-body { background: white; padding: 30px; border-radius: 0 0 15px 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        .form-row { display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap; }
+        .form-group { flex: 1; min-width: 200px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; color: #2e7d32; font-size: 0.9em; }
+        .form-group input, .form-group select { width: 100%; padding: 12px; border: 2px solid #c8e6c9; border-radius: 8px; font-size: 15px; transition: border-color 0.3s; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: #2e7d32; }
+        .form-group input[readonly] { background: #e8f5e9; color: #2e7d32; font-weight: bold; }
+        .btn-iniciar { display: block; width: 100%; padding: 18px; background: linear-gradient(135deg, #2e7d32, #43a047); color: white; border: none; border-radius: 30px; font-size: 1.2em; font-weight: 700; cursor: pointer; margin-top: 25px; transition: all 0.3s; box-shadow: 0 5px 15px rgba(46,125,50,0.3); }
+        .btn-iniciar:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(46,125,50,0.4); }
+        .instrucoes-box { background: #f1f8e9; border-left: 4px solid #2e7d32; padding: 15px 20px; border-radius: 0 8px 8px 0; margin-bottom: 20px; }
+        .instrucoes-box h3 { color: #2e7d32; margin-bottom: 8px; }
+        .instrucoes-box p { color: #555; font-size: 0.9em; line-height: 1.7; }
+
+        /* === TELA 2: ATIVIDADE (FULLSCREEN RESPONSIVO) === */
+        .atividade-container { width: 100vw; height: 100vh; background: #fafafa; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 1vh 1vw; overflow: hidden; }
+        .atividade-header { width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 0.8vh 2vw; background: #2e7d32; color: white; border-radius: 8px; flex-shrink: 0; }
+        .cronometro { font-size: clamp(1.2em, 2.5vw, 2em); font-weight: bold; font-family: 'Courier New', monospace; }
+        .info-atividade { font-size: clamp(0.7em, 1.2vw, 1em); opacity: 0.9; }
+        .padrao-cores { display: flex; gap: clamp(8px, 2vw, 25px); justify-content: center; align-items: center; background: white; padding: 0.8vh 2vw; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); flex-shrink: 0; }
+        .padrao-cores h3 { color: #2e7d32; font-size: clamp(0.7em, 1.2vw, 0.9em); margin-right: 8px; }
+        .padrao-item { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+        .padrao-item span { font-size: clamp(0.55em, 0.9vw, 0.75em); color: #666; font-weight: 600; }
+        .padrao-quadrado { width: clamp(45px, 5.5vw, 70px); height: clamp(45px, 5.5vw, 70px); border: 2px solid #333; position: relative; background: white; }
+        .padrao-interno { position: absolute; width: 40%; height: 40%; }
+        .grade-wrapper { display: flex; flex-direction: column; align-items: center; flex: 1; justify-content: center; }
+        .grade-com-labels { display: flex; align-items: flex-start; gap: 0.3vw; }
+        .grade-labels-top { display: flex; margin-left: calc(2vw + 5px); margin-bottom: 2px; }
+        .grade-labels-top span { text-align: center; font-weight: bold; color: #2e7d32; }
+        .grade-label-lateral { display: flex; align-items: center; justify-content: center; font-weight: bold; color: #2e7d32; width: 2vw; min-width: 15px; }
+        .grade { display: grid; grid-template-columns: repeat(6, 1fr); grid-template-rows: repeat(7, 1fr); gap: 2px; }
+        .quadrado { border: 2px solid #333; position: relative; background: white; cursor: pointer; transition: all 0.15s; border-radius: 2px; aspect-ratio: 1; }
+        .quadrado:hover { box-shadow: 0 0 6px rgba(46,125,50,0.5); transform: scale(1.04); z-index: 2; }
+        .quadrado.respondido { cursor: default; }
+        .quadrado.respondido:hover { transform: none; box-shadow: none; }
+        .quadrado-interno { position: absolute; width: 42%; height: 42%; border: 2px solid #333; background: white; }
+        .quadrado-interno.pos-TL { top: 6%; left: 6%; }
+        .quadrado-interno.pos-TR { top: 6%; right: 6%; }
+        .quadrado-interno.pos-BL { bottom: 6%; left: 6%; }
+        .quadrado-interno.pos-BR { bottom: 6%; right: 6%; }
+
+        /* Popup paleta */
+        .paleta-popup { position: fixed; z-index: 1000; background: white; border: 2px solid #2e7d32; border-radius: 10px; padding: 8px; display: none; box-shadow: 0 5px 20px rgba(0,0,0,0.25); }
+        .paleta-popup.visivel { display: flex; gap: 8px; }
+        .paleta-cor { width: clamp(30px, 4vw, 45px); height: clamp(30px, 4vw, 45px); border: 2px solid #555; border-radius: 5px; cursor: pointer; transition: all 0.2s; }
+        .paleta-cor:hover { transform: scale(1.2); box-shadow: 0 3px 8px rgba(0,0,0,0.3); }
+        .paleta-cor.vermelho { background: #d32f2f; }
+        .paleta-cor.amarelo { background: #fdd835; }
+        .paleta-cor.verde { background: #2e7d32; }
+        .paleta-cor.azul { background: #1565c0; }
+
+        .atividade-footer { display: flex; gap: 15px; align-items: center; flex-shrink: 0; }
+        .btn-encerrar { padding: 0.6vh 2vw; background: #f44336; color: white; border: none; border-radius: 20px; font-size: clamp(0.7em, 1vw, 0.9em); font-weight: 600; cursor: pointer; opacity: 0.7; transition: all 0.3s; }
+        .btn-encerrar:hover { opacity: 1; }
+        .progresso-texto { font-size: clamp(0.8em, 1.2vw, 1em); color: #2e7d32; font-weight: bold; }
+        .progresso-bar { width: 200px; height: 6px; background: #e0e0e0; border-radius: 3px; overflow: hidden; }
+        .progresso-fill { height: 100%; background: linear-gradient(90deg, #2e7d32, #66bb6a); transition: width 0.3s; border-radius: 3px; }
+
+        /* === TELA 3: RESULTADOS === */
+        .resultados-container { max-width: 800px; margin: 0 auto; padding: 20px; }
+        .resultados-header { background: linear-gradient(135deg, #2e7d32, #43a047); color: white; padding: 25px; border-radius: 15px 15px 0 0; text-align: center; }
+        .resultados-header h1 { font-size: 1.8em; }
+        .resultados-body { background: white; padding: 30px; border-radius: 0 0 15px 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        .resultado-card { background: #f8f9fa; border-left: 4px solid #2e7d32; padding: 15px 20px; border-radius: 0 8px 8px 0; margin-bottom: 15px; }
+        .resultado-card h4 { color: #2e7d32; margin-bottom: 8px; }
+        .resultado-card .valor { font-size: 1.5em; font-weight: bold; color: #333; }
+        .resultado-card .detalhe { font-size: 0.85em; color: #666; margin-top: 5px; }
+        .resultados-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 25px; }
+        .estrategia-box { background: #e8f5e9; border: 2px solid #2e7d32; border-radius: 10px; padding: 20px; text-align: center; margin-bottom: 20px; }
+        .estrategia-box h3 { color: #2e7d32; margin-bottom: 5px; }
+        .estrategia-box p { font-size: 1.1em; font-weight: 600; color: #333; }
+        .grafico-container { margin: 25px 0; text-align: center; }
+        .grafico-container canvas { border: 1px solid #e0e0e0; border-radius: 10px; max-width: 100%; }
+        .historico-tabela { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 0.85em; }
+        .historico-tabela th { background: #2e7d32; color: white; padding: 10px 8px; text-align: center; }
+        .historico-tabela td { padding: 8px; text-align: center; border-bottom: 1px solid #e0e0e0; }
+        .historico-tabela tr:hover { background: #f1f8e9; }
+        .botoes-resultado { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 25px; }
+        .btn-resultado { padding: 12px 25px; border: none; border-radius: 25px; font-size: 0.95em; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+        .btn-pdf { background: linear-gradient(135deg, #1565c0, #1976d2); color: white; }
+        .btn-excel { background: linear-gradient(135deg, #2e7d32, #43a047); color: white; }
+        .btn-nova { background: linear-gradient(135deg, #ff8f00, #ffa000); color: white; }
+        .btn-resultado:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+
+        .rodape { text-align: center; padding: 20px; color: #666; font-size: 0.8em; margin-top: 20px; }
+        .rodape p { margin-bottom: 3px; }
+
+        /* Responsivo */
+        @media (max-width: 768px) {
+            .cadastro-container { padding: 10px; }
+            .form-row { flex-direction: column; }
+            .paleta-cor { width: 40px; height: 40px; }
+        }
+
+        /* Impressao */
+        @media print {
+            .tela { display: block !important; }
+            .btn-iniciar, .botoes-resultado, .btn-encerrar { display: none !important; }
+            body { background: white !important; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ========== TELA 1: CADASTRO ========== -->
+<div id="telaCadastro" class="tela ativa">
+    <div class="cadastro-container">
+        <div class="cadastro-header">
+            <div><span class="psi">&#936;</span></div>
+            <h1>ATIVIDADE COGNITIVA</h1>
+            <p>PRAt &#8212; Programa de Reabilita&#231;&#227;o da Aten&#231;&#227;o</p>
+        </div>
+        <div class="cadastro-body">
+            <div class="instrucoes-box">
+                <h3>&#128221; Sobre a Atividade</h3>
+                <p>Esta atividade estimula <strong>aten&#231;&#227;o</strong>, <strong>percep&#231;&#227;o visual</strong>, <strong>discrimina&#231;&#227;o de est&#237;mulos</strong> e <strong>rastreio visual</strong>. O participante deve associar a posi&#231;&#227;o do quadrado interno &#224; cor correta, seguindo o padr&#227;o de refer&#234;ncia. O tempo de execu&#231;&#227;o ser&#225; cronometrado.</p>
+            </div>
+
+            <h3 style="color:#2e7d32; margin-bottom:15px;">&#128203; Dados do Participante</h3>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="nome">Nome Completo *</label>
+                    <input type="text" id="nome" placeholder="Nome completo do participante">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="dataNascimento">Data de Nascimento *</label>
+                    <input type="date" id="dataNascimento">
+                </div>
+                <div class="form-group">
+                    <label for="idadeCalculada">Idade</label>
+                    <input type="text" id="idadeCalculada" readonly placeholder="Calculada automaticamente">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="sexo">Sexo *</label>
+                    <select id="sexo">
+                        <option value="">Selecione</option>
+                        <option value="Masculino">Masculino</option>
+                        <option value="Feminino">Feminino</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="escolaridade">Escolaridade</label>
+                    <select id="escolaridade">
+                        <option value="">Selecione</option>
+                        <option value="Analfabeto">Analfabeto</option>
+                        <option value="Fundamental incompleto">Fundamental incompleto</option>
+                        <option value="Fundamental completo">Fundamental completo</option>
+                        <option value="Medio incompleto">M&#233;dio incompleto</option>
+                        <option value="Medio completo">M&#233;dio completo</option>
+                        <option value="Superior incompleto">Superior incompleto</option>
+                        <option value="Superior completo">Superior completo</option>
+                        <option value="Pos-graduacao">P&#243;s-gradua&#231;&#227;o</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="oculos">Usa &#211;culos?</label>
+                    <select id="oculos">
+                        <option value="">Selecione</option>
+                        <option value="Sim">Sim</option>
+                        <option value="Nao">N&#227;o</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="lateralidade">Lateralidade</label>
+                    <select id="lateralidade">
+                        <option value="">Selecione</option>
+                        <option value="Destro">Destro</option>
+                        <option value="Canhoto">Canhoto</option>
+                        <option value="Ambidestro">Ambidestro</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="idPaciente">ID do Participante</label>
+                    <input type="text" id="idPaciente" readonly placeholder="Gerado automaticamente">
+                </div>
+                <div class="form-group">
+                    <label for="dataAvaliacao">Data da Avalia&#231;&#227;o</label>
+                    <input type="date" id="dataAvaliacao">
+                </div>
+            </div>
+
+            <button class="btn-iniciar" onclick="iniciarAtividade()">&#9654; Iniciar Atividade</button>
+        </div>
+        <div class="rodape">
+            <p>&#127793; Estimule sua mente. Pequenas a&#231;&#245;es, grandes conex&#245;es.</p>
+            <p>&#127807; A neuropsicologia transforma conhecimento em possibilidades.</p>
+        </div>
+    </div>
+</div>
+
+<!-- ========== TELA 2: ATIVIDADE ========== -->
+<div id="telaAtividade" class="tela">
+    <div class="atividade-container">
+        <div class="atividade-header">
+            <div class="info-atividade">&#936; PRAt | Aten&#231;&#227;o Visual</div>
+            <div class="cronometro" id="cronometroDisplay">00:00</div>
+            <div class="info-atividade" id="contadorProgresso">0 / 42</div>
+        </div>
+
+        <div class="padrao-cores">
+            <h3>PADR&#195;O:</h3>
+            <div class="padrao-item">
+                <div class="padrao-quadrado"><div class="padrao-interno" style="background:#d32f2f; bottom:6%; left:6%;"></div></div>
+                <span>Inf-Esq</span>
+            </div>
+            <div class="padrao-item">
+                <div class="padrao-quadrado"><div class="padrao-interno" style="background:#fdd835; top:6%; left:6%;"></div></div>
+                <span>Sup-Esq</span>
+            </div>
+            <div class="padrao-item">
+                <div class="padrao-quadrado"><div class="padrao-interno" style="background:#2e7d32; bottom:6%; right:6%;"></div></div>
+                <span>Inf-Dir</span>
+            </div>
+            <div class="padrao-item">
+                <div class="padrao-quadrado"><div class="padrao-interno" style="background:#1565c0; top:6%; right:6%;"></div></div>
+                <span>Sup-Dir</span>
+            </div>
+        </div>
+
+        <div class="grade-wrapper">
+            <div class="grade-labels-top" id="labelsTop"></div>
+            <div class="grade-com-labels">
+                <div id="labelsLateral" style="display:flex; flex-direction:column;"></div>
+                <div class="grade" id="grade"></div>
+            </div>
+        </div>
+
+        <div class="atividade-footer">
+            <div class="progresso-bar"><div class="progresso-fill" id="progressoFill" style="width:0%"></div></div>
+            <div class="progresso-texto" id="progressoTexto">0%</div>
+            <button class="btn-encerrar" id="btnFinalizar" onclick="finalizarAtividade()">Finalizar</button>
+        </div>
+    </div>
+
+    <div class="paleta-popup" id="paletaPopup">
+        <div class="paleta-cor vermelho" data-cor="vermelho" title="Vermelho"></div>
+        <div class="paleta-cor amarelo" data-cor="amarelo" title="Amarelo"></div>
+        <div class="paleta-cor verde" data-cor="verde" title="Verde"></div>
+        <div class="paleta-cor azul" data-cor="azul" title="Azul"></div>
+    </div>
+</div>
+
+<!-- ========== TELA 3: RESULTADOS ========== -->
+<div id="telaResultados" class="tela">
+    <div class="resultados-container">
+        <div class="resultados-header">
+            <h1>&#128202; Resultados</h1>
+            <p>PRAt &#8212; Programa de Reabilita&#231;&#227;o da Aten&#231;&#227;o</p>
+        </div>
+        <div class="resultados-body">
+            <div id="resultadosConteudo"></div>
+            <div class="grafico-container">
+                <h3 style="color:#2e7d32; margin-bottom:10px;">&#128200; Evolu&#231;&#227;o do Desempenho</h3>
+                <canvas id="graficoEvolucao" width="700" height="300"></canvas>
+            </div>
+            <div id="historicoTabela"></div>
+            <div class="botoes-resultado">
+                <button class="btn-resultado btn-pdf" onclick="gerarPDF()">&#128196; Gerar PDF</button>
+                <button class="btn-resultado btn-excel" onclick="exportarCSV()">&#128202; Exportar Excel</button>
+                <button class="btn-resultado btn-nova" onclick="novaAplicacao()">&#128260; Nova Aplica&#231;&#227;o</button>
+                <button class="btn-resultado" style="background:linear-gradient(135deg,#c62828,#e53935);color:white;" onclick="limparHistorico()">&#128465; Limpar Hist&#243;rico</button>
+            </div>
+        </div>
+        <div class="rodape">
+            <p>&#127793; Estimule sua mente. Pequenas a&#231;&#245;es, grandes conex&#245;es.</p>
+            <p>&#127807; A neuropsicologia transforma conhecimento em possibilidades.</p>
+        </div>
+    </div>
+</div>
+
+<script>
+// ============================================================
+// DADOS E VARIAVEIS GLOBAIS
+// ============================================================
+var POSICOES = ['TL', 'TR', 'BL', 'BR'];
+var CORES_MAPA = { BL: 'vermelho', TL: 'amarelo', BR: 'verde', TR: 'azul' };
+var CORES_HEX = { vermelho: '#d32f2f', amarelo: '#fdd835', verde: '#2e7d32', azul: '#1565c0' };
+var COLUNAS = 6;
+var LINHAS = 7;
+var TOTAL_QUADRADOS = COLUNAS * LINHAS;
+var LETRAS_LINHAS = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
+
+var gradeData = [];
+var ordemCliques = [];
+var registroTrocas = [];
+var cronometroInterval = null;
+var tempoInicio = null;
+var tempoTotal = 0;
+var quadradoAtual = null;
+var acertos = 0;
+var erros = 0;
+var trocas = 0;
+
+// ============================================================
+// FUNCOES UTILITARIAS
+// ============================================================
+
+function gerarIdPaciente(nome, nascimento) {
+    if (!nascimento || !nome || nome.trim().length < 1) return null;
+    var n = nome.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z]/g, '').toLowerCase();
+    var prefixo = n.substring(0, 3);
+    var raw = nascimento + '+' + prefixo;
+    var hash = 5381;
+    for (var i = 0; i < raw.length; i++) hash = ((hash << 5) + hash) + raw.charCodeAt(i);
+    return 'P' + Math.abs(hash).toString(36).toUpperCase();
+}
+
+function calcularIdade() {
+    var d = document.getElementById('dataNascimento').value;
+    if (!d) return;
+    var h = new Date(), n = new Date(d);
+    var a = h.getFullYear() - n.getFullYear(), m = h.getMonth() - n.getMonth(), di = h.getDate() - n.getDate();
+    if (di < 0) { m--; di += new Date(h.getFullYear(), h.getMonth(), 0).getDate(); }
+    if (m < 0) { a--; m += 12; }
+    document.getElementById('idadeCalculada').value = a + ' anos, ' + m + ' meses e ' + di + ' dias';
+    atualizarId();
+}
+
+function atualizarId() {
+    var nome = document.getElementById('nome').value;
+    var nasc = document.getElementById('dataNascimento').value;
+    var id = gerarIdPaciente(nome, nasc);
+    document.getElementById('idPaciente').value = id || '';
+}
+
+// ============================================================
+// GERAR GRADE
+// ============================================================
+
+function gerarGradeData() {
+    gradeData = [];
+    var pool = [];
+    for (var p = 0; p < 4; p++) {
+        for (var q = 0; q < 10; q++) {
+            pool.push(POSICOES[p]);
+        }
+    }
+    pool.push(POSICOES[Math.floor(Math.random() * 4)]);
+    pool.push(POSICOES[Math.floor(Math.random() * 4)]);
+    // Embaralhar (Fisher-Yates)
+    for (var i = pool.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var tmp = pool[i]; pool[i] = pool[j]; pool[j] = tmp;
+    }
+    for (var idx = 0; idx < TOTAL_QUADRADOS; idx++) {
+        var col = (idx % COLUNAS) + 1;
+        var lin = Math.floor(idx / COLUNAS);
+        gradeData.push({
+            indice: idx,
+            coluna: col,
+            linha: LETRAS_LINHAS[lin],
+            linhaNum: lin,
+            posicao: pool[idx],
+            corCorreta: CORES_MAPA[pool[idx]],
+            corEscolhida: null,
+            acertou: false,
+            errosItem: 0,
+            trocasItem: 0
+        });
+    }
+}
+
+function calcularTamanhoGrade() {
+    // Calcula o tamanho ideal dos quadrados para caber na tela
+    var alturaDisponivel = window.innerHeight * 0.62; // 62% da altura para a grade
+    var larguraDisponivel = window.innerWidth * 0.85; // 85% da largura
+    var tamPorAltura = Math.floor((alturaDisponivel - (LINHAS - 1) * 2) / LINHAS);
+    var tamPorLargura = Math.floor((larguraDisponivel - (COLUNAS - 1) * 2) / COLUNAS);
+    var tam = Math.min(tamPorAltura, tamPorLargura);
+    // Limites min/max
+    if (tam < 35) tam = 35;
+    if (tam > 120) tam = 120;
+    return tam;
+}
+
+function renderizarGrade() {
+    var tam = calcularTamanhoGrade();
+
+    // Aplicar tamanho na grade via CSS
+    var gradeEl = document.getElementById('grade');
+    gradeEl.style.gridTemplateColumns = 'repeat(6, ' + tam + 'px)';
+    gradeEl.style.gridTemplateRows = 'repeat(7, ' + tam + 'px)';
+
+    // Labels topo
+    var topHtml = '';
+    for (var c = 1; c <= COLUNAS; c++) {
+        topHtml += '<span style="width:' + tam + 'px; font-size:' + Math.max(10, tam * 0.22) + 'px;">' + c + '</span>';
+    }
+    document.getElementById('labelsTop').innerHTML = topHtml;
+
+    // Labels lateral
+    var latHtml = '';
+    for (var l = 0; l < LINHAS; l++) {
+        latHtml += '<div class="grade-label-lateral" style="height:' + tam + 'px; font-size:' + Math.max(10, tam * 0.22) + 'px;">' + LETRAS_LINHAS[l] + '</div>';
+    }
+    document.getElementById('labelsLateral').innerHTML = latHtml;
+
+    // Grade
+    var gradeHtml = '';
+    for (var i = 0; i < gradeData.length; i++) {
+        var item = gradeData[i];
+        gradeHtml += '<div class="quadrado" data-indice="' + i + '" style="width:' + tam + 'px; height:' + tam + 'px;">';
+        gradeHtml += '<div class="quadrado-interno pos-' + item.posicao + '"></div>';
+        gradeHtml += '</div>';
+    }
+    gradeEl.innerHTML = gradeHtml;
+
+    // Adicionar eventos de clique nos quadrados
+    var quadrados = gradeEl.querySelectorAll('.quadrado');
+    for (var q = 0; q < quadrados.length; q++) {
+        quadrados[q].addEventListener('click', function(e) {
+            var idx = parseInt(this.getAttribute('data-indice'));
+            clicarQuadrado(idx, e);
+        });
+    }
+}
+
+// ============================================================
+// CRONOMETRO
+// ============================================================
+
+function iniciarCronometro() {
+    tempoInicio = Date.now();
+    cronometroInterval = setInterval(function() {
+        var elapsed = Math.floor((Date.now() - tempoInicio) / 1000);
+        var min = Math.floor(elapsed / 60);
+        var seg = elapsed % 60;
+        document.getElementById('cronometroDisplay').textContent =
+            (min < 10 ? '0' : '') + min + ':' + (seg < 10 ? '0' : '') + seg;
+    }, 100);
+}
+
+function pararCronometro() {
+    if (cronometroInterval) {
+        clearInterval(cronometroInterval);
+        cronometroInterval = null;
+    }
+    tempoTotal = (Date.now() - tempoInicio) / 1000;
+}
+
+// ============================================================
+// FULLSCREEN
+// ============================================================
+
+function entrarFullscreen() {
+    var el = document.documentElement;
+    if (el.requestFullscreen) el.requestFullscreen();
+    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    else if (el.msRequestFullscreen) el.msRequestFullscreen();
+}
+
+function sairFullscreen() {
+    if (document.fullscreenElement || document.webkitFullscreenElement) {
+        if (document.exitFullscreen) document.exitFullscreen();
+        else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+    }
+}
+
+// ============================================================
+// INICIAR ATIVIDADE
+// ============================================================
+
+function iniciarAtividade() {
+    var nome = document.getElementById('nome').value.trim();
+    var nasc = document.getElementById('dataNascimento').value;
+    var sexo = document.getElementById('sexo').value;
+    if (!nome) { alert('Preencha o nome do participante.'); return; }
+    if (!nasc) { alert('Preencha a data de nascimento.'); return; }
+    if (!sexo) { alert('Selecione o sexo.'); return; }
+
+    // Resetar variaveis
+    acertos = 0; erros = 0; trocas = 0;
+    ordemCliques = [];
+    registroTrocas = [];
+    tempoTotal = 0;
+
+    // Gerar grade
+    gerarGradeData();
+
+    // Trocar tela
+    document.getElementById('telaCadastro').classList.remove('ativa');
+    document.getElementById('telaAtividade').classList.add('ativa');
+
+    // Renderizar (apos a tela estar visivel para calcular tamanhos)
+    setTimeout(function() {
+        renderizarGrade();
+        atualizarProgresso();
+        entrarFullscreen();
+        iniciarCronometro();
+    }, 100);
+}
+
+// ============================================================
+// PALETA DE CORES (POPUP)
+// ============================================================
+
+function clicarQuadrado(indice, event) {
+    var item = gradeData[indice];
+    if (item.acertou) return;
+
+    fecharPaleta();
+    quadradoAtual = indice;
+
+    var popup = document.getElementById('paletaPopup');
+    var quadEl = document.querySelector('.quadrado[data-indice="' + indice + '"]');
+    var rect = quadEl.getBoundingClientRect();
+
+    // Posicionar popup (fixed, relativo ao viewport)
+    var popupW = 200;
+    var popupH = 60;
+    var left = rect.left + rect.width / 2 - popupW / 2;
+    var top = rect.bottom + 5;
+
+    // Ajustar se sair da tela
+    if (left < 5) left = 5;
+    if (left + popupW > window.innerWidth - 5) left = window.innerWidth - popupW - 5;
+    if (top + popupH > window.innerHeight - 5) top = rect.top - popupH - 5;
+
+    popup.style.left = left + 'px';
+    popup.style.top = top + 'px';
+    popup.classList.add('visivel');
+}
+
+function fecharPaleta() {
+    var popup = document.getElementById('paletaPopup');
+    popup.classList.remove('visivel');
+    quadradoAtual = null;
+}
+
+function escolherCor(cor) {
+    if (quadradoAtual === null) return;
+
+    var item = gradeData[quadradoAtual];
+    var quadEl = document.querySelector('.quadrado[data-indice="' + quadradoAtual + '"]');
+
+    // Registrar clique na ordem
+    ordemCliques.push({
+        indice: quadradoAtual,
+        coluna: item.coluna,
+        linha: item.linha,
+        linhaNum: item.linhaNum,
+        timestamp: Date.now() - tempoInicio,
+        corEscolhida: cor,
+        corCorreta: item.corCorreta,
+        acertou: cor === item.corCorreta
+    });
+
+    // Se ja tinha cor errada e esta trocando
+    if (item.corEscolhida !== null && !item.acertou) {
+        item.trocasItem++;
+        trocas++;
+        // Registrar detalhe da troca
+        var nomeCores = { vermelho: 'vermelho', amarelo: 'amarelo', verde: 'verde', azul: 'azul' };
+        registroTrocas.push({
+            posicao: item.coluna + item.linha,
+            corAnterior: nomeCores[item.corEscolhida] || item.corEscolhida,
+            corNova: nomeCores[cor] || cor
+        });
+    }
+
+    item.corEscolhida = cor;
+
+    // Pintar APENAS o quadrado interno (inscrito)
+    var interno = quadEl.querySelector('.quadrado-interno');
+    interno.style.background = CORES_HEX[cor];
+    interno.style.borderColor = CORES_HEX[cor];
+
+    if (cor === item.corCorreta) {
+        item.acertou = true;
+        acertos++;
+        quadEl.classList.add('respondido');
+    } else {
+        item.errosItem++;
+        erros++;
+    }
+
+    fecharPaleta();
+    atualizarProgresso();
+}
+
+function atualizarProgresso() {
+    var corretos = 0;
+    var pintados = 0;
+    for (var i = 0; i < gradeData.length; i++) {
+        if (gradeData[i].acertou) corretos++;
+        if (gradeData[i].corEscolhida !== null) pintados++;
+    }
+    var pct = Math.round((pintados / TOTAL_QUADRADOS) * 100);
+    document.getElementById('contadorProgresso').textContent = pintados + ' / ' + TOTAL_QUADRADOS;
+    document.getElementById('progressoFill').style.width = pct + '%';
+    document.getElementById('progressoTexto').textContent = pct + '%';
+    // Destacar botao finalizar quando todos pintados
+    var btn = document.getElementById('btnFinalizar');
+    if (pintados >= TOTAL_QUADRADOS) {
+        btn.style.opacity = '1';
+        btn.style.background = '#2e7d32';
+        btn.style.fontSize = 'clamp(0.9em, 1.3vw, 1.1em)';
+        btn.style.padding = '1vh 3vw';
+        btn.textContent = 'Finalizar';
+    }
+}
+
+// ============================================================
+// FINALIZAR ATIVIDADE
+// ============================================================
+
+function finalizarAtividade() {
+    pararCronometro();
+    sairFullscreen();
+
+    // Calcular resultados finais
+    var omissoes = 0;    // nao pintados
+    var acertosFinais = 0; // cor correta no final
+    var errosFinais = 0;   // pintou errado e NAO corrigiu (ficou errado)
+    var trocasFinais = trocas; // pintou errado e CORRIGIU
+
+    for (var i = 0; i < gradeData.length; i++) {
+        var item = gradeData[i];
+        if (item.corEscolhida === null) {
+            omissoes++;
+        } else if (item.acertou) {
+            acertosFinais++;
+        } else {
+            // Tem cor mas esta errada (nao percebeu)
+            errosFinais++;
+        }
+    }
+
+    // Formula: Desempenho = Tempo total / N figuras (tempo medio por quadrado)
+    var T = tempoTotal > 0 ? tempoTotal : 1;
+    var desempenho = parseFloat((T / TOTAL_QUADRADOS).toFixed(2));
+
+    // Detectar estrategia
+    var estrategia = detectarEstrategia();
+
+    // Salvar no localStorage
+    var idPac = document.getElementById('idPaciente').value || 'sem_id';
+    var chave = 'prat_historico_' + idPac;
+    var historico = JSON.parse(localStorage.getItem(chave) || '[]');
+    var aplicacaoNum = historico.length + 1;
+
+    var registro = {
+        aplicacao: aplicacaoNum,
+        data: new Date().toISOString(),
+        dataFormatada: new Date().toLocaleDateString('pt-BR') + ' ' + new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'}),
+        acertos: acertosFinais,
+        erros: errosFinais,
+        omissoes: omissoes,
+        trocas: trocasFinais,
+        trocasDetalhe: gerarDescricaoTrocas(),
+        acertosLiquidos: acertosFinais - errosFinais - omissoes,
+        tempoSegundos: parseFloat(T.toFixed(1)),
+        tempoFormatado: formatarTempo(T),
+        desempenho: desempenho,
+        estrategia: estrategia.nome,
+        estrategiaAderencia: estrategia.aderencia,
+        mapeamento: gerarMapeamento().join(', '),
+        nome: document.getElementById('nome').value,
+        idade: document.getElementById('idadeCalculada').value,
+        sexo: document.getElementById('sexo').value,
+        escolaridade: document.getElementById('escolaridade').value,
+        oculos: document.getElementById('oculos').value,
+        lateralidade: document.getElementById('lateralidade').value,
+        idPaciente: idPac
+    };
+
+    historico.push(registro);
+    localStorage.setItem(chave, JSON.stringify(historico));
+
+    mostrarResultados(registro, historico);
+}
+
+function formatarTempo(segundos) {
+    var min = Math.floor(segundos / 60);
+    var seg = Math.floor(segundos % 60);
+    return (min < 10 ? '0' : '') + min + ':' + (seg < 10 ? '0' : '') + seg;
+}
+
+// ============================================================
+// DETECCAO DE ESTRATEGIA
+// ============================================================
+
+function detectarEstrategia() {
+    if (ordemCliques.length < 5) return { nome: 'Indeterminado', aderencia: 0 };
+
+    var primeirosCliques = [];
+    var jaVisitados = {};
+    for (var i = 0; i < ordemCliques.length; i++) {
+        var cl = ordemCliques[i];
+        var chaveQ = cl.coluna + '-' + cl.linhaNum;
+        if (!jaVisitados[chaveQ]) {
+            jaVisitados[chaveQ] = true;
+            primeirosCliques.push(cl);
+        }
+    }
+
+    if (primeirosCliques.length < 5) return { nome: 'Indeterminado', aderencia: 0 };
+
+    var estrategias = {
+        'Esquerda \u2192 Direita, Cima \u2192 Baixo': 0,
+        'Direita \u2192 Esquerda, Cima \u2192 Baixo': 0,
+        'Cima \u2192 Baixo, Esquerda \u2192 Direita': 0,
+        'Baixo \u2192 Cima': 0,
+        'Diagonal': 0
+    };
+
+    for (var i = 1; i < primeirosCliques.length; i++) {
+        var prev = primeirosCliques[i - 1];
+        var curr = primeirosCliques[i];
+        var dCol = curr.coluna - prev.coluna;
+        var dLin = curr.linhaNum - prev.linhaNum;
+
+        if ((dCol === 1 && dLin === 0) || (dLin === 1 && curr.coluna <= prev.coluna)) {
+            estrategias['Esquerda \u2192 Direita, Cima \u2192 Baixo']++;
+        }
+        if ((dCol === -1 && dLin === 0) || (dLin === 1 && curr.coluna >= prev.coluna)) {
+            estrategias['Direita \u2192 Esquerda, Cima \u2192 Baixo']++;
+        }
+        if ((dLin === 1 && dCol === 0) || (dCol === 1 && curr.linhaNum <= prev.linhaNum)) {
+            estrategias['Cima \u2192 Baixo, Esquerda \u2192 Direita']++;
+        }
+        if (dLin < 0) {
+            estrategias['Baixo \u2192 Cima']++;
+        }
+        if (Math.abs(dCol) === 1 && Math.abs(dLin) === 1) {
+            estrategias['Diagonal']++;
+        }
+    }
+
+    var melhorNome = 'Aleat\u00f3rio / Sem padr\u00e3o definido';
+    var melhorPontos = 0;
+    var totalTransicoes = primeirosCliques.length - 1;
+
+    var chaves = Object.keys(estrategias);
+    for (var k = 0; k < chaves.length; k++) {
+        if (estrategias[chaves[k]] > melhorPontos) {
+            melhorPontos = estrategias[chaves[k]];
+            melhorNome = chaves[k];
+        }
+    }
+
+    var aderencia = totalTransicoes > 0 ? Math.round((melhorPontos / totalTransicoes) * 100) : 0;
+    if (aderencia < 30) {
+        melhorNome = 'Aleat\u00f3rio / Sem padr\u00e3o definido';
+    }
+
+    return { nome: melhorNome, aderencia: aderencia };
+}
+
+// ============================================================
+// GERAR MAPEAMENTO (sequencia de coordenadas)
+// ============================================================
+
+function gerarMapeamento() {
+    var mapa = [];
+    var jaAdicionado = {};
+    for (var i = 0; i < ordemCliques.length; i++) {
+        var cl = ordemCliques[i];
+        var coord = cl.coluna + cl.linha;
+        if (!jaAdicionado[coord]) {
+            jaAdicionado[coord] = true;
+            mapa.push(coord);
+        }
+    }
+    return mapa;
+}
+
+function gerarDescricaoTrocas() {
+    var descricoes = [];
+    for (var i = 0; i < registroTrocas.length; i++) {
+        var t = registroTrocas[i];
+        descricoes.push('Trocou ' + t.corAnterior + ' por ' + t.corNova + ' em ' + t.posicao);
+    }
+    return descricoes;
+}
+
+// ============================================================
+// MOSTRAR RESULTADOS
+// ============================================================
+
+function mostrarResultados(registro, historico) {
+    document.getElementById('telaAtividade').classList.remove('ativa');
+    document.getElementById('telaResultados').classList.add('ativa');
+
+    var html = '';
+    html += '<div class="resultados-grid">';
+    html += '<div class="resultado-card"><h4>Acertos</h4><div class="valor" style="color:#2e7d32;">' + registro.acertos + ' / ' + TOTAL_QUADRADOS + '</div></div>';
+    html += '<div class="resultado-card"><h4>Erros</h4><div class="valor" style="color:#d32f2f;">' + registro.erros + '</div><div class="detalhe">Pintou errado e n\u00e3o corrigiu</div></div>';
+    html += '<div class="resultado-card"><h4>Omiss\u00f5es</h4><div class="valor" style="color:#ff8f00;">' + registro.omissoes + '</div><div class="detalhe">N\u00e3o respondidos</div></div>';
+    html += '<div class="resultado-card"><h4>Trocas</h4><div class="valor" style="color:#7b1fa2;">' + registro.trocas + '</div><div class="detalhe">Corre\u00e7\u00f5es realizadas</div></div>';
+    html += '<div class="resultado-card"><h4>Tempo Total</h4><div class="valor">' + registro.tempoFormatado + '</div><div class="detalhe">' + registro.tempoSegundos + ' segundos</div></div>';
+    html += '<div class="resultado-card"><h4>Desempenho</h4><div class="valor" style="color:#1565c0;">' + registro.desempenho + 's</div><div class="detalhe">Tempo/N\u00ba figuras (m\u00e9dia por quadrado)</div></div>';
+    var acertosLiquidos = registro.acertos - registro.erros - registro.omissoes;
+    html += '<div class="resultado-card" style="border-left-color:#1565c0;"><h4 style="color:#1565c0;">Acertos L\u00edquidos</h4><div class="valor" style="color:#1565c0;">' + acertosLiquidos + '</div><div class="detalhe">Acertos - Erros - Omiss\u00f5es</div></div>';
+    html += '</div>';
+
+    // Detalhe das trocas (se houver)
+    if (registro.trocasDetalhe && registro.trocasDetalhe.length > 0) {
+        html += '<div class="resultado-card" style="border-left-color:#7b1fa2;">';
+        html += '<h4 style="color:#7b1fa2;">Detalhamento das Trocas</h4>';
+        for (var t = 0; t < registro.trocasDetalhe.length; t++) {
+            html += '<div class="detalhe" style="margin-top:4px;">\u2022 ' + registro.trocasDetalhe[t] + '</div>';
+        }
+        html += '</div>';
+    }
+
+    html += '<div class="estrategia-box">';
+    html += '<h3>Estrat\u00e9gia de Rastreio Detectada</h3>';
+    html += '<p>' + registro.estrategia + '</p>';
+    if (registro.estrategiaAderencia > 0) {
+        html += '<div class="detalhe">Ader\u00eancia ao padr\u00e3o: ' + registro.estrategiaAderencia + '%</div>';
+    }
+    html += '</div>';
+
+    // Mapeamento: sequencia de coordenadas por onde passou
+    html += '<div class="estrategia-box" style="background:#f3e5f5; border-color:#7b1fa2;">';
+    html += '<h3 style="color:#7b1fa2;">Mapeamento do Rastreio Visual</h3>';
+    html += '<p style="font-size:0.85em; color:#555; margin-bottom:8px;">Sequ\u00eancia de posi\u00e7\u00f5es respondidas (ordem dos cliques):</p>';
+    html += '<div style="display:flex; flex-wrap:wrap; gap:4px; justify-content:center;">';
+    var mapeamento = gerarMapeamento();
+    for (var m = 0; m < mapeamento.length; m++) {
+        html += '<span style="background:#7b1fa2; color:white; padding:2px 6px; border-radius:4px; font-size:0.8em; font-weight:600;">' + mapeamento[m] + '</span>';
+        if (m < mapeamento.length - 1) {
+            html += '<span style="color:#999; font-size:0.7em; align-self:center;">\u2192</span>';
+        }
+    }
+    html += '</div></div>';
+
+    document.getElementById('resultadosConteudo').innerHTML = html;
+    desenharGrafico(historico);
+    renderizarTabelaHistorico(historico);
+}
+
+// ============================================================
+// GRAFICO DE BARRAS VERTICAIS (COLUNAS)
+// ============================================================
+
+function desenharGrafico(historico) {
+    var canvas = document.getElementById('graficoEvolucao');
+    var ctx = canvas.getContext('2d');
+    var w = canvas.width;
+    var h = canvas.height;
+
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = '#fafafa';
+    ctx.fillRect(0, 0, w, h);
+
+    if (historico.length === 0) {
+        ctx.fillStyle = '#999';
+        ctx.font = '16px Segoe UI';
+        ctx.textAlign = 'center';
+        ctx.fillText('Nenhum dado para exibir', w / 2, h / 2);
+        return;
+    }
+
+    var marginL = 60, marginR = 30, marginT = 40, marginB = 50;
+    var areaW = w - marginL - marginR;
+    var areaH = h - marginT - marginB;
+
+    // Encontrar max desempenho (minimo sempre 0)
+    var valores = [];
+    for (var i = 0; i < historico.length; i++) {
+        valores.push(historico[i].desempenho);
+    }
+    var maxVal = Math.max.apply(null, valores);
+    if (maxVal <= 0) maxVal = 1;
+    // Arredondar para cima para ter margem
+    maxVal = Math.ceil(maxVal * 1.15);
+
+    // Titulo
+    ctx.fillStyle = '#333';
+    ctx.font = 'bold 14px Segoe UI';
+    ctx.textAlign = 'center';
+    ctx.fillText('Evolu\u00e7\u00e3o do Desempenho por Aplica\u00e7\u00e3o', w / 2, 20);
+
+    // Eixos
+    ctx.strokeStyle = '#999';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(marginL, marginT);
+    ctx.lineTo(marginL, marginT + areaH);
+    ctx.lineTo(marginL + areaW, marginT + areaH);
+    ctx.stroke();
+
+    // Grid horizontal
+    ctx.strokeStyle = '#e0e0e0';
+    ctx.setLineDash([3, 3]);
+    var numGridH = 5;
+    for (var g = 0; g <= numGridH; g++) {
+        var gy = marginT + areaH - (g / numGridH) * areaH;
+        ctx.beginPath();
+        ctx.moveTo(marginL, gy);
+        ctx.lineTo(marginL + areaW, gy);
+        ctx.stroke();
+        var val = (g / numGridH) * maxVal;
+        ctx.fillStyle = '#666';
+        ctx.font = '11px Segoe UI';
+        ctx.textAlign = 'right';
+        ctx.setLineDash([]);
+        ctx.fillText(val.toFixed(1), marginL - 8, gy + 4);
+        ctx.setLineDash([3, 3]);
+    }
+    ctx.setLineDash([]);
+
+    // Label eixo Y
+    ctx.save();
+    ctx.translate(15, marginT + areaH / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillStyle = '#2e7d32';
+    ctx.font = 'bold 12px Segoe UI';
+    ctx.textAlign = 'center';
+    ctx.fillText('Desempenho', 0, 0);
+    ctx.restore();
+
+    // Label eixo X
+    ctx.fillStyle = '#2e7d32';
+    ctx.font = 'bold 12px Segoe UI';
+    ctx.textAlign = 'center';
+    ctx.fillText('Aplica\u00e7\u00f5es', marginL + areaW / 2, h - 5);
+
+    // Desenhar barras
+    var maxBarras = Math.min(historico.length, 20);
+    var barGap = 10;
+    var barW = Math.min(50, (areaW - barGap * (maxBarras + 1)) / maxBarras);
+    if (barW < 20) barW = 20;
+    var totalBarsWidth = maxBarras * barW + (maxBarras - 1) * barGap;
+    var startX = marginL + (areaW - totalBarsWidth) / 2;
+
+    for (var i = 0; i < maxBarras; i++) {
+        var idx = historico.length - maxBarras + i;
+        var val = historico[idx].desempenho;
+        var barH = (val / maxVal) * areaH;
+        if (barH < 0) barH = 0;
+        var x = startX + i * (barW + barGap);
+        var y = marginT + areaH - barH;
+
+        // Gradiente da barra
+        var grad = ctx.createLinearGradient(x, y, x, marginT + areaH);
+        grad.addColorStop(0, '#43a047');
+        grad.addColorStop(1, '#2e7d32');
+        ctx.fillStyle = grad;
+
+        // Barra com cantos arredondados no topo
+        ctx.beginPath();
+        var radius = Math.min(5, barW / 4);
+        ctx.moveTo(x + radius, y);
+        ctx.lineTo(x + barW - radius, y);
+        ctx.quadraticCurveTo(x + barW, y, x + barW, y + radius);
+        ctx.lineTo(x + barW, marginT + areaH);
+        ctx.lineTo(x, marginT + areaH);
+        ctx.lineTo(x, y + radius);
+        ctx.quadraticCurveTo(x, y, x + radius, y);
+        ctx.closePath();
+        ctx.fill();
+
+        // Valor no topo da barra
+        ctx.fillStyle = '#333';
+        ctx.font = 'bold 10px Segoe UI';
+        ctx.textAlign = 'center';
+        ctx.fillText(val.toFixed(1), x + barW / 2, y - 5);
+
+        // Numero da aplicacao embaixo
+        ctx.fillStyle = '#666';
+        ctx.font = '11px Segoe UI';
+        ctx.textAlign = 'center';
+        ctx.fillText('' + historico[idx].aplicacao, x + barW / 2, marginT + areaH + 18);
+    }
+}
+
+// ============================================================
+// TABELA HISTORICO
+// ============================================================
+
+function renderizarTabelaHistorico(historico) {
+    if (historico.length === 0) {
+        document.getElementById('historicoTabela').innerHTML = '';
+        return;
+    }
+
+    var html = '<h3 style="color:#2e7d32; margin-bottom:10px;">Hist\u00f3rico de Aplica\u00e7\u00f5es</h3>';
+    html += '<table class="historico-tabela"><thead><tr>';
+    html += '<th>#</th><th>Data</th><th>Acertos</th><th>Erros</th><th>Omiss.</th><th>Trocas</th><th>A. L\u00edq.</th><th>Tempo</th><th>Desemp.</th><th>Mapeamento</th>';
+    html += '</tr></thead><tbody>';
+
+    for (var i = historico.length - 1; i >= 0; i--) {
+        var r = historico[i];
+        var al = (typeof r.acertosLiquidos !== 'undefined') ? r.acertosLiquidos : (r.acertos - r.erros - r.omissoes);
+        html += '<tr>';
+        html += '<td>' + r.aplicacao + '</td>';
+        html += '<td>' + r.dataFormatada + '</td>';
+        html += '<td>' + r.acertos + '</td>';
+        html += '<td>' + r.erros + '</td>';
+        html += '<td>' + r.omissoes + '</td>';
+        html += '<td>' + r.trocas + '</td>';
+        html += '<td><strong>' + al + '</strong></td>';
+        html += '<td>' + r.tempoFormatado + '</td>';
+        html += '<td>' + r.desempenho + 's</td>';
+        html += '<td style="font-size:0.7em; max-width:350px; word-wrap:break-word; white-space:normal; text-align:left;">' + (r.mapeamento || r.estrategia || '') + '</td>';
+        html += '</tr>';
+    }
+
+    html += '</tbody></table>';
+    document.getElementById('historicoTabela').innerHTML = html;
+}
+
+// ============================================================
+// GERAR PDF (jsPDF)
+// ============================================================
+
+function gerarPDF() {
+    var idPac = document.getElementById('idPaciente').value || 'sem_id';
+    var chave = 'prat_historico_' + idPac;
+    var historico = JSON.parse(localStorage.getItem(chave) || '[]');
+    if (historico.length === 0) { alert('Nenhum dado para gerar PDF.'); return; }
+
+    var ultimo = historico[historico.length - 1];
+    var nome = ultimo.nome || document.getElementById('nome').value;
+
+    var jsPDF = window.jspdf.jsPDF;
+    var doc = new jsPDF();
+    var ml = 15;
+
+    // Cabecalho
+    doc.setFillColor(46, 125, 50);
+    doc.rect(0, 0, 210, 30, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(14);
+    doc.setFont(undefined, 'bold');
+    doc.text('PRAt - PROGRAMA DE REABILITACAO DA ATENCAO', 105, 12, { align: 'center' });
+    doc.setFontSize(9);
+    doc.setFont(undefined, 'normal');
+    doc.text('Atividade Cognitiva | Atencao Visual', 105, 19, { align: 'center' });
+    doc.text('Sistema SYM - Avaliacao Neuropsicologica', 105, 25, { align: 'center' });
+
+    var y = 36;
+
+    // Dados pessoais
+    doc.setFillColor(241, 248, 233);
+    doc.rect(ml, y, 180, 22, 'F');
+    doc.setDrawColor(46, 125, 50);
+    doc.setLineWidth(0.8);
+    doc.line(ml, y, ml, y + 22);
+    doc.setTextColor(46, 125, 50);
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'bold');
+    doc.text('DADOS DO PARTICIPANTE', ml + 4, y + 6);
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(9);
+    doc.setFont(undefined, 'normal');
+    doc.text('Nome: ' + nome + '   |   Sexo: ' + (ultimo.sexo || ''), ml + 4, y + 12);
+    doc.text('Idade: ' + (ultimo.idade || '') + '   |   ID: ' + (ultimo.idPaciente || ''), ml + 4, y + 17);
+    doc.text('Escolaridade: ' + (ultimo.escolaridade || '') + '   |   Lateralidade: ' + (ultimo.lateralidade || '') + '   |   Oculos: ' + (ultimo.oculos || ''), ml + 4, y + 22);
+
+    y += 30;
+
+    // Resultados
+    doc.setFillColor(232, 245, 233);
+    doc.rect(ml, y, 180, 8, 'F');
+    doc.setTextColor(46, 125, 50);
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'bold');
+    doc.text('RESULTADOS - APLICACAO #' + ultimo.aplicacao + ' (' + ultimo.dataFormatada + ')', ml + 4, y + 6);
+    y += 12;
+
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(9);
+    doc.setFont(undefined, 'normal');
+    doc.text('Acertos: ' + ultimo.acertos + '/' + TOTAL_QUADRADOS, ml + 4, y);
+    doc.text('Erros: ' + ultimo.erros, ml + 50, y);
+    doc.text('Omissoes: ' + ultimo.omissoes, ml + 80, y);
+    doc.text('Trocas: ' + ultimo.trocas, ml + 115, y);
+    var alPdf = (typeof ultimo.acertosLiquidos !== 'undefined') ? ultimo.acertosLiquidos : (ultimo.acertos - ultimo.erros - ultimo.omissoes);
+    doc.text('Ac. Liquidos: ' + alPdf, ml + 145, y);
+    y += 6;
+    doc.text('Tempo: ' + ultimo.tempoFormatado + ' (' + ultimo.tempoSegundos + 's)', ml + 4, y);
+    doc.text('Desempenho: ' + ultimo.desempenho + 's/fig', ml + 80, y);
+    y += 6;
+    doc.text('Estrategia: ' + ultimo.estrategia.replace(/\u2192/g, '->') + ' (aderencia: ' + ultimo.estrategiaAderencia + '%)', ml + 4, y);
+    y += 6;
+    doc.setFontSize(8);
+    doc.setTextColor(100, 100, 100);
+    doc.text('Formula: Desempenho = Tempo total / N figuras (tempo medio por quadrado, em segundos)', ml + 4, y);
+
+    y += 5;
+    // Detalhe das trocas
+    if (ultimo.trocasDetalhe && ultimo.trocasDetalhe.length > 0) {
+        doc.setTextColor(100, 50, 150);
+        doc.setFontSize(8);
+        doc.setFont(undefined, 'bold');
+        doc.text('Detalhamento das Trocas:', ml + 4, y);
+        doc.setFont(undefined, 'normal');
+        doc.setTextColor(80, 80, 80);
+        y += 4;
+        for (var ti = 0; ti < ultimo.trocasDetalhe.length; ti++) {
+            doc.text('- ' + ultimo.trocasDetalhe[ti], ml + 6, y);
+            y += 4;
+            if (y > 270) { doc.addPage(); y = 20; }
+        }
+    }
+
+    y += 3;
+    // Mapeamento
+    doc.setTextColor(100, 50, 150);
+    doc.setFontSize(8);
+    doc.setFont(undefined, 'bold');
+    doc.text('Mapeamento:', ml + 4, y);
+    doc.setFont(undefined, 'normal');
+    doc.setTextColor(80, 80, 80);
+    y += 4;
+    var mapaTexto = ultimo.mapeamento || '';
+    var mapaLinhas = doc.splitTextToSize(mapaTexto, 170);
+    for (var ml2 = 0; ml2 < mapaLinhas.length; ml2++) {
+        doc.text(mapaLinhas[ml2], ml + 6, y);
+        y += 4;
+        if (y > 270) { doc.addPage(); y = 20; }
+    }
+
+    y += 4;
+
+    // Grafico
+    doc.setTextColor(46, 125, 50);
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'bold');
+    doc.text('GRAFICO DE EVOLUCAO', ml, y);
+    y += 3;
+
+    var canvas = document.getElementById('graficoEvolucao');
+    var imgData = canvas.toDataURL('image/png');
+    doc.addImage(imgData, 'PNG', ml, y, 180, 75);
+    y += 80;
+
+    // Tabela historico - SEMPRE em nova pagina
+    if (historico.length >= 1) {
+        doc.addPage();
+        y = 20;
+        doc.setTextColor(46, 125, 50);
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'bold');
+        doc.text('HISTORICO DE APLICACOES', ml, y);
+        y += 6;
+
+        doc.setFillColor(46, 125, 50);
+        doc.rect(ml, y - 3, 180, 6, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(7);
+        doc.setFont(undefined, 'bold');
+        var cols = ['#', 'Data', 'Acertos', 'Erros', 'Omis.', 'Trocas', 'A.Liq.', 'Tempo', 'Desemp.', 'Mapeamento'];
+        var colX = [ml + 3, ml + 10, ml + 38, ml + 55, ml + 68, ml + 81, ml + 94, ml + 108, ml + 123, ml + 140];
+        for (var c = 0; c < cols.length; c++) {
+            doc.text(cols[c], colX[c], y + 1);
+        }
+        y += 6;
+
+        doc.setTextColor(0, 0, 0);
+        doc.setFont(undefined, 'normal');
+        doc.setFontSize(7);
+        var maxRows = Math.min(historico.length, 15);
+        for (var i = historico.length - 1; i >= Math.max(0, historico.length - maxRows); i--) {
+            var r = historico[i];
+            if (y > 270) { doc.addPage(); y = 20; }
+            doc.text('' + r.aplicacao, colX[0], y);
+            doc.text(r.dataFormatada || '', colX[1], y);
+            doc.text('' + r.acertos, colX[2], y);
+            doc.text('' + r.erros, colX[3], y);
+            doc.text('' + r.omissoes, colX[4], y);
+            doc.text('' + r.trocas, colX[5], y);
+            var alR = (typeof r.acertosLiquidos !== 'undefined') ? r.acertosLiquidos : (r.acertos - r.erros - r.omissoes);
+            doc.text('' + alR, colX[6], y);
+            doc.text(r.tempoFormatado || '', colX[7], y);
+            doc.text('' + r.desempenho, colX[8], y);
+            // Mapeamento na mesma linha (limitado)
+            var mapaCol = (r.mapeamento || r.estrategia || '');
+            var mapaColLinhas = doc.splitTextToSize(mapaCol, 50);
+            doc.text(mapaColLinhas[0] || '', colX[9], y);
+            if (mapaColLinhas.length > 1) {
+                y += 4;
+                if (y > 270) { doc.addPage(); y = 20; }
+                doc.text(mapaColLinhas[1] || '', colX[1], y);
+            }
+            if (mapaColLinhas.length > 2) {
+                y += 4;
+                if (y > 270) { doc.addPage(); y = 20; }
+                doc.text(mapaColLinhas[2] || '', colX[1], y);
+            }
+            y += 5;
+        }
+    }
+
+    // Rodape
+    doc.setFillColor(50, 50, 50);
+    doc.rect(0, 285, 210, 12, 'F');
+    doc.setTextColor(200, 200, 200);
+    doc.setFontSize(7);
+    doc.text('SYM Online | PRAt - Programa de Reabilitacao da Atencao | Gerado em ' + new Date().toLocaleString('pt-BR'), 105, 291, { align: 'center' });
+
+    var ts = new Date();
+    var tsStr = ts.getFullYear() + String(ts.getMonth() + 1).padStart(2, '0') + String(ts.getDate()).padStart(2, '0') + String(ts.getHours()).padStart(2, '0') + String(ts.getMinutes()).padStart(2, '0');
+    doc.save('PRAt_' + nome.replace(/\s+/g, '_') + '_' + tsStr + '.pdf');
+}
+
+// ============================================================
+// EXPORTAR CSV (EXCEL)
+// ============================================================
+
+function exportarCSV() {
+    var idPac = document.getElementById('idPaciente').value || 'sem_id';
+    var chave = 'prat_historico_' + idPac;
+    var historico = JSON.parse(localStorage.getItem(chave) || '[]');
+    if (historico.length === 0) { alert('Nenhum dado para exportar.'); return; }
+
+    var nome = document.getElementById('nome').value || 'Participante';
+    var sep = ';';
+    var linhas = [];
+    linhas.push('Aplicacao' + sep + 'Data' + sep + 'Acertos' + sep + 'Erros' + sep + 'Omissoes' + sep + 'Trocas' + sep + 'Acertos Liquidos' + sep + 'Tempo(s)' + sep + 'Desempenho' + sep + 'Estrategia' + sep + 'Mapeamento');
+
+    for (var i = 0; i < historico.length; i++) {
+        var r = historico[i];
+        var alCsv = (typeof r.acertosLiquidos !== 'undefined') ? r.acertosLiquidos : (r.acertos - r.erros - r.omissoes);
+        linhas.push(r.aplicacao + sep + r.dataFormatada + sep + r.acertos + sep + r.erros + sep + r.omissoes + sep + r.trocas + sep + alCsv + sep + r.tempoSegundos + sep + r.desempenho + sep + (r.estrategia || '').replace(/\u2192/g, '->') + sep + (r.mapeamento || ''));
+    }
+
+    var csv = '\uFEFF' + linhas.join('\r\n');
+    var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    var ts = new Date();
+    var tsStr = ts.getFullYear() + String(ts.getMonth() + 1).padStart(2, '0') + String(ts.getDate()).padStart(2, '0');
+    a.download = 'PRAt_HISTORICO_' + nome.replace(/\s+/g, '_') + '_' + tsStr + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+// ============================================================
+// NOVA APLICACAO
+// ============================================================
+
+function novaAplicacao() {
+    document.getElementById('telaResultados').classList.remove('ativa');
+    document.getElementById('telaCadastro').classList.add('ativa');
+    document.getElementById('cronometroDisplay').textContent = '00:00';
+}
+
+// ============================================================
+// LIMPAR HISTORICO
+// ============================================================
+
+function limparHistorico() {
+    var idPac = document.getElementById('idPaciente').value || 'sem_id';
+    var confirmar = confirm('Tem certeza que deseja apagar TODO o historico deste participante? Esta acao nao pode ser desfeita.');
+    if (!confirmar) return;
+    var chave = 'prat_historico_' + idPac;
+    localStorage.removeItem(chave);
+    alert('Historico apagado com sucesso!');
+    novaAplicacao();
+}
+
+// ============================================================
+// INICIALIZACAO DIRETA
+// ============================================================
+
+document.getElementById('dataNascimento').addEventListener('change', calcularIdade);
+document.getElementById('nome').addEventListener('input', atualizarId);
+document.getElementById('dataAvaliacao').value = new Date().toISOString().split('T')[0];
+
+// Eventos da paleta de cores
+var paletaCores = document.querySelectorAll('.paleta-cor');
+for (var i = 0; i < paletaCores.length; i++) {
+    paletaCores[i].addEventListener('click', function(e) {
+        e.stopPropagation();
+        escolherCor(this.getAttribute('data-cor'));
+    });
+}
+
+// Fechar paleta ao clicar fora
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.paleta-popup') && !e.target.closest('.quadrado')) {
+        fecharPaleta();
+    }
+});
+
+// Recalcular grade ao redimensionar (caso mude orientacao do dispositivo)
+window.addEventListener('resize', function() {
+    if (document.getElementById('telaAtividade').classList.contains('ativa')) {
+        var tam = calcularTamanhoGrade();
+        var gradeEl = document.getElementById('grade');
+        gradeEl.style.gridTemplateColumns = 'repeat(6, ' + tam + 'px)';
+        gradeEl.style.gridTemplateRows = 'repeat(7, ' + tam + 'px)';
+        var quadrados = gradeEl.querySelectorAll('.quadrado');
+        for (var q = 0; q < quadrados.length; q++) {
+            quadrados[q].style.width = tam + 'px';
+            quadrados[q].style.height = tam + 'px';
+        }
+    }
+});
+</script>
+
+</body>
+</html>
