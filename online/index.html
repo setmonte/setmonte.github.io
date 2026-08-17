@@ -9535,8 +9535,13 @@
               var vals = [];
               _cbclChaves.forEach(function(k) {
                 var dom = rd.dominios[k];
-                if (dom && dom.pontuacao != null && dom.max != null && dom.max > 0) {
+                if (dom && typeof dom === 'object' && dom.pontuacao != null && dom.max != null && dom.max > 0) {
                   vals.push(Math.round((dom.pontuacao / dom.max) * 1000) / 10);
+                } else if (typeof dom === 'number' && dom > 0) {
+                  var _cbclMaxRef = {'Ansiedade/Depressao':26,'Afastamento/Depressao':16,'Queixas Somaticas':22,'Problemas Sociais':22,'Problemas de Pensamento':30,'Problemas de Atencao':20,'Quebrar Regras':34,'Comportamento Agressivo':36};
+                  var _kNorm = k.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+                  var _maxK = _cbclMaxRef[_kNorm] || _cbclMaxRef[k] || 26;
+                  vals.push(Math.round((dom / _maxK) * 1000) / 10);
                 } else { vals.push(0); }
               });
               if (vals.length > 0) _cbclInformantes.push({label: label, valores: vals, data: rd.data || ''});
@@ -9549,8 +9554,13 @@
           var _selfVals = [];
           _cbclChaves.forEach(function(k) {
             var dom = d.dominios[k];
-            if (dom && dom.pontuacao != null && dom.max != null && dom.max > 0) {
+            if (dom && typeof dom === 'object' && dom.pontuacao != null && dom.max != null && dom.max > 0) {
               _selfVals.push(Math.round((dom.pontuacao / dom.max) * 1000) / 10);
+            } else if (typeof dom === 'number' && dom > 0) {
+              var _cbclMaxRef2 = {'Ansiedade/Depressao':26,'Afastamento/Depressao':16,'Queixas Somaticas':22,'Problemas Sociais':22,'Problemas de Pensamento':30,'Problemas de Atencao':20,'Quebrar Regras':34,'Comportamento Agressivo':36};
+              var _kNorm2 = k.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+              var _maxK2 = _cbclMaxRef2[_kNorm2] || _cbclMaxRef2[k] || 26;
+              _selfVals.push(Math.round((dom / _maxK2) * 1000) / 10);
             } else { _selfVals.push(0); }
           });
           _cbclInformantes.push({label: _selfLabel, valores: _selfVals});
