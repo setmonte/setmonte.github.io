@@ -9244,6 +9244,7 @@
             if (v.classificacao) linha += ' | ' + v.classificacao;
             if (v.itens != null) linha += ' (' + v.itens + ' itens)';
           } else { linha = k + ': ' + v; }
+          if (linha.indexOf('Afastamento') >= 0) linha = linha.replace('Afastamento', 'Isolamento');
           if (i % 2 === 0) { doc.setFillColor(245,245,245); doc.rect(15, y-3, 180, 6, 'F'); }
           doc.text(sanitize(linha), 18, y); y += 6;
         });
@@ -9265,7 +9266,8 @@
             if (y > maxY) { doc.addPage(); y = 15; }
             var pct = Math.round((v.pontuacao / v.max) * 100);
             var barW = (pct / 100) * barMaxW;
-            var nome = sanitize(k);
+            var nome = sanitize(k).normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+            if (nome.indexOf('Afastamento') >= 0) nome = nome.replace('Afastamento', 'Isolamento');
             if (nome.length > 24) nome = nome.substring(0, 24) + '..';
             doc.setTextColor(0,0,0); doc.setFontSize(7); doc.setFont(undefined,'bold');
             doc.text(nome, 17, y + barH/2 + 1);
@@ -9305,7 +9307,8 @@
             if (typeof v !== 'number') return;
             if (y > maxY) { doc.addPage(); y = 15; }
             var barW = (v / maxVal) * barMaxW;
-            var nome = sanitize(k);
+            var nome = sanitize(k).normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+            if (nome.indexOf('Afastamento') >= 0) nome = nome.replace('Afastamento', 'Isolamento');
             if (nome.length > 24) nome = nome.substring(0, 24) + '..';
             doc.setTextColor(0,0,0); doc.setFontSize(7); doc.setFont(undefined,'bold');
             doc.text(nome, 17, y + barH/2 + 1);
@@ -9576,7 +9579,7 @@
         doc.text('Paciente: ' + sanitize(d.paciente || '') + '   |   ' + _cbclInformantes.length + ' informante(s)', 105, _gy, {align:'center'});
         _gy += 8;
         // Dimensoes do grafico
-        var _gX = 32; var _gW = 160; var _gH = 80;
+        var _gX = 32; var _gW = 160; var _gH = 70;
         var _gY = _gy; var _yBase = _gY + _gH; var _yTop = _gY;
         var _y25 = _yBase - (25/100)*_gH;
         var _y40 = _yBase - (40/100)*_gH;
@@ -9639,14 +9642,17 @@
         }
         // Labels eixo X
         doc.setFontSize(5.5); doc.setFont(undefined,'normal'); doc.setTextColor(50,50,50);
-        var _labX = ['Ansiedade/Depressao','Isolamento/Depressao','Queixas Somaticas','Problemas Sociais','Problemas de Pensamento','Problemas de Atencao','Quebrar Regras','Comportamento Agressivo'];
+        var _labX = ['Ansiedade/\nDepressao','Isolamento/\nDepressao','Queixas\nSomaticas','Problemas\nSociais','Probl. de\nPensamento','Probl. de\nAtencao','Quebrar\nRegras','Compto\nAgressivo'];
         for (var _li = 0; _li < _labX.length && _li < _cbclChaves.length; _li++) {
           var _lxp = _gX + _li * _stepX;
-          doc.setFontSize(4.5); doc.setFont(undefined,'normal'); doc.setTextColor(50,50,50);
-          doc.text(_labX[_li], _lxp, _yBase + 3, {angle: 45});
+          doc.setFontSize(5.5); doc.setFont(undefined,'normal'); doc.setTextColor(50,50,50);
+          var _partes = _labX[_li].split('\n');
+          for (var _lpi = 0; _lpi < _partes.length; _lpi++) {
+            doc.text(_partes[_lpi], _lxp, _yBase + 4 + _lpi*3.5, {align:'center'});
+          }
         }
         // Legenda
-        var _legY = _yBase + 28;
+        var _legY = _yBase + 14;
         doc.setFontSize(7); doc.setFont(undefined,'bold'); doc.setTextColor(50,50,50);
         doc.text('Informantes:', _gX, _legY); _legY += 5;
         for (var _lgi = 0; _lgi < _cbclInformantes.length; _lgi++) {
