@@ -9266,8 +9266,8 @@
             var pct = Math.round((v.pontuacao / v.max) * 100);
             var barW = (pct / 100) * barMaxW;
             var nome = sanitize(k);
-            if (nome.length > 18) nome = nome.substring(0, 18) + '..';
-            doc.setTextColor(0,0,0); doc.setFontSize(7.5); doc.setFont(undefined,'bold');
+            if (nome.length > 24) nome = nome.substring(0, 24) + '..';
+            doc.setTextColor(0,0,0); doc.setFontSize(7); doc.setFont(undefined,'bold');
             doc.text(nome, 17, y + barH/2 + 1);
             doc.setFillColor(230,230,230); doc.rect(barX, y, barMaxW, barH, 'F');
             // Cor baseada na classificacao textual (mais universal)
@@ -9306,8 +9306,8 @@
             if (y > maxY) { doc.addPage(); y = 15; }
             var barW = (v / maxVal) * barMaxW;
             var nome = sanitize(k);
-            if (nome.length > 18) nome = nome.substring(0, 18) + '..';
-            doc.setTextColor(0,0,0); doc.setFontSize(7.5); doc.setFont(undefined,'bold');
+            if (nome.length > 24) nome = nome.substring(0, 24) + '..';
+            doc.setTextColor(0,0,0); doc.setFontSize(7); doc.setFont(undefined,'bold');
             doc.text(nome, 17, y + barH/2 + 1);
             doc.setFillColor(230,230,230); doc.rect(barX, y, barMaxW, barH, 'F');
             var pct = d.escore > 0 ? (v / d.escore) * 100 : 0;
@@ -9522,7 +9522,7 @@
       // === GRAFICO CBCL MULTI-INFORMANTE ===
       if (d.escala && d.escala.indexOf('CBCL') >= 0 && d.dominios && typeof d.dominios === 'object' && !Array.isArray(d.dominios)) {
         // Sindromes do CBCL (8 escalas)
-        var _cbclSindr = ['Ansiedade/Depressao','Afastamento/Depressao','Queixas Somaticas','Problemas Sociais','Problemas de Pensamento','Problemas de Atencao','Quebrar Regras','Comportamento Agressivo'];
+        var _cbclSindr = ['Ansiedade/Depressao','Isolamento/Depressao','Queixas Somaticas','Problemas Sociais','Problemas de Pensamento','Problemas de Atencao','Quebrar Regras','Comportamento Agressivo'];
         var _cbclChaves = Object.keys(d.dominios).filter(function(k) { return k !== 'Internalizante' && k !== 'Externalizante' && k !== 'Outros Problemas'; });
         // Buscar todas as CBCLs do mesmo paciente no cache
         var _cbclIdPac = d.idPaciente || '';
@@ -9538,7 +9538,7 @@
                 if (dom && typeof dom === 'object' && dom.pontuacao != null && dom.max != null && dom.max > 0) {
                   vals.push(Math.round((dom.pontuacao / dom.max) * 1000) / 10);
                 } else if (typeof dom === 'number' && dom > 0) {
-                  var _cbclMaxRef = {'Ansiedade/Depressao':26,'Afastamento/Depressao':16,'Queixas Somaticas':22,'Problemas Sociais':22,'Problemas de Pensamento':30,'Problemas de Atencao':20,'Quebrar Regras':34,'Comportamento Agressivo':36};
+                  var _cbclMaxRef = {'Ansiedade/Depressao':26,'Isolamento/Depressao':16,'Afastamento/Depressao':16,'Queixas Somaticas':22,'Problemas Sociais':22,'Problemas de Pensamento':30,'Problemas de Atencao':20,'Quebrar Regras':34,'Comportamento Agressivo':36};
                   var _kNorm = k.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
                   var _maxK = _cbclMaxRef[_kNorm] || _cbclMaxRef[k] || 26;
                   vals.push(Math.round((dom / _maxK) * 1000) / 10);
@@ -9557,7 +9557,7 @@
             if (dom && typeof dom === 'object' && dom.pontuacao != null && dom.max != null && dom.max > 0) {
               _selfVals.push(Math.round((dom.pontuacao / dom.max) * 1000) / 10);
             } else if (typeof dom === 'number' && dom > 0) {
-              var _cbclMaxRef2 = {'Ansiedade/Depressao':26,'Afastamento/Depressao':16,'Queixas Somaticas':22,'Problemas Sociais':22,'Problemas de Pensamento':30,'Problemas de Atencao':20,'Quebrar Regras':34,'Comportamento Agressivo':36};
+              var _cbclMaxRef2 = {'Ansiedade/Depressao':26,'Isolamento/Depressao':16,'Afastamento/Depressao':16,'Queixas Somaticas':22,'Problemas Sociais':22,'Problemas de Pensamento':30,'Problemas de Atencao':20,'Quebrar Regras':34,'Comportamento Agressivo':36};
               var _kNorm2 = k.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
               var _maxK2 = _cbclMaxRef2[_kNorm2] || _cbclMaxRef2[k] || 26;
               _selfVals.push(Math.round((dom / _maxK2) * 1000) / 10);
@@ -9639,16 +9639,14 @@
         }
         // Labels eixo X
         doc.setFontSize(5.5); doc.setFont(undefined,'normal'); doc.setTextColor(50,50,50);
-        var _labX = ['Depr/Ans','Afastam','Queixas\nSomat','Probl\nSociais','Probl\nPensam','Probl\nAtencao','Quebrar\nRegras','Compto\nAgress'];
+        var _labX = ['Ansiedade/Depressao','Isolamento/Depressao','Queixas Somaticas','Problemas Sociais','Problemas de Pensamento','Problemas de Atencao','Quebrar Regras','Comportamento Agressivo'];
         for (var _li = 0; _li < _labX.length && _li < _cbclChaves.length; _li++) {
           var _lxp = _gX + _li * _stepX;
-          var _partes = _labX[_li].split('\n');
-          for (var _lpi = 0; _lpi < _partes.length; _lpi++) {
-            doc.text(_partes[_lpi], _lxp, _yBase + 4 + _lpi*3.5, {align:'center'});
-          }
+          doc.setFontSize(4.5); doc.setFont(undefined,'normal'); doc.setTextColor(50,50,50);
+          doc.text(_labX[_li], _lxp, _yBase + 3, {angle: 45});
         }
         // Legenda
-        var _legY = _yBase + 16;
+        var _legY = _yBase + 28;
         doc.setFontSize(7); doc.setFont(undefined,'bold'); doc.setTextColor(50,50,50);
         doc.text('Informantes:', _gX, _legY); _legY += 5;
         for (var _lgi = 0; _lgi < _cbclInformantes.length; _lgi++) {
