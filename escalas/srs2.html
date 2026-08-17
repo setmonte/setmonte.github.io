@@ -96,6 +96,7 @@
 </div>
 <div class="form-row">
 <div class="form-group"><label for="respondente">Respondente:</label><select id="respondente"><option value="">Selecione</option><option value="Pais">Pais/Respons&#225;veis</option><option value="Professores">Professores</option></select></div>
+<div class="form-group"><label for="nomeRespondente">Nome de quem responde:</label><input type="text" id="nomeRespondente" placeholder="Nome completo do respondente"></div>
 <div class="form-group"><label for="data">Data da Avalia&#231;&#227;o:</label><input type="date" id="data"></div>
 </div>
 <div class="form-row">
@@ -242,6 +243,8 @@ var resp=document.getElementById('respondente').value;
 if(!nome){alert('Preencha o nome.');return;}
 if(!sexo){alert('Selecione o sexo.');return;}
 if(!resp){alert('Selecione o respondente.');return;}
+var nomeResp=document.getElementById('nomeRespondente');
+if(!nomeResp||!nomeResp.value.trim()){alert('Preencha o nome de quem est\u00e1 respondendo.');return;}
 var r=obterRespostas();
 if(!r){alert('Responda todos os 65 itens.');return;}
 
@@ -315,7 +318,7 @@ el.innerHTML=h;
 el.style.display='block';
 el.scrollIntoView({behavior:'smooth'});
 
-window._escalaDados={escala:'SRS-2',paciente:nome,escore:escoresT.TOTAL,classificacao:classTot.texto,brutoTotal:brutoTotal,escoresT:escoresT,brutos:brutos,brutoCIS:brutoCIS,respondente:resp,dominios:{PS:{pontuacao:escoresT.PS,max:100,classificacao:classificarEscoreT(escoresT.PS).texto,media:brutos.PS},CS:{pontuacao:escoresT.CS,max:100,classificacao:classificarEscoreT(escoresT.CS).texto,media:brutos.CS},COS:{pontuacao:escoresT.COS,max:100,classificacao:classificarEscoreT(escoresT.COS).texto,media:brutos.COS},MS:{pontuacao:escoresT.MS,max:100,classificacao:classificarEscoreT(escoresT.MS).texto,media:brutos.MS},PRR:{pontuacao:escoresT.PRR,max:100,classificacao:classificarEscoreT(escoresT.PRR).texto,media:brutos.PRR},CIS:{pontuacao:escoresT.CIS,max:100,classificacao:classificarEscoreT(escoresT.CIS).texto,media:brutoCIS}},respostas:(function(){var o={};for(var i=0;i<r.length;i++){o[i+1]=r[i];}return o;})(),idPaciente:(document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''),idade:idade,sexo:sexo,data:new Date().toISOString()};
+window._escalaDados={escala:'SRS-2',paciente:nome,escore:escoresT.TOTAL,classificacao:classTot.texto,brutoTotal:brutoTotal,escoresT:escoresT,brutos:brutos,brutoCIS:brutoCIS,respondente:resp,nomeRespondente:(document.getElementById('nomeRespondente')?document.getElementById('nomeRespondente').value:''),dominios:{PS:{pontuacao:escoresT.PS,max:100,classificacao:classificarEscoreT(escoresT.PS).texto,media:brutos.PS},CS:{pontuacao:escoresT.CS,max:100,classificacao:classificarEscoreT(escoresT.CS).texto,media:brutos.CS},COS:{pontuacao:escoresT.COS,max:100,classificacao:classificarEscoreT(escoresT.COS).texto,media:brutos.COS},MS:{pontuacao:escoresT.MS,max:100,classificacao:classificarEscoreT(escoresT.MS).texto,media:brutos.MS},PRR:{pontuacao:escoresT.PRR,max:100,classificacao:classificarEscoreT(escoresT.PRR).texto,media:brutos.PRR},CIS:{pontuacao:escoresT.CIS,max:100,classificacao:classificarEscoreT(escoresT.CIS).texto,media:brutoCIS}},respostas:(function(){var o={};for(var i=0;i<r.length;i++){o[i+1]=r[i];}return o;})(),idPaciente:(document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''),idade:idade,sexo:sexo,data:new Date().toISOString()};
 if(window.injetarBotaoSalvar)injetarBotaoSalvar('resultados');
 }
 
@@ -392,7 +395,7 @@ var ts=new Date();var tsStr=ts.getFullYear()+String(ts.getMonth()+1).padStart(2,
 doc.save('SRS2_'+nome.replace(/\s+/g,'_')+'_'+tsStr+'.pdf');
 }
 
-function limparDados(){if(!confirm('Limpar todos os dados?'))return;document.getElementById('nome').value='';document.getElementById('dataNascimento').value='';document.getElementById('idadeCalculada').value='';document.getElementById('sexo').value='';document.getElementById('respondente').value='';document.getElementById('observacoes').value='';document.querySelectorAll('input[type="radio"]').forEach(function(r){r.checked=false;});document.querySelectorAll('.item').forEach(function(el){el.style.backgroundColor='';el.style.borderLeft='';});document.getElementById('resultados').style.display='none';document.getElementById('data').value=new Date().toISOString().split('T')[0];}
+function limparDados(){if(!confirm('Limpar todos os dados?'))return;document.getElementById('nome').value='';document.getElementById('dataNascimento').value='';document.getElementById('idadeCalculada').value='';document.getElementById('sexo').value='';document.getElementById('respondente').value='';document.getElementById('nomeRespondente').value='';document.getElementById('observacoes').value='';document.querySelectorAll('input[type="radio"]').forEach(function(r){r.checked=false;});document.querySelectorAll('.item').forEach(function(el){el.style.backgroundColor='';el.style.borderLeft='';});document.getElementById('resultados').style.display='none';document.getElementById('data').value=new Date().toISOString().split('T')[0];}
 
 // ===== MODO PAINEL =====
 var _sessionInfo=null;
@@ -403,6 +406,10 @@ function _decodificarURL(){var params=new URLSearchParams(window.location.search
 async function _enviarResultadosPainel(){
 var nomeEl=document.getElementById('nome');
 if(!nomeEl||!nomeEl.value.trim()){alert('Preencha o nome antes de enviar.');return;}
+var nomeRespEl=document.getElementById('nomeRespondente');
+if(!nomeRespEl||!nomeRespEl.value.trim()){alert('Preencha seu nome completo (campo "Nome de quem responde").');return;}
+var respEl=document.getElementById('respondente');
+if(!respEl||!respEl.value){alert('Selecione o tipo de respondente (Pais ou Professores).');return;}
 var totalItens=document.querySelectorAll('.item').length;
 var respondidos=document.querySelectorAll('input[type="radio"]:checked').length;
 if(respondidos<totalItens){alert('Responda todos os '+totalItens+' itens antes de enviar. Faltam '+(totalItens-respondidos)+'.');return;}
