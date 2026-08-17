@@ -6693,7 +6693,7 @@
           html += '<p style="font-size:11px;color:#555;margin-bottom:10px;">ID: <strong style="font-family:monospace;color:#2e7d32;">' + idHashHist + '</strong></p>';
           html += '<button class="btn btn-green" style="padding:6px 14px;font-size:12px;margin-bottom:10px;" onclick="gerarRelatorioPacientePDF()">Relatorio PDF</button>';
           html += ' <button class="btn btn-blue" style="padding:6px 14px;font-size:12px;margin-bottom:10px;" onclick="loadPacientes()">Voltar</button>';
-          html += '<table class="results-table"><tr><th>Data</th><th>Tipo</th><th>Detalhes</th></tr>';
+          html += '<table class="results-table"><tr><th>Data</th><th>Tipo</th><th>Detalhes</th><th>PDF</th></tr>';
           todos.forEach(function(r) {
             var d = r.data || {};
             var date = r.date ? new Date(r.date).toLocaleString('pt-BR') : '-';
@@ -6777,7 +6777,9 @@
               if (tTempo) tecP.push('T:' + tTempo);
               detalhe = tecP.join(' | ');
             }
-            html += '<tr><td>'+date+'</td><td style="text-transform:uppercase;font-weight:bold;">'+tipo+'</td><td>'+detalhe+'</td></tr>';
+            var _pdfBtn = '';
+            if (tipo === 'escala') { _pdfBtn = '<button class="btn btn-green" style="padding:3px 8px;font-size:11px;" onclick="_gerarPDFHistorico(' + todos.indexOf(r) + ')">PDF</button>'; }
+            html += '<tr><td>'+date+'</td><td style="text-transform:uppercase;font-weight:bold;">'+tipo+'</td><td>'+detalhe+'</td><td>'+_pdfBtn+'</td></tr>';
           });
           html += '</table>';
           el.innerHTML = html;
@@ -6785,6 +6787,13 @@
           el.innerHTML = '<p style="color:#777;">Nenhum resultado encontrado para ' + nome + '.</p><button class="btn btn-blue" style="padding:5px 12px;font-size:12px;margin-top:10px;" onclick="loadPacientes()">Voltar</button>';
         }
       } catch(e) { el.innerHTML = '<p style="color:#c62828;">Erro ao carregar.</p><button class="btn btn-blue" style="padding:5px 12px;font-size:12px;margin-top:10px;" onclick="loadPacientes()">Voltar</button>'; }
+    }
+
+    function _gerarPDFHistorico(idx) {
+      var r = window._historicoCache ? window._historicoCache[idx] : null;
+      if (!r) { alert('Resultado nao encontrado.'); return; }
+      _escalasResultCache[8000 + idx] = r;
+      gerarPDFEscala(8000 + idx);
     }
 
     function gerarRelatorioPacientePDF() {
