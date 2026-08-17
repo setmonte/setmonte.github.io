@@ -694,6 +694,25 @@ function finalizarAtividade() {
     historico.push(registro);
     localStorage.setItem(chave, JSON.stringify(historico));
 
+    // Definir window._escalaDados para coleta anonima
+    window._escalaDados = {
+        escala: 'PRAt',
+        paciente: registro.nome,
+        escore: registro.desempenho,
+        classificacao: 'Desempenho: ' + registro.desempenho + 's/fig',
+        dominios: {
+            'Acertos': { pontuacao: registro.acertos, max: TOTAL_QUADRADOS, classificacao: registro.acertos + '/' + TOTAL_QUADRADOS },
+            'Erros': { pontuacao: registro.erros, max: TOTAL_QUADRADOS, classificacao: registro.erros > 0 ? 'Com erros' : 'Sem erros' },
+            'Omissoes': { pontuacao: registro.omissoes, max: TOTAL_QUADRADOS, classificacao: registro.omissoes > 0 ? 'Com omissoes' : 'Sem omissoes' },
+            'Trocas': { pontuacao: registro.trocas, max: TOTAL_QUADRADOS, classificacao: registro.trocas > 0 ? 'Autocorrecao' : 'Sem trocas' },
+            'Acertos Liquidos': { pontuacao: registro.acertosLiquidos, max: TOTAL_QUADRADOS, classificacao: '' + registro.acertosLiquidos }
+        },
+        idPaciente: registro.idPaciente,
+        idade: registro.idade,
+        sexo: registro.sexo,
+        data: new Date().toISOString()
+    };
+
     mostrarResultados(registro, historico);
 }
 
@@ -1322,6 +1341,10 @@ window.addEventListener('resize', function() {
         }
     }
 });
+</script>
+<script>
+// Carregar coleta anonima
+var _sc=document.createElement('script');_sc.src='../coleta-anonima.js';document.body.appendChild(_sc);
 </script>
 
 </body>
