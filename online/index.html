@@ -1054,6 +1054,7 @@
             <button id="subTabPfister" onclick="switchProgOcultoSubTab('pfister')" style="flex:1;padding:12px 20px;font-size:13px;font-weight:bold;border:none;border-bottom:3px solid #6a1b9a;background:#f3e5f5;color:#6a1b9a;cursor:pointer;border-radius:8px 8px 0 0;">Pfister</button>
             <button id="subTabNeo" onclick="switchProgOcultoSubTab('neo')" style="flex:1;padding:12px 20px;font-size:13px;font-weight:bold;border:none;border-bottom:3px solid transparent;background:#f5f5f5;color:#777;cursor:pointer;border-radius:8px 8px 0 0;">NEO PI-R</button>
             <button id="subTabSrs2" onclick="switchProgOcultoSubTab('srs2')" style="flex:1;padding:12px 20px;font-size:13px;font-weight:bold;border:none;border-bottom:3px solid transparent;background:#f5f5f5;color:#777;cursor:pointer;border-radius:8px 8px 0 0;">SRS-2</button>
+            <button id="subTabVineland3" onclick="switchProgOcultoSubTab('vineland3')" style="flex:1;padding:12px 20px;font-size:13px;font-weight:bold;border:none;border-bottom:3px solid transparent;background:#f5f5f5;color:#777;cursor:pointer;border-radius:8px 8px 0 0;">Vineland-3</button>
           </div>
 
           <!-- CONTEUDO PFISTER -->
@@ -1208,6 +1209,59 @@
             </div>
             <!-- RESULTADOS SRS-2 -->
             <div id="srs2ResultsSection" class="card hidden" style="margin-top:15px;"></div>
+          </div>
+
+          <!-- CONTEUDO VINELAND-3 -->
+          <div id="subVineland3Content" style="display:none;">
+            <div style="background:#e0f2f1;border:2px solid #00796b;border-radius:10px;padding:20px;margin:10px 0;">
+              <p style="font-size:14px;font-weight:bold;color:#00796b;margin-bottom:8px;">Vineland-3 - Escala de Comportamento Adaptativo</p>
+              <p style="font-size:12px;color:#555;line-height:1.6;margin-bottom:12px;">Avalia o comportamento adaptativo em 3 dominios: Comunicacao, Habilidades da Vida Diaria e Socializacao. Formato de entrevista semiestruturada. Faixa: 0-90 anos. Aplicacao por profissional treinado.</p>
+              <div class="btn-row">
+                <button class="btn btn-green" onclick="showNewVineland3()">Nova Aplicacao</button>
+                <button class="btn btn-blue" onclick="showVineland3Results()">Resultados</button>
+              </div>
+            </div>
+            <!-- NOVA APLICACAO VINELAND-3 -->
+            <div id="newVineland3Section" class="card hidden" style="margin-top:15px;">
+              <h2 style="font-size:16px;color:#00796b;">Nova Aplicacao Vineland-3</h2>
+              <p style="margin-bottom:10px;color:#555;font-size:0.9em;">Escala de Comportamento Adaptativo — Entrevista Semiestruturada</p>
+              <label style="font-size:0.85em;color:#555;">Paciente cadastrado:</label>
+              <select id="vineland3SelPac" onchange="preencherPaciente('vineland3')" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:10px;">
+                <option value="">-- Selecione ou preencha abaixo --</option>
+              </select>
+              <label style="font-size:0.85em;color:#555;">Nome:</label>
+              <input type="text" id="vineland3Nome" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+              <label style="font-size:0.85em;color:#555;">Data de Nascimento:</label>
+              <input type="date" id="vineland3Dn" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+              <label style="font-size:0.85em;color:#555;">Sexo:</label>
+              <select id="vineland3Sexo" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+                <option value="">Selecione...</option>
+                <option value="Masculino">Masculino</option>
+                <option value="Feminino">Feminino</option>
+              </select>
+              <label style="font-size:0.85em;color:#555;">Respondente:</label>
+              <select id="vineland3Respondente" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+                <option value="">Selecione...</option>
+                <option value="Pais">Pais/Responsaveis</option>
+                <option value="Cuidador">Cuidador</option>
+                <option value="Professor">Professor</option>
+                <option value="Proprio">Proprio paciente</option>
+              </select>
+              <label style="font-size:0.85em;color:#555;">Observacoes:</label>
+              <input type="text" id="vineland3Obs" placeholder="Opcional" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:12px;">
+              <button onclick="startVineland3OnlineTest()" class="btn btn-green" style="width:48%;">Gerar Link</button>
+              <button onclick="startVineland3OnlineTest(true)" class="btn btn-blue" style="width:48%;">Aplicar Aqui</button>
+              <div id="vineland3LinkResult" class="hidden" style="margin-top:15px;padding:12px;background:#e0f2f1;border-radius:8px;">
+                <p style="font-size:0.8em;color:#555;margin-bottom:5px;">Link gerado:</p>
+                <p id="vineland3SessionLink" style="word-break:break-all;font-size:0.75em;color:#00796b;"></p>
+                <div style="margin-top:10px;display:flex;gap:8px;">
+                  <button onclick="copyVineland3Link()" class="btn btn-blue" style="font-size:0.85em;">Copiar</button>
+                  <button onclick="whatsappVineland3Link()" class="btn btn-green" style="font-size:0.85em;">WhatsApp</button>
+                </div>
+              </div>
+            </div>
+            <!-- RESULTADOS VINELAND-3 -->
+            <div id="vineland3ResultsSection" class="card hidden" style="margin-top:15px;"></div>
           </div>
         </div>
 
@@ -3069,7 +3123,7 @@
       document.getElementById('tabDepoimentos').classList.remove('active');
       document.getElementById('tabAdmin').classList.remove('active');
       document.getElementById('tabProgramasOcultos').classList.remove('active');
-      ['plansSection','newTestSection','resultsSection','baePlansSection','newBaeSection','baeResultsSection','trmvPlansSection','newTrmvSection','trmvResultsSection','taavPlansSection','newTaavSection','taavResultsSection','trefPlansSection','newTrefSection','trefResultsSection','newTflodSection','tflodResultsSection','newCorsiSection','corsiResultsSection','newTteSection','tteResultsSection','newTetaylorSection','tetaylorResultsSection','newTetaylorsimpSection','tetaylorsimpResultsSection','newPfisterSection','pfisterResultsSection'].forEach(function(id) {
+      ['plansSection','newTestSection','resultsSection','baePlansSection','newBaeSection','baeResultsSection','trmvPlansSection','newTrmvSection','trmvResultsSection','taavPlansSection','newTaavSection','taavResultsSection','trefPlansSection','newTrefSection','trefResultsSection','newTflodSection','tflodResultsSection','newCorsiSection','corsiResultsSection','newTteSection','tteResultsSection','newTetaylorSection','tetaylorResultsSection','newTetaylorsimpSection','tetaylorsimpResultsSection','newPfisterSection','pfisterResultsSection','newVineland3Section','vineland3ResultsSection'].forEach(function(id) {
         var el = document.getElementById(id); if (el) el.classList.add('hidden');
       });
       if (tab === 'funcExec') {
@@ -6204,7 +6258,7 @@
       listaOrdenada.forEach(function(p) {
         opcoesHtml += '<option value="' + p.id + '" data-nome="' + (p.nome||'').replace(/"/g,'') + '" data-dn="' + (p.dataNascimento||'') + '" data-cpf="' + (p.cpf||'') + '" data-sexo="' + (p.sexo||'') + '" data-esc="' + (p.escolaridade||'') + '" data-lat="' + (p.lateralidade||'') + '">' + (p.nome||'') + ' (' + (p.dataNascimento||'?') + ')</option>';
       });
-      ['baeSelPac','trmvSelPac','taavSelPac','tecfeSelPac','trefSelPac','tflodSelPac','corsiSelPac','tteSelPac','escalaSelPac','anamneseSelPac','reocupaSelPac','pfisterSelPac','neoSelPac','agendaSelPac','prontuarioSelPac','srs2SelPac','lermaisSelPac','etdahSelPac','criadSelPac','bvrtSelPac'].forEach(function(id) {
+      ['baeSelPac','trmvSelPac','taavSelPac','tecfeSelPac','trefSelPac','tflodSelPac','corsiSelPac','tteSelPac','escalaSelPac','anamneseSelPac','reocupaSelPac','pfisterSelPac','neoSelPac','agendaSelPac','prontuarioSelPac','srs2SelPac','lermaisSelPac','etdahSelPac','criadSelPac','bvrtSelPac','vineland3SelPac'].forEach(function(id) {
         var sel = document.getElementById(id);
         if (!sel) return;
         var val = sel.value;
@@ -6258,6 +6312,7 @@
       else if (tipo === 'pfister') { campoNome = document.getElementById('pfisterNome'); campoDN = document.getElementById('pfisterDn'); }
       else if (tipo === 'neo') { campoNome = document.getElementById('neoNome'); campoDN = document.getElementById('neoDn'); }
       else if (tipo === 'srs2') { campoNome = document.getElementById('srs2Nome'); campoDN = document.getElementById('srs2Dn'); }
+      else if (tipo === 'vineland3') { campoNome = document.getElementById('vineland3Nome'); campoDN = document.getElementById('vineland3Dn'); }
       // Preencher campos basicos
       if (campoNome) campoNome.value = pac.nome || '';
       if (campoDN) campoDN.value = pac.dataNascimento || '';
@@ -6986,13 +7041,16 @@
       var pfisterContent = document.getElementById('subPfisterContent');
       var neoContent = document.getElementById('subNeoContent');
       var srs2Content = document.getElementById('subSrs2Content');
+      var vineland3Content = document.getElementById('subVineland3Content');
       var btnPfister = document.getElementById('subTabPfister');
       var btnNeo = document.getElementById('subTabNeo');
       var btnSrs2 = document.getElementById('subTabSrs2');
+      var btnVineland3 = document.getElementById('subTabVineland3');
       // Reset all
       pfisterContent.style.display = 'none';
       neoContent.style.display = 'none';
       if (srs2Content) srs2Content.style.display = 'none';
+      if (vineland3Content) vineland3Content.style.display = 'none';
       btnPfister.style.background = '#f5f5f5';
       btnPfister.style.color = '#777';
       btnPfister.style.borderBottom = '3px solid transparent';
@@ -7000,6 +7058,7 @@
       btnNeo.style.color = '#777';
       btnNeo.style.borderBottom = '3px solid transparent';
       if (btnSrs2) { btnSrs2.style.background = '#f5f5f5'; btnSrs2.style.color = '#777'; btnSrs2.style.borderBottom = '3px solid transparent'; }
+      if (btnVineland3) { btnVineland3.style.background = '#f5f5f5'; btnVineland3.style.color = '#777'; btnVineland3.style.borderBottom = '3px solid transparent'; }
       if (sub === 'pfister') {
         pfisterContent.style.display = 'block';
         btnPfister.style.background = '#f3e5f5';
@@ -7014,6 +7073,10 @@
         if (srs2Content) srs2Content.style.display = 'block';
         if (btnSrs2) { btnSrs2.style.background = '#e3f2fd'; btnSrs2.style.color = '#1565c0'; btnSrs2.style.borderBottom = '3px solid #1565c0'; }
         loadSrs2Pacientes();
+      } else if (sub === 'vineland3') {
+        if (vineland3Content) vineland3Content.style.display = 'block';
+        if (btnVineland3) { btnVineland3.style.background = '#e0f2f1'; btnVineland3.style.color = '#00796b'; btnVineland3.style.borderBottom = '3px solid #00796b'; }
+        if (typeof popularDropdownsPacientes === 'function') popularDropdownsPacientes();
       }
     }
 
@@ -7322,6 +7385,131 @@
       // Reutilizar gerarPDFEscala passando pelo cache generico
       _escalasResultCache[9000 + idx] = r;
       gerarPDFEscala(9000 + idx);
+    }
+
+    // ===== FUNCOES PROGRAMAS OCULTOS - VINELAND-3 =====
+    function showNewVineland3() {
+      document.getElementById('newVineland3Section').classList.toggle('hidden');
+      var res = document.getElementById('vineland3ResultsSection');
+      if (res) res.classList.add('hidden');
+    }
+
+    function showVineland3Results() {
+      var res = document.getElementById('vineland3ResultsSection');
+      if (res) res.classList.toggle('hidden');
+      document.getElementById('newVineland3Section').classList.add('hidden');
+      loadVineland3Results();
+    }
+
+    var generatedVineland3Link = '';
+
+    async function startVineland3OnlineTest(abrirLocal) {
+      var nome = document.getElementById('vineland3Nome').value.trim();
+      var dn = document.getElementById('vineland3Dn').value;
+      if (!nome || !dn) { alert('Preencha nome e data de nascimento.'); return; }
+      var _dnErr = (typeof _validarDataNascimento === 'function') ? _validarDataNascimento(dn) : null;
+      if (_dnErr) { alert(_dnErr); return; }
+      var btn = event && event.target ? event.target : null;
+      if (typeof btnLoading === 'function') btnLoading(btn);
+      try {
+        var sessionId = 'vineland3-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+        var sessionData = {
+          email: currentUser,
+          sessionId: sessionId,
+          tipo: 'vineland3',
+          patientName: nome,
+          birthDate: dn,
+          sex: document.getElementById('vineland3Sexo').value || '',
+          respondente: document.getElementById('vineland3Respondente').value || '',
+          obs: document.getElementById('vineland3Obs').value || '',
+          pacienteId: document.getElementById('vineland3SelPac').value || ''
+        };
+        var resp = await fetch(API_URL + '/save-session', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(sessionData)
+        });
+        var result = await resp.json();
+        var link = '';
+        if (result.id) {
+          link = 'https://setmonte.github.io/programas-ocultos/vineland3.html?s=' + result.id;
+        } else {
+          var params = safeBtoa(JSON.stringify(sessionData));
+          link = 'https://setmonte.github.io/programas-ocultos/vineland3.html?d=' + encodeURIComponent(params);
+        }
+        generatedVineland3Link = link;
+        if (abrirLocal) { window.open(link, '_blank'); }
+        else { document.getElementById('vineland3SessionLink').textContent = link; document.getElementById('vineland3LinkResult').classList.remove('hidden'); }
+      } catch(e) { alert('Erro ao gerar link: ' + e.message); }
+      if (typeof btnReset === 'function') btnReset(btn);
+    }
+
+    function copyVineland3Link() {
+      var link = document.getElementById('vineland3SessionLink').textContent || generatedVineland3Link;
+      navigator.clipboard.writeText(link);
+      alert('Link copiado!');
+    }
+
+    function whatsappVineland3Link() {
+      var link = document.getElementById('vineland3SessionLink').textContent || generatedVineland3Link;
+      window.open('https://wa.me/?text=' + encodeURIComponent('Preencha a escala Vineland-3: ' + link), '_blank');
+    }
+
+    var _vineland3ResultCache = [];
+
+    async function loadVineland3Results() {
+      var el = document.getElementById('vineland3ResultsSection');
+      if (!el) return;
+      el.innerHTML = '<p>Carregando...</p>';
+      try {
+        var resp = await fetch(API_URL + '/get-results?email=' + encodeURIComponent(currentUser) + '&tipo=vineland3');
+        var data = await resp.json();
+        var results = data.results || [];
+        _vineland3ResultCache = results;
+        if (results.length === 0) { el.innerHTML = '<p>Nenhum resultado Vineland-3 encontrado.</p>'; return; }
+        var html = '<h3 style="color:#00796b;">Resultados Vineland-3</h3><table style="width:100%;border-collapse:collapse;font-size:0.85em;"><tr><th style="padding:6px;border-bottom:2px solid #00796b;width:30px;"><input type="checkbox" onclick="toggleAllVineland3(this)"></th><th style="text-align:left;padding:6px;border-bottom:2px solid #00796b;">Data</th><th style="text-align:left;padding:6px;border-bottom:2px solid #00796b;">Paciente</th><th style="text-align:left;padding:6px;border-bottom:2px solid #00796b;">ID</th><th style="text-align:left;padding:6px;border-bottom:2px solid #00796b;">Escore</th><th style="text-align:left;padding:6px;border-bottom:2px solid #00796b;">Classificacao</th><th style="text-align:left;padding:6px;border-bottom:2px solid #00796b;">PDF</th></tr>';
+        for (var i = 0; i < results.length; i++) {
+          var r = results[i];
+          var d = r.data || {};
+          html += '<tr>';
+          html += '<td style="padding:5px;border-bottom:1px solid #eee;text-align:center;"><input type="checkbox" class="vineland3-check" value="' + (r.sessionId || '') + '"></td>';
+          html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (d.data ? new Date(d.data).toLocaleDateString('pt-BR') : '') + '</td>';
+          html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (d.paciente || '') + '</td>';
+          html += '<td style="padding:5px;border-bottom:1px solid #eee;font-size:10px;font-family:monospace;color:#00796b;">' + (d.idPaciente || '-') + '</td>';
+          html += '<td style="padding:5px;border-bottom:1px solid #eee;font-weight:bold;">' + (d.escore != null ? d.escore : '-') + '</td>';
+          html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (d.classificacao || '-') + '</td>';
+          html += '<td style="padding:5px;border-bottom:1px solid #eee;"><button class="btn btn-green" style="padding:3px 8px;font-size:11px;" onclick="gerarPDFVineland3(' + i + ')">PDF</button></td>';
+          html += '</tr>';
+        }
+        html += '</table>';
+        html += '<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">';
+        html += '<button onclick="eliminarResultadosVineland3()" class="btn btn-red" style="padding:6px 14px;font-size:0.8em;">Eliminar Selecionados</button>';
+        html += '</div>';
+        el.innerHTML = html;
+      } catch(e) { el.innerHTML = '<p>Erro ao carregar resultados.</p>'; }
+    }
+
+    function toggleAllVineland3(el) {
+      document.querySelectorAll('.vineland3-check').forEach(function(cb) { cb.checked = el.checked; });
+    }
+
+    async function eliminarResultadosVineland3() {
+      var checks = document.querySelectorAll('.vineland3-check:checked');
+      if (checks.length === 0) { alert('Selecione pelo menos um resultado.'); return; }
+      if (!confirm('Eliminar ' + checks.length + ' resultado(s)?')) return;
+      for (var i = 0; i < checks.length; i++) {
+        try {
+          await fetch(API_URL + '/delete-result', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ sessionId: checks[i].value, email: currentUser }) });
+        } catch(e) {}
+      }
+      loadVineland3Results();
+    }
+
+    function gerarPDFVineland3(idx) {
+      var r = _vineland3ResultCache[idx];
+      if (!r) return;
+      _escalasResultCache[9100 + idx] = r;
+      gerarPDFEscala(9100 + idx);
     }
 
     // ===== FUNCOES SMART - REABILITACAO COM IA =====
