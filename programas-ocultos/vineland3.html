@@ -501,9 +501,6 @@ var motR=getRawDominio('mot',25);
 var probAR=getRawDominio('prob_a',13);
 var probBR=getRawDominio('prob_b',11);
 var totalAdapt=comR.respondidos+dlsR.respondidos+socR.respondidos+motR.respondidos;
-if(totalAdapt<(40+40+40+25)*0.8){
-if(!confirm('Apenas '+totalAdapt+' de 145 itens adaptativos foram respondidos. Deseja calcular mesmo assim?'))return;
-}
 var comSS=lookupSS(faixa,'com',comR.raw);
 var dlsSS=lookupSS(faixa,'dls',dlsR.raw);
 var socSS=lookupSS(faixa,'soc',socR.raw);
@@ -672,9 +669,8 @@ _preencherDadosSessao();
 async function _enviarResultadosPainel(){
 var nomeEl=document.getElementById('nome');
 if(!nomeEl||!nomeEl.value.trim()){alert('Preencha o nome antes de enviar.');return;}
-var totalItens=145+35;
 var respondidos=document.querySelectorAll('input[type="radio"]:checked').length;
-if(respondidos<100){alert('Responda pelo menos os itens adaptativos antes de enviar. Respondidos: '+respondidos+'/180.');return;}
+if(respondidos<40){alert('Responda pelo menos os itens de um dominio antes de enviar (minimo 40 itens).');return;}
 var sexoEl=document.getElementById('sexo');
 if(sexoEl&&!sexoEl.value){sexoEl.value='Nao informado';}
 var idadeEl=document.getElementById('idadeCalculada');
@@ -707,9 +703,34 @@ alert('Erro de conexao. Verifique sua internet e tente novamente.');
 }
 }
 
+function checkRegraTetoVineland(radio){
+var name=radio.name;
+var parts=name.split('_');
+var domId=parts[0];if(parts.length===3)domId=parts[0]+'_'+parts[1];
+var idx=parseInt(parts[parts.length-1]);
+if(domId.indexOf('prob')!==-1)return;
+var consecutivos=0;
+for(var i=idx;i>=Math.max(0,idx-3);i--){
+var nm=domId+'_'+i;
+var checked=document.querySelector('input[name="'+nm+'"]:checked');
+if(checked&&checked.value==='0')consecutivos++;
+else break;
+}
+if(consecutivos>=4){
+var numItens=domId==='mot'?25:40;
+var restantes=numItens-idx-1;
+if(restantes>0&&confirm('Regra de teto: 4 itens consecutivos com pontua\u00e7\u00e3o 0.\nDeseja preencher os '+restantes+' itens restantes deste dom\u00ednio com 0 (Nunca)?')){
+for(var j=idx+1;j<numItens;j++){
+var r=document.getElementById(domId+'_'+j+'_0');
+if(r){r.checked=true;var it=r.closest('.item');if(it){it.style.backgroundColor='#ffebee';it.style.borderLeft='4px solid #ef9a9a';}}
+}
+}
+}
+}
+
 // === INICIALIZACAO (direta, sem wrapper) ===
 gerarQuestionario();
-document.getElementById('questionario').addEventListener('change',function(e){if(e.target.type==='radio'){var item=e.target.closest('.item');if(item){item.style.backgroundColor='#e0f2f1';item.style.borderLeft='4px solid #00796b';}if(item&&item.nextElementSibling){item.nextElementSibling.scrollIntoView({behavior:'smooth',block:'center'});}}});
+document.getElementById('questionario').addEventListener('change',function(e){if(e.target.type==='radio'){var item=e.target.closest('.item');if(item){item.style.backgroundColor='#e0f2f1';item.style.borderLeft='4px solid #00796b';}if(item&&item.nextElementSibling){item.nextElementSibling.scrollIntoView({behavior:'smooth',block:'center'});}if(e.target.value==='0'){checkRegraTetoVineland(e.target);}}});
 document.getElementById('data').value=new Date().toISOString().split('T')[0];
 var params=new URLSearchParams(window.location.search);
 if(params.get('s')){
