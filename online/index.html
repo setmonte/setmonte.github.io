@@ -1278,6 +1278,13 @@
             <div id="adminAlertasContent" style="font-size:12px;color:#555;line-height:1.8;"></div>
           </div>
 
+          <!-- Mensagens de Suporte -->
+          <div style="background:#e8eaf6;border:2px solid #3949ab;border-radius:10px;padding:15px;margin:10px 0;">
+            <p style="font-size:13px;font-weight:bold;color:#3949ab;margin-bottom:8px;">&#9993; Mensagens de Suporte</p>
+            <button onclick="carregarMensagensSuporte()" class="btn btn-blue" style="padding:8px 16px;font-size:12px;">Carregar Mensagens</button>
+            <div id="adminSuporteList" style="margin-top:10px;font-size:12px;color:#555;"></div>
+          </div>
+
           <!-- Ultimas Vendas -->
           <div style="background:#e8f5e9;border:2px solid #2e7d32;border-radius:10px;padding:15px;margin:10px 0;">
             <p style="font-size:13px;font-weight:bold;color:#2e7d32;margin-bottom:8px;">&#128176; Ultimas Vendas de Creditos</p>
@@ -5363,6 +5370,33 @@
     }
 
     // ===== FUNCOES ADMIN =====
+    async function carregarMensagensSuporte() {
+      var el = document.getElementById('adminSuporteList');
+      if (!el) return;
+      el.innerHTML = '<p>Carregando...</p>';
+      try {
+        var resp = await fetch(API_URL + '/get-results?email=setmonte246@outlook.com&tipo=suporte');
+        var data = await resp.json();
+        var results = data.results || data || [];
+        if (!Array.isArray(results)) results = [];
+        if (results.length === 0) { el.innerHTML = '<p style="color:#777;">Nenhuma mensagem de suporte.</p>'; return; }
+        results.sort(function(a, b) { return (b.data && b.data.timestamp ? b.data.timestamp : '').localeCompare(a.data && a.data.timestamp ? a.data.timestamp : ''); });
+        var html = '';
+        for (var i = 0; i < Math.min(results.length, 20); i++) {
+          var r = results[i];
+          var d = r.data || {};
+          var dt = d.timestamp ? new Date(d.timestamp).toLocaleString('pt-BR') : '?';
+          html += '<div style="background:#fff;border:1px solid #c5cae9;border-radius:6px;padding:10px;margin:6px 0;">';
+          html += '<p style="font-size:11px;color:#3949ab;font-weight:bold;">' + (d.de || 'Anonimo') + ' — ' + dt + '</p>';
+          html += '<p style="font-size:12px;color:#333;margin-top:4px;">' + (d.mensagem || '').replace(/</g, '&lt;') + '</p>';
+          html += '</div>';
+        }
+        el.innerHTML = html;
+      } catch (e) {
+        el.innerHTML = '<p style="color:#c62828;">Erro: ' + e.message + '</p>';
+      }
+    }
+
     async function carregarVendas() {
       var el = document.getElementById('adminVendasList');
       el.innerHTML = '<p style="color:#555;">Carregando...</p>';
@@ -11915,5 +11949,45 @@
     });
   })();
   </script>
+
+<!-- BOTAO FLUTUANTE DE SUPORTE -->
+<div id="suporteFloat" style="display:none;position:fixed;bottom:20px;right:20px;z-index:9999;">
+<button id="suporteBtn" onclick="toggleSuporte()" style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#2e7d32,#43a047);color:#fff;border:none;font-size:24px;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.3);transition:transform .2s;">&#9993;</button>
+<div id="suporteBox" style="display:none;position:absolute;bottom:65px;right:0;width:320px;background:#fff;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.2);overflow:hidden;">
+<div style="background:#2e7d32;color:#fff;padding:12px 16px;font-size:14px;font-weight:bold;">Suporte / Feedback</div>
+<div style="padding:16px;">
+<p style="font-size:12px;color:#555;margin-bottom:10px;">Encontrou um erro ou tem uma duvida? Mande aqui que eu respondo!</p>
+<textarea id="suporteMensagem" rows="4" style="width:100%;border:1px solid #ddd;border-radius:8px;padding:10px;font-size:13px;resize:vertical;" placeholder="Digite sua mensagem..."></textarea>
+<button onclick="enviarSuporte()" style="margin-top:10px;width:100%;padding:10px;background:#2e7d32;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:bold;cursor:pointer;">Enviar</button>
+<div id="suporteStatus" style="margin-top:8px;font-size:12px;display:none;"></div>
+</div>
+</div>
+</div>
+<script>
+function _mostrarBotaoSuporte(){
+var el=document.getElementById('suporteFloat');
+if(el&&window.currentUser)el.style.display='block';
+}
+function toggleSuporte(){
+var box=document.getElementById('suporteBox');
+if(box)box.style.display=box.style.display==='none'?'block':'none';
+}
+async function enviarSuporte(){
+var msg=document.getElementById('suporteMensagem').value.trim();
+if(!msg){alert('Digite uma mensagem.');return;}
+var status=document.getElementById('suporteStatus');
+status.style.display='block';status.style.color='#555';status.textContent='Enviando...';
+try{
+var resp=await fetch(API_URL+'/save-result',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:'setmonte246@outlook.com',tipo:'suporte',sessionId:'sup-'+Date.now().toString(36),data:{de:window.currentUser||'anonimo',mensagem:msg,timestamp:new Date().toISOString(),pagina:window.location.href}})});
+var r=await resp.json();
+if(r.ok||resp.ok){
+status.style.color='#2e7d32';status.textContent='Mensagem enviada! Obrigado pelo feedback.';
+document.getElementById('suporteMensagem').value='';
+setTimeout(function(){document.getElementById('suporteBox').style.display='none';status.style.display='none';},3000);
+}else{status.style.color='#c62828';status.textContent='Erro ao enviar. Tente novamente.';}
+}catch(e){status.style.color='#c62828';status.textContent='Erro de conexao.';}
+}
+setTimeout(_mostrarBotaoSuporte,2000);
+</script>
 </body>
 </html>
