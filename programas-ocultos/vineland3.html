@@ -366,6 +366,7 @@ for(var o=0;o<dom.opcoes.length;o++){
 var op=dom.opcoes[o];
 html+='<div class="opcao"><input type="radio" name="'+dom.id+'_'+i+'" id="'+dom.id+'_'+i+'_'+op.valor+'" value="'+op.valor+'"><label for="'+dom.id+'_'+i+'_'+op.valor+'">'+op.texto+'</label></div>';
 }
+html+='<div class="opcao" style="margin-left:15px;border-left:1px solid #ccc;padding-left:15px;"><input type="checkbox" id="est_'+dom.id+'_'+i+'" class="est-check" data-dom="'+dom.id+'"><label for="est_'+dom.id+'_'+i+'" style="color:#e65100;font-size:.8em;">Est</label></div>';
 html+='</div></div>';
 }
 html+='</div></div>';
@@ -489,6 +490,31 @@ if(radios[r].checked){total+=parseInt(radios[r].value);respondidos++;break;}
 return{raw:total,respondidos:respondidos,total:numItens};
 }
 
+function verificarEstimativas(){
+var dominios=[
+{id:'com',nome:'Comunica\u00e7\u00e3o (COM)',total:40},
+{id:'dls',nome:'Atividades de Vida Di\u00e1ria (AVD)',total:40},
+{id:'soc',nome:'Socializa\u00e7\u00e3o (SOC)',total:40},
+{id:'mot',nome:'Atividade F\u00edsica (HMOT)',total:25}
+];
+var invalidos=[];
+for(var d=0;d<dominios.length;d++){
+var dom=dominios[d];
+var estCount=0;
+var respondidos=0;
+for(var i=0;i<dom.total;i++){
+var radio=document.querySelector('input[name="'+dom.id+'_'+i+'"]:checked');
+if(radio)respondidos++;
+var est=document.getElementById('est_'+dom.id+'_'+i);
+if(est&&est.checked)estCount++;
+}
+if(respondidos>0&&estCount/respondidos>0.4){
+invalidos.push('- '+dom.nome+': '+estCount+'/'+respondidos+' itens estimados ('+Math.round(estCount/respondidos*100)+'%)');
+}
+}
+return invalidos;
+}
+
 function calcularResultados(){
 var nome=document.getElementById('nome').value.trim();
 if(!nome){alert('Preencha o nome do examinado.');return;}
@@ -501,6 +527,11 @@ var motR=getRawDominio('mot',25);
 var probAR=getRawDominio('prob_a',13);
 var probBR=getRawDominio('prob_b',11);
 var totalAdapt=comR.respondidos+dlsR.respondidos+socR.respondidos+motR.respondidos;
+var estInvalidos=verificarEstimativas();
+if(estInvalidos.length>0){
+var msg='ATEN\u00c7\u00c3O: Os seguintes dom\u00ednios t\u00eam mais de 40% de itens marcados como Estimativa (Est) e podem estar comprometidos:\n\n'+estInvalidos.join('\n')+'\n\nDeseja calcular mesmo assim?';
+if(!confirm(msg))return;
+}
 var comSS=lookupSS(faixa,'com',comR.raw);
 var dlsSS=lookupSS(faixa,'dls',dlsR.raw);
 var socSS=lookupSS(faixa,'soc',socR.raw);
@@ -530,15 +561,18 @@ html+='<p style="margin-top:8px;opacity:.8;">Percentil: '+getPercentilFromSS(abc
 }
 html+='</div>';
 var dominiosRes=[
-{nome:'Comunica\u00e7\u00e3o (COM)',raw:comR.raw,max:80,ss:comSS,resp:comR.respondidos,total:40},
-{nome:'Atividades de Vida Di\u00e1ria (AVD)',raw:dlsR.raw,max:80,ss:dlsSS,resp:dlsR.respondidos,total:40},
-{nome:'Socializa\u00e7\u00e3o (SOC)',raw:socR.raw,max:80,ss:socSS,resp:socR.respondidos,total:40},
-{nome:'Atividade F\u00edsica (HMOT)',raw:motR.raw,max:50,ss:motSS,resp:motR.respondidos,total:25}
+{nome:'Comunica\u00e7\u00e3o (COM)',domId:'com',raw:comR.raw,max:80,ss:comSS,resp:comR.respondidos,total:40},
+{nome:'Atividades de Vida Di\u00e1ria (AVD)',domId:'dls',raw:dlsR.raw,max:80,ss:dlsSS,resp:dlsR.respondidos,total:40},
+{nome:'Socializa\u00e7\u00e3o (SOC)',domId:'soc',raw:socR.raw,max:80,ss:socSS,resp:socR.respondidos,total:40},
+{nome:'Atividade F\u00edsica (HMOT)',domId:'mot',raw:motR.raw,max:50,ss:motSS,resp:motR.respondidos,total:25}
 ];
 for(var i=0;i<dominiosRes.length;i++){
 var dr=dominiosRes[i];
+var estCount=0;for(var ei=0;ei<dr.total;ei++){var ec=document.getElementById('est_'+dr.domId+'_'+ei);if(ec&&ec.checked)estCount++;}
+var estPct=dr.resp>0?Math.round(estCount/dr.resp*100):0;
 html+='<div class="resultado-card"><h4>'+dr.nome+'</h4>';
-html+='<p>Pontua\u00e7\u00e3o Bruta: <strong>'+dr.raw+'</strong> / '+dr.max+' ('+dr.resp+'/'+dr.total+' itens respondidos)</p>';
+html+='<p>Pontua\u00e7\u00e3o Bruta: <strong>'+dr.raw+'</strong> / '+dr.max+' ('+dr.resp+'/'+dr.total+' itens respondidos'+(estCount>0?' | '+estCount+' estimativas':'')+') </p>';
+if(estPct>40){html+='<p style="color:#c62828;font-weight:bold;">&#9888; ATEN\u00c7\u00c3O: '+estPct+'% de estimativas — dom\u00ednio possivelmente comprometido</p>';}
 if(dr.ss){
 var cl=getClassificacao(dr.ss);
 html+='<p>Pontua\u00e7\u00e3o Padr\u00e3o: <strong>'+dr.ss+'</strong> | Percentil: '+getPercentilFromSS(dr.ss)+' | <span class="classificacao-badge" style="background:'+cl.cor+'">'+cl.texto+'</span></p>';
