@@ -1283,10 +1283,13 @@
           </div>
 
           <!-- Mensagens de Suporte -->
-          <div style="background:#e8eaf6;border:2px solid #3949ab;border-radius:10px;padding:15px;margin:10px 0;">
-            <p style="font-size:13px;font-weight:bold;color:#3949ab;margin-bottom:8px;">&#9993; Mensagens de Suporte</p>
-            <button onclick="carregarMensagensSuporte()" class="btn btn-blue" style="padding:8px 16px;font-size:12px;">Carregar Mensagens</button>
-            <div id="adminSuporteList" style="margin-top:10px;font-size:12px;color:#555;"></div>
+          <div id="adminSuporteCard" style="background:#e8eaf6;border:2px solid #3949ab;border-radius:10px;padding:15px;margin:10px 0;display:none;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+              <p style="font-size:13px;font-weight:bold;color:#3949ab;">&#9993; Mensagens de Suporte</p>
+              <div style="background:#3949ab;color:#fff;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:bold;" id="adminSuporteCount">0</div>
+            </div>
+            <div id="adminSuporteList" style="font-size:12px;color:#555;max-height:300px;overflow-y:auto;"></div>
+            <button onclick="marcarSuporteLido()" class="btn btn-blue" style="padding:8px 16px;font-size:12px;margin-top:10px;">&#10003; Mensagem Lida</button>
           </div>
 
           <!-- Ultimas Vendas -->
@@ -2710,6 +2713,7 @@
         if (suporteArea) suporteArea.style.display = 'none';
         initFreeModeToggle();
         verificarVendasNovas();
+        verificarMsgSuporteNovas();
       }
       // Mostrar aba Reabilitacao para profissional autorizada
       if (currentUser === 'neidegnoronha@gmail.com') {
@@ -5376,31 +5380,49 @@
     }
 
     // ===== FUNCOES ADMIN =====
-    async function carregarMensagensSuporte() {
-      var el = document.getElementById('adminSuporteList');
-      if (!el) return;
-      el.innerHTML = '<p>Carregando...</p>';
+    var _suporteMsgCache = [];
+
+    async function verificarMsgSuporteNovas() {
       try {
         var resp = await fetch(API_URL + '/get-results?email=setmonte246@outlook.com&tipo=suporte');
         var data = await resp.json();
         var results = data.results || data || [];
         if (!Array.isArray(results)) results = [];
-        if (results.length === 0) { el.innerHTML = '<p style="color:#777;">Nenhuma mensagem de suporte.</p>'; return; }
-        results.sort(function(a, b) { return (b.data && b.data.timestamp ? b.data.timestamp : '').localeCompare(a.data && a.data.timestamp ? a.data.timestamp : ''); });
+        var lidas = JSON.parse(localStorage.getItem('suporte_lidas') || '[]');
+        var novas = results.filter(function(r) { return lidas.indexOf(r.sessionId || r.id || '') === -1; });
+        _suporteMsgCache = novas;
+        var card = document.getElementById('adminSuporteCard');
+        var countEl = document.getElementById('adminSuporteCount');
+        var listEl = document.getElementById('adminSuporteList');
+        if (novas.length === 0) { if (card) card.style.display = 'none'; return; }
+        if (card) card.style.display = 'block';
+        if (countEl) countEl.textContent = novas.length;
+        novas.sort(function(a, b) { return ((b.data && b.data.timestamp) || '').localeCompare((a.data && a.data.timestamp) || ''); });
         var html = '';
-        for (var i = 0; i < Math.min(results.length, 20); i++) {
-          var r = results[i];
+        for (var i = 0; i < Math.min(novas.length, 10); i++) {
+          var r = novas[i];
           var d = r.data || {};
           var dt = d.timestamp ? new Date(d.timestamp).toLocaleString('pt-BR') : '?';
           html += '<div style="background:#fff;border:1px solid #c5cae9;border-radius:6px;padding:10px;margin:6px 0;">';
-          html += '<p style="font-size:11px;color:#3949ab;font-weight:bold;">' + (d.de || 'Anonimo') + ' — ' + dt + '</p>';
-          html += '<p style="font-size:12px;color:#333;margin-top:4px;">' + (d.mensagem || '').replace(/</g, '&lt;') + '</p>';
+          html += '<p style="font-size:11px;color:#3949ab;font-weight:bold;">' + (d.de || 'Anonimo') + ' &mdash; ' + dt + '</p>';
+          html += '<p style="font-size:12px;color:#333;margin-top:4px;">' + ((d.mensagem || '').replace(/</g, '&lt;').replace(/>/g, '&gt;')) + '</p>';
           html += '</div>';
         }
-        el.innerHTML = html;
-      } catch (e) {
-        el.innerHTML = '<p style="color:#c62828;">Erro: ' + e.message + '</p>';
+        if (novas.length > 10) html += '<p style="color:#777;font-size:11px;">... e mais ' + (novas.length - 10) + ' mensagens</p>';
+        if (listEl) listEl.innerHTML = html;
+      } catch (e) {}
+    }
+
+    function marcarSuporteLido() {
+      var lidas = JSON.parse(localStorage.getItem('suporte_lidas') || '[]');
+      for (var i = 0; i < _suporteMsgCache.length; i++) {
+        var id = _suporteMsgCache[i].sessionId || _suporteMsgCache[i].id || '';
+        if (id && lidas.indexOf(id) === -1) lidas.push(id);
       }
+      localStorage.setItem('suporte_lidas', JSON.stringify(lidas));
+      _suporteMsgCache = [];
+      var card = document.getElementById('adminSuporteCard');
+      if (card) card.style.display = 'none';
     }
 
     async function carregarVendas() {
