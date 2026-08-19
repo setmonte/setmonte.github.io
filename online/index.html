@@ -967,6 +967,15 @@
             <button onclick="toggleSuporte()" style="background:linear-gradient(135deg,#2e7d32,#43a047);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:13px;font-weight:bold;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.15);">&#9993; Suporte / Feedback</button>
             <p style="font-size:11px;color:#777;margin-top:5px;">D&#250;vidas? Entre em contato direto comigo</p>
           </div>
+          <!-- Card de respostas do suporte para o usuario -->
+          <div id="suporteRespostaCard" style="display:none;background:#e8f5e9;border:2px solid #2e7d32;border-radius:10px;padding:15px;margin:0 0 15px 0;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+              <p style="font-size:13px;font-weight:bold;color:#2e7d32;">&#128172; Resposta do Suporte</p>
+              <div style="background:#2e7d32;color:#fff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:bold;" id="suporteRespostaCount">0</div>
+            </div>
+            <div id="suporteRespostaList" style="font-size:12px;color:#555;"></div>
+            <button onclick="marcarRespostaLida()" class="btn btn-green" style="padding:8px 16px;font-size:12px;margin-top:10px;">&#10003; Lida</button>
+          </div>
           <div style="text-align:center;padding:10px 0;">
             <p style="font-size:15px;color:#2e7d32;font-weight:bold;">Meus Pacientes</p>
             <p style="font-size:12px;color:#555;margin-top:5px;">Cadastre seus pacientes uma vez e selecione ao aplicar testes e escalas.</p>
@@ -1288,8 +1297,8 @@
               <p style="font-size:13px;font-weight:bold;color:#3949ab;">&#9993; Mensagens de Suporte</p>
               <div style="background:#3949ab;color:#fff;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:bold;" id="adminSuporteCount">0</div>
             </div>
-            <div id="adminSuporteList" style="font-size:12px;color:#555;max-height:300px;overflow-y:auto;"></div>
-            <button onclick="marcarSuporteLido()" class="btn btn-blue" style="padding:8px 16px;font-size:12px;margin-top:10px;">&#10003; Mensagem Lida</button>
+            <div id="adminSuporteList" style="font-size:12px;color:#555;max-height:400px;overflow-y:auto;"></div>
+            <button onclick="marcarSuporteLido()" class="btn btn-blue" style="padding:8px 16px;font-size:12px;margin-top:10px;">&#10003; Marcar Todas como Lidas</button>
           </div>
 
           <!-- Ultimas Vendas -->
@@ -2721,6 +2730,8 @@
       }
       // Aplicar modo gratuito para qualquer usuario (o toggle so aparece para admin, mas o efeito e global)
       if (isFreeModeActive()) { aplicarFreeMode(true); }
+      // Verificar respostas do suporte para o usuario
+      if (currentUser !== 'setmonte@gmail.com') { verificarRespostasSuporte(); }
       // BAE visivel para todos
       document.getElementById('tabAtencao').classList.remove('hidden');
       // Buscar creditos
@@ -5403,14 +5414,52 @@
           var r = novas[i];
           var d = r.data || {};
           var dt = d.timestamp ? new Date(d.timestamp).toLocaleString('pt-BR') : '?';
+          var remetente = d.de || 'Anonimo';
           html += '<div style="background:#fff;border:1px solid #c5cae9;border-radius:6px;padding:10px;margin:6px 0;">';
-          html += '<p style="font-size:11px;color:#3949ab;font-weight:bold;">' + (d.de || 'Anonimo') + ' &mdash; ' + dt + '</p>';
+          html += '<p style="font-size:11px;color:#3949ab;font-weight:bold;">' + remetente + ' &mdash; ' + dt + '</p>';
           html += '<p style="font-size:12px;color:#333;margin-top:4px;">' + ((d.mensagem || '').replace(/</g, '&lt;').replace(/>/g, '&gt;')) + '</p>';
-          html += '</div>';
+          html += '<div style="margin-top:8px;display:flex;gap:6px;align-items:center;">';
+          html += '<input type="text" id="respSup_' + i + '" placeholder="Responder..." style="flex:1;padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-size:12px;">';
+          html += '<button onclick="responderSuporte(' + i + ')" style="background:#3949ab;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:bold;cursor:pointer;">Enviar</button>';
+          html += '</div></div>';
         }
         if (novas.length > 10) html += '<p style="color:#777;font-size:11px;">... e mais ' + (novas.length - 10) + ' mensagens</p>';
         if (listEl) listEl.innerHTML = html;
       } catch (e) {}
+    }
+
+    async function responderSuporte(idx) {
+      var msg = _suporteMsgCache[idx];
+      if (!msg) return;
+      var input = document.getElementById('respSup_' + idx);
+      var resposta = input ? input.value.trim() : '';
+      if (!resposta) { alert('Digite uma resposta.'); return; }
+      var emailUsuario = (msg.data && msg.data.de) ? msg.data.de : '';
+      if (!emailUsuario || emailUsuario === 'Anonimo' || !emailUsuario.includes('@')) {
+        alert('Nao foi possivel identificar o email do usuario para responder.');
+        return;
+      }
+      try {
+        await fetch(API_URL + '/save-result', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            email: emailUsuario,
+            tipo: 'suporte-resposta',
+            sessionId: 'resp-' + Date.now().toString(36),
+            data: {
+              de: 'Administrador',
+              para: emailUsuario,
+              resposta: resposta,
+              msgOriginal: (msg.data && msg.data.mensagem) || '',
+              timestamp: new Date().toISOString()
+            }
+          })
+        });
+        if (input) { input.value = ''; input.placeholder = 'Resposta enviada!'; input.disabled = true; }
+      } catch (e) {
+        alert('Erro ao enviar resposta.');
+      }
     }
 
     function marcarSuporteLido() {
@@ -12007,6 +12056,49 @@ document.getElementById('suporteMensagem').value='';
 setTimeout(function(){document.getElementById('suporteBox').style.display='none';status.style.display='none';},3000);
 }else{status.style.color='#c62828';status.textContent='Erro ao enviar. Tente novamente.';}
 }catch(e){status.style.color='#c62828';status.textContent='Erro de conexao.';}
+}
+
+var _respostaSupCache=[];
+async function verificarRespostasSuporte(){
+try{
+var resp=await fetch(API_URL+'/get-results?email='+encodeURIComponent(window.currentUser)+'&tipo=suporte-resposta');
+var data=await resp.json();
+var results=data.results||data||[];
+if(!Array.isArray(results))results=[];
+var lidas=JSON.parse(localStorage.getItem('suporte_resp_lidas')||'[]');
+var novas=results.filter(function(r){return lidas.indexOf(r.sessionId||r.id||'')===-1;});
+_respostaSupCache=novas;
+var card=document.getElementById('suporteRespostaCard');
+var countEl=document.getElementById('suporteRespostaCount');
+var listEl=document.getElementById('suporteRespostaList');
+if(novas.length===0){if(card)card.style.display='none';return;}
+if(card)card.style.display='block';
+if(countEl)countEl.textContent=novas.length;
+novas.sort(function(a,b){return((b.data&&b.data.timestamp)||'').localeCompare((a.data&&a.data.timestamp)||'');});
+var html='';
+for(var i=0;i<novas.length;i++){
+var r=novas[i];var d=r.data||{};
+var dt=d.timestamp?new Date(d.timestamp).toLocaleString('pt-BR'):'?';
+html+='<div style="background:#fff;border:1px solid #a5d6a7;border-radius:6px;padding:10px;margin:6px 0;">';
+if(d.msgOriginal)html+='<p style="font-size:11px;color:#777;font-style:italic;">Sua pergunta: "'+((d.msgOriginal||'').replace(/</g,'&lt;').slice(0,100))+'"</p>';
+html+='<p style="font-size:12px;color:#2e7d32;font-weight:bold;margin-top:4px;">Resposta: '+((d.resposta||'').replace(/</g,'&lt;').replace(/>/g,'&gt;'))+'</p>';
+html+='<p style="font-size:10px;color:#999;margin-top:4px;">'+dt+'</p>';
+html+='</div>';
+}
+if(listEl)listEl.innerHTML=html;
+}catch(e){}
+}
+
+function marcarRespostaLida(){
+var lidas=JSON.parse(localStorage.getItem('suporte_resp_lidas')||'[]');
+for(var i=0;i<_respostaSupCache.length;i++){
+var id=_respostaSupCache[i].sessionId||_respostaSupCache[i].id||'';
+if(id&&lidas.indexOf(id)===-1)lidas.push(id);
+}
+localStorage.setItem('suporte_resp_lidas',JSON.stringify(lidas));
+_respostaSupCache=[];
+var card=document.getElementById('suporteRespostaCard');
+if(card)card.style.display='none';
 }
 </script>
 </body>
