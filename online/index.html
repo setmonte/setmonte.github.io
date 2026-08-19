@@ -1285,6 +1285,15 @@
             <p style="font-size:12px;color:#555;margin-top:5px;">Gerenciamento completo do sistema</p>
           </div>
 
+          <!-- Enviar Mensagem ao Usuario -->
+          <div style="background:#e3f2fd;border:2px solid #1565c0;border-radius:10px;padding:15px;margin:10px 0;">
+            <p style="font-size:13px;font-weight:bold;color:#1565c0;margin-bottom:10px;">&#128232; Enviar Mensagem ao Usu&#225;rio</p>
+            <input type="email" id="adminMsgEmail" placeholder="Email do usuario" style="width:100%;padding:8px 12px;border:1px solid #ccc;border-radius:6px;font-size:13px;margin-bottom:8px;">
+            <textarea id="adminMsgTexto" rows="3" placeholder="Digite a mensagem..." style="width:100%;padding:8px 12px;border:1px solid #ccc;border-radius:6px;font-size:13px;resize:vertical;margin-bottom:8px;"></textarea>
+            <button onclick="enviarMsgAoUsuario()" class="btn btn-blue" style="padding:8px 20px;font-size:12px;">Enviar</button>
+            <span id="adminMsgStatus" style="margin-left:10px;font-size:12px;"></span>
+          </div>
+
           <!-- Monitor de Atividade (Alertas) -->
           <div id="adminAlertasCard" style="background:#fff8e1;border:2px solid #f57f17;border-radius:10px;padding:15px;margin:10px 0;display:none;">
             <p style="font-size:13px;font-weight:bold;color:#f57f17;margin-bottom:8px;">&#128680; Monitor de Atividade — Ultimas 48h</p>
@@ -5392,6 +5401,38 @@
 
     // ===== FUNCOES ADMIN =====
     var _suporteMsgCache = [];
+
+    async function enviarMsgAoUsuario() {
+      var email = document.getElementById('adminMsgEmail').value.trim();
+      var texto = document.getElementById('adminMsgTexto').value.trim();
+      var status = document.getElementById('adminMsgStatus');
+      if (!email || !email.includes('@')) { alert('Digite um email valido.'); return; }
+      if (!texto) { alert('Digite a mensagem.'); return; }
+      status.textContent = 'Enviando...'; status.style.color = '#555';
+      try {
+        await fetch(API_URL + '/save-result', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            email: email,
+            tipo: 'suporte-resposta',
+            sessionId: 'adm-' + Date.now().toString(36),
+            data: {
+              de: 'Administrador',
+              para: email,
+              resposta: texto,
+              msgOriginal: '',
+              timestamp: new Date().toISOString()
+            }
+          })
+        });
+        status.textContent = 'Enviado!'; status.style.color = '#2e7d32';
+        document.getElementById('adminMsgTexto').value = '';
+        setTimeout(function() { status.textContent = ''; }, 3000);
+      } catch (e) {
+        status.textContent = 'Erro ao enviar.'; status.style.color = '#c62828';
+      }
+    }
 
     async function verificarMsgSuporteNovas() {
       try {
