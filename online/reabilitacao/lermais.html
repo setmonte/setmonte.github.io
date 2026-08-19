@@ -911,16 +911,35 @@ function toggleHistorico() {
 }
 // ===== SALVAMENTO NA API (dupla seguranca) =====
 function salvarNaAPI(resultado) {
+    var indice = resultado.indiceLermais || 0;
+    var classificacao = '';
+    if (indice >= 80) classificacao = 'Excelente';
+    else if (indice >= 65) classificacao = 'Bom';
+    else if (indice >= 50) classificacao = 'Regular';
+    else if (indice >= 35) classificacao = 'Abaixo do esperado';
+    else classificacao = 'Necessita intervencao';
+    var ppmVal = resultado.ppm || 0;
+    var precVal = resultado.precisao || 0;
+    var fluVal = resultado.fluencia || 0;
+    var compVal = resultado.completude || 0;
     var payload = {
         tipo: 'lermais',
         escala: 'LERMAIS',
         idPaciente: document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '',
         paciente: resultado.nome || '',
-        ppm: resultado.ppm || 0,
-        precisao: resultado.precisao || 0,
-        fluencia: resultado.fluencia || 0,
-        completude: resultado.completude || 0,
-        indiceLermais: resultado.indiceLermais || 0,
+        escore: indice,
+        classificacao: classificacao,
+        dominios: {
+            'Velocidade (PPM)': { pontuacao: ppmVal, max: 200, classificacao: ppmVal >= 120 ? 'Rapida' : ppmVal >= 80 ? 'Adequada' : ppmVal >= 50 ? 'Lenta' : 'Muito lenta' },
+            'Precisao': { pontuacao: precVal, max: 100, classificacao: precVal >= 90 ? 'Alta' : precVal >= 70 ? 'Adequada' : precVal >= 50 ? 'Baixa' : 'Muito baixa' },
+            'Fluencia': { pontuacao: fluVal, max: 10, classificacao: fluVal >= 8 ? 'Fluente' : fluVal >= 5 ? 'Moderada' : 'Disfluente' },
+            'Completude': { pontuacao: compVal, max: 100, classificacao: compVal >= 90 ? 'Completa' : compVal >= 70 ? 'Parcial' : 'Incompleta' }
+        },
+        ppm: ppmVal,
+        precisao: precVal,
+        fluencia: fluVal,
+        completude: compVal,
+        indiceLermais: indice,
         texto: resultado.texto || '',
         tema: resultado.tema || '',
         faixa: resultado.faixa || '',
@@ -934,7 +953,6 @@ function salvarNaAPI(resultado) {
     } else if (_sessionInfo && _sessionInfo.email) {
         body = { email: _sessionInfo.email, data: payload };
     } else {
-        // Sem sessao e sem email - nao envia para API (apenas localStorage)
         return;
     }
     fetch(_API_URL + '/save-escala', {
