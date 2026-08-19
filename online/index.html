@@ -11541,7 +11541,7 @@
           var d = r.data || {};
           var res = d.resultados || {};
           var fd = d.formData || {};
-          var temAudio = d.audioBase64 ? true : false;
+          var temAudio = d.audioBase64 ? true : (d.audioS3Key ? true : (d._temAudio ? true : false));
           var isErro = (d.status === 'erro_transcricao');
           var bgRow = isErro ? 'background:#fff3e0;' : '';
           html += '<tr style="' + bgRow + '"><td style="padding:5px;border-bottom:1px solid #eee;text-align:center;"><input type="checkbox" class="tflod-check" value="' + (r.sessionId || '') + '"></td>';
@@ -11697,6 +11697,14 @@
       if (!r) return;
       var d = r.data || {};
       var audioB64 = d.audioBase64;
+      // Se nao tem audio inline mas tem no S3, buscar
+      if (!audioB64 && d.audioS3Key) {
+        try {
+          var audioResp = await fetch(API_URL + '/get-audio?key=' + encodeURIComponent(d.audioS3Key));
+          var audioData = await audioResp.json();
+          audioB64 = audioData.audioBase64 || '';
+        } catch(e) { alert('Erro ao buscar audio do S3: ' + e.message); return; }
+      }
       if (!audioB64) { alert('Audio nao disponivel para reprocessamento.'); return; }
       if (!confirm('Reenviar audio para transcricao? Isso vai substituir o resultado com erro.')) return;
       var btn = event && event.target ? event.target : null;
@@ -11706,7 +11714,7 @@
         var resp = await fetch(API_URL + '/transcribe-audio', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ audioBase64: audioB64 })
+          body: JSON.stringify({ audioBase64: audioB64, sessionId: r.sessionId || '' })
         });
         var data = await resp.json();
         var transcricao = data.text || '';
@@ -11734,11 +11742,19 @@
     }
 
     // ===== OUVIR AUDIO TFLOD =====
-    function ouvirAudioTflod(idx) {
+    async function ouvirAudioTflod(idx) {
       var r = _tflodResultCache[idx];
       if (!r) return;
       var d = r.data || {};
       var audioB64 = d.audioBase64;
+      // Se nao tem audio inline mas tem no S3, buscar
+      if (!audioB64 && d.audioS3Key) {
+        try {
+          var audioResp = await fetch(API_URL + '/get-audio?key=' + encodeURIComponent(d.audioS3Key));
+          var audioData = await audioResp.json();
+          audioB64 = audioData.audioBase64 || '';
+        } catch(e) { alert('Erro ao buscar audio do S3: ' + e.message); return; }
+      }
       if (!audioB64) { alert('Audio nao disponivel para este resultado.'); return; }
       // Montar data URL do audio WebM
       var audioSrc = 'data:audio/webm;codecs=opus;base64,' + audioB64;
@@ -11750,11 +11766,19 @@
     }
 
     // ===== BAIXAR AUDIO TFLOD =====
-    function baixarAudioTflod(idx) {
+    async function baixarAudioTflod(idx) {
       var r = _tflodResultCache[idx];
       if (!r) return;
       var d = r.data || {};
       var audioB64 = d.audioBase64;
+      // Se nao tem audio inline mas tem no S3, buscar
+      if (!audioB64 && d.audioS3Key) {
+        try {
+          var audioResp = await fetch(API_URL + '/get-audio?key=' + encodeURIComponent(d.audioS3Key));
+          var audioData = await audioResp.json();
+          audioB64 = audioData.audioBase64 || '';
+        } catch(e) { alert('Erro ao buscar audio do S3: ' + e.message); return; }
+      }
       if (!audioB64) { alert('Audio nao disponivel para download.'); return; }
       var fd = d.formData || {};
       var nome = (fd.nome || 'audio').replace(/\s+/g, '_');
