@@ -315,6 +315,7 @@ async function iniciarGravacao() {
       window._fallbackStream = stream;
       var chunkQueue = [];
       var enviando = false;
+      var chunkCounter = 0;
       
       mediaRec.ondataavailable = function(e) {
         if (e.data.size > 0 && gravando && !pausado) {
@@ -327,6 +328,8 @@ async function iniciarGravacao() {
         if (enviando || chunkQueue.length === 0) return;
         enviando = true;
         var chunk = chunkQueue.shift();
+        chunkCounter++;
+        var chunkId = (sessionInfo.sessionId || 'prontuario') + '-chunk' + chunkCounter;
         var reader = new FileReader();
         reader.onloadend = function() {
           var base64 = reader.result.split(',')[1] || '';
@@ -335,23 +338,32 @@ async function iniciarGravacao() {
             processarFilaChunks();
             return;
           }
-          fetch(API_URL + '/transcribe-audio', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ audioBase64: base64 })
-          }).then(function(resp) {
-            return resp.json();
-          }).then(function(data) {
-            if (data.text && data.text.trim()) {
-              transcricaoAcumulada += data.text.trim() + ' ';
-              document.getElementById('transcricao').value = transcricaoAcumulada;
-            }
-            enviando = false;
-            processarFilaChunks();
-          }).catch(function() {
-            enviando = false;
-            processarFilaChunks();
-          });
+          var tentativas = 0;
+          function tentarTranscrever() {
+            tentativas++;
+            fetch(API_URL + '/transcribe-audio', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ audioBase64: base64, sessionId: chunkId })
+            }).then(function(resp) {
+              return resp.json();
+            }).then(function(data) {
+              if (data.text && data.text.trim()) {
+                transcricaoAcumulada += data.text.trim() + ' ';
+                document.getElementById('transcricao').value = transcricaoAcumulada;
+              }
+              enviando = false;
+              processarFilaChunks();
+            }).catch(function() {
+              if (tentativas < 2) {
+                setTimeout(tentarTranscrever, 2000);
+              } else {
+                enviando = false;
+                processarFilaChunks();
+              }
+            });
+          }
+          tentarTranscrever();
         };
         reader.readAsDataURL(chunk);
       }
