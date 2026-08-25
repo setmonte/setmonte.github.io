@@ -2799,10 +2799,38 @@
         var prontElErr = document.getElementById('prontuarioCreditsCount');
         if (prontElErr) prontElErr.textContent = '?';
       }
+      // Atualizar creditos ao voltar de outra aba (ex: Mercado Pago)
+      document.addEventListener('visibilitychange', function() {
+        if (!document.hidden && currentUser) { atualizarCreditos(); }
+      });
+      window.addEventListener('focus', function() {
+        if (currentUser) { atualizarCreditos(); }
+      });
       // Carregar pacientes (aba padrao)
       // Auto-refresh token a cada 50 minutos (antes de expirar em ~60min)
       setInterval(function() { refreshAccessToken(); }, 50 * 60 * 1000);
       loadPacientes();
+    }
+
+    async function atualizarCreditos() {
+      if (!currentUser) return;
+      try {
+        var resp = await fetch(API_URL + '/credits?email=' + encodeURIComponent(currentUser));
+        var data = await resp.json();
+        var el1 = document.getElementById('tecfeCreditsCount'); if (el1) el1.textContent = data.credits || 0;
+        var el2 = document.getElementById('baeCreditsCount'); if (el2) el2.textContent = data.baeCredits || 0;
+        var el3 = document.getElementById('trmvCreditsCount'); if (el3) el3.textContent = data.trmvCredits || 0;
+        var el4 = document.getElementById('taavCreditsCount'); if (el4) el4.textContent = data.taavCredits || 0;
+        var el5 = document.getElementById('trefCreditsCount'); if (el5) el5.textContent = data.trefCredits || 0;
+        var el6 = document.getElementById('tflodCreditsCount'); if (el6) el6.textContent = data.tflodCredits || 0;
+        var el7 = document.getElementById('prontuarioCreditsCount'); if (el7) el7.textContent = data.prontuarioCredits || 0;
+        var btn = document.getElementById('btnNewTest');
+        if (btn) {
+          if ((data.credits || 0) <= 0) { btn.disabled = true; btn.textContent = 'Sem creditos'; }
+          else { btn.disabled = false; btn.textContent = 'Nova Aplicacao'; }
+        }
+        if (typeof isFreeModeActive === 'function' && isFreeModeActive()) { aplicarFreeMode(true); }
+      } catch(e) {}
     }
 
     function showNewTest() {
