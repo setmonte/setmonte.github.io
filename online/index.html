@@ -1440,6 +1440,12 @@
             </div>
             <p id="freeModeStatus" style="font-size:11px;color:#c62828;margin-top:6px;font-weight:bold;display:none;">MODO GRATUITO ATIVO</p>
           </div>
+          <div style="background:#e3f2fd;border:2px solid #1565c0;border-radius:10px;padding:15px;margin:10px 0;">
+            <p style="font-size:13px;font-weight:bold;color:#1565c0;margin-bottom:8px;">&#x1F4CB; Historico de Creditos</p>
+            <p style="font-size:11px;color:#777;margin-bottom:10px;">Rastreia todas as movimentacoes: adicoes (admin) e consumos (usuarios).</p>
+            <button class="btn btn-blue" style="padding:8px 16px;font-size:12px;" onclick="carregarLogCreditos()">Carregar Historico</button>
+            <div id="logCreditosArea" style="margin-top:12px;max-height:400px;overflow-y:auto;"></div>
+          </div>
             </div><!-- /sub creditos -->
 
             <!-- SUB-ABA: Resultados -->
@@ -6025,6 +6031,46 @@
         var status = document.getElementById('freeModeStatus');
         if (status) status.style.display = active ? 'block' : 'none';
         aplicarFreeMode(active);
+      }
+    }
+
+    async function carregarLogCreditos() {
+      var area = document.getElementById('logCreditosArea');
+      area.innerHTML = '<p style="color:#777;">Carregando...</p>';
+      try {
+        var resp = await fetch(API_URL + '/get-results?email=admin-log@sistema&tipo=log-creditos');
+        var data = await resp.json();
+        var logs = data.results || [];
+        if (logs.length === 0) { area.innerHTML = '<p style="color:#777;font-size:12px;">Nenhum registro encontrado. O log comeca a partir de agora.</p>'; return; }
+        logs.sort(function(a, b) { return new Date(b.date || 0) - new Date(a.date || 0); });
+        var html = '<table style="width:100%;border-collapse:collapse;font-size:0.8em;">';
+        html += '<tr style="background:#1565c0;color:white;"><th style="padding:5px;">Data</th><th style="padding:5px;">Acao</th><th style="padding:5px;">Tipo</th><th style="padding:5px;">Para/De</th><th style="padding:5px;">Qtd</th><th style="padding:5px;">Restante</th></tr>';
+        for (var i = 0; i < logs.length; i++) {
+          var r = logs[i];
+          var d = {};
+          try { d = JSON.parse(r.data || '{}'); } catch(e) { d = r.data || {}; }
+          var dataStr = d.timestamp ? new Date(d.timestamp).toLocaleString('pt-BR') : (r.date ? new Date(r.date).toLocaleString('pt-BR') : '-');
+          var acao = d.acao || '-';
+          var corAcao = acao === 'adicionar' ? '#2e7d32' : '#c62828';
+          var icone = acao === 'adicionar' ? '+' : '-';
+          var destinatario = d.para || d.usuario || '-';
+          var qtd = d.quantidade || 1;
+          var restante = d.creditosRestantes != null ? d.creditosRestantes : '-';
+          var tipo = (d.tipo || '-').toUpperCase();
+          html += '<tr style="border-bottom:1px solid #eee;">';
+          html += '<td style="padding:4px;font-size:10px;">' + dataStr + '</td>';
+          html += '<td style="padding:4px;font-weight:bold;color:' + corAcao + ';">' + icone + ' ' + acao + '</td>';
+          html += '<td style="padding:4px;">' + tipo + '</td>';
+          html += '<td style="padding:4px;font-size:10px;word-break:break-all;">' + destinatario + '</td>';
+          html += '<td style="padding:4px;text-align:center;font-weight:bold;">' + qtd + '</td>';
+          html += '<td style="padding:4px;text-align:center;">' + restante + '</td>';
+          html += '</tr>';
+        }
+        html += '</table>';
+        html += '<p style="font-size:10px;color:#999;margin-top:8px;">Total: ' + logs.length + ' registros</p>';
+        area.innerHTML = html;
+      } catch(e) {
+        area.innerHTML = '<p style="color:#c62828;font-size:12px;">Erro: ' + e.message + '</p>';
       }
     }
 
