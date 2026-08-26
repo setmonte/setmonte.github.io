@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-QY1N9587DG"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-QY1N9587DG');</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IDEIA - Instrumento de Diverg&#234;ncia e Elabora&#231;&#227;o de Ideias Alternativas</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',sans-serif;background:#f5f5f5;min-height:100vh}
+.tela{display:none;width:100%;min-height:100vh;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+.tela.ativa{display:flex}
+#tela-inicio{background:linear-gradient(135deg,#e65100 0%,#ff8f00 100%)}
+#tela-inicio h1{color:#fff;font-size:2.2em;margin-bottom:5px}
+#tela-inicio .subtitulo{color:#ffe0b2;font-size:0.9em;margin-bottom:20px}
+.form-container{background:#fff;border-radius:12px;padding:25px;width:100%;max-width:500px;box-shadow:0 4px 20px rgba(0,0,0,0.3)}
+.form-container label{display:block;font-size:0.8em;color:#555;margin:8px 0 3px;font-weight:600}
+.form-container input,.form-container select{width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:0.9em}
+.form-container input:focus,.form-container select:focus{outline:none;border-color:#e65100}
+.btn{padding:12px 30px;border:none;border-radius:8px;font-size:1em;font-weight:700;cursor:pointer;margin:5px}
+.btn-primary{background:#e65100;color:#fff}
+.btn-primary:hover{background:#bf360c}
+.btn-secondary{background:#2e7d32;color:#fff}
+.btn-secondary:hover{background:#1b5e20}
+.info-tecnica{background:#fff3e0;border-left:4px solid #e65100;padding:12px;border-radius:0 8px 8px 0;margin-bottom:15px;font-size:0.75em;color:#555}
+#tela-teste{background:#1a1a2e;padding:0;align-items:stretch;justify-content:flex-start}
+.teste-header{background:#e65100;color:#fff;padding:15px 20px;display:flex;justify-content:space-between;align-items:center;width:100%}
+.teste-header .timer{font-size:1.4em;font-weight:bold;font-family:monospace}
+.teste-header .mic-status{font-size:1em;display:flex;align-items:center;gap:8px}
+.rec-dot{width:14px;height:14px;background:#f44336;border-radius:50%;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+.teste-body{flex:1;display:flex;flex-direction:column;align-items:center;padding:30px 20px;overflow-y:auto}
+.bloco-tag{font-size:0.7em;text-transform:uppercase;letter-spacing:0.08em;color:#ff8f00;margin-bottom:8px}
+.estimulo-card{background:#fff;border-radius:16px;padding:30px 40px;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,0.3);margin-bottom:20px;max-width:500px;width:100%}
+.estimulo-label{font-size:0.8em;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px}
+.estimulo-nome{font-size:1.8em;font-weight:800;color:#1a1a2e}
+.ideias-counter{color:#fff;font-size:0.9em;margin:15px 0 5px;opacity:0.8}
+.ideias-list{width:100%;max-width:500px;max-height:180px;overflow-y:auto;margin-bottom:10px}
+.ideia-chip{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:8px;padding:8px 12px;margin:4px 0;color:#fff;font-size:0.85em;display:flex;align-items:center;gap:8px;animation:fadeIn 0.3s ease}
+.ideia-chip .num{color:#ff8f00;font-weight:700;font-size:0.8em}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}
+.checkin-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:none;align-items:center;justify-content:center;z-index:100}
+.checkin-overlay.show{display:flex}
+.checkin-box{background:#fff;border-radius:16px;padding:30px;text-align:center;max-width:400px;width:90%}
+.checkin-box p{font-size:1em;color:#333;margin-bottom:15px;font-weight:600}
+.checkin-btns{display:flex;gap:10px;justify-content:center}
+.checkin-btns button{padding:12px 24px;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:0.9em}
+.btn-continuar{background:#2e7d32;color:#fff}
+.btn-proximo{background:#e65100;color:#fff}
+.mic-indicator{display:flex;align-items:center;gap:8px;color:#4caf50;font-size:0.8em;margin:10px 0}
+.mic-indicator .bars{display:flex;gap:2px;align-items:flex-end;height:20px}
+.mic-indicator .bar{width:3px;background:#4caf50;border-radius:2px;animation:barPulse 0.8s ease-in-out infinite}
+.mic-indicator .bar:nth-child(1){height:8px;animation-delay:0s}
+.mic-indicator .bar:nth-child(2){height:14px;animation-delay:0.1s}
+.mic-indicator .bar:nth-child(3){height:20px;animation-delay:0.2s}
+.mic-indicator .bar:nth-child(4){height:14px;animation-delay:0.3s}
+.mic-indicator .bar:nth-child(5){height:8px;animation-delay:0.4s}
+@keyframes barPulse{0%,100%{transform:scaleY(0.5)}50%{transform:scaleY(1)}}
+#tela-fim{background:linear-gradient(135deg,#e8f5e9,#c8e6c9)}
+#tela-processando{background:linear-gradient(135deg,#fff3e0,#ffe0b2)}
+.instrucao-box{background:#fff3e0;border:2px solid #e65100;border-radius:12px;padding:20px;margin:15px 0;text-align:left}
+.instrucao-box p{margin-bottom:8px;color:#bf360c;font-size:0.95em;line-height:1.6}
+.progress-container{width:80%;max-width:400px;margin:20px auto}
+.progress-bar{height:8px;background:#e0e0e0;border-radius:4px;overflow:hidden}
+.progress-fill{height:100%;background:#e65100;border-radius:4px;transition:width 0.3s;width:0%}
+.progress-text{text-align:center;margin-top:8px;color:#555;font-size:0.9em}
+.progress-top{height:4px;background:rgba(255,255,255,0.2);border-radius:2px;overflow:hidden;width:100%;margin:10px 20px}
+.progress-top-fill{height:100%;background:#4caf50;border-radius:2px;transition:width 0.5s ease}
+</style>
+</head>
+<body>
+
+<!-- TELA INICIO -->
+<div id="tela-inicio" class="tela ativa">
+    <h1>&#128161; IDEIA</h1>
+    <p class="subtitulo">Instrumento de Diverg&#234;ncia e Elabora&#231;&#227;o de Ideias Alternativas</p>
+    <div class="form-container">
+        <div class="info-tecnica">
+            <strong>Instrumento:</strong> IDEIA &#8212; rastreio de criatividade e pensamento divergente<br>
+            <strong>Base te&#243;rica:</strong> Tarefas de Usos Alternativos (Guilford, 1967; Torrance, 1974)<br>
+            <strong>P&#250;blico:</strong> A partir de 6 anos | <strong>Dura&#231;&#227;o:</strong> ~10 min
+        </div>
+        <label>ID do Paciente:</label>
+        <input type="text" id="idPaciente" placeholder="Gerado automaticamente" readonly style="background:#fff3e0;font-weight:700;color:#e65100">
+        <label>Nome do Avaliando:</label>
+        <input type="text" id="nome" placeholder="Nome completo">
+        <label>Data de Nascimento:</label>
+        <input type="date" id="dataNasc" onchange="calcularIdade()">
+        <label>Idade:</label>
+        <input type="text" id="idade" readonly placeholder="Calculada automaticamente">
+        <label>Faixa et&#225;ria:</label>
+        <select id="faixaEtaria">
+            <option value="">Selecione...</option>
+            <option value="6-7">6&#8211;7 anos</option>
+            <option value="8-9">8&#8211;9 anos</option>
+            <option value="10-11">10&#8211;11 anos</option>
+            <option value="12-13">12&#8211;13 anos</option>
+            <option value="14-17">14&#8211;17 anos</option>
+            <option value="18+">18+ (adulto)</option>
+        </select>
+        <label>Escolaridade:</label>
+        <select id="escolaridade">
+            <option value="">Selecione...</option>
+            <option value="1o ano">1&#186; ano (Fundamental)</option>
+            <option value="2o ano">2&#186; ano (Fundamental)</option>
+            <option value="3o ano">3&#186; ano (Fundamental)</option>
+            <option value="4o ano">4&#186; ano (Fundamental)</option>
+            <option value="5o ano">5&#186; ano (Fundamental)</option>
+            <option value="6o ano">6&#186; ano (Fundamental)</option>
+            <option value="7o ano">7&#186; ano (Fundamental)</option>
+            <option value="8o ano">8&#186; ano (Fundamental)</option>
+            <option value="9o ano">9&#186; ano (Fundamental)</option>
+            <option value="Ensino Medio">Ensino M&#233;dio</option>
+            <option value="Superior Incompleto">Superior Incompleto</option>
+            <option value="Superior Completo">Superior Completo</option>
+            <option value="Pos-graduacao">P&#243;s-gradua&#231;&#227;o</option>
+        </select>
+        <label>Data da Avalia&#231;&#227;o:</label>
+        <input type="date" id="dataAval">
+        <label>Observa&#231;&#245;es:</label>
+        <input type="text" id="obs" placeholder="Opcional">
+        <div style="text-align:center;margin-top:15px">
+            <button class="btn btn-primary" onclick="mostrarInstrucoes()">Continuar</button>
+        </div>
+    </div>
+</div>
+
+<!-- TELA INSTRUCOES -->
+<div id="tela-instrucoes" class="tela">
+    <div class="form-container" style="max-width:600px">
+        <h2 style="color:#e65100;margin-bottom:15px;text-align:center">&#128221; Instru&#231;&#245;es</h2>
+        <div class="instrucao-box">
+            <p><strong>Como funciona:</strong></p>
+            <p>Voc&#234; ver&#225; na tela um objeto ou conceito (por exemplo: <em>tijolo</em>).</p>
+            <p>Sua tarefa &#233; dizer <strong>em voz alta</strong> o maior n&#250;mero poss&#237;vel de <strong>usos diferentes e criativos</strong> para aquele objeto.</p>
+            <p>N&#227;o vale apenas o uso &#243;bvio &#8212; pense em usos incomuns, criativos ou inusitados!</p>
+            <p>O sistema vai gravar suas ideias automaticamente. <strong>Fale uma ideia de cada vez</strong>, de forma clara.</p>
+            <p>Quando voc&#234; parar de falar por alguns segundos, o sistema vai perguntar se quer continuar ou passar para o pr&#243;ximo.</p>
+            <p>S&#227;o <strong>20 est&#237;mulos</strong> no total, com tempo m&#225;ximo de <strong>10 minutos</strong>.</p>
+            <p>&#127908; Fique em um ambiente silencioso e fale com clareza.</p>
+        </div>
+        <div style="text-align:center;margin-top:15px">
+            <button class="btn btn-primary" id="btnIniciar" onclick="iniciarTeste()">Iniciar Teste</button>
+        </div>
+    </div>
+</div>
+
+<!-- TELA TESTE -->
+<div id="tela-teste" class="tela">
+    <div class="teste-header">
+        <div class="mic-status"><span class="rec-dot"></span> Gravando</div>
+        <div class="progress-top"><div class="progress-top-fill" id="progressItems"></div></div>
+        <div class="timer" id="timer">10:00</div>
+    </div>
+    <div class="teste-body">
+        <div class="bloco-tag" id="blocoTag">Bloco 1 &#8212; Objetos Concretos</div>
+        <div class="estimulo-card">
+            <div class="estimulo-label">Diga usos alternativos para:</div>
+            <div class="estimulo-nome" id="estimuloNome">Tijolo</div>
+        </div>
+        <div class="mic-indicator">
+            <div class="bars"><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div></div>
+            <span>Ouvindo...</span>
+        </div>
+        <div class="ideias-counter">Ideias neste item: <strong id="contadorIdeias">0</strong></div>
+        <div class="ideias-list" id="ideiasList"></div>
+    </div>
+</div>
+
+<!-- CHECK-IN OVERLAY -->
+<div class="checkin-overlay" id="checkinOverlay">
+    <div class="checkin-box">
+        <p>Voc&#234; esgotou suas ideias ou ainda est&#225; pensando?</p>
+        <div class="checkin-btns">
+            <button class="btn-continuar" onclick="continuarPensando()">Ainda estou pensando</button>
+            <button class="btn-proximo" onclick="proximoEstimulo()">Pr&#243;ximo item</button>
+        </div>
+    </div>
+</div>
+
+<!-- TELA PROCESSANDO -->
+<div id="tela-processando" class="tela">
+    <div style="text-align:center;padding:60px 30px;">
+        <h2 style="color:#e65100;font-size:1.8em;margin-bottom:15px;">&#9203; Processando suas ideias...</h2>
+        <p style="color:#555;font-size:1.1em;margin-bottom:20px;">Aguarde enquanto analisamos o &#225;udio.</p>
+        <div class="progress-container">
+            <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+            <div class="progress-text" id="progressText">Enviando &#225;udio...</div>
+        </div>
+    </div>
+</div>
+
+<!-- TELA FIM -->
+<div id="tela-fim" class="tela">
+    <div style="text-align:center;padding:60px 30px;">
+        <h2 style="color:#2e7d32;font-size:2em;margin-bottom:15px;">&#10004; Teste conclu&#237;do!</h2>
+        <p style="color:#555;font-size:1.2em;">Voc&#234; pode fechar esta janela.</p>
+        <p style="margin-top:20px;font-size:0.9em;color:#777;">Os resultados foram enviados para o avaliador.</p>
+    </div>
+</div>
+
+<script>
+// ===== IDEIA v1 - Instrumento de Divergencia e Elaboracao de Ideias Alternativas =====
+// Audio gravado no navegador -> enviado para Lambda -> Lambda transcreve via OpenAI Whisper
+// Analise de fluencia criativa por estimulo
+
+var API_URL = 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
+
+// ===== 20 ESTIMULOS EM 4 BLOCOS =====
+var BLOCOS = [
+    {nome:'Bloco 1 \u2014 Objetos Concretos', itens:['Tijolo','Cl\u00edpe de papel','Jornal','Garrafa PET','Colher']},
+    {nome:'Bloco 2 \u2014 Objetos Menos \u00d3bvios', itens:['Meia velha','El\u00e1stico','Caixa de papel\u00e3o','Corda','Pote de vidro']},
+    {nome:'Bloco 3 \u2014 Conceitos Abstratos', itens:['Sil\u00eancio','Zero','Sombra','Eco','Vazio']},
+    {nome:'Bloco 4 \u2014 Combina\u00e7\u00f5es', itens:['Guarda-chuva + Rel\u00f3gio','Escada + Espelho','Chave + Nuvem','Sapato + M\u00fasica','L\u00e2mpada + \u00c1gua']}
+];
+
+// ===== FAIXAS DE CLASSIFICACAO POR IDADE =====
+var FAIXAS = {
+    '6-7':  {tipica:[3,5], acima:[6,7], alta:[8,11], excepcional:12},
+    '8-9':  {tipica:[3,5], acima:[6,8], alta:[9,12], excepcional:13},
+    '10-11':{tipica:[3,6], acima:[7,9], alta:[10,13], excepcional:14},
+    '12-13':{tipica:[3,6], acima:[7,9], alta:[10,14], excepcional:15},
+    '14-17':{tipica:[3,7], acima:[8,10], alta:[11,15], excepcional:16},
+    '18+':  {tipica:[3,6], acima:[7,10], alta:[10,15], excepcional:20}
+};
+
+// ===== ESTADO GLOBAL =====
+var dadosForm = {};
+var sessionInfo = {};
+var mediaRecorder = null;
+var audioChunks = [];
+var timerInterval = null;
+var tempoTotal = 600; // 10 minutos em segundos
+var tempoRestante = 600;
+var itemAtual = 0;
+var blocoAtual = 0;
+var ideiasTotal = 0;
+var ideiasPorItem = [];
+var silencioTimer = null;
+var SILENCIO_LIMITE = 20000; // 20 segundos
+var ultimaAtividade = 0;
+var testeEmAndamento = false;
+
+// Registrar ideias por item (para analise posterior na transcricao)
+var registroEstimulos = []; // [{estimulo, bloco, inicio, fim}]
+var tempoInicioTeste = 0;
+
+// ===== UTILIDADES =====
+function calcularIdade() {
+    var dn = document.getElementById('dataNasc').value;
+    if (!dn) return;
+    var nasc = new Date(dn + 'T00:00:00');
+    var hoje = new Date();
+    var anos = hoje.getFullYear() - nasc.getFullYear();
+    var meses = hoje.getMonth() - nasc.getMonth();
+    var dias = hoje.getDate() - nasc.getDate();
+    if (dias < 0) { meses--; var mesAnt = new Date(hoje.getFullYear(), hoje.getMonth(), 0); dias += mesAnt.getDate(); }
+    if (meses < 0) { anos--; meses += 12; }
+    document.getElementById('idade').value = anos + ' anos, ' + meses + ' meses e ' + dias + ' dias';
+    dadosForm.idadeAnos = anos;
+    // Auto-selecionar faixa etaria
+    var sel = document.getElementById('faixaEtaria');
+    if (anos >= 18) sel.value = '18+';
+    else if (anos >= 14) sel.value = '14-17';
+    else if (anos >= 12) sel.value = '12-13';
+    else if (anos >= 10) sel.value = '10-11';
+    else if (anos >= 8) sel.value = '8-9';
+    else if (anos >= 6) sel.value = '6-7';
+    gerarID();
+}
+
+function gerarID() {
+    var nome = document.getElementById('nome').value.trim();
+    var dn = document.getElementById('dataNasc').value;
+    if (!nome || !dn || nome.length < 1) { document.getElementById('idPaciente').value = ''; return; }
+    var n = nome.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z]/g,'').toLowerCase();
+    var prefixo = n.substring(0, 3);
+    var raw = dn + '+' + prefixo;
+    var hash = 5381;
+    for (var i = 0; i < raw.length; i++) hash = ((hash << 5) + hash) + raw.charCodeAt(i);
+    document.getElementById('idPaciente').value = 'P' + Math.abs(hash).toString(36).toUpperCase();
+}
+
+function trocarTela(mostrar) {
+    var telas = document.querySelectorAll('.tela');
+    for (var i = 0; i < telas.length; i++) telas[i].classList.remove('ativa');
+    document.getElementById(mostrar).classList.add('ativa');
+}
+
+function formatarTempo(s) {
+    var min = Math.floor(s / 60);
+    var seg = s % 60;
+    return min + ':' + (seg < 10 ? '0' : '') + seg;
+}
+
+function getEstimuloIndex() {
+    var idx = 0;
+    for (var b = 0; b < blocoAtual; b++) idx += BLOCOS[b].itens.length;
+    idx += itemAtual;
+    return idx;
+}
+
+function getTotalEstimulos() {
+    var t = 0;
+    for (var b = 0; b < BLOCOS.length; b++) t += BLOCOS[b].itens.length;
+    return t;
+}
+
+function blobToBase64(blob) {
+    return new Promise(function(resolve) {
+        var reader = new FileReader();
+        reader.onloadend = function() {
+            resolve(reader.result.split(',')[1] || '');
+        };
+        reader.readAsDataURL(blob);
+    });
+}
+
+// ===== CLASSIFICACAO =====
+function classificar(mediaIdeias, faixa) {
+    var f = FAIXAS[faixa];
+    if (!f) f = FAIXAS['18+'];
+    if (mediaIdeias >= f.excepcional) return 'Excepcional';
+    if (mediaIdeias >= f.alta[0]) return 'Alta Criatividade / Poss\u00edvel AH-SD';
+    if (mediaIdeias >= f.acima[0]) return 'Acima da M\u00e9dia';
+    if (mediaIdeias >= f.tipica[0]) return 'T\u00edpica';
+    return 'Abaixo do Esperado';
+}
+
+// ===== FLUXO DO TESTE =====
+function mostrarInstrucoes() {
+    var nome = document.getElementById('nome').value.trim();
+    var dataNasc = document.getElementById('dataNasc').value;
+    var faixa = document.getElementById('faixaEtaria').value;
+    if (!nome || !dataNasc) { alert('Preencha Nome e Data de Nascimento!'); return; }
+    if (!faixa) { alert('Selecione a faixa et\u00e1ria!'); return; }
+    calcularIdade();
+    gerarID();
+    dadosForm = {
+        nome: nome,
+        dataNasc: dataNasc,
+        idade: document.getElementById('idade').value,
+        idadeAnos: dadosForm.idadeAnos || 0,
+        faixaEtaria: faixa,
+        escolaridade: document.getElementById('escolaridade').value,
+        dataAval: document.getElementById('dataAval').value || new Date().toISOString().split('T')[0],
+        obs: document.getElementById('obs').value,
+        id: document.getElementById('idPaciente').value,
+        pacienteId: sessionInfo.pacienteId || ''
+    };
+    trocarTela('tela-instrucoes');
+}
+
+async function iniciarTeste() {
+    // Verificar credito antes de iniciar
+    if (sessionInfo && sessionInfo.email && sessionInfo.email !== 'setmonte@gmail.com') {
+        try {
+            var _cr = await fetch(API_URL + '/use-credit', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({email: sessionInfo.email, tipo: 'ideia'})
+            });
+            if (_cr.status === 403) {
+                alert('Cr\u00e9ditos insuficientes. Consulte seu avaliador.');
+                return;
+            }
+        } catch(e) {}
+    }
+
+    // Iniciar gravacao de audio
+    try {
+        var stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioChunks = [];
+        mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus', audioBitsPerSecond: 32000 });
+        mediaRecorder.ondataavailable = function(e) {
+            if (e.data.size > 0) audioChunks.push(e.data);
+        };
+        mediaRecorder.start(1000);
+    } catch (erro) {
+        alert('N\u00e3o foi poss\u00edvel acessar o microfone. Verifique as permiss\u00f5es do navegador.');
+        return;
+    }
+
+    // Inicializar estado
+    testeEmAndamento = true;
+    blocoAtual = 0;
+    itemAtual = 0;
+    ideiasTotal = 0;
+    ideiasPorItem = [];
+    registroEstimulos = [];
+    tempoRestante = tempoTotal;
+    tempoInicioTeste = Date.now();
+    ultimaAtividade = Date.now();
+
+    // Mostrar tela do teste
+    trocarTela('tela-teste');
+    mostrarEstimulo();
+
+    // Cronometro geral (10 min)
+    document.getElementById('timer').textContent = formatarTempo(tempoRestante);
+    timerInterval = setInterval(function() {
+        tempoRestante--;
+        document.getElementById('timer').textContent = formatarTempo(tempoRestante);
+        if (tempoRestante <= 0) finalizarTeste();
+    }, 1000);
+
+    // Monitorar silencio
+    iniciarMonitorSilencio();
+}
+
+function mostrarEstimulo() {
+    if (blocoAtual >= BLOCOS.length) {
+        finalizarTeste();
+        return;
+    }
+    var bloco = BLOCOS[blocoAtual];
+    if (itemAtual >= bloco.itens.length) {
+        blocoAtual++;
+        itemAtual = 0;
+        mostrarEstimulo();
+        return;
+    }
+
+    var estimulo = bloco.itens[itemAtual];
+    document.getElementById('blocoTag').textContent = bloco.nome;
+    document.getElementById('estimuloNome').textContent = estimulo;
+    document.getElementById('contadorIdeias').textContent = '0';
+    document.getElementById('ideiasList').innerHTML = '';
+
+    // Atualizar barra de progresso
+    var idx = getEstimuloIndex();
+    var total = getTotalEstimulos();
+    document.getElementById('progressItems').style.width = Math.round((idx / total) * 100) + '%';
+
+    // Registrar inicio do estimulo
+    registroEstimulos.push({
+        estimulo: estimulo,
+        bloco: bloco.nome,
+        blocoIdx: blocoAtual,
+        itemIdx: itemAtual,
+        inicio: (Date.now() - tempoInicioTeste) / 1000,
+        fim: null,
+        ideias: 0
+    });
+
+    // Resetar contagem local
+    ideiasPorItem.push(0);
+    ultimaAtividade = Date.now();
+}
+
+function registrarIdeia(texto) {
+    if (!testeEmAndamento) return;
+    var idx = ideiasPorItem.length - 1;
+    ideiasPorItem[idx]++;
+    ideiasTotal++;
+    var regIdx = registroEstimulos.length - 1;
+    if (regIdx >= 0) registroEstimulos[regIdx].ideias++;
+
+    document.getElementById('contadorIdeias').textContent = ideiasPorItem[idx];
+
+    // Adicionar chip visual
+    var list = document.getElementById('ideiasList');
+    var chip = document.createElement('div');
+    chip.className = 'ideia-chip';
+    chip.innerHTML = '<span class="num">#' + ideiasPorItem[idx] + '</span> ' + (texto || 'Ideia registrada');
+    list.insertBefore(chip, list.firstChild);
+
+    ultimaAtividade = Date.now();
+}
+
+// ===== MONITORAMENTO DE SILENCIO =====
+function iniciarMonitorSilencio() {
+    if (silencioTimer) clearInterval(silencioTimer);
+    silencioTimer = setInterval(function() {
+        if (!testeEmAndamento) return;
+        var silencio = Date.now() - ultimaAtividade;
+        if (silencio >= SILENCIO_LIMITE) {
+            mostrarCheckin();
+        }
+    }, 2000);
+}
+
+function mostrarCheckin() {
+    document.getElementById('checkinOverlay').classList.add('show');
+}
+
+function continuarPensando() {
+    document.getElementById('checkinOverlay').classList.remove('show');
+    ultimaAtividade = Date.now();
+}
+
+function proximoEstimulo() {
+    document.getElementById('checkinOverlay').classList.remove('show');
+    // Registrar fim do estimulo atual
+    var regIdx = registroEstimulos.length - 1;
+    if (regIdx >= 0) registroEstimulos[regIdx].fim = (Date.now() - tempoInicioTeste) / 1000;
+
+    // Avancar para proximo
+    itemAtual++;
+    ultimaAtividade = Date.now();
+    mostrarEstimulo();
+}
+
+// ===== SIMULACAO DE DETECCAO DE FALA (via Web Speech API como backup visual) =====
+// A transcricao real e feita pelo Whisper no final
+// Aqui usamos Web Speech API apenas para feedback visual em tempo real
+function iniciarReconhecimentoVisual() {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) return;
+    var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    var recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = false;
+    recognition.lang = 'pt-BR';
+
+    recognition.onresult = function(event) {
+        if (!testeEmAndamento) return;
+        for (var i = event.resultIndex; i < event.results.length; i++) {
+            if (event.results[i].isFinal) {
+                var texto = event.results[i][0].transcript.trim();
+                if (texto.length > 2) {
+                    registrarIdeia(texto);
+                }
+            }
+        }
+    };
+
+    recognition.onerror = function() {
+        // Silencioso — a transcricao real e feita pelo Whisper
+        setTimeout(function() {
+            if (testeEmAndamento) {
+                try { recognition.start(); } catch(e) {}
+            }
+        }, 1000);
+    };
+
+    recognition.onend = function() {
+        if (testeEmAndamento) {
+            try { recognition.start(); } catch(e) {}
+        }
+    };
+
+    try { recognition.start(); } catch(e) {}
+    window._ideiaRecognition = recognition;
+}
+
+// ===== FINALIZAR TESTE =====
+async function finalizarTeste() {
+    if (!testeEmAndamento) return;
+    testeEmAndamento = false;
+
+    // Parar cronometro e silencio
+    if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+    if (silencioTimer) { clearInterval(silencioTimer); silencioTimer = null; }
+
+    // Registrar fim do ultimo estimulo
+    var regIdx = registroEstimulos.length - 1;
+    if (regIdx >= 0 && !registroEstimulos[regIdx].fim) {
+        registroEstimulos[regIdx].fim = (Date.now() - tempoInicioTeste) / 1000;
+    }
+
+    // Parar reconhecimento visual
+    if (window._ideiaRecognition) {
+        try { window._ideiaRecognition.stop(); } catch(e) {}
+    }
+
+    // Esconder check-in se visivel
+    document.getElementById('checkinOverlay').classList.remove('show');
+
+    // Parar gravacao
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+        mediaRecorder.stream.getTracks().forEach(function(t) { t.stop(); });
+    }
+
+    // Tela de processamento
+    trocarTela('tela-processando');
+    document.getElementById('progressFill').style.width = '10%';
+    document.getElementById('progressText').textContent = 'Preparando \u00e1udio...';
+
+    // Esperar mediaRecorder finalizar
+    await new Promise(function(resolve) { setTimeout(resolve, 800); });
+
+    // Converter audio para base64
+    var audioBlob = new Blob(audioChunks, { type: 'audio/webm;codecs=opus' });
+    var audioBase64 = await blobToBase64(audioBlob);
+
+    document.getElementById('progressFill').style.width = '30%';
+    document.getElementById('progressText').textContent = 'Transcrevendo com IA (pode levar at\u00e9 30s)...';
+
+    var audioS3Key = '';
+    try {
+        // Enviar audio para Lambda que transcreve via Whisper
+        var resp = await fetch(API_URL + '/transcribe-audio', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ audioBase64: audioBase64, sessionId: sessionInfo.sessionId || '' })
+        });
+        var data = await resp.json();
+        audioS3Key = data.s3Key || '';
+        if (!resp.ok) throw new Error(data.error || 'Erro na transcricao');
+        var transcricao = data.text || '';
+
+        document.getElementById('progressFill').style.width = '80%';
+        document.getElementById('progressText').textContent = 'Calculando resultados...';
+
+        // Calcular resultados
+        var resultado = calcularResultados(transcricao);
+
+        // Coleta anonima
+        window._escalaDados = {
+            escala: 'IDEIA',
+            escore: resultado.mediaIdeias,
+            classificacao: resultado.classificacao,
+            dominios: {
+                TotalIdeias: {pontuacao: resultado.totalIdeias, max: 999, classificacao: resultado.classificacao},
+                ItensAlcancados: {pontuacao: resultado.itensAlcancados, max: 20, classificacao: ''},
+                MediaPorItem: {pontuacao: parseFloat(resultado.mediaIdeias.toFixed(1)), max: 99, classificacao: resultado.classificacao}
+            }
+        };
+
+        document.getElementById('progressFill').style.width = '100%';
+        document.getElementById('progressText').textContent = 'Enviando resultados...';
+
+        // Salvar resultados
+        await salvarResultado(resultado, audioS3Key);
+
+        // Coleta anonima via sendBeacon
+        try {
+            var _cUrl = 'https://script.google.com/macros/s/AKfycbzYl7-ageXnHHyvrKMb6iS_7gX2l6ZBngPpbCHNfj7YYbXylcZ_vQ9iJkrbko8ICPcW/exec';
+            var _idadeVal = dadosForm.idadeAnos || null;
+            if (_idadeVal && window._escalaDados && window._escalaDados.escala) {
+                var _pkt = {
+                    email: sessionInfo.email || '',
+                    escala: window._escalaDados.escala,
+                    idade: _idadeVal,
+                    sexo: sessionInfo.sex || '',
+                    escolaridade: dadosForm.escolaridade || '',
+                    pontuacao: parseFloat(resultado.mediaIdeias).toFixed(2),
+                    dominios: 'TotalIdeias:' + resultado.totalIdeias + '; ItensAlcancados:' + resultado.itensAlcancados + '; MediaPorItem:' + resultado.mediaIdeias.toFixed(1),
+                    classificacao: resultado.classificacao || ''
+                };
+                navigator.sendBeacon(_cUrl, JSON.stringify(_pkt));
+            }
+        } catch(e) {}
+
+        // Tela fim
+        trocarTela('tela-fim');
+
+        // Auto-fechar
+        setTimeout(function() {
+            var _s = document.createElement('script');
+            _s.src = 'auto-close.js';
+            _s.onload = function() { if (window._autoFechar) _autoFechar(); };
+            document.body.appendChild(_s);
+        }, 2000);
+
+    } catch (erro) {
+        console.error('Erro na transcri\u00e7\u00e3o:', erro);
+        document.getElementById('progressText').textContent = 'Erro ao processar. Salvando dados...';
+        await salvarResultadoErro(erro.message, audioS3Key);
+        setTimeout(function() {
+            trocarTela('tela-fim');
+            var _s2 = document.createElement('script');
+            _s2.src = 'auto-close.js';
+            _s2.onload = function() { if (window._autoFechar) _autoFechar(); };
+            document.body.appendChild(_s2);
+        }, 3000);
+    }
+}
+
+// ===== CALCULAR RESULTADOS =====
+function calcularResultados(transcricao) {
+    // A transcricao contem tudo que foi dito em 10 minutos
+    // Separar por frases/ideias (cada frase curta e uma ideia)
+    var frases = transcricao
+        .replace(/\.\.\./g, '.')
+        .split(/[.!?\n]+/)
+        .map(function(f) { return f.trim(); })
+        .filter(function(f) { return f.length > 3; });
+
+    var totalIdeias = frases.length;
+    var itensAlcancados = registroEstimulos.length;
+    var mediaIdeias = itensAlcancados > 0 ? totalIdeias / itensAlcancados : 0;
+    var faixa = dadosForm.faixaEtaria || '18+';
+    var classificacao = classificar(mediaIdeias, faixa);
+
+    // Tempo usado
+    var tempoUsado = tempoTotal - tempoRestante;
+
+    // Dados por bloco
+    var dadosBlocos = [];
+    for (var b = 0; b < BLOCOS.length; b++) {
+        var ideiasBloco = 0;
+        var itensBloco = 0;
+        for (var r = 0; r < registroEstimulos.length; r++) {
+            if (registroEstimulos[r].blocoIdx === b) {
+                ideiasBloco += registroEstimulos[r].ideias;
+                itensBloco++;
+            }
+        }
+        dadosBlocos.push({
+            nome: BLOCOS[b].nome,
+            itens: itensBloco,
+            ideias: ideiasBloco,
+            media: itensBloco > 0 ? (ideiasBloco / itensBloco).toFixed(1) : '0'
+        });
+    }
+
+    return {
+        transcricao: transcricao,
+        frases: frases,
+        totalIdeias: totalIdeias,
+        itensAlcancados: itensAlcancados,
+        mediaIdeias: mediaIdeias,
+        faixaEtaria: faixa,
+        classificacao: classificacao,
+        tempoUsado: tempoUsado,
+        dadosBlocos: dadosBlocos,
+        registroEstimulos: registroEstimulos,
+        ideiasPorItemVisual: ideiasPorItem
+    };
+}
+
+// ===== ENVIAR RESULTADOS =====
+async function salvarResultado(resultado, audioS3Key) {
+    if (!sessionInfo.email || !sessionInfo.sessionId) return;
+    var dados = {
+        email: sessionInfo.email,
+        tipo: 'ideia',
+        sessionId: sessionInfo.sessionId,
+        data: {
+            status: 'finalizado',
+            date: new Date().toISOString(),
+            formData: {
+                nome: dadosForm.nome,
+                idade: dadosForm.idade,
+                idadeAnos: dadosForm.idadeAnos,
+                faixaEtaria: dadosForm.faixaEtaria,
+                escolaridade: dadosForm.escolaridade,
+                dataNasc: dadosForm.dataNasc,
+                dataAval: dadosForm.dataAval,
+                obs: dadosForm.obs,
+                id: dadosForm.id,
+                pacienteId: sessionInfo.pacienteId || ''
+            },
+            resultados: resultado,
+            audioS3Key: audioS3Key || '',
+            _temAudio: true
+        }
+    };
+    dados.idPaciente = dadosForm.id || '';
+    dados.data.pacienteId = sessionInfo.pacienteId || '';
+    dados.data.idPaciente = dadosForm.id || '';
+    try {
+        await fetch(API_URL + '/save-result', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(dados)
+        });
+    } catch (e) { console.error('Erro ao enviar:', e); }
+}
+
+async function salvarResultadoErro(mensagemErro, audioS3Key) {
+    if (!sessionInfo.email || !sessionInfo.sessionId) return;
+    try {
+        await fetch(API_URL + '/save-result', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email: sessionInfo.email,
+                tipo: 'ideia',
+                sessionId: sessionInfo.sessionId,
+                data: { status: 'erro_transcricao', date: new Date().toISOString(), formData: dadosForm, erro: mensagemErro, audioS3Key: audioS3Key || '', _temAudio: !!(audioS3Key) }
+            })
+        });
+    } catch (e) { console.error('Erro ao enviar:', e); }
+}
+
+// ===== DADOS DA URL (modo sessao) =====
+function decodificarURL() {
+    var params = new URLSearchParams(window.location.search);
+    var d = params.get('d');
+    if (d) {
+        try { sessionInfo = JSON.parse(atob(decodeURIComponent(d))); } catch(e) {}
+        if (sessionInfo.patientName) document.getElementById('nome').value = sessionInfo.patientName;
+        if (sessionInfo.birthDate) document.getElementById('dataNasc').value = sessionInfo.birthDate;
+        if (sessionInfo.education) document.getElementById('escolaridade').value = sessionInfo.education;
+        if (sessionInfo.obs) document.getElementById('obs').value = sessionInfo.obs;
+        calcularIdade();
+        gerarID();
+    }
+    // Modo sessao unica (?s=)
+    var s = params.get('s');
+    if (s) {
+        fetch(API_URL + '/get-session?id=' + s).then(function(r) {
+            if (r.status === 410) {
+                document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#fff3e0,#ffe0b2);text-align:center;padding:20px;"><h1 style="color:#c62828;font-size:24px;margin-bottom:10px;">Este link j\u00e1 foi utilizado.</h1><p style="font-size:16px;color:#555;">Solicite um novo link ao seu avaliador.</p></div>';
+                throw new Error('link_usado');
+            }
+            return r.json();
+        }).then(function(data) {
+            if (data.sessionId) {
+                sessionInfo = data;
+                if (data.patientName) document.getElementById('nome').value = data.patientName;
+                if (data.birthDate) document.getElementById('dataNasc').value = data.birthDate;
+                if (data.education) document.getElementById('escolaridade').value = data.education;
+                calcularIdade();
+                gerarID();
+            }
+        }).catch(function() {});
+    }
+}
+
+// ===== INIT =====
+window.addEventListener('load', function() {
+    document.getElementById('dataAval').value = new Date().toISOString().split('T')[0];
+    document.getElementById('nome').addEventListener('input', gerarID);
+    document.getElementById('dataNasc').addEventListener('change', function() { calcularIdade(); gerarID(); });
+    decodificarURL();
+    // Iniciar reconhecimento visual apos inicio do teste (chamado em iniciarTeste via timeout)
+});
+
+// Iniciar reconhecimento visual quando o teste comeca
+var _origIniciarTeste = iniciarTeste;
+iniciarTeste = async function() {
+    await _origIniciarTeste();
+    setTimeout(iniciarReconhecimentoVisual, 500);
+};
+
+// Se paciente fechar no meio da gravacao
+window.addEventListener('beforeunload', function() {
+    if (mediaRecorder && mediaRecorder.state === 'recording' && sessionInfo.email) {
+        navigator.sendBeacon(API_URL + '/save-result', JSON.stringify({
+            email: sessionInfo.email, tipo: 'ideia', sessionId: sessionInfo.sessionId,
+            data: { status: 'abandonado', date: new Date().toISOString(), formData: dadosForm }
+        }));
+    }
+});
+</script>
+<script src="coleta-anonima.js"></script>
+</body>
+</html>
