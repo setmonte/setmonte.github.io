@@ -1729,13 +1729,17 @@
             <div class="btn-row">
               <button class="btn btn-green" id="btnNewIdeia" onclick="showNewIdeia()">Nova Aplicacao</button>
               <button class="btn btn-blue" onclick="showIdeiaResults()">Resultados</button>
-              <a href="#" class="btn btn-orange" onclick="document.getElementById('ideiaPlansSection').classList.toggle('hidden');return false;">Comprar Creditos</a>
+              <a href="#" class="btn btn-orange" onclick="showIdeiaPlanos();return false;">Comprar Creditos</a>
               <a href="manual-ideia.html" target="_blank" class="btn" style="background:#607d8b;color:#fff;">&#128212; Manual T&#233;cnico</a>
             </div>
             <!-- Planos IDEIA -->
-            <div id="ideiaPlansSection" class="hidden" style="margin-top:15px;">
-              <div class="card">
+            <div id="ideiaPlansSection" class="ideia-modal-overlay" onclick="fecharModalIdeiaPlanos(event)">
+             <div class="ideia-modal-box" onclick="event.stopPropagation()">
+              <div class="ideia-modal-header">
                 <h2>Comprar Creditos IDEIA</h2>
+                <button class="ideia-modal-fechar" onclick="fecharModalIdeiaPlanos()" title="Fechar">&#10005;</button>
+              </div>
+              <div class="ideia-modal-body">
                 <p style="margin-bottom:15px;">Escolha o plano para o Instrumento de Divergencia e Elaboracao de Ideias Alternativas:</p>
                 <div style="display:flex;gap:15px;flex-wrap:wrap;">
                   <div style="flex:1;min-width:200px;border:2px solid #2e7d32;border-radius:10px;padding:20px;text-align:center;">
@@ -1752,8 +1756,9 @@
                   </div>
                 </div>
                 <p style="margin-top:15px;font-size:14px;color:#555;font-weight:600;">Apos o pagamento, os creditos sao liberados automaticamente em ate 5 minutos.</p>
-              </div>
-            </div>
+              </div><!-- fim .ideia-modal-body -->
+             </div><!-- fim .ideia-modal-box -->
+            </div><!-- fim #ideiaPlansSection (modal) -->
           </div>
         </div>
 
@@ -3364,7 +3369,7 @@
       document.getElementById('tabDepoimentos').classList.remove('active');
       document.getElementById('tabAdmin').classList.remove('active');
       document.getElementById('tabProgramasOcultos').classList.remove('active');
-      ['plansSection','newTestSection','resultsSection','baePlansSection','newBaeSection','baeResultsSection','trmvPlansSection','newTrmvSection','trmvResultsSection','taavPlansSection','newTaavSection','taavResultsSection','trefPlansSection','newTrefSection','trefResultsSection','newTflodSection','tflodResultsSection','newCorsiSection','corsiResultsSection','newTteSection','tteResultsSection','newTetaylorSection','tetaylorResultsSection','newTetaylorsimpSection','tetaylorsimpResultsSection','newPfisterSection','pfisterResultsSection','newVineland3Section','vineland3ResultsSection','newIdeiaSection','ideiaResultsSection'].forEach(function(id) {
+      ['plansSection','newTestSection','resultsSection','baePlansSection','newBaeSection','baeResultsSection','trmvPlansSection','newTrmvSection','trmvResultsSection','taavPlansSection','newTaavSection','taavResultsSection','trefPlansSection','newTrefSection','trefResultsSection','newTflodSection','tflodResultsSection','newCorsiSection','corsiResultsSection','newTteSection','tteResultsSection','newTetaylorSection','tetaylorResultsSection','newTetaylorsimpSection','tetaylorsimpResultsSection','newPfisterSection','pfisterResultsSection','newVineland3Section','vineland3ResultsSection','newIdeiaSection','ideiaResultsSection','ideiaPlansSection'].forEach(function(id) {
         var el = document.getElementById(id); if (el) { el.classList.add('hidden'); el.classList.remove('aberto'); }
       });
       if (tab === 'funcExec') {
@@ -9081,11 +9086,24 @@
       if (e && e.target !== document.getElementById('newIdeiaSection')) return;
       document.getElementById('newIdeiaSection').classList.remove('aberto');
     }
-    // Fecha o modal do IDEIA ao apertar Esc
+    // ===== Modal Comprar Creditos IDEIA =====
+    function showIdeiaPlanos() {
+      var m = document.getElementById('ideiaPlansSection');
+      m.classList.remove('hidden'); // remove display:none !important herdado da troca de abas
+      m.classList.add('aberto');
+    }
+    function fecharModalIdeiaPlanos(e) {
+      if (e && e.target !== document.getElementById('ideiaPlansSection')) return;
+      document.getElementById('ideiaPlansSection').classList.remove('aberto');
+    }
+
+    // Fecha os modais do IDEIA ao apertar Esc
     document.addEventListener('keydown', function(e) {
       if (e.key === 'Escape') {
         var m = document.getElementById('newIdeiaSection');
         if (m && m.classList.contains('aberto')) m.classList.remove('aberto');
+        var p = document.getElementById('ideiaPlansSection');
+        if (p && p.classList.contains('aberto')) p.classList.remove('aberto');
       }
     });
 
