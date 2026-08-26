@@ -112,7 +112,31 @@ body.cursor-hidden, body.cursor-hidden * { cursor: none !important; }
             <p>🎧 Preferencialmente use um microfone (headset ou fone com microfone) para melhor captação.</p>
         </div>
         <div style="text-align:center;margin-top:15px">
-            <button class="btn btn-primary" id="btnIniciar" onclick="iniciarTeste()">Iniciar Leitura</button>
+            <button class="btn btn-primary" id="btnIniciar" onclick="testarMicrofone()">Verificar Microfone</button>
+        </div>
+    </div>
+</div>
+
+<!-- TELA VERIFICACAO DE MICROFONE -->
+<div id="tela-mic" class="tela">
+    <div class="form-container" style="max-width:500px">
+        <h2 style="color:#1565c0;margin-bottom:15px;text-align:center">&#127908; Verifica&#231;&#227;o do Microfone</h2>
+        <p style="text-align:center;color:#555;margin-bottom:15px;">Fale algo para verificar se o microfone est&#225; funcionando.</p>
+        <p style="text-align:center;color:#1565c0;font-weight:600;margin-bottom:20px;">Diga: &#8220;Teste, um, dois, tr&#234;s&#8221;</p>
+        <div id="micStatus" style="text-align:center;margin-bottom:15px;padding:12px;border-radius:8px;background:#e3f2fd;color:#0d47a1;font-weight:600;">
+            Aguardando permiss&#227;o do microfone...
+        </div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:20px;">
+            <span style="font-size:0.8em;color:#888;">Silencioso</span>
+            <div style="width:200px;height:20px;background:#e0e0e0;border-radius:10px;overflow:hidden;">
+                <div id="micLevel" style="height:100%;width:0%;background:linear-gradient(90deg,#42a5f5,#1565c0);border-radius:10px;transition:width 0.1s;"></div>
+            </div>
+            <span style="font-size:0.8em;color:#888;">Alto</span>
+        </div>
+        <div id="micFeedback" style="text-align:center;margin-bottom:15px;font-size:0.9em;color:#888;min-height:20px;"></div>
+        <div style="text-align:center">
+            <button class="btn btn-primary" id="btnIniciarReal" onclick="iniciarTeste()" disabled style="opacity:0.5;">Iniciar Leitura</button>
+            <p style="font-size:0.75em;color:#999;margin-top:8px;" id="micHint">O bot&#227;o ser&#225; liberado quando detectarmos sua voz.</p>
         </div>
     </div>
 </div>
@@ -380,7 +404,74 @@ function mostrarInstrucoes() {
     trocarTela('tela-instrucoes');
 }
 
+// ===== VERIFICACAO DE MICROFONE =====
+var _micStream = null;
+var _micAnalyser = null;
+var _micAnimFrame = null;
+var _micDetected = false;
+
+function testarMicrofone() {
+    trocarTela('tela-mic');
+    _micDetected = false;
+    document.getElementById('btnIniciarReal').disabled = true;
+    document.getElementById('btnIniciarReal').style.opacity = '0.5';
+    document.getElementById('micHint').textContent = 'O bot\u00e3o ser\u00e1 liberado quando detectarmos sua voz.';
+    document.getElementById('micFeedback').textContent = '';
+    document.getElementById('micStatus').textContent = 'Solicitando acesso ao microfone...';
+    document.getElementById('micStatus').style.background = '#e3f2fd';
+    document.getElementById('micStatus').style.color = '#0d47a1';
+
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
+        _micStream = stream;
+        document.getElementById('micStatus').textContent = '\u2705 Microfone conectado! Fale algo para testar.';
+        document.getElementById('micStatus').style.background = '#e8f5e9';
+        document.getElementById('micStatus').style.color = '#2e7d32';
+
+        var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        var source = audioCtx.createMediaStreamSource(stream);
+        _micAnalyser = audioCtx.createAnalyser();
+        _micAnalyser.fftSize = 256;
+        source.connect(_micAnalyser);
+
+        var dataArray = new Uint8Array(_micAnalyser.frequencyBinCount);
+        var peakCount = 0;
+
+        function monitorar() {
+            _micAnalyser.getByteFrequencyData(dataArray);
+            var sum = 0;
+            for (var i = 0; i < dataArray.length; i++) sum += dataArray[i];
+            var avg = sum / dataArray.length;
+            var pct = Math.min(100, Math.round((avg / 128) * 100));
+            document.getElementById('micLevel').style.width = pct + '%';
+            if (pct > 15) {
+                peakCount++;
+                if (peakCount >= 5 && !_micDetected) {
+                    _micDetected = true;
+                    document.getElementById('micFeedback').innerHTML = '<span style="color:#2e7d32;font-weight:700;">\u2705 Voz detectada! Microfone funcionando perfeitamente.</span>';
+                    document.getElementById('btnIniciarReal').disabled = false;
+                    document.getElementById('btnIniciarReal').style.opacity = '1';
+                    document.getElementById('micHint').textContent = 'Tudo pronto! Clique para iniciar.';
+                }
+            }
+            _micAnimFrame = requestAnimationFrame(monitorar);
+        }
+        monitorar();
+    }).catch(function(err) {
+        document.getElementById('micStatus').textContent = '\u274c Microfone bloqueado ou n\u00e3o encontrado.';
+        document.getElementById('micStatus').style.background = '#ffebee';
+        document.getElementById('micStatus').style.color = '#c62828';
+        document.getElementById('micFeedback').innerHTML = '<span style="color:#c62828;">Verifique as permiss\u00f5es do navegador e tente novamente.<br>Dica: clique no \u00edcone de cadeado na barra de endere\u00e7o.</span>';
+    });
+}
+
+function pararTesteMic() {
+    if (_micAnimFrame) { cancelAnimationFrame(_micAnimFrame); _micAnimFrame = null; }
+    if (_micStream) { _micStream.getTracks().forEach(function(t) { t.stop(); }); _micStream = null; }
+    _micAnalyser = null;
+}
+
 async function iniciarTeste() {
+    pararTesteMic();
     // Verificar credito antes de iniciar
     if (sessionInfo && sessionInfo.email && sessionInfo.email !== 'setmonte@gmail.com') {
       try {
