@@ -949,8 +949,25 @@ function calcularResultados(transcricao, resultadoIA) {
     // Ideias por minuto (velocidade media)
     var ideiasPorMinuto = tempoUsado > 0 ? (totalIdeias / (tempoUsado / 60)).toFixed(1) : '0';
 
+    // GRAFICO: contar ideias por estimulo alcancado (para o grafico de linha no PDF)
+    var graficoEstimulos = [];
+    for (var ge = 0; ge < registroEstimulos.length; ge++) {
+        var estNome = registroEstimulos[ge].estimulo;
+        var contagem = registroEstimulos[ge].ideias; // fallback: contagem local (Web Speech)
+        // Se IA disponivel, contar quantas ideias a IA atribuiu a este estimulo
+        if (resultadoIA && resultadoIA.ideias && resultadoIA.ideias.length > 0) {
+            var c = 0;
+            for (var gi = 0; gi < resultadoIA.ideias.length; gi++) {
+                if ((resultadoIA.ideias[gi].estimulo || '').toLowerCase().indexOf(estNome.toLowerCase()) >= 0) c++;
+            }
+            contagem = c;
+        }
+        graficoEstimulos.push({ estimulo: estNome, ideias: contagem, numero: ge + 1 });
+    }
+
     return {
         transcricao: transcricao,
+        graficoEstimulos: graficoEstimulos,
         ideiasList: ideiasList,
         categorias: categorias,
         totalIdeias: totalIdeias,

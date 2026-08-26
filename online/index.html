@@ -9277,6 +9277,105 @@
         y += 5;
       }
 
+      // === GRAFICO DE LINHA: Evolucao da Criatividade por Estimulo ===
+      if (res.graficoEstimulos && res.graficoEstimulos.length > 0) {
+        if (y > 180) { doc.addPage(); y = 20; }
+        doc.setFontSize(11);
+        doc.setTextColor(TEAL[0], TEAL[1], TEAL[2]);
+        doc.text('Evolucao da Criatividade (ideias por estimulo)', 15, y); y += 8;
+
+        var pts = res.graficoEstimulos;
+        // Area do grafico
+        var gx = 25;            // x inicial (eixo Y)
+        var gTopo = y;          // y do topo
+        var gAltura = 60;       // altura do grafico
+        var gBase = gTopo + gAltura;
+        var gLarg = 160;        // largura total
+        // Escala Y: definir maximo (max ideias ou pelo menos 10)
+        var maxIdeias = 6;
+        for (var mp = 0; mp < pts.length; mp++) { if (pts[mp].ideias > maxIdeias) maxIdeias = pts[mp].ideias; }
+        maxIdeias = Math.ceil(maxIdeias * 1.15);
+
+        // Faixas de referencia por idade (limites de ideias por item)
+        // Tipica[max], acima[max], alta[max]; acima disso = muito superior
+        var FX = {
+          '6-7':{tip:5,aci:7,alt:11},'8-9':{tip:5,aci:8,alt:12},'10-11':{tip:6,aci:9,alt:13},
+          '12-13':{tip:6,aci:9,alt:14},'14-17':{tip:7,aci:10,alt:15},'18+':{tip:6,aci:10,alt:15}
+        };
+        var fEt = (fd.faixaEtaria && FX[fd.faixaEtaria]) ? FX[fd.faixaEtaria] : FX['18+'];
+        function yPara(valor) { return gBase - (valor / maxIdeias) * gAltura; }
+
+        // Desenhar faixas de fundo (bandas horizontais coloridas)
+        // Verde claro (esperado 0-tip), Verde escuro (acima tip-aci), Azul claro (superior aci-alt), Azul escuro (muito sup alt+)
+        var yTip = yPara(fEt.tip);
+        var yAci = yPara(fEt.aci);
+        var yAlt = yPara(fEt.alt);
+        // banda esperado (base ate tip) - verde claro
+        doc.setFillColor(200, 230, 201); doc.rect(gx, yTip, gLarg, gBase - yTip, 'F');
+        // banda acima da media (tip ate aci) - verde escuro
+        doc.setFillColor(129, 199, 132); doc.rect(gx, yAci, gLarg, yTip - yAci, 'F');
+        // banda superior (aci ate alt) - azul claro
+        doc.setFillColor(144, 202, 249); doc.rect(gx, yAlt, gLarg, yAci - yAlt, 'F');
+        // banda muito superior (alt ate topo) - azul escuro
+        doc.setFillColor(21, 101, 192); doc.rect(gx, gTopo, gLarg, yAlt - gTopo, 'F');
+
+        // Eixos
+        doc.setDrawColor(80, 80, 80); doc.setLineWidth(0.4);
+        doc.line(gx, gTopo, gx, gBase); // eixo Y
+        doc.line(gx, gBase, gx + gLarg, gBase); // eixo X
+
+        // Marcas do eixo Y
+        doc.setFontSize(6); doc.setTextColor(60, 60, 60);
+        for (var yv = 0; yv <= maxIdeias; yv += Math.max(1, Math.round(maxIdeias/5))) {
+          var yy = yPara(yv);
+          doc.text(String(yv), gx - 4, yy + 1, {align: 'right'});
+          doc.setDrawColor(220,220,220); doc.setLineWidth(0.1);
+          doc.line(gx, yy, gx + gLarg, yy);
+        }
+
+        // Linha de producao real (pontos por estimulo)
+        var passo = pts.length > 1 ? gLarg / (pts.length - 1) : gLarg;
+        doc.setDrawColor(TEAL[0], TEAL[1], TEAL[2]); doc.setLineWidth(0.8);
+        var px0 = null, py0 = null;
+        for (var pi = 0; pi < pts.length; pi++) {
+          var px = gx + (pts.length > 1 ? pi * passo : gLarg/2);
+          var py = yPara(pts[pi].ideias);
+          if (px0 !== null) doc.line(px0, py0, px, py);
+          px0 = px; py0 = py;
+        }
+        // Pontos (marcadores)
+        doc.setFillColor(TEAL[0], TEAL[1], TEAL[2]);
+        for (var pj = 0; pj < pts.length; pj++) {
+          var pxx = gx + (pts.length > 1 ? pj * passo : gLarg/2);
+          var pyy = yPara(pts[pj].ideias);
+          doc.circle(pxx, pyy, 0.9, 'F');
+        }
+
+        // Labels eixo X (numero do estimulo)
+        doc.setFontSize(5); doc.setTextColor(80,80,80);
+        for (var lx = 0; lx < pts.length; lx++) {
+          var lxx = gx + (pts.length > 1 ? lx * passo : gLarg/2);
+          doc.text(String(pts[lx].numero), lxx, gBase + 4, {align: 'center'});
+        }
+        doc.setFontSize(7); doc.setTextColor(100,100,100);
+        doc.text('Estimulos (na ordem de aplicacao)', gx + gLarg/2, gBase + 9, {align: 'center'});
+
+        y = gBase + 15;
+
+        // Legenda das faixas
+        y = checkPage(y);
+        doc.setFontSize(7);
+        function legenda(cor, txt, xpos) {
+          doc.setFillColor(cor[0], cor[1], cor[2]); doc.rect(xpos, y-2.5, 4, 3, 'F');
+          doc.setTextColor(60,60,60); doc.text(txt, xpos + 5, y);
+        }
+        legenda([200,230,201], 'Esperado', 25);
+        legenda([129,199,132], 'Acima da media', 55);
+        legenda([144,202,249], 'Superior', 100);
+        legenda([21,101,192], 'Muito superior', 135);
+        y += 10;
+      }
+
       // === REFERENCIAS ===
       y = checkPage(y);
       if (y > 240) { doc.addPage(); y = 20; }
