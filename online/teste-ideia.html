@@ -218,9 +218,15 @@ body{font-family:'Segoe UI',sans-serif;background:#f5f5f5;min-height:100vh}
 <!-- TELA FIM -->
 <div id="tela-fim" class="tela">
     <div style="text-align:center;padding:60px 30px;">
-        <h2 style="color:#2e7d32;font-size:2em;margin-bottom:15px;">&#10004; Teste conclu&#237;do!</h2>
-        <p style="color:#555;font-size:1.2em;">Voc&#234; pode fechar esta janela.</p>
-        <p style="margin-top:20px;font-size:0.9em;color:#777;">Os resultados foram enviados para o avaliador.</p>
+        <div style="width:80px;height:80px;border-radius:50%;background:#e8f5e9;display:inline-flex;align-items:center;justify-content:center;margin-bottom:20px;">
+            <span style="font-size:2.5em;">&#10004;</span>
+        </div>
+        <h2 style="color:#2e7d32;font-size:2em;margin-bottom:15px;">Teste conclu&#237;do!</h2>
+        <p style="color:#555;font-size:1.2em;margin-bottom:10px;">Seus resultados foram enviados com sucesso para o painel do profissional.</p>
+        <p style="color:#777;font-size:0.95em;margin-bottom:25px;">O avaliador j&#225; pode visualizar sua produ&#231;&#227;o criativa no painel.</p>
+        <div style="background:#e0f2f1;border:2px solid #00695c;border-radius:12px;padding:15px;display:inline-block;">
+            <p style="color:#004d40;font-size:0.9em;font-weight:600;">&#128274; Voc&#234; pode fechar esta janela com seguran&#231;a.</p>
+        </div>
     </div>
 </div>
 
@@ -414,12 +420,12 @@ function testarMicrofone() {
             var sum = 0;
             for (var i = 0; i < dataArray.length; i++) sum += dataArray[i];
             var avg = sum / dataArray.length;
-            var pct = Math.min(100, Math.round((avg / 128) * 100));
+            var pct = Math.min(100, Math.round((avg / 40) * 100));
 
             document.getElementById('micLevel').style.width = pct + '%';
 
-            // Detectar fala (volume acima de 15%)
-            if (pct > 15) {
+            // Detectar fala (volume acima de 5%)
+            if (pct > 5) {
                 peakCount++;
                 if (peakCount >= 5 && !_micDetected) {
                     _micDetected = true;
@@ -699,11 +705,43 @@ async function finalizarTeste() {
         if (!resp.ok) throw new Error(data.error || 'Erro na transcricao');
         var transcricao = data.text || '';
 
+        document.getElementById('progressFill').style.width = '50%';
+        document.getElementById('progressText').textContent = 'Analisando ideias com IA...';
+
+        // Enviar transcricao para IA extrair e categorizar ideias
+        var estimulosLista = '';
+        for (var ei = 0; ei < registroEstimulos.length; ei++) {
+            estimulosLista += (ei + 1) + '. ' + registroEstimulos[ei].estimulo + '\n';
+        }
+        var promptIA = 'Voce e um assistente de avaliacao neuropsicologica. Analise a transcricao abaixo de um teste de pensamento divergente (usos alternativos). O avaliando recebeu estimulos sequenciais e falou ideias de usos criativos para cada um.\n\n'
+            + 'ESTIMULOS APRESENTADOS (em ordem):\n' + estimulosLista + '\n'
+            + 'TRANSCRICAO COMPLETA:\n"' + transcricao + '"\n\n'
+            + 'TAREFA: Extraia CADA ideia distinta mencionada. Ignore hesitacoes, repeticoes, e falas irrelevantes (ex: "hmm", "entao", "deixa eu pensar"). Conte apenas ideias reais de uso alternativo.\n\n'
+            + 'Retorne SOMENTE um JSON valido (sem markdown, sem explicacao) neste formato:\n'
+            + '{"ideias":[{"estimulo":"nome do estimulo","ideia":"descricao curta da ideia","categoria":"categoria da ideia"}],"resumo":{"totalIdeias":N,"totalEstimulos":N,"mediaPorItem":N.N,"categorias":{"nome_categoria":quantidade}}}\n\n'
+            + 'Categorias possiveis: utilitario, artistico, ludico, cientifico, social, absurdo_criativo, outro.\n'
+            + 'Se a transcricao estiver vazia ou ininteligivel, retorne: {"ideias":[],"resumo":{"totalIdeias":0,"totalEstimulos":0,"mediaPorItem":0,"categorias":{}}}';
+
+        var resultadoIA = null;
+        try {
+            var aiResp = await fetch(API_URL + '/generate-ai', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: promptIA })
+            });
+            var aiData = await aiResp.json();
+            if (aiData.text) {
+                // Limpar possivel markdown do retorno
+                var jsonStr = aiData.text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+                try { resultadoIA = JSON.parse(jsonStr); } catch(pe) { resultadoIA = null; }
+            }
+        } catch(aiErr) { resultadoIA = null; }
+
         document.getElementById('progressFill').style.width = '80%';
         document.getElementById('progressText').textContent = 'Calculando resultados...';
 
-        // Calcular resultados
-        var resultado = calcularResultados(transcricao);
+        // Calcular resultados (usa IA se disponivel, senao fallback local)
+        var resultado = calcularResultados(transcricao, resultadoIA);
 
         // Coleta anonima
         window._escalaDados = {
@@ -745,13 +783,13 @@ async function finalizarTeste() {
         // Tela fim
         trocarTela('tela-fim');
 
-        // Auto-fechar
+        // Auto-fechar (8s para o usuario ler a mensagem)
         setTimeout(function() {
             var _s = document.createElement('script');
             _s.src = 'auto-close.js';
             _s.onload = function() { if (window._autoFechar) _autoFechar(); };
             document.body.appendChild(_s);
-        }, 2000);
+        }, 8000);
 
     } catch (erro) {
         console.error('Erro na transcri\u00e7\u00e3o:', erro);
@@ -768,17 +806,30 @@ async function finalizarTeste() {
 }
 
 // ===== CALCULAR RESULTADOS =====
-function calcularResultados(transcricao) {
-    // A transcricao contem tudo que foi dito em 10 minutos
-    // Separar por frases/ideias (cada frase curta e uma ideia)
-    var frases = transcricao
-        .replace(/\.\.\./g, '.')
-        .split(/[.!?\n]+/)
-        .map(function(f) { return f.trim(); })
-        .filter(function(f) { return f.length > 3; });
-
-    var totalIdeias = frases.length;
+function calcularResultados(transcricao, resultadoIA) {
+    var totalIdeias = 0;
     var itensAlcancados = registroEstimulos.length;
+    var ideiasList = [];
+    var categorias = {};
+
+    if (resultadoIA && resultadoIA.resumo && resultadoIA.ideias) {
+        // MODO IA: usar resultado refinado pela inteligencia artificial
+        totalIdeias = resultadoIA.resumo.totalIdeias || resultadoIA.ideias.length;
+        ideiasList = resultadoIA.ideias || [];
+        categorias = resultadoIA.resumo.categorias || {};
+    } else {
+        // FALLBACK LOCAL: separar por frases (menos preciso)
+        var frases = transcricao
+            .replace(/\.\.\./g, '.')
+            .split(/[.!?\n]+/)
+            .map(function(f) { return f.trim(); })
+            .filter(function(f) { return f.length > 3; });
+        totalIdeias = frases.length;
+        for (var fi = 0; fi < frases.length; fi++) {
+            ideiasList.push({estimulo: '', ideia: frases[fi], categoria: 'outro'});
+        }
+    }
+
     var mediaIdeias = itensAlcancados > 0 ? totalIdeias / itensAlcancados : 0;
     var faixa = dadosForm.faixaEtaria || '18+';
     var classificacao = classificar(mediaIdeias, faixa);
@@ -786,7 +837,7 @@ function calcularResultados(transcricao) {
     // Tempo usado
     var tempoUsado = tempoTotal - tempoRestante;
 
-    // Dados por bloco
+    // Dados por bloco (usa dados visuais do registro local)
     var dadosBlocos = [];
     for (var b = 0; b < BLOCOS.length; b++) {
         var ideiasBloco = 0;
@@ -805,9 +856,41 @@ function calcularResultados(transcricao) {
         });
     }
 
+    // Se IA disponivel, recalcular blocos pela lista de ideias da IA
+    if (resultadoIA && resultadoIA.ideias && resultadoIA.ideias.length > 0) {
+        dadosBlocos = [];
+        for (var b2 = 0; b2 < BLOCOS.length; b2++) {
+            var ideiasB = 0;
+            var itensB = BLOCOS[b2].itens.length;
+            for (var ii = 0; ii < resultadoIA.ideias.length; ii++) {
+                var ideiaEstimulo = (resultadoIA.ideias[ii].estimulo || '').toLowerCase();
+                for (var ib = 0; ib < BLOCOS[b2].itens.length; ib++) {
+                    if (ideiaEstimulo.indexOf(BLOCOS[b2].itens[ib].toLowerCase()) >= 0) {
+                        ideiasB++;
+                        break;
+                    }
+                }
+            }
+            dadosBlocos.push({
+                nome: BLOCOS[b2].nome,
+                itens: itensB,
+                ideias: ideiasB,
+                media: itensB > 0 ? (ideiasB / itensB).toFixed(1) : '0'
+            });
+        }
+        // Recalcular media com dados da IA
+        var itensAlcIA = 0;
+        for (var ba = 0; ba < dadosBlocos.length; ba++) {
+            if (dadosBlocos[ba].ideias > 0) itensAlcIA += dadosBlocos[ba].itens;
+        }
+        if (itensAlcIA > 0) mediaIdeias = totalIdeias / itensAlcIA;
+        classificacao = classificar(mediaIdeias, faixa);
+    }
+
     return {
         transcricao: transcricao,
-        frases: frases,
+        ideiasList: ideiasList,
+        categorias: categorias,
         totalIdeias: totalIdeias,
         itensAlcancados: itensAlcancados,
         mediaIdeias: mediaIdeias,
@@ -816,7 +899,8 @@ function calcularResultados(transcricao) {
         tempoUsado: tempoUsado,
         dadosBlocos: dadosBlocos,
         registroEstimulos: registroEstimulos,
-        ideiasPorItemVisual: ideiasPorItem
+        ideiasPorItemVisual: ideiasPorItem,
+        usouIA: !!(resultadoIA && resultadoIA.ideias)
     };
 }
 
@@ -850,6 +934,7 @@ async function salvarResultado(resultado, audioS3Key) {
     dados.idPaciente = dadosForm.id || '';
     dados.data.pacienteId = sessionInfo.pacienteId || '';
     dados.data.idPaciente = dadosForm.id || '';
+    dados.originalSessionId = sessionInfo.sessionId || '';
     try {
         await fetch(API_URL + '/save-result', {
             method: 'POST',
@@ -893,7 +978,7 @@ function decodificarURL() {
     if (s) {
         fetch(API_URL + '/get-session?id=' + s).then(function(r) {
             if (r.status === 410) {
-                document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#fff3e0,#ffe0b2);text-align:center;padding:20px;"><h1 style="color:#c62828;font-size:24px;margin-bottom:10px;">Este link j\u00e1 foi utilizado.</h1><p style="font-size:16px;color:#555;">Solicite um novo link ao seu avaliador.</p></div>';
+                document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#e0f2f1,#b2dfdb);text-align:center;padding:20px;"><h1 style="color:#c62828;font-size:24px;margin-bottom:10px;">Este link j\u00e1 foi utilizado.</h1><p style="font-size:16px;color:#555;">Solicite um novo link ao seu avaliador.</p></div>';
                 throw new Error('link_usado');
             }
             return r.json();
