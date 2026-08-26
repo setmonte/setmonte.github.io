@@ -270,6 +270,11 @@ var ideiasPorItem = [];
 var silencioTimer = null;
 var SILENCIO_LIMITE = 20000; // 20 segundos
 var ultimaAtividade = 0;
+// Deteccao de silencio por VOLUME real do microfone (nao depende da Web Speech API)
+var _audioCtxVol = null;      // AudioContext do analisador de volume
+var _volAnalyser = null;      // AnalyserNode ligado ao stream gravado
+var _volData = null;          // buffer de leitura do volume
+var LIMIAR_FALA = 8;          // volume medio acima disso = "esta falando" (calibravel)
 var testeEmAndamento = false;
 
 // Registrar ideias por item (para analise posterior na transcricao)
@@ -482,6 +487,16 @@ async function iniciarTeste() {
             if (e.data.size > 0) audioChunks.push(e.data);
         };
         mediaRecorder.start(1000);
+        // Analisador de volume no MESMO stream (sem abrir outro acesso ao mic).
+        // Serve para detectar silencio pelo audio real, independente da Web Speech API.
+        try {
+            _audioCtxVol = new (window.AudioContext || window.webkitAudioContext)();
+            var _srcVol = _audioCtxVol.createMediaStreamSource(stream);
+            _volAnalyser = _audioCtxVol.createAnalyser();
+            _volAnalyser.fftSize = 256;
+            _srcVol.connect(_volAnalyser);
+            _volData = new Uint8Array(_volAnalyser.frequencyBinCount);
+        } catch(e) { _volAnalyser = null; }
     } catch (erro) {
         alert('N\u00e3o foi poss\u00edvel acessar o microfone. Verifique as permiss\u00f5es do navegador.');
         return;
@@ -583,11 +598,29 @@ function iniciarMonitorSilencio() {
     if (silencioTimer) clearInterval(silencioTimer);
     silencioTimer = setInterval(function() {
         if (!testeEmAndamento) return;
+
+        // Se temos o analisador de volume, usamos o AUDIO REAL para saber se esta falando.
+        // Isso funciona mesmo quando a Web Speech API nao pega o microfone (ex: webcam).
+        if (_volAnalyser && _volData) {
+            _volAnalyser.getByteFrequencyData(_volData);
+            var soma = 0;
+            for (var i = 0; i < _volData.length; i++) soma += _volData[i];
+            var media = soma / _volData.length;
+            if (media >= LIMIAR_FALA) {
+                // Esta falando: reseta o relogio de silencio e fecha o check-in se estiver aberto
+                ultimaAtividade = Date.now();
+                var ov = document.getElementById('checkinOverlay');
+                if (ov && ov.classList.contains('show')) ov.classList.remove('show');
+                return;
+            }
+        }
+
+        // Silencio (ou sem analisador): conta o tempo desde a ultima atividade
         var silencio = Date.now() - ultimaAtividade;
         if (silencio >= SILENCIO_LIMITE) {
             mostrarCheckin();
         }
-    }, 2000);
+    }, 500);
 }
 
 function mostrarCheckin() {
@@ -681,6 +714,9 @@ async function finalizarTeste() {
         mediaRecorder.stop();
         mediaRecorder.stream.getTracks().forEach(function(t) { t.stop(); });
     }
+
+    // Fechar analisador de volume
+    if (_audioCtxVol) { try { _audioCtxVol.close(); } catch(e) {} _audioCtxVol = null; _volAnalyser = null; _volData = null; }
 
     // Tela de processamento
     trocarTela('tela-processando');
