@@ -275,6 +275,7 @@ var testeEmAndamento = false;
 // Registrar ideias por item (para analise posterior na transcricao)
 var registroEstimulos = []; // [{estimulo, bloco, inicio, fim}]
 var tempoInicioTeste = 0;
+var timestampsIdeias = []; // segundos desde o inicio, para cada ideia registrada
 
 // ===== UTILIDADES =====
 function calcularIdade() {
@@ -493,6 +494,7 @@ async function iniciarTeste() {
     ideiasTotal = 0;
     ideiasPorItem = [];
     registroEstimulos = [];
+    timestampsIdeias = [];
     tempoRestante = tempoTotal;
     tempoInicioTeste = Date.now();
     ultimaAtividade = Date.now();
@@ -560,6 +562,9 @@ function registrarIdeia(texto) {
     ideiasTotal++;
     var regIdx = registroEstimulos.length - 1;
     if (regIdx >= 0) registroEstimulos[regIdx].ideias++;
+
+    // Registrar timestamp da ideia (segundos desde o inicio do teste)
+    timestampsIdeias.push((Date.now() - tempoInicioTeste) / 1000);
 
     document.getElementById('contadorIdeias').textContent = ideiasPorItem[idx];
 
@@ -713,14 +718,29 @@ async function finalizarTeste() {
         for (var ei = 0; ei < registroEstimulos.length; ei++) {
             estimulosLista += (ei + 1) + '. ' + registroEstimulos[ei].estimulo + '\n';
         }
-        var promptIA = 'Voce e um assistente de avaliacao neuropsicologica. Analise a transcricao abaixo de um teste de pensamento divergente (usos alternativos). O avaliando recebeu estimulos sequenciais e falou ideias de usos criativos para cada um.\n\n'
+        var promptIA = 'Voce e um assistente de avaliacao neuropsicologica especializado em pensamento divergente. Analise a transcricao abaixo de um teste de criatividade (usos alternativos). O avaliando recebeu estimulos sequenciais e falou ideias de usos criativos para cada um.\n\n'
             + 'ESTIMULOS APRESENTADOS (em ordem):\n' + estimulosLista + '\n'
             + 'TRANSCRICAO COMPLETA:\n"' + transcricao + '"\n\n'
-            + 'TAREFA: Extraia CADA ideia distinta mencionada. Ignore hesitacoes, repeticoes, e falas irrelevantes (ex: "hmm", "entao", "deixa eu pensar"). Conte apenas ideias reais de uso alternativo.\n\n'
+            + 'TAREFA: Extraia CADA ideia distinta mencionada. Ignore hesitacoes, repeticoes exatas, e falas irrelevantes (ex: "hmm", "entao", "deixa eu pensar", "proximo").\n\n'
+            + 'Para CADA ideia, avalie:\n'
+            + '- categoria: utilitario, artistico, ludico, cientifico, social, absurdo_criativo, outro\n'
+            + '- originalidade (1-5): 1=muito obvio/comum, 2=comum, 3=moderado, 4=incomum, 5=muito original/surpreendente\n'
+            + '- elaboracao (1-3): 1=simples/curta, 2=algum detalhe, 3=detalhada/complexa\n'
+            + '- similar_a (indice da ideia anterior que e parecida, ou null se unica)\n\n'
+            + 'No resumo, calcule:\n'
+            + '- totalIdeias: numero total de ideias validas\n'
+            + '- totalEstimulos: quantos estimulos tiveram pelo menos 1 ideia\n'
+            + '- mediaPorItem: totalIdeias / totalEstimulos\n'
+            + '- fluencia: total de ideias (igual totalIdeias)\n'
+            + '- flexibilidade: numero de CATEGORIAS DIFERENTES usadas\n'
+            + '- originalidade_media: media dos scores de originalidade (1-5)\n'
+            + '- elaboracao_media: media dos scores de elaboracao (1-3)\n'
+            + '- repeticoes: quantas ideias sao similares a outra (similar_a != null)\n'
+            + '- ideiasOriginais: quantas ideias tem originalidade >= 4\n'
+            + '- categorias: objeto com contagem por categoria\n\n'
             + 'Retorne SOMENTE um JSON valido (sem markdown, sem explicacao) neste formato:\n'
-            + '{"ideias":[{"estimulo":"nome do estimulo","ideia":"descricao curta da ideia","categoria":"categoria da ideia"}],"resumo":{"totalIdeias":N,"totalEstimulos":N,"mediaPorItem":N.N,"categorias":{"nome_categoria":quantidade}}}\n\n'
-            + 'Categorias possiveis: utilitario, artistico, ludico, cientifico, social, absurdo_criativo, outro.\n'
-            + 'Se a transcricao estiver vazia ou ininteligivel, retorne: {"ideias":[],"resumo":{"totalIdeias":0,"totalEstimulos":0,"mediaPorItem":0,"categorias":{}}}';
+            + '{"ideias":[{"estimulo":"nome","ideia":"descricao curta","categoria":"cat","originalidade":N,"elaboracao":N,"similar_a":null}],"resumo":{"totalIdeias":N,"totalEstimulos":N,"mediaPorItem":N.N,"fluencia":N,"flexibilidade":N,"originalidade_media":N.N,"elaboracao_media":N.N,"repeticoes":N,"ideiasOriginais":N,"categorias":{"cat":N}}}\n\n'
+            + 'Se a transcricao estiver vazia ou ininteligivel, retorne: {"ideias":[],"resumo":{"totalIdeias":0,"totalEstimulos":0,"mediaPorItem":0,"fluencia":0,"flexibilidade":0,"originalidade_media":0,"elaboracao_media":0,"repeticoes":0,"ideiasOriginais":0,"categorias":{}}}';
 
         var resultadoIA = null;
         try {
@@ -812,11 +832,24 @@ function calcularResultados(transcricao, resultadoIA) {
     var ideiasList = [];
     var categorias = {};
 
+    // Metricas avancadas (padrao)
+    var flexibilidade = 0;
+    var originalidadeMedia = 0;
+    var elaboracaoMedia = 0;
+    var repeticoes = 0;
+    var ideiasOriginais = 0;
+
     if (resultadoIA && resultadoIA.resumo && resultadoIA.ideias) {
         // MODO IA: usar resultado refinado pela inteligencia artificial
-        totalIdeias = resultadoIA.resumo.totalIdeias || resultadoIA.ideias.length;
+        var rsm = resultadoIA.resumo;
+        totalIdeias = rsm.totalIdeias || resultadoIA.ideias.length;
         ideiasList = resultadoIA.ideias || [];
-        categorias = resultadoIA.resumo.categorias || {};
+        categorias = rsm.categorias || {};
+        flexibilidade = rsm.flexibilidade || Object.keys(categorias).length;
+        originalidadeMedia = rsm.originalidade_media || 0;
+        elaboracaoMedia = rsm.elaboracao_media || 0;
+        repeticoes = rsm.repeticoes || 0;
+        ideiasOriginais = rsm.ideiasOriginais || 0;
     } else {
         // FALLBACK LOCAL: separar por frases (menos preciso)
         var frases = transcricao
@@ -828,6 +861,32 @@ function calcularResultados(transcricao, resultadoIA) {
         for (var fi = 0; fi < frases.length; fi++) {
             ideiasList.push({estimulo: '', ideia: frases[fi], categoria: 'outro'});
         }
+    }
+
+    // CURVA TEMPORAL (velocidade de ideias por minuto) - baseada nos timestamps locais
+    var curvaTemporal = { porMinuto: [], intervaloMedio: 0, primeiraMetade: 0, segundaMetade: 0 };
+    if (timestampsIdeias.length > 0) {
+        var tempoUsadoSeg = tempoTotal - tempoRestante;
+        var minutos = Math.max(1, Math.ceil(tempoUsadoSeg / 60));
+        var porMin = [];
+        for (var mn = 0; mn < minutos; mn++) porMin.push(0);
+        for (var ti = 0; ti < timestampsIdeias.length; ti++) {
+            var minIdx = Math.floor(timestampsIdeias[ti] / 60);
+            if (minIdx < porMin.length) porMin[minIdx]++;
+        }
+        curvaTemporal.porMinuto = porMin;
+        // Intervalo medio entre ideias
+        if (timestampsIdeias.length > 1) {
+            var somaInt = 0;
+            for (var iv = 1; iv < timestampsIdeias.length; iv++) {
+                somaInt += (timestampsIdeias[iv] - timestampsIdeias[iv-1]);
+            }
+            curvaTemporal.intervaloMedio = (somaInt / (timestampsIdeias.length - 1)).toFixed(1);
+        }
+        // Comparar 1a metade vs 2a metade (esgotamento)
+        var metade = Math.floor(timestampsIdeias.length / 2);
+        curvaTemporal.primeiraMetade = metade;
+        curvaTemporal.segundaMetade = timestampsIdeias.length - metade;
     }
 
     var mediaIdeias = itensAlcancados > 0 ? totalIdeias / itensAlcancados : 0;
@@ -887,6 +946,9 @@ function calcularResultados(transcricao, resultadoIA) {
         classificacao = classificar(mediaIdeias, faixa);
     }
 
+    // Ideias por minuto (velocidade media)
+    var ideiasPorMinuto = tempoUsado > 0 ? (totalIdeias / (tempoUsado / 60)).toFixed(1) : '0';
+
     return {
         transcricao: transcricao,
         ideiasList: ideiasList,
@@ -900,7 +962,16 @@ function calcularResultados(transcricao, resultadoIA) {
         dadosBlocos: dadosBlocos,
         registroEstimulos: registroEstimulos,
         ideiasPorItemVisual: ideiasPorItem,
-        usouIA: !!(resultadoIA && resultadoIA.ideias)
+        usouIA: !!(resultadoIA && resultadoIA.ideias),
+        // Metricas avancadas
+        fluencia: totalIdeias,
+        flexibilidade: flexibilidade,
+        originalidadeMedia: originalidadeMedia,
+        elaboracaoMedia: elaboracaoMedia,
+        repeticoes: repeticoes,
+        ideiasOriginais: ideiasOriginais,
+        ideiasPorMinuto: ideiasPorMinuto,
+        curvaTemporal: curvaTemporal
     };
 }
 

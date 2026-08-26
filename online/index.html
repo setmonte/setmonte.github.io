@@ -1722,6 +1722,7 @@
               <button class="btn btn-green" id="btnNewIdeia" onclick="showNewIdeia()">Nova Aplicacao</button>
               <button class="btn btn-blue" onclick="showIdeiaResults()">Resultados</button>
               <a href="#" class="btn btn-orange" onclick="document.getElementById('ideiaPlansSection').classList.toggle('hidden');return false;">Comprar Creditos</a>
+              <a href="manual-ideia.html" target="_blank" class="btn" style="background:#607d8b;color:#fff;">&#128212; Manual T&#233;cnico</a>
             </div>
             <!-- Planos IDEIA -->
             <div id="ideiaPlansSection" class="hidden" style="margin-top:15px;">
@@ -9174,54 +9175,141 @@
     function _gerarPdfIdeiaReal(fd, res, d) {
       var jsPDF = window.jspdf.jsPDF;
       var doc = new jsPDF();
+      var TEAL = [0, 105, 92];
+      function checkPage(yv) { if (yv > 275) { doc.addPage(); return 20; } return yv; }
       var y = 20;
-      doc.setFillColor(230, 81, 0);
+      // Cabecalho
+      doc.setFillColor(TEAL[0], TEAL[1], TEAL[2]);
       doc.rect(0, 0, 210, 30, 'F');
       doc.setTextColor(255, 255, 255);
-      doc.setFontSize(16);
+      doc.setFontSize(15);
       doc.text('IDEIA - Instrumento de Divergencia e Elaboracao de Ideias Alternativas', 105, 12, {align: 'center'});
       doc.setFontSize(10);
       doc.text('Rastreio de Criatividade e Pensamento Divergente', 105, 22, {align: 'center'});
       y = 40;
+      // Dados do paciente
       doc.setTextColor(0, 0, 0);
       doc.setFontSize(11);
       doc.text('Paciente: ' + (fd.nome || '-'), 15, y); y += 7;
       doc.text('Idade: ' + (fd.idade || '-') + '  |  Faixa: ' + (fd.faixaEtaria || '-'), 15, y); y += 7;
       doc.text('Escolaridade: ' + (fd.escolaridade || '-'), 15, y); y += 7;
       doc.text('Data da Avaliacao: ' + (fd.dataAval || '-') + '  |  ID: ' + (fd.id || '-'), 15, y); y += 12;
+
+      // === RESULTADOS PRINCIPAIS ===
       doc.setFontSize(13);
-      doc.setTextColor(230, 81, 0);
-      doc.text('Resultados', 15, y); y += 8;
+      doc.setTextColor(TEAL[0], TEAL[1], TEAL[2]);
+      doc.text('Resultados Principais', 15, y); y += 8;
       doc.setFontSize(11);
       doc.setTextColor(0, 0, 0);
-      doc.text('Total de ideias: ' + (res.totalIdeias || '-'), 15, y); y += 7;
-      doc.text('Itens alcancados: ' + (res.itensAlcancados || '-') + ' / 20', 15, y); y += 7;
-      doc.text('Media de ideias por item: ' + (res.mediaIdeias ? res.mediaIdeias.toFixed(1) : '-'), 15, y); y += 7;
+      doc.text('Fluencia (total de ideias): ' + (res.totalIdeias || 0), 15, y); y += 7;
+      doc.text('Itens alcancados: ' + (res.itensAlcancados || 0) + ' / 20', 15, y); y += 7;
+      doc.text('Media de ideias por item: ' + (res.mediaIdeias ? res.mediaIdeias.toFixed(1) : '0'), 15, y); y += 7;
+      doc.text('Velocidade: ' + (res.ideiasPorMinuto || '0') + ' ideias por minuto', 15, y); y += 7;
       doc.text('Tempo utilizado: ' + (res.tempoUsado ? Math.floor(res.tempoUsado/60) + 'min ' + (res.tempoUsado%60) + 's' : '-'), 15, y); y += 10;
+      // Classificacao
       doc.setFontSize(12);
-      var classColor = (res.classificacao || '').indexOf('Excepcional') >= 0 ? [230,81,0] : (res.classificacao || '').indexOf('Alta') >= 0 ? [46,125,50] : [33,33,33];
+      var classColor = (res.classificacao || '').indexOf('Excepcional') >= 0 ? TEAL : (res.classificacao || '').indexOf('Alta') >= 0 ? [46,125,50] : [33,33,33];
       doc.setTextColor(classColor[0], classColor[1], classColor[2]);
       doc.text('Classificacao: ' + (res.classificacao || '-'), 15, y); y += 12;
-      // Blocos
-      if (res.dadosBlocos && res.dadosBlocos.length > 0) {
-        doc.setTextColor(230, 81, 0);
+
+      // === METRICAS DE CRIATIVIDADE (Guilford) ===
+      y = checkPage(y);
+      doc.setFontSize(13);
+      doc.setTextColor(TEAL[0], TEAL[1], TEAL[2]);
+      doc.text('Indicadores de Criatividade', 15, y); y += 8;
+      doc.setFontSize(10);
+      doc.setTextColor(0, 0, 0);
+      doc.text('Flexibilidade (categorias diferentes usadas): ' + (res.flexibilidade || 0), 15, y); y += 6;
+      doc.text('Originalidade media (1-5): ' + (res.originalidadeMedia ? Number(res.originalidadeMedia).toFixed(1) : '-'), 15, y); y += 6;
+      doc.text('Ideias muito originais (score >= 4): ' + (res.ideiasOriginais || 0), 15, y); y += 6;
+      doc.text('Elaboracao media (1-3): ' + (res.elaboracaoMedia ? Number(res.elaboracaoMedia).toFixed(1) : '-'), 15, y); y += 6;
+      doc.text('Ideias repetidas/similares: ' + (res.repeticoes || 0), 15, y); y += 10;
+
+      // === CATEGORIAS ===
+      if (res.categorias && Object.keys(res.categorias).length > 0) {
+        y = checkPage(y);
         doc.setFontSize(11);
-        doc.text('Desempenho por Bloco:', 15, y); y += 7;
-        doc.setTextColor(0, 0, 0);
+        doc.setTextColor(TEAL[0], TEAL[1], TEAL[2]);
+        doc.text('Distribuicao por Categoria de Ideia:', 15, y); y += 7;
         doc.setFontSize(10);
+        doc.setTextColor(0, 0, 0);
+        var cats = res.categorias;
+        for (var ck in cats) {
+          if (cats.hasOwnProperty(ck)) {
+            doc.text('- ' + ck.replace(/_/g, ' ') + ': ' + cats[ck], 20, y); y += 6;
+            y = checkPage(y);
+          }
+        }
+        y += 4;
+      }
+
+      // === CURVA TEMPORAL ===
+      if (res.curvaTemporal && res.curvaTemporal.porMinuto && res.curvaTemporal.porMinuto.length > 0) {
+        y = checkPage(y);
+        doc.setFontSize(11);
+        doc.setTextColor(TEAL[0], TEAL[1], TEAL[2]);
+        doc.text('Curva Temporal (ideias por minuto):', 15, y); y += 7;
+        doc.setFontSize(10);
+        doc.setTextColor(0, 0, 0);
+        var cm = res.curvaTemporal.porMinuto;
+        var linha = '';
+        for (var mi = 0; mi < cm.length; mi++) { linha += 'Min ' + (mi+1) + ': ' + cm[mi] + '   '; }
+        doc.text(linha, 20, y); y += 6;
+        doc.text('Intervalo medio entre ideias: ' + (res.curvaTemporal.intervaloMedio || '-') + 's', 20, y); y += 6;
+        doc.text('1a metade: ' + (res.curvaTemporal.primeiraMetade || 0) + ' ideias  |  2a metade: ' + (res.curvaTemporal.segundaMetade || 0) + ' ideias', 20, y); y += 10;
+      }
+
+      // === BLOCOS ===
+      if (res.dadosBlocos && res.dadosBlocos.length > 0) {
+        y = checkPage(y);
+        doc.setTextColor(TEAL[0], TEAL[1], TEAL[2]);
+        doc.setFontSize(11);
+        doc.text('Desempenho por Bloco (progressao de dificuldade):', 15, y); y += 7;
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(9);
         for (var b = 0; b < res.dadosBlocos.length; b++) {
           var bl = res.dadosBlocos[b];
           doc.text((b+1) + '. ' + bl.nome + ': ' + bl.ideias + ' ideias em ' + bl.itens + ' itens (media: ' + bl.media + ')', 20, y);
           y += 6;
+          y = checkPage(y);
         }
         y += 5;
       }
+
+      // === REFERENCIAS ===
+      y = checkPage(y);
+      if (y > 240) { doc.addPage(); y = 20; }
+      doc.setFontSize(11);
+      doc.setTextColor(TEAL[0], TEAL[1], TEAL[2]);
+      doc.text('Fundamentacao Teorica (ABNT)', 15, y); y += 7;
+      doc.setFontSize(7.5);
+      doc.setTextColor(60, 60, 60);
+      var refs = [
+        'GUILFORD, J. P. The nature of human intelligence. New York: McGraw-Hill, 1967.',
+        'TORRANCE, E. P. Torrance Tests of Creative Thinking. Bensenville: Scholastic Testing Service, 1974.',
+        'WALLACH, M. A.; KOGAN, N. Modes of thinking in young children. New York: Holt, Rinehart & Winston, 1965.',
+        'SILVIA, P. J. et al. Assessing creativity with divergent thinking tasks. Psychology of Aesthetics,',
+        '   Creativity, and the Arts, v. 2, n. 2, p. 68-85, 2008.',
+        'BEATY, R. E.; SILVIA, P. J. Why do ideas get more creative over time? Psychology of Aesthetics,',
+        '   Creativity, and the Arts, v. 6, n. 4, p. 309-319, 2012.',
+        'NAKANO, T. C.; WECHSLER, S. M. Teste Brasileiro de Criatividade Figural. Interamerican Journal',
+        '   of Psychology, v. 40, n. 1, p. 103-110, 2006.',
+        'RENZULLI, J. S. The three-ring conception of giftedness. In: STERNBERG, R. J.; DAVIDSON, J. E. (Ed.).',
+        '   Conceptions of giftedness. Cambridge: Cambridge University Press, 2005. p. 246-279.'
+      ];
+      for (var ri = 0; ri < refs.length; ri++) {
+        doc.text(refs[ri], 15, y); y += 4;
+        y = checkPage(y);
+      }
+      y += 4;
+
       // Disclaimer
+      y = checkPage(y);
       doc.setFontSize(8);
       doc.setTextColor(120, 120, 120);
-      doc.text('Instrumento de rastreio sem validacao empirica formal. Nao substitui avaliacao clinica completa.', 15, y); y += 5;
-      doc.text('Base teorica: Guilford (1967), Torrance (1974). Faixas estimadas.', 15, y); y += 5;
-      doc.text('Gerado em: ' + new Date().toLocaleString('pt-BR'), 15, y);
+      doc.text('Instrumento de rastreio de teto alto (sem limite fixo de respostas). Faixas de classificacao', 15, y); y += 4;
+      doc.text('estimadas com base na literatura, sem validacao normativa brasileira formal. Nao substitui', 15, y); y += 4;
+      doc.text('avaliacao clinica completa. Gerado em: ' + new Date().toLocaleString('pt-BR'), 15, y);
       // Rodape
       doc.setFontSize(7);
       doc.text('SYM Online - setmonte.github.io', 105, 290, {align: 'center'});
