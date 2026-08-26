@@ -30,6 +30,14 @@
     .btn-blue { background: #1565c0; }
     .btn-blue:hover { background: #0d47a1; }
     .btn:disabled { background: #bbb; cursor: default; }
+    /* ===== Modal Nova Aplicacao IDEIA (popup centralizado, responsivo) ===== */
+    .ideia-modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
+    .ideia-modal-overlay.aberto { display: flex; }
+    .ideia-modal-box { background: #fff; border-radius: 12px; max-width: 500px; width: 100%; max-height: 88vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.3); }
+    .ideia-modal-header { display: flex; align-items: center; justify-content: space-between; padding: 15px 20px; border-bottom: 1px solid #eee; position: sticky; top: 0; background: #fff; border-radius: 12px 12px 0 0; z-index: 1; }
+    .ideia-modal-header h2 { margin: 0; font-size: 18px; color: #00695c; }
+    .ideia-modal-fechar { background: none; border: none; font-size: 24px; cursor: pointer; color: #999; padding: 0 5px; line-height: 1; }
+    .ideia-modal-body { padding: 20px; }
     .credits-box { background: #e8f5e9; border: 2px solid #2e7d32; border-radius: 10px; padding: 15px; text-align: center; margin: 15px 0; }
     .credits-box .number { font-size: 48px; font-weight: bold; color: #2e7d32; }
     .credits-box .label { font-size: 14px; color: #555; }
@@ -2158,9 +2166,14 @@
       <!-- RESULTADOS TFLOD -->
       <div id="tflodResultsSection" class="card hidden"></div>
 
-      <!-- NOVA APLICACAO IDEIA -->
-      <div id="newIdeiaSection" class="card hidden">
-        <h2>Nova Aplicacao IDEIA</h2>
+      <!-- NOVA APLICACAO IDEIA (modal centralizado) -->
+      <div id="newIdeiaSection" class="ideia-modal-overlay" onclick="fecharModalIdeia(event)">
+       <div class="ideia-modal-box" onclick="event.stopPropagation()">
+        <div class="ideia-modal-header">
+          <h2>Nova Aplicacao IDEIA</h2>
+          <button class="ideia-modal-fechar" onclick="fecharModalIdeia()" title="Fechar">&#10005;</button>
+        </div>
+        <div class="ideia-modal-body">
         <p style="margin-bottom:10px;color:#555;font-size:0.9em;">Instrumento de Divergencia e Elaboracao de Ideias Alternativas — rastreio de criatividade com reconhecimento de voz</p>
         <label style="font-size:0.85em;color:#555;">Paciente cadastrado:</label>
         <select id="ideiaSelPac" onchange="preencherPaciente('ideia')" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:10px;">
@@ -2205,7 +2218,9 @@
             <button onclick="whatsappIdeiaLink()" class="btn btn-green" style="font-size:0.85em;">WhatsApp</button>
           </div>
         </div>
-      </div>
+        </div><!-- fim .ideia-modal-body -->
+       </div><!-- fim .ideia-modal-box -->
+      </div><!-- fim #newIdeiaSection (modal) -->
 
       <!-- RESULTADOS IDEIA -->
       <div id="ideiaResultsSection" class="card hidden"></div>
@@ -3350,7 +3365,7 @@
       document.getElementById('tabAdmin').classList.remove('active');
       document.getElementById('tabProgramasOcultos').classList.remove('active');
       ['plansSection','newTestSection','resultsSection','baePlansSection','newBaeSection','baeResultsSection','trmvPlansSection','newTrmvSection','trmvResultsSection','taavPlansSection','newTaavSection','taavResultsSection','trefPlansSection','newTrefSection','trefResultsSection','newTflodSection','tflodResultsSection','newCorsiSection','corsiResultsSection','newTteSection','tteResultsSection','newTetaylorSection','tetaylorResultsSection','newTetaylorsimpSection','tetaylorsimpResultsSection','newPfisterSection','pfisterResultsSection','newVineland3Section','vineland3ResultsSection','newIdeiaSection','ideiaResultsSection'].forEach(function(id) {
-        var el = document.getElementById(id); if (el) el.classList.add('hidden');
+        var el = document.getElementById(id); if (el) { el.classList.add('hidden'); el.classList.remove('aberto'); }
       });
       if (tab === 'funcExec') {
         document.getElementById('funcExecTab').classList.add('active');
@@ -9054,13 +9069,27 @@
     }
 
     function showNewIdeia() {
-      document.getElementById('newIdeiaSection').classList.toggle('hidden');
+      document.getElementById('newIdeiaSection').classList.add('aberto');
       if (document.getElementById('ideiaResultsSection')) document.getElementById('ideiaResultsSection').classList.add('hidden');
     }
 
+    // Fecha o modal de Nova Aplicacao IDEIA. Se receber o evento de clique,
+    // so fecha quando o clique foi no fundo escurecido (nao dentro do quadro).
+    function fecharModalIdeia(e) {
+      if (e && e.target !== document.getElementById('newIdeiaSection')) return;
+      document.getElementById('newIdeiaSection').classList.remove('aberto');
+    }
+    // Fecha o modal do IDEIA ao apertar Esc
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        var m = document.getElementById('newIdeiaSection');
+        if (m && m.classList.contains('aberto')) m.classList.remove('aberto');
+      }
+    });
+
     function showIdeiaResults() {
       if (document.getElementById('ideiaResultsSection')) document.getElementById('ideiaResultsSection').classList.toggle('hidden');
-      document.getElementById('newIdeiaSection').classList.add('hidden');
+      document.getElementById('newIdeiaSection').classList.remove('aberto');
       loadIdeiaResults();
     }
 
