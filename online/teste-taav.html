@@ -767,13 +767,15 @@
 
     // --- TRIAL 1 ---
     async function iniciarTrial1() {
-      // Verificar credito antes de iniciar
-      if (sessionData && sessionData.email && sessionData.email !== 'setmonte@gmail.com') {
+      // Verificar credito antes de iniciar (fail-closed). Admin nao consome.
+      var _em = (sessionData && sessionData.email) ? sessionData.email : '';
+      if (_em !== 'setmonte@gmail.com') {
+        if (!_em) { alert('Sessao invalida (sem identificacao). Solicite um novo link ao seu avaliador.'); return; }
         try {
           var _cr = await fetch(API_URL + '/use-credit', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({email: sessionData.email, tipo: 'taav'})
+            body: JSON.stringify({email: _em, tipo: 'taav'})
           });
           // Fail-closed: so libera se a verificacao respondeu OK. 403 ou qualquer erro bloqueia.
           if (!_cr.ok) {

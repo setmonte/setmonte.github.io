@@ -221,7 +221,23 @@
           } catch(e) {}
           // Mostrar pagina de instrucoes e aguardar clique do paciente
           document.getElementById('coverPage').style.display = 'flex';
-          document.getElementById('startButton').addEventListener('click', function() {
+          document.getElementById('startButton').addEventListener('click', async function() {
+            // Verificar e descontar credito antes de iniciar (fail-closed).
+            // Admin nao consome. Se nao houver email na sessao, bloqueia.
+            var _em = sessionData.email || '';
+            if (_em !== 'setmonte@gmail.com') {
+              if (!_em) { alert('Sessao invalida (sem identificacao). Solicite um novo link ao seu avaliador.'); return; }
+              try {
+                var _cr = await fetch(API_URL + '/use-credit', {
+                  method: 'POST',
+                  headers: {'Content-Type': 'application/json'},
+                  body: JSON.stringify({email: _em, tipo: 'tecfe'})
+                });
+                if (!_cr.ok) { alert('Creditos insuficientes ou nao foi possivel verificar. Consulte seu avaliador.'); return; }
+              } catch(e) {
+                alert('Nao foi possivel verificar seus creditos. Verifique a conexao e tente novamente.'); return;
+              }
+            }
             setTimeout(function() { testStarted = true; }, 1000);
           });
         }, 500);

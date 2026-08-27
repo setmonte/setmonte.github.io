@@ -472,13 +472,15 @@ function pararTesteMic() {
 
 async function iniciarTeste() {
     pararTesteMic();
-    // Verificar credito antes de iniciar
-    if (sessionInfo && sessionInfo.email && sessionInfo.email !== 'setmonte@gmail.com') {
+    // Verificar credito antes de iniciar (fail-closed). Admin nao consome.
+    var _em = (sessionInfo && sessionInfo.email) ? sessionInfo.email : '';
+    if (_em !== 'setmonte@gmail.com') {
+      if (!_em) { alert('Sessao invalida (sem identificacao). Solicite um novo link ao seu avaliador.'); return; }
       try {
         var _cr = await fetch(API_URL + '/use-credit', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({email: sessionInfo.email, tipo: 'tflod'})
+          body: JSON.stringify({email: _em, tipo: 'tflod'})
         });
         // Fail-closed: so libera se a verificacao respondeu OK. 403 ou qualquer erro bloqueia.
         if (!_cr.ok) {
