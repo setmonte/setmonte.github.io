@@ -471,11 +471,16 @@ async function iniciarTeste() {
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({email: sessionInfo.email, tipo: 'ideia'})
             });
-            if (_cr.status === 403) {
-                alert('Cr\u00e9ditos insuficientes. Consulte seu avaliador.');
+            // Fail-closed: so libera se a verificacao respondeu OK. 403 ou qualquer erro bloqueia.
+            if (!_cr.ok) {
+                alert('Cr\u00e9ditos insuficientes ou n\u00e3o foi poss\u00edvel verificar. Consulte seu avaliador.');
                 return;
             }
-        } catch(e) {}
+        } catch(e) {
+            // Se a verificacao falhar (rede/servidor), NAO liberar o teste.
+            alert('N\u00e3o foi poss\u00edvel verificar seus cr\u00e9ditos. Verifique a conex\u00e3o e tente novamente.');
+            return;
+        }
     }
 
     // Iniciar gravacao de audio

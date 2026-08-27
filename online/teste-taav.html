@@ -775,11 +775,16 @@
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({email: sessionData.email, tipo: 'taav'})
           });
-          if (_cr.status === 403) {
-            alert('Creditos insuficientes. Consulte seu avaliador.');
+          // Fail-closed: so libera se a verificacao respondeu OK. 403 ou qualquer erro bloqueia.
+          if (!_cr.ok) {
+            alert('Creditos insuficientes ou nao foi possivel verificar. Consulte seu avaliador.');
             return;
           }
-        } catch(e) {}
+        } catch(e) {
+          // Se a verificacao falhar (rede/servidor), NAO liberar o teste.
+          alert('Nao foi possivel verificar seus creditos. Verifique a conexao e tente novamente.');
+          return;
+        }
       }
       estadoTeste.faseAtual = 'instrucoes-t1';
       navegarPara('pagina-instrucoes-t1');

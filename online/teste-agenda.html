@@ -226,11 +226,16 @@ async function iniciarGravacao() {
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({email: sessionInfo.email, tipo: 'prontuario'})
       });
-      if (_cr.status === 403) {
-        alert('Creditos insuficientes. Consulte seu avaliador.');
+      // Fail-closed: so libera se a verificacao respondeu OK. 403 ou qualquer erro bloqueia.
+      if (!_cr.ok) {
+        alert('Creditos insuficientes ou nao foi possivel verificar. Consulte seu avaliador.');
         return;
       }
-    } catch(e) {}
+    } catch(e) {
+      // Se a verificacao falhar (rede/servidor), NAO liberar o teste.
+      alert('Nao foi possivel verificar seus creditos. Verifique a conexao e tente novamente.');
+      return;
+    }
   }
   gravando = true;
   pausado = false;
