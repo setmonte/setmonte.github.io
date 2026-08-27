@@ -78,9 +78,7 @@
     .tab-content { display:none; }
     .tab-content.active { display:block; }
     input[type="text"], input[type="date"], select { padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
-    /* Toggle switch */
-    #freeModeToggle:checked + span { background: #ff6f00; }
-    #freeModeToggle:checked + span + span { transform: translateX(24px); }
+
     .form-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
     .form-row label { font-size: 13px; color: #555; display: flex; flex-direction: column; gap: 4px; }
   </style>
@@ -1440,20 +1438,6 @@
               <button class="btn btn-green" style="padding:8px 16px;font-size:12px;margin-top:18px;" onclick="adminAddCredits()">Adicionar</button>
             </div>
             <p id="adminCreditMsg" style="font-size:11px;color:#555;margin-top:5px;"></p>
-          </div>
-          <div style="background:#fff8e1;border:2px solid #ff6f00;border-radius:10px;padding:15px;margin:10px 0;">
-            <div style="display:flex;align-items:center;justify-content:space-between;">
-              <div>
-                <p style="font-size:13px;font-weight:bold;color:#ff6f00;margin-bottom:4px;">🔓 Modo Gratuito</p>
-                <p style="font-size:11px;color:#777;">Todos os testes ficam gratuitos. Use para demonstracoes.</p>
-              </div>
-              <label style="position:relative;display:inline-block;width:50px;height:26px;cursor:pointer;">
-                <input type="checkbox" id="freeModeToggle" onchange="toggleFreeMode(this)" style="opacity:0;width:0;height:0;">
-                <span style="position:absolute;top:0;left:0;right:0;bottom:0;background:#ccc;border-radius:26px;transition:0.3s;"></span>
-                <span style="position:absolute;height:20px;width:20px;left:3px;bottom:3px;background:white;border-radius:50%;transition:0.3s;"></span>
-              </label>
-            </div>
-            <p id="freeModeStatus" style="font-size:11px;color:#c62828;margin-top:6px;font-weight:bold;display:none;">MODO GRATUITO ATIVO</p>
           </div>
           <div style="background:#e3f2fd;border:2px solid #1565c0;border-radius:10px;padding:15px;margin:10px 0;">
             <p style="font-size:13px;font-weight:bold;color:#1565c0;margin-bottom:8px;">&#x1F4CB; Historico de Creditos</p>
@@ -6198,48 +6182,20 @@
       } catch(e) { el.innerHTML = '<span style="color:#c62828;">Erro: ' + e.message + '</span>'; }
     }
 
-    function toggleFreeMode(el) {
-      var active = el.checked;
-      localStorage.setItem('freeMode', active ? 'true' : 'false');
-      var status = document.getElementById('freeModeStatus');
-      if (active) { status.style.display = 'block'; }
-      else { status.style.display = 'none'; }
-      aplicarFreeMode(active);
-    }
+    // ===== MODO GRATUITO REMOVIDO =====
+    // As funcoes abaixo foram neutralizadas: o modo gratuito nao existe mais.
+    // Mantidas como stubs vazios para nao quebrar chamadas espalhadas no codigo.
+    // Tambem limpamos qualquer residuo salvo no navegador (localStorage) de aparelhos
+    // onde o modo gratuito havia ficado ligado.
+    try { localStorage.removeItem('freeMode'); } catch(e) {}
 
-    function aplicarFreeMode(active) {
-      // Esconder/mostrar caixas de creditos
-      document.querySelectorAll('.credits-box').forEach(function(el) { el.style.display = active ? 'none' : ''; });
-      // Esconder/mostrar botoes "Comprar Creditos"
-      document.querySelectorAll('a.btn-orange').forEach(function(el) { if (el.textContent.indexOf('Comprar') >= 0) el.style.display = active ? 'none' : ''; });
-      // Esconder seções de planos caso estejam abertas
-      ['plansSection','baePlansSection','trmvPlansSection','taavPlansSection','trefPlansSection','tflodPlansSection'].forEach(function(id) {
-        var el = document.getElementById(id);
-        if (el && active) el.classList.add('hidden');
-      });
-      // Reabilitar botoes de nova aplicacao (caso tenham sido desabilitados por falta de credito)
-      if (active) {
-        ['btnNewTest','btnNewBae','btnNewTrmv','btnNewTaav','btnNewTref','btnNewTflod'].forEach(function(id) {
-          var btn = document.getElementById(id);
-          if (btn) { btn.disabled = false; btn.textContent = btn.textContent.replace('Sem creditos','Nova Aplicacao'); }
-        });
-      }
-    }
+    function toggleFreeMode(el) { /* removido */ }
 
-    function isFreeModeActive() {
-      return localStorage.getItem('freeMode') === 'true';
-    }
+    function aplicarFreeMode(active) { /* removido */ }
 
-    function initFreeModeToggle() {
-      var toggle = document.getElementById('freeModeToggle');
-      if (toggle) {
-        var active = isFreeModeActive();
-        toggle.checked = active;
-        var status = document.getElementById('freeModeStatus');
-        if (status) status.style.display = active ? 'block' : 'none';
-        aplicarFreeMode(active);
-      }
-    }
+    function isFreeModeActive() { return false; }
+
+    function initFreeModeToggle() { /* removido */ }
 
     async function carregarLogCreditos() {
       var area = document.getElementById('logCreditosArea');
