@@ -106,7 +106,9 @@ function _bvrtCalcZ(resultado, media, dp) {
 }
 
 function _bvrtClassificar(z, invertido) {
-  if (z==='-'||z===null||isNaN(z)) return {texto:'N/A',classe:'esperado'};
+  // DP=0 significa que ninguem varia nesse item (todos zeram). Se o paciente tambem nao errou,
+  // seu comportamento e esperado. Por isso mostramos "Resultado esperado" em vez de N/A.
+  if (z==='-'||z===null||isNaN(z)) return {texto:'Resultado esperado',classe:'esperado'};
   var valor = invertido ? z : -z;
   if (valor<=1.0) return {texto:'Desempenho esperado',classe:'esperado'};
   if (valor<=1.5) return {texto:'Sugestivo de alerta para deficit neuropsicologico',classe:'alerta'};
