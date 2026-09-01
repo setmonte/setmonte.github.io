@@ -865,9 +865,10 @@
         alert('Relatorio gerado com sucesso!');
     }
 
-    // ========== LAUDO VIA IA (GEMINI) ==========
-    const GEMINI_API_KEY = 'CHAVE_GEMINI_REMOVIDA';
-    const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=';
+    // ========== LAUDO VIA IA (via Lambda AWS) ==========
+    // A chave da IA NAO fica mais aqui no arquivo (que e publico). Em vez disso,
+    // chamamos a nossa Lambda (/generate-ai), que guarda a chave com seguranca na AWS.
+    const API_URL = 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
 
     async function gerarLaudoIA() {
         const contagens = dadosTeste.piramides.map(p => {
@@ -926,18 +927,18 @@
             '- NAO faca recomendacoes de tratamento\n' +
             '- Termine com conclusao sobre dinamica emocional global';
 
-        const body = JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] });
-
-        const response = await fetch(GEMINI_API_URL + GEMINI_API_KEY, {
+        // Envia o prompt para a nossa Lambda, que fala com o Gemini usando a chave guardada na AWS.
+        const response = await fetch(API_URL + '/generate-ai', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: body
+            body: JSON.stringify({ prompt: prompt })
         });
 
         if (!response.ok) throw new Error('HTTP ' + response.status);
         const data = await response.json();
-        if (data.candidates && data.candidates[0] && data.candidates[0].content) {
-            return data.candidates[0].content.parts[0].text.trim();
+        // A Lambda devolve o laudo no campo "text".
+        if (data && data.text) {
+            return data.text.trim();
         }
         return null;
     }

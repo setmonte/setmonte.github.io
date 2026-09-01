@@ -675,7 +675,7 @@ function iniciarReconhecimentoVisual() {
     };
 
     recognition.onerror = function() {
-        // Silencioso — a transcricao real e feita pelo Whisper
+        // Silencioso - a transcricao real e feita pelo Whisper
         setTimeout(function() {
             if (testeEmAndamento) {
                 try { recognition.start(); } catch(e) {}
@@ -751,7 +751,14 @@ async function finalizarTeste() {
         var data = await resp.json();
         audioS3Key = data.s3Key || '';
         if (!resp.ok) throw new Error(data.error || 'Erro na transcricao');
-        var transcricao = data.text || '';
+        var transcricao = (typeof data.text === 'string') ? data.text : '';
+
+        // Se a transcricao veio vazia, o audio nao teve fala reconhecivel.
+        // Nao geramos um resultado "fantasma" (zerado) que enganaria o avaliador:
+        // salvamos como erro tratado, mantendo o audio para eventual reprocessamento.
+        if (!transcricao.trim()) {
+            throw new Error('Transcricao vazia (audio sem fala reconhecivel)');
+        }
 
         document.getElementById('progressFill').style.width = '50%';
         document.getElementById('progressText').textContent = 'Analisando ideias com IA...';
@@ -804,17 +811,24 @@ async function finalizarTeste() {
         document.getElementById('progressText').textContent = 'Calculando resultados...';
 
         // Calcular resultados (usa IA se disponivel, senao fallback local)
-        var resultado = calcularResultados(transcricao, resultadoIA);
+        // Blindagem: garante que 'transcricao' seja sempre string e que 'resultado'
+        // seja sempre um objeto valido, mesmo se o calculo encontrar algo inesperado.
+        var transcricaoSegura = (typeof transcricao === 'string') ? transcricao : '';
+        var resultado = calcularResultados(transcricaoSegura, resultadoIA) || {};
+
+        // Blindagem: mediaIdeias sempre numero valido (evita 'reading mediaIdeias' de undefined/NaN)
+        var _media = Number(resultado.mediaIdeias);
+        if (!isFinite(_media)) { _media = 0; resultado.mediaIdeias = 0; }
 
         // Coleta anonima
         window._escalaDados = {
             escala: 'IDEIA',
-            escore: resultado.mediaIdeias,
-            classificacao: resultado.classificacao,
+            escore: _media,
+            classificacao: resultado.classificacao || 'Nao classificado',
             dominios: {
-                TotalIdeias: {pontuacao: resultado.totalIdeias, max: 999, classificacao: resultado.classificacao},
-                ItensAlcancados: {pontuacao: resultado.itensAlcancados, max: 20, classificacao: ''},
-                MediaPorItem: {pontuacao: parseFloat(resultado.mediaIdeias.toFixed(1)), max: 99, classificacao: resultado.classificacao}
+                TotalIdeias: {pontuacao: resultado.totalIdeias || 0, max: 999, classificacao: resultado.classificacao || ''},
+                ItensAlcancados: {pontuacao: resultado.itensAlcancados || 0, max: 20, classificacao: ''},
+                MediaPorItem: {pontuacao: parseFloat(_media.toFixed(1)), max: 99, classificacao: resultado.classificacao || ''}
             }
         };
 
@@ -835,8 +849,8 @@ async function finalizarTeste() {
                     idade: _idadeVal,
                     sexo: sessionInfo.sex || '',
                     escolaridade: dadosForm.escolaridade || '',
-                    pontuacao: parseFloat(resultado.mediaIdeias).toFixed(2),
-                    dominios: 'TotalIdeias:' + resultado.totalIdeias + '; ItensAlcancados:' + resultado.itensAlcancados + '; MediaPorItem:' + resultado.mediaIdeias.toFixed(1),
+                    pontuacao: _media.toFixed(2),
+                    dominios: 'TotalIdeias:' + (resultado.totalIdeias || 0) + '; ItensAlcancados:' + (resultado.itensAlcancados || 0) + '; MediaPorItem:' + _media.toFixed(1),
                     classificacao: resultado.classificacao || ''
                 };
                 navigator.sendBeacon(_cUrl, JSON.stringify(_pkt));
@@ -870,6 +884,8 @@ async function finalizarTeste() {
 
 // ===== CALCULAR RESULTADOS =====
 function calcularResultados(transcricao, resultadoIA) {
+    // Blindagem: garante que transcricao seja sempre uma string (evita erro no .replace)
+    if (typeof transcricao !== 'string') transcricao = '';
     var totalIdeias = 0;
     var itensAlcancados = registroEstimulos.length;
     var ideiasList = [];
@@ -933,6 +949,7 @@ function calcularResultados(transcricao, resultadoIA) {
     }
 
     var mediaIdeias = itensAlcancados > 0 ? totalIdeias / itensAlcancados : 0;
+    if (!isFinite(mediaIdeias)) mediaIdeias = 0;
     var faixa = dadosForm.faixaEtaria || '18+';
     var classificacao = classificar(mediaIdeias, faixa);
 

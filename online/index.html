@@ -9104,10 +9104,13 @@
             html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (res.classificacao || '-') + '</td>';
           }
           html += '<td style="padding:5px;border-bottom:1px solid #eee;text-align:center;">';
+          var temAudio = d._temAudio || d.audioS3Key;
           if (!isErro) {
             html += '<button onclick="gerarPdfIdeia(' + i + ')" class="btn btn-blue" style="padding:4px 10px;font-size:0.8em;">PDF</button> ';
+          } else if (temAudio) {
+            // Resultado com erro mas com audio salvo: permite reenviar para a IA
+            html += '<button id="btnReprocIdeia' + i + '" onclick="reprocessarIdeia(' + i + ')" class="btn btn-orange" style="padding:4px 10px;font-size:0.8em;">&#128260; Reprocessar</button> ';
           }
-          var temAudio = d._temAudio || d.audioS3Key;
           if (temAudio) {
             html += '<button onclick="ouvirAudioIdeia(' + i + ')" class="btn btn-green" style="padding:4px 10px;font-size:0.8em;">&#9654; Ouvir</button> ';
           }
@@ -9152,12 +9155,172 @@
       player.style.display = 'block';
       if (d.audioS3Key) {
         try {
+          // O backend /get-audio retorna JSON { audioBase64, contentType } (mesmo contrato do TFLOD)
           var resp = await fetch(API_URL + '/get-audio?key=' + encodeURIComponent(d.audioS3Key));
-          var blob = await resp.blob();
-          audio.src = URL.createObjectURL(blob);
+          var audioData = await resp.json();
+          var b64 = audioData.audioBase64 || '';
+          if (!b64) { alert('Audio nao encontrado no servidor.'); return; }
+          audio.src = 'data:audio/webm;codecs=opus;base64,' + b64;
           audio.play();
         } catch(e) { alert('Erro ao carregar audio.'); }
       }
+    }
+
+    // ===== REPROCESSAR IDEIA (erro_transcricao com audio salvo) =====
+    // Refaz o caminho que falhou: busca o audio no S3, transcreve (Whisper),
+    // analisa com IA (Gemini) e recalcula os resultados, salvando como finalizado.
+    async function reprocessarIdeia(idx) {
+      var r = _ideiaResultCache[idx];
+      if (!r) return;
+      var d = r.data || {};
+      if (!d.audioS3Key) { alert('Este resultado nao tem audio salvo para reprocessar.'); return; }
+      if (!confirm('Reenviar o audio para a IA? Isso vai transcrever novamente e substituir o resultado com erro.')) return;
+      var btn = document.getElementById('btnReprocIdeia' + idx);
+      if (btn) { btn.disabled = true; btn.textContent = 'Processando...'; }
+      try {
+        // 1. Buscar o audio salvo no S3
+        var audioResp = await fetch(API_URL + '/get-audio?key=' + encodeURIComponent(d.audioS3Key));
+        var audioData = await audioResp.json();
+        var audioB64 = audioData.audioBase64 || '';
+        if (!audioB64) { throw new Error('Audio nao encontrado no servidor (S3).'); }
+
+        // 2. Transcrever com Whisper
+        var trResp = await fetch(API_URL + '/transcribe-audio', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ audioBase64: audioB64, sessionId: r.sessionId || '' })
+        });
+        var trData = await trResp.json();
+        var transcricao = (typeof trData.text === 'string') ? trData.text : '';
+        if (!transcricao.trim()) { throw new Error('A transcricao voltou vazia. O audio pode nao conter fala reconhecivel.'); }
+
+        // 3. Analisar a transcricao com a IA (extrair e categorizar ideias)
+        var fd = d.formData || {};
+        var resultadoIA = await _ideiaAnalisarComIA(transcricao);
+
+        // 4. Recalcular os resultados (mesma logica do teste)
+        var resultado = _ideiaCalcularResultados(transcricao, resultadoIA, fd);
+
+        // 5. Salvar como finalizado, substituindo o registro com erro
+        var novoData = {
+          status: 'finalizado',
+          date: d.date,
+          formData: fd,
+          resultados: resultado,
+          audioS3Key: d.audioS3Key,
+          _temAudio: true,
+          reprocessadoEm: new Date().toISOString(),
+          idPaciente: d.idPaciente || fd.id || '',
+          pacienteId: d.pacienteId || ''
+        };
+        await fetch(API_URL + '/save-result', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: currentUser, tipo: 'ideia', sessionId: r.sessionId, data: novoData, originalSessionId: r.sessionId })
+        });
+        alert('Reprocessado com sucesso! Total de ideias: ' + (resultado.totalIdeias || 0) + ' | Media/item: ' + (resultado.mediaIdeias || 0).toFixed(1) + ' | ' + (resultado.classificacao || '-'));
+        loadIdeiaResults();
+      } catch(e) {
+        alert('Erro ao reprocessar: ' + (e.message || e));
+        if (btn) { btn.disabled = false; btn.innerHTML = '\u{1F504} Reprocessar'; }
+      }
+    }
+
+    // Chama a IA para extrair/categorizar ideias a partir da transcricao (retorna objeto ou null)
+    async function _ideiaAnalisarComIA(transcricao) {
+      var promptIA = 'Voce e um assistente de avaliacao neuropsicologica especializado em pensamento divergente. Analise a transcricao abaixo de um teste de criatividade (usos alternativos). O avaliando recebeu estimulos e falou ideias de usos criativos.\n\n'
+        + 'TRANSCRICAO COMPLETA:\n"' + transcricao + '"\n\n'
+        + 'TAREFA: Extraia CADA ideia distinta mencionada. Ignore hesitacoes, repeticoes exatas e falas irrelevantes (ex: "hmm", "entao", "deixa eu pensar", "proximo").\n\n'
+        + 'Para CADA ideia avalie: categoria (utilitario, artistico, ludico, cientifico, social, absurdo_criativo, outro); originalidade (1-5); elaboracao (1-3); similar_a (indice de ideia anterior parecida ou null).\n\n'
+        + 'No resumo calcule: totalIdeias; totalEstimulos; mediaPorItem; fluencia; flexibilidade (categorias diferentes); originalidade_media; elaboracao_media; repeticoes; ideiasOriginais (originalidade >= 4); categorias (contagem por categoria).\n\n'
+        + 'Retorne SOMENTE um JSON valido (sem markdown) no formato:\n'
+        + '{"ideias":[{"estimulo":"nome","ideia":"descricao curta","categoria":"cat","originalidade":N,"elaboracao":N,"similar_a":null}],"resumo":{"totalIdeias":N,"totalEstimulos":N,"mediaPorItem":N.N,"fluencia":N,"flexibilidade":N,"originalidade_media":N.N,"elaboracao_media":N.N,"repeticoes":N,"ideiasOriginais":N,"categorias":{"cat":N}}}\n\n'
+        + 'Se a transcricao estiver vazia ou ininteligivel, retorne: {"ideias":[],"resumo":{"totalIdeias":0,"totalEstimulos":0,"mediaPorItem":0,"fluencia":0,"flexibilidade":0,"originalidade_media":0,"elaboracao_media":0,"repeticoes":0,"ideiasOriginais":0,"categorias":{}}}';
+      try {
+        var aiResp = await fetch(API_URL + '/generate-ai', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: promptIA })
+        });
+        var aiData = await aiResp.json();
+        if (aiData.text) {
+          var jsonStr = aiData.text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+          try { return JSON.parse(jsonStr); } catch(pe) { return null; }
+        }
+      } catch(aiErr) { return null; }
+      return null;
+    }
+
+    // Recalcula os resultados do IDEIA a partir da transcricao + analise da IA.
+    // Versao do painel (sem os registros de tempo do teste ao vivo): usa os dados da IA.
+    function _ideiaCalcularResultados(transcricao, resultadoIA, fd) {
+      // Tabela de faixas identica a do teste-ideia.html (var FAIXAS)
+      var FAIXAS_IDEIA = {
+        '6-7':   { tipica: [3, 5], acima: [6, 7], alta: [8, 11], excepcional: 12 },
+        '8-9':   { tipica: [3, 5], acima: [6, 8], alta: [9, 12], excepcional: 13 },
+        '10-11': { tipica: [3, 6], acima: [7, 9], alta: [10, 13], excepcional: 14 },
+        '12-13': { tipica: [3, 6], acima: [7, 9], alta: [10, 14], excepcional: 15 },
+        '14-17': { tipica: [3, 7], acima: [8, 10], alta: [11, 15], excepcional: 16 },
+        '18+':   { tipica: [3, 6], acima: [7, 10], alta: [10, 15], excepcional: 20 }
+      };
+      function classificarIdeia(media, faixa) {
+        var f = FAIXAS_IDEIA[faixa] || FAIXAS_IDEIA['18+'];
+        if (media >= f.excepcional) return 'Excepcional';
+        if (media >= f.alta[0]) return 'Alta Criatividade / Possivel AH-SD';
+        if (media >= f.acima[0]) return 'Acima da Media';
+        if (media >= f.tipica[0]) return 'Tipica';
+        return 'Abaixo do Esperado';
+      }
+      if (typeof transcricao !== 'string') transcricao = '';
+      var totalIdeias = 0, ideiasList = [], categorias = {};
+      var flexibilidade = 0, originalidadeMedia = 0, elaboracaoMedia = 0, repeticoes = 0, ideiasOriginais = 0;
+      var itensAlcancados = 0;
+      if (resultadoIA && resultadoIA.resumo && resultadoIA.ideias) {
+        var rsm = resultadoIA.resumo;
+        totalIdeias = rsm.totalIdeias || resultadoIA.ideias.length;
+        ideiasList = resultadoIA.ideias || [];
+        categorias = rsm.categorias || {};
+        flexibilidade = rsm.flexibilidade || Object.keys(categorias).length;
+        originalidadeMedia = rsm.originalidade_media || 0;
+        elaboracaoMedia = rsm.elaboracao_media || 0;
+        repeticoes = rsm.repeticoes || 0;
+        ideiasOriginais = rsm.ideiasOriginais || 0;
+        // Estimativa de itens alcancados (o painel nao tem o registro ao vivo dos estimulos).
+        // Usa totalEstimulos da IA; se indisponivel, cai para o total de estimulos do teste (20).
+        itensAlcancados = rsm.totalEstimulos || 0;
+      } else {
+        // Fallback local: separa a transcricao em frases
+        var frases = transcricao.replace(/\.\.\./g, '.').split(/[.!?\n]+/)
+          .map(function(f) { return f.trim(); }).filter(function(f) { return f.length > 3; });
+        totalIdeias = frases.length;
+        for (var fi = 0; fi < frases.length; fi++) ideiasList.push({ estimulo: '', ideia: frases[fi], categoria: 'outro' });
+        itensAlcancados = 0;
+      }
+      // Divisor da media: usa itens alcancados; se a IA nao informou, assume os 20 estimulos do teste.
+      var divisor = itensAlcancados > 0 ? itensAlcancados : 20;
+      var mediaIdeias = totalIdeias / divisor;
+      if (!isFinite(mediaIdeias)) mediaIdeias = 0;
+      if (itensAlcancados === 0) itensAlcancados = divisor;
+      var faixa = (fd && fd.faixaEtaria) || '18+';
+      var classificacao = classificarIdeia(mediaIdeias, faixa);
+      return {
+        transcricao: transcricao,
+        ideiasList: ideiasList,
+        categorias: categorias,
+        totalIdeias: totalIdeias,
+        itensAlcancados: itensAlcancados,
+        mediaIdeias: mediaIdeias,
+        faixaEtaria: faixa,
+        classificacao: classificacao,
+        usouIA: !!(resultadoIA && resultadoIA.ideias),
+        fluencia: totalIdeias,
+        flexibilidade: flexibilidade,
+        originalidadeMedia: originalidadeMedia,
+        elaboracaoMedia: elaboracaoMedia,
+        repeticoes: repeticoes,
+        ideiasOriginais: ideiasOriginais,
+        reprocessadoNoPainel: true
+      };
     }
 
     async function gerarPdfIdeia(idx) {
