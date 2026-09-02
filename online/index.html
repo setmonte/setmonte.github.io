@@ -2907,13 +2907,15 @@
       // Buscar creditos
       try {
         var resp = await fetch(API_URL + '/credits?email=' + encodeURIComponent(currentUser));
+        // (fingerprint definido em gerarFingerprint, mais abaixo no mesmo script)
         var data = await resp.json();
 
         // Bonus de primeiro acesso: se todos os creditos sao 0, dar 1 de cada
         var totalCreditos = (data.credits||0) + (data.baeCredits||0) + (data.trmvCredits||0) + (data.trefCredits||0) + (data.taavCredits||0) + (data.tflodCredits||0) + (data.ideiaCredits||0) + (data.prontuarioCredits||0);
         if (totalCreditos === 0 && !data.bonusRecebido) {
           try {
-            var bonusResp = await fetch(API_URL + '/give-bonus', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:currentUser})});
+            var _fp = gerarFingerprint();
+            var bonusResp = await fetch(API_URL + '/give-bonus', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:currentUser, fingerprint:_fp})});
             var bonusData = await bonusResp.json();
             if (bonusData.ok) {
               data.credits = 1; data.baeCredits = 5; data.trmvCredits = 1; data.trefCredits = 1; data.taavCredits = 1; data.tflodCredits = 1; data.ideiaCredits = 1; data.prontuarioCredits = 1;
@@ -5778,6 +5780,7 @@
         var errosTranscricao = [];
         var abandonados = [];
         var aguardando = [];
+        var bonusSuspeitos = [];
         var loginsMultiplos = {};
         var agora = Date.now();
         var limite48h = agora - (48 * 60 * 60 * 1000);
@@ -5793,7 +5796,9 @@
           var paciente = fd.nome || d.paciente || '-';
           // Erros de transcricao
           if (d.status === 'erro_transcricao') {
-            errosTranscricao.push({usuario: usuario, paciente: paciente, data: d.date, temAudio: !!d.audioBase64, erro: d.erro || ''});
+            // Audio pode estar salvo de 3 formas: base64 embutido, referencia no S3, ou flag _temAudio
+            var _temAudioErro = !!(d.audioBase64 || d.audioS3Key || d._temAudio);
+            errosTranscricao.push({usuario: usuario, paciente: paciente, tipo: (r.tipo || '?'), data: d.date, temAudio: _temAudioErro, erro: d.erro || ''});
           }
           // Abandonados
           if (d.status === 'abandonado') {
@@ -5808,16 +5813,21 @@
             if (!loginsMultiplos[usuario]) loginsMultiplos[usuario] = 0;
             loginsMultiplos[usuario]++;
           }
+          // Bonus suspeito (>=80% de similaridade) - anti-abuso
+          if (r.tipo === 'bonus-log' && d.alerta && d.alerta.scoreSuspeita >= 80) {
+            bonusSuspeitos.push({ usuario: usuario, score: d.alerta.scoreSuspeita, motivo: d.alerta.motivo || '', similarA: d.alerta.similarA || '', data: d.date });
+          }
         });
         // Montar HTML dos alertas (classificados por responsabilidade)
         var html = '';
         if (errosTranscricao.length > 0) {
           html += '<div style="background:#ffebee;border-left:4px solid #c62828;border-radius:6px;padding:8px;margin-bottom:8px;">';
-          html += '<strong style="color:#c62828;">&#128308; FALHA NOSSA — ' + errosTranscricao.length + ' erro(s) de transcricao TFLOD</strong>';
+          html += '<strong style="color:#c62828;">&#128308; FALHA NOSSA — ' + errosTranscricao.length + ' erro(s) de transcricao</strong>';
           html += '<span style="float:right;font-size:10px;background:#c62828;color:white;padding:2px 6px;border-radius:10px;">Devolver credito</span><br>';
           errosTranscricao.forEach(function(e) {
             var dataStr = e.data ? new Date(e.data).toLocaleString('pt-BR') : '';
-            html += '<span style="font-size:11px;">&#128100; ' + e.usuario + ' | &#128113; ' + e.paciente + ' | ' + (e.temAudio ? '&#127925; audio salvo (reprocessavel)' : '&#9888; sem audio (perdido)') + ' | &#128337; ' + dataStr + '</span><br>';
+            var tipoStr = (e.tipo || '?').toUpperCase();
+            html += '<span style="font-size:11px;">&#128100; ' + e.usuario + ' | &#127919; ' + tipoStr + ' | &#128113; ' + e.paciente + ' | ' + (e.temAudio ? '&#127925; audio salvo (reprocessavel)' : '&#9888; sem audio (perdido)') + ' | &#128337; ' + dataStr + '</span><br>';
             if (e.erro) html += '<span style="font-size:10px;color:#888;margin-left:16px;">Erro: ' + e.erro.slice(0,80) + '</span><br>';
           });
           html += '</div>';
@@ -5845,6 +5855,17 @@
           html += '<span style="font-size:10px;color:#888;">Pode ser: internet instavel do usuario ou bug no sistema.</span><br>';
           loginsProblema.forEach(function(l) {
             html += '<span style="font-size:11px;">&#128100; ' + l.usuario + ' — ' + l.vezes + 'x em 48h</span><br>';
+          });
+          html += '</div>';
+        }
+        if (bonusSuspeitos.length > 0) {
+          html += '<div style="background:#fff3e0;border-left:4px solid #e65100;border-radius:6px;padding:8px;margin-bottom:8px;">';
+          html += '<strong style="color:#e65100;">&#128064; SUSPEITA — ' + bonusSuspeitos.length + ' bonus possivelmente da mesma pessoa</strong>';
+          html += '<span style="float:right;font-size:10px;background:#e65100;color:white;padding:2px 6px;border-radius:10px;">Voce decide</span><br>';
+          html += '<span style="font-size:10px;color:#888;">Bonus liberado normalmente. Verifique se e a mesma pessoa criando varios emails.</span><br>';
+          bonusSuspeitos.forEach(function(b) {
+            var dataStr = b.data ? new Date(b.data).toLocaleString('pt-BR') : '';
+            html += '<span style="font-size:11px;">&#128100; ' + b.usuario + ' &#8776; ' + b.similarA + ' | &#127919; ' + b.score + '% (' + b.motivo + ') | &#128337; ' + dataStr + '</span><br>';
           });
           html += '</div>';
         }
@@ -13091,6 +13112,39 @@ localStorage.setItem('suporte_resp_lidas',JSON.stringify(lidas));
 _respostaSupCache=[];
 var card=document.getElementById('suporteRespostaCard');
 if(card)card.style.display='none';
+}
+
+// ===== IMPRESSAO DIGITAL DO DISPOSITIVO (anti-abuso de bonus) =====
+// Gera um codigo a partir de caracteristicas estaveis do navegador/aparelho.
+// Nao coleta dado pessoal: apenas caracteristicas tecnicas (tela, fuso, idioma, canvas).
+function gerarFingerprint() {
+  try {
+    var partes = [];
+    partes.push(navigator.userAgent || '');
+    partes.push(navigator.language || '');
+    partes.push((navigator.languages || []).join(','));
+    partes.push(screen.width + 'x' + screen.height + 'x' + (screen.colorDepth || ''));
+    partes.push(new Date().getTimezoneOffset());
+    partes.push(navigator.hardwareConcurrency || '');
+    partes.push(navigator.platform || '');
+    // Canvas fingerprint (renderizacao grafica varia por aparelho)
+    try {
+      var cv = document.createElement('canvas');
+      var ctx = cv.getContext('2d');
+      ctx.textBaseline = 'top';
+      ctx.font = "14px 'Arial'";
+      ctx.fillStyle = '#f60';
+      ctx.fillRect(10, 1, 62, 20);
+      ctx.fillStyle = '#069';
+      ctx.fillText('fp-sym-2026', 2, 15);
+      partes.push(cv.toDataURL().slice(-80));
+    } catch(e) {}
+    // Hash simples (djb2) das partes concatenadas
+    var str = partes.join('|');
+    var hash = 5381;
+    for (var i = 0; i < str.length; i++) hash = ((hash << 5) + hash + str.charCodeAt(i)) & 0xffffffff;
+    return 'fp' + Math.abs(hash).toString(36);
+  } catch(e) { return ''; }
 }
 </script>
 </body>
