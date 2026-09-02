@@ -12177,6 +12177,21 @@
     async function generateTrefPDF(idx) {
       var r = _trefResultCache[idx];
       if (!r) { alert('Resultado nao encontrado'); return; }
+      // Garante que a biblioteca jsPDF esteja carregada antes de gerar o PDF.
+      // Se o arquivo local nao carregou (rede/cache), busca do CDN como fallback.
+      if (!window.jspdf || !window.jspdf.jsPDF) {
+        await new Promise(function(resolve, reject) {
+          var s = document.createElement('script');
+          s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+          s.onload = resolve;
+          s.onerror = function() { reject(new Error('falha ao carregar jsPDF')); };
+          document.head.appendChild(s);
+        }).catch(function() {});
+      }
+      if (!window.jspdf || !window.jspdf.jsPDF) {
+        alert('Nao foi possivel carregar o gerador de PDF. Verifique sua conexao e tente novamente.');
+        return;
+      }
       var d = r.data || {};
       var fd = d.formData || {};
       var resultados = d.resultados || [];
@@ -12282,7 +12297,7 @@
       descL.forEach(function(l) { doc.text(l, ml, y); y += 5; });
       y += 5;
       // Como interpretar
-      if (y > ymax - 40) { doc.addPage(); y = 15; }
+      if (y > 287 - 40) { doc.addPage(); y = 15; }
       doc.setTextColor(21, 101, 192); doc.setFontSize(10); doc.setFont(undefined, 'bold');
       doc.text('COMO INTERPRETAR', ml, y); y += 6;
       doc.setTextColor(0); doc.setFont(undefined, 'normal'); doc.setFontSize(8);

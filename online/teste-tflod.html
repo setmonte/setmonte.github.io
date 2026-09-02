@@ -578,16 +578,25 @@ async function finalizarGravacao() {
         var data = await resp.json();
         audioS3Key = data.s3Key || '';
         if (!resp.ok) throw new Error(data.error || 'Erro na transcricao');
-        var transcricao = data.text || '';
+        var transcricao = (typeof data.text === 'string') ? data.text : '';
+
+        // Se a transcricao veio vazia, o audio nao teve fala reconhecivel.
+        // Trata como erro (mantendo o audio salvo para reprocessamento) em vez de estourar.
+        if (!transcricao.trim()) {
+            throw new Error('Transcricao vazia (audio sem fala reconhecivel)');
+        }
 
         document.getElementById('progressFill').style.width = '80%';
         document.getElementById('progressText').textContent = 'Calculando resultados...';
 
-        // Calcular resultados
-        var resultado = calcularResultados(transcricao);
+        // Calcular resultados (blindado: resultado sempre objeto, pcpm sempre numero)
+        var resultado = calcularResultados(transcricao) || {};
+        var _pcpm = Number(resultado.pcpm);
+        if (!isFinite(_pcpm)) { _pcpm = 0; resultado.pcpm = 0; }
+        if (!resultado.erros) resultado.erros = [];
 
         // Coleta anonima
-        window._escalaDados = {escala:'TFLOD', escore:resultado.pcpm, classificacao:resultado.classificacao, versaoTexto:resultado.versaoTexto, dominios:{PCPM:resultado.pcpm, Acertos:resultado.acertos, Erros:resultado.erros.length, PalavrasAlcancadas:resultado.palavrasAlcancadas}};
+        window._escalaDados = {escala:'TFLOD', escore:_pcpm, classificacao:resultado.classificacao||'Nao classificado', versaoTexto:resultado.versaoTexto||'', dominios:{PCPM:_pcpm, Acertos:resultado.acertos||0, Erros:resultado.erros.length, PalavrasAlcancadas:resultado.palavrasAlcancadas||0}};
 
         document.getElementById('progressFill').style.width = '100%';
         document.getElementById('progressText').textContent = 'Enviando resultados...';
@@ -612,6 +621,8 @@ async function finalizarGravacao() {
 
 // ===== CALCULAR RESULTADOS =====
 function calcularResultados(transcricao) {
+    // Blindagem: garante que transcricao seja sempre string (evita erro no .toLowerCase)
+    if (typeof transcricao !== 'string') transcricao = '';
     var palavrasFaladas = transcricao.toLowerCase()
         .replace(/[.,!?;:"""''()\-]/g, '')
         .split(/\s+/)
