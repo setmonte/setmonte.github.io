@@ -501,10 +501,17 @@
                 <label style="font-size:0.85em;color:#555;">Data de nascimento:</label>
                 <input type="date" id="lermaisDn" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
                 <label style="font-size:0.85em;color:#555;">Sexo:</label>
-                <select id="lermaisSexo" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:12px;">
+                <select id="lermaisSexo" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
                   <option value="">Selecione...</option>
                   <option value="Masculino">Masculino</option>
                   <option value="Feminino">Feminino</option>
+                </select>
+                <label style="font-size:0.85em;color:#555;">Correcao Visual:</label>
+                <select id="lermaisCorrecaoVisual" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:12px;">
+                  <option value="">Selecione...</option>
+                  <option value="Nenhuma">Nenhuma</option>
+                  <option value="Oculos">Oculos</option>
+                  <option value="Lente de contato">Lente de contato</option>
                 </select>
               </div>
               <div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -6778,6 +6785,7 @@
       var nome = document.getElementById('lermaisNome').value.trim();
       var dn = document.getElementById('lermaisDn').value;
       var sexo = document.getElementById('lermaisSexo').value;
+      var correcaoVisual = document.getElementById('lermaisCorrecaoVisual') ? document.getElementById('lermaisCorrecaoVisual').value : '';
       if (!nome) { alert('Preencha o nome do paciente.'); return; }
       if (!dn) { alert('Preencha a data de nascimento.'); return; }
       // Buscar pacienteId do cadastro (se existir)
@@ -6790,7 +6798,7 @@
           }
         }
       }
-      var dados = { nome: nome, dn: dn, sexo: sexo, email: currentUser || '', pacienteId: pacienteId };
+      var dados = { nome: nome, dn: dn, sexo: sexo, correcaoVisual: correcaoVisual, email: currentUser || '', pacienteId: pacienteId };
       var encoded = safeBtoa(JSON.stringify(dados));
       var url = 'reabilitacao/lermais.html?d=' + encoded;
       window.open(url, '_blank');
@@ -6806,6 +6814,7 @@
       var nome = document.getElementById('lermaisNome').value.trim();
       var dn = document.getElementById('lermaisDn').value;
       var sexo = document.getElementById('lermaisSexo').value;
+      var correcaoVisual = document.getElementById('lermaisCorrecaoVisual') ? document.getElementById('lermaisCorrecaoVisual').value : '';
       if (!nome || !dn) { alert('Preencha nome e data de nascimento.'); return; }
       // Buscar pacienteId do cadastro
       var pacienteId = '';
@@ -6826,6 +6835,7 @@
           patientName: nome,
           birthDate: dn,
           sex: sexo,
+          correcaoVisual: correcaoVisual,
           pacienteId: pacienteId
         };
         var resp = await fetch(API_URL + '/save-session', {

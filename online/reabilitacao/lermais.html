@@ -120,6 +120,17 @@ body.tema-neutro{background:linear-gradient(135deg,#e8f5e9 0%,#c8e6c9 50%,#e8f5e
                     </select>
                 </div>
             </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Corre&#231;&#227;o Visual</label>
+                    <select id="correcaoVisual">
+                        <option value="">Selecione...</option>
+                        <option value="Nenhuma">Nenhuma</option>
+                        <option value="Oculos">&#211;culos</option>
+                        <option value="Lente de contato">Lente de contato</option>
+                    </select>
+                </div>
+            </div>
         </div>
         <!-- INSTRUCOES -->
         <div class="instrucoes">
@@ -837,6 +848,7 @@ function finalizarLeitura() {
         nome: document.getElementById('nome').value,
         idade: idadeAnos,
         sexo: document.getElementById('sexo').value,
+        correcaoVisual: document.getElementById('correcaoVisual') ? document.getElementById('correcaoVisual').value : '',
         texto: textoAtual.titulo,
         tema: textoAtual.tema,
         faixa: idadeAnos <= 12 ? 'crianca' : 'adolescente_adulto',
@@ -1130,6 +1142,8 @@ function _decodificarURL() {
         if (dados.nome) { document.getElementById('nome').value = dados.nome; document.getElementById('nome').dispatchEvent(new Event('input')); }
         if (dados.dn) { document.getElementById('dataNascimento').value = dados.dn; document.getElementById('dataNascimento').dispatchEvent(new Event('change')); calcularIdade(); }
         if (dados.sexo) { document.getElementById('sexo').value = dados.sexo; aplicarTema(); }
+        var cvEl = document.getElementById('correcaoVisual');
+        if (cvEl && dados.correcaoVisual) { cvEl.value = dados.correcaoVisual; }
         _sessionInfo = dados;
         // Esconde info tecnica no modo painel
         var infoEls = document.querySelectorAll('.instrucoes');
@@ -1199,6 +1213,8 @@ if (params.get('s')) {
             if (nomeEl && data.patientName) { nomeEl.value = data.patientName; nomeEl.dispatchEvent(new Event('input')); }
             if (nascEl && data.birthDate) { nascEl.value = data.birthDate; nascEl.dispatchEvent(new Event('change')); calcularIdade(); }
             if (sexoEl && data.sex) { sexoEl.value = data.sex; aplicarTema(); }
+            var cvEl2 = document.getElementById('correcaoVisual');
+            if (cvEl2 && data.correcaoVisual) { cvEl2.value = data.correcaoVisual; }
             _criarBotaoEnviar();
         }
     }).catch(function() {});
