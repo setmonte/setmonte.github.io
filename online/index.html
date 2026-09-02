@@ -10468,6 +10468,19 @@
       el.classList.toggle('hidden');
     }
 
+    // Trava anti-clique-duplo para geracao de sessao de escala.
+    // Retorna true (e avisa) se a MESMA sessao (escala+paciente) foi gerada ha menos de 10s.
+    var _ultimaSessaoEscala = { assinatura: '', quando: 0 };
+    function _travaSessaoEscalaAtiva(assinatura) {
+      var agora = Date.now();
+      if (assinatura === _ultimaSessaoEscala.assinatura && (agora - _ultimaSessaoEscala.quando) < 10000) {
+        alert('Voce acabou de gerar esta sessao. Aguarde alguns segundos antes de gerar de novo (evita duplicatas).');
+        return true;
+      }
+      _ultimaSessaoEscala = { assinatura: assinatura, quando: agora };
+      return false;
+    }
+
     async function aplicarEscalaAqui() {
       var escala = document.getElementById('escalaSelect').value;
       if (!escala) { alert('Selecione uma escala primeiro.'); return; }
@@ -10477,6 +10490,10 @@
       if (!dn) { alert('Preencha a data de nascimento.'); return; }
       var _dnErr = _validarDataNascimento(dn);
       if (_dnErr) { alert(_dnErr); return; }
+      // Trava anti-clique-duplo: impede aplicar a mesma sessao 2x em sequencia
+      if (_travaSessaoEscalaAtiva('aplicar|' + escala + '|' + nome + '|' + dn)) return;
+      var _btnAplicar = (event && event.target) ? event.target.closest('button') : null;
+      if (_btnAplicar) { _btnAplicar.disabled = true; }
       var sexo = document.getElementById('escalaSexo').value || '';
       // Salvar sessao no banco (igual Gerar Link) para garantir uso unico
       try {
@@ -10497,6 +10514,7 @@
       } catch(e) {
         alert('Erro de conexao. Tente novamente.');
       }
+      if (_btnAplicar) { setTimeout(function(){ _btnAplicar.disabled = false; }, 4000); }
     }
 
     function imprimirEscala() {
@@ -10517,6 +10535,10 @@
       if (!dn) { alert('Preencha a data de nascimento. O ID do paciente depende desse dado.'); return; }
       var _dnErr = _validarDataNascimento(dn);
       if (_dnErr) { alert(_dnErr); return; }
+      // Trava anti-clique-duplo: impede gerar a mesma sessao 2x em sequencia
+      if (_travaSessaoEscalaAtiva('link|' + escala + '|' + nome + '|' + dn)) return;
+      var _btnLink = (event && event.target) ? event.target.closest('button') : null;
+      if (_btnLink) { _btnLink.disabled = true; }
       var sexo = document.getElementById('escalaSexo').value || '';
       // Salvar sessao no banco e obter ID curto
       try {
@@ -10538,6 +10560,8 @@
       } catch(e) {
         alert('Erro de conexao. Tente novamente.');
       }
+      // Reabilita o botao apos um curto intervalo (evita o segundo clique acidental)
+      if (_btnLink) { setTimeout(function(){ _btnLink.disabled = false; }, 4000); }
     }
 
     function copyEscalaLink() {
