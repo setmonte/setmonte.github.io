@@ -5782,6 +5782,7 @@
         var abandonados = [];
         var aguardando = [];
         var bonusSuspeitos = [];
+        var errosPDF = [];
         var loginsMultiplos = {};
         var agora = Date.now();
         var limite48h = agora - (48 * 60 * 60 * 1000);
@@ -5818,6 +5819,10 @@
           if (r.tipo === 'bonus-log' && d.alerta && d.alerta.scoreSuspeita >= 80) {
             bonusSuspeitos.push({ usuario: usuario, score: d.alerta.scoreSuspeita, motivo: d.alerta.motivo || '', similarA: d.alerta.similarA || '', data: d.date });
           }
+          // Falha na geracao de PDF (registrada pelo navegador do usuario)
+          if (r.tipo === 'erro-pdf') {
+            errosPDF.push({ usuario: usuario, tipoTeste: d.tipoTeste || '?', erro: d.erro || '', data: d.date });
+          }
         });
         // Montar HTML dos alertas (classificados por responsabilidade)
         var html = '';
@@ -5829,6 +5834,18 @@
             var dataStr = e.data ? new Date(e.data).toLocaleString('pt-BR') : '';
             var tipoStr = (e.tipo || '?').toUpperCase();
             html += '<span style="font-size:11px;">&#128100; ' + e.usuario + ' | &#127919; ' + tipoStr + ' | &#128113; ' + e.paciente + ' | ' + (e.temAudio ? '&#127925; audio salvo (reprocessavel)' : '&#9888; sem audio (perdido)') + ' | &#128337; ' + dataStr + '</span><br>';
+            if (e.erro) html += '<span style="font-size:10px;color:#888;margin-left:16px;">Erro: ' + e.erro.slice(0,80) + '</span><br>';
+          });
+          html += '</div>';
+        }
+        if (errosPDF.length > 0) {
+          html += '<div style="background:#ffebee;border-left:4px solid #c62828;border-radius:6px;padding:8px;margin-bottom:8px;">';
+          html += '<strong style="color:#c62828;">&#128308; FALHA NOSSA — ' + errosPDF.length + ' falha(s) ao gerar PDF</strong>';
+          html += '<span style="float:right;font-size:10px;background:#c62828;color:white;padding:2px 6px;border-radius:10px;">Verificar</span><br>';
+          html += '<span style="font-size:10px;color:#888;">O PDF nao foi gerado no navegador do usuario. Os dados do teste continuam salvos.</span><br>';
+          errosPDF.forEach(function(e) {
+            var dataStr = e.data ? new Date(e.data).toLocaleString('pt-BR') : '';
+            html += '<span style="font-size:11px;">&#128100; ' + e.usuario + ' | &#127919; ' + (e.tipoTeste || '?').toUpperCase() + ' | &#128337; ' + dataStr + '</span><br>';
             if (e.erro) html += '<span style="font-size:10px;color:#888;margin-left:16px;">Erro: ' + e.erro.slice(0,80) + '</span><br>';
           });
           html += '</div>';
@@ -13186,6 +13203,103 @@ function gerarFingerprint() {
     return 'fp' + Math.abs(hash).toString(36);
   } catch(e) { return ''; }
 }
+
+// ===== DETECTOR DE FALHAS NA GERACAO DE PDF (aviso no Monitor) =====
+// A geracao de PDF acontece no navegador e nao passa pelo servidor. Para que uma
+// falha apareca no Monitor do admin, registramos a falha no servidor (tipo 'erro-pdf').
+// Evita registros repetidos da mesma falha em poucos segundos.
+var _ultimaFalhaPDF = { chave: '', quando: 0 };
+function _registrarFalhaPDF(tipo, mensagemErro, paciente) {
+  try {
+    var chave = (tipo || '?') + '|' + (mensagemErro || '');
+    var agora = Date.now();
+    if (chave === _ultimaFalhaPDF.chave && (agora - _ultimaFalhaPDF.quando) < 15000) return; // deduplica
+    _ultimaFalhaPDF = { chave: chave, quando: agora };
+    var usuario = (window.currentUser || 'desconhecido');
+    fetch(API_URL + '/save-result', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: usuario,
+        tipo: 'erro-pdf',
+        sessionId: 'errpdf-' + agora.toString(36) + Math.random().toString(36).slice(2, 6),
+        data: {
+          status: 'erro_pdf',
+          date: new Date().toISOString(),
+          tipoTeste: tipo || '?',
+          paciente: paciente || '',
+          erro: (mensagemErro || '').toString().slice(0, 200),
+          pagina: window.location.href
+        }
+      })
+    }).catch(function() {});
+  } catch(e) {}
+}
+
+// Lista de nomes das funcoes geradoras de PDF (para identificar a origem do erro pela pilha)
+var _FUNCOES_PDF = ['generatePDF','_gerarPDFHistorico','gerarRelatorioPacientePDF','gerarPDFSrs2',
+  'gerarPDFVineland3','gerarSmartPDF','gerarPDFAnamnese','gerarPdfIdeia','_gerarPdfIdeiaReal',
+  'generateCorsiPDF','generateTtePDF','gerarPDFEscala','generateTrmvPDF','generateTaavPDF',
+  'generateTrefPDF','gerarPdfTflod'];
+
+function _erroVeioDePDF(stack) {
+  if (!stack) return null;
+  for (var i = 0; i < _FUNCOES_PDF.length; i++) {
+    if (stack.indexOf(_FUNCOES_PDF[i]) >= 0) return _FUNCOES_PDF[i];
+  }
+  return null;
+}
+
+// Captura erros sincronos nao tratados
+window.addEventListener('error', function(ev) {
+  try {
+    var fn = _erroVeioDePDF(ev.error && ev.error.stack ? ev.error.stack : '');
+    if (fn) _registrarFalhaPDF(fn, (ev.error && ev.error.message) || ev.message || 'erro desconhecido', '');
+  } catch(e) {}
+});
+
+// Captura promises rejeitadas nao tratadas (funcoes de PDF async)
+window.addEventListener('unhandledrejection', function(ev) {
+  try {
+    var reason = ev.reason;
+    var stack = reason && reason.stack ? reason.stack : '';
+    var fn = _erroVeioDePDF(stack);
+    if (fn) _registrarFalhaPDF(fn, (reason && reason.message) || String(reason) || 'promessa rejeitada', '');
+  } catch(e) {}
+});
+
+// ===== BLINDAGEM EXPLICITA: embrulha cada gerador de PDF com try/catch =====
+// Garante que QUALQUER falha em QUALQUER PDF seja registrada no Monitor,
+// mesmo quando o navegador nao fornece stack trace util. Feito por fora,
+// sem alterar o corpo das funcoes. Funciona para funcoes sincronas e async.
+(function _blindarGeradoresPDF() {
+  try {
+    for (var i = 0; i < _FUNCOES_PDF.length; i++) {
+      (function(nomeFn) {
+        var original = window[nomeFn];
+        if (typeof original !== 'function' || original._blindado) return;
+        var envolvida = function() {
+          try {
+            var resultado = original.apply(this, arguments);
+            // Se for async (retorna Promise), captura a rejeicao tambem
+            if (resultado && typeof resultado.then === 'function') {
+              return resultado.catch(function(err) {
+                _registrarFalhaPDF(nomeFn, (err && err.message) || String(err), '');
+                throw err; // preserva o comportamento original (nao engole o erro)
+              });
+            }
+            return resultado;
+          } catch (err) {
+            _registrarFalhaPDF(nomeFn, (err && err.message) || String(err), '');
+            throw err;
+          }
+        };
+        envolvida._blindado = true;
+        window[nomeFn] = envolvida;
+      })(_FUNCOES_PDF[i]);
+    }
+  } catch(e) {}
+})();
 </script>
 </body>
 </html>
