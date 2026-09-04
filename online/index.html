@@ -12641,7 +12641,7 @@
           if (temAudio) {
             // Reprocessar: SEMPRE visivel quando ha audio (erro, limbo ou ja classificado).
             // Ao clicar, pede confirmacao e consome 1 credito TFLOD (so se der certo).
-            html += '<button onclick="reprocessarTflod(' + i + ')" class="btn btn-orange" style="padding:4px 10px;font-size:0.8em;">&#128260; Reprocessar</button> ';
+            html += '<button onclick="reprocessarTflod(' + i + ', this)" class="btn btn-orange" style="padding:4px 10px;font-size:0.8em;">&#128260; Reprocessar</button> ';
             html += '<button onclick="ouvirAudioTflod(' + i + ')" class="btn btn-green" style="padding:4px 10px;font-size:0.8em;">&#9654; Ouvir</button> ';
             html += '<button onclick="baixarAudioTflod(' + i + ')" style="padding:4px 10px;font-size:0.8em;border:none;border-radius:6px;cursor:pointer;background:#607d8b;color:white;">&#11015; Baixar</button>';
           } else if (isErro) {
@@ -13075,8 +13075,31 @@
       };
     }
 
+    // Atualiza o visual do botao Reprocessar durante o processo, para dar nocao de progresso.
+    // estado: 'processando' | 'transcrevendo' | 'identificando' | 'salvando' | 'ok' | 'reset'
+    function _tflodBotaoEstado(btn, estado) {
+      if (!btn) return;
+      var mapa = {
+        processando:   { txt: '\u23F3 Iniciando...',       bg: '#f57c00', disabled: true },
+        transcrevendo: { txt: '\u23F3 Transcrevendo audio...', bg: '#f57c00', disabled: true },
+        identificando: { txt: '\u{1F50D} Identificando texto...', bg: '#1565c0', disabled: true },
+        salvando:      { txt: '\u{1F4BE} Salvando resultado...', bg: '#1565c0', disabled: true },
+        ok:            { txt: '\u2705 Pronto!',             bg: '#2e7d32', disabled: true },
+        reset:         { txt: '\u{1F504} Reprocessar',       bg: '',        disabled: false }
+      };
+      var e = mapa[estado] || mapa.reset;
+      btn.disabled = e.disabled;
+      btn.innerHTML = e.txt;
+      // Cor de fundo: se vazio, remove o override e deixa a classe btn-orange original.
+      if (e.bg) { btn.style.background = e.bg; btn.style.color = '#fff'; }
+      else { btn.style.background = ''; btn.style.color = ''; }
+    }
+
     // ===== REPROCESSAR TFLOD (quando deu erro_transcricao mas tem audio salvo) =====
-    async function reprocessarTflod(idx) {
+    // O segundo parametro (btnEl) e o proprio botao clicado (passado via 'this' no onclick),
+    // capturado logo aqui para nao se perder ao longo dos varios await.
+    async function reprocessarTflod(idx, btnEl) {
+      var btn = btnEl || (typeof event !== 'undefined' && event && event.target ? event.target : null);
       var r = _tflodResultCache[idx];
       if (!r) return;
       var d = r.data || {};
@@ -13127,8 +13150,7 @@
         }
       }
 
-      var btn = event && event.target ? event.target : null;
-      if (btn) { btn.disabled = true; btn.textContent = 'Processando...'; }
+      _tflodBotaoEstado(btn, 'processando');
       // Flag que controla se cobramos o credito no final (so se der certo).
       var _reprocessouComSucesso = false;
       try {
@@ -13138,6 +13160,7 @@
         var ultimoErroRede = false;
         while (tentativas < 3 && !transcricao) {
           tentativas++;
+          _tflodBotaoEstado(btn, 'transcrevendo');
           try {
             var resp = await fetch(API_URL + '/transcribe-audio', {
               method: 'POST',
@@ -13151,7 +13174,7 @@
           }
         }
         if (!transcricao) {
-          if (btn) { btn.disabled = false; btn.textContent = '\u{1F504} Reprocessar'; }
+          _tflodBotaoEstado(btn, 'reset');
           if (ultimoErroRede) {
             await _tflodConfirmar('Conexao instavel', 'Parece que sua internet esta baixa ou instavel. O audio nao pode ser reenviado. Nenhum credito foi cobrado. Tente novamente com uma conexao melhor.', 'Entendi', ' ');
           } else {
@@ -13163,7 +13186,7 @@
         if (podeRecalcular) {
           // 2a. Recalcular resultado completo (PCPM, erros, classificacao)
           var resultado = _tflodRecalcular(transcricao, textoUsado, tempoUsado, categoria, versaoTexto, escolaridade);
-          alert('Resultado recalculado com sucesso!\n\nPCPM: ' + resultado.pcpm + '\nClassificacao: ' + resultado.classificacao + '\nAcertos: ' + resultado.acertos + '\n\nO resultado foi salvo e ja aparece como finalizado no painel.');
+          _tflodBotaoEstado(btn, 'salvando');
           await fetch(API_URL + '/save-result', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -13183,13 +13206,15 @@
             })
           });
           _reprocessouComSucesso = true;
+          _tflodBotaoEstado(btn, 'ok');
+          await _tflodConfirmar('\u2705 Resultado recalculado', 'PCPM: ' + resultado.pcpm + '  |  ' + resultado.classificacao + '\nAcertos: ' + resultado.acertos + '\n\nJa aparece classificado no painel.', 'Entendi', ' ');
         } else {
           // 2b. RECUPERACAO INTELIGENTE (erro antigo, sem texto/tempo salvos).
           // Reconstroi o resultado a partir do audio + formData, como se refizesse a prova de forma clonada:
           //   - categoria: inferida da idade/escolaridade do formData
           //   - tempo real: medido pela duracao do audio (o teste grava durante a leitura)
           //   - texto: identificado comparando a transcricao com os textos possiveis
-          if (btn) { btn.textContent = 'Identificando...'; }
+          _tflodBotaoEstado(btn, 'identificando');
           var catInf = _tflodInferirCategoria(fd);
           var ident = _tflodIdentificarTexto(transcricao, catInf);
           var duracao = await _tflodDuracaoAudio(audioB64);
@@ -13201,7 +13226,7 @@
             var resultado2 = _tflodRecalcular(transcricao, ident.texto, duracao, catInf, ident.versao, escolaridade);
             resultado2.recuperado = true;
             resultado2.similaridadeTexto = Math.round(ident.similaridade * 100);
-            alert('Resultado RECUPERADO a partir do audio!\n\nPCPM: ' + resultado2.pcpm + '\nClassificacao: ' + resultado2.classificacao + '\nAcertos: ' + resultado2.acertos + '\nTempo de leitura (do audio): ' + duracao + 's\nTexto identificado: ' + ident.versao + ' (' + resultado2.similaridadeTexto + '% de coincidencia)\n\nEste resultado foi reconstruido do audio salvo e ja aparece como finalizado no painel.');
+            _tflodBotaoEstado(btn, 'salvando');
             await fetch(API_URL + '/save-result', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -13222,13 +13247,16 @@
               })
             });
             _reprocessouComSucesso = true;
+            _tflodBotaoEstado(btn, 'ok');
+            await _tflodConfirmar('\u2705 Resultado recuperado', 'PCPM: ' + resultado2.pcpm + '  |  ' + resultado2.classificacao + '\nAcertos: ' + resultado2.acertos + '\nTempo de leitura (do audio): ' + duracao + 's\nTexto: ' + ident.versao + ' (' + resultado2.similaridadeTexto + '% de coincidencia)\n\nReconstruido do audio e ja classificado no painel.', 'Entendi', ' ');
           } else {
             // Nao foi possivel identificar o texto com seguranca (ou audio sem duracao).
             // Salva a transcricao para nao perder o dado, sem chutar um PCPM.
+            _tflodBotaoEstado(btn, 'reset');
             var motivo = duracao <= 0
               ? 'nao foi possivel medir a duracao do audio'
               : 'a transcricao nao bateu com nenhum texto conhecido com seguranca (melhor coincidencia: ' + (ident ? Math.round(ident.similaridade * 100) : 0) + '%)';
-            alert('Transcricao recuperada:\n\n"' + transcricao.slice(0, 200) + '..."\n\nO PCPM NAO pode ser reconstruido automaticamente porque ' + motivo + '. A transcricao foi salva para nao perder o dado. Se precisar do resultado numerico, o teste pode ser reaplicado.');
+            await _tflodConfirmar('Nao foi possivel reconstruir', 'A transcricao foi recuperada e salva (nenhum credito cobrado), mas o PCPM nao pode ser reconstruido porque ' + motivo + '. Se precisar do resultado numerico, o teste pode ser reaplicado.', 'Entendi', ' ');
             await fetch(API_URL + '/save-result', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -13260,7 +13288,7 @@
       } catch(e) {
         // Erro inesperado durante o processamento. Nenhum credito e cobrado (a cobranca so ocorre no sucesso).
         await _tflodConfirmar('Algo deu errado', 'Ocorreu um erro inesperado ao reprocessar. Nenhum credito foi cobrado. Tente novamente; se persistir, tente mais tarde.', 'Entendi', ' ');
-        if (btn) { btn.disabled = false; btn.textContent = '\u{1F504} Reprocessar'; }
+        _tflodBotaoEstado(btn, 'reset');
       }
     }
 
