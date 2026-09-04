@@ -12634,18 +12634,18 @@
             html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (res.classificacao || '-') + '</td>';
           }
           html += '<td style="padding:5px;border-bottom:1px solid #eee;text-align:center;">';
-          if (isErro && temAudio) {
+          // PDF: so faz sentido quando ja ha resultado (nao e erro/limbo).
+          if (!isErro) {
+            html += '<button id="btnPdfTflod' + i + '" onclick="gerarPdfTflod(' + i + ')" class="btn btn-blue" style="padding:4px 10px;font-size:0.8em;">PDF</button> ';
+          }
+          if (temAudio) {
+            // Reprocessar: SEMPRE visivel quando ha audio (erro, limbo ou ja classificado).
+            // Ao clicar, pede confirmacao e consome 1 credito TFLOD (so se der certo).
             html += '<button onclick="reprocessarTflod(' + i + ')" class="btn btn-orange" style="padding:4px 10px;font-size:0.8em;">&#128260; Reprocessar</button> ';
             html += '<button onclick="ouvirAudioTflod(' + i + ')" class="btn btn-green" style="padding:4px 10px;font-size:0.8em;">&#9654; Ouvir</button> ';
             html += '<button onclick="baixarAudioTflod(' + i + ')" style="padding:4px 10px;font-size:0.8em;border:none;border-radius:6px;cursor:pointer;background:#607d8b;color:white;">&#11015; Baixar</button>';
-          } else if (isErro && !temAudio) {
+          } else if (isErro) {
             html += '<span style="font-size:10px;color:#999;">Audio nao salvo</span>';
-          } else {
-            html += '<button id="btnPdfTflod' + i + '" onclick="gerarPdfTflod(' + i + ')" class="btn btn-blue" style="padding:4px 10px;font-size:0.8em;">PDF</button> ';
-            if (temAudio) {
-              html += '<button onclick="ouvirAudioTflod(' + i + ')" class="btn btn-green" style="padding:4px 10px;font-size:0.8em;">&#9654; Ouvir</button> ';
-              html += '<button onclick="baixarAudioTflod(' + i + ')" style="padding:4px 10px;font-size:0.8em;border:none;border-radius:6px;cursor:pointer;background:#607d8b;color:white;">&#11015; Baixar</button>';
-            }
           }
           html += '</td></tr>';
         }
@@ -12901,6 +12901,65 @@
       });
     }
 
+    // ===== MODAL DE CONFIRMACAO REUTILIZAVEL (pop-up responsivo) =====
+    // Substitui o confirm() feio do navegador por um pop-up estilizado, centralizado,
+    // que ocupa bem a tela no celular. Retorna uma Promise que resolve true (confirmou)
+    // ou false (cancelou).
+    function _tflodConfirmar(titulo, mensagem, textoOk, textoCancelar) {
+      return new Promise(function(resolve) {
+        // Remove qualquer modal anterior que tenha ficado aberto.
+        var antigo = document.getElementById('_tflodModalOverlay');
+        if (antigo) antigo.parentNode.removeChild(antigo);
+
+        var overlay = document.createElement('div');
+        overlay.id = '_tflodModalOverlay';
+        overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;z-index:99999;padding:16px;box-sizing:border-box;';
+
+        var caixa = document.createElement('div');
+        caixa.style.cssText = 'background:#fff;border-radius:14px;max-width:420px;width:100%;padding:24px 20px;box-shadow:0 10px 40px rgba(0,0,0,0.3);text-align:center;box-sizing:border-box;';
+
+        var h = document.createElement('div');
+        h.style.cssText = 'font-size:20px;font-weight:bold;color:#1565c0;margin-bottom:12px;';
+        h.textContent = titulo;
+
+        var p = document.createElement('div');
+        p.style.cssText = 'font-size:16px;color:#444;line-height:1.5;margin-bottom:22px;';
+        p.textContent = mensagem;
+
+        var linhaBotoes = document.createElement('div');
+        linhaBotoes.style.cssText = 'display:flex;gap:12px;justify-content:center;flex-wrap:wrap;';
+
+        var fechar = function(valor) {
+          if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+          resolve(valor);
+        };
+
+        var btnOk = document.createElement('button');
+        btnOk.textContent = textoOk || 'Sim';
+        btnOk.style.cssText = 'flex:1;min-width:120px;padding:14px 18px;border:none;border-radius:25px;font-size:16px;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#2e7d32,#43a047);color:#fff;';
+        btnOk.onclick = function() { fechar(true); };
+
+        // So mostra o botao "cancelar" se houver um texto real para ele.
+        // Nos modais de aviso (um botao so), passamos texto vazio/espaco e ocultamos o cancelar.
+        var temCancelar = textoCancelar && textoCancelar.trim().length > 0;
+        if (temCancelar) {
+          var btnCancelar = document.createElement('button');
+          btnCancelar.textContent = textoCancelar;
+          btnCancelar.style.cssText = 'flex:1;min-width:120px;padding:14px 18px;border:2px solid #ccc;border-radius:25px;font-size:16px;font-weight:600;cursor:pointer;background:#f5f5f5;color:#555;';
+          btnCancelar.onclick = function() { fechar(false); };
+          linhaBotoes.appendChild(btnCancelar);
+        }
+        linhaBotoes.appendChild(btnOk);
+        // Clicar fora da caixa (no fundo escuro) cancela (equivale a "Nao").
+        overlay.onclick = function(e) { if (e.target === overlay) fechar(false); };
+        caixa.appendChild(h);
+        caixa.appendChild(p);
+        caixa.appendChild(linhaBotoes);
+        overlay.appendChild(caixa);
+        document.body.appendChild(overlay);
+      });
+    }
+
     // ===== CALCULO TFLOD PORTADO (para reprocessamento no painel) =====
     // Estas funcoes replicam fielmente a logica de calcularResultados/classificarDesempenho
     // do teste-tflod.html, mas recebem texto/tempo/categoria/escolaridade como parametros
@@ -13030,7 +13089,7 @@
           audioB64 = audioData.audioBase64 || '';
         } catch(e) { alert('Erro ao buscar audio do S3: ' + e.message); return; }
       }
-      if (!audioB64) { alert('Audio nao disponivel para reprocessamento.'); return; }
+      if (!audioB64) { await _tflodConfirmar('Audio indisponivel', 'Nao foi possivel recuperar o audio deste resultado para reprocessar.', 'Entendi', ' '); return; }
 
       // Verificar se temos os dados necessarios para recalcular o PCPM.
       // Resultados antigos (erros anteriores a esta correcao) nao os tem.
@@ -13042,23 +13101,64 @@
       var escolaridade = fd.escolaridade || '';
       var podeRecalcular = !!(textoUsado && tempoUsado);
 
-      var msgConfirm = podeRecalcular
-        ? 'Reenviar audio para transcricao e recalcular o resultado? Isso vai substituir o resultado com erro.'
-        : 'Este resultado e um erro antigo (sem texto/tempo salvos). O sistema vai tentar RECONSTRUIR o resultado a partir do audio: transcreve, identifica o texto lido e mede o tempo pela duracao da gravacao. Se conseguir identificar o texto com seguranca, o PCPM sera recalculado. Deseja continuar?';
-      if (!confirm(msgConfirm)) return;
+      // === CONFIRMACAO COM AVISO DE CREDITO (modal responsivo) ===
+      var confirmou = await _tflodConfirmar(
+        '\u{1F504} Reprocessar resultado',
+        'Gostaria de usar 1 credito para reprocessar? O credito so sera cobrado se o reprocessamento der certo.',
+        'Sim, usar 1 credito',
+        'Nao'
+      );
+      if (!confirmou) return;
+
+      // === VERIFICACAO DE CREDITO (sem gastar ainda) ===
+      // Admin e modo gratuito nao consomem. Para os demais, confere se ha saldo TFLOD.
+      var isadmin = (currentUser === 'setmonte@gmail.com') || (typeof isFreeModeActive === 'function' && isFreeModeActive());
+      if (!isadmin) {
+        try {
+          var credResp = await fetch(API_URL + '/credits?email=' + encodeURIComponent(currentUser));
+          var credData = await credResp.json();
+          if ((credData.tflodCredits || 0) < 1) {
+            await _tflodConfirmar('Creditos insuficientes', 'Voce nao tem creditos TFLOD disponiveis. Adquira creditos para reprocessar este resultado.', 'Entendi', ' ');
+            return;
+          }
+        } catch(e) {
+          await _tflodConfirmar('Sem conexao', 'Nao foi possivel verificar seus creditos. Verifique sua internet e tente novamente.', 'Entendi', ' ');
+          return;
+        }
+      }
 
       var btn = event && event.target ? event.target : null;
       if (btn) { btn.disabled = true; btn.textContent = 'Processando...'; }
+      // Flag que controla se cobramos o credito no final (so se der certo).
+      var _reprocessouComSucesso = false;
       try {
-        // 1. Transcrever audio via Whisper
-        var resp = await fetch(API_URL + '/transcribe-audio', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ audioBase64: audioB64, sessionId: r.sessionId || '' })
-        });
-        var data = await resp.json();
-        var transcricao = data.text || '';
-        if (!transcricao) { alert('Transcricao retornou vazia. Tente novamente.'); if (btn) { btn.disabled = false; btn.textContent = '\u{1F504} Reprocessar'; } return; }
+        // 1. Transcrever audio via Whisper, com ate 3 tentativas (forca maior/congestionamento).
+        var transcricao = '';
+        var tentativas = 0;
+        var ultimoErroRede = false;
+        while (tentativas < 3 && !transcricao) {
+          tentativas++;
+          try {
+            var resp = await fetch(API_URL + '/transcribe-audio', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ audioBase64: audioB64, sessionId: r.sessionId || '' })
+            });
+            var data = await resp.json();
+            transcricao = data.text || '';
+          } catch(eRede) {
+            ultimoErroRede = true; // provavel internet baixa / conexao caiu
+          }
+        }
+        if (!transcricao) {
+          if (btn) { btn.disabled = false; btn.textContent = '\u{1F504} Reprocessar'; }
+          if (ultimoErroRede) {
+            await _tflodConfirmar('Conexao instavel', 'Parece que sua internet esta baixa ou instavel. O audio nao pode ser reenviado. Nenhum credito foi cobrado. Tente novamente com uma conexao melhor.', 'Entendi', ' ');
+          } else {
+            await _tflodConfirmar('Nao foi possivel agora', 'Tentamos 3 vezes e o servico de transcricao nao respondeu (pode ser congestionamento). Nenhum credito foi cobrado. Por favor, tente novamente mais tarde.', 'Entendi', ' ');
+          }
+          return;
+        }
 
         if (podeRecalcular) {
           // 2a. Recalcular resultado completo (PCPM, erros, classificacao)
@@ -13082,6 +13182,7 @@
               }
             })
           });
+          _reprocessouComSucesso = true;
         } else {
           // 2b. RECUPERACAO INTELIGENTE (erro antigo, sem texto/tempo salvos).
           // Reconstroi o resultado a partir do audio + formData, como se refizesse a prova de forma clonada:
@@ -13120,6 +13221,7 @@
                 }
               })
             });
+            _reprocessouComSucesso = true;
           } else {
             // Nao foi possivel identificar o texto com seguranca (ou audio sem duracao).
             // Salva a transcricao para nao perder o dado, sem chutar um PCPM.
@@ -13139,9 +13241,25 @@
             });
           }
         }
+
+        // === COBRANCA DO CREDITO: so agora, e SO se o reprocessamento deu certo ===
+        // (admin e modo gratuito nao consomem). Se falhou, nada e cobrado.
+        if (_reprocessouComSucesso && !isadmin) {
+          try {
+            await fetch(API_URL + '/use-credit', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email: currentUser, tipo: 'tflod' })
+            });
+            // Atualiza o contador de creditos na tela, se a funcao existir.
+            if (typeof atualizarCreditos === 'function') { try { atualizarCreditos(); } catch(e) {} }
+          } catch(e) { /* Falha ao cobrar nao deve travar o resultado ja salvo. */ }
+        }
+
         loadTflodResults();
       } catch(e) {
-        alert('Erro ao reprocessar: ' + e.message);
+        // Erro inesperado durante o processamento. Nenhum credito e cobrado (a cobranca so ocorre no sucesso).
+        await _tflodConfirmar('Algo deu errado', 'Ocorreu um erro inesperado ao reprocessar. Nenhum credito foi cobrado. Tente novamente; se persistir, tente mais tarde.', 'Entendi', ' ');
         if (btn) { btn.disabled = false; btn.textContent = '\u{1F504} Reprocessar'; }
       }
     }
