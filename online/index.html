@@ -12604,7 +12604,10 @@
           var res = d.resultados || {};
           var fd = d.formData || {};
           var temAudio = d.audioBase64 ? true : (d.audioS3Key ? true : (d._temAudio ? true : false));
-          var isErro = (d.status === 'erro_transcricao');
+          // Considera "erro" tanto o status erro_transcricao quanto um resultado finalizado VAZIO
+          // (pcpm 0 e sem erros de leitura) que tem audio salvo — sinal de transcricao que falhou.
+          var _resVazio = (!res.pcpm || res.pcpm === 0) && (!res.erros || res.erros.length === 0);
+          var isErro = (d.status === 'erro_transcricao') || (_resVazio && temAudio);
           var bgRow = isErro ? 'background:#fff3e0;' : '';
           html += '<tr style="' + bgRow + '"><td style="padding:5px;border-bottom:1px solid #eee;text-align:center;"><input type="checkbox" class="tflod-check" value="' + (r.sessionId || '') + '"></td>';
           html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (d.date ? new Date(d.date).toLocaleString('pt-BR') : '') + '</td>';
@@ -12612,7 +12615,7 @@
           html += '<td style="padding:5px;border-bottom:1px solid #eee;font-size:10px;font-family:monospace;color:#2e7d32;">' + (d.idPaciente || fd.id || (fd.nome && fd.birthDate ? gerarIdPacienteHash(fd.nome, fd.birthDate) : '-')) + '</td>';
           if (isErro) {
             html += '<td style="padding:5px;border-bottom:1px solid #eee;color:#c62828;font-weight:bold;">ERRO</td>';
-            html += '<td style="padding:5px;border-bottom:1px solid #eee;color:#c62828;font-size:10px;">' + (d.erro || 'Falha na transcricao') + '</td>';
+            html += '<td style="padding:5px;border-bottom:1px solid #eee;color:#c62828;font-size:10px;">' + (d.erro || 'Transcricao vazia - use Reprocessar') + '</td>';
           } else {
             html += '<td style="padding:5px;border-bottom:1px solid #eee;font-weight:bold;">' + (res.pcpm || '-') + '</td>';
             html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (res.classificacao || '-') + '</td>';
