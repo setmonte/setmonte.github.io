@@ -12756,6 +12756,121 @@
       loadTflodResults();
     }
 
+    // ===== CALCULO TFLOD PORTADO (para reprocessamento no painel) =====
+    // Estas funcoes replicam fielmente a logica de calcularResultados/classificarDesempenho
+    // do teste-tflod.html, mas recebem texto/tempo/categoria/escolaridade como parametros
+    // (no teste eram variaveis globais). Assim o painel consegue recalcular o PCPM.
+    function _tflodClassificar(pcpm, categoria, escolaridade) {
+      if (categoria === 'infantil') {
+        var esc = (escolaridade || '').toLowerCase();
+        var faixas;
+        if (esc.indexOf('1o') >= 0 || esc.indexOf('1\u00ba') >= 0) { faixas = [80, 65, 53, 35, 20]; }
+        else if (esc.indexOf('2o') >= 0 || esc.indexOf('2\u00ba') >= 0) { faixas = [100, 85, 72, 50, 30]; }
+        else if (esc.indexOf('3o') >= 0 || esc.indexOf('3\u00ba') >= 0) { faixas = [120, 107, 92, 70, 45]; }
+        else if (esc.indexOf('4o') >= 0 || esc.indexOf('4\u00ba') >= 0) { faixas = [140, 125, 112, 85, 60]; }
+        else if (esc.indexOf('5o') >= 0 || esc.indexOf('5\u00ba') >= 0) { faixas = [155, 140, 127, 100, 70]; }
+        else if (esc.indexOf('6o') >= 0 || esc.indexOf('6\u00ba') >= 0) { faixas = [165, 150, 140, 110, 80]; }
+        else if (esc.indexOf('7o') >= 0 || esc.indexOf('7\u00ba') >= 0) { faixas = [170, 155, 145, 115, 85]; }
+        else { faixas = [90, 70, 50, 30, 15]; }
+        if (pcpm >= faixas[0]) return 'Superior';
+        if (pcpm >= faixas[1]) return 'M\u00e9dia Superior';
+        if (pcpm >= faixas[2]) return 'M\u00e9dia';
+        if (pcpm >= faixas[3]) return 'M\u00e9dia Inferior';
+        if (pcpm >= faixas[4]) return 'Lim\u00edtrofe';
+        return 'Insuficiente';
+      } else {
+        if (pcpm >= 180) return 'Superior';
+        if (pcpm >= 160) return 'M\u00e9dia Superior';
+        if (pcpm >= 140) return 'M\u00e9dia';
+        if (pcpm >= 110) return 'M\u00e9dia Inferior';
+        if (pcpm >= 80) return 'Lim\u00edtrofe';
+        return 'Insuficiente';
+      }
+    }
+
+    function _tflodClassificarErro(original, falada) {
+      if (!falada || falada === '(omitida)') return 'omissao';
+      var trocas = [['p','b'],['t','d'],['f','v'],['c','g'],['k','g'],['s','z'],['x','j'],['ch','j'],['lh','li'],['nh','ni']];
+      for (var i = 0; i < trocas.length; i++) {
+        var a = trocas[i][0], b = trocas[i][1];
+        if (original.replace(a, b) === falada || original.replace(b, a) === falada) return 'troca_fonologica';
+      }
+      if (original.length === falada.length && original.length > 2) {
+        var diffs = 0;
+        for (var j = 0; j < original.length; j++) { if (original[j] !== falada[j]) diffs++; }
+        if (diffs === 2) return 'inversao';
+      }
+      if (Math.abs(original.length - falada.length) >= 2) return 'silaba';
+      return 'substituicao';
+    }
+
+    // Recalcula o resultado completo do TFLOD a partir da transcricao + texto/tempo/categoria salvos.
+    function _tflodRecalcular(transcricao, textoUsado, tempoUsado, categoria, versaoTexto, escolaridade) {
+      if (typeof transcricao !== 'string') transcricao = '';
+      var palavrasTexto = String(textoUsado || '').split(/\s+/).filter(function(p){ return p.length > 0; });
+      var palavrasFaladas = transcricao.toLowerCase().replace(/[.,!?;:"""''()\-]/g, '').split(/\s+/).filter(function(p){ return p.length > 0; });
+      var palavrasOriginal = palavrasTexto.map(function(p){ return p.toLowerCase().replace(/[.,!?;:"""''()\-]/g, ''); });
+      var totalLidas = palavrasFaladas.length;
+      var _tempo = Number(tempoUsado);
+      if (!isFinite(_tempo) || _tempo <= 0) _tempo = 60;
+      var m = palavrasOriginal.length, n = palavrasFaladas.length;
+      // Matriz LCS completa (para backtracking dos erros)
+      var dp = [];
+      for (var i = 0; i <= m; i++) { dp[i] = new Array(n + 1).fill(0); }
+      for (var i = 1; i <= m; i++) {
+        for (var j = 1; j <= n; j++) {
+          if (palavrasOriginal[i-1] === palavrasFaladas[j-1]) dp[i][j] = dp[i-1][j-1] + 1;
+          else dp[i][j] = Math.max(dp[i-1][j], dp[i][j-1]);
+        }
+      }
+      var acertos = dp[m][n];
+      var erros = [];
+      var i = m, j = n;
+      var alinhamento = [];
+      while (i > 0 && j > 0) {
+        if (palavrasOriginal[i-1] === palavrasFaladas[j-1]) { alinhamento.unshift({tipo:'match', posO:i, posF:j}); i--; j--; }
+        else if (dp[i-1][j] >= dp[i][j-1]) { alinhamento.unshift({tipo:'omissao', posO:i, posF:null}); i--; }
+        else { alinhamento.unshift({tipo:'insercao', posO:null, posF:j}); j--; }
+      }
+      while (i > 0) { alinhamento.unshift({tipo:'omissao', posO:i, posF:null}); i--; }
+      while (j > 0) { alinhamento.unshift({tipo:'insercao', posO:null, posF:j}); j--; }
+      for (var k = 0; k < alinhamento.length; k++) {
+        var al = alinhamento[k];
+        if (al.tipo === 'omissao') {
+          if (k + 1 < alinhamento.length && alinhamento[k+1].tipo === 'insercao') {
+            erros.push({ posicao: al.posO, esperada: palavrasTexto[al.posO - 1], lida: palavrasFaladas[alinhamento[k+1].posF - 1], tipo: _tflodClassificarErro(palavrasOriginal[al.posO - 1], palavrasFaladas[alinhamento[k+1].posF - 1]) });
+            k++;
+          } else {
+            erros.push({ posicao: al.posO, esperada: palavrasTexto[al.posO - 1], lida: '(omitida)', tipo: 'omissao' });
+          }
+        } else if (al.tipo === 'insercao') {
+          erros.push({ posicao: al.posF, esperada: '\u2014', lida: palavrasFaladas[al.posF - 1], tipo: 'insercao' });
+        }
+      }
+      var ultimaPosAlcancada = 0;
+      for (var k = 0; k < alinhamento.length; k++) {
+        if (alinhamento[k].posO && (alinhamento[k].tipo === 'match' || alinhamento[k].posF)) {
+          ultimaPosAlcancada = Math.max(ultimaPosAlcancada, alinhamento[k].posO);
+        }
+      }
+      var errosReais = [];
+      var naoAlcancadas = 0;
+      for (var k = 0; k < erros.length; k++) {
+        if (erros[k].tipo === 'omissao' && erros[k].posicao > ultimaPosAlcancada) naoAlcancadas++;
+        else errosReais.push(erros[k]);
+      }
+      var pcpm = Math.round(acertos * (60 / _tempo));
+      var cat = categoria || 'adulto';
+      var classificacao = _tflodClassificar(pcpm, cat, escolaridade);
+      var pctErros = ultimaPosAlcancada > 0 ? Math.round((errosReais.length / ultimaPosAlcancada) * 100) : 0;
+      return {
+        textoUsado: textoUsado, categoria: cat, versaoTexto: versaoTexto || '', transcricao: transcricao,
+        totalPalavrasTexto: palavrasTexto.length, totalPalavrasLidas: totalLidas, palavrasAlcancadas: ultimaPosAlcancada,
+        naoAlcancadas: naoAlcancadas, acertos: acertos, erros: errosReais, pctErros: pctErros, pcpm: pcpm,
+        tempoUsado: _tempo, classificacao: classificacao
+      };
+    }
+
     // ===== REPROCESSAR TFLOD (quando deu erro_transcricao mas tem audio salvo) =====
     async function reprocessarTflod(idx) {
       var r = _tflodResultCache[idx];
@@ -12771,7 +12886,22 @@
         } catch(e) { alert('Erro ao buscar audio do S3: ' + e.message); return; }
       }
       if (!audioB64) { alert('Audio nao disponivel para reprocessamento.'); return; }
-      if (!confirm('Reenviar audio para transcricao? Isso vai substituir o resultado com erro.')) return;
+
+      // Verificar se temos os dados necessarios para recalcular o PCPM.
+      // Resultados antigos (erros anteriores a esta correcao) nao os tem.
+      var fd = d.formData || {};
+      var textoUsado = d.textoUsado || fd.textoUsado || '';
+      var tempoUsado = d.tempoUsado || fd.tempoUsado || 0;
+      var categoria = d.categoria || fd.categoria || '';
+      var versaoTexto = d.versaoTexto || fd.versaoTexto || '';
+      var escolaridade = fd.escolaridade || '';
+      var podeRecalcular = !!(textoUsado && tempoUsado);
+
+      var msgConfirm = podeRecalcular
+        ? 'Reenviar audio para transcricao e recalcular o resultado? Isso vai substituir o resultado com erro.'
+        : 'Este resultado nao tem o texto/tempo salvos (erro antigo), entao o PCPM NAO podera ser recalculado - apenas a transcricao sera recuperada. Deseja continuar mesmo assim?';
+      if (!confirm(msgConfirm)) return;
+
       var btn = event && event.target ? event.target : null;
       if (btn) { btn.disabled = true; btn.textContent = 'Processando...'; }
       try {
@@ -12784,23 +12914,43 @@
         var data = await resp.json();
         var transcricao = data.text || '';
         if (!transcricao) { alert('Transcricao retornou vazia. Tente novamente.'); if (btn) { btn.disabled = false; btn.textContent = '\u{1F504} Reprocessar'; } return; }
-        // 2. Atualizar resultado no banco (sobrescrever com dados corretos)
-        var fd = d.formData || {};
-        // ATENCAO: o calculo do PCPM depende de variaveis do teste (palavrasTexto, tempoRestante,
-        // categoriaTexto) que NAO existem no painel. Por isso, aqui apenas recuperamos a transcricao;
-        // o PCPM/classificacao ainda precisam ser recalculados abrindo o teste. Mensagem honesta:
-        alert('Transcricao recuperada:\n\n"' + transcricao.slice(0, 200) + '..."\n\nATENCAO: o PCPM e a classificacao ainda NAO foram recalculados (isso depende do texto e do tempo do teste). A transcricao foi salva, mas o resultado continuara marcado como pendente ate ser recalculado no proprio teste. Correcao completa em desenvolvimento.');
-        // Salvar resultado atualizado
-        await fetch(API_URL + '/save-result', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: currentUser,
-            tipo: 'tflod',
-            sessionId: r.sessionId,
-            data: { status: 'reprocessado', date: d.date, formData: fd, transcricao: transcricao, audioBase64: audioB64, reprocessadoEm: new Date().toISOString() }
-          })
-        });
+
+        if (podeRecalcular) {
+          // 2a. Recalcular resultado completo (PCPM, erros, classificacao)
+          var resultado = _tflodRecalcular(transcricao, textoUsado, tempoUsado, categoria, versaoTexto, escolaridade);
+          alert('Resultado recalculado com sucesso!\n\nPCPM: ' + resultado.pcpm + '\nClassificacao: ' + resultado.classificacao + '\nAcertos: ' + resultado.acertos + '\n\nO resultado foi salvo e ja aparece como finalizado no painel.');
+          await fetch(API_URL + '/save-result', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: currentUser,
+              tipo: 'tflod',
+              sessionId: r.sessionId,
+              data: {
+                status: 'finalizado',
+                date: d.date,
+                formData: fd,
+                resultados: resultado,
+                audioS3Key: d.audioS3Key || '',
+                _temAudio: true,
+                reprocessadoEm: new Date().toISOString()
+              }
+            })
+          });
+        } else {
+          // 2b. Sem dados para recalcular (erro antigo): recupera so a transcricao (comportamento honesto)
+          alert('Transcricao recuperada:\n\n"' + transcricao.slice(0, 200) + '..."\n\nATENCAO: o PCPM e a classificacao NAO puderam ser recalculados porque este resultado (erro antigo) nao guardou o texto e o tempo de leitura. Para obter o resultado completo, o teste precisa ser reaplicado.');
+          await fetch(API_URL + '/save-result', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: currentUser,
+              tipo: 'tflod',
+              sessionId: r.sessionId,
+              data: { status: 'reprocessado', date: d.date, formData: fd, transcricao: transcricao, audioBase64: audioB64, reprocessadoEm: new Date().toISOString() }
+            })
+          });
+        }
         loadTflodResults();
       } catch(e) {
         alert('Erro ao reprocessar: ' + e.message);

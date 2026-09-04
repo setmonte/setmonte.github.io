@@ -899,6 +899,11 @@ async function salvarResultado(resultado, audioBase64, audioS3Key) {
 
 async function salvarResultadoErro(mensagemErro, audioBase64, audioS3Key) {
     if (!sessionInfo.email || !sessionInfo.sessionId) return;
+    // Tempo efetivamente usado na leitura (mesma logica do calcularResultados).
+    // Salvamos junto com o texto/categoria para permitir recalcular o PCPM no painel
+    // durante o "Reprocessar" (sem esses dados, o recalculo seria impossivel).
+    var _tempoUsadoErro = 60 - tempoRestante;
+    if (_tempoUsadoErro <= 0) _tempoUsadoErro = 60;
     try {
         await fetch(API_URL + '/save-result', {
             method: 'POST',
@@ -907,7 +912,20 @@ async function salvarResultadoErro(mensagemErro, audioBase64, audioS3Key) {
                 email: sessionInfo.email,
                 tipo: 'tflod',
                 sessionId: sessionInfo.sessionId,
-                data: { status: 'erro_transcricao', date: new Date().toISOString(), formData: dadosForm, erro: mensagemErro, audioS3Key: audioS3Key || '', _temAudio: !!(audioS3Key) }
+                data: {
+                    status: 'erro_transcricao',
+                    date: new Date().toISOString(),
+                    formData: dadosForm,
+                    erro: mensagemErro,
+                    audioS3Key: audioS3Key || '',
+                    _temAudio: !!(audioS3Key),
+                    // Dados necessarios para recalcular o PCPM no reprocessamento:
+                    textoUsado: textoEscolhido,
+                    versaoTexto: versaoTexto,
+                    categoria: categoriaTexto,
+                    tempoUsado: _tempoUsadoErro,
+                    totalPalavrasTexto: palavrasTexto.length
+                }
             })
         });
     } catch (e) { console.error('Erro ao enviar:', e); }
