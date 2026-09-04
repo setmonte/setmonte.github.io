@@ -12604,10 +12604,19 @@
           var res = d.resultados || {};
           var fd = d.formData || {};
           var temAudio = d.audioBase64 ? true : (d.audioS3Key ? true : (d._temAudio ? true : false));
-          // Considera "erro" tanto o status erro_transcricao quanto um resultado finalizado VAZIO
-          // (pcpm 0 e sem erros de leitura) que tem audio salvo — sinal de transcricao que falhou.
+          // === CLASSIFICACAO: ERRO DE SISTEMA vs. DESEMPENHO CLINICO REAL ===
+          // Regra antiga marcava como "ERRO" todo resultado vazio (pcpm 0, sem erros) com audio.
+          // Problema: um paciente mudo/gago/afasico que tenta ler tem PCPM 0 LEGITIMO (resultado
+          // clinico valido), e nao um erro. Distinguimos os dois olhando a fala captada e o audio.
           var _resVazio = (!res.pcpm || res.pcpm === 0) && (!res.erros || res.erros.length === 0);
-          var isErro = (d.status === 'erro_transcricao') || (_resVazio && temAudio);
+          // Foi reprocessado/recuperado com sucesso? (recalculo direto ou recuperacao do audio)
+          var _foiReprocessado = !!(d.reprocessadoEm || d.recuperadoEm || d._recuperadoDoAudio);
+          // Ha sinal de fala humana real? (transcricao salva com fragmentos, mesmo que zerado)
+          var _temFalaReal = _tflodTemFalaReal(res.transcricao || d.transcricao || '');
+          // So e "erro de sistema" quando: status de erro OU vazio-com-audio, e AO MESMO TEMPO
+          // NAO foi reprocessado com sucesso E NAO ha sinal de fala real (ou seja, silencio/falha).
+          var _pareceFalha = (d.status === 'erro_transcricao') || (_resVazio && temAudio);
+          var isErro = _pareceFalha && !_foiReprocessado && !_temFalaReal;
           var bgRow = isErro ? 'background:#fff3e0;' : '';
           html += '<tr style="' + bgRow + '"><td style="padding:5px;border-bottom:1px solid #eee;text-align:center;"><input type="checkbox" class="tflod-check" value="' + (r.sessionId || '') + '"></td>';
           html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (d.date ? new Date(d.date).toLocaleString('pt-BR') : '') + '</td>';
@@ -12617,7 +12626,11 @@
             html += '<td style="padding:5px;border-bottom:1px solid #eee;color:#c62828;font-weight:bold;">ERRO</td>';
             html += '<td style="padding:5px;border-bottom:1px solid #eee;color:#c62828;font-size:10px;">' + (d.erro || 'Transcricao vazia - use Reprocessar') + '</td>';
           } else {
-            html += '<td style="padding:5px;border-bottom:1px solid #eee;font-weight:bold;">' + (res.pcpm || '-') + '</td>';
+            // Ha um resultado real processado? (tem transcricao ou foi reprocessado) -> mostra o numero,
+            // mesmo que seja 0 (PCPM 0 legitimo de quem tentou ler mas nao conseguiu). Senao, "-".
+            var _temResultado = (typeof res.pcpm === 'number') && (res.transcricao || _foiReprocessado || res.classificacao);
+            var _pcpmTexto = _temResultado ? String(res.pcpm) : (res.pcpm || '-');
+            html += '<td style="padding:5px;border-bottom:1px solid #eee;font-weight:bold;">' + _pcpmTexto + '</td>';
             html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (res.classificacao || '-') + '</td>';
           }
           html += '<td style="padding:5px;border-bottom:1px solid #eee;text-align:center;">';
@@ -12787,6 +12800,38 @@
     // Normaliza um texto em lista de palavras minusculas sem pontuacao (para comparar).
     function _tflodNormalizar(txt) {
       return String(txt || '').toLowerCase().replace(/[.,!?;:"""''()\-]/g, '').split(/\s+/).filter(function(p){ return p.length > 0; });
+    }
+
+    // Detecta se a transcricao contem FALA HUMANA REAL (tentativa de leitura), mesmo que
+    // fragmentada, versus apenas ruido/silencio (falha tecnica de captacao).
+    // Adaptado da logica de detectarRespiracao do sistema THEDUGA (FDT), que distinguia
+    // respiracao/ruido de fala real - aqui aplicado a palavras em vez de numeros.
+    // Filosofia: uma pessoa muda/gaga/afasica produz silabas e fragmentos ("e... um... fada...
+    // dada... kiki"), que sao um resultado clinico legitimo (PCPM baixo/zero real), NAO um erro.
+    // Ja o silencio de falha tecnica gera transcricao vazia ou so ruido.
+    function _tflodTemFalaReal(transcricao) {
+      var t = String(transcricao || '').trim();
+      if (t.length === 0) return false; // vazio = sem fala captada
+      // Padroes que indicam apenas ruido/respiracao (NAO sao fala real):
+      var padroesRuido = [
+        /^[.\u2026\s]+$/,        // so pontos/reticencias/espacos ("...", "\u2026")
+        /^h+$/i,                  // "hhhh" (respiracao)
+        /^[aeiou]{1,2}$/i,        // uma ou duas vogais isoladas ("a", "ah" ja abaixo)
+        /^a+h*$/i,                // "aaah", "aaa"
+        /^[^a-z0-9\u00e0-\u00ff]{1,3}$/i // 1-3 caracteres nao-verbais
+      ];
+      // Se o texto inteiro for so um desses padroes de ruido, nao ha fala real.
+      for (var i = 0; i < padroesRuido.length; i++) {
+        if (padroesRuido[i].test(t)) return false;
+      }
+      // Conta "tokens" que parecem tentativa de fala: sequencias com pelo menos uma letra.
+      // Fragmentos como "fada", "kiki", "vari", "nha" contam como fala humana real.
+      var tokens = t.toLowerCase().split(/\s+/).filter(function(p){
+        return /[a-z\u00e0-\u00ff]/.test(p); // tem ao menos uma letra
+      });
+      // Pelo menos 1 fragmento com 2+ letras ja indica tentativa real de leitura.
+      var comLetras = tokens.filter(function(p){ return p.replace(/[^a-z\u00e0-\u00ff]/g,'').length >= 2; });
+      return comLetras.length >= 1;
     }
 
     // Conta palavras em comum (LCS) entre duas listas ja normalizadas.
