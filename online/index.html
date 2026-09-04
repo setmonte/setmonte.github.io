@@ -5793,29 +5793,34 @@
         var loginsMultiplos = {};
         var agora = Date.now();
         var limite48h = agora - (48 * 60 * 60 * 1000);
-        var resolvidoEm = localStorage.getItem('adminAlertasResolvidoEm');
-        var limiteResolvido = resolvidoEm ? new Date(resolvidoEm).getTime() : 0;
+        // Lista de sessionIds dos alertas exibidos agora (para marcar como resolvidos no servidor)
+        window._alertasVisiveis = [];
         resultados.forEach(function(r) {
           var d = r.data || {};
           var ts = d.date ? new Date(d.date).getTime() : (r.timestamp || 0);
           if (ts < limite48h) return;
-          if (ts <= limiteResolvido) return;
+          // Resolvido fica no SERVIDOR (vale para qualquer dispositivo), nao mais no localStorage
+          if (d.alertaResolvido) return;
           var usuario = r.email || '?';
           var fd = d.formData || {};
           var paciente = fd.nome || d.paciente || '-';
+          var _ehAlerta = false;
           // Erros de transcricao
           if (d.status === 'erro_transcricao') {
             // Audio pode estar salvo de 3 formas: base64 embutido, referencia no S3, ou flag _temAudio
             var _temAudioErro = !!(d.audioBase64 || d.audioS3Key || d._temAudio);
             errosTranscricao.push({usuario: usuario, paciente: paciente, tipo: (r.tipo || '?'), data: d.date, temAudio: _temAudioErro, erro: d.erro || ''});
+            _ehAlerta = true;
           }
           // Abandonados
           if (d.status === 'abandonado') {
             abandonados.push({usuario: usuario, paciente: paciente, tipo: r.tipo || '?', data: d.date});
+            _ehAlerta = true;
           }
           // Aguardando (sessoes nao completadas)
           if (d.status === 'aguardando') {
             aguardando.push({usuario: usuario, paciente: paciente, tipo: r.tipo || '?', data: d.date});
+            _ehAlerta = true;
           }
           // Contar logins por usuario
           if (r.tipo === 'login') {
@@ -5825,10 +5830,16 @@
           // Bonus suspeito (>=80% de similaridade) - anti-abuso
           if (r.tipo === 'bonus-log' && d.alerta && d.alerta.scoreSuspeita >= 80) {
             bonusSuspeitos.push({ usuario: usuario, score: d.alerta.scoreSuspeita, motivo: d.alerta.motivo || '', similarA: d.alerta.similarA || '', data: d.date });
+            _ehAlerta = true;
           }
           // Falha na geracao de PDF (registrada pelo navegador do usuario)
           if (r.tipo === 'erro-pdf') {
             errosPDF.push({ usuario: usuario, tipoTeste: d.tipoTeste || '?', erro: d.erro || '', data: d.date });
+            _ehAlerta = true;
+          }
+          // Guarda o identificador para poder marcar como resolvido no servidor
+          if (_ehAlerta && r.sessionId) {
+            window._alertasVisiveis.push({ sessionId: r.sessionId, email: r.email || currentUser, tipo: r.tipo || '', data: d });
           }
         });
         // Montar HTML dos alertas (classificados por responsabilidade)
@@ -5922,11 +5933,30 @@
       }
     }
 
-    function resolverAlertasAdmin() {
-      localStorage.setItem('adminAlertasResolvidoEm', new Date().toISOString());
-      var card = document.getElementById('adminAlertasCard');
+    async function resolverAlertasAdmin() {
+      var lista = window._alertasVisiveis || [];
+      if (lista.length === 0) {
+        var elVazio = document.getElementById('adminAlertasContent');
+        if (elVazio) elVazio.innerHTML = '<p style="color:#2e7d32;font-weight:bold;">&#9989; Tudo certo! Alertas limpos.</p>';
+        return;
+      }
       var el = document.getElementById('adminAlertasContent');
-      if (el) el.innerHTML = '<p style="color:#2e7d32;font-weight:bold;">&#9989; Tudo certo! Alertas limpos.</p>';
+      if (el) el.innerHTML = '<p style="color:#555;">Marcando ' + lista.length + ' alerta(s) como resolvido(s)...</p>';
+      // Marca CADA alerta como resolvido no SERVIDOR (vale para qualquer dispositivo).
+      // Usa /resolver-alerta (so adiciona a flag; nao dispara email nem altera a data).
+      for (var i = 0; i < lista.length; i++) {
+        var item = lista[i];
+        try {
+          await fetch(API_URL + '/resolver-alerta', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId: item.sessionId })
+          });
+        } catch(e) {}
+      }
+      window._alertasVisiveis = [];
+      var card = document.getElementById('adminAlertasCard');
+      if (el) el.innerHTML = '<p style="color:#2e7d32;font-weight:bold;">&#9989; Tudo certo! Alertas resolvidos (em todos os dispositivos).</p>';
       if (card) { card.style.borderColor = '#2e7d32'; card.style.background = '#e8f5e9'; }
     }
 
