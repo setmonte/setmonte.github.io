@@ -12786,8 +12786,10 @@
         if (!transcricao) { alert('Transcricao retornou vazia. Tente novamente.'); if (btn) { btn.disabled = false; btn.textContent = '\u{1F504} Reprocessar'; } return; }
         // 2. Atualizar resultado no banco (sobrescrever com dados corretos)
         var fd = d.formData || {};
-        // Calcular resultados usando a funcao do teste (simplificada aqui)
-        alert('Transcricao recuperada com sucesso!\n\n"' + transcricao.slice(0, 200) + '..."\n\nO resultado sera salvo. Recarregue os resultados para ver.');
+        // ATENCAO: o calculo do PCPM depende de variaveis do teste (palavrasTexto, tempoRestante,
+        // categoriaTexto) que NAO existem no painel. Por isso, aqui apenas recuperamos a transcricao;
+        // o PCPM/classificacao ainda precisam ser recalculados abrindo o teste. Mensagem honesta:
+        alert('Transcricao recuperada:\n\n"' + transcricao.slice(0, 200) + '..."\n\nATENCAO: o PCPM e a classificacao ainda NAO foram recalculados (isso depende do texto e do tempo do teste). A transcricao foi salva, mas o resultado continuara marcado como pendente ate ser recalculado no proprio teste. Correcao completa em desenvolvimento.');
         // Salvar resultado atualizado
         await fetch(API_URL + '/save-result', {
           method: 'POST',
