@@ -237,7 +237,20 @@ function calcularResultados() {
     el.scrollIntoView({behavior: 'smooth'});
 
     var _respostasObj = {}; for (var _i = 0; _i < r.length; _i++) { _respostasObj[_i + 1] = r[_i].valor; }
-    window._escalaDados = {escala:'ERT-PD', paciente:n, escore:mg, classificacao: classificarIntensidade(mg).texto + ' (' + cp + '/8 criterios)', dominios:dom, respostas:_respostasObj, idPaciente:(document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''), idade:id, sexo:s, data:new Date().toISOString()};
+    // Detalhamento das respostas (para o painel imprimir a pagina "Respostas do Paciente"):
+    // guarda o texto da pergunta, o valor BRUTO marcado (sem inversao), o criterio e se e invertido.
+    var _respDet = [];
+    for (var _j = 0; _j < ITENS.length; _j++) {
+        var _sel = document.querySelector('input[name="q' + _j + '"]:checked');
+        _respDet.push({
+            n: _j + 1,
+            texto: ITENS[_j].texto,
+            criterio: ITENS[_j].criterio,
+            invertido: !!ITENS[_j].invertido,
+            valorBruto: _sel ? parseInt(_sel.value) : 0
+        });
+    }
+    window._escalaDados = {escala:'ERT-PD', paciente:n, escore:mg, classificacao: classificarIntensidade(mg).texto + ' (' + cp + '/8 criterios)', dominios:dom, respostas:_respostasObj, respostasDetalhadas:_respDet, criteriosNomes:CRITERIOS, escalaLikert:'1-5', idPaciente:(document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''), idade:id, sexo:s, data:new Date().toISOString()};
     if (window.injetarBotaoSalvar) injetarBotaoSalvar('resultados');
 }
 

@@ -11325,6 +11325,61 @@
         doc.setFontSize(6); doc.setFont(undefined,'italic'); doc.setTextColor(130,130,130);
         doc.text('Pontos de corte: Normal <=25% | Limitrofe 25-40% | Clinico >40% (proporcao do escore maximo)', _gX, _legY);
       }
+
+      // ===== PAGINA "RESPOSTAS DO PACIENTE" (valor qualitativo do laudo) =====
+      // So imprime se o resultado salvo trouxe o detalhamento (respostasDetalhadas).
+      // Resultados antigos (sem esse campo) simplesmente nao ganham a pagina.
+      if (Array.isArray(d.respostasDetalhadas) && d.respostasDetalhadas.length > 0) {
+        var _rd = d.respostasDetalhadas;
+        // Rotulos conforme a escala Likert usada pela escala (1-5 padrao; 0-4 para algumas).
+        var _likert = (d.escalaLikert === '0-4')
+          ? ['Nunca','Raramente','As vezes','Frequentemente','Sempre']            // indice 0..4
+          : ['','Nunca','Raramente','As vezes','Frequentemente','Sempre'];        // indice 1..5
+        var _off04 = (d.escalaLikert === '0-4');
+        var _critNomes = d.criteriosNomes || null;
+        doc.addPage();
+        doc.setFillColor(46,125,50); doc.rect(0,0,210,20,'F');
+        doc.setTextColor(255,255,255); doc.setFontSize(11); doc.setFont(undefined,'bold');
+        doc.text('RESPOSTAS DO PACIENTE (para comparacao com DSM-5-TR)', 105, 13, {align:'center'});
+        var yr = 28;
+        // Agrupa por criterio quando houver info de criterio; senao lista na ordem.
+        var _temCriterio = _rd.some(function(x){ return x.criterio != null; });
+        function _imprimirItemResp(it) {
+          if (yr > 280) { doc.addPage(); yr = 15; }
+          var _idxLik = _off04 ? it.valorBruto : it.valorBruto;
+          var _txtResp = (it.valorBruto != null && (_off04 ? it.valorBruto >= 0 : it.valorBruto > 0))
+            ? (_likert[_idxLik] || '?') + ' (' + it.valorBruto + ')'
+            : '---';
+          var _inv = it.invertido ? ' (R)' : '';
+          var _t = it.n + '. ' + sanitize(it.texto).substring(0,90) + (sanitize(it.texto).length > 90 ? '...' : '') + _inv;
+          doc.setTextColor(0,0,0); doc.setFontSize(7.5); doc.setFont(undefined,'normal');
+          doc.text(_t, 20, yr);
+          doc.setFont(undefined,'bold'); doc.text(_txtResp, 190, yr, {align:'right'}); doc.setFont(undefined,'normal');
+          yr += 5;
+        }
+        if (_temCriterio && _critNomes) {
+          var _critKeys = Object.keys(_critNomes);
+          for (var _ck = 0; _ck < _critKeys.length; _ck++) {
+            var _c = _critKeys[_ck];
+            var _itensC = _rd.filter(function(x){ return String(x.criterio) === String(_c); });
+            if (_itensC.length === 0) continue;
+            if (yr + 8 + _itensC.length*5 > 280) { doc.addPage(); yr = 15; }
+            doc.setFillColor(235,240,235); doc.rect(15, yr-2, 180, 7, 'F');
+            doc.setTextColor(46,125,50); doc.setFontSize(9); doc.setFont(undefined,'bold');
+            doc.text('Criterio ' + _c + ': ' + sanitize(_critNomes[_c]), 18, yr+3); yr += 9;
+            for (var _ii = 0; _ii < _itensC.length; _ii++) { _imprimirItemResp(_itensC[_ii]); }
+            yr += 3;
+          }
+        } else {
+          for (var _ri = 0; _ri < _rd.length; _ri++) { _imprimirItemResp(_rd[_ri]); }
+        }
+        // Legenda do (R)
+        if (yr > 275) { doc.addPage(); yr = 15; }
+        yr += 2;
+        doc.setFontSize(7); doc.setFont(undefined,'italic'); doc.setTextColor(130,130,130);
+        doc.text('(R) = item reverso (pontuacao invertida no calculo). Valores mostrados sao as respostas brutas do paciente.', 15, yr);
+      }
+
       // Rodape profissional
       var totalPages = doc.internal.getNumberOfPages();
       for (var pg = 1; pg <= totalPages; pg++) {
