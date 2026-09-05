@@ -556,8 +556,32 @@
               <div style="background:#e8f5e9;border-left:4px solid #2e7d32;border-radius:8px;padding:12px;margin-bottom:12px;">
                 <p style="font-size:12px;color:#1b5e20;line-height:1.6;"><strong>Populacao:</strong> Criancas, adolescentes e adultos<br><strong>Medidas:</strong> Acertos, Erros, Omissoes, Trocas, Acertos Liquidos, Tempo, Desempenho (s/fig)<br><strong>Rastreio:</strong> Estrategia de varredura visual + Mapeamento de coordenadas<br><strong>Evolucao:</strong> Grafico de barras por aplicacao (historico local)</p>
               </div>
+              <div style="background:#fff;border:1px solid #c8e6c9;border-radius:8px;padding:12px;margin-bottom:12px;">
+                <label style="font-size:0.85em;color:#555;">Paciente cadastrado:</label>
+                <select id="pratSelPac" onchange="preencherPaciente('prat')" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+                  <option value="">-- Selecione ou preencha abaixo --</option>
+                </select>
+                <label style="font-size:0.85em;color:#555;">Nome:</label>
+                <input type="text" id="pratNome" placeholder="Nome completo" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+                <label style="font-size:0.85em;color:#555;">Data de nascimento:</label>
+                <input type="date" id="pratDn" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+                <label style="font-size:0.85em;color:#555;">Sexo:</label>
+                <select id="pratSexo" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+                  <option value="">Selecione...</option>
+                  <option value="Masculino">Masculino</option>
+                  <option value="Feminino">Feminino</option>
+                </select>
+                <label style="font-size:0.85em;color:#555;">Correcao Visual:</label>
+                <select id="pratCorrecaoVisual" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+                  <option value="">Selecione...</option>
+                  <option value="Nenhuma">Nenhuma</option>
+                  <option value="Oculos">Oculos</option>
+                  <option value="Lente de contato">Lente de contato</option>
+                </select>
+              </div>
               <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                <button onclick="window.open('reabilitacao/prat.html','_blank')" class="btn btn-green" style="flex:1;min-width:120px;padding:12px;font-size:13px;">&#9654; Iniciar Sessao</button>
+                <button onclick="iniciarPrat()" class="btn btn-green" style="flex:1;min-width:120px;padding:12px;font-size:13px;">&#9654; Iniciar Sessao</button>
+                <button onclick="window.open('reabilitacao/prat.html','_blank')" class="btn btn-blue" style="flex:1;min-width:120px;padding:12px;font-size:13px;">&#128421;&#65039; Abrir Direto</button>
               </div>
             </div>
           </div>
@@ -6713,7 +6737,7 @@
       listaOrdenada.forEach(function(p) {
         opcoesHtml += '<option value="' + p.id + '" data-nome="' + (p.nome||'').replace(/"/g,'') + '" data-dn="' + (p.dataNascimento||'') + '" data-cpf="' + (p.cpf||'') + '" data-sexo="' + (p.sexo||'') + '" data-esc="' + (p.escolaridade||'') + '" data-lat="' + (p.lateralidade||'') + '" data-cv="' + (p.correcaoVisual||'') + '">' + (p.nome||'') + ' (' + (p.dataNascimento||'?') + ')</option>';
       });
-      ['baeSelPac','trmvSelPac','taavSelPac','tecfeSelPac','trefSelPac','tflodSelPac','corsiSelPac','tteSelPac','escalaSelPac','anamneseSelPac','reocupaSelPac','pfisterSelPac','neoSelPac','agendaSelPac','prontuarioSelPac','srs2SelPac','lermaisSelPac','etdahSelPac','criadSelPac','bvrtSelPac','vineland3SelPac','ideiaSelPac'].forEach(function(id) {
+      ['baeSelPac','trmvSelPac','taavSelPac','tecfeSelPac','trefSelPac','tflodSelPac','corsiSelPac','tteSelPac','escalaSelPac','anamneseSelPac','reocupaSelPac','pfisterSelPac','neoSelPac','agendaSelPac','prontuarioSelPac','srs2SelPac','lermaisSelPac','pratSelPac','etdahSelPac','criadSelPac','bvrtSelPac','vineland3SelPac','ideiaSelPac'].forEach(function(id) {
         var sel = document.getElementById(id);
         if (!sel) return;
         var val = sel.value;
@@ -6764,6 +6788,7 @@
       else if (tipo === 'agenda') { campoNome = document.getElementById('agendaNome'); }
       else if (tipo === 'reocupa') { campoNome = document.getElementById('reocupaNome'); campoDN = document.getElementById('reocupaDn'); }
       else if (tipo === 'lermais') { campoNome = document.getElementById('lermaisNome'); campoDN = document.getElementById('lermaisDn'); }
+      else if (tipo === 'prat') { campoNome = document.getElementById('pratNome'); campoDN = document.getElementById('pratDn'); }
       else if (tipo === 'pfister') { campoNome = document.getElementById('pfisterNome'); campoDN = document.getElementById('pfisterDn'); }
       else if (tipo === 'neo') { campoNome = document.getElementById('neoNome'); campoDN = document.getElementById('neoDn'); }
       else if (tipo === 'srs2') { campoNome = document.getElementById('srs2Nome'); campoDN = document.getElementById('srs2Dn'); }
@@ -6839,6 +6864,26 @@
 
     function abrirLermaisDireto() {
       window.open('reabilitacao/lermais.html', '_blank');
+    }
+
+    // === PRAt - abre o programa com os dados do paciente (para salvar historico no servidor) ===
+    function iniciarPrat() {
+      var nome = document.getElementById('pratNome').value.trim();
+      var dn = document.getElementById('pratDn').value;
+      var sexo = document.getElementById('pratSexo').value;
+      var correcaoVisual = document.getElementById('pratCorrecaoVisual') ? document.getElementById('pratCorrecaoVisual').value : '';
+      if (!nome) { alert('Preencha o nome do paciente.'); return; }
+      if (!dn) { alert('Preencha a data de nascimento.'); return; }
+      // Buscar pacienteId do cadastro (se existir) para vincular o historico
+      var pacienteId = '';
+      if (window._pacientesCache) {
+        for (var i = 0; i < _pacientesCache.length; i++) {
+          if (_pacientesCache[i].nome === nome && _pacientesCache[i].dataNascimento === dn) { pacienteId = _pacientesCache[i].id || ''; break; }
+        }
+      }
+      var dados = { nome: nome, dn: dn, sexo: sexo, correcaoVisual: correcaoVisual, email: currentUser || '', pacienteId: pacienteId };
+      var url = 'reabilitacao/prat.html?d=' + encodeURIComponent(safeBtoa(JSON.stringify(dados)));
+      window.open(url, '_blank');
     }
 
     var generatedLermaisLink = '';
@@ -8297,6 +8342,7 @@
         btnPrat.style.background = '#e8f5e9';
         btnPrat.style.color = '#2e7d32';
         btnPrat.style.borderBottom = '3px solid #2e7d32';
+        if (typeof popularDropdownsPacientes === 'function') popularDropdownsPacientes();
       } else {
         reocupaContent.style.display = 'block';
         btnReocupa.style.background = '#e8f5e9';

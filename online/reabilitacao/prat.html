@@ -314,6 +314,10 @@ var cronometroInterval = null;
 var tempoInicio = null;
 var tempoTotal = 0;
 var quadradoAtual = null;
+
+// Dados da sessao vinda do painel (email do avaliador + paciente) para salvar historico no servidor.
+var _sessionInfo = null;
+var _API_URL = 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
 var acertos = 0;
 var erros = 0;
 var trocas = 0;
@@ -713,7 +717,36 @@ function finalizarAtividade() {
         data: new Date().toISOString()
     };
 
+    // Enriquecer com o registro completo (acertos, erros, tempo, estrategia, etc.) para o historico do painel.
+    window._escalaDados.registro = registro;
+
+    // Salvar o historico no SERVIDOR (vinculado ao avaliador/paciente), alem do localStorage.
+    // Sem isto o historico ficava so no navegador e se perdia ao trocar de maquina/limpar cache.
+    _salvarPratNoServidor(registro);
+
     mostrarResultados(registro, historico);
+}
+
+// Envia o resultado do PRAt para o servidor (endpoint /save-escala), como fazem REOCUPA/LERMAIS.
+// So envia se houver email do avaliador (veio do painel). Falha de rede nao trava o resultado local.
+function _salvarPratNoServidor(registro) {
+    try {
+        var email = _sessionInfo ? (_sessionInfo.email || '') : '';
+        if (!email) return; // aberto direto, sem vinculo com avaliador: mantem so o localStorage
+        var dados = window._escalaDados || {};
+        dados.tipo = 'prat';
+        var body;
+        if (_sessionInfo && _sessionInfo.sessionId) {
+            body = { sessionId: _sessionInfo.sessionId, email: email, data: dados, originalSessionId: _sessionInfo.sessionId };
+        } else {
+            body = { email: email, data: dados, tipo: 'prat' };
+        }
+        fetch(_API_URL + '/save-escala', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        }).catch(function() {});
+    } catch (e) { /* nao travar o resultado local por falha de envio */ }
 }
 
 function formatarTempo(segundos) {
@@ -1310,6 +1343,28 @@ function limparHistorico() {
 document.getElementById('dataNascimento').addEventListener('change', calcularIdade);
 document.getElementById('nome').addEventListener('input', atualizarId);
 document.getElementById('dataAvaliacao').value = new Date().toISOString().split('T')[0];
+
+// Capta os dados do paciente vindos do painel (aba Pacientes) via ?d=base64.
+// Preenche nome, data de nascimento, sexo e correcao visual, e guarda o email do avaliador
+// para vincular o historico ao paciente no servidor.
+function _decodificarURLPrat() {
+    try {
+        var params = new URLSearchParams(window.location.search);
+        var d = params.get('d');
+        if (!d) return;
+        var dados = JSON.parse(atob(decodeURIComponent(d)));
+        _sessionInfo = dados;
+        var nomeEl = document.getElementById('nome');
+        var nascEl = document.getElementById('dataNascimento');
+        var sexoEl = document.getElementById('sexo');
+        var oculosEl = document.getElementById('oculos');
+        if (nomeEl && (dados.nome || dados.patientName)) { nomeEl.value = dados.nome || dados.patientName; nomeEl.dispatchEvent(new Event('input')); }
+        if (nascEl && (dados.dn || dados.dataNascimento || dados.birthDate)) { nascEl.value = dados.dn || dados.dataNascimento || dados.birthDate; nascEl.dispatchEvent(new Event('change')); calcularIdade(); }
+        if (sexoEl && (dados.sexo || dados.sex)) sexoEl.value = dados.sexo || dados.sex;
+        if (oculosEl && dados.correcaoVisual) oculosEl.value = dados.correcaoVisual;
+    } catch (e) { console.log('PRAt: erro ao decodificar URL:', e); }
+}
+_decodificarURLPrat();
 
 // Eventos da paleta de cores
 var paletaCores = document.querySelectorAll('.paleta-cor');
