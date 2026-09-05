@@ -228,9 +228,86 @@ function validarDados() {
     if (!dn) { alert('Preencha a data de nascimento.'); return false; }
     return true;
 }
+// === PRE-TESTE DE MICROFONE (padrao TFLOD/LERMAIS, adaptado) ===
+// Verifica permissao e volume real do microfone, mas NAO trava a sessao:
+// o cronometro do REOCUPA e sempre automatico (registra o tempo mesmo em silencio).
+// Isto e apenas um aviso de seguranca para o profissional saber se o mic esta captando.
+var _reocupaMicStream = null;
+var _reocupaMicAnimFrame = null;
+
+function _reocupaAvisoMic(texto, cor, fundo) {
+    var el = document.getElementById('reocupaMicAviso');
+    if (!el) {
+        var area = document.getElementById('programaArea');
+        if (!area) return;
+        el = document.createElement('div');
+        el.id = 'reocupaMicAviso';
+        el.style.cssText = 'margin:10px 0;padding:10px 14px;border-radius:8px;font-size:0.9em;line-height:1.5;';
+        area.parentNode.insertBefore(el, area);
+    }
+    el.style.background = fundo;
+    el.style.color = cor;
+    el.innerHTML = texto;
+}
+
+function _reocupaPararTesteMic() {
+    if (_reocupaMicAnimFrame) { cancelAnimationFrame(_reocupaMicAnimFrame); _reocupaMicAnimFrame = null; }
+    if (_reocupaMicStream) { _reocupaMicStream.getTracks().forEach(function(t) { t.stop(); }); _reocupaMicStream = null; }
+}
+
+function _reocupaTestarMic() {
+    // Sem suporte a getUserMedia: apenas informa que sera manual/cronometro automatico.
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        _reocupaAvisoMic('O navegador pode nao captar voz automaticamente. Nao tem problema: o cronometro registra o tempo automaticamente. Se quiser, o profissional pode cronometrar manualmente.', '#8a6d00', '#fff8e1');
+        return;
+    }
+    _reocupaAvisoMic('Testando o microfone...', '#2e7d32', '#e8f5e9');
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
+        _reocupaMicStream = stream;
+        var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        var source = audioCtx.createMediaStreamSource(stream);
+        var analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 256;
+        source.connect(analyser);
+        var dataArray = new Uint8Array(analyser.frequencyBinCount);
+        var peakCount = 0;
+        var detectado = false;
+        var quadros = 0;
+        function monitorar() {
+            analyser.getByteFrequencyData(dataArray);
+            var sum = 0;
+            for (var i = 0; i < dataArray.length; i++) sum += dataArray[i];
+            var avg = sum / dataArray.length;
+            var pct = Math.min(100, Math.round((avg / 40) * 100));
+            if (pct > 5) {
+                peakCount++;
+                if (peakCount >= 5 && !detectado) {
+                    detectado = true;
+                    _reocupaAvisoMic('&#10003; Microfone funcionando: voz detectada. Pode iniciar a leitura normalmente.', '#2e7d32', '#e8f5e9');
+                    _reocupaPararTesteMic();
+                    return;
+                }
+            }
+            quadros++;
+            // Apos ~5s sem detectar voz, avisa (sem travar) que pode estar mudo.
+            if (quadros > 300 && !detectado) {
+                _reocupaAvisoMic('Ainda nao detectamos sua voz. Fale mais perto do microfone. Mesmo assim, o cronometro registra o tempo automaticamente; o profissional pode cronometrar manualmente se preferir.', '#8a6d00', '#fff8e1');
+                _reocupaPararTesteMic();
+                return;
+            }
+            _reocupaMicAnimFrame = requestAnimationFrame(monitorar);
+        }
+        monitorar();
+    }).catch(function(err) {
+        _reocupaAvisoMic('&#9888; Microfone bloqueado ou nao encontrado. Verifique as permissoes: clique no cadeado na barra de endereco e permita o microfone. O cronometro continua funcionando automaticamente; o profissional tambem pode cronometrar manualmente.', '#c62828', '#ffebee');
+    });
+}
+
 // === FUNCAO INICIAR SESSAO ===
 function iniciarSessao() {
     if (!validarDados()) return;
+    // Pre-teste de microfone (nao trava: cronometro segue sempre automatico)
+    _reocupaTestarMic();
     // Filtra situacoes pela categoria selecionada
     var catSelecionada = document.getElementById('selectCategoria').value;
     if (catSelecionada === 'todas') {
@@ -579,8 +656,9 @@ function verificarSuporteVoz() {
 }
 
 // === RECONHECIMENTO DE VOZ ===
-function iniciarReconhecimentoLeitura() { var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; _reconhecimento = new SpeechRecognition(); _reconhecimento.lang = 'pt-BR'; _reconhecimento.continuous = true; _reconhecimento.interimResults = true; _reconhecimento.onresult = function(event) { if (_leituraFinalizada) return; var textoCompleto = ''; for (var i = 0; i < event.results.length; i++) { textoCompleto += event.results[i][0].transcript + ' '; } var palavrasOuvidas = extrairPalavras(textoCompleto); _palavrasDetectadas = palavrasOuvidas; var encontradas = 0; for (var j = 0; j < _palavrasDaFrase.length; j++) { for (var k = 0; k < palavrasOuvidas.length; k++) { if (palavrasOuvidas[k].indexOf(_palavrasDaFrase[j]) >= 0 || _palavrasDaFrase[j].indexOf(palavrasOuvidas[k]) >= 0) { encontradas++; break; } } } var porcentagem = _palavrasDaFrase.length > 0 ? (encontradas / _palavrasDaFrase.length) : 0; var statusEl = document.getElementById('statusVoz'); if (statusEl) { statusEl.innerHTML = '<span class="mic-indicator"></span> Leitura: ' + Math.round(porcentagem * 100) + '% detectado'; } if (porcentagem >= 0.70 && !_leituraFinalizada) { _leituraFinalizada = true; pararReconhecimento(); var tempoLeitura = pararCronometro(); concluirLeituraCenario(tempoLeitura); } }; _reconhecimento.onerror = function(event) { if (event.error === 'not-allowed' || event.error === 'no-speech') { document.getElementById('statusVoz').innerHTML = '<span class="mic-indicator"></span> Sem acesso ao microfone. Use o bot\u00e3o manual.'; } }; _reconhecimento.onend = function() { if (!_leituraFinalizada && _reconhecimento) { try { _reconhecimento.start(); } catch(e) {} } }; try { _reconhecimento.start(); } catch(e) { document.getElementById('statusVoz').textContent = 'Erro ao iniciar microfone. Use o bot\u00e3o manual.'; } }
-function pararReconhecimento() { if (_reconhecimento) { _leituraFinalizada = true; try { _reconhecimento.stop(); } catch(e) {} _reconhecimento = null; } }
+var _reocupaAlertaSemFala = null;
+function iniciarReconhecimentoLeitura() { var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; _reconhecimento = new SpeechRecognition(); _reconhecimento.lang = 'pt-BR'; _reconhecimento.continuous = true; _reconhecimento.interimResults = true; _reconhecimento.onresult = function(event) { if (_leituraFinalizada) return; var textoCompleto = ''; for (var i = 0; i < event.results.length; i++) { textoCompleto += event.results[i][0].transcript + ' '; } var palavrasOuvidas = extrairPalavras(textoCompleto); _palavrasDetectadas = palavrasOuvidas; if (palavrasOuvidas.length > 0 && _reocupaAlertaSemFala) { clearTimeout(_reocupaAlertaSemFala); _reocupaAlertaSemFala = null; } var encontradas = 0; for (var j = 0; j < _palavrasDaFrase.length; j++) { for (var k = 0; k < palavrasOuvidas.length; k++) { if (palavrasOuvidas[k].indexOf(_palavrasDaFrase[j]) >= 0 || _palavrasDaFrase[j].indexOf(palavrasOuvidas[k]) >= 0) { encontradas++; break; } } } var porcentagem = _palavrasDaFrase.length > 0 ? (encontradas / _palavrasDaFrase.length) : 0; var statusEl = document.getElementById('statusVoz'); if (statusEl) { statusEl.innerHTML = '<span class="mic-indicator"></span> Leitura: ' + Math.round(porcentagem * 100) + '% detectado'; } if (porcentagem >= 0.70 && !_leituraFinalizada) { _leituraFinalizada = true; pararReconhecimento(); var tempoLeitura = pararCronometro(); concluirLeituraCenario(tempoLeitura); } }; _reconhecimento.onerror = function(event) { if (event.error === 'not-allowed' || event.error === 'service-not-allowed') { document.getElementById('statusVoz').innerHTML = '<span class="mic-indicator"></span> Microfone bloqueado. Clique no cadeado na barra de endereco e permita o microfone. O cronometro continua automatico; use o botao para parar manualmente quando terminar.'; } }; _reconhecimento.onend = function() { if (!_leituraFinalizada && _reconhecimento) { try { _reconhecimento.start(); } catch(e) {} } }; try { _reconhecimento.start(); } catch(e) { document.getElementById('statusVoz').textContent = 'Nao foi possivel iniciar o microfone. O cronometro esta automatico; pare manualmente ao terminar.'; } if (_reocupaAlertaSemFala) { clearTimeout(_reocupaAlertaSemFala); } _reocupaAlertaSemFala = setTimeout(function() { if (!_leituraFinalizada && (!_palavrasDetectadas || _palavrasDetectadas.length === 0)) { var s = document.getElementById('statusVoz'); if (s) { s.innerHTML = '<span class="mic-indicator"></span> Nenhuma palavra detectada ainda. Fale mais perto do microfone. O cronometro segue automatico; o profissional pode parar manualmente ao terminar.'; } } }, 12000); }
+function pararReconhecimento() { if (_reocupaAlertaSemFala) { clearTimeout(_reocupaAlertaSemFala); _reocupaAlertaSemFala = null; } if (_reconhecimento) { _leituraFinalizada = true; try { _reconhecimento.stop(); } catch(e) {} _reconhecimento = null; } }
 function classificarPorPalavrasChave(sit, textoResposta) { if (!textoResposta || textoResposta.trim() === '') return 1; var nivelAprendido = consultarAprendizado(sit.id, textoResposta); if (nivelAprendido > 0) return nivelAprendido; var palavrasFaladas = extrairPalavras(textoResposta); var pontuacao = { 4: 0, 3: 0, 2: 0, 1: 0 }; for (var nivel = 4; nivel >= 1; nivel--) { var chaves = sit.palavrasChave[nivel] || []; for (var i = 0; i < chaves.length; i++) { var chave = normalizarTexto(chaves[i]); for (var j = 0; j < palavrasFaladas.length; j++) { if (palavrasFaladas[j].indexOf(chave) >= 0 || chave.indexOf(palavrasFaladas[j]) >= 0) { pontuacao[nivel]++; break; } } } } var melhorNivel = 1; var melhorPontuacao = 0; for (var n = 4; n >= 1; n--) { if (pontuacao[n] > melhorPontuacao) { melhorPontuacao = pontuacao[n]; melhorNivel = n; } } return melhorPontuacao === 0 ? 1 : melhorNivel; }
 function atualizarCorNivel() { var nivel = parseInt(document.getElementById('selectNivel').value); var nv = REOCUPA_NIVEIS[nivel]; var preview = document.getElementById('nivelPreview'); if (preview && nv) { preview.style.background = nv.corFundo; preview.style.color = nv.cor; preview.textContent = nv.nome; } }
 function mostrarRespostaModelo() { var nivel = parseInt(document.getElementById('selectNivel').value); var sit = _situacoesSessao[_indiceSituacao]; var modeloDiv = document.getElementById('respostaModelo'); var modeloTexto = document.getElementById('respostaModeloTexto'); if (sit && sit.respostasModelo && sit.respostasModelo[nivel]) { modeloTexto.textContent = sit.respostasModelo[nivel]; modeloDiv.style.display = 'block'; } else { modeloDiv.style.display = 'none'; } }

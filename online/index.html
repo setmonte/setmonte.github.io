@@ -8714,19 +8714,43 @@
         var promptSeguro = anonReab.textoLimpo;
         var mapaReab = anonReab.mapa;
         // === FIM ANONIMIZACAO ===
-        // Chamar /generate-ai
-        var aiResp = await fetch(API_URL + '/generate-ai', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ prompt: promptSeguro })
-        });
-        var aiData = await aiResp.json();
-        if (aiData.error) {
-          area.innerHTML = '<div style="text-align:center;padding:20px;background:#ffebee;border-radius:8px;border:1px solid #ef9a9a;"><p style="color:#c62828;font-size:13px;">Erro ao gerar metas: ' + aiData.error + '</p><p style="font-size:12px;color:#777;margin-top:5px;">Tente novamente.</p></div>';
+        // Chamar /generate-ai (com tratamento reforcado de erro: IA paga a partir de out/2026)
+        var _erroBoxSmart = function(titulo, sub) {
+          area.innerHTML = '<div style="text-align:center;padding:20px;background:#ffebee;border-radius:8px;border:1px solid #ef9a9a;"><p style="color:#c62828;font-size:13px;font-weight:bold;">' + titulo + '</p><p style="font-size:12px;color:#777;margin-top:5px;">' + sub + '</p><button class="btn btn-blue" style="margin-top:10px;padding:6px 14px;font-size:12px;" onclick="gerarSmartPaciente(\'' + pacId + '\',\'' + nome.replace(/'/g,'') + '\')">Tentar novamente</button></div>';
+        };
+        var aiResp;
+        try {
+          aiResp = await fetch(API_URL + '/generate-ai', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ prompt: promptSeguro })
+          });
+        } catch(eNet) {
+          _erroBoxSmart('Sem conexao com a IA', 'Verifique sua internet e tente novamente. Nenhuma meta foi gerada.');
+          return;
+        }
+        // Erro HTTP (IA fora do ar, sobrecarga, limite): nao quebrar, avisar.
+        if (!aiResp.ok) {
+          _erroBoxSmart('A IA nao respondeu agora (erro ' + aiResp.status + ')', 'Pode ser sobrecarga temporaria. Aguarde alguns instantes e tente novamente.');
+          return;
+        }
+        var aiData;
+        try {
+          aiData = await aiResp.json();
+        } catch(eJson) {
+          _erroBoxSmart('Resposta invalida da IA', 'A IA devolveu um formato inesperado. Tente novamente.');
+          return;
+        }
+        if (!aiData || aiData.error) {
+          _erroBoxSmart('Erro ao gerar metas' + (aiData && aiData.error ? ': ' + aiData.error : ''), 'Tente novamente em instantes.');
           return;
         }
         // Parsear JSON da resposta
         var texto = aiData.text || '';
+        if (!texto.trim()) {
+          _erroBoxSmart('A IA retornou uma resposta vazia', 'Tente novamente. Se persistir, o servico de IA pode estar indisponivel no momento.');
+          return;
+        }
         // === DESANONIMIZACAO INVISIVEL ===
         if (typeof Anonimizador !== 'undefined' && mapaReab && Object.keys(mapaReab).length > 0) {
           texto = Anonimizador.desmascarar(texto, mapaReab);
@@ -8737,7 +8761,11 @@
         try {
           resultado = JSON.parse(jsonLimpo);
         } catch(e) {
-          area.innerHTML = '<div style="text-align:center;padding:20px;background:#ffebee;border-radius:8px;border:1px solid #ef9a9a;"><p style="color:#c62828;font-size:13px;">Erro ao interpretar resposta da IA.</p><p style="font-size:11px;color:#777;margin-top:5px;">Tente novamente.</p></div>';
+          _erroBoxSmart('Nao foi possivel interpretar a resposta da IA', 'A IA respondeu fora do formato esperado. Tente novamente.');
+          return;
+        }
+        if (!resultado || !resultado.metas || resultado.metas.length === 0) {
+          _erroBoxSmart('A IA nao retornou metas', 'Tente novamente. Verifique se o paciente tem resultados suficientes no historico.');
           return;
         }
         // Salvar em cache para PDF

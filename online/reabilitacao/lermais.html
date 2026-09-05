@@ -893,6 +893,23 @@ function finalizarLeitura() {
         graficoData: graficoData
     };
 
+    // PROTECAO ANTI-RESULTADO-FALSO (padrao TFLOD):
+    // Se nenhuma palavra foi captada, isto e falha de captacao do microfone,
+    // NAO um resultado clinico real. Nao salvar um "0" enganoso no historico.
+    if (palavraAtualIdx === 0) {
+        var msgFalha = '<div style="background:#fff3e0;border:2px solid #ff9800;border-radius:10px;padding:16px;text-align:center;">' +
+            '<p style="font-size:1.1em;color:#e65100;font-weight:bold;margin-bottom:6px;">&#9888; Nenhuma palavra foi captada</p>' +
+            '<p style="font-size:0.9em;color:#555;line-height:1.5;">O microfone nao registrou a leitura, entao nao ha resultado para salvar (evitamos gravar um resultado zerado que nao reflete o desempenho real). ' +
+            'Verifique se o microfone esta ativo (cadeado na barra de endereco) e fale mais perto do aparelho. Depois clique em <strong>Nova Leitura</strong> para repetir.</p></div>';
+        var contEl = document.getElementById('resultadosConteudo');
+        var areaEl = document.getElementById('resultadosArea');
+        if (contEl && areaEl) { contEl.innerHTML = msgFalha; areaEl.style.display = 'block'; areaEl.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+        else { alert('Nenhuma palavra foi captada. Verifique o microfone e repita a leitura.'); }
+        var btnNovoEl = document.getElementById('btnNovo');
+        if (btnNovoEl) btnNovoEl.style.display = 'inline-block';
+        return; // nao exibe nem salva resultado falso
+    }
+
     exibirResultados(resultado);
     salvarHistorico(resultado);
 }
