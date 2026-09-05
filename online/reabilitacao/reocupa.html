@@ -98,7 +98,14 @@
                     <div class="form-group"><label for="sexo">Sexo:</label><select id="sexo"><option value="">Selecione</option><option value="Masculino">Masculino</option><option value="Feminino">Feminino</option></select></div>
                 </div>
                 <div class="form-row">
+                    <div class="form-group"><label for="escolaridade">Escolaridade:</label><select id="escolaridade"><option value="">Selecione</option><option value="Analfabeto">Analfabeto</option><option value="Fundamental incompleto">Fundamental incompleto</option><option value="Fundamental completo">Fundamental completo</option><option value="Medio incompleto">M&#233;dio incompleto</option><option value="Medio completo">M&#233;dio completo</option><option value="Superior incompleto">Superior incompleto</option><option value="Superior completo">Superior completo</option><option value="Pos-graduacao">P&#243;s-gradua&#231;&#227;o</option></select></div>
+                    <div class="form-group"><label for="lateralidade">Lateralidade:</label><select id="lateralidade"><option value="">Selecione</option><option value="Destro">Destro</option><option value="Canhoto">Canhoto</option><option value="Ambidestro">Ambidestro</option></select></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label for="correcaoVisual">Corre&#231;&#227;o Visual:</label><select id="correcaoVisual"><option value="">Selecione</option><option value="Nenhuma">Nenhuma</option><option value="Oculos">&#211;culos</option><option value="Lente de contato">Lente de contato</option></select></div>
                     <div class="form-group"><label for="data">Data da Sess&#227;o:</label><input type="date" id="data"></div>
+                </div>
+                <div class="form-row">
                     <div class="form-group"><label for="observacoes">Observa&#231;&#245;es (opcional):</label><input type="text" id="observacoes" placeholder="Informa&#231;&#245;es adicionais"></div>
                 </div>
             </div>
@@ -238,9 +245,13 @@ function iniciarSessao() {
         dataNascimento: document.getElementById('dataNascimento').value,
         idade: document.getElementById('idadeCalculada').value,
         sexo: document.getElementById('sexo').value,
+        escolaridade: document.getElementById('escolaridade') ? document.getElementById('escolaridade').value : '',
+        lateralidade: document.getElementById('lateralidade') ? document.getElementById('lateralidade').value : '',
+        correcaoVisual: document.getElementById('correcaoVisual') ? document.getElementById('correcaoVisual').value : '',
         dataSessao: document.getElementById('data').value,
         observacoes: document.getElementById('observacoes').value,
         idPaciente: document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '',
+        pacienteId: (_sessionInfo && _sessionInfo.pacienteId) ? _sessionInfo.pacienteId : '',
         categoria: catSelecionada,
         inicio: new Date().toISOString(),
         registros: []
@@ -656,7 +667,12 @@ function salvarNaAPI(sessao) {
         tipo: 'reocupa',
         escala: 'REOCUPA',
         idPaciente: sessao.idPaciente || '',
+        pacienteId: sessao.pacienteId || '',
         paciente: sessao.paciente || '',
+        sexo: sessao.sexo || '',
+        escolaridade: sessao.escolaridade || '',
+        lateralidade: sessao.lateralidade || '',
+        correcaoVisual: sessao.correcaoVisual || '',
         dataSessao: sessao.dataSessao || '',
         inicio: sessao.inicio || '',
         fim: sessao.fim || '',
@@ -1154,6 +1170,12 @@ function _decodificarURL() {
         if (dados.nome) { document.getElementById('nome').value = dados.nome; document.getElementById('nome').dispatchEvent(new Event('input')); }
         if (dados.dn) { document.getElementById('dataNascimento').value = dados.dn; document.getElementById('dataNascimento').dispatchEvent(new Event('change')); }
         if (dados.sexo) { document.getElementById('sexo').value = dados.sexo; }
+        var escEl = document.getElementById('escolaridade');
+        if (escEl && (dados.escolaridade || dados.education)) escEl.value = dados.escolaridade || dados.education;
+        var latEl = document.getElementById('lateralidade');
+        if (latEl && dados.lateralidade) latEl.value = dados.lateralidade;
+        var cvEl = document.getElementById('correcaoVisual');
+        if (cvEl && dados.correcaoVisual) cvEl.value = dados.correcaoVisual;
         _sessionInfo = dados;
         // Esconde info tecnica no modo painel
         var infoTec = document.querySelector('.info-tecnica');

@@ -712,8 +712,12 @@ function finalizarAtividade() {
             'Acertos Liquidos': { pontuacao: registro.acertosLiquidos, max: TOTAL_QUADRADOS, classificacao: '' + registro.acertosLiquidos }
         },
         idPaciente: registro.idPaciente,
+        pacienteId: (_sessionInfo && _sessionInfo.pacienteId) ? _sessionInfo.pacienteId : '',
         idade: registro.idade,
         sexo: registro.sexo,
+        escolaridade: registro.escolaridade,
+        lateralidade: registro.lateralidade,
+        oculos: registro.oculos,
         data: new Date().toISOString()
     };
 
@@ -1361,7 +1365,18 @@ function _decodificarURLPrat() {
         if (nomeEl && (dados.nome || dados.patientName)) { nomeEl.value = dados.nome || dados.patientName; nomeEl.dispatchEvent(new Event('input')); }
         if (nascEl && (dados.dn || dados.dataNascimento || dados.birthDate)) { nascEl.value = dados.dn || dados.dataNascimento || dados.birthDate; nascEl.dispatchEvent(new Event('change')); calcularIdade(); }
         if (sexoEl && (dados.sexo || dados.sex)) sexoEl.value = dados.sexo || dados.sex;
-        if (oculosEl && dados.correcaoVisual) oculosEl.value = dados.correcaoVisual;
+        // Escolaridade e lateralidade vindas do cadastro
+        var escEl = document.getElementById('escolaridade');
+        if (escEl && (dados.escolaridade || dados.education)) escEl.value = dados.escolaridade || dados.education;
+        var latEl = document.getElementById('lateralidade');
+        if (latEl && dados.lateralidade) latEl.value = dados.lateralidade;
+        // O cadastro usa "Correcao Visual" (Nenhuma/Oculos/Lente de contato); o PRAt usa "Usa Oculos?" (Sim/Nao).
+        // Traduz: qualquer correcao (Oculos ou Lente) vira "Sim"; "Nenhuma" vira "Nao".
+        if (oculosEl && dados.correcaoVisual) {
+            var cv = String(dados.correcaoVisual).toLowerCase();
+            if (cv === 'nenhuma') oculosEl.value = 'Nao';
+            else oculosEl.value = 'Sim';
+        }
     } catch (e) { console.log('PRAt: erro ao decodificar URL:', e); }
 }
 _decodificarURLPrat();

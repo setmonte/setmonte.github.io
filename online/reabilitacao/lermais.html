@@ -122,6 +122,31 @@ body.tema-neutro{background:linear-gradient(135deg,#e8f5e9 0%,#c8e6c9 50%,#e8f5e
             </div>
             <div class="form-row">
                 <div class="form-group">
+                    <label>Escolaridade</label>
+                    <select id="escolaridade">
+                        <option value="">Selecione...</option>
+                        <option value="Analfabeto">Analfabeto</option>
+                        <option value="Fundamental incompleto">Fundamental incompleto</option>
+                        <option value="Fundamental completo">Fundamental completo</option>
+                        <option value="Medio incompleto">M&#233;dio incompleto</option>
+                        <option value="Medio completo">M&#233;dio completo</option>
+                        <option value="Superior incompleto">Superior incompleto</option>
+                        <option value="Superior completo">Superior completo</option>
+                        <option value="Pos-graduacao">P&#243;s-gradua&#231;&#227;o</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Lateralidade</label>
+                    <select id="lateralidade">
+                        <option value="">Selecione...</option>
+                        <option value="Destro">Destro</option>
+                        <option value="Canhoto">Canhoto</option>
+                        <option value="Ambidestro">Ambidestro</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
                     <label>Corre&#231;&#227;o Visual</label>
                     <select id="correcaoVisual">
                         <option value="">Selecione...</option>
@@ -848,6 +873,8 @@ function finalizarLeitura() {
         nome: document.getElementById('nome').value,
         idade: idadeAnos,
         sexo: document.getElementById('sexo').value,
+        escolaridade: document.getElementById('escolaridade') ? document.getElementById('escolaridade').value : '',
+        lateralidade: document.getElementById('lateralidade') ? document.getElementById('lateralidade').value : '',
         correcaoVisual: document.getElementById('correcaoVisual') ? document.getElementById('correcaoVisual').value : '',
         texto: textoAtual.titulo,
         tema: textoAtual.tema,
@@ -1142,6 +1169,10 @@ function _decodificarURL() {
         if (dados.nome) { document.getElementById('nome').value = dados.nome; document.getElementById('nome').dispatchEvent(new Event('input')); }
         if (dados.dn) { document.getElementById('dataNascimento').value = dados.dn; document.getElementById('dataNascimento').dispatchEvent(new Event('change')); calcularIdade(); }
         if (dados.sexo) { document.getElementById('sexo').value = dados.sexo; aplicarTema(); }
+        var escEl = document.getElementById('escolaridade');
+        if (escEl && (dados.escolaridade || dados.education)) { escEl.value = dados.escolaridade || dados.education; }
+        var latEl = document.getElementById('lateralidade');
+        if (latEl && dados.lateralidade) { latEl.value = dados.lateralidade; }
         var cvEl = document.getElementById('correcaoVisual');
         if (cvEl && dados.correcaoVisual) { cvEl.value = dados.correcaoVisual; }
         _sessionInfo = dados;
@@ -1213,6 +1244,10 @@ if (params.get('s')) {
             if (nomeEl && data.patientName) { nomeEl.value = data.patientName; nomeEl.dispatchEvent(new Event('input')); }
             if (nascEl && data.birthDate) { nascEl.value = data.birthDate; nascEl.dispatchEvent(new Event('change')); calcularIdade(); }
             if (sexoEl && data.sex) { sexoEl.value = data.sex; aplicarTema(); }
+            var escEl2 = document.getElementById('escolaridade');
+            if (escEl2 && (data.education || data.escolaridade)) { escEl2.value = data.education || data.escolaridade; }
+            var latEl2 = document.getElementById('lateralidade');
+            if (latEl2 && data.lateralidade) { latEl2.value = data.lateralidade; }
             var cvEl2 = document.getElementById('correcaoVisual');
             if (cvEl2 && data.correcaoVisual) { cvEl2.value = data.correcaoVisual; }
             _criarBotaoEnviar();
