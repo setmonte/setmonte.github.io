@@ -8355,6 +8355,169 @@
 
     var _smartMetasCache = null;
     var _smartPacienteAtual = null;
+    var _smartUltimoPrompt = '';
+
+    // ===== SMART: RESUMO UNIVERSAL DE RESULTADO =====
+    // Traduz UM registro de resultado (r) numa linha de texto para o clinico geral (IA).
+    // Casos especificos conhecidos tem resumo caprichado; qualquer tipo desconhecido
+    // (teste/escala novo criado no futuro) cai no fallback generico, que varre os dados
+    // e monta "campo: valor" com o que encontrar. Assim nenhum instrumento novo vira
+    // dado falso nem fica de fora do SMART sem eu precisar editar o codigo.
+    // Funcao auxiliar: transforma um objeto de dominios em texto legivel.
+    function _smartDominiosTexto(domObj) {
+      if (!domObj || typeof domObj !== 'object') return '';
+      var partes = [];
+      for (var k in domObj) {
+        if (!domObj.hasOwnProperty(k)) continue;
+        var dv = domObj[k];
+        if (dv && typeof dv === 'object') {
+          // Dominio no formato { pontuacao, max, classificacao, media }
+          var txt = dv.classificacao || '';
+          var num = (dv.pontuacao != null ? dv.pontuacao : (dv.escore != null ? dv.escore : null));
+          if (num != null && dv.max != null) num = num + '/' + dv.max;
+          if (num != null) txt += (txt ? ' (' + num + ')' : String(num));
+          if (!txt && dv.media != null) txt = 'media ' + dv.media;
+          partes.push(k + ': ' + (txt || '-'));
+        } else {
+          partes.push(k + ': ' + dv);
+        }
+      }
+      return partes.join(', ');
+    }
+
+    // Fallback generico: le qualquer objeto de dados e extrai os campos numericos/textuais
+    // mais comuns (escore, classificacao, acertos, erros, tempo, indices) sem conhecer o tipo.
+    function _smartResumoGenerico(d) {
+      if (!d || typeof d !== 'object') return '-';
+      var partes = [];
+      // Campos "de topo" mais comuns entre instrumentos
+      var candidatos = ['classificacao','escore','escoreTotal','pontuacao','acertos','erros','omissoes',
+        'indiceRetencao','acuracia','taxaAcerto','span','ppm','totalIdeias','mediaIdeias','tempoExecucao','tempoTotal'];
+      candidatos.forEach(function(c) {
+        var v = d[c];
+        if (v == null || v === '') return;
+        if (typeof v === 'number') v = (Math.round(v * 100) / 100);
+        partes.push(c + ': ' + v);
+      });
+      // Se o instrumento guarda tudo dentro de d.resultados, olha la tambem
+      if (d.resultados && typeof d.resultados === 'object') {
+        candidatos.forEach(function(c) {
+          var v = d.resultados[c];
+          if (v == null || v === '' || partes.join().indexOf(c + ':') >= 0) return;
+          if (typeof v === 'number') v = (Math.round(v * 100) / 100);
+          partes.push(c + ': ' + v);
+        });
+      }
+      // Dominios, se houver
+      var domTxt = _smartDominiosTexto(d.dominios);
+      if (domTxt) partes.push('Dominios: ' + domTxt);
+      if (partes.length === 0 && d.status) partes.push('Status: ' + d.status);
+      return partes.length > 0 ? partes.join(', ') : '-';
+    }
+
+    // Retorna { rotulo, detalhe } para um registro qualquer.
+    function _smartResumirResultado(r) {
+      var d = r.data || {};
+      var tp = r.tipo || 'tecfe';
+      var rotulo = tp.toUpperCase();
+      var det = '';
+      if (tp === 'escala') {
+        rotulo = (d.escala || 'ESCALA').toUpperCase();
+        det = (d.classificacao || d.escore || '-');
+        var domTxt = _smartDominiosTexto(d.dominios);
+        if (domTxt) det += ' | Dominios: ' + domTxt;
+      }
+      else if (tp === 'bae') {
+        var bp = [];
+        if (d.concentrada) bp.push('Concentrada: ' + (d.concentrada.taxaAcerto||0).toFixed(0) + '% (TR ' + (d.concentrada.tempoReacao||0).toFixed(0) + 'ms)');
+        if (d.seletiva) bp.push('Seletiva: ' + (d.seletiva.taxaAcerto||0).toFixed(0) + '% (TR ' + (d.seletiva.tempoReacao||0).toFixed(0) + 'ms)');
+        if (d.dividida) bp.push('Dividida: ' + (d.dividida.taxaAcerto||0).toFixed(0) + '%');
+        if (d.alternada) bp.push('Alternada: ' + (d.alternada.taxaAcerto||0).toFixed(0) + '%');
+        if (d.sustentada) bp.push('Sustentada: ' + (d.sustentada.taxaAcerto||0).toFixed(0) + '%');
+        det = bp.length > 0 ? bp.join(', ') : (d.status||'-');
+      }
+      else if (tp === 'trmv' || tp === 'taav') {
+        var mp = [];
+        if (d.indiceRetencao != null) mp.push('Retencao: ' + Math.round(d.indiceRetencao) + '%');
+        if (d.acertos != null) mp.push('Acertos: ' + d.acertos);
+        if (d.erros != null) mp.push('Erros: ' + d.erros);
+        if (d.omissoes != null) mp.push('Omissoes: ' + d.omissoes);
+        det = mp.length > 0 ? mp.join(', ') : (d.status||'-');
+      }
+      else if (tp === 'tref') {
+        var fp = [];
+        if (d.tempoExecucao != null) fp.push('Tempo exec: ' + d.tempoExecucao + 's');
+        if (d.movimentos != null) fp.push('Movimentos: ' + d.movimentos);
+        if (d.erros != null) fp.push('Erros: ' + d.erros);
+        det = fp.length > 0 ? fp.join(', ') : (d.status||'-');
+      }
+      else if (tp === 'tflod') {
+        var res = d.resultados || {};
+        det = 'PPM: ' + (res.ppm||'-') + ', Erros: ' + (res.erros||0) + ', Repeticoes: ' + (res.repeticoes||0);
+      }
+      else if (tp === 'ideia') {
+        var ri = d.resultados || {};
+        det = 'Total ideias: ' + (ri.totalIdeias||'-') + ', Media/item: ' + (ri.mediaIdeias!=null?Number(ri.mediaIdeias).toFixed(1):'-') + (ri.classificacao?', '+ri.classificacao:'');
+      }
+      else if (tp === 'corsi') {
+        det = 'Span: ' + (d.span||d.acertos||'-') + (d.classificacao?', '+d.classificacao:'');
+      }
+      else if (tp === 'tte') {
+        det = 'Escore: ' + (d.escore||'-') + (d.classificacao?', '+d.classificacao:'');
+      }
+      else if (tp === 'tecfe') {
+        var s = d.stats || {};
+        det = 'Categorias: ' + (s.completedCategories||0) + '/6, Erros: ' + (s.pctErrors?Number(s.pctErrors).toFixed(1):'0') + '%, Perseverativos: ' + (s.perseverativeErrors||0);
+      }
+      else {
+        // Instrumento desconhecido (criado no futuro): fallback generico com dados reais.
+        det = _smartResumoGenerico(d);
+      }
+      return { rotulo: rotulo, detalhe: det };
+    }
+
+    // ===== SMART: EXTRACAO DA ANAMNESE (crua, sem depender de rotulos fixos) =====
+    // A anamnese e montada por cada profissional do jeito dele. Por isso NAO procuramos
+    // rotulos especificos: pegamos TODAS as perguntas respondidas como pergunta -> resposta
+    // e deixamos a interpretacao clinica (atraso motor, polifarmacos, etc.) para a IA.
+    // Recebe o array 'todos' (ja filtrado do paciente) e retorna um texto ou string vazia.
+    function _smartExtrairAnamnese(todos) {
+      // Anamnese e salva como escala com d.escala contendo "ANAMNESE".
+      var anamneses = (todos || []).filter(function(r) {
+        var d = r.data || {};
+        return r.tipo === 'escala' && d.escala && String(d.escala).toUpperCase().indexOf('ANAMNESE') >= 0;
+      });
+      if (anamneses.length === 0) return { texto: '', anteriores: 0 };
+      // Usar a mais recente (todos ja vem ordenado por data desc).
+      var maisRecente = anamneses[0];
+      var d = maisRecente.data || {};
+      var respostas = d.respostas || {};
+      var secoes = respostas._secoesAtivas || respostas._secoes || [];
+      var linhas = [];
+      // Campos de identificacao que nao interessam ao raciocinio clinico.
+      var ignorar = { nome:1, dataNascimento:1, idade:1, sexo:1, cpf:1, idPaciente:1, respondente:1 };
+      if (secoes && secoes.length > 0) {
+        // Formato estruturado: percorre secoes -> campos, usando o label da pergunta.
+        secoes.forEach(function(secao) {
+          if (!secao || !secao.campos) return;
+          secao.campos.forEach(function(campo) {
+            var valor = respostas[campo.id];
+            if (valor == null || valor === '') return;
+            linhas.push((campo.label || campo.id) + ': ' + String(valor));
+          });
+        });
+      } else {
+        // Formato simples: objeto plano pergunta/resposta.
+        for (var k in respostas) {
+          if (!respostas.hasOwnProperty(k)) continue;
+          if (k.charAt(0) === '_' || ignorar[k]) continue;
+          var v = respostas[k];
+          if (v == null || v === '' || typeof v === 'object') continue;
+          linhas.push(k + ': ' + String(v));
+        }
+      }
+      return { texto: linhas.join('\n'), anteriores: anamneses.length - 1 };
+    }
 
     function loadSmartPacientes() {
       var el = document.getElementById('smartPacientesList');
@@ -8435,53 +8598,35 @@
           area.innerHTML = '<div style="text-align:center;padding:20px;background:#fff3e0;border-radius:8px;border:1px solid #ffcc80;"><p style="color:#e65100;font-size:13px;">Nenhum resultado encontrado para ' + nome + '.</p><p style="font-size:12px;color:#777;margin-top:5px;">Aplique testes pelo painel primeiro.</p></div>';
           return;
         }
-        // Montar resumo dos testes para o prompt
+        // Montar resumo dos testes/escalas para o prompt (funcao central universal).
+        // A anamnese e tratada separadamente (texto clinico), entao a excluimos daqui.
         var resumo = '';
         todos.forEach(function(r) {
           var d = r.data || {};
+          if (r.tipo === 'escala' && d.escala && String(d.escala).toUpperCase().indexOf('ANAMNESE') >= 0) return;
           var date = r.date ? new Date(r.date).toLocaleDateString('pt-BR') : '-';
-          var tipo = (r.tipo||'tecfe').toUpperCase();
-          var det = '';
-          if (r.tipo === 'escala') {
-            tipo = (d.escala || 'ESCALA').toUpperCase();
-            det = (d.classificacao || d.escore || '-');
-            var domObj = d.dominios || {};
-            var domParts = [];
-            for (var k in domObj) { if (domObj.hasOwnProperty(k)) domParts.push(k + ': ' + domObj[k]); }
-            if (domParts.length > 0) det += ' | Dominios: ' + domParts.join(', ');
-          }
-          else if (r.tipo === 'bae') {
-            var bp = [];
-            if (d.concentrada) bp.push('Concentrada: ' + (d.concentrada.taxaAcerto||0).toFixed(0) + '%');
-            if (d.seletiva) bp.push('Seletiva: ' + (d.seletiva.taxaAcerto||0).toFixed(0) + '%');
-            if (d.dividida) bp.push('Dividida: ' + (d.dividida.taxaAcerto||0).toFixed(0) + '%');
-            if (d.alternada) bp.push('Alternada: ' + (d.alternada.taxaAcerto||0).toFixed(0) + '%');
-            if (d.sustentada) bp.push('Sustentada: ' + (d.sustentada.taxaAcerto||0).toFixed(0) + '%');
-            det = bp.length > 0 ? bp.join(', ') : (d.status||'-');
-          }
-          else if (r.tipo === 'trmv') { det = 'Retencao: ' + (d.indiceRetencao ? Math.round(d.indiceRetencao)+'%' : '-'); }
-          else if (r.tipo === 'taav') { det = 'Retencao: ' + (d.indiceRetencao ? Math.round(d.indiceRetencao)+'%' : '-'); }
-          else if (r.tipo === 'tref') { det = 'Tempo exec: ' + (d.tempoExecucao||'-') + 's, Movimentos: ' + (d.movimentos||'-'); }
-          else if (r.tipo === 'tflod') {
-            var res = d.resultados || {};
-            det = 'PPM: ' + (res.ppm||'-') + ', Erros: ' + (res.erros||0) + ', Repeticoes: ' + (res.repeticoes||0);
-          }
-          else {
-            var s = d.stats || {};
-            det = 'Categorias: ' + (s.completedCategories||0) + '/6, Erros: ' + (s.pctErrors?Number(s.pctErrors).toFixed(1):'0') + '%, Perseverativos: ' + (s.perseverativeErrors||0);
-          }
-          resumo += '- ' + date + ' | ' + tipo + ': ' + det + '\n';
+          var res = _smartResumirResultado(r);
+          resumo += '- ' + date + ' | ' + res.rotulo + ': ' + res.detalhe + '\n';
         });
+        // Extrair anamnese (crua, para a IA interpretar clinicamente)
+        var anam = _smartExtrairAnamnese(todos);
         // Montar prompt para IA
         area.innerHTML = '<div style="text-align:center;padding:30px;"><p style="font-size:14px;color:#1565c0;font-weight:bold;">Gerando metas SMART para ' + nome + '...</p><p style="font-size:12px;color:#777;margin-top:8px;">A IA esta analisando ' + todos.length + ' resultados.</p></div>';
-        var prompt = 'Voce e um neuropsicologo especialista em reabilitacao cognitiva.\n';
-        prompt += 'Com base nos resultados abaixo do paciente ' + nome + ', gere de 2 a 4 metas SMART de reabilitacao cognitiva.\n\n';
-        prompt += 'Resultados dos testes aplicados:\n' + resumo + '\n';
+        var prompt = 'Voce e um neuropsicologo especialista em reabilitacao cognitiva, atuando como o clinico geral que reune TODA a informacao do paciente para prescrever a reabilitacao.\n';
+        prompt += 'Com base em todo o material abaixo do paciente ' + nome + ', gere de 2 a 4 metas SMART de reabilitacao cognitiva.\n\n';
+        if (anam.texto) {
+          prompt += 'ANAMNESE (relato clinico bruto - interprete voce mesmo o que for relevante para a reabilitacao: marcos do desenvolvimento, uso de medicamentos, doencas, cirurgias, historico familiar, queixa). Ex.: se relata andar/falar tardios, conclua atraso no desenvolvimento; se ha varios medicamentos de uso continuo, considere polifarmacia:\n' + anam.texto + '\n';
+          if (anam.anteriores > 0) prompt += '(Existem ' + anam.anteriores + ' anamnese(s) anterior(es) no historico; foi usada a mais recente.)\n';
+          prompt += '\n';
+        }
+        prompt += 'Resultados dos testes e escalas aplicados:\n' + resumo + '\n';
         prompt += 'Para cada meta, responda SOMENTE em JSON valido, sem texto adicional, no seguinte formato:\n';
         prompt += '{"metas": [{"numero": 1, "titulo": "Titulo curto da meta", "instrumento": "Instrumento relacionado", "descricao": "Frase completa no formato SMART: O que, quem, quanto, em quanto tempo.", "especifica": "O que exatamente sera trabalhado", "mensuravel": "Como sera medido (instrumento e criterio)", "alcancavel": "Por que e realista para este paciente", "relevante": "Impacto funcional na vida do paciente", "temporal": "Prazo e frequencia das sessoes", "status": "reabilitacao"}]}\n';
         prompt += 'O campo status pode ser: "reabilitacao" (funcao deficitaria), "manutencao" (funcao preservada a manter) ou "monitoramento" (acompanhar evolucao).\n';
-        prompt += 'Baseie-se nos resultados reais. Se um teste mostra deficit, proponha reabilitacao. Se esta preservado, proponha manutencao.\n';
+        prompt += 'Baseie-se nos dados reais (anamnese + testes). Se um teste ou o relato mostra deficit, proponha reabilitacao. Se esta preservado, proponha manutencao.\n';
         prompt += 'Responda APENAS o JSON, sem explicacoes extras.';
+        // Guardar o resumo/anamnese para o modo de validacao (visualizar o que vai para a IA)
+        _smartUltimoPrompt = prompt;
         // === ANONIMIZACAO INVISIVEL ===
         var anonReab = (typeof Anonimizador !== 'undefined') ? Anonimizador.mascararPrompt(prompt, { paciente: nome || '' }) : { textoLimpo: prompt, mapa: {} };
         var promptSeguro = anonReab.textoLimpo;
@@ -8516,6 +8661,7 @@
         // Salvar em cache para PDF
         _smartMetasCache = resultado.metas || [];
         _smartPacienteAtual.historico = todos;
+        _smartPacienteAtual.anamnese = anam.texto || '';
         // Habilitar botao PDF
         var btnPdf = document.getElementById('btnSmartPdf_' + pacId);
         if (btnPdf) { btnPdf.disabled = false; }
@@ -8537,6 +8683,7 @@
       html += '<p style="font-size:14px;font-weight:bold;color:#1565c0;margin:0;">Metas SMART — ' + nome + '</p>';
       html += '<span style="font-size:11px;color:#9ca3af;">Gerado em ' + new Date().toLocaleString('pt-BR') + '</span>';
       html += '</div>';
+      html += '<div style="text-align:right;margin-bottom:8px;"><button class="btn btn-blue" style="padding:3px 10px;font-size:11px;" onclick="verDadosEnviadosSmart()">Ver dados enviados a IA</button></div>';
       metas.forEach(function(meta) {
         var cor = coresPorStatus[meta.status] || coresPorStatus.monitoramento;
         html += '<div style="border:1px solid #e5e7eb;border-left:4px solid ' + cor.borda + ';border-radius:8px;padding:14px 16px;margin-bottom:10px;background:#fff;">';
@@ -8558,6 +8705,16 @@
       html += '<p style="font-size:11px;color:#9ca3af;margin:10px 0 0;line-height:1.5;">Gerado automaticamente pelo SYM com base nos instrumentos aplicados. Revise e ajuste conforme avaliacao clinica. Este e um instrumento de apoio a decisao, nao substitui o julgamento profissional.</p>';
       html += '</div>';
       container.innerHTML = html;
+    }
+
+    // Mostra o texto exato que foi enviado a IA (transparencia / validacao clinica).
+    function verDadosEnviadosSmart() {
+      if (!_smartUltimoPrompt) { alert('Gere as metas primeiro (botao "Ver").'); return; }
+      var w = window.open('', '_blank');
+      if (!w) { alert('Permita pop-ups para visualizar.'); return; }
+      var esc = _smartUltimoPrompt.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      w.document.write('<html><head><title>Dados enviados a IA (SMART)</title><meta charset="utf-8"></head><body style="font-family:monospace;white-space:pre-wrap;padding:20px;font-size:13px;line-height:1.5;color:#222;">' + esc + '</body></html>');
+      w.document.close();
     }
 
     function gerarSmartPDF() {
@@ -8618,24 +8775,10 @@
       historico.forEach(function(r) {
         var d = r.data || {};
         var date = r.date ? new Date(r.date).toLocaleDateString('pt-BR') : '-';
-        var tipo = (r.tipo||'tecfe').toUpperCase();
-        if (r.tipo === 'escala') tipo = (d.escala || 'ESCALA').toUpperCase();
-        var det = '';
-        if (r.tipo === 'escala') { det = (d.classificacao || d.escore || '-'); }
-        else if (r.tipo === 'bae') {
-          var bp = [];
-          if (d.concentrada) bp.push('Conc:' + (d.concentrada.taxaAcerto||0).toFixed(0) + '%');
-          if (d.seletiva) bp.push('Sel:' + (d.seletiva.taxaAcerto||0).toFixed(0) + '%');
-          if (d.dividida) bp.push('Div:' + (d.dividida.taxaAcerto||0).toFixed(0) + '%');
-          if (d.alternada) bp.push('Alt:' + (d.alternada.taxaAcerto||0).toFixed(0) + '%');
-          if (d.sustentada) bp.push('Sus:' + (d.sustentada.taxaAcerto||0).toFixed(0) + '%');
-          det = bp.join(' | ') || (d.status||'-');
-        }
-        else if (r.tipo === 'trmv') { det = 'Retencao: ' + (d.indiceRetencao ? Math.round(d.indiceRetencao)+'%' : '-'); }
-        else if (r.tipo === 'taav') { det = 'Retencao: ' + (d.indiceRetencao ? Math.round(d.indiceRetencao)+'%' : '-'); }
-        else if (r.tipo === 'tref') { det = d.status || '-'; }
-        else if (r.tipo === 'tflod') { var res = d.resultados||{}; det = res.ppm ? 'PPM: '+res.ppm : (d.status||'-'); }
-        else { var s=d.stats||{}; det = 'Cat: '+(s.completedCategories||0)+'/6 Erros: '+(s.pctErrors?Number(s.pctErrors).toFixed(1):'0')+'%'; }
+        // Usa a mesma funcao central da tela (sem divergencia entre tela e PDF)
+        var _res = _smartResumirResultado(r);
+        var tipo = _res.rotulo;
+        var det = _res.detalhe;
         if (y > maxY - 20) { doc.addPage(); y = 15; }
         doc.text(date, 16, y); doc.text(tipo, 40, y);
         var linhas = doc.splitTextToSize(det, 100);
