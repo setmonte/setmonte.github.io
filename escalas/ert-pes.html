@@ -80,9 +80,9 @@
                 <p>
                     <strong>Instrumento:</strong> ERT-PEs &#8212; Escala de Rastreio para Tra&#231;os de Personalidade Esquizoide<br>
                     <strong>Base te&#243;rica:</strong> Crit&#233;rios diagn&#243;sticos do DSM-5-TR para Transtorno de Personalidade Esquizoide<br>
-                    <strong>Estrutura:</strong> 36 itens, 7 dimens&#245;es, escala Likert 5 pontos<br>
+                    <strong>Estrutura:</strong> 36 itens, 7 crit&#233;rios (DSM-5-TR), escala Likert 5 pontos<br>
                     <strong>Resultado:</strong> H&#237;brido &#8212; Rastreio categorial + Perfil dimensional<br>
-                    <strong>Dom&#237;nios:</strong> Desconfian&#231;a e Suspei&#231;&#227;o, Hostilidade e Rancor<br>
+                    <strong>Dom&#237;nios:</strong> Isolamento Social, Restri&#231;&#227;o Afetiva<br>
                     <strong>Popula&#231;&#227;o:</strong> Adultos (&#8805;18 anos) &#8212; instrumento de rastreio
                 </p>
             </div>
@@ -237,7 +237,12 @@ function calcularResultados() {
     el.scrollIntoView({behavior: 'smooth'});
 
     var _respostasObj = {}; for (var _i = 0; _i < r.length; _i++) { _respostasObj[_i + 1] = r[_i].valor; }
-    window._escalaDados = {escala:'ERT-PEs', paciente:n, escore:mg, classificacao: classificarIntensidade(mg).texto + ' (' + cp + '/7 criterios)', dominios:dom, respostas:_respostasObj, idPaciente:(document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''), idade:id, sexo:s, data:new Date().toISOString()};
+    var _respDet = [];
+    for (var _j = 0; _j < ITENS.length; _j++) {
+        var _sel = document.querySelector('input[name="q' + _j + '"]:checked');
+        _respDet.push({ n: _j + 1, texto: ITENS[_j].texto, criterio: ITENS[_j].criterio, invertido: !!ITENS[_j].invertido, valorBruto: _sel ? parseInt(_sel.value) : 0 });
+    }
+    window._escalaDados = {escala:'ERT-PEs', paciente:n, escore:mg, classificacao: classificarIntensidade(mg).texto + ' (' + cp + '/7 criterios)', dominios:dom, respostas:_respostasObj, respostasDetalhadas:_respDet, criteriosNomes:CRITERIOS, escalaLikert:'1-5', idPaciente:(document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''), idade:id, sexo:s, data:new Date().toISOString()};
     if (window.injetarBotaoSalvar) injetarBotaoSalvar('resultados');
 }
 

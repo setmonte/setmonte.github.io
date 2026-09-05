@@ -10872,9 +10872,11 @@
         doc.setFillColor(corR, corG, corB); doc.rect(15,y,180,12,'F');
         doc.setTextColor(255,255,255); doc.setFontSize(11); doc.setFont(undefined,'bold');
         var textoClass = '';
-        if (d.escore != null && d.escore !== undefined && d.escore !== '') textoClass += 'Escore: ' + d.escore + '   |   ';
+        // Arredonda escore/media para no maximo 2 casas decimais (evita 3.02777777...).
+        function _fmtNum(v) { var n = Number(v); return isFinite(n) ? (Math.round(n * 100) / 100) : v; }
+        if (d.escore != null && d.escore !== undefined && d.escore !== '') textoClass += 'Escore: ' + _fmtNum(d.escore) + '   |   ';
         if (d.classificacao) textoClass += sanitize(d.classificacao);
-        if (d.media != null) textoClass += '   |   Media: ' + d.media;
+        if (d.media != null) textoClass += '   |   Media: ' + _fmtNum(d.media);
         doc.text(textoClass, 105, y+8, {align:'center'});
         y += 18;
       } else {

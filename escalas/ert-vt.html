@@ -92,7 +92,7 @@
                     <strong>Objetivo:</strong> Rastrear sinais de desgaste ocupacional, fadiga cognitiva e risco de burnout<br>
                     <strong>Estrutura:</strong> 20 itens, escala Likert 5 pontos (0-4)<br>
                     <strong>Resultado:</strong> Dimensional + An&#225;lise interpretativa autom&#225;tica (3 eixos)<br>
-                    <strong>Dom&#237;nios:</strong> Fadiga Mental | Aten&#231;&#227;o Concentrada | Desengajamento | Controle Emocional | Exaust&#227;o Emocional | Percep&#231;&#227;o de Risco<br>
+                    <strong>Dom&#237;nios (8):</strong> Fadiga Mental | Aten&#231;&#227;o Concentrada | Desengajamento | Capacidade Funcional | Exaust&#227;o Emocional | Controle Emocional | Percep&#231;&#227;o de Risco | Press&#227;o Decis&#243;ria<br>
                     <strong>Popula&#231;&#227;o:</strong> Adultos em atividade laboral &#8212; instrumento de rastreio
                 </p>
             </div>
@@ -360,7 +360,15 @@ function calcularResultados() {
     var dom = {};
     Object.keys(DOMINIOS).forEach(function(k) { dom[DOMINIOS_NOMES[k]] = resultadosDominios[k]; });
     var _respostasObj = {}; for (var _i = 0; _i < r.length; _i++) { _respostasObj[_i + 1] = r[_i]; }
-    window._escalaDados = {escala:'ERT-VT', paciente:n, escore:mediaGeral, classificacao:classGeral.texto, dominios:dom, respostas:_respostasObj, idPaciente:(document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''), idade:id, sexo:s, data:new Date().toISOString()};
+    // Detalhamento para a pagina "Respostas do Trabalhador" (agrupada por dominio; escala 0-4).
+    var _respDet = [];
+    for (var _j = 0; _j < ITENS.length; _j++) {
+        var _sel = document.querySelector('input[name="q' + _j + '"]:checked');
+        var _nomeDom = DOMINIOS_NOMES[ITENS[_j].dominio] || ITENS[_j].dominio;
+        _respDet.push({ n: _j + 1, texto: ITENS[_j].texto, criterio: _nomeDom, invertido: false, valorBruto: _sel ? parseInt(_sel.value) : -1 });
+    }
+    var _critNomesVT = {}; Object.keys(DOMINIOS_NOMES).forEach(function(k){ _critNomesVT[DOMINIOS_NOMES[k]] = DOMINIOS_NOMES[k]; });
+    window._escalaDados = {escala:'ERT-VT', paciente:n, escore:mediaGeral, classificacao:classGeral.texto, dominios:dom, respostas:_respostasObj, respostasDetalhadas:_respDet, criteriosNomes:_critNomesVT, escalaLikert:'0-4', idPaciente:(document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''), idade:id, sexo:s, data:new Date().toISOString()};
     if (window.injetarBotaoSalvar) injetarBotaoSalvar('resultados');
 }
 function gerarRelatorioPDF() {
@@ -496,7 +504,7 @@ function gerarRelatorioPDF() {
 
     var ts = new Date();
     var tsStr = ts.getFullYear() + String(ts.getMonth()+1).padStart(2,'0') + String(ts.getDate()).padStart(2,'0') + String(ts.getHours()).padStart(2,'0') + String(ts.getMinutes()).padStart(2,'0');
-    doc.addPage();doc.setFillColor(26,35,126);doc.rect(0,0,210,20,'F');doc.setTextColor(255,255,255);doc.setFontSize(11);doc.setFont(undefined,'bold');doc.text('RESPOSTAS DO PACIENTE (para comparacao com DSM-5-TR)',105,13,{align:'center'});var yr=28;var opcoesTexto=['','Nunca','Raramente','As vezes','Frequentemente','Sempre'];var critKeys=Object.keys(CRITERIOS);for(var ci=0;ci<critKeys.length;ci++){var ck=critKeys[ci];var itensCrit=[];for(var ii=0;ii<ITENS.length;ii++){if(ITENS[ii].criterio==ck)itensCrit.push(ii);}if(yr+8+itensCrit.length*5>280){doc.addPage();yr=15;}doc.setFillColor(235,238,255);doc.rect(15,yr-2,180,7,'F');doc.setTextColor(26,35,126);doc.setFontSize(9);doc.setFont(undefined,'bold');doc.text('Criterio '+ck+': '+CRITERIOS[ck],18,yr+3);yr+=9;doc.setTextColor(0,0,0);doc.setFontSize(7.5);doc.setFont(undefined,'normal');for(var ji=0;ji<itensCrit.length;ji++){var idx=itensCrit[ji];var sel=document.querySelector('input[name="q'+idx+'"]:checked');var valSel=sel?parseInt(sel.value):0;var txtResp=valSel>0?opcoesTexto[valSel]+' ('+valSel+')':'---';var invertido=ITENS[idx].invertido?' (R)':'';if(yr>280){doc.addPage();yr=15;}var textoItem=(idx+1)+'. '+ITENS[idx].texto.substring(0,90)+(ITENS[idx].texto.length>90?'...':'')+invertido;doc.text(textoItem,20,yr);doc.setFont(undefined,'bold');doc.text(txtResp,175,yr,{align:'right'});doc.setFont(undefined,'normal');yr+=5;}yr+=3;}doc.setFillColor(50,50,50);doc.rect(0,285,210,12,'F');doc.setTextColor(200,200,200);doc.setFontSize(7);doc.text('Respostas detalhadas | Gerado em '+new Date().toLocaleString('pt-BR'),105,291,{align:'center'});
+    doc.addPage();doc.setFillColor(0,77,64);doc.rect(0,0,210,20,'F');doc.setTextColor(255,255,255);doc.setFontSize(11);doc.setFont(undefined,'bold');doc.text('RESPOSTAS DO TRABALHADOR (detalhamento por dominio)',105,13,{align:'center'});var yr=28;var opcoesTexto=['Nunca','Raramente','As vezes','Frequentemente','Sempre'];var domKeys=Object.keys(DOMINIOS);for(var ci=0;ci<domKeys.length;ci++){var dk=domKeys[ci];var idxItens=DOMINIOS[dk];if(yr+8+idxItens.length*5>280){doc.addPage();yr=15;}doc.setFillColor(224,242,241);doc.rect(15,yr-2,180,7,'F');doc.setTextColor(0,77,64);doc.setFontSize(9);doc.setFont(undefined,'bold');doc.text((DOMINIOS_NOMES[dk]||dk),18,yr+3);yr+=9;doc.setTextColor(0,0,0);doc.setFontSize(7.5);doc.setFont(undefined,'normal');for(var ji=0;ji<idxItens.length;ji++){var idx=idxItens[ji];var sel=document.querySelector('input[name="q'+idx+'"]:checked');var valSel=sel?parseInt(sel.value):-1;var txtResp=valSel>=0?opcoesTexto[valSel]+' ('+valSel+')':'---';if(yr>280){doc.addPage();yr=15;}var textoItem=(idx+1)+'. '+ITENS[idx].texto.substring(0,90)+(ITENS[idx].texto.length>90?'...':'');doc.text(textoItem,20,yr);doc.setFont(undefined,'bold');doc.text(txtResp,190,yr,{align:'right'});doc.setFont(undefined,'normal');yr+=5;}yr+=3;}doc.setFillColor(50,50,50);doc.rect(0,285,210,12,'F');doc.setTextColor(200,200,200);doc.setFontSize(7);doc.text('Respostas detalhadas | Gerado em '+new Date().toLocaleString('pt-BR'),105,291,{align:'center'});
     doc.save('ERT-VT_' + nome.replace(/\s+/g,'_') + '_' + tsStr + '.pdf');
 }
 
