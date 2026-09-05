@@ -358,6 +358,44 @@ function gerarRelatorioPDF() {
     doc.setFillColor(50,50,50); doc.rect(0,285,210,12,'F');
     doc.setTextColor(200,200,200); doc.setFontSize(7);
     doc.text('SYM Online  |  ' + dataAval + '  |  Gerado em ' + new Date().toLocaleString('pt-BR'), 105, 291, {align:'center'});
+
+    // ===== PAGINA EXTRA: RESPOSTAS DO PACIENTE (valor qualitativo do laudo) =====
+    // Lista cada item com a resposta BRUTA marcada (sem inversao), agrupado por criterio.
+    // Itens invertidos sao sinalizados com (R). Escala 1-5 (Nunca..Sempre).
+    doc.addPage();
+    doc.setFillColor(26,35,126); doc.rect(0,0,210,20,'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(11); doc.setFont(undefined,'bold');
+    doc.text('RESPOSTAS DO PACIENTE (para comparacao com DSM-5-TR)', 105, 13, {align:'center'});
+    var yr = 28;
+    var opcoesTexto = ['','Nunca','Raramente','As vezes','Frequentemente','Sempre'];
+    var critKeys = Object.keys(CRITERIOS);
+    for (var ci = 0; ci < critKeys.length; ci++) {
+        var ck = critKeys[ci];
+        var itensCrit = [];
+        for (var ii = 0; ii < ITENS.length; ii++) { if (ITENS[ii].criterio == ck) itensCrit.push(ii); }
+        if (yr + 8 + itensCrit.length*5 > 280) { doc.addPage(); yr = 15; }
+        doc.setFillColor(235,238,255); doc.rect(15, yr-2, 180, 7, 'F');
+        doc.setTextColor(26,35,126); doc.setFontSize(9); doc.setFont(undefined,'bold');
+        doc.text('Criterio ' + ck + ': ' + CRITERIOS[ck], 18, yr+3); yr += 9;
+        doc.setTextColor(0,0,0); doc.setFontSize(7.5); doc.setFont(undefined,'normal');
+        for (var ji = 0; ji < itensCrit.length; ji++) {
+            var idx = itensCrit[ji];
+            var sel = document.querySelector('input[name="q' + idx + '"]:checked');
+            var valSel = sel ? parseInt(sel.value) : 0;
+            var txtResp = valSel > 0 ? opcoesTexto[valSel] + ' (' + valSel + ')' : '---';
+            var invertido = ITENS[idx].invertido ? ' (R)' : '';
+            if (yr > 280) { doc.addPage(); yr = 15; }
+            var textoItem = (idx+1) + '. ' + ITENS[idx].texto.substring(0,90) + (ITENS[idx].texto.length > 90 ? '...' : '') + invertido;
+            doc.text(textoItem, 20, yr);
+            doc.setFont(undefined,'bold'); doc.text(txtResp, 175, yr, {align:'right'}); doc.setFont(undefined,'normal');
+            yr += 5;
+        }
+        yr += 3;
+    }
+    doc.setFillColor(50,50,50); doc.rect(0,285,210,12,'F');
+    doc.setTextColor(200,200,200); doc.setFontSize(7);
+    doc.text('Respostas detalhadas  |  (R) = item reverso  |  Gerado em ' + new Date().toLocaleString('pt-BR'), 105, 291, {align:'center'});
+
     var ts = new Date();
     var tsStr = ts.getFullYear() + String(ts.getMonth()+1).padStart(2,'0') + String(ts.getDate()).padStart(2,'0') + String(ts.getHours()).padStart(2,'0') + String(ts.getMinutes()).padStart(2,'0');
     doc.save('ERT-PD_' + nome.replace(/\s+/g,'_') + '_' + tsStr + '.pdf');
