@@ -80,9 +80,9 @@
                 <p>
                     <strong>Instrumento:</strong> ERT-PD &#8212; Escala de Rastreio para Tra&#231;os de Personalidade Dependente<br>
                     <strong>Base te&#243;rica:</strong> Crit&#233;rios diagn&#243;sticos do DSM-5-TR para Transtorno de Personalidade Dependente<br>
-                    <strong>Estrutura:</strong> 36 itens, 7 dimens&#245;es, escala Likert 5 pontos<br>
+                    <strong>Estrutura:</strong> 36 itens, 8 crit&#233;rios (DSM-5-TR), escala Likert 5 pontos<br>
                     <strong>Resultado:</strong> H&#237;brido &#8212; Rastreio categorial + Perfil dimensional<br>
-                    <strong>Dom&#237;nios:</strong> Desconfian&#231;a e Suspei&#231;&#227;o, Hostilidade e Rancor<br>
+                    <strong>Dom&#237;nios:</strong> Submiss&#227;o e Indecis&#227;o, Necessidade de V&#237;nculo<br>
                     <strong>Popula&#231;&#227;o:</strong> Adultos (&#8805;18 anos) &#8212; instrumento de rastreio
                 </p>
             </div>
@@ -259,9 +259,9 @@ function gerarRelatorioPDF() {
     var sexo = document.getElementById('sexo').value;
     var dataAval = document.getElementById('data').value || new Date().toLocaleDateString('pt-BR');
     var idPac = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
-    var canvasG = document.createElement('canvas'); canvasG.width = 700; canvasG.height = 266;
+    var canvasG = document.createElement('canvas'); canvasG.width = 700; canvasG.height = 290;
     var cx = canvasG.getContext('2d');
-    cx.fillStyle = '#fff'; cx.fillRect(0, 0, 700, 266);
+    cx.fillStyle = '#fff'; cx.fillRect(0, 0, 700, 290);
     cx.fillStyle = '#333'; cx.font = 'bold 12px Segoe UI'; cx.textAlign = 'left';
     cx.fillText('Perfil dos Criterios (media por criterio, escala 1-5)', 10, 15);
     var nomes = []; var valores = [];
@@ -270,7 +270,8 @@ function gerarRelatorioPDF() {
     for (var i = 0; i < nomes.length; i++) {
         var by = startY + i * (bh + gap);
         var pct = valores[i] / 5; var bw = pct * maxW;
-        var cor = valores[i] < 2 ? '#4caf50' : valores[i] < 3 ? '#ffb300' : valores[i] < 3.5 ? '#ff9800' : '#e53935';
+        var _v = valores[i];
+        var cor = _v < 2 ? '#4caf50' : _v < 2.5 ? '#ffeb3b' : _v < 3 ? '#ffc107' : _v < 3.5 ? '#ff9800' : _v < 4 ? '#ff5722' : '#f44336';
         cx.fillStyle = '#555'; cx.font = '11px Segoe UI'; cx.textAlign = 'right';
         cx.fillText(nomes[i], labelW - 5, by + 15);
         cx.fillStyle = cor; cx.fillRect(labelW, by, bw, bh);
@@ -279,9 +280,16 @@ function gerarRelatorioPDF() {
         if (i === 0) { var limX = labelW + (3.5/5)*maxW; cx.strokeStyle = '#c62828'; cx.setLineDash([4,3]); cx.lineWidth = 1.5; cx.beginPath(); cx.moveTo(limX, startY - 5); cx.lineTo(limX, startY + nomes.length*(bh+gap)); cx.stroke(); cx.setLineDash([]); cx.fillStyle = '#c62828'; cx.font = '9px Segoe UI'; cx.textAlign = 'center'; cx.fillText('Limiar 3.5', limX, startY - 8); }
     }
     var ly = startY + nomes.length*(bh+gap) + 10;
-    var cores = [['#4caf50','Minimo (<2)'],['#ffb300','Leve (2-3)'],['#ff9800','Moderado (3-3.5)'],['#e53935','Significativo (>=3.5)']];
+    var cores = [['#4caf50','Minimo (<2)'],['#ffeb3b','Leve (2-2.5)'],['#ffc107','Leve-Mod (2.5-3)'],['#ff9800','Moderado (3-3.5)'],['#ff5722','Signif. (3.5-4)'],['#f44336','Intenso (>=4)']];
     cx.font = '10px Segoe UI'; cx.textAlign = 'left';
-    for (var li = 0; li < cores.length; li++) { cx.fillStyle = cores[li][0]; cx.fillRect(labelW + li*130, ly, 12, 12); cx.fillStyle = '#555'; cx.fillText(cores[li][1], labelW + li*130 + 15, ly + 10); }
+    // 6 faixas nao cabem numa linha so (canvas = 700px). Distribui em 2 linhas de 3.
+    var legX0 = 10; var legColW = 165; var legRowH = 18;
+    for (var li = 0; li < cores.length; li++) {
+      var col = li % 3; var row = Math.floor(li / 3);
+      var lx = legX0 + col * legColW; var lyy = ly + row * legRowH;
+      cx.fillStyle = cores[li][0]; cx.fillRect(lx, lyy, 12, 12);
+      cx.fillStyle = '#555'; cx.fillText(cores[li][1], lx + 15, lyy + 10);
+    }
     var imgGrafico = canvasG.toDataURL('image/png');
     var jsPDF = window.jspdf.jsPDF; var doc = new jsPDF(); var ml = 15; var lu = 180;
     doc.setFillColor(26,35,126); doc.rect(0,0,210,32,'F');
@@ -318,9 +326,10 @@ function gerarRelatorioPDF() {
         var dk = domKeys[di]; var crits = DOMINIOS[dk];
         var somaDom = 0; for (var ci = 0; ci < crits.length; ci++) { somaDom += cr[crits[ci]].media; }
         var mediaDom = somaDom / crits.length;
-        var classDom = mediaDom < 2 ? 'Minimo' : mediaDom < 3 ? 'Leve' : mediaDom < 3.5 ? 'Moderado' : 'Significativo';
+        // Usa a MESMA regua de intensidade da tela (classificarIntensidade): 6 faixas.
+        var classDom = mediaDom < 2 ? 'Minimo' : mediaDom < 2.5 ? 'Leve' : mediaDom < 3 ? 'Leve-Moderado' : mediaDom < 3.5 ? 'Moderado' : mediaDom < 4 ? 'Significativo' : 'Intenso';
         var barW = (mediaDom/5) * 80;
-        var corDom = mediaDom < 2 ? [76,175,80] : mediaDom < 3 ? [255,179,0] : mediaDom < 3.5 ? [255,152,0] : [229,57,53];
+        var corDom = mediaDom < 2 ? [76,175,80] : mediaDom < 2.5 ? [255,235,59] : mediaDom < 3 ? [255,193,7] : mediaDom < 3.5 ? [255,152,0] : mediaDom < 4 ? [255,87,34] : [244,67,54];
         doc.setFillColor(240,240,240); doc.rect(ml, y-3, lu, 8, 'F');
         doc.setFillColor(corDom[0],corDom[1],corDom[2]); doc.rect(ml+100, y-2, barW, 5, 'F');
         doc.setFont(undefined,'bold'); doc.text(dk + ':', ml+2, y+2);
