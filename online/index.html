@@ -3156,6 +3156,7 @@
       }
       var _dnErr = _validarDataNascimento(birth);
       if (_dnErr) { alert(_dnErr); return; }
+      if (!_confirmarCredito(1, 'TECFE')) return;
       var btn = event && event.target ? event.target : null;
       btnLoading(btn);
       try {
@@ -3576,6 +3577,7 @@
       if (testesSelecionados.length === 0) { alert('Selecione pelo menos um teste.'); return; }
       // Calcula créditos necessários
       var creditosNecessarios = testesSelecionados.length;
+      if (!_confirmarCredito(creditosNecessarios, 'BAE')) return;
       var btn = event && event.target ? event.target : null;
       btnLoading(btn);
       try {
@@ -6361,6 +6363,19 @@
     function aplicarFreeMode(active) { /* removido */ }
 
     function isFreeModeActive() { return false; }
+
+    // ===== CONFIRMACAO DE CREDITO (padrao unico para todos os testes pagos) =====
+    // Mostra um aviso claro no momento em que o profissional vai gastar credito(s),
+    // deixando explicito que o credito NAO e devolvido se o teste for abandonado.
+    // Retorna true se pode prosseguir, false se cancelou. Admin nao ve (nao gasta credito).
+    function _confirmarCredito(qtd, nomeTeste) {
+      if (currentUser === 'setmonte@gmail.com' || isFreeModeActive()) return true;
+      var n = qtd || 1;
+      var msg = 'Esta aplicacao vai consumir ' + n + ' credito' + (n > 1 ? 's' : '') + ' de ' + nomeTeste + '.\n\n' +
+                'ATENCAO: o credito NAO e devolvido se o teste for abandonado ou nao concluido pelo paciente.\n\n' +
+                'Deseja continuar?';
+      return window.confirm(msg);
+    }
 
     function initFreeModeToggle() { /* removido */ }
 
@@ -9587,26 +9602,44 @@
       var r = _ideiaResultCache[idx];
       if (!r) return;
       var d = r.data || {};
-      if (!d.audioS3Key) { alert('Este resultado nao tem audio salvo para reprocessar.'); return; }
+      // Aceita audio salvo de duas formas: base64 inline (fallback) ou no S3.
+      if (!d.audioS3Key && !d.audioBase64) { alert('Este resultado nao tem audio salvo para reprocessar.'); return; }
       if (!confirm('Reenviar o audio para a IA? Isso vai transcrever novamente e substituir o resultado com erro.')) return;
       var btn = document.getElementById('btnReprocIdeia' + idx);
       if (btn) { btn.disabled = true; btn.textContent = 'Processando...'; }
       try {
-        // 1. Buscar o audio salvo no S3
-        var audioResp = await fetch(API_URL + '/get-audio?key=' + encodeURIComponent(d.audioS3Key));
-        var audioData = await audioResp.json();
-        var audioB64 = audioData.audioBase64 || '';
-        if (!audioB64) { throw new Error('Audio nao encontrado no servidor (S3).'); }
+        // 1. Recuperar o audio: primeiro tenta o base64 inline (fallback); senao busca no S3.
+        var audioB64 = d.audioBase64 || '';
+        if (!audioB64 && d.audioS3Key) {
+          var audioResp = await fetch(API_URL + '/get-audio?key=' + encodeURIComponent(d.audioS3Key));
+          var audioData = await audioResp.json();
+          audioB64 = audioData.audioBase64 || '';
+        }
+        if (!audioB64) { throw new Error('Audio nao encontrado (nem inline nem no servidor S3).'); }
 
-        // 2. Transcrever com Whisper
-        var trResp = await fetch(API_URL + '/transcribe-audio', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ audioBase64: audioB64, sessionId: r.sessionId || '' })
-        });
-        var trData = await trResp.json();
-        var transcricao = (typeof trData.text === 'string') ? trData.text : '';
-        if (!transcricao.trim()) { throw new Error('A transcricao voltou vazia. O audio pode nao conter fala reconhecivel.'); }
+        // 2. Transcrever com Whisper - RETRY de ate 3 tentativas (padrao TFLOD).
+        // A IA as vezes falha por congestionamento momentaneo; tentar de novo antes de desistir.
+        var transcricao = '';
+        var tentativas = 0;
+        var ultimoErroRede = false;
+        while (tentativas < 3 && !transcricao.trim()) {
+          tentativas++;
+          try {
+            var trResp = await fetch(API_URL + '/transcribe-audio', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ audioBase64: audioB64, sessionId: r.sessionId || '' })
+            });
+            var trData = await trResp.json();
+            transcricao = (typeof trData.text === 'string') ? trData.text : '';
+          } catch(eRede) {
+            ultimoErroRede = true;
+          }
+        }
+        if (!transcricao.trim()) {
+          if (ultimoErroRede) { throw new Error('Conexao instavel. Tentamos 3 vezes e nao foi possivel transcrever. Verifique a internet e tente de novo.'); }
+          throw new Error('A transcricao voltou vazia apos 3 tentativas. O audio pode nao conter fala reconhecivel.');
+        }
 
         // 3. Analisar a transcricao com a IA (extrair e categorizar ideias)
         var fd = d.formData || {};
@@ -10007,6 +10040,7 @@
       if (!nome || !dn) { alert('Preencha nome e data de nascimento.'); return; }
       var _dnErr = _validarDataNascimento(dn);
       if (_dnErr) { alert(_dnErr); return; }
+      if (!_confirmarCredito(1, 'IDEIA')) return;
       var btn = event && event.target ? event.target : null;
       if (typeof btnLoading === 'function') btnLoading(btn);
       try {
@@ -11778,6 +11812,7 @@
       if (!name || !birth) { alert('Preencha pelo menos o nome e a data de nascimento.'); return; }
       var _dnErr = _validarDataNascimento(birth);
       if (_dnErr) { alert(_dnErr); return; }
+      if (!_confirmarCredito(1, 'TRMV')) return;
       var btn = event && event.target ? event.target : null;
       btnLoading(btn);
       try {
@@ -12087,6 +12122,7 @@
       if (!name || !birth) { alert('Preencha pelo menos o nome e a data de nascimento.'); return; }
       var _dnErr = _validarDataNascimento(birth);
       if (_dnErr) { alert(_dnErr); return; }
+      if (!_confirmarCredito(1, 'TAAV')) return;
       var btn = event && event.target ? event.target : null;
       btnLoading(btn);
       try {
@@ -12824,6 +12860,7 @@
       if (!nome || !dn || !sexo) { alert('Preencha nome, data de nascimento e sexo.'); return; }
       var _dnErr = _validarDataNascimento(dn);
       if (_dnErr) { alert(_dnErr); return; }
+      if (!_confirmarCredito(1, 'TREF')) return;
       var btn = event && event.target ? event.target : null;
       btnLoading(btn);
       try {
@@ -13031,6 +13068,7 @@
       if (!nome || !dn || !escolaridade) { alert('Preencha nome, data de nascimento e escolaridade.'); return; }
       var _dnErr = _validarDataNascimento(dn);
       if (_dnErr) { alert(_dnErr); return; }
+      if (!_confirmarCredito(1, 'TFLOD')) return;
       var btn = event && event.target ? event.target : null;
       btnLoading(btn);
       try {

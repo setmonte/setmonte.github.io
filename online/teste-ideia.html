@@ -871,7 +871,9 @@ async function finalizarTeste() {
     } catch (erro) {
         console.error('Erro na transcri\u00e7\u00e3o:', erro);
         document.getElementById('progressText').textContent = 'Erro ao processar. Salvando dados...';
-        await salvarResultadoErro(erro.message, audioS3Key);
+        // Passa o audio base64 como fallback: se o S3 nao guardou (audioS3Key vazio),
+        // o audio ainda fica salvo inline no registro de erro para permitir reprocessar.
+        await salvarResultadoErro(erro.message, audioS3Key, audioS3Key ? '' : audioBase64);
         setTimeout(function() {
             trocarTela('tela-fim');
             var _s2 = document.createElement('script');
@@ -1092,7 +1094,7 @@ async function salvarResultado(resultado, audioS3Key) {
     } catch (e) { console.error('Erro ao enviar:', e); }
 }
 
-async function salvarResultadoErro(mensagemErro, audioS3Key) {
+async function salvarResultadoErro(mensagemErro, audioS3Key, audioB64Fallback) {
     if (!sessionInfo.email || !sessionInfo.sessionId) return;
     try {
         await fetch(API_URL + '/save-result', {
@@ -1102,7 +1104,7 @@ async function salvarResultadoErro(mensagemErro, audioS3Key) {
                 email: sessionInfo.email,
                 tipo: 'ideia',
                 sessionId: sessionInfo.sessionId,
-                data: { status: 'erro_transcricao', date: new Date().toISOString(), formData: dadosForm, erro: mensagemErro, audioS3Key: audioS3Key || '', _temAudio: !!(audioS3Key) }
+                data: { status: 'erro_transcricao', date: new Date().toISOString(), formData: dadosForm, erro: mensagemErro, audioS3Key: audioS3Key || '', audioBase64: audioB64Fallback || '', _temAudio: !!(audioS3Key || audioB64Fallback) }
             })
         });
     } catch (e) { console.error('Erro ao enviar:', e); }
