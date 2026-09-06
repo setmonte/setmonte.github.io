@@ -60,6 +60,14 @@ var restartWindowStart = 0;
 var MAX_RESTARTS = 5;
 var RESTART_WINDOW = 10000;
 var RESTART_DELAY = 300;
+// Monitor de microfone (padrao TFLOD adaptado para sessao longa): roda em paralelo
+// durante a gravacao para (1) confirmar que o mic capta voz e (2) alertar silencio prolongado.
+var _monMicStream = null;
+var _monMicAnimFrame = null;
+var _monMicCtx = null;
+var _ultimoSomTs = 0;      // ultimo instante em que houve som acima do limiar
+var _vozJaDetectada = false; // true assim que capta voz pela primeira vez
+var _alertaSilencioAtivo = false;
 var topicosPadrao = ['Nome completo','Idade e data de nascimento','CPF','Nome do pai','Nome da mae','Queixa principal','Desenvolvimento na infancia','Desenvolvimento na adolescencia','Vida adulta','Historico familiar','Medicamentos em uso','Observacoes adicionais'];
 var topicosAtuais = [];
 
@@ -76,11 +84,14 @@ function init() {
     document.getElementById('page-title').innerHTML = '&#128203; Consulta em Andamento';
     renderPacienteInfo();
   } else {
-    // Modo livre (acesso direto)
-    modoAgenda = false;
-    sessionInfo = { patientName: '', tipoConsulta: 'Livre', duracao: 0 };
-    document.getElementById('page-title').innerHTML = '&#128203; Prontuario IA — Modo Livre';
-    renderModoLivreInfo();
+    // Acesso direto (sem vir do painel) NAO e permitido - nem para o admin.
+    // O Prontuario grava audio e consome credito, entao deve sempre passar pelo painel.
+    document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#e8f2f8,#d0e4ef);text-align:center;padding:20px;font-family:\'Segoe UI\',Arial,sans-serif;">' +
+      '<h1 style="color:#2d6a8f;font-size:22px;margin-bottom:10px;">Prontuario IA</h1>' +
+      '<p style="font-size:15px;color:#555;max-width:420px;line-height:1.5;margin-bottom:20px;">Esta pagina so pode ser aberta pelo painel do avaliador. Acesse o painel, escolha o perfil de prontuario e inicie a sessao por la.</p>' +
+      '<a href="https://setmonte.github.io/online/" style="background:#2d6a8f;color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:600;">Ir para o Painel</a>' +
+      '</div>';
+    return;
   }
   // Carregar topicos salvos ou usar padrao
   var saved = localStorage.getItem('prontuario_topicos');
@@ -217,6 +228,77 @@ function togglePausa() {
   }
 }
 
+// Inicia o monitor de volume do microfone (paralelo a gravacao).
+// Numa sessao clinica longa, isto evita gravar 40 min "mudo" sem perceber:
+// confirma que ha voz e alerta se ficar em silencio prolongado. Nao trava a gravacao.
+function _iniciarMonitorMic() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
+  try {
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
+      _monMicStream = stream;
+      _monMicCtx = new (window.AudioContext || window.webkitAudioContext)();
+      var source = _monMicCtx.createMediaStreamSource(stream);
+      var analyser = _monMicCtx.createAnalyser();
+      analyser.fftSize = 256;
+      source.connect(analyser);
+      var dataArray = new Uint8Array(analyser.frequencyBinCount);
+      _ultimoSomTs = Date.now();
+      _vozJaDetectada = false;
+      _alertaSilencioAtivo = false;
+      function monitorar() {
+        if (!gravando) return;
+        analyser.getByteFrequencyData(dataArray);
+        var sum = 0;
+        for (var i = 0; i < dataArray.length; i++) sum += dataArray[i];
+        var avg = sum / dataArray.length;
+        var pct = Math.min(100, Math.round((avg / 40) * 100));
+        if (!pausado) {
+          if (pct > 5) {
+            _ultimoSomTs = Date.now();
+            _vozJaDetectada = true;
+            if (_alertaSilencioAtivo) {
+              _alertaSilencioAtivo = false;
+              var st = document.getElementById('status-gravacao');
+              if (st) st.textContent = 'Gravando... clique para parar';
+            }
+          } else {
+            // Sem som ha mais de 15s (e ja tinha captado voz antes) -> alerta de silencio.
+            if (_vozJaDetectada && (Date.now() - _ultimoSomTs) > 15000 && !_alertaSilencioAtivo) {
+              _alertaSilencioAtivo = true;
+              var st2 = document.getElementById('status-gravacao');
+              if (st2) st2.innerHTML = '<span style="color:#e65100;font-weight:bold;">Sem fala detectada ha alguns segundos. Verifique se o microfone esta captando (o cronometro continua).</span>';
+            }
+          }
+        }
+        _monMicAnimFrame = requestAnimationFrame(monitorar);
+      }
+      monitorar();
+    }).catch(function() {
+      // Sem permissao/erro: o proprio caminho de gravacao ja trata; aqui so nao monitora.
+    });
+  } catch(e) {}
+}
+
+function _pararMonitorMic() {
+  if (_monMicAnimFrame) { cancelAnimationFrame(_monMicAnimFrame); _monMicAnimFrame = null; }
+  if (_monMicStream) { try { _monMicStream.getTracks().forEach(function(t) { t.stop(); }); } catch(e){} _monMicStream = null; }
+  if (_monMicCtx) { try { _monMicCtx.close(); } catch(e){} _monMicCtx = null; }
+}
+
+// Registra sessao abandonada se o profissional fechar a aba durante a gravacao.
+window.addEventListener('beforeunload', function() {
+  if (gravando && sessionInfo && sessionInfo.email) {
+    try {
+      navigator.sendBeacon(API_URL + '/save-result', JSON.stringify({
+        email: sessionInfo.email,
+        tipo: 'prontuario',
+        sessionId: sessionInfo.sessionId || ('prontuario-' + Date.now().toString(36)),
+        data: { status: 'abandonado', date: new Date().toISOString(), formData: { nome: sessionInfo.patientName || '' } }
+      }));
+    } catch(e) {}
+  }
+});
+
 async function iniciarGravacao() {
   // Verificar credito antes de iniciar
   if (sessionInfo && sessionInfo.email && sessionInfo.email !== 'setmonte@gmail.com') {
@@ -245,6 +327,8 @@ async function iniciarGravacao() {
   transcricaoAcumulada = '';
   restartCount = 0;
   restartWindowStart = Date.now();
+  // Monitor de volume do microfone em paralelo (confirma captacao + alerta de silencio)
+  _iniciarMonitorMic();
   document.getElementById('btn-gravar').style.background = '#e24b4a';
   document.getElementById('btn-gravar').style.borderColor = '#e24b4a';
   document.getElementById('btn-gravar').innerHTML = '&#9632;';
@@ -360,9 +444,15 @@ async function iniciarGravacao() {
               enviando = false;
               processarFilaChunks();
             }).catch(function() {
-              if (tentativas < 2) {
+              if (tentativas < 3) {
                 setTimeout(tentarTranscrever, 2000);
               } else {
+                // Trecho perdido apos 3 tentativas: sinaliza na transcricao em vez de sumir silenciosamente,
+                // para o profissional saber que aquele segmento (~5s) nao foi transcrito.
+                transcricaoAcumulada += '[...trecho nao transcrito...] ';
+                document.getElementById('transcricao').value = transcricaoAcumulada;
+                var stErr = document.getElementById('status-gravacao');
+                if (stErr && !pausado) stErr.innerHTML = '<span style="color:#e65100;">Um trecho do audio nao foi transcrito (marcado no texto). A gravacao continua normalmente.</span>';
                 enviando = false;
                 processarFilaChunks();
               }
@@ -404,6 +494,7 @@ async function iniciarGravacao() {
 function pararGravacao() {
   gravando = false;
   pausado = false;
+  _pararMonitorMic();
   if (recognition) { try { recognition.stop(); } catch(e){} }
   if (window._fallbackMediaRecorder) {
     try { window._fallbackMediaRecorder.stop(); } catch(e) {}

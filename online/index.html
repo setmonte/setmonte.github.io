@@ -3798,22 +3798,18 @@
       if (!perfil) return;
       // Salvar topicos ativos
       localStorage.setItem('prontuario_topicos', JSON.stringify(perfil.topicos));
-      // Verificar creditos (admin nao consome)
+      // Verificar creditos SEM gastar (admin nao precisa). O desconto real acontece
+      // uma unica vez, quando a gravacao comeca (em teste-agenda.html/iniciarGravacao).
+      // Antes havia /use-credit aqui TAMBEM, o que causava cobranca dupla (corrigido set/2026).
       if (currentUser !== 'setmonte@gmail.com') {
         try {
-          var credResp = await fetch(API_URL + '/use-credit', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ email: currentUser, tipo: 'prontuario' })
-          });
+          var credResp = await fetch(API_URL + '/credits?email=' + encodeURIComponent(currentUser));
           var credData = await credResp.json();
-          if (credResp.status === 403 || credData.error) {
+          if ((credData.prontuarioCredits || 0) < 1) {
             alert('Voce nao tem creditos de Prontuario. Adquira creditos para continuar.');
             return;
           }
-          // Atualizar card de creditos
-          var countEl = document.getElementById('prontuarioCreditsCount');
-          if (countEl) countEl.textContent = credData.credits || 0;
+          if (!_confirmarCredito(1, 'Prontuario')) return;
         } catch(e) {
           alert('Erro ao verificar creditos. Tente novamente.');
           return;
