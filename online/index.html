@@ -6743,7 +6743,11 @@
       var cats = {};
       var totalGeral = 0;
       Object.keys(porTipo).forEach(function(t) {
-        if (_TIPOS_OCULTOS[(t || '').toLowerCase()]) return; // ignora testes ocultos
+        var _tl = (t || '').toLowerCase();
+        if (_TIPOS_OCULTOS[_tl]) return; // ignora testes ocultos (por tipo)
+        // Ignora ocultos que vieram como escala:Nome (ex: 'escala:neo-pi-r')
+        if (_tl.indexOf('escala:') === 0 && _TIPOS_OCULTOS[_tl.slice(_tl.indexOf(':') + 1)]) return;
+        if (_tl.indexOf('sem identificacao') >= 0) return; // ignora escalas antigas sem nome (residuo)
         var q = porTipo[t] || 0;
         totalGeral += q;
         var cat = _catDoTipo(t);
