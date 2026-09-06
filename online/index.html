@@ -6690,6 +6690,113 @@
       } catch(e) { el.innerHTML = '<p style="color:red;">Erro: ' + e.message + '</p>'; }
     }
 
+    // Mapeia cada 'tipo' de registro para uma das 6 categorias do site + se e pago.
+    // A prova de futuro: tipo desconhecido cai em "Testes de Rastreio" por padrao
+    // (a maioria dos instrumentos novos e teste), a menos que seja mapeado aqui.
+    var _CAT_MAP = {
+      // Registro
+      'paciente': 'Registro', 'anamnese': 'Registro', 'anamnese-infantil': 'Registro',
+      // Acompanhamento
+      'prontuario': 'Acompanhamento', 'smart': 'Acompanhamento', 'agenda': 'Acompanhamento',
+      // Reabilitacao
+      'reocupa': 'Reabilitacao', 'prat': 'Reabilitacao', 'lermais': 'Reabilitacao',
+      'reocupa-aprendizado': 'Reabilitacao', 'reocupa-perguntas': 'Reabilitacao',
+      // Testes de Rastreio
+      'tecfe': 'Testes de Rastreio', 'bae': 'Testes de Rastreio', 'trmv': 'Testes de Rastreio',
+      'taav': 'Testes de Rastreio', 'tref': 'Testes de Rastreio', 'tflod': 'Testes de Rastreio',
+      'tte': 'Testes de Rastreio', 'corsi': 'Testes de Rastreio', 'ideia': 'Testes de Rastreio',
+      // Escalas
+      'escala': 'Escalas',
+      // RegSis (registros internos do sistema)
+      'login': 'RegSis', 'session': 'RegSis', 'bonus-log': 'RegSis', 'bonuslog': 'RegSis',
+      'log-delete': 'RegSis', 'erro-pdf': 'RegSis', 'suporte': 'RegSis', 'depoimento': 'RegSis'
+    };
+    // Tipos que consomem credito (pagos). Os demais sao gratuitos.
+    var _TIPOS_PAGOS = { 'tecfe':1, 'bae':1, 'trmv':1, 'taav':1, 'tref':1, 'tflod':1, 'ideia':1, 'prontuario':1 };
+    var _ORDEM_CAT = ['Testes de Rastreio', 'Escalas', 'Acompanhamento', 'Reabilitacao', 'Registro', 'RegSis'];
+    var _CORES_CAT = {
+      'Testes de Rastreio': '#1565c0', 'Escalas': '#2e7d32', 'Acompanhamento': '#00695c',
+      'Reabilitacao': '#5e35b1', 'Registro': '#e65100', 'RegSis': '#757575'
+    };
+
+    function _catDoTipo(t) {
+      var tl = (t || 'outro').toLowerCase();
+      return _CAT_MAP[tl] || 'Testes de Rastreio'; // fallback: instrumento novo entra como Rastreio
+    }
+
+    function _renderRankingCategorias(porTipo) {
+      // Agrupa os tipos por categoria, somando as quantidades e guardando o detalhe por instrumento.
+      var cats = {};
+      var totalGeral = 0;
+      Object.keys(porTipo).forEach(function(t) {
+        var q = porTipo[t] || 0;
+        totalGeral += q;
+        var cat = _catDoTipo(t);
+        if (!cats[cat]) cats[cat] = { total: 0, itens: [] };
+        cats[cat].total += q;
+        cats[cat].itens.push({ tipo: t, qtd: q, pago: !!_TIPOS_PAGOS[(t || '').toLowerCase()] });
+      });
+      if (totalGeral === 0) return '<p style="font-size:12px;color:#777;margin-top:10px;">Nenhum registro ainda.</p>';
+
+      // Medalhas como entidades HTML (renderizam emoji no navegador sem por emoji no <script>)
+      var medalhas = ['&#129351;', '&#129352;', '&#129353;']; // ouro, prata, bronze
+      var _selo_pago = '&#128176;';   // moeda (pago)
+      var _selo_free = '&#127823;';   // etiqueta free (gratuito)
+
+      // Separa o RegSis (bastidores) do ranking clinico principal. O podio e das 5 categorias
+      // clinicas, que sao as que interessam para melhorar o produto.
+      var totalClinico = 0;
+      Object.keys(cats).forEach(function(c) { if (c !== 'RegSis') totalClinico += cats[c].total; });
+
+      // Ranking das categorias CLINICAS (maior total primeiro)
+      var ranking = Object.keys(cats).filter(function(c) { return c !== 'RegSis'; }).map(function(c) { return { cat: c, total: cats[c].total }; });
+      ranking.sort(function(a, b) { return b.total - a.total; });
+
+      var html = '<p style="margin-top:14px;font-size:13px;font-weight:bold;color:#333;">Ranking de uso (' + totalClinico + ' aplicacoes clinicas)</p>';
+      html += '<p style="font-size:10px;color:#999;margin-bottom:8px;">Quanto mais usado, mais merece sua atencao. ' + _selo_pago + ' = pago | ' + _selo_free + ' = gratuito</p>';
+
+      ranking.forEach(function(r, idx) {
+        var cor = _CORES_CAT[r.cat] || '#757575';
+        var pct = totalClinico > 0 ? Math.round((r.total / totalClinico) * 100) : 0;
+        var medalha = medalhas[idx] || (idx + 1 + 'o');
+        html += '<div style="margin:10px 0;border:1px solid #e0e0e0;border-left:4px solid ' + cor + ';border-radius:8px;padding:10px;">';
+        // Cabecalho da categoria
+        html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
+        html += '<span style="font-size:13px;font-weight:bold;color:' + cor + ';">' + medalha + ' ' + r.cat + '</span>';
+        html += '<span style="font-size:12px;color:#555;">' + r.total + ' (' + pct + '%)</span>';
+        html += '</div>';
+        // Barra da categoria
+        html += '<div style="height:8px;background:#f0f0f0;border-radius:4px;margin:6px 0;overflow:hidden;"><div style="height:100%;width:' + pct + '%;background:' + cor + ';"></div></div>';
+        // Detalhe por instrumento (ordenado do mais usado ao menos)
+        var itens = cats[r.cat].itens.slice().sort(function(a, b) { return b.qtd - a.qtd; });
+        html += '<div style="font-size:11px;color:#555;margin-top:4px;">';
+        itens.forEach(function(it) {
+          var selo = it.pago ? _selo_pago : _selo_free;
+          var pctItem = r.total > 0 ? Math.round((it.qtd / r.total) * 100) : 0;
+          html += '<div style="display:flex;justify-content:space-between;padding:2px 0;">';
+          html += '<span>' + selo + ' ' + it.tipo.toUpperCase() + '</span>';
+          html += '<span style="color:#888;">' + it.qtd + ' (' + pctItem + '% da categoria)</span>';
+          html += '</div>';
+        });
+        html += '</div></div>';
+      });
+
+      // RegSis - bastidores do sistema, mostrado A PARTE (nao compete no ranking clinico)
+      if (cats['RegSis']) {
+        var rs = cats['RegSis'];
+        html += '<div style="margin:14px 0 4px;padding:8px 10px;background:#f5f5f5;border:1px dashed #bbb;border-radius:8px;">';
+        html += '<p style="font-size:11px;font-weight:bold;color:#757575;margin-bottom:4px;">Bastidores do sistema (RegSis) - ' + rs.total + ' registros</p>';
+        html += '<p style="font-size:10px;color:#999;margin-bottom:6px;">Registros tecnicos (login, sessao, bonus, etc.). Nao sao aplicacoes clinicas.</p>';
+        var itensRs = rs.itens.slice().sort(function(a, b) { return b.qtd - a.qtd; });
+        html += '<div style="font-size:11px;color:#666;">';
+        itensRs.forEach(function(it) {
+          html += '<div style="display:flex;justify-content:space-between;padding:1px 0;"><span>' + it.tipo.toUpperCase() + '</span><span style="color:#999;">' + it.qtd + '</span></div>';
+        });
+        html += '</div></div>';
+      }
+      return html;
+    }
+
     async function adminEstatisticas() {
       var el = document.getElementById('adminStats');
       el.innerHTML = '<p style="color:#555;">Calculando...</p>';
@@ -6703,8 +6810,7 @@
         html += '<div style="background:#fff3e0;padding:10px;border-radius:6px;text-align:center;"><strong style="font-size:20px;color:#e65100;">' + (data.totalVisits || 0) + '</strong><br><span style="font-size:11px;">Visitas Site</span></div>';
         html += '</div>';
         if (data.porTipo) {
-          html += '<p style="margin-top:10px;font-size:12px;font-weight:bold;">Por tipo:</p>';
-          Object.keys(data.porTipo).sort(function(a,b){return data.porTipo[b]-data.porTipo[a];}).forEach(function(t) { html += '<p style="font-size:11px;">\u2022 ' + t.toUpperCase() + ': ' + data.porTipo[t] + '</p>'; });
+          html += _renderRankingCategorias(data.porTipo);
         }
         // Buscar logs de deleção
         try {
