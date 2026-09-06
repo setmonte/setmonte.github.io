@@ -6705,11 +6705,12 @@
       'tecfe': 'Testes de Rastreio', 'bae': 'Testes de Rastreio', 'trmv': 'Testes de Rastreio',
       'taav': 'Testes de Rastreio', 'tref': 'Testes de Rastreio', 'tflod': 'Testes de Rastreio',
       'tte': 'Testes de Rastreio', 'corsi': 'Testes de Rastreio', 'ideia': 'Testes de Rastreio',
-      // Escalas
+      // Escalas (a Lambda detalha por nome: 'escala:DASS-21'; 'escala' cru = fallback)
       'escala': 'Escalas',
       // RegSis (registros internos do sistema)
       'login': 'RegSis', 'session': 'RegSis', 'bonus-log': 'RegSis', 'bonuslog': 'RegSis',
-      'log-delete': 'RegSis', 'erro-pdf': 'RegSis', 'suporte': 'RegSis', 'depoimento': 'RegSis'
+      'log-delete': 'RegSis', 'log-creditos': 'RegSis', 'erro-pdf': 'RegSis', 'suporte': 'RegSis',
+      'suporte-resposta': 'RegSis', 'compartilhamento': 'RegSis', 'depoimento': 'RegSis', '(sem tipo)': 'RegSis'
     };
     // Tipos que consomem credito (pagos). Os demais sao gratuitos.
     var _TIPOS_PAGOS = { 'tecfe':1, 'bae':1, 'trmv':1, 'taav':1, 'tref':1, 'tflod':1, 'ideia':1, 'prontuario':1 };
@@ -6721,14 +6722,28 @@
 
     function _catDoTipo(t) {
       var tl = (t || 'outro').toLowerCase();
+      // Chave detalhada de escala vinda da Lambda: 'escala:DASS-21' -> categoria Escalas
+      if (tl.indexOf('escala:') === 0) return 'Escalas';
       return _CAT_MAP[tl] || 'Testes de Rastreio'; // fallback: instrumento novo entra como Rastreio
     }
+
+    // Nome amigavel para exibir no ranking (tira o prefixo 'escala:' das escalas detalhadas).
+    function _nomeExibir(t) {
+      if (!t) return '?';
+      if (t.toLowerCase().indexOf('escala:') === 0) return t.slice(t.indexOf(':') + 1).toUpperCase();
+      return t.toUpperCase();
+    }
+
+    // Testes ocultos (uso pessoal / protegidos por direitos autorais / aba Programas Ocultos).
+    // Ficam FORA do ranking de estatisticas.
+    var _TIPOS_OCULTOS = { 'neo-pi-r':1, 'neo':1, 'pfister':1, 'srs2':1, 'vineland3':1, 'bvrt':1 };
 
     function _renderRankingCategorias(porTipo) {
       // Agrupa os tipos por categoria, somando as quantidades e guardando o detalhe por instrumento.
       var cats = {};
       var totalGeral = 0;
       Object.keys(porTipo).forEach(function(t) {
+        if (_TIPOS_OCULTOS[(t || '').toLowerCase()]) return; // ignora testes ocultos
         var q = porTipo[t] || 0;
         totalGeral += q;
         var cat = _catDoTipo(t);
@@ -6774,7 +6789,7 @@
           var selo = it.pago ? _selo_pago : _selo_free;
           var pctItem = r.total > 0 ? Math.round((it.qtd / r.total) * 100) : 0;
           html += '<div style="display:flex;justify-content:space-between;padding:2px 0;">';
-          html += '<span>' + selo + ' ' + it.tipo.toUpperCase() + '</span>';
+          html += '<span>' + selo + ' ' + _nomeExibir(it.tipo) + '</span>';
           html += '<span style="color:#888;">' + it.qtd + ' (' + pctItem + '% da categoria)</span>';
           html += '</div>';
         });
@@ -6790,7 +6805,7 @@
         var itensRs = rs.itens.slice().sort(function(a, b) { return b.qtd - a.qtd; });
         html += '<div style="font-size:11px;color:#666;">';
         itensRs.forEach(function(it) {
-          html += '<div style="display:flex;justify-content:space-between;padding:1px 0;"><span>' + it.tipo.toUpperCase() + '</span><span style="color:#999;">' + it.qtd + '</span></div>';
+          html += '<div style="display:flex;justify-content:space-between;padding:1px 0;"><span>' + _nomeExibir(it.tipo) + '</span><span style="color:#999;">' + it.qtd + '</span></div>';
         });
         html += '</div></div>';
       }
