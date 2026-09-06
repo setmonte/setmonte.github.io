@@ -7641,154 +7641,7 @@
     }
 
     // ===== FUNCAO VERIFICAR NORMATIZACAO =====
-    var _normatizacaoCache = null;
-
-    async function verificarNormatizacao() {
-      var el = document.getElementById('normatizacaoResult');
-      if (!el) return;
-      el.style.display = 'block';
-      el.innerHTML = '<p style="color:#555;font-size:12px;">Carregando dados da planilha...</p>';
-      try {
-        var url = 'https://docs.google.com/spreadsheets/d/11pDQe5VupNqrCU5mTFckQFFfjM8Egsi44fLnyq05GyM/gviz/tq?tqx=out:csv';
-        var resp = await fetch(url);
-        var csv = await resp.text();
-        var linhas = csv.split('\n').filter(function(l) { return l.trim().length > 0; });
-        if (linhas.length < 2) { el.innerHTML = '<p style="color:#999;">Nenhum dado encontrado.</p>'; return; }
-        // Parse CSV (colunas: timestamp, email, escala, idade, sexo, escolaridade, pontuacao_total, dominios, classificacao)
-        var header = parseCsvLine(linhas[0]);
-        var colEscala = header.indexOf('escala');
-        var colIdade = header.indexOf('idade');
-        var colSexo = header.indexOf('sexo');
-        var colPontuacao = header.indexOf('pontuacao_total');
-        if (colPontuacao === -1) colPontuacao = header.indexOf('pontuacao');
-        var colDominios = header.indexOf('dominios');
-        if (colEscala === -1) { el.innerHTML = '<p style="color:#c62828;">Erro: coluna "escala" nao encontrada.</p>'; return; }
-        // Agrupar por escala
-        var escalas = {};
-        for (var i = 1; i < linhas.length; i++) {
-          var cols = parseCsvLine(linhas[i]);
-          var esc = (cols[colEscala] || '').replace(/"/g, '').trim();
-          if (!esc || esc.length < 3) continue;
-          if (!escalas[esc]) escalas[esc] = [];
-          var idade = colIdade >= 0 ? parseInt((cols[colIdade] || '').replace(/"/g, '')) : null;
-          var sexo = colSexo >= 0 ? (cols[colSexo] || '').replace(/"/g, '').trim() : '';
-          var pont = colPontuacao >= 0 ? parseFloat((cols[colPontuacao] || '').replace(/"/g, '')) : NaN;
-          var doms = colDominios >= 0 ? (cols[colDominios] || '').replace(/"/g, '').trim() : '';
-          escalas[esc].push({ idade: idade, sexo: sexo, pontuacao: pont, dominios: doms });
-        }
-        // Verificar quais atingiram N >= 100
-        var N_MIN = 100;
-        var prontas = [];
-        var emAndamento = [];
-        Object.keys(escalas).sort().forEach(function(esc) {
-          var dados = escalas[esc];
-          var n = dados.length;
-          if (n >= N_MIN) prontas.push({ escala: esc, n: n, dados: dados });
-          else if (n >= 30) emAndamento.push({ escala: esc, n: n });
-        });
-        var html = '';
-        if (prontas.length > 0) {
-          html += '<div style="background:#c8e6c9;border:1px solid #2e7d32;border-radius:8px;padding:12px;margin-bottom:10px;">';
-          html += '<p style="font-weight:bold;color:#1b5e20;margin-bottom:8px;">&#9989; Escalas com N suficiente para normatizacao (N >= ' + N_MIN + '):</p>';
-          for (var p = 0; p < prontas.length; p++) {
-            var pr = prontas[p];
-            var stats = calcularEstatisticas(pr.dados);
-            html += '<div style="background:#fff;border:1px solid #a5d6a7;border-radius:6px;padding:10px;margin:8px 0;">';
-            html += '<p style="font-weight:bold;color:#2e7d32;font-size:13px;">' + pr.escala + ' (N=' + pr.n + ')</p>';
-            html += '<p style="font-size:11px;color:#555;">Media: ' + stats.media.toFixed(2) + ' | DP: ' + stats.dp.toFixed(2) + '</p>';
-            html += '<p style="font-size:11px;color:#555;">Percentis: P25=' + stats.p25.toFixed(1) + ' | P50=' + stats.p50.toFixed(1) + ' | P75=' + stats.p75.toFixed(1) + '</p>';
-            if (stats.faixas.length > 0) {
-              html += '<p style="font-size:10px;color:#777;margin-top:4px;">Por faixa: ';
-              html += stats.faixas.map(function(f) { return f.nome + '(n=' + f.n + ', M=' + f.media.toFixed(1) + ')'; }).join(' | ');
-              html += '</p>';
-            }
-            if (stats.porSexo.length > 0) {
-              html += '<p style="font-size:10px;color:#777;">Por sexo: ';
-              html += stats.porSexo.map(function(s) { return s.sexo + '(n=' + s.n + ', M=' + s.media.toFixed(1) + ')'; }).join(' | ');
-              html += '</p>';
-            }
-            html += '</div>';
-          }
-          html += '</div>';
-        }
-        if (emAndamento.length > 0) {
-          html += '<div style="background:#fff3e0;border:1px solid #ff9800;border-radius:8px;padding:10px;margin-bottom:10px;">';
-          html += '<p style="font-weight:bold;color:#e65100;font-size:12px;margin-bottom:5px;">&#9203; Em andamento (N >= 30, falta para ' + N_MIN + '):</p>';
-          for (var e = 0; e < emAndamento.length; e++) {
-            var ea = emAndamento[e];
-            var falta = N_MIN - ea.n;
-            html += '<p style="font-size:11px;color:#555;">' + ea.escala + ': N=' + ea.n + ' (faltam ' + falta + ')</p>';
-          }
-          html += '</div>';
-        }
-        if (prontas.length === 0 && emAndamento.length === 0) {
-          html += '<p style="font-size:12px;color:#777;">Nenhuma escala atingiu N >= 30 ainda. Total de registros: ' + (linhas.length - 1) + '</p>';
-          // Mostrar contagem por escala
-          html += '<div style="margin-top:8px;">';
-          Object.keys(escalas).sort(function(a, b) { return escalas[b].length - escalas[a].length; }).forEach(function(esc) {
-            html += '<p style="font-size:11px;color:#555;">' + esc + ': N=' + escalas[esc].length + '</p>';
-          });
-          html += '</div>';
-        }
-        el.innerHTML = html;
-      } catch (e) {
-        el.innerHTML = '<p style="color:#c62828;font-size:12px;">Erro ao acessar planilha: ' + e.message + '. Verifique se a planilha esta compartilhada como publica.</p>';
-      }
-    }
-
-    function parseCsvLine(line) {
-      var result = [];
-      var current = '';
-      var inQuotes = false;
-      for (var i = 0; i < line.length; i++) {
-        var c = line[i];
-        if (c === '"') { inQuotes = !inQuotes; }
-        else if (c === ',' && !inQuotes) { result.push(current); current = ''; }
-        else { current += c; }
-      }
-      result.push(current);
-      return result;
-    }
-
-    function calcularEstatisticas(dados) {
-      var valores = dados.map(function(d) { return d.pontuacao; }).filter(function(v) { return !isNaN(v); });
-      valores.sort(function(a, b) { return a - b; });
-      var n = valores.length;
-      var soma = valores.reduce(function(a, b) { return a + b; }, 0);
-      var media = n > 0 ? soma / n : 0;
-      var variancia = n > 1 ? valores.reduce(function(s, v) { return s + Math.pow(v - media, 2); }, 0) / (n - 1) : 0;
-      var dp = Math.sqrt(variancia);
-      var p25 = n > 0 ? valores[Math.floor(n * 0.25)] : 0;
-      var p50 = n > 0 ? valores[Math.floor(n * 0.5)] : 0;
-      var p75 = n > 0 ? valores[Math.floor(n * 0.75)] : 0;
-      // Por faixa etaria
-      var faixasDef = [
-        { nome: '3-6', min: 3, max: 6 }, { nome: '7-12', min: 7, max: 12 },
-        { nome: '13-17', min: 13, max: 17 }, { nome: '18-30', min: 18, max: 30 },
-        { nome: '31-50', min: 31, max: 50 }, { nome: '51-70', min: 51, max: 70 },
-        { nome: '71+', min: 71, max: 999 }
-      ];
-      var faixas = [];
-      faixasDef.forEach(function(fx) {
-        var sub = dados.filter(function(d) { return d.idade >= fx.min && d.idade <= fx.max && !isNaN(d.pontuacao); });
-        if (sub.length >= 5) {
-          var m = sub.reduce(function(s, d) { return s + d.pontuacao; }, 0) / sub.length;
-          faixas.push({ nome: fx.nome, n: sub.length, media: m });
-        }
-      });
-      // Por sexo
-      var porSexo = [];
-      ['Masculino', 'Feminino'].forEach(function(sx) {
-        var sub = dados.filter(function(d) { return d.sexo === sx && !isNaN(d.pontuacao); });
-        if (sub.length >= 5) {
-          var m = sub.reduce(function(s, d) { return s + d.pontuacao; }, 0) / sub.length;
-          porSexo.push({ sexo: sx, n: sub.length, media: m });
-        }
-      });
-      return { media: media, dp: dp, p25: p25, p50: p50, p75: p75, n: n, faixas: faixas, porSexo: porSexo };
-    }
-
-    // ===== FUNCAO VERIFICAR NORMATIZACAO =====
+    // (Bloco duplicado removido em set/2026. A versao ativa e a unica abaixo, com calcularEstatisticasNorm.)
     var _normatizacaoCache = null;
 
     async function verificarNormatizacao() {
@@ -7825,16 +7678,22 @@
         var N_MIN = 100;
         var prontas = [];
         var emAndamento = [];
+        var coletando = []; // N < 30 - o ranking dos que ainda estao juntando amostra
         Object.keys(escalas).sort().forEach(function(esc) {
           var dados = escalas[esc];
           var n = dados.length;
           if (n >= N_MIN) prontas.push({ escala: esc, n: n, dados: dados });
           else if (n >= 30) emAndamento.push({ escala: esc, n: n });
+          else coletando.push({ escala: esc, n: n });
         });
+        // Ordena os blocos por N (maior primeiro) para virar um ranking claro
+        emAndamento.sort(function(a, b) { return b.n - a.n; });
+        coletando.sort(function(a, b) { return b.n - a.n; });
         var html = '';
+        html += '<p style="font-size:11px;color:#888;margin-bottom:8px;">Total de registros na planilha: ' + (linhas.length - 1) + ' | Instrumentos distintos: ' + Object.keys(escalas).length + '</p>';
         if (prontas.length > 0) {
           html += '<div style="background:#c8e6c9;border:1px solid #2e7d32;border-radius:8px;padding:12px;margin-bottom:10px;">';
-          html += '<p style="font-weight:bold;color:#1b5e20;margin-bottom:8px;">&#9989; Escalas prontas para normatizacao (N >= ' + N_MIN + '):</p>';
+          html += '<p style="font-weight:bold;color:#1b5e20;margin-bottom:8px;">&#9989; Prontas para normatizacao (N >= ' + N_MIN + '):</p>';
           for (var p = 0; p < prontas.length; p++) {
             var pr = prontas[p];
             var stats = calcularEstatisticasNorm(pr.dados);
@@ -7865,13 +7724,19 @@
           }
           html += '</div>';
         }
-        if (prontas.length === 0 && emAndamento.length === 0) {
-          html += '<p style="font-size:12px;color:#777;">Nenhuma escala atingiu N >= 30 ainda. Total de registros: ' + (linhas.length - 1) + '</p>';
-          html += '<div style="margin-top:8px;">';
-          Object.keys(escalas).sort(function(a, b) { return escalas[b].length - escalas[a].length; }).forEach(function(esc) {
-            html += '<p style="font-size:11px;color:#555;">' + esc + ': N=' + escalas[esc].length + '</p>';
-          });
+        // Bloco "Coletando" (N < 30): SEMPRE mostra o ranking dos demais,
+        // independente de outros ja terem passado de 30. Corrige o sumico do ranking.
+        if (coletando.length > 0) {
+          html += '<div style="background:#eceff1;border:1px solid #b0bec5;border-radius:8px;padding:10px;margin-bottom:10px;">';
+          html += '<p style="font-weight:bold;color:#455a64;font-size:12px;margin-bottom:5px;">&#128203; Coletando amostra (N < 30):</p>';
+          for (var c = 0; c < coletando.length; c++) {
+            var co = coletando[c];
+            html += '<p style="font-size:11px;color:#555;">' + co.escala + ': N=' + co.n + ' (faltam ' + (30 - co.n) + ' para entrar em andamento)</p>';
+          }
           html += '</div>';
+        }
+        if (prontas.length === 0 && emAndamento.length === 0 && coletando.length === 0) {
+          html += '<p style="font-size:12px;color:#777;">Nenhum registro encontrado na planilha ainda.</p>';
         }
         el.innerHTML = html;
       } catch (e) {
