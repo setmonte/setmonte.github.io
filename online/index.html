@@ -6722,8 +6722,13 @@
 
     function _catDoTipo(t) {
       var tl = (t || 'outro').toLowerCase();
-      // Chave detalhada de escala vinda da Lambda: 'escala:DASS-21' -> categoria Escalas
-      if (tl.indexOf('escala:') === 0) return 'Escalas';
+      // Chave detalhada de escala vinda da Lambda: 'escala:NOME'
+      if (tl.indexOf('escala:') === 0) {
+        var nome = tl.slice(tl.indexOf(':') + 1);
+        // A anamnese e salva com tipo 'escala', mas pertence a categoria Registro.
+        if (nome.indexOf('anamnese') >= 0) return 'Registro';
+        return 'Escalas';
+      }
       return _CAT_MAP[tl] || 'Testes de Rastreio'; // fallback: instrumento novo entra como Rastreio
     }
 
