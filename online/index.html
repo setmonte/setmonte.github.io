@@ -6720,6 +6720,13 @@
       'Reabilitacao': '#5e35b1', 'Registro': '#e65100', 'RegSis': '#757575'
     };
 
+    // Alguns instrumentos sao salvos com tipo 'escala' (nome em d.escala), mas NAO sao escalas:
+    // reclassifica pelo nome para a categoria correta.
+    var _NOME_ESCALA_RECAT = {
+      'lermais': 'Reabilitacao',
+      'corsi': 'Testes de Rastreio', 'tetaylor': 'Testes de Rastreio', 'tetaylorsimp': 'Testes de Rastreio'
+    };
+
     function _catDoTipo(t) {
       var tl = (t || 'outro').toLowerCase();
       // Chave detalhada de escala vinda da Lambda: 'escala:NOME'
@@ -6727,6 +6734,8 @@
         var nome = tl.slice(tl.indexOf(':') + 1);
         // A anamnese e salva com tipo 'escala', mas pertence a categoria Registro.
         if (nome.indexOf('anamnese') >= 0) return 'Registro';
+        // Programas/testes salvos como 'escala' mas que sao de outra categoria.
+        if (_NOME_ESCALA_RECAT[nome]) return _NOME_ESCALA_RECAT[nome];
         return 'Escalas';
       }
       return _CAT_MAP[tl] || 'Testes de Rastreio'; // fallback: instrumento novo entra como Rastreio
