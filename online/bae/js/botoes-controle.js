@@ -287,7 +287,12 @@ function pararTeste() {
         console.log('Nenhum teste ativo encontrado');
         return;
     }
-    // Mostra mensagem "Teste Finalizado" e botão Próximo
+    // MODO LINK (?d=/?s=): usa a fila de testes selecionados para avancar corretamente.
+    if (window.filaTestes && typeof window.avancarParaProximoTeste === 'function') {
+        window.avancarParaProximoTeste();
+        return;
+    }
+    // MODO LOCAL (presencial, sem fila): comportamento antigo (ordem fixa das 5 telas).
     var telaAtual = detectarTelaAtual();
     if (telaAtual) {
         var indice = ordemTelas.indexOf(telaAtual.id);
@@ -331,6 +336,11 @@ window._testesNavegadosSemIniciar = window._testesNavegadosSemIniciar || [];
 function bypassarTestes() {
     if (!_confirmarAbandonoComPerdaCredito()) return; // avaliador desistiu de pular/abandonar
     var testeParou = pararTesteAtivo('ABANDONADO');
+    // MODO LINK: avanca pela fila de testes selecionados (respeita a selecao do link).
+    if (window.filaTestes && typeof window.avancarParaProximoTeste === 'function') {
+        window.avancarParaProximoTeste();
+        return;
+    }
 
     const telaAtual = detectarTelaAtual();
     if (!telaAtual) {
