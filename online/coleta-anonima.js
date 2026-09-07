@@ -124,6 +124,23 @@
         return partes.join('; ');
     }
 
+    // Detecta subtestes da BAE abandonados/bypassados.
+    // Retorna { detalhe, teveAbandono }.
+    function _statusAbandonoBAE() {
+        var r = window.resultadosBAE || {};
+        var testes = ['concentrada', 'seletiva', 'dividida', 'alternada', 'sustentada'];
+        var itens = [];
+        var CONCLUIDO_ACENTO = 'CONCLU' + String.fromCharCode(205) + 'DO';
+        testes.forEach(function(t) {
+            if (r[t]) {
+                var st = r[t].statusTeste;
+                var abandonado = (r[t].abandonado === true) || (st && st !== CONCLUIDO_ACENTO && st !== 'CONCLUIDO');
+                if (abandonado) { itens.push(t + ':' + (st || 'ABANDONADO')); }
+            }
+        });
+        return { detalhe: itens.join('; '), teveAbandono: itens.length > 0 };
+    }
+
     function _classBaeNivel(taxa) {
         if (taxa < 50) return 'Muito Baixo';
         if (taxa < 60) return 'Baixo';
@@ -173,6 +190,7 @@
             var pontuacao = '';
             var dominios = '';
             var classificacao = '';
+            var _abandonoBAE = { detalhe: '', teveAbandono: false };
 
             if (window._escalaDados) {
                 pontuacao = (window._escalaDados.escore !== undefined && window._escalaDados.escore !== null) ? parseFloat(window._escalaDados.escore).toFixed(2) : '';
@@ -181,6 +199,7 @@
             } else if (window.resultadosBAE && (window.resultadosBAE.concentrada || window.resultadosBAE.seletiva || window.resultadosBAE.dividida || window.resultadosBAE.alternada || window.resultadosBAE.sustentada)) {
                 dominios = _formatarResultadosBAE();
                 classificacao = _classificarBAE();
+                _abandonoBAE = _statusAbandonoBAE();
             }
 
             // Sem pontuacao E sem dominios = teste nao foi calculado, nao enviar
@@ -194,8 +213,14 @@
                 escolaridade: escolaridade,
                 pontuacao: pontuacao,
                 dominios: dominios,
-                classificacao: classificacao
+                classificacao: classificacao,
+                statusAbandono: _abandonoBAE.detalhe,
+                abandonado: _abandonoBAE.teveAbandono
             };
+
+            // Trava ANTES do envio (apos validacoes): fecha a janela de corrida de duplicidade.
+            _jaEnviou = true;
+            window._jaEnviou = true;
 
             fetch(_COLETA_URL, {
                 method: 'POST',
@@ -203,8 +228,6 @@
                 headers: { 'Content-Type': 'text/plain' },
                 body: JSON.stringify(pacote)
             }).catch(function() {});
-
-            _jaEnviou = true;
         } catch(e) {}
     }
 

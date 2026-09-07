@@ -43,10 +43,16 @@ async function iniciarTesteAlternado() {
       var _cr = await fetch(API_URL + '/use-credit', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({email: sessionData.email, tipo: 'bae'})
+        body: JSON.stringify({email: sessionData.email, tipo: 'bae', linkSessionId: (sessionData.sessionId || ''), subteste: 'alternada'})
       });
       if (_cr.status === 403) {
         alert('Creditos insuficientes. Consulte seu avaliador.');
+        return;
+      }
+      if (_cr.status === 409) {
+        var _msg409 = 'Ha um teste em andamento neste link. Conclua ou abandone antes de iniciar outro.';
+        try { var _j = await _cr.json(); if (_j && _j.message) _msg409 = _j.message; } catch(e) {}
+        alert(_msg409);
         return;
       }
     } catch(e) {}

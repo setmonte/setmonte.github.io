@@ -247,8 +247,42 @@ function pararTesteAtivo(motivo = 'PARADO') {
     return false;
 }
 
+// ===== VERIFICA SE HÁ TESTE EM ANDAMENTO (crédito já consumido ao iniciar) =====
+function _temTesteAtivo() {
+    return (typeof isTestRunningConc !== 'undefined' && isTestRunningConc) ||
+           (typeof isTestRunningSeletiva !== 'undefined' && isTestRunningSeletiva) ||
+           (typeof isTesteDivididaRunning !== 'undefined' && isTesteDivididaRunning) ||
+           (typeof testeAtivoAlternada !== 'undefined' && testeAtivoAlternada) ||
+           (typeof testeAtivoSustentada !== 'undefined' && testeAtivoSustentada);
+}
+
+// ===== AVISO DE PERDA DE CRÉDITO AO ABANDONAR =====
+// Só pergunta se realmente houver um teste rodando (crédito já foi gasto ao iniciar).
+// Retorna true se pode prosseguir com o abandono; false se o avaliador desistiu.
+function _confirmarAbandonoComPerdaCredito() {
+    if (!_temTesteAtivo()) return true; // sem teste ativo = nenhum crédito em risco
+    return confirm(
+        '\u26a0\ufe0f ATEN\u00c7\u00c3O\n\n' +
+        'Este teste est\u00e1 em andamento e o cr\u00e9dito j\u00e1 foi utilizado.\n' +
+        'Se voc\u00ea encerrar agora, ESSE CR\u00c9DITO SER\u00c1 PERDIDO e n\u00e3o poder\u00e1 ser recuperado.\n\n' +
+        'Deseja realmente encerrar o teste?'
+    );
+}
+
+// ===== AVISO NATIVO AO FECHAR/RECARREGAR A ABA COM TESTE EM ANDAMENTO =====
+// Protege contra perda acidental do crédito. O texto é padrão do navegador
+// (não é personalizável por segurança), mas força a confirmação para sair.
+window.addEventListener('beforeunload', function(e) {
+    if (_temTesteAtivo()) {
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+    }
+});
+
 // ===== BOTÃO VERMELHO: PARAR TESTE =====
 function pararTeste() {
+    if (!_confirmarAbandonoComPerdaCredito()) return; // avaliador desistiu de parar
     if (!pararTesteAtivo('PARADO')) {
         console.log('Nenhum teste ativo encontrado');
         return;
@@ -295,6 +329,7 @@ const ordemTelas = [
 window._testesNavegadosSemIniciar = window._testesNavegadosSemIniciar || [];
 
 function bypassarTestes() {
+    if (!_confirmarAbandonoComPerdaCredito()) return; // avaliador desistiu de pular/abandonar
     var testeParou = pararTesteAtivo('ABANDONADO');
 
     const telaAtual = detectarTelaAtual();

@@ -16,6 +16,21 @@ function salvarResultadoTeste(nomeTeste, dados) {
     console.log(`📊 Salvando resultado do teste: ${nomeTeste}`);
     window.resultadosBAE[nomeTeste] = dados;
     console.log(`✅ Resultado salvo:`, dados);
+    // Libera o teste ativo no link (concluido ou abandonado) para permitir o proximo subteste.
+    _liberarTesteNoLink();
+}
+
+// Avisa o servidor que nao ha mais teste ativo neste link (destrava a proxima aba/subteste).
+function _liberarTesteNoLink() {
+    try {
+        if (typeof sessionData === 'undefined' || !sessionData || !sessionData.sessionId) return;
+        if (typeof API_URL === 'undefined') return;
+        fetch(API_URL + '/liberar-teste', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ linkSessionId: sessionData.sessionId })
+        }).catch(function(){});
+    } catch(e) {}
 }
 
 // ===== FUNÇÃO PARA CAPTURAR DADOS DO PACIENTE =====
