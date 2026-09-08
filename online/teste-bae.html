@@ -208,21 +208,13 @@
 
     // Inicia a bateria
     async function iniciarBateria() {
-      // Verificar e descontar credito antes de iniciar (fail-closed).
-      // Admin nao consome. Se nao houver email na sessao, bloqueia.
+      // NAO cobra credito aqui. O credito e descontado por CADA subteste no seu
+      // proprio botao Iniciar (o gatilho correto). Assim, fechar sem iniciar um
+      // subteste NAO consome credito, e nao ha cobranca dupla.
+      // Apenas valida que a sessao tem identificacao.
       var _em = sessionData.email || '';
-      if (_em !== 'setmonte@gmail.com') {
-        if (!_em) { alert('Sessao invalida (sem identificacao). Solicite um novo link ao seu avaliador.'); return; }
-        try {
-          var _cr = await fetch(API_URL + '/use-credit', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({email: _em, tipo: 'bae'})
-          });
-          if (!_cr.ok) { alert('Creditos insuficientes ou nao foi possivel verificar. Consulte seu avaliador.'); return; }
-        } catch(e) {
-          alert('Nao foi possivel verificar seus creditos. Verifique a conexao e tente novamente.'); return;
-        }
+      if (_em !== 'setmonte@gmail.com' && !_em) {
+        alert('Sessao invalida (sem identificacao). Solicite um novo link ao seu avaliador.'); return;
       }
       // Entrar em tela cheia
       var el = document.documentElement;
