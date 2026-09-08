@@ -1550,6 +1550,12 @@
             <button class="btn btn-orange" style="padding:8px 16px;font-size:12px;background:#795548;" onclick="adminEstatisticas()">Carregar</button>
             <div id="adminStats" style="margin-top:10px;"></div>
           </div>
+          <div style="background:#fff3e0;border:2px solid #e65100;border-radius:10px;padding:15px;margin:10px 0;">
+            <p style="font-size:13px;font-weight:bold;color:#e65100;margin-bottom:8px;">&#128737;&#65039; Conex&#245;es Suspeitas (BAE)</p>
+            <p style="font-size:11px;color:#777;margin-bottom:8px;">Tentativas de uso do BAE sem identifica&#231;&#227;o ou com link manipulado (modo observa&#231;&#227;o, n&#227;o bloqueia).</p>
+            <button class="btn btn-orange" style="padding:8px 16px;font-size:12px;background:#e65100;" onclick="adminConexoesSuspeitas()">Carregar</button>
+            <div id="adminSuspeitas" style="margin-top:10px;"></div>
+          </div>
             </div><!-- /sub resultados -->
 
             <!-- SUB-ABA: Ferramentas -->
@@ -6828,6 +6834,45 @@
         html += '</div></div>';
       }
       return html;
+    }
+
+    async function adminConexoesSuspeitas() {
+      var el = document.getElementById("adminSuspeitas");
+      el.innerHTML = "<p style=\"color:#555;\">Carregando...</p>";
+      try {
+        var resp = await fetch(API_URL + "/get-results?email=admin-log@sistema&tipo=suspeita-bae");
+        var data = await resp.json();
+        var lista = data.results || [];
+        if (!Array.isArray(lista)) lista = [];
+        if (lista.length === 0) {
+          el.innerHTML = "<p style=\"color:#2e7d32;font-size:12px;\">Nenhuma conex&#227;o suspeita registrada. Tudo certo!</p>";
+          return;
+        }
+        lista.sort(function(a,b){ return (b.date||"") > (a.date||"") ? 1 : -1; });
+        var _motivos = {
+          sem_email_no_use_credit: "Sem e-mail ao consumir cr&#233;dito",
+          email_diverge_da_sessao: "E-mail difere do dono do link (poss&#237;vel manipula&#231;&#227;o)",
+          bae_sem_sessao_ou_email: "BAE sem sess&#227;o ou sem e-mail",
+          save_result_bae_sem_email: "Resultado BAE salvo sem e-mail"
+        };
+        var html = "<p style=\"font-size:12px;font-weight:bold;color:#e65100;\">" + lista.length + " registro(s) suspeito(s):</p>";
+        html += "<div style=\"max-height:260px;overflow-y:auto;border:1px solid #ffe0b2;border-radius:6px;padding:8px;margin-top:5px;\">";
+        lista.slice(0, 100).forEach(function(r) {
+          var d = r.data || {};
+          var quando = r.date ? new Date(r.date).toLocaleString("pt-BR") : "-";
+          var motivoTxt = _motivos[d.motivo] || d.motivo || "Desconhecido";
+          var det = "";
+          try { det = JSON.stringify(d.detalhe || {}); } catch(e) { det = ""; }
+          html += "<div style=\"font-size:11px;color:#555;border-bottom:1px solid #fff3e0;padding:5px 0;\">";
+          html += "<strong>" + quando + "</strong> &mdash; <span style=\"color:#e65100;\">" + motivoTxt + "</span>";
+          if (det && det !== "{}") html += "<br><span style=\"font-size:10px;color:#999;\">" + det.replace(/</g,"&lt;").replace(/>/g,"&gt;") + "</span>";
+          html += "</div>";
+        });
+        html += "</div>";
+        el.innerHTML = html;
+      } catch(e) {
+        el.innerHTML = "<p style=\"color:#c62828;font-size:12px;\">Erro ao carregar: " + (e.message || e) + "</p>";
+      }
     }
 
     async function adminEstatisticas() {
