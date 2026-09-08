@@ -119,28 +119,19 @@ function toggleGeneroInput() {
 
 // Event listeners - Eventos que "escutam" ações do usuário
 
-// Escuta mudanças no campo de data de nascimento
-document.getElementById('dataNascimento').addEventListener('change', function() {
-    calcularIdade();
-});
+// Event listeners seguros: so adiciona se o elemento existir.
+// (No teste-bae.html estes campos nao existem — evita erro que trava o script.)
+var _dn = document.getElementById('dataNascimento');
+if (_dn) _dn.addEventListener('change', function() { calcularIdade(); });
 
-// Escuta digitação no campo CPF e formata automaticamente
-document.getElementById('cpf').addEventListener('input', function(e) {
-    // Aplica a formatação no valor digitado
-    e.target.value = formatarCPF(e.target.value);
-});
+var _cpf = document.getElementById('cpf');
+if (_cpf) _cpf.addEventListener('input', function(e) { e.target.value = formatarCPF(e.target.value); });
 
-// Escuta digitação no campo CRP e formata automaticamente
-document.getElementById('crp').addEventListener('input', function(e) {
-    // Aplica a formatação no valor digitado
-    e.target.value = formatarCRP(e.target.value);
-});
+var _crp = document.getElementById('crp');
+if (_crp) _crp.addEventListener('input', function(e) { e.target.value = formatarCRP(e.target.value); });
 
-// Escuta mudanças em todos os botões radio de sexo
-document.querySelectorAll('input[name="sexo"]').forEach(radio => {
-    // Para cada botão radio, adiciona o evento de mudança
-    radio.addEventListener('change', toggleGeneroInput);
-});
+var _radiosSexo = document.querySelectorAll('input[name="sexo"]');
+if (_radiosSexo && _radiosSexo.length) { _radiosSexo.forEach(function(radio) { radio.addEventListener('change', toggleGeneroInput); }); }
 
 
 
