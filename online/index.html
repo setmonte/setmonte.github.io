@@ -5912,6 +5912,17 @@
             errosTranscricao.push({usuario: usuario, paciente: paciente, tipo: (r.tipo || '?'), data: d.date, temAudio: _temAudioErro, erro: d.erro || ''});
             _ehAlerta = true;
           }
+          // FALHA SILENCIOSA: teste TFLOD salvo como 'finalizado' mas com PCPM 0 (nenhuma
+          // palavra reconhecida). Na pratica e uma falha de captacao que escapou como sucesso.
+          // Tratamos como alerta para o profissional (com audio preservado, permite reprocessar).
+          if (d.status === 'finalizado' && (r.tipo === 'tflod' || (d.resultados && d.resultados.pcpm !== undefined))) {
+            var _pcpmFin = (d.resultados && d.resultados.pcpm !== undefined) ? Number(d.resultados.pcpm) : null;
+            if (_pcpmFin !== null && (!isFinite(_pcpmFin) || _pcpmFin <= 0)) {
+              var _temAudioFin = !!(d.audioBase64 || d.audioS3Key || d._temAudio);
+              errosTranscricao.push({usuario: usuario, paciente: paciente, tipo: (r.tipo || '?'), data: d.date, temAudio: _temAudioFin, erro: 'PCPM 0 (leitura nao captada) - salvo como finalizado'});
+              _ehAlerta = true;
+            }
+          }
           // Abandonados
           if (d.status === 'abandonado') {
             abandonados.push({usuario: usuario, paciente: paciente, tipo: r.tipo || '?', data: d.date});

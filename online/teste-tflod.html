@@ -595,6 +595,19 @@ async function finalizarGravacao() {
         if (!isFinite(_pcpm)) { _pcpm = 0; resultado.pcpm = 0; }
         if (!resultado.erros) resultado.erros = [];
 
+        // PROTECAO ANTI-RESULTADO-FALSO:
+        // Se o PCPM deu 0 (nenhuma palavra correta reconhecida), a leitura NAO foi captada.
+        // Isso NAO e um resultado clinico real (ninguem le a 0 palavras por minuto). Tratamos como
+        // falha de captacao: salvamos como 'erro_transcricao' (entra no radar de alertas do painel,
+        // com o audio preservado para reprocessamento) e avisamos o paciente para refazer.
+        // Sem isso, um teste falho seria salvo como 'finalizado' e passaria despercebido.
+        var _acertos = Number(resultado.acertos) || 0;
+        if (_pcpm <= 0 || _acertos <= 0) {
+            await salvarResultadoErro('PCPM zero (audio sem leitura reconhecivel)', audioBase64, audioS3Key || '');
+            _mostrarFalhaCaptacao();
+            return;
+        }
+
         // Coleta anonima
         window._escalaDados = {escala:'TFLOD', escore:_pcpm, classificacao:resultado.classificacao||'Nao classificado', versaoTexto:resultado.versaoTexto||'', dominios:{PCPM:_pcpm, Acertos:resultado.acertos||0, Erros:resultado.erros.length, PalavrasAlcancadas:resultado.palavrasAlcancadas||0}};
 
@@ -612,11 +625,32 @@ async function finalizarGravacao() {
 
     } catch (erro) {
         console.error('Erro na transcri\u00e7\u00e3o:', erro);
-        document.getElementById('progressText').textContent = 'Erro ao processar. Tente novamente.';
         // Tenta salvar o que tem (incluindo audio para reprocessamento)
         await salvarResultadoErro(erro.message, audioBase64, audioS3Key || '');
-        setTimeout(function() { var _s2=document.createElement('script');_s2.src='auto-close.js';_s2.onload=function(){if(window._autoFechar)_autoFechar();};document.body.appendChild(_s2); }, 3000);
+        // Mostra mensagem clara de falha de captacao (sem auto-fechar a aba,
+        // para o paciente ler e conseguir refazer o teste).
+        _mostrarFalhaCaptacao();
     }
+}
+
+// ===== MENSAGEM DE FALHA DE CAPTACAO (audio nao reconhecido) =====
+// Exibe um aviso claro na tela de processamento e NAO fecha a aba automaticamente,
+// para o paciente entender que precisa refazer o teste.
+function _mostrarFalhaCaptacao() {
+    try {
+        var tela = document.getElementById('tela-processando');
+        if (tela) {
+            tela.innerHTML = '<div style="text-align:center;padding:50px 25px;max-width:520px;margin:0 auto;">' +
+                '<div style="font-size:3em;margin-bottom:10px;">&#128295;</div>' +
+                '<h2 style="color:#1565c0;font-size:1.6em;margin-bottom:12px;">Ops! Tivemos um probleminha t\u00e9cnico</h2>' +
+                '<p style="color:#555;font-size:1.05em;line-height:1.6;margin-bottom:18px;">O sistema n\u00e3o conseguiu processar a grava\u00e7\u00e3o desta vez. \u00c9 s\u00f3 um ajuste t\u00e9cnico da nossa parte &#8212; <strong>nada a ver com a leitura realizada</strong>. Basta refazer o teste.</p>' +
+                '<button onclick="location.reload()" style="padding:14px 32px;border:none;border-radius:8px;font-size:1em;font-weight:700;cursor:pointer;background:#1565c0;color:#fff;">&#128260; Refazer o teste</button>' +
+                '</div>';
+        } else {
+            var pt = document.getElementById('progressText');
+            if (pt) pt.textContent = 'Tivemos um probleminha tecnico ao processar. Por favor, refaca o teste.';
+        }
+    } catch (e) { console.error('Erro ao exibir falha de captacao:', e); }
 }
 
 // ===== CALCULAR RESULTADOS =====
