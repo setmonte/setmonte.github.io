@@ -8709,15 +8709,60 @@
       return { texto: linhas.join('\n'), anteriores: anamneses.length - 1 };
     }
 
-    function loadSmartPacientes() {
+    // Estado do filtro por letra da aba SMART (independente do filtro da aba Pacientes)
+    var _smartLetraAtiva = '';
+
+    // Renderiza a lista SMART agrupada por letra (barra de letras clicavel,
+    // mesmo padrao da aba Pacientes: por padrao mostra so a barra; ao clicar
+    // numa letra, exibe a tabela daquele grupo). Evita a lista corrida comprida.
+    function loadSmartPacientes(filtroLetra) {
       var el = document.getElementById('smartPacientesList');
       if (!el) return;
       if (_pacientesCache.length === 0) {
         el.innerHTML = '<p style="color:#777;font-size:12px;">Nenhum paciente cadastrado. Cadastre na aba Pacientes.</p>';
         return;
       }
-      var html = '<table class="results-table" style="font-size:12px;"><tr><th>Nome</th><th>Data Nasc.</th><th>ID</th><th>Sexo</th><th>Programa SMART</th></tr>';
-      _pacientesCache.forEach(function(p) {
+      // Ordenar por nome (pt-BR, respeita acentos)
+      var lista = _pacientesCache.slice().sort(function(a, b) { return (a.nome || '').localeCompare(b.nome || '', 'pt-BR'); });
+      // Agrupar por primeira letra
+      var grupos = {};
+      lista.forEach(function(p) {
+        var letra = (p.nome || '?').charAt(0).toUpperCase();
+        if (!/[A-Z]/.test(letra)) letra = '#';
+        if (!grupos[letra]) grupos[letra] = [];
+        grupos[letra].push(p);
+      });
+      var letras = Object.keys(grupos).sort();
+      // Barra de letras
+      var barHtml = '';
+      if (letras.length > 1) {
+        barHtml += '<div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:10px;padding:8px;background:#f1f8e9;border-radius:8px;border:1px solid #c8e6c9;align-items:center;">';
+        barHtml += '<span style="font-size:11px;color:#555;margin-right:8px;">' + lista.length + ' pacientes</span>';
+        letras.forEach(function(l) {
+          var ativo = filtroLetra === l;
+          barHtml += '<button onclick="_smartFiltrarLetra(\'' + (ativo ? '' : l) + '\')" style="padding:6px 12px;border:none;border-radius:6px;font-size:12px;font-weight:bold;cursor:pointer;' + (ativo ? 'background:#2e7d32;color:white;box-shadow:0 2px 4px rgba(0,0,0,0.2);' : 'background:white;color:#2e7d32;border:1px solid #c8e6c9;') + '">' + l + ' <span style="font-size:10px;opacity:0.7;">(' + grupos[l].length + ')</span></button>';
+        });
+        barHtml += '</div>';
+      }
+      // Filtrar — se so tem 1 letra, mostrar todos diretamente
+      var pacientesFiltrados;
+      if (filtroLetra) {
+        pacientesFiltrados = grupos[filtroLetra] || [];
+      } else if (letras.length === 1) {
+        pacientesFiltrados = grupos[letras[0]] || [];
+      } else {
+        pacientesFiltrados = [];
+      }
+      // Renderizar
+      if (!filtroLetra && letras.length > 1) {
+        // Varias letras e nenhuma selecionada: mostrar apenas a barra de letras
+        el.innerHTML = barHtml;
+        return;
+      }
+      var html = barHtml;
+      html += '<div style="font-size:12px;color:#888;margin-bottom:5px;">Exibindo ' + pacientesFiltrados.length + ' de ' + lista.length + ' pacientes' + (filtroLetra ? ' (letra ' + filtroLetra + ')' : '') + '</div>';
+      html += '<table class="results-table" style="font-size:12px;"><tr><th>Nome</th><th>Data Nasc.</th><th>ID</th><th>Sexo</th><th>Programa SMART</th></tr>';
+      pacientesFiltrados.forEach(function(p) {
         var idHash = gerarIdPacienteHash(p.nome, p.dataNascimento);
         html += '<tr>';
         html += '<td>' + p.nome + '</td>';
@@ -8732,6 +8777,11 @@
       });
       html += '</table>';
       el.innerHTML = html;
+    }
+
+    function _smartFiltrarLetra(letra) {
+      _smartLetraAtiva = letra;
+      loadSmartPacientes(letra || undefined);
     }
 
     async function gerarSmartPaciente(pacId, nome) {
