@@ -6233,10 +6233,18 @@
         // Ignora ocultos (por tipo direto ou como escala:Nome)
         if (_TIPOS_OCULTOS[tp]) return;
         if (tp.indexOf('escala:') === 0 && _TIPOS_OCULTOS[tp.slice(tp.indexOf(':') + 1)]) return;
-        var cat = _catDoTipo(r.tipo);
+        var d = r.data || {};
+        // Escalas sao salvas com tipo 'escala' e o nome real fica em d.escala.
+        // Monta um "tipo detalhado" (escala:NOME) para classificar e discriminar igual a aba Estatisticas.
+        var tipoDetalhado = r.tipo || '';
+        if (tp === 'escala' && d.escala) {
+          tipoDetalhado = 'escala:' + String(d.escala).toLowerCase();
+        }
+        // Reaplica o filtro de ocultos considerando o nome real da escala
+        if (tipoDetalhado.indexOf('escala:') === 0 && _TIPOS_OCULTOS[tipoDetalhado.slice(tipoDetalhado.indexOf(':') + 1)]) return;
+        var cat = _catDoTipo(tipoDetalhado);
         if (cat === 'RegSis') return; // ignora bastidores (login, logs, etc.)
         var email = r.email || '?';
-        var d = r.data || {};
         var dataMs = d.date ? new Date(d.date).getTime() : (r.timestamp || 0);
         if (!porEmail[email]) porEmail[email] = { email: email, total: 0, ultima: 0, cats: {}, tipos: {} };
         var u = porEmail[email];
@@ -6246,8 +6254,8 @@
         var grupo = (cat === 'Testes de Rastreio') ? 'Testes' : (cat === 'Escalas') ? 'Escalas' : 'Programas';
         if (!u.cats[grupo]) u.cats[grupo] = 0;
         u.cats[grupo]++;
-        // Detalhe por instrumento: guarda quantidade e datas
-        var nome = _nomeExibir(r.tipo);
+        // Detalhe por instrumento: guarda quantidade e datas (escalas discriminadas por nome real)
+        var nome = _nomeExibir(tipoDetalhado);
         var chave = grupo + '||' + nome;
         if (!u.tipos[chave]) u.tipos[chave] = { grupo: grupo, nome: nome, qtd: 0, datas: [] };
         u.tipos[chave].qtd++;
