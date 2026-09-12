@@ -6254,12 +6254,20 @@
         if (tp === 'escala' && d.escala) {
           tipoDetalhado = 'escala:' + String(d.escala).toLowerCase();
         }
+        // O prontuario e salvo com tipo 'agenda'. So conta como USO o prontuario finalizado
+        // (status 'finalizado'); marcacoes 'agendado'/'cancelado' NAO sao uso do prontuario.
+        // Renomeia para 'prontuario' para exibir com nome claro no detalhe.
+        if (tp === 'agenda') {
+          if (d.status !== 'finalizado') return; // ignora agendamentos/cancelamentos
+          tipoDetalhado = 'prontuario';
+        }
         // Reaplica o filtro de ocultos considerando o nome real da escala
         if (tipoDetalhado.indexOf('escala:') === 0 && _TIPOS_OCULTOS[tipoDetalhado.slice(tipoDetalhado.indexOf(':') + 1)]) return;
         var cat = _catDoTipo(tipoDetalhado);
         if (cat === 'RegSis') return; // ignora bastidores (login, logs, etc.)
         var email = r.email || '?';
-        var dataMs = d.date ? new Date(d.date).getTime() : (r.timestamp || 0);
+        // Data: alguns tipos guardam em d.date, outros no topo (r.date). Usa o que existir.
+        var dataMs = d.date ? new Date(d.date).getTime() : (r.date ? new Date(r.date).getTime() : (r.timestamp || 0));
         if (!porEmail[email]) porEmail[email] = { email: email, total: 0, ultima: 0, cats: {}, tipos: {} };
         var u = porEmail[email];
         u.total++;
