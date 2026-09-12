@@ -6193,10 +6193,24 @@
     // (RegSis) e testes ocultos. Ordenavel por uso (padrao) ou por nome. Detalhe expande ao clicar.
     var _rankingUsoOrdem = 'uso';
 
+    // Busca a lista de emails ATIVOS (tabela principal) para marcar quem foi arquivado.
+    // Arquivado = tem resultados no ranking mas nao esta mais na lista de usuarios ativos.
+    async function _carregarEmailsAtivos() {
+      try {
+        var resp = await fetch(API_URL + '/admin-list-users-full?email=' + encodeURIComponent(currentUser));
+        var data = await resp.json();
+        var set = {};
+        (data.users || []).forEach(function(u) { if (u.email) set[u.email.toLowerCase()] = true; });
+        window._emailsAtivos = set;
+      } catch(e) { window._emailsAtivos = null; } // null = nao conseguiu saber (nao marca ninguem)
+    }
+
     // Garante que os dados existam; se o Monitor ainda nao baixou, faz o proprio fetch.
     async function carregarRankingUso() {
       var el = document.getElementById('adminRankingUsoList');
       if (!el) return;
+      // Buscar quem esta ativo (em paralelo, so 1 vez) para marcar arquivados
+      if (typeof window._emailsAtivos === 'undefined') { await _carregarEmailsAtivos(); }
       if (window._todosResultadosAdmin && window._todosResultadosAdmin.length >= 0) {
         renderRankingUso();
         return;
@@ -6283,12 +6297,18 @@
         var ultimaStr = u.ultima ? new Date(u.ultima).toLocaleDateString('pt-BR') : '-';
         var pct = maxTotal > 0 ? Math.round((u.total / maxTotal) * 100) : 0;
         var safeId = 'rankdet_' + idx;
+        // Etiqueta de arquivado: so marca se conseguimos a lista de ativos (window._emailsAtivos)
+        // e o email do usuario NAO esta nela (foi arquivado, mas tem historico de uso).
+        var seloArq = '';
+        if (window._emailsAtivos && !window._emailsAtivos[(u.email || '').toLowerCase()]) {
+          seloArq = ' <span style="font-size:9px;background:#90a4ae;color:#fff;padding:1px 6px;border-radius:8px;white-space:nowrap;">&#128230; arquivado</span>';
+        }
         html += '<div style="border:1px solid #eee;border-radius:8px;margin-bottom:6px;overflow:hidden;">';
         // Linha principal (clicavel)
         html += '<div onclick="toggleRankingDetalhe(\'' + safeId + '\')" style="cursor:pointer;padding:8px 10px;display:flex;align-items:center;gap:8px;background:#fff;">';
         html += '<span style="font-size:14px;min-width:24px;text-align:center;">' + posLabel + '</span>';
         html += '<div style="flex:1;min-width:0;">';
-        html += '<div style="font-size:12px;font-weight:600;color:#333;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + u.email + '</div>';
+        html += '<div style="font-size:12px;font-weight:600;color:#333;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + u.email + seloArq + '</div>';
         html += '<div style="height:6px;background:#f0f0f0;border-radius:3px;margin-top:3px;overflow:hidden;"><div style="height:100%;width:' + pct + '%;background:#f9a825;"></div></div>';
         html += '</div>';
         html += '<div style="text-align:right;font-size:11px;color:#555;white-space:nowrap;"><strong style="color:#f57f17;font-size:14px;">' + u.total + '</strong><br><span style="font-size:9px;color:#999;">ult: ' + ultimaStr + '</span></div>';
