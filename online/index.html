@@ -1506,6 +1506,19 @@
             <div id="adminUsersList" style="margin-top:10px;max-height:300px;overflow-y:auto;"></div>
           </div>
 
+          <!-- Ranking de Uso: quais usuarios mais usam o sistema (para dar mais atencao a eles) -->
+          <div style="background:#fffde7;border:2px solid #f9a825;border-radius:10px;padding:15px;margin:10px 0;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
+              <p style="font-size:13px;font-weight:bold;color:#f57f17;margin:0;">&#127942; Ranking de Uso</p>
+              <div style="display:flex;gap:6px;align-items:center;">
+                <button class="btn btn-blue" id="btnRankUso" style="padding:5px 12px;font-size:11px;" onclick="ordenarRankingUso('uso')">Por uso</button>
+                <button class="btn btn-blue" id="btnRankNome" style="padding:5px 12px;font-size:11px;background:#90a4ae;" onclick="ordenarRankingUso('nome')">Por nome</button>
+              </div>
+            </div>
+            <p style="font-size:10px;color:#999;margin-bottom:8px;">Quem mais usa o sistema merece mais aten&#231;&#227;o. Clique num usu&#225;rio para ver o detalhe (testes, escalas e programas).</p>
+            <div id="adminRankingUsoList" style="font-size:12px;color:#555;max-height:420px;overflow-y:auto;">Carregando...</div>
+          </div>
+
           <!-- Deletar usuario (movido para baixo: acao perigosa, afastada do fluxo de fiscalizacao) -->
           <!-- Pacientes de um usuario (subiu) -->
           <div style="background:#f3e5f5;border:2px solid #7b1fa2;border-radius:10px;padding:15px;margin:10px 0;">
@@ -3583,6 +3596,7 @@
         carregarSaldoApi();
         carregarVendas();
         carregarAlertasAdmin();
+        carregarRankingUso();
         verificarVendasNovas();
       }
     }
@@ -5924,6 +5938,8 @@
         if (!resp.ok) { card.style.display = 'none'; return; }
         var data = await resp.json();
         var resultados = data.results || [];
+        window._todosResultadosAdmin = resultados; // cache reaproveitado pelo Ranking de Uso
+        if (typeof renderRankingUso === 'function') { try { renderRankingUso(); } catch(e) {} }
         if (resultados.length === 0) { card.style.display = 'none'; return; }
         var alertas = [];
         var errosTranscricao = [];
@@ -6169,6 +6185,140 @@
         if (btn) { btn.disabled = false; btn.textContent = 'Resolver'; }
         alert('Erro ao resolver o alerta. Tente novamente.');
       }
+    }
+
+    // ===== RANKING DE USO (quais usuarios mais usam o sistema) =====
+    // Usa o mesmo array de /admin-get-all-results ja baixado pelo Monitor (window._todosResultadosAdmin),
+    // agrega por email, classifica cada registro com _catDoTipo (Testes/Escalas/Programas), ignora ruido
+    // (RegSis) e testes ocultos. Ordenavel por uso (padrao) ou por nome. Detalhe expande ao clicar.
+    var _rankingUsoOrdem = 'uso';
+
+    // Garante que os dados existam; se o Monitor ainda nao baixou, faz o proprio fetch.
+    async function carregarRankingUso() {
+      var el = document.getElementById('adminRankingUsoList');
+      if (!el) return;
+      if (window._todosResultadosAdmin && window._todosResultadosAdmin.length >= 0) {
+        renderRankingUso();
+        return;
+      }
+      el.innerHTML = 'Carregando...';
+      try {
+        var resp = await fetch(API_URL + '/admin-get-all-results?email=' + encodeURIComponent(currentUser) + '&horas=8760');
+        var data = await resp.json();
+        window._todosResultadosAdmin = data.results || [];
+        renderRankingUso();
+      } catch(e) {
+        el.innerHTML = '<p style="color:#c62828;font-size:12px;">Erro ao carregar o ranking: ' + (e.message || e) + '</p>';
+      }
+    }
+
+    function ordenarRankingUso(modo) {
+      _rankingUsoOrdem = (modo === 'nome') ? 'nome' : 'uso';
+      // Destaque visual do botao ativo
+      var bU = document.getElementById('btnRankUso');
+      var bN = document.getElementById('btnRankNome');
+      if (bU) bU.style.background = (_rankingUsoOrdem === 'uso') ? '' : '#90a4ae';
+      if (bN) bN.style.background = (_rankingUsoOrdem === 'nome') ? '' : '#90a4ae';
+      renderRankingUso();
+    }
+
+    function renderRankingUso() {
+      var el = document.getElementById('adminRankingUsoList');
+      if (!el) return;
+      var resultados = window._todosResultadosAdmin || [];
+      // Agrega por email
+      var porEmail = {};
+      resultados.forEach(function(r) {
+        var tp = (r.tipo || '').toLowerCase();
+        // Ignora ocultos (por tipo direto ou como escala:Nome)
+        if (_TIPOS_OCULTOS[tp]) return;
+        if (tp.indexOf('escala:') === 0 && _TIPOS_OCULTOS[tp.slice(tp.indexOf(':') + 1)]) return;
+        var cat = _catDoTipo(r.tipo);
+        if (cat === 'RegSis') return; // ignora bastidores (login, logs, etc.)
+        var email = r.email || '?';
+        var d = r.data || {};
+        var dataMs = d.date ? new Date(d.date).getTime() : (r.timestamp || 0);
+        if (!porEmail[email]) porEmail[email] = { email: email, total: 0, ultima: 0, cats: {}, tipos: {} };
+        var u = porEmail[email];
+        u.total++;
+        if (dataMs > u.ultima) u.ultima = dataMs;
+        // Agrupa em 3 grupos macro: Testes, Escalas, Programas
+        var grupo = (cat === 'Testes de Rastreio') ? 'Testes' : (cat === 'Escalas') ? 'Escalas' : 'Programas';
+        if (!u.cats[grupo]) u.cats[grupo] = 0;
+        u.cats[grupo]++;
+        // Detalhe por instrumento: guarda quantidade e datas
+        var nome = _nomeExibir(r.tipo);
+        var chave = grupo + '||' + nome;
+        if (!u.tipos[chave]) u.tipos[chave] = { grupo: grupo, nome: nome, qtd: 0, datas: [] };
+        u.tipos[chave].qtd++;
+        if (dataMs) u.tipos[chave].datas.push(dataMs);
+      });
+      var lista = Object.keys(porEmail).map(function(k) { return porEmail[k]; });
+      if (lista.length === 0) {
+        el.innerHTML = '<p style="color:#777;font-size:12px;">Nenhum uso registrado ainda.</p>';
+        return;
+      }
+      // Ordenacao
+      if (_rankingUsoOrdem === 'nome') {
+        lista.sort(function(a, b) { return a.email.localeCompare(b.email, 'pt-BR'); });
+      } else {
+        lista.sort(function(a, b) { return b.total - a.total; });
+      }
+      var maxTotal = 0;
+      lista.forEach(function(u) { if (u.total > maxTotal) maxTotal = u.total; });
+      var medalhas = ['&#129351;', '&#129352;', '&#129353;']; // ouro, prata, bronze
+      var coresGrupo = { 'Testes': '#1565c0', 'Escalas': '#2e7d32', 'Programas': '#5e35b1' };
+
+      var html = '';
+      lista.forEach(function(u, idx) {
+        var posLabel = (_rankingUsoOrdem === 'uso') ? (medalhas[idx] || (idx + 1) + 'o') : '&#128100;';
+        var ultimaStr = u.ultima ? new Date(u.ultima).toLocaleDateString('pt-BR') : '-';
+        var pct = maxTotal > 0 ? Math.round((u.total / maxTotal) * 100) : 0;
+        var safeId = 'rankdet_' + idx;
+        html += '<div style="border:1px solid #eee;border-radius:8px;margin-bottom:6px;overflow:hidden;">';
+        // Linha principal (clicavel)
+        html += '<div onclick="toggleRankingDetalhe(\'' + safeId + '\')" style="cursor:pointer;padding:8px 10px;display:flex;align-items:center;gap:8px;background:#fff;">';
+        html += '<span style="font-size:14px;min-width:24px;text-align:center;">' + posLabel + '</span>';
+        html += '<div style="flex:1;min-width:0;">';
+        html += '<div style="font-size:12px;font-weight:600;color:#333;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + u.email + '</div>';
+        html += '<div style="height:6px;background:#f0f0f0;border-radius:3px;margin-top:3px;overflow:hidden;"><div style="height:100%;width:' + pct + '%;background:#f9a825;"></div></div>';
+        html += '</div>';
+        html += '<div style="text-align:right;font-size:11px;color:#555;white-space:nowrap;"><strong style="color:#f57f17;font-size:14px;">' + u.total + '</strong><br><span style="font-size:9px;color:#999;">ult: ' + ultimaStr + '</span></div>';
+        html += '</div>';
+        // Detalhe (oculto por padrao)
+        html += '<div id="' + safeId + '" style="display:none;padding:8px 12px;background:#fafafa;border-top:1px solid #eee;">';
+        // Resumo dos 3 grupos
+        html += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">';
+        ['Testes', 'Escalas', 'Programas'].forEach(function(g) {
+          var q = u.cats[g] || 0;
+          html += '<span style="font-size:10px;background:' + coresGrupo[g] + ';color:#fff;padding:2px 8px;border-radius:10px;">' + g + ': ' + q + '</span>';
+        });
+        html += '</div>';
+        // Detalhe por instrumento, agrupado por grupo
+        ['Testes', 'Escalas', 'Programas'].forEach(function(g) {
+          var itens = Object.keys(u.tipos).map(function(k) { return u.tipos[k]; }).filter(function(it) { return it.grupo === g; });
+          if (itens.length === 0) return;
+          itens.sort(function(a, b) { return b.qtd - a.qtd; });
+          html += '<p style="font-size:10px;font-weight:bold;color:' + coresGrupo[g] + ';margin:6px 0 2px;">' + g + '</p>';
+          itens.forEach(function(it) {
+            var datas = it.datas.slice().sort(function(a, b) { return b - a; });
+            var datasFmt = datas.slice(0, 5).map(function(ms) { return new Date(ms).toLocaleDateString('pt-BR'); }).join(', ');
+            if (datas.length > 5) datasFmt += ' (+' + (datas.length - 5) + ')';
+            html += '<div style="display:flex;justify-content:space-between;font-size:11px;padding:2px 0;border-bottom:1px solid #f0f0f0;">';
+            html += '<span>' + it.nome + '</span>';
+            html += '<span style="color:#888;">' + it.qtd + 'x &#183; ' + datasFmt + '</span>';
+            html += '</div>';
+          });
+        });
+        html += '</div>';
+        html += '</div>';
+      });
+      el.innerHTML = html;
+    }
+
+    function toggleRankingDetalhe(id) {
+      var el = document.getElementById(id);
+      if (el) el.style.display = (el.style.display === 'none') ? 'block' : 'none';
     }
 
     function adminSubTab(nome) {
