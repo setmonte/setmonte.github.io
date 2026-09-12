@@ -1440,7 +1440,7 @@
             <div id="adminSub_monitor" class="admin-sub-content" style="display:none;">
           <!-- Monitor de Atividade (Alertas) -->
           <div id="adminAlertasCard" style="background:#fff8e1;border:2px solid #f57f17;border-radius:10px;padding:15px;margin:10px 0;">
-            <p style="font-size:13px;font-weight:bold;color:#f57f17;margin-bottom:8px;">&#128680; Monitor de Atividade — Ultimas 48h</p>
+            <p style="font-size:13px;font-weight:bold;color:#f57f17;margin-bottom:8px;">&#128680; Monitor de Atividade</p>
             <div id="adminAlertasContent" style="font-size:12px;color:#555;line-height:1.8;">Carregando...</div>
           </div>
 
@@ -5920,7 +5920,7 @@
       if (!card || !el) return;
       try {
         // Buscar todos os resultados das ultimas 48h de TODOS os usuarios
-        var resp = await fetch(API_URL + '/admin-get-all-results?email=' + encodeURIComponent(currentUser) + '&horas=48');
+        var resp = await fetch(API_URL + '/admin-get-all-results?email=' + encodeURIComponent(currentUser) + '&horas=8760');
         if (!resp.ok) { card.style.display = 'none'; return; }
         var data = await resp.json();
         var resultados = data.results || [];
@@ -5933,7 +5933,8 @@
         var errosPDF = [];
         var loginsMultiplos = {};
         var agora = Date.now();
-        var limite48h = agora - (48 * 60 * 60 * 1000);
+        var limite48h = agora - (8760 * 60 * 60 * 1000); // janela de 1 ano (antes 48h): falhas nao somem por tempo
+        var limiteLogins48h = agora - (48 * 60 * 60 * 1000); // logins excessivos so fazem sentido em janela curta (48h)
         // Lista de sessionIds dos alertas exibidos agora (para marcar como resolvidos no servidor)
         window._alertasVisiveis = [];
         resultados.forEach(function(r) {
@@ -5950,7 +5951,7 @@
           if (d.status === 'erro_transcricao') {
             // Audio pode estar salvo de 3 formas: base64 embutido, referencia no S3, ou flag _temAudio
             var _temAudioErro = !!(d.audioBase64 || d.audioS3Key || d._temAudio);
-            errosTranscricao.push({usuario: usuario, paciente: paciente, tipo: (r.tipo || '?'), data: d.date, temAudio: _temAudioErro, erro: d.erro || ''});
+            errosTranscricao.push({usuario: usuario, paciente: paciente, tipo: (r.tipo || '?'), data: d.date, temAudio: _temAudioErro, erro: d.erro || '', sessionId: r.sessionId || ''});
             _ehAlerta = true;
           }
           // FALHA SILENCIOSA: teste TFLOD salvo como 'finalizado' mas com PCPM 0 (nenhuma
@@ -5960,22 +5961,22 @@
             var _pcpmFin = (d.resultados && d.resultados.pcpm !== undefined) ? Number(d.resultados.pcpm) : null;
             if (_pcpmFin !== null && (!isFinite(_pcpmFin) || _pcpmFin <= 0)) {
               var _temAudioFin = !!(d.audioBase64 || d.audioS3Key || d._temAudio);
-              errosTranscricao.push({usuario: usuario, paciente: paciente, tipo: (r.tipo || '?'), data: d.date, temAudio: _temAudioFin, erro: 'PCPM 0 (leitura nao captada) - salvo como finalizado'});
+              errosTranscricao.push({usuario: usuario, paciente: paciente, tipo: (r.tipo || '?'), data: d.date, temAudio: _temAudioFin, erro: 'PCPM 0 (leitura nao captada) - salvo como finalizado', sessionId: r.sessionId || ''});
               _ehAlerta = true;
             }
           }
           // Abandonados
           if (d.status === 'abandonado') {
-            abandonados.push({usuario: usuario, paciente: paciente, tipo: r.tipo || '?', data: d.date});
+            abandonados.push({usuario: usuario, paciente: paciente, tipo: r.tipo || '?', data: d.date, sessionId: r.sessionId || ''});
             _ehAlerta = true;
           }
           // Aguardando (sessoes nao completadas)
           if (d.status === 'aguardando') {
-            aguardando.push({usuario: usuario, paciente: paciente, tipo: r.tipo || '?', data: d.date});
+            aguardando.push({usuario: usuario, paciente: paciente, tipo: r.tipo || '?', data: d.date, sessionId: r.sessionId || ''});
             _ehAlerta = true;
           }
-          // Contar logins por usuario
-          if (r.tipo === 'login') {
+          // Contar logins por usuario (apenas ultimas 48h - metrica de curto prazo)
+          if (r.tipo === 'login' && ts >= limiteLogins48h) {
             if (!loginsMultiplos[usuario]) loginsMultiplos[usuario] = 0;
             loginsMultiplos[usuario]++;
           }
@@ -5986,7 +5987,7 @@
           }
           // Falha na geracao de PDF (registrada pelo navegador do usuario)
           if (r.tipo === 'erro-pdf') {
-            errosPDF.push({ usuario: usuario, tipoTeste: d.tipoTeste || '?', erro: d.erro || '', data: d.date });
+            errosPDF.push({ usuario: usuario, tipoTeste: d.tipoTeste || '?', erro: d.erro || '', data: d.date, sessionId: r.sessionId || '' });
             _ehAlerta = true;
           }
           // Guarda o identificador para poder marcar como resolvido no servidor
@@ -6003,7 +6004,8 @@
           errosTranscricao.forEach(function(e) {
             var dataStr = e.data ? new Date(e.data).toLocaleString('pt-BR') : '';
             var tipoStr = (e.tipo || '?').toUpperCase();
-            html += '<span style="font-size:11px;">&#128100; ' + e.usuario + ' | &#127919; ' + tipoStr + ' | &#128113; ' + e.paciente + ' | ' + (e.temAudio ? '&#127925; audio salvo (reprocessavel)' : '&#9888; sem audio (perdido)') + ' | &#128337; ' + dataStr + '</span><br>';
+            var btnResE = e.sessionId ? ' <button onclick="resolverAlertaItem(\'' + String(e.sessionId).replace(/'/g,'') + '\', this)" style="font-size:9px;padding:1px 8px;border:none;border-radius:8px;background:#2e7d32;color:#fff;cursor:pointer;">Resolver</button>' : '';
+            html += '<span style="font-size:11px;">&#128100; ' + e.usuario + ' | &#127919; ' + tipoStr + ' | &#128113; ' + e.paciente + ' | ' + (e.temAudio ? '&#127925; audio salvo (reprocessavel)' : '&#9888; sem audio (perdido)') + ' | &#128337; ' + dataStr + btnResE + '</span><br>';
             if (e.erro) html += '<span style="font-size:10px;color:#888;margin-left:16px;">Erro: ' + e.erro.slice(0,80) + '</span><br>';
           });
           html += '</div>';
@@ -6015,7 +6017,8 @@
           html += '<span style="font-size:10px;color:#888;">O PDF nao foi gerado no navegador do usuario. Os dados do teste continuam salvos.</span><br>';
           errosPDF.forEach(function(e) {
             var dataStr = e.data ? new Date(e.data).toLocaleString('pt-BR') : '';
-            html += '<span style="font-size:11px;">&#128100; ' + e.usuario + ' | &#127919; ' + (e.tipoTeste || '?').toUpperCase() + ' | &#128337; ' + dataStr + '</span><br>';
+            var btnResP = e.sessionId ? ' <button onclick="resolverAlertaItem(\'' + String(e.sessionId).replace(/'/g,'') + '\', this)" style="font-size:9px;padding:1px 8px;border:none;border-radius:8px;background:#2e7d32;color:#fff;cursor:pointer;">Resolver</button>' : '';
+            html += '<span style="font-size:11px;">&#128100; ' + e.usuario + ' | &#127919; ' + (e.tipoTeste || '?').toUpperCase() + ' | &#128337; ' + dataStr + btnResP + '</span><br>';
             if (e.erro) html += '<span style="font-size:10px;color:#888;margin-left:16px;">Erro: ' + e.erro.slice(0,80) + '</span><br>';
           });
           html += '</div>';
@@ -6027,7 +6030,8 @@
           html += '<span style="font-size:10px;color:#888;">Pode ser: link nao aberto pelo paciente, teste que travou, ou conexao caiu.</span><br>';
           aguardando.forEach(function(a) {
             var dataStr = a.data ? new Date(a.data).toLocaleString('pt-BR') : '';
-            html += '<span style="font-size:11px;">&#128100; ' + a.usuario + ' | &#128113; ' + a.paciente + ' | &#127919; ' + a.tipo.toUpperCase() + ' | &#128337; ' + dataStr + '</span><br>';
+            var btnResA = a.sessionId ? ' <button onclick="resolverAlertaItem(\'' + String(a.sessionId).replace(/'/g,'') + '\', this)" style="font-size:9px;padding:1px 8px;border:none;border-radius:8px;background:#f57f17;color:#fff;cursor:pointer;">Resolver</button>' : '';
+            html += '<span style="font-size:11px;">&#128100; ' + a.usuario + ' | &#128113; ' + a.paciente + ' | &#127919; ' + a.tipo.toUpperCase() + ' | &#128337; ' + dataStr + btnResA + '</span><br>';
           });
           html += '</div>';
         }
@@ -6072,12 +6076,13 @@
           html += '<span style="font-size:10px;color:#888;">Paciente ou avaliador fechou a aba antes de concluir. Decisao deles.</span><br>';
           abandonados.forEach(function(a) {
             var dataStr = a.data ? new Date(a.data).toLocaleString('pt-BR') : '';
-            html += '<span style="font-size:11px;">&#128100; ' + a.usuario + ' | &#128113; ' + a.paciente + ' | &#127919; ' + a.tipo.toUpperCase() + ' | &#128337; ' + dataStr + '</span><br>';
+            var btnResAb = a.sessionId ? ' <button onclick="resolverAlertaItem(\'' + String(a.sessionId).replace(/'/g,'') + '\', this)" style="font-size:9px;padding:1px 8px;border:none;border-radius:8px;background:#4caf50;color:#fff;cursor:pointer;">Resolver</button>' : '';
+            html += '<span style="font-size:11px;">&#128100; ' + a.usuario + ' | &#128113; ' + a.paciente + ' | &#127919; ' + a.tipo.toUpperCase() + ' | &#128337; ' + dataStr + btnResAb + '</span><br>';
           });
           html += '</div>';
         }
         if (html === '') {
-          html = '<p style="color:#2e7d32;font-weight:bold;">&#9989; Tudo certo! Nenhum problema detectado nas ultimas 48h.</p>';
+          html = '<p style="color:#2e7d32;font-weight:bold;">&#9989; Tudo certo! Nenhum problema pendente.</p>';
           card.style.borderColor = '#2e7d32';
           card.style.background = '#e8f5e9';
         } else {
@@ -6142,6 +6147,28 @@
       var card = document.getElementById('adminAlertasCard');
       if (el) el.innerHTML = '<p style="color:#2e7d32;font-weight:bold;">&#9989; Tudo certo! Alertas resolvidos (em todos os dispositivos).</p>';
       if (card) { card.style.borderColor = '#2e7d32'; card.style.background = '#e8f5e9'; }
+    }
+
+    // Resolve UM unico alerta (botao por item). Marca so aquele sessionId como resolvido
+    // no servidor, sem tocar nos demais. Depois recarrega o monitor para refletir.
+    async function resolverAlertaItem(sessionId, btn) {
+      if (!sessionId) return;
+      if (btn) { btn.disabled = true; btn.textContent = '...'; }
+      try {
+        await fetch(API_URL + '/resolver-alerta', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId: sessionId })
+        });
+        // Remove da lista em memoria e recarrega o monitor
+        if (window._alertasVisiveis) {
+          window._alertasVisiveis = window._alertasVisiveis.filter(function(a) { return a.sessionId !== sessionId; });
+        }
+        if (typeof carregarAlertasAdmin === 'function') carregarAlertasAdmin();
+      } catch(e) {
+        if (btn) { btn.disabled = false; btn.textContent = 'Resolver'; }
+        alert('Erro ao resolver o alerta. Tente novamente.');
+      }
     }
 
     function adminSubTab(nome) {
