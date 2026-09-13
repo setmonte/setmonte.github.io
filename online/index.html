@@ -1091,6 +1091,15 @@
             <div id="suporteRespostaList" style="font-size:14px;color:#555;"></div>
             <button onclick="marcarRespostaLida()" class="btn btn-green" style="padding:8px 16px;font-size:12px;margin-top:10px;">&#10003; Lida</button>
           </div>
+          <!-- Card de notificacoes do sistema (paciente concluiu teste/escala) -->
+          <div id="notifSistemaCard" style="display:none;background:linear-gradient(135deg,#fff8e1,#fffde7);border:2px solid #f9a825;border-radius:10px;padding:15px;margin:0 0 15px 0;box-shadow:0 2px 10px rgba(249,168,37,.15);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+              <p style="font-size:13px;font-weight:bold;color:#e65100;">&#128276; Notifica&#231;&#245;es</p>
+              <div style="background:#f9a825;color:#fff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:bold;" id="notifSistemaCount">0</div>
+            </div>
+            <div id="notifSistemaList" style="font-size:14px;color:#555;"></div>
+            <button onclick="marcarNotifSistemaLida()" class="btn" style="padding:8px 16px;font-size:12px;margin-top:10px;background:#f9a825;color:#fff;border:none;border-radius:6px;cursor:pointer;">&#10003; Marcar como lidas</button>
+          </div>
           <div style="text-align:center;padding:10px 0;">
             <p style="font-size:15px;color:#2e7d32;font-weight:bold;">Meus Pacientes</p>
             <p style="font-size:12px;color:#555;margin-top:5px;">Cadastre seus pacientes uma vez e selecione ao aplicar testes e escalas.</p>
@@ -3056,6 +3065,8 @@
       if (isFreeModeActive()) { aplicarFreeMode(true); }
       // Verificar respostas do suporte para o usuario
       if (currentUser !== 'setmonte@gmail.com') { verificarRespostasSuporte(); }
+      // Verificar notificacoes do sistema (paciente concluiu teste/escala)
+      verificarNotificacoesSistema();
       // BAE visivel para todos
       document.getElementById('tabAtencao').classList.remove('hidden');
       // Buscar creditos
@@ -14623,6 +14634,53 @@ if(id&&lidas.indexOf(id)===-1)lidas.push(id);
 localStorage.setItem('suporte_resp_lidas',JSON.stringify(lidas));
 _respostaSupCache=[];
 var card=document.getElementById('suporteRespostaCard');
+if(card)card.style.display='none';
+}
+
+// ===== NOTIFICACOES DO SISTEMA (paciente concluiu teste/escala) =====
+// Busca registros tipo 'notif-sistema' enderecados ao profissional logado
+// e mostra no card #notifSistemaCard. Controle de lidas por localStorage (chave propria).
+var _notifSistemaCache=[];
+async function verificarNotificacoesSistema(){
+try{
+var resp=await fetch(API_URL+'/get-results?email='+encodeURIComponent(window.currentUser)+'&tipo=notif-sistema');
+var data=await resp.json();
+var results=data.results||data||[];
+if(!Array.isArray(results))results=[];
+var lidas=JSON.parse(localStorage.getItem('notif_sistema_lidas')||'[]');
+var novas=results.filter(function(r){return lidas.indexOf(r.sessionId||r.id||'')===-1;});
+_notifSistemaCache=novas;
+var card=document.getElementById('notifSistemaCard');
+var countEl=document.getElementById('notifSistemaCount');
+var listEl=document.getElementById('notifSistemaList');
+if(novas.length===0){if(card)card.style.display='none';return;}
+if(card)card.style.display='block';
+if(countEl)countEl.textContent=novas.length;
+novas.sort(function(a,b){return((b.data&&b.data.timestamp)||'').localeCompare((a.data&&a.data.timestamp)||'');});
+var html='';
+for(var i=0;i<novas.length;i++){
+var r=novas[i];var d=r.data||{};
+var dt=d.timestamp?new Date(d.timestamp).toLocaleString('pt-BR'):'?';
+var emoji=d.icone==='escala'?'\uD83D\uDCCB':'\uD83E\uDDE0';
+html+='<div style="background:#fff;border:1px solid #ffcc80;border-radius:8px;padding:12px 15px;margin:8px 0;">';
+html+='<p style="font-size:15px;color:#e65100;font-weight:bold;margin-bottom:4px;">'+emoji+' '+((d.titulo||'Notificacao').replace(/</g,'&lt;').replace(/>/g,'&gt;'))+'</p>';
+html+='<p style="font-size:14px;color:#555;line-height:1.5;">'+((d.corpo||'').replace(/</g,'&lt;').replace(/>/g,'&gt;'))+'</p>';
+html+='<p style="font-size:12px;color:#999;margin-top:6px;">'+dt+'</p>';
+html+='</div>';
+}
+if(listEl)listEl.innerHTML=html;
+}catch(e){}
+}
+
+function marcarNotifSistemaLida(){
+var lidas=JSON.parse(localStorage.getItem('notif_sistema_lidas')||'[]');
+for(var i=0;i<_notifSistemaCache.length;i++){
+var id=_notifSistemaCache[i].sessionId||_notifSistemaCache[i].id||'';
+if(id&&lidas.indexOf(id)===-1)lidas.push(id);
+}
+localStorage.setItem('notif_sistema_lidas',JSON.stringify(lidas));
+_notifSistemaCache=[];
+var card=document.getElementById('notifSistemaCard');
 if(card)card.style.display='none';
 }
 
