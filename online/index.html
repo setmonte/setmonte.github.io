@@ -3067,6 +3067,8 @@
       if (currentUser !== 'setmonte@gmail.com') { verificarRespostasSuporte(); }
       // Verificar notificacoes do sistema (paciente concluiu teste/escala)
       verificarNotificacoesSistema();
+      // POLLING: atualiza avisos sozinho a cada 60s, SEM recarregar a pagina.
+      iniciarPollingPainel();
       // BAE visivel para todos
       document.getElementById('tabAtencao').classList.remove('hidden');
       // Buscar creditos
@@ -14682,6 +14684,32 @@ localStorage.setItem('notif_sistema_lidas',JSON.stringify(lidas));
 _notifSistemaCache=[];
 var card=document.getElementById('notifSistemaCard');
 if(card)card.style.display='none';
+}
+
+// ===== POLLING DO PAINEL =====
+// A cada 60s, re-checa os avisos (notificacoes, suporte, vendas) SEM recarregar a pagina.
+// Atualiza so os cards; nao interfere no que o usuario esta fazendo (formularios, PDFs, etc.).
+// Guarda o timer em _pollingPainel e limpa antes de criar outro, evitando timers duplicados.
+var _pollingPainel=null;
+function iniciarPollingPainel(){
+if(_pollingPainel){clearInterval(_pollingPainel);_pollingPainel=null;}
+if(!window.currentUser)return;
+_pollingPainel=setInterval(function(){
+// Se a aba estiver em segundo plano, pula esta rodada (economiza chamadas).
+if(document.hidden)return;
+try{
+if(window.currentUser==='setmonte@gmail.com'){
+// Admin: vendas novas e mensagens de suporte recebidas dos usuarios.
+if(typeof verificarVendasNovas==='function')verificarVendasNovas();
+if(typeof verificarMsgSuporteNovas==='function')verificarMsgSuporteNovas();
+}else{
+// Profissional comum: respostas do suporte enderecadas a ele.
+if(typeof verificarRespostasSuporte==='function')verificarRespostasSuporte();
+}
+// Notificacoes do sistema (paciente concluiu teste/escala) valem para todos.
+if(typeof verificarNotificacoesSistema==='function')verificarNotificacoesSistema();
+}catch(e){}
+},60000);
 }
 
 // ===== IMPRESSAO DIGITAL DO DISPOSITIVO (anti-abuso de bonus) =====
