@@ -411,7 +411,22 @@ r.addEventListener('change',function(){document.getElementById('outroRespondente
 });
 var params=new URLSearchParams(window.location.search);
 if (params.get('s')) {
-    fetch(_API_URL + '/get-session?id=' + params.get('s')).then(function(r){if(r.status===410){document.body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#e8f5e9,#c8e6c9);text-align:center;padding:20px;"><h1 style="color:#c62828;font-size:24px;margin-bottom:10px;">Este link j\u00e1 foi utilizado.</h1><p style="font-size:16px;color:#555;">Solicite um novo link ao seu avaliador.</p></div>';throw new Error("link_usado");}return r.json();}).then(function(data){if(data.sessionId){_sessionInfo=data;var nomeEl=document.getElementById('nome');var nascEl=document.getElementById('dataNascimento');var sexoEl=document.getElementById('sexo');if(nomeEl&&data.patientName)nomeEl.value=data.patientName;if(nascEl&&data.birthDate)nascEl.value=data.birthDate;if(sexoEl&&data.sex)sexoEl.value=data.sex;var escEl=document.getElementById('escolaridade');if(escEl&&data.education)escEl.value=data.education;var latEl=document.getElementById('lateralidade');if(latEl&&data.laterality)latEl.value=data.laterality;if(typeof calcularIdade==='function')calcularIdade();if(nomeEl)nomeEl.dispatchEvent(new Event('input'));if(nascEl)nascEl.dispatchEvent(new Event('change'));var botoes=document.querySelector('.botoes');if(botoes){botoes.innerHTML='<button class="btn btn-primary" style="padding:15px 30px;border:none;border-radius:25px;font-size:16px;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#2e7d32,#43a047);color:white;" onclick="_enviarResultadosPainel()">Enviar Resultados ao Profissional</button>';}var els=document.querySelectorAll('.info-tecnica');els.forEach(function(el){el.style.display='none';});}}).catch(function(){});
+    fetch(_API_URL + '/get-session?id=' + params.get('s')).then(function(r){if(r.status===410){document.body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#e8f5e9,#c8e6c9);text-align:center;padding:20px;"><h1 style="color:#c62828;font-size:24px;margin-bottom:10px;">Este link j\u00e1 foi utilizado.</h1><p style="font-size:16px;color:#555;">Solicite um novo link ao seu avaliador.</p></div>';throw new Error("link_usado");}return r.json();}).then(function(data){if(data.sessionId){_sessionInfo=data;var nomeEl=document.getElementById('nome');var nascEl=document.getElementById('dataNascimento');var sexoEl=document.getElementById('sexo');if(nomeEl&&data.patientName)nomeEl.value=data.patientName;if(nascEl&&data.birthDate)nascEl.value=data.birthDate;if(sexoEl&&data.sex)sexoEl.value=data.sex;var escEl=document.getElementById('escolaridade');if(escEl&&data.education)escEl.value=data.education;var cpfEl=document.getElementById('cpf');if(cpfEl&&data.cpf)cpfEl.value=data.cpf;var latEl=document.getElementById('lateralidade');if(latEl&&data.laterality)latEl.value=data.laterality;if(typeof calcularIdade==='function')calcularIdade();
+// Aplicar secoes ativas e perguntas extras vindas do servidor (personalizacao da anamnese)
+if(data.secoes&&Array.isArray(data.secoes)){_secoesAtivas=[];data.secoes.forEach(function(sid){var found=SECOES_TODAS.find(function(s){return s.id===sid;});if(found)_secoesAtivas.push(found);});}else{_secoesAtivas=SECOES_TODAS.slice();}
+if(data.extras&&Array.isArray(data.extras)){_perguntasExtras=data.extras;}
+// Montar o formulario com as secoes escolhidas (sem isso a anamnese abriria vazia)
+gerarFormulario();
+if(nomeEl)nomeEl.dispatchEvent(new Event('input'));if(nascEl)nascEl.dispatchEvent(new Event('change'));
+// Ligar progresso, rascunho e auto-scroll (espelha o modo ?d=)
+_chaveRascunho='anamnese_rascunho_'+(_sessionInfo?_sessionInfo.sessionId:'local');
+restaurarRascunho();
+document.getElementById('formulario').addEventListener('input',atualizarProgresso);
+document.getElementById('formulario').addEventListener('change',function(e){atualizarProgresso();if(e.target.type==='radio'){var campo=e.target.closest('.campo');if(campo){var next=campo.nextElementSibling;while(next&&next.classList.contains('campo-condicional')&&!next.classList.contains('visivel')){next=next.nextElementSibling;}if(next)next.scrollIntoView({behavior:'smooth',block:'center'});}}});
+document.querySelector('.dados-fixos').addEventListener('input',atualizarProgresso);
+document.querySelector('.dados-fixos').addEventListener('change',atualizarProgresso);
+atualizarProgresso();
+var botoes=document.querySelector('.botoes');if(botoes){botoes.innerHTML='<button class="btn btn-primary" style="padding:15px 30px;border:none;border-radius:25px;font-size:16px;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#2e7d32,#43a047);color:white;" onclick="_enviarResultadosPainel()">Enviar Resultados ao Profissional</button>';}var els=document.querySelectorAll('.info-tecnica');els.forEach(function(el){el.style.display='none';});}}).catch(function(){});
 } else if(params.get('d')){
 _decodificarURL();
 gerarFormulario();
@@ -435,7 +450,7 @@ window.location.href='https://setmonte.github.io/online/';
     </script>
 <script>
 var _sc=document.createElement('script');_sc.src='coleta-anonima.js';document.body.appendChild(_sc);
-if(new URLSearchParams(window.location.search).get('d')){var _ac=document.createElement('script');_ac.src='auto-close.js';document.body.appendChild(_ac);}
+var _qp=new URLSearchParams(window.location.search);if(_qp.get('d')||_qp.get('s')){var _ac=document.createElement('script');_ac.src='auto-close.js';document.body.appendChild(_ac);}
 </script>
 </body>
 </html>
