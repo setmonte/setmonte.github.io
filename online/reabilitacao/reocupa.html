@@ -1245,31 +1245,59 @@ function _decodificarURL() {
     if (!d) return;
     try {
         var dados = JSON.parse(atob(d));
-        if (dados.nome) { document.getElementById('nome').value = dados.nome; document.getElementById('nome').dispatchEvent(new Event('input')); }
-        if (dados.dn) { document.getElementById('dataNascimento').value = dados.dn; document.getElementById('dataNascimento').dispatchEvent(new Event('change')); }
-        if (dados.sexo) { document.getElementById('sexo').value = dados.sexo; }
-        var escEl = document.getElementById('escolaridade');
-        if (escEl && (dados.escolaridade || dados.education)) escEl.value = dados.escolaridade || dados.education;
-        var latEl = document.getElementById('lateralidade');
-        if (latEl && dados.lateralidade) latEl.value = dados.lateralidade;
-        var cvEl = document.getElementById('correcaoVisual');
-        if (cvEl && dados.correcaoVisual) cvEl.value = dados.correcaoVisual;
-        _sessionInfo = dados;
-        // Esconde info tecnica no modo painel
-        var infoTec = document.querySelector('.info-tecnica');
-        if (infoTec) infoTec.style.display = 'none';
-        // Busca perguntas personalizadas do profissional (se existirem)
-        if (dados.email) {
-            var btnIni = document.getElementById('btnIniciar');
-            if (btnIni) { btnIni.disabled = true; btnIni.textContent = 'Carregando perguntas...'; }
-            _carregarPerguntasCustom(dados.email);
-        }
-        // Busca aprendizado do paciente (se tiver ID)
-        setTimeout(function() {
-            var idPac = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
-            if (idPac) { _carregarAprendizado(idPac); }
-        }, 500);
+        _aplicarDadosReocupa(dados);
     } catch(e) { console.error('Erro ao decodificar URL:', e); }
+}
+
+// Aplica os dados da sessao (usa nomes internos: nome/dn/sexo/escolaridade/lateralidade).
+// Comum aos modos ?d= e ?s=.
+function _aplicarDadosReocupa(dados) {
+    if (dados.nome) { document.getElementById('nome').value = dados.nome; document.getElementById('nome').dispatchEvent(new Event('input')); }
+    if (dados.dn) { document.getElementById('dataNascimento').value = dados.dn; document.getElementById('dataNascimento').dispatchEvent(new Event('change')); }
+    if (dados.sexo) { document.getElementById('sexo').value = dados.sexo; }
+    var escEl = document.getElementById('escolaridade');
+    if (escEl && (dados.escolaridade || dados.education)) escEl.value = dados.escolaridade || dados.education;
+    var latEl = document.getElementById('lateralidade');
+    if (latEl && dados.lateralidade) latEl.value = dados.lateralidade;
+    var cvEl = document.getElementById('correcaoVisual');
+    if (cvEl && dados.correcaoVisual) cvEl.value = dados.correcaoVisual;
+    _sessionInfo = dados;
+    // Esconde info tecnica no modo painel
+    var infoTec = document.querySelector('.info-tecnica');
+    if (infoTec) infoTec.style.display = 'none';
+    // Busca perguntas personalizadas do profissional (se existirem)
+    if (dados.email) {
+        var btnIni = document.getElementById('btnIniciar');
+        if (btnIni) { btnIni.disabled = true; btnIni.textContent = 'Carregando perguntas...'; }
+        _carregarPerguntasCustom(dados.email);
+    }
+    // Busca aprendizado do paciente (se tiver ID)
+    setTimeout(function() {
+        var idPac = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
+        if (idPac) { _carregarAprendizado(idPac); }
+    }, 500);
+}
+
+// Modo link curto (?s=): busca a sessao no servidor e mapeia os nomes padrao (patientName/birthDate/...)
+// para os nomes internos do reocupa (nome/dn/...).
+function _carregarSessaoReocupa(sid) {
+    fetch(_API_URL + '/get-session?id=' + sid).then(function(r){
+        if (r.status === 410) {
+            document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:20px;font-family:sans-serif;"><h1 style="color:#c62828;font-size:24px;margin-bottom:10px;">Este link j\u00e1 foi utilizado.</h1><p style="font-size:16px;color:#555;">Solicite um novo link ao seu avaliador.</p></div>';
+            throw new Error('link_usado');
+        }
+        return r.json();
+    }).then(function(data){
+        if (data && data.sessionId) {
+            var dados = {
+                sessionId: data.sessionId, email: data.email || '', pacienteId: data.pacienteId || '',
+                nome: data.patientName || '', dn: data.birthDate || '', sexo: data.sex || '',
+                escolaridade: data.education || '', lateralidade: data.laterality || data.lateralidade || '',
+                correcaoVisual: data.correcaoVisual || ''
+            };
+            _aplicarDadosReocupa(dados);
+        }
+    }).catch(function(){});
 }
 
 // Carrega perguntas personalizadas do profissional a partir da API
@@ -1355,7 +1383,9 @@ document.getElementById('data').value = new Date().toISOString().split('T')[0];
 })();
 
 var _params = new URLSearchParams(window.location.search);
-if (_params.get('d')) {
+if (_params.get('s')) {
+    _carregarSessaoReocupa(_params.get('s'));
+} else if (_params.get('d')) {
     _decodificarURL();
 } else if (_params.get('print')) {
     // Modo impressao - gera formulario com situacoes em branco

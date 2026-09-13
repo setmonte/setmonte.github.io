@@ -7392,7 +7392,7 @@
     }
 
     // === REOCUPA - Funcoes do painel ===
-    function iniciarReocupa() {
+    async function iniciarReocupa() {
       var nome = document.getElementById('reocupaNome').value.trim();
       var dn = document.getElementById('reocupaDn').value;
       var sexo = document.getElementById('reocupaSexo').value;
@@ -7409,8 +7409,22 @@
         }
       }
       var dados = { nome: nome, dn: dn, sexo: sexo, escolaridade: escolaridade, lateralidade: lateralidade, correcaoVisual: correcaoVisual, email: currentUser || '', pacienteId: pacienteId };
-      var encoded = safeBtoa(JSON.stringify(dados));
-      var url = 'reabilitacao/reocupa.html?d=' + encoded;
+      // Link CURTO (?s=): salva a sessao no servidor usando os nomes padrao; se falhar, cai no ?d= antigo.
+      var url = '';
+      try {
+        var _sd = { email: currentUser || '', patientName: nome, birthDate: dn, sex: sexo, education: escolaridade, laterality: lateralidade, correcaoVisual: correcaoVisual, pacienteId: pacienteId, tipo: 'reocupa' };
+        var _rsR = await fetch(API_URL + '/save-session', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(_sd)
+        });
+        var _rjR = await _rsR.json();
+        if (_rjR.id) { url = 'reabilitacao/reocupa.html?s=' + _rjR.id; }
+      } catch(e) {}
+      if (!url) {
+        var encoded = safeBtoa(JSON.stringify(dados));
+        url = 'reabilitacao/reocupa.html?d=' + encoded;
+      }
       window.open(url, '_blank');
     }
 
