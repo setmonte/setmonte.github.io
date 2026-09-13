@@ -136,25 +136,56 @@
     var API_URL = 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
     var sessionData = {};
 
-    // Decodifica dados da URL
-    try {
-      var params = new URLSearchParams(window.location.search);
-      var d = params.get('d');
-      if (d) sessionData = JSON.parse(atob(decodeURIComponent(d)));
-    } catch(e) {}
-
-    if (!sessionData.sessionId) {
-      document.body.innerHTML = '<div style="text-align:center;padding:50px;font-size:18px;color:#c62828;">Link inválido ou expirado.<br>Solicite um novo link ao seu avaliador.</div>';
+    // Preenche campos ocultos para os scripts do desktop (comum a ?s= e ?d=)
+    function _preencherCamposBAE() {
+      document.getElementById('nome').value = sessionData.patientName || '';
+      document.getElementById('dataNascimento').value = sessionData.birthDate || '';
+      localStorage.setItem('dataNascimento', sessionData.birthDate || '');
+      localStorage.setItem('nome', sessionData.patientName || '');
     }
 
-    // Preenche campos ocultos para os scripts do desktop
-    document.getElementById('nome').value = sessionData.patientName || '';
-    document.getElementById('dataNascimento').value = sessionData.birthDate || '';
-    localStorage.setItem('dataNascimento', sessionData.birthDate || '');
-    localStorage.setItem('nome', sessionData.patientName || '');
+    // Decodifica dados da URL
+    var _params = new URLSearchParams(window.location.search);
+    if (_params.get('s')) {
+      // MODO LINK CURTO: busca os dados da sessao no servidor
+      fetch(API_URL + '/get-session?id=' + _params.get('s')).then(function(r){
+        if (r.status === 410) {
+          document.body.innerHTML = '<div style="text-align:center;padding:50px;font-size:18px;color:#c62828;">Este link j\u00e1 foi utilizado.<br>Solicite um novo link ao seu avaliador.</div>';
+          throw new Error('link_usado');
+        }
+        return r.json();
+      }).then(function(data){
+        if (data && data.sessionId) {
+          sessionData = {
+            sessionId: data.sessionId, email: data.email || '', patientName: data.patientName || '',
+            birthDate: data.birthDate || '', cpf: data.cpf || '', sex: data.sex || '',
+            laterality: data.laterality || data.lateralidade || '', education: data.education || '',
+            correcaoVisual: data.correcaoVisual || '', evaluator: data.evaluator || '', crp: data.crp || '',
+            pacienteId: data.pacienteId || '', obs: data.obs || '',
+            testes: data.testes || null
+          };
+          _preencherCamposBAE();
+        } else {
+          document.body.innerHTML = '<div style="text-align:center;padding:50px;font-size:18px;color:#c62828;">Link inv\u00e1lido ou expirado.<br>Solicite um novo link ao seu avaliador.</div>';
+        }
+      }).catch(function(){});
+    } else {
+      try {
+        var d = _params.get('d');
+        if (d) sessionData = JSON.parse(atob(decodeURIComponent(d)));
+      } catch(e) {}
+      if (!sessionData.sessionId) {
+        document.body.innerHTML = '<div style="text-align:center;padding:50px;font-size:18px;color:#c62828;">Link inv\u00e1lido ou expirado.<br>Solicite um novo link ao seu avaliador.</div>';
+      }
+      _preencherCamposBAE();
+    }
 
-    // Verifica se sessão já foi usada
+    // Verifica se sessao ja foi usada
     (async function() {
+      // No modo ?s= os dados chegam via fetch. Espera o sessionData ficar pronto.
+      var _tent = 0;
+      while (!sessionData.sessionId && _tent < 50) { await new Promise(function(res){ setTimeout(res, 100); }); _tent++; }
+      if (!sessionData.sessionId) return;
       try {
         var resp = await fetch(API_URL + '/session-status?sessionId=' + encodeURIComponent(sessionData.sessionId));
         var data = await resp.json();

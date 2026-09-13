@@ -3695,8 +3695,21 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ sessionId: sessionId, email: currentUser, tipo: 'bae', data: { formData: sessionData, status: 'aguardando' } })
         });
-        var params = safeBtoa(JSON.stringify(sessionData));
-        generatedBaeLink = 'https://setmonte.github.io/online/teste-bae.html?d=' + encodeURIComponent(params);
+        // Link CURTO (?s=): salva a sessao no servidor (incluindo testes[]); se falhar, cai no ?d= antigo.
+        generatedBaeLink = '';
+        try {
+          var _rsB = await fetch(API_URL + '/save-session', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(sessionData)
+          });
+          var _rjB = await _rsB.json();
+          if (_rjB.id) { generatedBaeLink = 'https://setmonte.github.io/online/teste-bae.html?s=' + _rjB.id; }
+        } catch(e) {}
+        if (!generatedBaeLink) {
+          var params = safeBtoa(JSON.stringify(sessionData));
+          generatedBaeLink = 'https://setmonte.github.io/online/teste-bae.html?d=' + encodeURIComponent(params);
+        }
         if (abrirLocal) { window.open(generatedBaeLink, '_blank'); }
         else { document.getElementById('baeSessionLink').textContent = generatedBaeLink; document.getElementById('baeLinkResult').classList.remove('hidden'); }
         var nomesTestes = {concentrada:'TEAC',seletiva:'TEAS',dividida:'TEAD',alternada:'TEAL',sustentada:'TEASU'};
