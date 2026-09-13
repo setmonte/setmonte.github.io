@@ -241,16 +241,8 @@
     var cronometroProgressivoId = null;
 
     // ===== PARSE SESSION DATA FROM URL =====
-    (function() {
-      var params = new URLSearchParams(window.location.search);
-      var d = params.get('d');
-      if (d) {
-        try { sessionData = JSON.parse(atob(decodeURIComponent(d))); } catch(e) { sessionData = null; }
-      }
-      if (!sessionData) {
-        document.querySelector('.container').innerHTML = '<div style="padding:60px;text-align:center;"><h2 style="color:#c62828;">Link invalido</h2><p>Este link nao contem dados validos. Solicite um novo link ao avaliador.</p></div>';
-        return;
-      }
+    // Processa a sessao ja carregada em sessionData (comum aos modos ?s= e ?d=)
+    function _processarSessaoTrmv() {
       // Preencher estado com dados da sessao
       estadoTeste.sessaoId = sessionData.sessionId || '';
       estadoTeste.paciente.nome = sessionData.patientName || '';
@@ -273,10 +265,45 @@
       if (idade.anos <= 12) justificativa = '5 figuras (crianca: ' + idade.anos + ' anos)';
       else if (idade.anos <= 59) justificativa = '10 figuras (adulto: ' + idade.anos + ' anos)';
       else if (numAuto === 10) justificativa = '10 figuras (60+ com escolaridade superior)';
-      else justificativa = '5 figuras (60+ — escolaridade ate ensino medio)';
+      else justificativa = '5 figuras (60+ \u2014 escolaridade ate ensino medio)';
 
       var el = document.getElementById('justificativa-config');
       if (el) el.textContent = 'Configuracao: ' + justificativa;
+    }
+
+    function _linkInvalidoTrmv() {
+      document.querySelector('.container').innerHTML = '<div style="padding:60px;text-align:center;"><h2 style="color:#c62828;">Link invalido</h2><p>Este link nao contem dados validos. Solicite um novo link ao avaliador.</p></div>';
+    }
+
+    (function() {
+      var params = new URLSearchParams(window.location.search);
+      if (params.get('s')) {
+        // MODO LINK CURTO: busca os dados da sessao no servidor
+        fetch(API_URL + '/get-session?id=' + params.get('s')).then(function(r){
+          if (r.status === 410) {
+            document.querySelector('.container').innerHTML = '<div style="padding:60px;text-align:center;"><h2 style="color:#c62828;">Este link j\u00e1 foi utilizado</h2><p>Solicite um novo link ao seu avaliador.</p></div>';
+            throw new Error('link_usado');
+          }
+          return r.json();
+        }).then(function(data){
+          if (data && data.sessionId) {
+            sessionData = {
+              sessionId: data.sessionId, email: data.email || '', patientName: data.patientName || '',
+              birthDate: data.birthDate || '', education: data.education || '', sex: data.sex || '',
+              correcaoVisual: data.correcaoVisual || '', pacienteId: data.pacienteId || '',
+              evaluator: data.evaluator || '', crp: data.crp || '', obs: data.obs || ''
+            };
+            _processarSessaoTrmv();
+          } else { _linkInvalidoTrmv(); }
+        }).catch(function(){});
+        return;
+      }
+      var d = params.get('d');
+      if (d) {
+        try { sessionData = JSON.parse(atob(decodeURIComponent(d))); } catch(e) { sessionData = null; }
+      }
+      if (!sessionData) { _linkInvalidoTrmv(); return; }
+      _processarSessaoTrmv();
     })();
 
     // ===== FUNCOES AUXILIARES =====

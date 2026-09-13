@@ -3257,8 +3257,21 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ sessionId: sessionId, email: currentUser, data: { formData: sessionData, status: 'aguardando' } })
         });
-        var params = safeBtoa(JSON.stringify(sessionData));
-        generatedLink = 'https://setmonte.github.io/online/teste.html?d=' + encodeURIComponent(params);
+        // Link CURTO (?s=): salva a sessao no servidor; se falhar, cai no link antigo (?d=).
+        generatedLink = '';
+        try {
+          var _rsO = await fetch(API_URL + '/save-session', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(sessionData)
+          });
+          var _rjO = await _rsO.json();
+          if (_rjO.id) { generatedLink = 'https://setmonte.github.io/online/teste.html?s=' + _rjO.id; }
+        } catch(e) {}
+        if (!generatedLink) {
+          var params = safeBtoa(JSON.stringify(sessionData));
+          generatedLink = 'https://setmonte.github.io/online/teste.html?d=' + encodeURIComponent(params);
+        }
         if (abrirLocal) { window.open(generatedLink, '_blank'); }
         else { document.getElementById('sessionLink').textContent = generatedLink; document.getElementById('linkResult').classList.remove('hidden'); }
       } catch(e) {
@@ -12396,8 +12409,21 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ sessionId: sessionId, email: currentUser, tipo: 'trmv', data: { formData: sessionData, status: 'aguardando' } })
         });
-        var params = safeBtoa(JSON.stringify(sessionData));
-        generatedTrmvLink = 'https://setmonte.github.io/online/teste-trmv.html?d=' + encodeURIComponent(params);
+        // Link CURTO (?s=): salva a sessao no servidor; se falhar, cai no link antigo (?d=).
+        generatedTrmvLink = '';
+        try {
+          var _rsT = await fetch(API_URL + '/save-session', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(sessionData)
+          });
+          var _rjT = await _rsT.json();
+          if (_rjT.id) { generatedTrmvLink = 'https://setmonte.github.io/online/teste-trmv.html?s=' + _rjT.id; }
+        } catch(e) {}
+        if (!generatedTrmvLink) {
+          var params = safeBtoa(JSON.stringify(sessionData));
+          generatedTrmvLink = 'https://setmonte.github.io/online/teste-trmv.html?d=' + encodeURIComponent(params);
+        }
         if (abrirLocal) { window.open(generatedTrmvLink, '_blank'); }
         else { document.getElementById('trmvSessionLink').textContent = generatedTrmvLink; document.getElementById('trmvLinkResult').classList.remove('hidden'); }
       } catch(e) { mostrarErro('Erro ao gerar link TRMV: ' + e.message); }
@@ -12707,8 +12733,21 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ sessionId: sessionId, email: currentUser, tipo: 'taav', data: { formData: sessionData, status: 'aguardando' } })
         });
-        var params = safeBtoa(JSON.stringify(sessionData));
-        generatedTaavLink = 'https://setmonte.github.io/online/teste-taav.html?d=' + encodeURIComponent(params);
+        // Link CURTO (?s=): salva a sessao no servidor; se falhar, cai no link antigo (?d=).
+        generatedTaavLink = '';
+        try {
+          var _rsA = await fetch(API_URL + '/save-session', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(sessionData)
+          });
+          var _rjA = await _rsA.json();
+          if (_rjA.id) { generatedTaavLink = 'https://setmonte.github.io/online/teste-taav.html?s=' + _rjA.id; }
+        } catch(e) {}
+        if (!generatedTaavLink) {
+          var params = safeBtoa(JSON.stringify(sessionData));
+          generatedTaavLink = 'https://setmonte.github.io/online/teste-taav.html?d=' + encodeURIComponent(params);
+        }
         if (abrirLocal) { window.open(generatedTaavLink, '_blank'); }
         else { document.getElementById('taavSessionLink').textContent = generatedTaavLink; document.getElementById('taavLinkResult').classList.remove('hidden'); }
       } catch(e) { mostrarErro('Erro ao gerar link TAAV: ' + e.message); }

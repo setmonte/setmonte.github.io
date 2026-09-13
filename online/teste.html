@@ -151,35 +151,59 @@
   <script>
     // Sobrescrever comportamento pos-teste para versao online
     (function() {
+      var API_URL = 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
       var sessionData = {};
-      try {
-        var params = new URLSearchParams(window.location.search);
-        var d = params.get('d');
-        if (d) sessionData = JSON.parse(atob(decodeURIComponent(d)));
-      } catch(e) {}
+      var _params = new URLSearchParams(window.location.search);
 
-      if (!sessionData.sessionId) {
-        document.body.innerHTML = '<div style="text-align:center;padding:50px;font-size:18px;color:#c62828;">Link invalido ou expirado.<br>Solicite um novo link ao seu avaliador.</div>';
-        return;
+      // Preenche os campos do formulario a partir de sessionData (comum aos modos ?s= e ?d=)
+      function _preencherCamposTECFE() {
+        window._onlineSession = sessionData;
+        window._testStatus = 'aguardando';
+        document.getElementById('patientName').value = sessionData.patientName || '';
+        document.getElementById('birthDate').value = sessionData.birthDate || '';
+        document.getElementById('cpf').value = sessionData.cpf || '';
+        document.getElementById('sex').value = sessionData.sex || '';
+        document.getElementById('laterality').value = sessionData.laterality || '';
+        document.getElementById('education').value = sessionData.education || '';
+        document.getElementById('evaluator').value = sessionData.evaluator || '';
+        document.getElementById('crp').value = sessionData.crp || '';
+        var evt = new Event('change');
+        document.getElementById('birthDate').dispatchEvent(evt);
       }
 
-      window._onlineSession = sessionData;
-      window._testStatus = 'aguardando';
-
-      // Preencher campos do formulario
-      document.getElementById('patientName').value = sessionData.patientName || '';
-      document.getElementById('birthDate').value = sessionData.birthDate || '';
-      document.getElementById('cpf').value = sessionData.cpf || '';
-      document.getElementById('sex').value = sessionData.sex || '';
-      document.getElementById('laterality').value = sessionData.laterality || '';
-      document.getElementById('education').value = sessionData.education || '';
-      document.getElementById('evaluator').value = sessionData.evaluator || '';
-      document.getElementById('crp').value = sessionData.crp || '';
-      var evt = new Event('change');
-      document.getElementById('birthDate').dispatchEvent(evt);
-
-      // Interceptar exportAll/afterSave para enviar ao banco em vez de salvar local
-      var API_URL = 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
+      if (_params.get('s')) {
+        // MODO LINK CURTO: busca os dados da sessao no servidor
+        fetch(API_URL + '/get-session?id=' + _params.get('s')).then(function(r){
+          if (r.status === 410) {
+            document.body.innerHTML = '<div style="text-align:center;padding:50px;font-size:18px;color:#c62828;">Este link j\u00e1 foi utilizado.<br>Solicite um novo link ao seu avaliador.</div>';
+            throw new Error('link_usado');
+          }
+          return r.json();
+        }).then(function(data){
+          if (data && data.sessionId) {
+            sessionData = {
+              sessionId: data.sessionId, email: data.email || '', patientName: data.patientName || '',
+              birthDate: data.birthDate || '', cpf: data.cpf || '', sex: data.sex || '',
+              laterality: data.laterality || data.lateralidade || '', education: data.education || '',
+              evaluator: data.evaluator || '', crp: data.crp || '', pacienteId: data.pacienteId || '', obs: data.obs || ''
+            };
+            _preencherCamposTECFE();
+          } else {
+            document.body.innerHTML = '<div style="text-align:center;padding:50px;font-size:18px;color:#c62828;">Link invalido ou expirado.<br>Solicite um novo link ao seu avaliador.</div>';
+          }
+        }).catch(function(){});
+      } else {
+        // MODO LEGADO: dados embutidos no proprio link (?d=)
+        try {
+          var d = _params.get('d');
+          if (d) sessionData = JSON.parse(atob(decodeURIComponent(d)));
+        } catch(e) {}
+        if (!sessionData.sessionId) {
+          document.body.innerHTML = '<div style="text-align:center;padding:50px;font-size:18px;color:#c62828;">Link invalido ou expirado.<br>Solicite um novo link ao seu avaliador.</div>';
+          return;
+        }
+        _preencherCamposTECFE();
+      }
 
       // Sobrescrever a funcao global de salvar PDF
       var origSavePDF = null;
@@ -211,6 +235,13 @@
 
         // Iniciar teste quando paciente clicar no botao (verificar se sessao ja foi usada)
         setTimeout(async function() {
+          // No modo ?s= os dados chegam via fetch (assincrono). Espera o sessionData ficar pronto.
+          var _tentativas = 0;
+          while (!sessionData.sessionId && _tentativas < 50) {
+            await new Promise(function(res){ setTimeout(res, 100); });
+            _tentativas++;
+          }
+          if (!sessionData.sessionId) return;
           try {
             var resp = await fetch('https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws/session-status?sessionId=' + encodeURIComponent(sessionData.sessionId));
             var data = await resp.json();
