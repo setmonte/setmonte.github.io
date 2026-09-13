@@ -8461,8 +8461,20 @@
           obs: document.getElementById('neoObs').value || '',
           pacienteId: document.getElementById('neoSelPac').value || ''
         };
-        var params = safeBtoa(JSON.stringify(sessionData));
-        var link = 'https://setmonte.github.io/programas-ocultos/neo-pi-r.html?d=' + encodeURIComponent(params);
+        // Link CURTO (?s=): salva a sessao no servidor; se falhar, cai no link antigo (?d=).
+        var resp = await fetch(API_URL + '/save-session', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(sessionData)
+        });
+        var result = await resp.json();
+        var link = '';
+        if (result.id) {
+          link = 'https://setmonte.github.io/programas-ocultos/neo-pi-r.html?s=' + result.id;
+        } else {
+          var params = safeBtoa(JSON.stringify(sessionData));
+          link = 'https://setmonte.github.io/programas-ocultos/neo-pi-r.html?d=' + encodeURIComponent(params);
+        }
         if (abrirLocal) { window.open(link, '_blank'); }
         else { document.getElementById('neoSessionLink').textContent = link; document.getElementById('neoLinkResult').classList.remove('hidden'); }
       } catch(e) { alert('Erro ao gerar link: ' + e.message); }
@@ -10620,8 +10632,21 @@
         obs: document.getElementById('corsiObs').value || '',
         pacienteId: document.getElementById('corsiSelPac').value || ''
       };
-      var params = safeBtoa(JSON.stringify(sessionData));
-      var link = 'https://setmonte.github.io/produtos/corsi.html?d=' + encodeURIComponent(params);
+      // Link CURTO (?s=): salva a sessao no servidor; se falhar, cai no link antigo (?d=).
+      var link = '';
+      try {
+        var resp = await fetch(API_URL + '/save-session', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(sessionData)
+        });
+        var result = await resp.json();
+        if (result.id) { link = 'https://setmonte.github.io/produtos/corsi.html?s=' + result.id; }
+      } catch(e) {}
+      if (!link) {
+        var params = safeBtoa(JSON.stringify(sessionData));
+        link = 'https://setmonte.github.io/produtos/corsi.html?d=' + encodeURIComponent(params);
+      }
       if (abrirLocal) { window.open(link, '_blank'); }
       else { document.getElementById('corsiSessionLink').textContent = link; document.getElementById('corsiLinkResult').classList.remove('hidden'); }
     }
@@ -11278,7 +11303,7 @@
       });
     }
 
-    function startTetaylorsimpTest() {
+    async function startTetaylorsimpTest() {
       var nome = document.getElementById('tetaylorsimpNome').value.trim();
       var dn = document.getElementById('tetaylorsimpDn').value;
       var sexo = document.getElementById('tetaylorsimpSexo').value;
@@ -11298,8 +11323,21 @@
         pacienteId: document.getElementById('tetaylorsimpSelPac').value || '',
         correcaoVisual: document.getElementById('tetaylorsimpCorrecaoVisual').value || ''
       };
-      var params = safeBtoa(JSON.stringify(sessionData));
-      var link = 'https://setmonte.github.io/online/teste-TETaylorSimp.html?d=' + encodeURIComponent(params);
+      // Link CURTO (?s=): salva a sessao no servidor; se falhar, cai no link antigo (?d=).
+      var link = '';
+      try {
+        var resp = await fetch(API_URL + '/save-session', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(sessionData)
+        });
+        var result = await resp.json();
+        if (result.id) { link = 'https://setmonte.github.io/online/teste-TETaylorSimp.html?s=' + result.id; }
+      } catch(e) {}
+      if (!link) {
+        var params = safeBtoa(JSON.stringify(sessionData));
+        link = 'https://setmonte.github.io/online/teste-TETaylorSimp.html?d=' + encodeURIComponent(params);
+      }
       window.open(link, '_blank');
     }
 
