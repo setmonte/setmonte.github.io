@@ -239,16 +239,8 @@
     var SEQ_TREINO_B = ['1','A','2','B','3','C','4','D'];
 
     // ===== PARSE SESSION DATA FROM URL =====
-    (function() {
-      var params = new URLSearchParams(window.location.search);
-      var d = params.get('d');
-      if (d) {
-        try { sessionData = JSON.parse(atob(decodeURIComponent(d))); } catch(e) { sessionData = null; }
-      }
-      if (!sessionData) {
-        document.querySelector('.container').innerHTML = '<div style="padding:60px;text-align:center;"><h2 style="color:#c62828;">Link invalido</h2><p>Este link nao contem dados validos. Solicite um novo link ao avaliador.</p></div>';
-        return;
-      }
+    // Preenche a tela com os dados ja carregados em sessionData (comum aos modos ?s= e ?d=)
+    function _aplicarSessionDataTTE() {
       estado.paciente.nome = sessionData.patientName || '';
       estado.paciente.dataNascimento = sessionData.birthDate || '';
       estado.paciente.escolaridade = sessionData.education || '';
@@ -261,6 +253,49 @@
         var idade = estado.paciente.idade;
         infoEl.textContent = estado.paciente.nome + ' | ' + idade.anos + ' anos, ' + idade.meses + ' meses | ' + (estado.paciente.escolaridade || 'Escolaridade nao informada');
       }
+    }
+
+    function _linkInvalidoTTE() {
+      document.querySelector('.container').innerHTML = '<div style="padding:60px;text-align:center;"><h2 style="color:#c62828;">Link invalido</h2><p>Este link nao contem dados validos. Solicite um novo link ao avaliador.</p></div>';
+    }
+
+    (function() {
+      var params = new URLSearchParams(window.location.search);
+      if (params.get('s')) {
+        // MODO LINK CURTO: busca os dados da sessao no servidor
+        fetch(API_URL + '/get-session?id=' + params.get('s')).then(function(r){
+          if (r.status === 410) {
+            document.querySelector('.container').innerHTML = '<div style="padding:60px;text-align:center;"><h2 style="color:#c62828;">Este link j\u00e1 foi utilizado</h2><p>Solicite um novo link ao seu avaliador.</p></div>';
+            throw new Error('link_usado');
+          }
+          return r.json();
+        }).then(function(data){
+          if (data && data.sessionId) {
+            sessionData = {
+              sessionId: data.sessionId,
+              email: data.email || '',
+              patientName: data.patientName || '',
+              birthDate: data.birthDate || '',
+              education: data.education || '',
+              sex: data.sex || '',
+              correcaoVisual: data.correcaoVisual || '',
+              pacienteId: data.pacienteId || '',
+              obs: data.obs || ''
+            };
+            _aplicarSessionDataTTE();
+          } else {
+            _linkInvalidoTTE();
+          }
+        }).catch(function(){});
+        return;
+      }
+      // MODO LEGADO: dados embutidos no proprio link (?d=)
+      var d = params.get('d');
+      if (d) {
+        try { sessionData = JSON.parse(atob(decodeURIComponent(d))); } catch(e) { sessionData = null; }
+      }
+      if (!sessionData) { _linkInvalidoTTE(); return; }
+      _aplicarSessionDataTTE();
     })();
 
     // ===== FUNCOES AUXILIARES =====

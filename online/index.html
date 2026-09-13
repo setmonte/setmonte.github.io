@@ -10906,8 +10906,21 @@
         obs: document.getElementById('tteObs').value || '',
         pacienteId: document.getElementById('tteSelPac').value || ''
       };
-      var params = safeBtoa(JSON.stringify(sessionData));
-      var link = 'https://setmonte.github.io/online/teste-tte.html?d=' + encodeURIComponent(params);
+      // Link CURTO (?s=): salva a sessao no servidor; se falhar, cai no link antigo (?d=).
+      var link = '';
+      try {
+        var resp = await fetch(API_URL + '/save-session', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(sessionData)
+        });
+        var result = await resp.json();
+        if (result.id) { link = 'https://setmonte.github.io/online/teste-tte.html?s=' + result.id; }
+      } catch(e) {}
+      if (!link) {
+        var params = safeBtoa(JSON.stringify(sessionData));
+        link = 'https://setmonte.github.io/online/teste-tte.html?d=' + encodeURIComponent(params);
+      }
       if (abrirLocal) { window.open(link, '_blank'); }
       else { document.getElementById('tteSessionLink').textContent = link; document.getElementById('tteLinkResult').classList.remove('hidden'); }
     }
@@ -11212,7 +11225,7 @@
       });
     }
 
-    function startTetaylorTest() {
+    async function startTetaylorTest() {
       var nome = document.getElementById('tetaylorNome').value.trim();
       var dn = document.getElementById('tetaylorDn').value;
       var sexo = document.getElementById('tetaylorSexo').value;
@@ -11232,8 +11245,21 @@
         pacienteId: document.getElementById('tetaylorSelPac').value || '',
         correcaoVisual: document.getElementById('tetaylorCorrecaoVisual').value || ''
       };
-      var params = safeBtoa(JSON.stringify(sessionData));
-      var link = 'https://setmonte.github.io/online/teste-TETaylor.html?d=' + encodeURIComponent(params);
+      // Link CURTO (?s=): salva a sessao no servidor; se falhar, cai no link antigo (?d=).
+      var link = '';
+      try {
+        var resp = await fetch(API_URL + '/save-session', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(sessionData)
+        });
+        var result = await resp.json();
+        if (result.id) { link = 'https://setmonte.github.io/online/teste-TETaylor.html?s=' + result.id; }
+      } catch(e) {}
+      if (!link) {
+        var params = safeBtoa(JSON.stringify(sessionData));
+        link = 'https://setmonte.github.io/online/teste-TETaylor.html?d=' + encodeURIComponent(params);
+      }
       window.open(link, '_blank');
     }
 
@@ -13618,8 +13644,21 @@
         sex: document.getElementById('tflodSexo').value || '',
         correcaoVisual: document.getElementById('tflodCorrecaoVisual').value || ''
       };
-      var params = safeBtoa(JSON.stringify(sessionData));
-      var link = 'https://setmonte.github.io/online/teste-tflod.html?d=' + encodeURIComponent(params);
+      // Link CURTO (?s=): salva a sessao no servidor; se falhar, cai no link antigo (?d=).
+      var link = '';
+      try {
+        var _rs = await fetch(API_URL + '/save-session', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(sessionData)
+        });
+        var _rj = await _rs.json();
+        if (_rj.id) { link = 'https://setmonte.github.io/online/teste-tflod.html?s=' + _rj.id; }
+      } catch(e) {}
+      if (!link) {
+        var params = safeBtoa(JSON.stringify(sessionData));
+        link = 'https://setmonte.github.io/online/teste-tflod.html?d=' + encodeURIComponent(params);
+      }
       if (abrirLocal) { window.open(link, '_blank'); }
       else { document.getElementById('tflodSessionLink').textContent = link; document.getElementById('tflodLinkResult').classList.remove('hidden'); }
       } catch(e) { mostrarErro('Erro ao gerar link TFLOD: ' + e.message); }

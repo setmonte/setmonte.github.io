@@ -966,20 +966,37 @@ async function salvarResultadoErro(mensagemErro, audioBase64, audioS3Key) {
 }
 
 // ===== DADOS DA URL =====
+// Preenche os campos da tela a partir de sessionInfo (comum aos modos ?s= e ?d=)
+function _aplicarSessionInfoTflod() {
+    if (sessionInfo.patientName) document.getElementById('nome').value = sessionInfo.patientName;
+    if (sessionInfo.birthDate) document.getElementById('dataNasc').value = sessionInfo.birthDate;
+    if (sessionInfo.education) document.getElementById('escolaridade').value = sessionInfo.education;
+    if (sessionInfo.obs) document.getElementById('obs').value = sessionInfo.obs;
+    var _cvEl = document.getElementById('correcaoVisual');
+    if (_cvEl && sessionInfo.correcaoVisual) _cvEl.value = sessionInfo.correcaoVisual;
+    calcularIdade();
+    gerarID();
+}
+
 function decodificarURL() {
     var params = new URLSearchParams(window.location.search);
+    if (params.get('s')) {
+        // MODO LINK CURTO: busca os dados da sessao no servidor
+        fetch(API_URL + '/get-session?id=' + params.get('s')).then(function(r){
+            if (r.status === 410) {
+                document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:20px;font-family:sans-serif;"><h1 style="color:#c62828;font-size:24px;margin-bottom:10px;">Este link j\u00e1 foi utilizado.</h1><p style="font-size:16px;color:#555;">Solicite um novo link ao seu avaliador.</p></div>';
+                throw new Error('link_usado');
+            }
+            return r.json();
+        }).then(function(data){
+            if (data && data.sessionId) { sessionInfo = data; _aplicarSessionInfoTflod(); }
+        }).catch(function(){});
+        return;
+    }
     var d = params.get('d');
     if (d) {
         try { sessionInfo = JSON.parse(atob(decodeURIComponent(d))); } catch(e) {}
-        if (sessionInfo.patientName) document.getElementById('nome').value = sessionInfo.patientName;
-        if (sessionInfo.birthDate) document.getElementById('dataNasc').value = sessionInfo.birthDate;
-        if (sessionInfo.education) document.getElementById('escolaridade').value = sessionInfo.education;
-        if (sessionInfo.obs) document.getElementById('obs').value = sessionInfo.obs;
-        // Preenche a correcao visual vinda do painel (aplicacao local ou link)
-        var _cvEl = document.getElementById('correcaoVisual');
-        if (_cvEl && sessionInfo.correcaoVisual) _cvEl.value = sessionInfo.correcaoVisual;
-        calcularIdade();
-        gerarID();
+        _aplicarSessionInfoTflod();
     }
 }
 
