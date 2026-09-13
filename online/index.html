@@ -1425,9 +1425,11 @@
           <!-- Enviar Mensagem ao Usuario -->
           <div style="background:#e3f2fd;border:2px solid #1565c0;border-radius:10px;padding:15px;margin:10px 0;">
             <p style="font-size:13px;font-weight:bold;color:#1565c0;margin-bottom:10px;">&#128232; Enviar Mensagem ao Usu&#225;rio</p>
-            <input type="email" id="adminMsgEmail" placeholder="Email do usuario" style="width:100%;padding:8px 12px;border:1px solid #ccc;border-radius:6px;font-size:13px;margin-bottom:8px;">
+            <input type="text" id="adminMsgEmail" placeholder="Email do usuario (ou digite @all para todos)" style="width:100%;padding:8px 12px;border:1px solid #ccc;border-radius:6px;font-size:13px;margin-bottom:4px;">
+            <p style="font-size:11px;color:#777;margin-bottom:8px;">Dica: digite <b>@all</b> no campo acima para enviar a mesma mensagem a <b>todos os usu&#225;rios</b> de uma vez.</p>
             <textarea id="adminMsgTexto" rows="10" placeholder="Digite a mensagem..." style="width:100%;padding:8px 12px;border:1px solid #ccc;border-radius:6px;font-size:13px;resize:vertical;margin-bottom:8px;min-height:200px;"></textarea>
             <button onclick="enviarMsgAoUsuario()" class="btn btn-blue" style="padding:8px 20px;font-size:12px;">Enviar</button>
+            <button onclick="document.getElementById('adminMsgEmail').value='@all';enviarMsgAoUsuario();" style="padding:8px 20px;font-size:12px;background:#e65100;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-left:6px;">&#128226; Enviar a Todos</button>
             <span id="adminMsgStatus" style="margin-left:10px;font-size:12px;"></span>
           </div>
 
@@ -5809,8 +5811,32 @@
       var email = document.getElementById('adminMsgEmail').value.trim();
       var texto = document.getElementById('adminMsgTexto').value.trim();
       var status = document.getElementById('adminMsgStatus');
-      if (!email || !email.includes('@')) { alert('Digite um email valido.'); return; }
       if (!texto) { alert('Digite a mensagem.'); return; }
+      // @all (ou "todos") no campo de email = enviar para TODOS os usuarios de uma vez.
+      if (email.toLowerCase() === '@all' || email.toLowerCase() === 'todos') {
+        if (!confirm('Enviar esta mensagem para TODOS os usuarios? Esta acao nao pode ser desfeita.')) { return; }
+        status.textContent = 'Enviando para todos...'; status.style.color = '#555';
+        try {
+          var respAll = await fetch(API_URL + '/broadcast', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ email: window.currentUser, texto: texto })
+          });
+          var rAll = await respAll.json();
+          if (respAll.ok && rAll.ok) {
+            status.textContent = 'Enviado para ' + rAll.enviados + ' usuario(s)!' + (rAll.falhas ? ' (' + rAll.falhas + ' falha(s))' : '');
+            status.style.color = '#2e7d32';
+            document.getElementById('adminMsgTexto').value = '';
+            document.getElementById('adminMsgEmail').value = '';
+          } else {
+            status.textContent = 'Erro: ' + (rAll.error || 'tente novamente'); status.style.color = '#c62828';
+          }
+        } catch(eAll) { status.textContent = 'Erro de conexao.'; status.style.color = '#c62828'; }
+        setTimeout(function(){ status.textContent = ''; }, 5000);
+        return;
+      }
+      // Envio individual (comportamento original)
+      if (!email || !email.includes('@')) { alert('Digite um email valido (ou "@all" para todos).'); return; }
       status.textContent = 'Enviando...'; status.style.color = '#555';
       try {
         await fetch(API_URL + '/save-result', {
