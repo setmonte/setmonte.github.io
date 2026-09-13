@@ -8423,8 +8423,21 @@
           obs: document.getElementById('pfisterObs').value || '',
           pacienteId: document.getElementById('pfisterSelPac').value || ''
         };
-        var params = safeBtoa(JSON.stringify(sessionData));
-        var link = 'https://setmonte.github.io/programas-ocultos/teste-pfister-v2.html?d=' + encodeURIComponent(params);
+        // Link CURTO (?s=): salva a sessao no servidor; se falhar, cai no link antigo (?d=).
+        var link = '';
+        try {
+          var _rsP = await fetch(API_URL + '/save-session', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(sessionData)
+          });
+          var _rjP = await _rsP.json();
+          if (_rjP.id) { link = 'https://setmonte.github.io/programas-ocultos/teste-pfister-v2.html?s=' + _rjP.id; }
+        } catch(e) {}
+        if (!link) {
+          var params = safeBtoa(JSON.stringify(sessionData));
+          link = 'https://setmonte.github.io/programas-ocultos/teste-pfister-v2.html?d=' + encodeURIComponent(params);
+        }
         if (abrirLocal) { window.open(link, '_blank'); }
         else { document.getElementById('pfisterSessionLink').textContent = link; document.getElementById('pfisterLinkResult').classList.remove('hidden'); }
       } catch(e) { alert('Erro ao gerar link: ' + e.message); }

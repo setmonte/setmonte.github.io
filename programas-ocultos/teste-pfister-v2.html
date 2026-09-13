@@ -240,35 +240,47 @@
     var API_URL = 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
     (function() {
         var params = new URLSearchParams(window.location.search);
+        if (params.get('s')) {
+            // MODO LINK CURTO: busca os dados da sessao no servidor
+            fetch(API_URL + '/get-session?id=' + params.get('s')).then(function(r){
+                if (r.status === 410) {
+                    document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:20px;font-family:sans-serif;"><h1 style="color:#c62828;font-size:24px;margin-bottom:10px;">Este link j\u00e1 foi utilizado.</h1><p style="font-size:16px;color:#555;">Solicite um novo link ao seu avaliador.</p></div>';
+                    throw new Error('link_usado');
+                }
+                return r.json();
+            }).then(function(data){
+                if (data && data.sessionId) { sessionInfo = data; if (sessionInfo.patientName) setTimeout(_preencherPfister, 200); }
+            }).catch(function(){});
+            return;
+        }
         var d = params.get('d');
         if (d) {
             try { sessionInfo = JSON.parse(atob(decodeURIComponent(d))); } catch(e) { try { sessionInfo = JSON.parse(atob(d)); } catch(e2) {} }
-            if (sessionInfo.patientName) {
-                setTimeout(function() {
-                    var nomeEl = document.getElementById('nome');
-                    var dnEl = document.getElementById('dataNascimento');
-                    if (nomeEl && sessionInfo.patientName) nomeEl.value = sessionInfo.patientName;
-                    if (dnEl && sessionInfo.birthDate) { dnEl.value = sessionInfo.birthDate; if (typeof calcularIdade === 'function') calcularIdade(); }
-                    if (sessionInfo.sex) { var sexEl = document.getElementById('sexo'); if (sexEl) sexEl.value = sessionInfo.sex; }
-                    if (sessionInfo.education) { var escEl = document.getElementById('escolaridade'); if (escEl) escEl.value = sessionInfo.education; }
-                    if (typeof atualizarIdPaciente === 'function') atualizarIdPaciente();
-                    // Preencher dados de identificacao e pular para instruções
-                    dadosTeste.identificacao = {
-                        nome: sessionInfo.patientName || '',
-                        dataNascimento: sessionInfo.birthDate || '',
-                        idade: document.getElementById('idadeCalculada') ? document.getElementById('idadeCalculada').value : '',
-                        idPaciente: document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '',
-                        cpf: '',
-                        escolaridade: sessionInfo.education || '',
-                        psicologo: '',
-                        crp: ''
-                    };
-                    // Ir direto para pagina de instrucoes
-                    if (typeof mudarPagina === 'function') mudarPagina(2);
-                }, 200);
-            }
+            if (sessionInfo.patientName) { setTimeout(_preencherPfister, 200); }
         }
     })();
+
+    // Preenche os campos e vai para as instrucoes (comum aos modos ?s= e ?d=)
+    function _preencherPfister() {
+        var nomeEl = document.getElementById('nome');
+        var dnEl = document.getElementById('dataNascimento');
+        if (nomeEl && sessionInfo.patientName) nomeEl.value = sessionInfo.patientName;
+        if (dnEl && sessionInfo.birthDate) { dnEl.value = sessionInfo.birthDate; if (typeof calcularIdade === 'function') calcularIdade(); }
+        if (sessionInfo.sex) { var sexEl = document.getElementById('sexo'); if (sexEl) sexEl.value = sessionInfo.sex; }
+        if (sessionInfo.education) { var escEl = document.getElementById('escolaridade'); if (escEl) escEl.value = sessionInfo.education; }
+        if (typeof atualizarIdPaciente === 'function') atualizarIdPaciente();
+        dadosTeste.identificacao = {
+            nome: sessionInfo.patientName || '',
+            dataNascimento: sessionInfo.birthDate || '',
+            idade: document.getElementById('idadeCalculada') ? document.getElementById('idadeCalculada').value : '',
+            idPaciente: document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '',
+            cpf: '',
+            escolaridade: sessionInfo.education || '',
+            psicologo: '',
+            crp: ''
+        };
+        if (typeof mudarPagina === 'function') mudarPagina(2);
+    }
 
     // ========== ID ÚNICO DO PACIENTE (SΨM) ==========
     function gerarIdPaciente(nome, nascimento) {
@@ -825,7 +837,7 @@
         doc.save(nomeArquivo);
         // Enviar resultados ao servidor se veio do painel
         if (sessionInfo && sessionInfo.sessionId && sessionInfo.email) {
-            var sindromes = calcularSindromes();
+            var sindromesEnvio = calcularSindromes();
             var coresTotal = {};
             Object.entries(dadosTeste.contagemCores).filter(function(e) { return e[1] > 0; }).forEach(function(e) { coresTotal[e[0]] = e[1]; });
             fetch(API_URL + '/save-result', {
@@ -848,7 +860,7 @@
                         resultados: {
                             piramides: dadosTeste.piramides,
                             contagemCores: coresTotal,
-                            sindromes: sindromes,
+                            sindromes: sindromesEnvio,
                             respostas: dadosTeste.respostas,
                             sequenciaColocacao: dadosTeste.sequenciaColocacao,
                             mudancasCor: dadosTeste.mudancasCor,
@@ -868,7 +880,7 @@
     // ========== LAUDO VIA IA (via Lambda AWS) ==========
     // A chave da IA NAO fica mais aqui no arquivo (que e publico). Em vez disso,
     // chamamos a nossa Lambda (/generate-ai), que guarda a chave com seguranca na AWS.
-    const API_URL = 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
+    // (API_URL ja declarado no topo do script)
 
     async function gerarLaudoIA() {
         const contagens = dadosTeste.piramides.map(p => {
