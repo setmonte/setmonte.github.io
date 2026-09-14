@@ -79,10 +79,18 @@ function init() {
     // Modo agenda (vindo do painel com dados do paciente)
     try { sessionInfo = JSON.parse(atob(decodeURIComponent(d))); } catch(e) { try { sessionInfo = JSON.parse(atob(d)); } catch(e2) {} }
     if (!sessionInfo.email) { document.body.innerHTML = '<div style="text-align:center;padding:60px;"><h2 style="color:#c62828;">Erro ao decodificar dados.</h2></div>'; return; }
-    modoAgenda = true;
-    totalSegundos = (parseInt(sessionInfo.duracao) || 60) * 60;
-    document.getElementById('page-title').innerHTML = '&#128203; Consulta em Andamento';
-    renderPacienteInfo();
+    if (sessionInfo.modoLivre) {
+      // Modo livre (vindo do painel sem paciente): sem timer, nome opcional na propria tela.
+      modoAgenda = false;
+      document.getElementById('page-title').innerHTML = '&#128203; Modo Livre';
+      renderModoLivreInfo();
+    } else {
+      // Modo agenda (vindo do painel com dados do paciente): com timer/bips.
+      modoAgenda = true;
+      totalSegundos = (parseInt(sessionInfo.duracao) || 60) * 60;
+      document.getElementById('page-title').innerHTML = '&#128203; Consulta em Andamento';
+      renderPacienteInfo();
+    }
   } else {
     // Acesso direto (sem vir do painel) NAO e permitido - nem para o admin.
     // O Prontuario grava audio e consome credito, entao deve sempre passar pelo painel.
