@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-QY1N9587DG"></script>
+    <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-QY1N9587DG');</script>
+    <meta name="description" content="SRS-2: Escala de Responsividade Social - Formulario Adulto Autorrelato. Rastreio de TEA.">
+    <meta property="og:description" content="SRS-2: Escala de Responsividade Social - Formulario Adulto Autorrelato. Rastreio de TEA.">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SRS-2 &#8212; Formul&#225;rio Adulto Autorrelato</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;line-height:1.6;color:#333;background:linear-gradient(135deg,#1a237e 0%,#00695c 100%);min-height:100vh;padding:20px;}
+        .container{max-width:1000px;margin:0 auto;background:white;border-radius:15px;box-shadow:0 20px 40px rgba(0,0,0,0.15);overflow:hidden;}
+        .header{background:linear-gradient(135deg,#1a237e 0%,#00695c 100%);color:white;padding:30px;text-align:center;}
+        .header h1{font-size:2.2em;margin-bottom:10px;text-shadow:2px 2px 4px rgba(0,0,0,0.3);}
+        .header p{font-size:1.1em;opacity:0.9;}
+        .content{padding:30px;}
+        .info-tecnica{background:#e8eaf6;padding:25px;border-radius:10px;margin-bottom:30px;border-left:5px solid #1a237e;position:relative;}
+        .info-tecnica h2{color:#1a237e;margin-bottom:15px;font-size:1.4em;}
+        .info-tecnica p{color:#555;line-height:1.7;font-size:0.95em;}
+        .dados-pessoais{background:#f8f9fa;padding:25px;border-radius:10px;margin-bottom:30px;border-left:5px solid #1a237e;}
+        .dados-pessoais h2{color:#1a237e;margin-bottom:20px;font-size:1.5em;}
+        .form-row{display:flex;gap:20px;margin-bottom:15px;flex-wrap:wrap;}
+        .form-group{flex:1;min-width:200px;}
+        .form-group label{display:block;margin-bottom:5px;font-weight:600;color:#555;}
+        .form-group input,.form-group select{width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:8px;font-size:16px;transition:border-color 0.3s;}
+        .form-group input:focus,.form-group select:focus{outline:none;border-color:#1a237e;}
+        .instrucoes{background:#e0f2f1;padding:20px;border-radius:10px;margin-bottom:30px;border-left:5px solid #00695c;}
+        .instrucoes h3{color:#00695c;margin-bottom:10px;}
+        .instrucoes p{color:#555;font-size:0.95em;line-height:1.7;}
+        .item{padding:20px;border-bottom:1px solid #f0f0f0;transition:background-color 0.3s;}
+        .item:hover{background-color:#e8eaf6;}
+        .item:last-child{border-bottom:none;}
+        .item-texto{font-size:1.05em;margin-bottom:15px;color:#444;line-height:1.5;}
+        .item-numero{font-weight:bold;color:#1a237e;margin-right:8px;}
+        .opcoes{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
+        .opcao{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;padding:8px;border-radius:8px;transition:all 0.3s;border:2px solid transparent;min-width:80px;min-height:70px;}
+        .opcao:hover{background-color:#e8eaf6;border-color:#1a237e;}
+        .opcao input[type="radio"]{width:18px;height:18px;cursor:pointer;accent-color:#1a237e;}
+        .opcao label{cursor:pointer;font-weight:500;color:#555;text-align:center;font-size:0.8em;line-height:1.2;min-height:30px;display:flex;align-items:center;}
+        .botoes{display:flex;gap:15px;justify-content:center;margin:30px 0;flex-wrap:wrap;}
+        .btn{padding:15px 30px;border:none;border-radius:25px;font-size:16px;font-weight:600;cursor:pointer;transition:all 0.3s;text-align:center;}
+        .btn-primary{background:linear-gradient(135deg,#1a237e 0%,#00695c 100%);color:white;}
+        .btn-primary:hover{transform:translateY(-2px);box-shadow:0 10px 20px rgba(26,35,126,0.3);}
+        .btn-secondary{background:linear-gradient(135deg,#28a745 0%,#20c997 100%);color:white;}
+        .btn-secondary:hover{transform:translateY(-2px);box-shadow:0 10px 20px rgba(40,167,69,0.3);}
+        .btn-danger{background:linear-gradient(135deg,#dc3545 0%,#fd7e14 100%);color:white;}
+        .btn-danger:hover{transform:translateY(-2px);box-shadow:0 10px 20px rgba(220,53,69,0.3);}
+        .resultados{background:#f8f9fa;padding:30px;border-radius:10px;margin-top:30px;border-left:5px solid #1a237e;display:none;}
+        .resultados h2{color:#1a237e;margin-bottom:20px;text-align:center;}
+        .total-geral{background:linear-gradient(135deg,#1a237e 0%,#00695c 100%);color:white;padding:25px;border-radius:10px;text-align:center;margin:20px 0;}
+        .dominio-card{background:white;padding:20px;border-radius:10px;margin-bottom:15px;box-shadow:0 3px 10px rgba(0,0,0,0.08);border-left:4px solid #1a237e;}
+        .dominio-card h4{color:#1a237e;margin-bottom:8px;}
+        .analise-texto{background:white;padding:25px;border-radius:10px;margin-top:20px;border:2px solid #1a237e;line-height:1.8;}
+        .analise-texto h3{color:#1a237e;margin-bottom:15px;}
+        .analise-texto p{margin-bottom:10px;color:#444;font-size:0.95em;}
+        .disclaimer{background:#fff3e0;padding:15px;border-radius:8px;margin-top:20px;border-left:4px solid #ff9800;font-size:0.85em;color:#e65100;line-height:1.6;}
+        .btn-imprimir{position:absolute;top:20px;right:20px;padding:10px 20px;background:linear-gradient(135deg,#1a237e 0%,#0d47a1 100%);color:white;border:none;border-radius:20px;font-size:14px;font-weight:600;cursor:pointer;}
+        @media print{body{background:white!important;padding:0!important;}.botoes,.btn,.btn-imprimir{display:none!important;}.container{box-shadow:none!important;max-width:100%!important;}.info-tecnica{display:none!important;}.resultados{display:none!important;}.item{page-break-inside:avoid;}.opcoes{flex-direction:row!important;align-items:center!important;justify-content:center!important;}.opcao{min-width:auto!important;padding:4px 6px!important;}}
+        @media(max-width:768px){.container{margin:10px;border-radius:10px;}.header{padding:20px;}.header h1{font-size:1.6em;}.content{padding:15px;}.form-row{flex-direction:column;}.opcoes{flex-direction:column;align-items:center;}.botoes{flex-direction:column;}.btn{width:100%;}}
+    </style>
+</head>
+<body>
+<div style="padding:10px 20px;background:#2e7d32;"><a href="../" style="display:inline-block;background:#fff;color:#2e7d32;text-decoration:none;font-family:Segoe UI,Arial,sans-serif;font-size:14px;font-weight:bold;padding:8px 20px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.15);">&#11013; Voltar ao In&#237;cio</a></div>
+<div class="container">
+<div class="header">
+<h1>&#129504; SRS-2</h1>
+<p>Escala de Responsividade Social &#8212; 2&#170; Edi&#231;&#227;o</p>
+<p style="font-size:0.85em;opacity:0.8;margin-top:5px;">Formul&#225;rio Adulto Autorrelato (a partir de 19 anos) &#8212; Normas Brasileiras</p>
+</div>
+<div class="content">
+<div class="info-tecnica">
+<button class="btn-imprimir" onclick="window.print()">&#128424; Imprimir Formul&#225;rio</button>
+<h2>&#128218; Informa&#231;&#245;es T&#233;cnicas</h2>
+<p>
+<strong>Instrumento:</strong> SRS-2 &#8212; Social Responsiveness Scale, 2nd Edition<br>
+<strong>Autores:</strong> John N. Constantino e Christian P. Gruber<br>
+<strong>Formul&#225;rio:</strong> Adulto Autorrelato (a pr&#243;pria pessoa responde sobre si)<br>
+<strong>Adapta&#231;&#227;o Brasileira:</strong> Hogrefe (normas brasileiras)<br>
+<strong>Estrutura:</strong> 65 itens, 5 subescalas de interven&#231;&#227;o, escala Likert 4 pontos (1&#8211;4)<br>
+<strong>Resultado:</strong> Escore T + Percentil (Normas Brasileiras &#8212; Ambos os Sexos)<br>
+<strong>Subescalas:</strong> Percep&#231;&#227;o Social, Cogni&#231;&#227;o Social, Comunica&#231;&#227;o Social, Motiva&#231;&#227;o Social, Padr&#245;es Restritos e Repetitivos<br>
+<strong>Popula&#231;&#227;o:</strong> Adultos a partir de 19 anos (autorrelato)
+</p>
+</div>
+<div class="dados-pessoais">
+<h2>&#128203; Dados Pessoais</h2>
+<div class="form-row">
+<div class="form-group"><label for="nome">Nome:</label><input type="text" id="nome" placeholder="Nome completo"></div>
+<div class="form-group"><label for="dataNascimento">Data de Nascimento:</label><input type="date" id="dataNascimento" onchange="calcularIdade()"></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label for="idadeCalculada">Idade:</label><input type="text" id="idadeCalculada" readonly style="background-color:#f0f0f0;" placeholder="Calculada automaticamente"></div>
+<div class="form-group"><label for="sexo">Sexo:</label><select id="sexo"><option value="">Selecione</option><option value="Masculino">Masculino</option><option value="Feminino">Feminino</option></select></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label for="data">Data da Avalia&#231;&#227;o:</label><input type="date" id="data"></div>
+<div class="form-group"><label for="observacoes">Observa&#231;&#245;es (opcional):</label><input type="text" id="observacoes" placeholder="Informa&#231;&#245;es adicionais"></div>
+</div>
+</div>
+<div class="instrucoes">
+<h3>&#128221; Instru&#231;&#245;es</h3>
+<p>Em cada quest&#227;o, marque a op&#231;&#227;o que melhor descreve o seu comportamento <strong>nos &#250;ltimos 6 meses</strong>. N&#227;o existem respostas certas ou erradas. Responda com sinceridade, com base em como voc&#234; realmente &#233; na maior parte do tempo.</p>
+</div>
+<div id="questionario"></div>
+<div class="botoes">
+<button class="btn btn-primary" onclick="calcularResultados()">Calcular Resultados</button>
+<button class="btn btn-secondary" onclick="gerarRelatorioPDF()">Gerar Relat&#243;rio PDF</button>
+<button class="btn btn-danger" onclick="limparDados()">Limpar Dados</button>
+</div>
+<div id="resultados" class="resultados"></div>
+<div class="info-tecnica" id="referencias" style="margin-top:30px;background:#f8f9fa;border-left-color:#1a237e;">
+<h2 style="color:#1a237e;">Refer&#234;ncias</h2>
+<p style="color:#555;line-height:1.9;font-size:0.88em;">
+<strong>CONSTANTINO, J. N.; GRUBER, C. P.</strong> <em>Social Responsiveness Scale</em> (SRS-2). 2nd ed. Torrance, CA: Western Psychological Services, 2012.<br><br>
+<strong>AMERICAN PSYCHIATRIC ASSOCIATION.</strong> <em>Diagnostic and Statistical Manual of Mental Disorders</em> (DSM-5-TR). 5th ed., text rev. Washington, DC: APA, 2022.
+</p>
+</div>
+</div>
+</div>
+<script src="../id-paciente.js"></script>
+<script>
+// === ITENS - FORMULARIO ADULTO AUTORRELATO (1a pessoa) ===
+// inv:true = item positivo (invertido). Escala 1-4. Inversao: 5 - valor.
+var ITENS=[
+{n:1,texto:"Eu fico muito mais desconfort\u00e1vel em situa\u00e7\u00f5es sociais do que quando estou sozinho.",sub:"MS",inv:false},
+{n:2,texto:"Minhas express\u00f5es no rosto passam uma mensagem errada aos outros sobre como eu realmente me sinto.",sub:"PS",inv:false},
+{n:3,texto:"Eu me sinto confiante (ou seguro) quando estou interagindo com os outros.",sub:"MS",inv:true},
+{n:4,texto:"Quando estou sob estresse, tenho um comportamento r\u00edgido e inflex\u00edvel que parece estranho para os outros.",sub:"PRR",inv:false},
+{n:5,texto:"Eu n\u00e3o reconhe\u00e7o quando os outros est\u00e3o tentando tirar vantagem sobre mim.",sub:"CS",inv:false},
+{n:6,texto:"Eu preferia estar sozinho do que com os outros.",sub:"MS",inv:false},
+{n:7,texto:"Normalmente eu consigo perceber como os outros est\u00e3o se sentindo.",sub:"PS",inv:true},
+{n:8,texto:"Eu me comporto de maneiras que parecem estranhas ou esquisitas aos outros.",sub:"PRR",inv:false},
+{n:9,texto:"Eu sou excessivamente dependente dos outros para me ajudar a entender as minhas necessidades di\u00e1rias.",sub:"MS",inv:false},
+{n:10,texto:"Eu levo as coisas muito \u201cao p\u00e9 da letra\u201d e, por causa disso, eu interpreto mal o significado pretendido de partes de uma conversa.",sub:"CS",inv:false},
+{n:11,texto:"Eu sou autoconfiante.",sub:"MS",inv:true},
+{n:12,texto:"Eu sou capaz de comunicar meus sentimentos aos outros.",sub:"COS",inv:false},
+{n:13,texto:"Eu fico estranho nas intera\u00e7\u00f5es com os colegas (por exemplo, eu levo um tempo acompanhando o vai e vem da conversa).",sub:"COS",inv:false},
+{n:14,texto:"Eu n\u00e3o sou bem coordenado.",sub:"PRR",inv:false},
+{n:15,texto:"Quando as pessoas mudam seu tom com a express\u00e3o facial, eu normalmente entendo o que isso significa.",sub:"CS",inv:true},
+{n:16,texto:"Eu evito contato visual ou me dizem que eu tenho contato visual diferente.",sub:"COS",inv:false},
+{n:17,texto:"Eu reconhe\u00e7o quando algo \u00e9 injusto.",sub:"CS",inv:true},
+{n:18,texto:"Eu tenho dificuldade em fazer amigos, mesmo quando eu tento dar o melhor de mim.",sub:"COS",inv:false},
+{n:19,texto:"Eu fico frustrado tentando expressar minhas ideias em uma conversa.",sub:"COS",inv:false},
+{n:20,texto:"Eu tenho interesses sensoriais que os outros acham diferentes (por exemplo, cheirar ou olhar para as coisas de um jeito especial).",sub:"PRR",inv:false},
+{n:21,texto:"Eu sou capaz de imitar a a\u00e7\u00e3o e a express\u00e3o dos outros quando \u00e9 socialmente apropriado.",sub:"COS",inv:true},
+{n:22,texto:"Eu interajo apropriadamente com os outros adultos.",sub:"COS",inv:true},
+{n:23,texto:"Eu n\u00e3o participo de atividades em grupo ou eventos sociais a menos que seja obrigado a faz\u00ea-lo.",sub:"MS",inv:false},
+{n:24,texto:"Eu tenho mais dificuldade que os outros com mudan\u00e7as na minha rotina.",sub:"PRR",inv:false},
+{n:25,texto:"Eu n\u00e3o me importo de n\u00e3o estar \u201cna mesma onda\u201d ou fora de sintonia com os outros.",sub:"PS",inv:false},
+{n:26,texto:"Eu ofere\u00e7o conforto aos outros quando eles est\u00e3o tristes.",sub:"COS",inv:true},
+{n:27,texto:"Eu evito iniciar intera\u00e7\u00f5es sociais com outros adultos.",sub:"MS",inv:false},
+{n:28,texto:"Eu penso ou falo sobre a mesma coisa repetidamente.",sub:"PRR",inv:false},
+{n:29,texto:"Eu sou considerado pelos outros como estranho ou esquisito.",sub:"PRR",inv:false},
+{n:30,texto:"Eu fico perturbado em situa\u00e7\u00f5es com muitas coisas acontecendo.",sub:"CS",inv:false},
+{n:31,texto:"Eu n\u00e3o consigo tirar algo da minha mente uma vez que come\u00e7o a pensar sobre aquilo.",sub:"PRR",inv:false},
+{n:32,texto:"Eu tenho boa higiene pessoal.",sub:"PS",inv:true},
+{n:33,texto:"Meu comportamento \u00e9 socialmente desajeitado, mesmo quando eu estou tentando ser educado.",sub:"COS",inv:false},
+{n:34,texto:"Eu evito pessoas que querem se aproximar de mim emocionalmente.",sub:"MS",inv:false},
+{n:35,texto:"Eu tenho dificuldade em acompanhar o fluxo de uma conversa normal.",sub:"COS",inv:false},
+{n:36,texto:"Eu tenho dificuldade em me relacionar com os membros da minha fam\u00edlia.",sub:"COS",inv:false},
+{n:37,texto:"Eu tenho dificuldade em me relacionar com pessoas que n\u00e3o s\u00e3o da minha fam\u00edlia.",sub:"COS",inv:false},
+{n:38,texto:"Eu respondo adequadamente \u00e0s mudan\u00e7as de humor das outras pessoas (por exemplo, quando o humor de um amigo muda de feliz para triste).",sub:"COS",inv:true},
+{n:39,texto:"As pessoas me acham muito interessado em poucos assuntos, ou eu me \u201cdeixo levar\u201d por esses assuntos.",sub:"PRR",inv:false},
+{n:40,texto:"Eu sou imaginativo.",sub:"CS",inv:true},
+{n:41,texto:"Eu \u00e0s vezes mudo de uma atividade para outra sem nenhuma raz\u00e3o.",sub:"COS",inv:false},
+{n:42,texto:"Eu sou excessivamente sens\u00edvel a certos sons, texturas ou cheiros.",sub:"CS",inv:false},
+{n:43,texto:"Eu gosto de conversas (conversas casuais com os outros).",sub:"MS",inv:true},
+{n:44,texto:"Eu tenho mais problema do que a maioria das pessoas com o entendimento da causalidade (em outras palavras, como os eventos est\u00e3o relacionados uns com os outros).",sub:"CS",inv:false},
+{n:45,texto:"Quando os outros ao redor de mim est\u00e3o prestando aten\u00e7\u00e3o em algo, eu fico interessado no que eles est\u00e3o atentos.",sub:"PS",inv:true},
+{n:46,texto:"Os outros sentem que eu tenho express\u00f5es faciais excessivamente s\u00e9rias.",sub:"COS",inv:false},
+{n:47,texto:"Eu dou risadas em momentos inapropriados.",sub:"COS",inv:false},
+{n:48,texto:"Eu tenho um bom senso de humor e consigo entender piadas.",sub:"CS",inv:true},
+{n:49,texto:"Eu sou extremamente h\u00e1bil em certos tipos de tarefas intelectuais ou computacionais, mas n\u00e3o sou t\u00e3o bom na maioria das outras tarefas.",sub:"PRR",inv:false},
+{n:50,texto:"Eu tenho comportamentos repetitivos e estranhos.",sub:"PRR",inv:false},
+{n:51,texto:"Eu tenho dificuldade de responder perguntas diretamente e acabo discursando sobre o assunto.",sub:"COS",inv:false},
+{n:52,texto:"Eu falo muito alto sem perceber.",sub:"PS",inv:true},
+{n:53,texto:"Eu tenho tend\u00eancia a falar com uma voz mon\u00f3tona (em outras palavras, menor inflex\u00e3o da voz que a maioria das pessoas demonstra).",sub:"COS",inv:false},
+{n:54,texto:"Eu tenho uma tend\u00eancia a pensar sobre as pessoas do mesmo jeito que eu o fa\u00e7o com os objetos.",sub:"PS",inv:false},
+{n:55,texto:"Eu fico muito perto dos outros ou invado o espa\u00e7o pessoal deles sem perceber.",sub:"COS",inv:true},
+{n:56,texto:"\u00c0s vezes eu cometo o erro de andar entre duas pessoas que est\u00e3o tentando conversar uma com a outra.",sub:"PS",inv:false},
+{n:57,texto:"Eu tenho tend\u00eancia a me isolar.",sub:"COS",inv:false},
+{n:58,texto:"Eu me concentro demais nas partes das coisas ao inv\u00e9s de ver a figura como um todo.",sub:"CS",inv:false},
+{n:59,texto:"Eu sou mais desconfiado que a maioria das pessoas.",sub:"CS",inv:false},
+{n:60,texto:"As outras pessoas me acham emocionalmente distante e que n\u00e3o demonstro meus sentimentos.",sub:"COS",inv:false},
+{n:61,texto:"Eu tenho uma tend\u00eancia a ser inflex\u00edvel.",sub:"COS",inv:false},
+{n:62,texto:"Quando eu conto a algu\u00e9m a minha raz\u00e3o para fazer alguma coisa, a pessoa acha que \u00e9 incomum, sem l\u00f3gica.",sub:"CS",inv:false},
+{n:63,texto:"Meu jeito de cumprimentar uma outra pessoa \u00e9 incomum.",sub:"PRR",inv:false},
+{n:64,texto:"Eu sou muito mais tenso em situa\u00e7\u00f5es sociais do que quando eu estou sozinho.",sub:"MS",inv:false},
+{n:65,texto:"Eu me pego olhando fixo para o espa\u00e7o.",sub:"MS",inv:false}
+];
+
+var SUBESCALAS={
+"PS":{nome:"Percep\u00e7\u00e3o Social",itens:[2,7,25,32,45,52,54,56]},
+"CS":{nome:"Cogni\u00e7\u00e3o Social",itens:[5,10,15,17,30,40,42,44,48,58,59,62]},
+"COS":{nome:"Comunica\u00e7\u00e3o Social",itens:[12,13,16,18,19,21,22,26,33,35,36,37,38,41,46,47,51,53,55,57,60,61]},
+"MS":{nome:"Motiva\u00e7\u00e3o Social",itens:[1,3,6,9,11,23,27,34,43,64,65]},
+"PRR":{nome:"Padr\u00f5es Restritos e Repetitivos",itens:[4,8,14,20,24,28,29,31,39,49,50,63]}
+};
+
+var OPCOES=[{valor:1,texto:"N\u00e3o \u00e9<br>verdade"},{valor:2,texto:"Algumas vezes<br>\u00e9 verdade"},{valor:3,texto:"Muitas vezes<br>\u00e9 verdade"},{valor:4,texto:"Quase sempre<br>\u00e9 verdade"}];
+
+// ============================================================
+// TABELAS NORMATIVAS - FORMULARIO ADULTO AUTORRELATO (Ambos os Sexos)
+// PREENCHER COM OS VALORES DO MANUAL (paginas 89-103, Normas Brasileiras).
+// Formato: {pontuacaoBruta: escoreT}. Escala 1-4. Chave = escore bruto somado.
+// >>> PLACEHOLDER: valores abaixo estao VAZIOS ate conferencia no manual fisico. <<<
+// PS, CS, COS, MS, PRR = subescalas | CIS = Comunicacao e Interacao Social | TOTAL = SRS-2 Total
+// ============================================================
+var NORMAS_T={
+PS:{0:21,2:26,3:31,4:35,5:39,6:44,7:48,8:52,9:55,10:59,11:63,12:66,13:70,15:74,16:75,19:79},
+CS:{0:21,1:26,2:32,3:36,4:39,5:41,6:43,7:45,8:47,9:49,10:51,11:53,12:55,13:57,14:59,15:61,16:63,17:64,18:66,19:68,20:69,21:70,22:71,23:72,25:74,31:75},
+COS:{4:26,5:30,6:33,7:34,8:36,9:42,10:44,11:45,12:46,13:47,14:48,15:50,16:51,17:51,18:52,19:53,20:55,21:56,22:57,23:58,24:59,25:60,26:61,27:61,28:62,29:63,30:63,31:63,32:64,33:65,34:66,35:67,36:68,37:69,38:70,39:70,41:71,42:72,44:74,46:75,53:79},
+MS:{1:21,2:26,3:30,4:34,5:38,6:41,7:43,8:47,9:49,10:51,11:53,12:55,13:56,14:58,15:60,16:62,17:63,18:65,19:67,20:68,21:70,22:72,24:74,25:75,28:79},
+PRR:{0:29,1:34,2:41,3:45,4:46,5:48,6:50,7:52,8:53,9:54,10:55,11:56,12:57,13:58,14:61,15:63,17:64,19:65,24:67,28:69,31:71,32:75},
+CIS:{5:27,13:31,14:33,15:35,17:36,19:37,20:39,21:39,23:40,24:41,25:42,26:43,27:44,28:45,29:46,31:46,32:47,33:48,34:49,35:49,36:50,37:51,38:51,40:51,41:52,43:53,44:53,46:54,47:54,48:54,50:55,52:55,54:55,55:56,56:56,57:57,59:58,60:58,63:58},
+TOTAL:{10:27,13:31,15:32,16:33,19:34,20:35,22:36,23:37,24:38,25:39,26:40,27:41,28:42,29:42,30:43,31:44,32:45,33:45,34:46,35:47,36:47,37:48,38:49,39:49,40:50,41:50,42:50,43:51,44:51,46:52,47:52,48:53,50:53,52:53,55:54,56:54,57:54,60:55,62:55,63:56,64:56,65:57,67:57}
+};
+// Tabela de PERCENTIL por escore bruto (o manual traz Percentil + Escore T). Valores como texto para preservar ">99" e "<1".
+var NORMAS_PCT={
+PS:{0:"<1",2:"1",3:"3",4:"6",5:"14",6:"29",7:"44",8:"56",9:"69",10:"81",11:"90",12:"95",13:"98",15:"99",16:"99",19:">99"},
+CS:{0:"<1",1:"1",2:"3",3:"8",4:"13",5:"18",6:"24",7:"32",8:"40",9:"48",10:"54",11:"60",12:"68",13:"75",14:"81",15:"86",16:"90",17:"93",18:"95",19:"96",20:"97",21:"98",22:"98",23:"99",25:"99",31:"99"},
+COS:{4:"1",5:"2",6:"4",7:"6",8:"9",9:"22",10:"26",11:"30",12:"34",13:"39",14:"43",15:"49",16:"52",17:"56",18:"60",19:"64",20:"68",21:"73",22:"75",23:"78",24:"81",25:"83",26:"85",27:"87",28:"88",29:"89",30:"91",31:"91",32:"92",33:"93",34:"94",35:"96",36:"96",37:"97",38:"98",39:"98",41:"98",42:"99",44:"99",46:"99",53:">99"},
+MS:{1:"<1",2:"1",3:"2",4:"6",5:"12",6:"17",7:"25",8:"36",9:"45",10:"53",11:"61",12:"68",13:"74",14:"79",15:"84",16:"88",17:"91",18:"94",19:"95",20:"97",21:"98",22:"99",24:"99",25:"99",28:">99"},
+PRR:{0:"2",1:"5",2:"18",3:"30",4:"35",5:"41",6:"50",7:"56",8:"61",9:"65",10:"69",11:"73",12:"75",13:"80",14:"86",15:"90",17:"92",19:"93",24:"95",28:"97",31:"98",32:"99"},
+CIS:{5:"1",13:"3",14:"5",15:"7",17:"8",19:"10",20:"13",21:"14",23:"15",24:"19",25:"23",26:"25",27:"27",28:"30",29:"33",31:"35",32:"37",33:"41",34:"45",35:"48",36:"50",37:"52",38:"53",40:"55",41:"58",43:"60",44:"62",46:"64",47:"65",48:"67",50:"69",52:"70",54:"71",55:"72",56:"74",57:"76",59:"77",60:"79",63:"80"},
+TOTAL:{10:"1",13:"3",15:"4",16:"5",19:"6",20:"7",22:"8",23:"10",24:"12",25:"14",26:"15",27:"18",28:"20",29:"23",30:"25",31:"27",32:"29",33:"31",34:"35",35:"37",36:"38",37:"42",38:"45",39:"47",40:"49",41:"50",42:"52",43:"53",44:"55",46:"57",47:"58",48:"60",50:"62",52:"63",55:"64",56:"65",57:"67",60:"69",62:"70",63:"71",64:"74",65:"75",67:"77"}
+};
+
+function gerarQuestionario(){var c=document.getElementById('questionario');var h='';ITENS.forEach(function(item,i){h+='<div class="item"><div class="item-texto"><span class="item-numero">'+item.n+'.</span> '+item.texto+'</div><div class="opcoes">';OPCOES.forEach(function(op){h+='<div class="opcao"><input type="radio" id="q'+i+'_'+op.valor+'" name="q'+i+'" value="'+op.valor+'"><label for="q'+i+'_'+op.valor+'">'+op.texto+'</label></div>';});h+='</div></div>';});c.innerHTML=h;}
+
+function calcularIdade(){var d=document.getElementById('dataNascimento').value;if(!d)return;var h=new Date(),n=new Date(d);var a=h.getFullYear()-n.getFullYear(),m=h.getMonth()-n.getMonth(),di=h.getDate()-n.getDate();if(di<0){m--;di+=new Date(h.getFullYear(),h.getMonth(),0).getDate();}if(m<0){a--;m+=12;}document.getElementById('idadeCalculada').value=a+' anos, '+m+' meses e '+di+' dias';}
+
+// Formulario responde 1-4. Conversao para pontos 0-3: item normal = valor-1; item invertido = 4-valor.
+function obterRespostas(){var r=[];for(var i=0;i<ITENS.length;i++){var s=document.querySelector('input[name="q'+i+'"]:checked');if(!s)return null;var v=parseInt(s.value);var p=ITENS[i].inv?(4-v):(v-1);r.push(p);}return r;}
+
+// Consulta direta a tabela: bruto -> escore T (sem interpolacao; usa valor mais proximo abaixo se faltar).
+function buscarEscoreT(tabela,bruto){if(!tabela||Object.keys(tabela).length===0)return null;if(tabela[bruto]!==undefined)return tabela[bruto];var keys=Object.keys(tabela).map(Number).sort(function(a,b){return a-b;});var menor=keys[0];var maior=keys[keys.length-1];if(bruto<=menor)return tabela[menor];if(bruto>=maior)return tabela[maior];for(var i=keys.length-1;i>=0;i--){if(keys[i]<=bruto)return tabela[keys[i]];}return tabela[keys[0]];}
+function buscarPercentil(tabela,bruto){return buscarEscoreT(tabela,bruto);}
+
+function classificarEscoreT(t){if(t===null)return{texto:"(tabela n\u00e3o preenchida)",cor:"#999"};if(t<=59)return{texto:"Dentro dos limites normais",cor:"#4caf50"};if(t<=65)return{texto:"Dificuldades leves",cor:"#ffc107"};if(t<=75)return{texto:"Dificuldades moderadas",cor:"#ff9800"};return{texto:"Dificuldades graves",cor:"#f44336"};}
+
+function calcularResultados(){
+var nome=document.getElementById('nome').value;
+var idade=document.getElementById('idadeCalculada').value;
+var sexo=document.getElementById('sexo').value;
+if(!nome){alert('Preencha o nome.');return;}
+if(!sexo){alert('Selecione o sexo.');return;}
+var r=obterRespostas();
+if(!r){alert('Responda todos os 65 itens.');return;}
+
+// Pontuacao bruta por subescala (escala 1-4)
+var brutos={};
+var keys=Object.keys(SUBESCALAS);
+for(var k=0;k<keys.length;k++){
+var key=keys[k];var sub=SUBESCALAS[key];var soma=0;
+for(var j=0;j<sub.itens.length;j++){soma+=r[sub.itens[j]-1];}
+brutos[key]=soma;
+}
+var brutoCIS=brutos.PS+brutos.CS+brutos.COS+brutos.MS;
+var brutoTotal=0;for(var i=0;i<r.length;i++)brutoTotal+=r[i];
+
+// Escores T e percentis (consulta direta a tabela do manual)
+var escoresT={};var pcts={};
+for(var k=0;k<keys.length;k++){var key=keys[k];escoresT[key]=buscarEscoreT(NORMAS_T[key],brutos[key]);pcts[key]=buscarPercentil(NORMAS_PCT[key],brutos[key]);}
+escoresT.CIS=buscarEscoreT(NORMAS_T.CIS,brutoCIS);pcts.CIS=buscarPercentil(NORMAS_PCT.CIS,brutoCIS);
+escoresT.TOTAL=buscarEscoreT(NORMAS_T.TOTAL,brutoTotal);pcts.TOTAL=buscarPercentil(NORMAS_PCT.TOTAL,brutoTotal);
+
+var classTot=classificarEscoreT(escoresT.TOTAL);
+var tVazia=(escoresT.TOTAL===null);
+
+var el=document.getElementById('resultados');
+var h='<h2>Resultados SRS-2 &#8212; Adulto Autorrelato</h2>';
+if(tVazia){h+='<div class="disclaimer" style="background:#ffebee;border-left-color:#c62828;color:#c62828;"><strong>ATEN\u00c7\u00c3O:</strong> As tabelas normativas ainda n\u00e3o foram preenchidas neste arquivo. Os escores brutos abaixo est\u00e3o corretos, mas o Escore T e a classifica\u00e7\u00e3o s\u00f3 aparecer\u00e3o ap\u00f3s preencher NORMAS_T com os valores do manual.</div>';}
+h+='<div class="total-geral"><h3>Pontua\u00e7\u00e3o Bruta Total: '+brutoTotal+(escoresT.TOTAL!==null?' (Escore T = '+escoresT.TOTAL+(pcts.TOTAL!==null?', Percentil '+pcts.TOTAL:'')+')':'')+'</h3>';
+h+='<p style="font-size:1.2em;margin-top:8px;">'+classTot.texto+'</p></div>';
+
+var nomeSubs={"PS":"Percep\u00e7\u00e3o Social","CS":"Cogni\u00e7\u00e3o Social","COS":"Comunica\u00e7\u00e3o Social","MS":"Motiva\u00e7\u00e3o Social","PRR":"Padr\u00f5es Restritos e Repetitivos"};
+for(var k=0;k<keys.length;k++){
+var key=keys[k];var cl=classificarEscoreT(escoresT[key]);
+var maxBruto=SUBESCALAS[key].itens.length*3;
+var pctBarra=Math.round((brutos[key]/maxBruto)*100);
+h+='<div class="dominio-card"><h4>'+nomeSubs[key]+'</h4>';
+h+='<p>Bruto: <strong>'+brutos[key]+'/'+maxBruto+'</strong>'+(escoresT[key]!==null?' | Escore T: <strong>'+escoresT[key]+'</strong>':'')+(pcts[key]!==null?' | Percentil: <strong>'+pcts[key]+'</strong>':'')+' | <span style="color:'+cl.cor+';font-weight:bold;">'+cl.texto+'</span></p>';
+h+='<div style="background:#e0e0e0;border-radius:5px;height:12px;margin-top:8px;"><div style="background:'+cl.cor+';height:12px;border-radius:5px;width:'+pctBarra+'%;"></div></div>';
+h+='</div>';
+}
+
+var clCIS=classificarEscoreT(escoresT.CIS);
+h+='<div class="dominio-card" style="border-left-color:#00695c;"><h4>Comunica\u00e7\u00e3o e Intera\u00e7\u00e3o Social (CIS)</h4>';
+h+='<p>Bruto: <strong>'+brutoCIS+'</strong>'+(escoresT.CIS!==null?' | Escore T: <strong>'+escoresT.CIS+'</strong>':'')+(pcts.CIS!==null?' | Percentil: <strong>'+pcts.CIS+'</strong>':'')+' | <span style="color:'+clCIS.cor+';font-weight:bold;">'+clCIS.texto+'</span></p></div>';
+
+h+='<div class="analise-texto"><h3>Interpreta\u00e7\u00e3o</h3>';
+if(escoresT.TOTAL===null)h+='<p>Preencha as tabelas normativas do manual para obter a interpreta\u00e7\u00e3o baseada no Escore T.</p>';
+else if(escoresT.TOTAL<=59)h+='<p>O escore total encontra-se <strong>dentro dos limites normais</strong> (Escore T \u2264 59). O padr\u00e3o de respostas n\u00e3o sugere dificuldades significativas de responsividade social.</p>';
+else if(escoresT.TOTAL<=65)h+='<p>O escore total indica <strong>dificuldades leves</strong> (Escore T 60\u201365). Sugere-se acompanhamento e reavalia\u00e7\u00e3o posterior.</p>';
+else if(escoresT.TOTAL<=75)h+='<p>O escore total indica <strong>dificuldades moderadas</strong> (Escore T 66\u201375), compat\u00edvel com d\u00e9ficits clinicamente significativos na reciprocidade social. Recomenda-se avalia\u00e7\u00e3o especializada.</p>';
+else h+='<p>O escore total indica <strong>dificuldades graves</strong> (Escore T >75), fortemente sugestivo de Transtorno do Espectro Autista (TEA). Encaminhamento para avalia\u00e7\u00e3o diagn\u00f3stica \u00e9 fortemente recomendado.</p>';
+h+='<p style="margin-top:10px;"><strong>Formul\u00e1rio:</strong> Adulto Autorrelato | <strong>Sexo:</strong> '+sexo+'</p>';
+h+='</div>';
+
+h+='<div class="disclaimer"><strong>IMPORTANTE:</strong> A SRS-2 \u00e9 um instrumento de rastreio. Os resultados devem ser interpretados por profissional qualificado, no contexto de uma avalia\u00e7\u00e3o cl\u00ednica abrangente. N\u00e3o substitui diagn\u00f3stico cl\u00ednico.</div>';
+
+el.innerHTML=h;
+el.style.display='block';
+el.scrollIntoView({behavior:'smooth'});
+
+window._escalaDados={escala:'SRS-2-AA',paciente:nome,escore:(escoresT.TOTAL!==null?escoresT.TOTAL:brutoTotal),classificacao:classTot.texto,brutoTotal:brutoTotal,escoresT:escoresT,brutos:brutos,brutoCIS:brutoCIS,formulario:'Adulto Autorrelato',dominios:{PS:{pontuacao:(escoresT.PS!==null?escoresT.PS:brutos.PS),max:100,classificacao:classificarEscoreT(escoresT.PS).texto,media:brutos.PS},CS:{pontuacao:(escoresT.CS!==null?escoresT.CS:brutos.CS),max:100,classificacao:classificarEscoreT(escoresT.CS).texto,media:brutos.CS},COS:{pontuacao:(escoresT.COS!==null?escoresT.COS:brutos.COS),max:100,classificacao:classificarEscoreT(escoresT.COS).texto,media:brutos.COS},MS:{pontuacao:(escoresT.MS!==null?escoresT.MS:brutos.MS),max:100,classificacao:classificarEscoreT(escoresT.MS).texto,media:brutos.MS},PRR:{pontuacao:(escoresT.PRR!==null?escoresT.PRR:brutos.PRR),max:100,classificacao:classificarEscoreT(escoresT.PRR).texto,media:brutos.PRR},CIS:{pontuacao:(escoresT.CIS!==null?escoresT.CIS:brutoCIS),max:100,classificacao:classificarEscoreT(escoresT.CIS).texto,media:brutoCIS}},respostas:(function(){var o={};for(var i=0;i<r.length;i++){o[i+1]=r[i];}return o;})(),idPaciente:(document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''),idade:idade,sexo:sexo,data:new Date().toISOString()};
+if(window.injetarBotaoSalvar)injetarBotaoSalvar('resultados');
+}
+
+function gerarRelatorioPDF(){
+var nome=document.getElementById('nome').value;
+if(!nome){alert('Preencha o nome.');return;}
+var r=obterRespostas();
+if(!r){alert('Responda todos os itens.');return;}
+var sexo=document.getElementById('sexo').value;
+if(!sexo){alert('Selecione o sexo.');return;}
+var idade=document.getElementById('idadeCalculada').value;
+var dataAval=document.getElementById('data').value||new Date().toLocaleDateString('pt-BR');
+var idPac=document.getElementById('idPaciente')?document.getElementById('idPaciente').value:'';
+var keys=Object.keys(SUBESCALAS);
+var brutos={};
+for(var k=0;k<keys.length;k++){var key=keys[k];var sub=SUBESCALAS[key];var soma=0;for(var j=0;j<sub.itens.length;j++){soma+=r[sub.itens[j]-1];}brutos[key]=soma;}
+var brutoCIS=brutos.PS+brutos.CS+brutos.COS+brutos.MS;
+var brutoTotal=0;for(var i=0;i<r.length;i++)brutoTotal+=r[i];
+var escoresT={};for(var k=0;k<keys.length;k++){var key=keys[k];escoresT[key]=buscarEscoreT(NORMAS_T[key],brutos[key]);}
+escoresT.CIS=buscarEscoreT(NORMAS_T.CIS,brutoCIS);escoresT.TOTAL=buscarEscoreT(NORMAS_T.TOTAL,brutoTotal);
+var classTot=classificarEscoreT(escoresT.TOTAL);
+var allBrutos={'PS':brutos.PS,'CS':brutos.CS,'COS':brutos.COS,'MS':brutos.MS,'PRR':brutos.PRR,'CIS':brutoCIS,'TOTAL':brutoTotal};
+var allScales=[{key:'PS',nome:'Percepcao Social'},{key:'CS',nome:'Cognicao Social'},{key:'COS',nome:'Comunicacao Social'},{key:'MS',nome:'Motivacao Social'},{key:'PRR',nome:'Padroes Restritos e Repetitivos'},{key:'CIS',nome:'Comunicacao e Interacao Social'},{key:'TOTAL',nome:'Escore Total'}];
+var jsPDF=window.jspdf.jsPDF;var doc=new jsPDF();var ml=15;var lu=180;var pw=210;var y=0;
+doc.setFillColor(26,35,126);doc.rect(0,0,pw,45,'F');doc.setTextColor(255,255,255);doc.setFontSize(22);doc.setFont(undefined,'bold');doc.text('SRS-2',105,20,{align:'center'});doc.setFontSize(11);doc.setFont(undefined,'normal');doc.text('Escala de Responsividade Social - 2a Edicao',105,30,{align:'center'});doc.text('Formulario Adulto Autorrelato | Normas Brasileiras',105,38,{align:'center'});
+y=60;doc.setTextColor(0,0,0);doc.setFontSize(12);doc.setFont(undefined,'bold');doc.text(nome,ml,y);y+=10;doc.setFontSize(10);doc.setFont(undefined,'normal');
+if(idPac){doc.text('ID: '+idPac,ml,y);y+=7;}doc.text('Data da avaliacao: '+dataAval,ml,y);y+=7;doc.text('Idade: '+idade+'   |   Sexo: '+sexo,ml,y);y+=7;doc.text('Formulario: Adulto Autorrelato',ml,y);y+=10;
+doc.setFontSize(11);doc.setFont(undefined,'bold');doc.text('Resultados',ml,y);y+=3;doc.setDrawColor(26,35,126);doc.setLineWidth(0.5);doc.line(ml,y,ml+lu,y);y+=8;
+doc.setFontSize(9);doc.setFont(undefined,'bold');doc.text('Escala',ml,y);doc.text('Bruto',ml+85,y);doc.text('Escore T',ml+112,y);doc.text('Classificacao',ml+135,y);y+=7;doc.setFont(undefined,'normal');
+for(var si=0;si<allScales.length;si++){var sc=allScales[si];var t=escoresT[sc.key];var cl=classificarEscoreT(t);if(si>=5)doc.setFont(undefined,'bold');else doc.setFont(undefined,'normal');doc.setTextColor(0,0,0);doc.text(sc.nome,ml,y);doc.text(String(allBrutos[sc.key]),ml+87,y);doc.text(t!==null?String(t):'-',ml+114,y);if(cl.cor==='#4caf50')doc.setTextColor(46,125,50);else if(cl.cor==='#ffc107')doc.setTextColor(180,140,0);else if(cl.cor==='#ff9800')doc.setTextColor(230,120,0);else if(cl.cor==='#f44336')doc.setTextColor(198,40,40);else doc.setTextColor(120,120,120);doc.text(cl.texto,ml+135,y);doc.setTextColor(0,0,0);y+=8;if(si===4){y+=2;doc.setDrawColor(200,200,200);doc.setLineWidth(0.3);doc.line(ml,y-5,ml+lu,y-5);}}
+y+=8;doc.setFillColor(255,248,235);doc.rect(ml,y,lu,14,'F');doc.setDrawColor(200,150,50);doc.setLineWidth(0.5);doc.line(ml,y,ml,y+14);doc.setTextColor(150,80,0);doc.setFontSize(7);doc.setFont(undefined,'bold');doc.text('IMPORTANTE:',ml+3,y+5);doc.setFont(undefined,'normal');doc.text('Instrumento de rastreio. Resultados devem ser interpretados por profissional qualificado em avaliacao abrangente.',ml+3,y+10);
+doc.setFontSize(6);doc.setTextColor(150,150,150);doc.text('Gerado em '+new Date().toLocaleString('pt-BR')+' | SYM Online',ml,285);
+var ts=new Date();var tsStr=ts.getFullYear()+String(ts.getMonth()+1).padStart(2,'0')+String(ts.getDate()).padStart(2,'0')+String(ts.getHours()).padStart(2,'0')+String(ts.getMinutes()).padStart(2,'0');
+doc.save('SRS2-AA_'+nome.replace(/\s+/g,'_')+'_'+tsStr+'.pdf');
+}
+
+function limparDados(){if(!confirm('Limpar todos os dados?'))return;document.getElementById('nome').value='';document.getElementById('dataNascimento').value='';document.getElementById('idadeCalculada').value='';document.getElementById('sexo').value='';document.getElementById('observacoes').value='';document.querySelectorAll('input[type="radio"]').forEach(function(r){r.checked=false;});document.querySelectorAll('.item').forEach(function(el){el.style.backgroundColor='';el.style.borderLeft='';});document.getElementById('resultados').style.display='none';document.getElementById('data').value=new Date().toISOString().split('T')[0];}
+
+// ===== MODO PAINEL =====
+var _sessionInfo=null;
+var _API_URL='https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
+
+function _decodificarURL(){var params=new URLSearchParams(window.location.search);var d=params.get('d');if(!d)return false;try{_sessionInfo=JSON.parse(atob(decodeURIComponent(d)));}catch(e){return false;}var nomeEl=document.getElementById('nome');var nascEl=document.getElementById('dataNascimento');var sexoEl=document.getElementById('sexo');if(nomeEl&&_sessionInfo.patientName)nomeEl.value=_sessionInfo.patientName;if(nascEl&&_sessionInfo.birthDate)nascEl.value=_sessionInfo.birthDate;if(sexoEl&&_sessionInfo.sex)sexoEl.value=_sessionInfo.sex;if(typeof calcularIdade==='function')calcularIdade();if(nomeEl)nomeEl.dispatchEvent(new Event('input'));if(nascEl)nascEl.dispatchEvent(new Event('change'));var botoes=document.querySelector('.botoes');if(botoes){botoes.innerHTML='<button class="btn btn-primary" style="padding:15px 30px;border:none;border-radius:25px;font-size:16px;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#2e7d32,#43a047);color:white;" onclick="_enviarResultadosPainel()">Enviar Resultados ao Profissional</button>';}var els=document.querySelectorAll('.info-tecnica');els.forEach(function(el){el.style.display='none';});return true;}
+
+async function _enviarResultadosPainel(){
+var nomeEl=document.getElementById('nome');
+if(!nomeEl||!nomeEl.value.trim()){alert('Preencha o nome antes de enviar.');return;}
+var totalItens=document.querySelectorAll('.item').length;
+var respondidos=document.querySelectorAll('input[type="radio"]:checked').length;
+if(respondidos<totalItens){alert('Responda todos os '+totalItens+' itens antes de enviar. Faltam '+(totalItens-respondidos)+'.');return;}
+var sexoEl=document.getElementById('sexo');
+if(sexoEl&&!sexoEl.value){sexoEl.value='Nao informado';}
+var idadeEl=document.getElementById('idadeCalculada');
+if(idadeEl&&!idadeEl.value){idadeEl.value='Nao informado';}
+var calcFn=window.calcularResultados;
+if(calcFn&&!window._escalaDados){try{calcFn();}catch(e){}}
+var dados=window._escalaDados||{};
+if(!dados.escala)dados.escala='SRS-2-AA';
+dados.idPaciente=document.getElementById('idPaciente')?document.getElementById('idPaciente').value:'';
+dados.pacienteId=_sessionInfo?(_sessionInfo.pacienteId||''):'';
+dados.data=new Date().toISOString();
+var btn=document.querySelector('.botoes button');
+if(btn){btn.disabled=true;btn.textContent='Enviando...';}
+try{
+var resp=await fetch(_API_URL+'/save-escala',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:_sessionInfo.sessionId,email:_sessionInfo.email,data:dados,originalSessionId:_sessionInfo.sessionId,tipo:'srs2-aa'})});
+var result=await resp.json();
+if(result.ok||resp.ok){
+var container=document.querySelector('.botoes');
+if(container)container.innerHTML='<div style="background:#c8e6c9;border:2px solid #2e7d32;border-radius:10px;padding:20px;text-align:center;"><p style="font-size:1.3em;color:#2e7d32;font-weight:bold;">Resultados enviados com sucesso!</p><p style="color:#555;margin-top:8px;">O profissional ja pode visualizar seus resultados no painel.</p><p style="color:#777;margin-top:5px;font-size:0.85em;">Voce pode fechar esta pagina.</p></div>';
+var res=document.getElementById('resultados');if(res)res.style.display='none';
+}else{if(btn){btn.disabled=false;btn.textContent='Enviar Resultados ao Profissional';}alert('Erro ao enviar. Tente novamente.');}
+}catch(e){if(btn){btn.disabled=false;btn.textContent='Enviar Resultados ao Profissional';}alert('Erro de conexao. Verifique sua internet e tente novamente.');}
+}
+
+// === INICIALIZACAO ===
+gerarQuestionario();
+document.getElementById('questionario').addEventListener('change',function(e){if(e.target.type==='radio'){var item=e.target.closest('.item');if(item){item.style.backgroundColor='#f1f8e9';item.style.borderLeft='4px solid #4caf50';}if(item&&item.nextElementSibling){item.nextElementSibling.scrollIntoView({behavior:'smooth',block:'center'});}}});
+document.getElementById('data').value=new Date().toISOString().split('T')[0];
+var params=new URLSearchParams(window.location.search);
+if(params.get('s')){
+fetch(_API_URL+'/get-session?id='+params.get('s')).then(function(r){if(r.status===410){document.body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#e8f5e9,#c8e6c9);text-align:center;padding:20px;"><h1 style="color:#c62828;font-size:24px;margin-bottom:10px;">Este link j\u00e1 foi utilizado.</h1><p style="font-size:16px;color:#555;">Solicite um novo link ao seu avaliador.</p></div>';throw new Error("link_usado");}return r.json();}).then(function(data){if(data.sessionId){_sessionInfo=data;var nomeEl=document.getElementById('nome');var nascEl=document.getElementById('dataNascimento');var sexoEl=document.getElementById('sexo');if(nomeEl&&data.patientName)nomeEl.value=data.patientName;if(nascEl&&data.birthDate)nascEl.value=data.birthDate;if(sexoEl&&data.sex)sexoEl.value=data.sex;if(typeof calcularIdade==='function')calcularIdade();if(nomeEl)nomeEl.dispatchEvent(new Event('input'));if(nascEl)nascEl.dispatchEvent(new Event('change'));var botoes=document.querySelector('.botoes');if(botoes){botoes.innerHTML='<button class="btn btn-primary" style="padding:15px 30px;border:none;border-radius:25px;font-size:16px;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#2e7d32,#43a047);color:white;" onclick="_enviarResultadosPainel()">Enviar Resultados ao Profissional</button>';}var els=document.querySelectorAll('.info-tecnica');els.forEach(function(el){el.style.display='none';});}}).catch(function(){});
+}else if(params.get('d')){
+_decodificarURL();
+}else if(params.get('print')){
+var els=document.querySelectorAll('.info-tecnica');els.forEach(function(el){el.style.display='none';});
+var botoes=document.querySelector('.botoes');if(botoes)botoes.style.display='none';
+setTimeout(function(){window.print();},500);
+}else{
+if(!window.location.protocol.startsWith('file'))window.location.href='https://setmonte.github.io/online/';
+}
+</script>
+<script>
+if(!new URLSearchParams(window.location.search).get('d')){
+var s1=document.createElement('script');s1.src='pdf-escalas.js';document.body.appendChild(s1);
+var s2=document.createElement('script');s2.src='salvar-escala.js';document.body.appendChild(s2);
+}
+var _sc=document.createElement('script');_sc.src='coleta-anonima.js';document.body.appendChild(_sc);
+if(new URLSearchParams(window.location.search).get('d')){var _ac=document.createElement('script');_ac.src='auto-close.js';document.body.appendChild(_ac);}
+</script>
+<div style="text-align:center;padding:15px;color:#999;font-size:0.75em;margin-top:20px;">Dados an&#244;nimos e n&#227;o-identific&#225;veis podem ser utilizados para fins de pesquisa e normatiza&#231;&#227;o.</div>
+</body>
+</html>
