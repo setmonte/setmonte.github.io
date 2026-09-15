@@ -14344,8 +14344,10 @@
     function _tflodRecalcular(transcricao, textoUsado, tempoUsado, categoria, versaoTexto, escolaridade) {
       if (typeof transcricao !== 'string') transcricao = '';
       var palavrasTexto = String(textoUsado || '').split(/\s+/).filter(function(p){ return p.length > 0; });
-      var palavrasFaladas = transcricao.toLowerCase().replace(/[.,!?;:"""''()\-]/g, '').split(/\s+/).filter(function(p){ return p.length > 0; });
-      var palavrasOriginal = palavrasTexto.map(function(p){ return p.toLowerCase().replace(/[.,!?;:"""''()\-]/g, ''); });
+      // Normaliza sem acentos (mesma regra do teste-tflod.html): evita "PCPM zero" falso
+      // quando a transcricao vem com acentuacao diferente do texto original.
+      var palavrasFaladas = transcricao.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[.,!?;:"""''()\-]/g, '').split(/\s+/).filter(function(p){ return p.length > 0; });
+      var palavrasOriginal = palavrasTexto.map(function(p){ return p.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[.,!?;:"""''()\-]/g, ''); });
       var totalLidas = palavrasFaladas.length;
       var _tempo = Number(tempoUsado);
       if (!isFinite(_tempo) || _tempo <= 0) _tempo = 60;

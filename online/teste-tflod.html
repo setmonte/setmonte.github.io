@@ -657,13 +657,23 @@ function _mostrarFalhaCaptacao() {
 function calcularResultados(transcricao) {
     // Blindagem: garante que transcricao seja sempre string (evita erro no .toLowerCase)
     if (typeof transcricao !== 'string') transcricao = '';
+    // Normaliza cada palavra: minusculas, sem pontuacao E SEM ACENTOS.
+    // Sem isso, "publico" (transcrito) nao casava com "publico" acentuado do texto,
+    // podendo zerar os acertos e gerar "PCPM zero" falso. Na leitura em voz alta o
+    // acento nao e pronunciado, entao ignora-lo na comparacao e o correto.
+    function _normalizarPalavra(p) {
+        return String(p).toLowerCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/[.,!?;:"""''()\-]/g, '');
+    }
     var palavrasFaladas = transcricao.toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
         .replace(/[.,!?;:"""''()\-]/g, '')
         .split(/\s+/)
         .filter(function(p) { return p.length > 0; });
 
     var palavrasOriginal = palavrasTexto.map(function(p) {
-        return p.toLowerCase().replace(/[.,!?;:"""''()\-]/g, '');
+        return _normalizarPalavra(p);
     });
 
     var totalLidas = palavrasFaladas.length;
