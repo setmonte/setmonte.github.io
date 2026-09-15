@@ -109,6 +109,13 @@
 
     <!-- PAINEL DO AVALIADOR -->
     <div id="dashboardPage" class="hidden">
+      <!-- AVISO DE SEGURANCA: sessao aberta em outro dispositivo -->
+      <div id="avisoSessaoSimultanea" style="display:none;background:#fff8e1;border:2px solid #ffb300;border-left:6px solid #ff8f00;border-radius:10px;padding:14px 18px;margin-bottom:15px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+          <p id="avisoSessaoSimultaneaTexto" style="color:#e65100;font-size:14px;line-height:1.6;margin:0;flex:1;"></p>
+          <button onclick="fecharAvisoSessaoSimultanea()" style="background:none;border:none;color:#e65100;font-size:20px;font-weight:bold;cursor:pointer;line-height:1;padding:0 4px;" title="Fechar aviso">&times;</button>
+        </div>
+      </div>
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;">
           <div>
@@ -3146,6 +3153,8 @@
       document.getElementById('userEmail').textContent = currentUser;
       // Registrar ultimo login (tipo 'login' nao dispara email na Lambda)
       try { fetch(API_URL + '/save-result', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:currentUser,tipo:'login',sessionId:'login-'+Date.now().toString(36),data:{status:'login',timestamp:new Date().toISOString()}})}); } catch(e){}
+      // Seguranca: registra presenca deste aparelho e ja checa se ha outro aberto
+      try { registrarPresenca(); checarSessaoSimultanea(); } catch(e){}
       // Mostrar aba Depoimentos e Admin apenas para admin
       if (currentUser === 'setmonte@gmail.com') {
         document.getElementById('tabDepoimentos').classList.remove('hidden');
@@ -15082,6 +15091,9 @@ _pollingPainel=setInterval(function(){
 // Se a aba estiver em segundo plano, pula esta rodada (economiza chamadas).
 if(document.hidden)return;
 try{
+// Seguranca: mantem a presenca deste aparelho "viva" e checa sessao simultanea.
+if(typeof registrarPresenca==='function')registrarPresenca();
+if(typeof checarSessaoSimultanea==='function')checarSessaoSimultanea();
 if(window.currentUser==='setmonte@gmail.com'){
 // Admin: vendas novas e mensagens de suporte recebidas dos usuarios.
 if(typeof verificarVendasNovas==='function')verificarVendasNovas();
@@ -15134,6 +15146,60 @@ function gerarFingerprint() {
     for (var i = 0; i < str.length; i++) hash = ((hash << 5) + hash + str.charCodeAt(i)) & 0xffffffff;
     return 'fp' + Math.abs(hash).toString(36);
   } catch(e) { return ''; }
+}
+
+// ===== SEGURANCA: AVISO DE SESSAO SIMULTANEA =====
+// Objetivo: se a mesma conta estiver aberta em OUTRO aparelho ao mesmo tempo,
+// mostrar um aviso (nunca bloqueia). Ajuda a perceber senha vazada ou painel
+// esquecido aberto em outra sala. O aparelho e identificado pelo fingerprint.
+function _getDeviceId() {
+  var id = '';
+  try { id = localStorage.getItem('tecfe_device_id') || ''; } catch(e) {}
+  if (!id) {
+    id = gerarFingerprint() || ('dev' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8));
+    try { localStorage.setItem('tecfe_device_id', id); } catch(e) {}
+  }
+  return id;
+}
+
+// Avisa o servidor "estou aqui" (chamado no login e a cada rodada do polling).
+function registrarPresenca() {
+  if (!window.currentUser) return;
+  try {
+    fetch(API_URL + '/registrar-presenca', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: window.currentUser, deviceId: _getDeviceId() })
+    });
+  } catch(e) {}
+}
+
+// Pergunta ao servidor se ha OUTRO aparelho ativo agora e mostra/esconde o aviso.
+async function checarSessaoSimultanea() {
+  if (!window.currentUser) return;
+  try {
+    var resp = await fetch(API_URL + '/checar-presenca?email=' + encodeURIComponent(window.currentUser) + '&deviceId=' + encodeURIComponent(_getDeviceId()));
+    var data = await resp.json();
+    var barra = document.getElementById('avisoSessaoSimultanea');
+    if (!barra) return;
+    if (data && data.outrasSessoes > 0) {
+      var det = (data.sessoes && data.sessoes[0]) ? data.sessoes[0] : null;
+      var quando = det && det.ultimoAcesso ? new Date(det.ultimoAcesso).toLocaleString('pt-BR') : '';
+      var ipTxt = det && det.ip ? (' | IP: ' + det.ip) : '';
+      var msg = '&#9888;&#65039; <strong>Aten&#231;&#227;o:</strong> sua conta est&#225; aberta em outro dispositivo agora';
+      if (quando) msg += ' (&#250;ltimo acesso: ' + quando + ipTxt + ')';
+      msg += '. Se n&#227;o foi voc&#234;, <strong>troque sua senha</strong> e feche as sess&#245;es abertas.';
+      document.getElementById('avisoSessaoSimultaneaTexto').innerHTML = msg;
+      barra.style.display = 'block';
+    } else {
+      barra.style.display = 'none';
+    }
+  } catch(e) {}
+}
+
+function fecharAvisoSessaoSimultanea() {
+  var barra = document.getElementById('avisoSessaoSimultanea');
+  if (barra) barra.style.display = 'none';
 }
 
 // ===== DETECTOR DE FALHAS NA GERACAO DE PDF (aviso no Monitor) =====
