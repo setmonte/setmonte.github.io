@@ -1213,30 +1213,47 @@ async function _enviarResultadosPainel() {
     dados.data = new Date().toISOString();
     var btn = document.getElementById('btnEnviarPainel');
     if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
-    try {
-        var body = {};
-        if (_sessionInfo && _sessionInfo.sessionId) {
-            body = { sessionId: _sessionInfo.sessionId, email: _sessionInfo.email || '', data: dados, originalSessionId: _sessionInfo.sessionId };
-        } else {
-            var email = _sessionInfo ? (_sessionInfo.email || '') : '';
-            body = { email: email, data: dados, tipo: 'lermais' };
+    var body = {};
+    if (_sessionInfo && _sessionInfo.sessionId) {
+        body = { sessionId: _sessionInfo.sessionId, email: _sessionInfo.email || '', data: dados, originalSessionId: _sessionInfo.sessionId };
+    } else {
+        var email = _sessionInfo ? (_sessionInfo.email || '') : '';
+        body = { email: email, data: dados, tipo: 'lermais' };
+    }
+    // ROBUSTEZ: tenta enviar com tempo limite de 20s e faz 1 nova tentativa automatica
+    // se a primeira falhar por rede. Assim o botao nunca fica preso em "Enviando...".
+    var _sucesso = false;
+    for (var _tentativa = 1; _tentativa <= 2 && !_sucesso; _tentativa++) {
+        try {
+            // AbortController: se passar de 20s sem resposta, cancela o envio
+            var _ctrl = new AbortController();
+            var _timer = setTimeout(function() { _ctrl.abort(); }, 20000);
+            var resp = await fetch(_API_URL + '/save-escala', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+                signal: _ctrl.signal
+            });
+            clearTimeout(_timer);
+            // Leitura segura da resposta: se nao vier JSON valido, nao quebra
+            var result = {};
+            try { result = await resp.json(); } catch(eJson) { result = {}; }
+            if (result.ok || resp.ok) {
+                _sucesso = true;
+                var container = document.getElementById('botoesArea');
+                if (container) container.innerHTML = '<div style="background:#c8e6c9;border:2px solid #2e7d32;border-radius:10px;padding:20px;text-align:center;"><p style="font-size:1.3em;color:#2e7d32;font-weight:bold;">Resultados enviados com sucesso!</p><p style="color:#555;margin-top:8px;">O profissional ja pode visualizar seus resultados no painel.</p></div>';
+                break;
+            }
+            // Resposta veio, mas indicou falha: nao adianta repetir, sai do laco
+            break;
+        } catch(e) {
+            // Falha de rede ou tempo esgotado: se ainda ha tentativa, espera 1s e repete
+            if (_tentativa < 2) { await new Promise(function(r) { setTimeout(r, 1000); }); }
         }
-        var resp = await fetch(_API_URL + '/save-escala', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body)
-        });
-        var result = await resp.json();
-        if (result.ok || resp.ok) {
-            var container = document.getElementById('botoesArea');
-            if (container) container.innerHTML = '<div style="background:#c8e6c9;border:2px solid #2e7d32;border-radius:10px;padding:20px;text-align:center;"><p style="font-size:1.3em;color:#2e7d32;font-weight:bold;">Resultados enviados com sucesso!</p><p style="color:#555;margin-top:8px;">O profissional ja pode visualizar seus resultados no painel.</p></div>';
-        } else {
-            if (btn) { btn.disabled = false; btn.textContent = 'Enviar Resultados ao Profissional'; }
-            alert('Erro ao enviar. Tente novamente.');
-        }
-    } catch(e) {
+    }
+    if (!_sucesso) {
         if (btn) { btn.disabled = false; btn.textContent = 'Enviar Resultados ao Profissional'; }
-        alert('Erro de conexao. Verifique sua internet e tente novamente.');
+        alert('Nao foi possivel enviar agora. Verifique a conexao com a internet e toque novamente em "Enviar Resultados ao Profissional".');
     }
 }
 // ===== INICIALIZACAO =====

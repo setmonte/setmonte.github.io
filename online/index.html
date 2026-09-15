@@ -7594,7 +7594,7 @@
     }
 
     // === LERMAIS - Funcoes do painel ===
-    function iniciarLermais() {
+    async function iniciarLermais() {
       var nome = document.getElementById('lermaisNome').value.trim();
       var dn = document.getElementById('lermaisDn').value;
       var sexo = document.getElementById('lermaisSexo').value;
@@ -7614,8 +7614,37 @@
         }
       }
       var dados = { nome: nome, dn: dn, sexo: sexo, escolaridade: escolaridade, lateralidade: lateralidade, correcaoVisual: correcaoVisual, email: currentUser || '', pacienteId: pacienteId };
-      var encoded = safeBtoa(JSON.stringify(dados));
-      var url = 'reabilitacao/lermais.html?d=' + encoded;
+      // CORRECAO: "Aplicar Aqui" agora cria uma sessao no servidor primeiro (modo ?s=),
+      // igual ao REOCUPA. Sem isso, o envio dos resultados falhava (sem sessionId o
+      // servidor nao reconhecia a sessao). Se a criacao da sessao falhar, cai no ?d= como plano B.
+      var url = '';
+      try {
+        var sessionId = 'lermais-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+        var sessionData = {
+          email: currentUser || '',
+          sessionId: sessionId,
+          tipo: 'lermais',
+          patientName: nome,
+          birthDate: dn,
+          sex: sexo,
+          education: escolaridade,
+          lateralidade: lateralidade,
+          correcaoVisual: correcaoVisual,
+          pacienteId: pacienteId
+        };
+        var _rsL = await fetch(API_URL + '/save-session', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(sessionData)
+        });
+        var _rjL = await _rsL.json();
+        if (_rjL.id) { url = 'reabilitacao/lermais.html?s=' + _rjL.id; }
+      } catch(e) {}
+      // Plano B: se nao conseguiu criar a sessao no servidor, usa o modo antigo ?d=
+      if (!url) {
+        var encoded = safeBtoa(JSON.stringify(dados));
+        url = 'reabilitacao/lermais.html?d=' + encoded;
+      }
       window.open(url, '_blank');
     }
 
