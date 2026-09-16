@@ -3179,6 +3179,8 @@
       verificarNotificacoesSistema();
       // POLLING: atualiza avisos sozinho a cada 60s, SEM recarregar a pagina.
       iniciarPollingPainel();
+      // Auto-update: le a versao atual como referencia (primeira leitura nao avisa nada).
+      if (typeof checarVersaoPainel === 'function') checarVersaoPainel();
       // BAE visivel para todos
       document.getElementById('tabAtencao').classList.remove('hidden');
       // Buscar creditos
@@ -15140,6 +15142,66 @@ if(card)card.style.display='none';
 // A cada 60s, re-checa os avisos (notificacoes, suporte, vendas) SEM recarregar a pagina.
 // Atualiza so os cards; nao interfere no que o usuario esta fazendo (formularios, PDFs, etc.).
 // Guarda o timer em _pollingPainel e limpa antes de criar outro, evitando timers duplicados.
+
+// ===== AUTO-UPDATE SEGURO DO PAINEL =====
+// Detecta versao nova (online/versao.json) e oferece atualizar, mas NUNCA recarrega
+// sozinho e NUNCA age enquanto houver atividade sensivel (gravacao, teste, dados nao salvos).
+var _versaoCarregada = null;   // versao lida na primeira checada (referencia)
+var _avisoUpdateVisivel = false;
+
+// Retorna true se houver algo em andamento que um reload interromperia.
+function _painelOcupado() {
+  try {
+    // 1) Gravacao de audio ativa (prontuario, TFLOD, etc.)
+    if (window._gravando === true || window.gravando === true) return true;
+    if (window._mediaRecorder && window._mediaRecorder.state === 'recording') return true;
+    // 2) Popup/janela de teste aberta (aplicacao em curso em outra aba)
+    if (window._janelaTesteAberta && !window._janelaTesteAberta.closed) return true;
+    // 3) Campos de texto/preenchimento com conteudo nao salvo (heuristica leve)
+    var el = document.activeElement;
+    if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT')) return true;
+    // 4) Secao de nova aplicacao/gravacao aberta com dados
+    var grav = document.getElementById('prontuarioTab');
+    if (grav && grav.classList.contains('active') && (window._gravando || window.gravando)) return true;
+  } catch(e) {}
+  return false;
+}
+
+function _mostrarAvisoUpdate() {
+  if (_avisoUpdateVisivel) return;
+  if (document.getElementById('_updateBar')) return;
+  _avisoUpdateVisivel = true;
+  var bar = document.createElement('div');
+  bar.id = '_updateBar';
+  bar.style.cssText = 'position:fixed;bottom:16px;right:16px;z-index:99998;background:#1565c0;color:#fff;font:13px Segoe UI,Arial;padding:10px 14px;border-radius:10px;box-shadow:0 4px 14px rgba(0,0,0,.25);display:flex;gap:10px;align-items:center;max-width:300px;';
+  bar.innerHTML = '<span>&#128260; Nova vers&#227;o do painel dispon&#237;vel.</span>';
+  var b = document.createElement('button');
+  b.textContent = 'Atualizar agora';
+  b.style.cssText = 'background:#fff;color:#1565c0;border:none;border-radius:6px;padding:5px 10px;font-weight:600;cursor:pointer;white-space:nowrap;';
+  b.onclick = function(){
+    if (_painelOcupado()) { alert('Ha uma atividade em andamento (gravacao ou preenchimento). Conclua antes de atualizar, para nao perder dados.'); return; }
+    location.reload();
+  };
+  var x = document.createElement('button');
+  x.textContent = 'Depois';
+  x.style.cssText = 'background:transparent;color:#cfe3ff;border:1px solid #cfe3ff;border-radius:6px;padding:5px 10px;cursor:pointer;';
+  x.onclick = function(){ var e = document.getElementById('_updateBar'); if (e) e.remove(); _avisoUpdateVisivel = false; };
+  bar.appendChild(b); bar.appendChild(x);
+  document.body.appendChild(bar);
+}
+
+// Checa a versao publicada. cache:'no-store' garante ler sempre o arquivo mais recente.
+function checarVersaoPainel() {
+  fetch('versao.json?_=' + Date.now(), { cache: 'no-store' })
+    .then(function(r){ return r.json(); })
+    .then(function(v){
+      if (!v || typeof v.versao === 'undefined') return;
+      if (_versaoCarregada === null) { _versaoCarregada = v.versao; return; } // 1a leitura = referencia
+      if (v.versao > _versaoCarregada && !_painelOcupado()) { _mostrarAvisoUpdate(); }
+    })
+    .catch(function(){});
+}
+
 var _pollingPainel=null;
 function iniciarPollingPainel(){
 if(_pollingPainel){clearInterval(_pollingPainel);_pollingPainel=null;}
@@ -15161,6 +15223,8 @@ if(typeof verificarRespostasSuporte==='function')verificarRespostasSuporte();
 }
 // Notificacoes do sistema (paciente concluiu teste/escala) valem para todos.
 if(typeof verificarNotificacoesSistema==='function')verificarNotificacoesSistema();
+// Auto-update: detecta versao nova do painel e oferece atualizar (sem interromper nada).
+if(typeof checarVersaoPainel==='function')checarVersaoPainel();
 // Tabela de resultados: so atualiza se a secao estiver ABERTA e nada estiver marcado
 // (evita gastar chamada com a secao fechada e evita apagar a selecao do usuario).
 var secResultados=document.getElementById('resultsSection');
