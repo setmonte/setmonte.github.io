@@ -11988,11 +11988,20 @@
         var resp = await fetch(API_URL + '/get-results?email=' + encodeURIComponent(currentUser) + '&tipo=escala');
         var data = await resp.json();
         _escalasResultCache = [];
-        if (data.results && data.results.length > 0) {
+        // 0) Remove o que NAO e escala de verdade: anamnese tem aba propria (aba Anamnese)
+        //    e o Corsi tem a aba dele (aba Corsi). Filtramos pelo nome em d.escala,
+        //    sem diferenciar maiusculas/minusculas.
+        var resultadosEscala = (data.results || []).filter(function(r) {
+          var nome = ((r.data && r.data.escala) || '').toUpperCase();
+          if (nome.indexOf('ANAMNESE') >= 0) return false; // vai para a aba Anamnese
+          if (nome.indexOf('CORSI') >= 0) return false;    // vai para a aba Corsi
+          return true;
+        });
+        if (resultadosEscala.length > 0) {
           // 1) Agrupa os resultados por nome da escala (d.escala).
           //    A chave "grupos" guarda, para cada escala, a lista de resultados dela.
           var grupos = {};
-          data.results.forEach(function(r) {
+          resultadosEscala.forEach(function(r) {
             var d = r.data || {};
             var nomeEscala = d.escala || 'Sem nome';
             if (!grupos[nomeEscala]) grupos[nomeEscala] = [];
@@ -12132,14 +12141,21 @@
       var maxY = 280;
       doc.setFillColor(46,125,50); doc.rect(0,0,210,32,'F');
       doc.setTextColor(255,255,255); doc.setFontSize(16); doc.setFont(undefined,'bold');
-      doc.text(sanitize(d.escala||'Escala') + ' - RELATORIO', 105, 13, {align:'center'});
+      // Titulo: usa nome completo da escala se enviado (d.escalaNome), senao a sigla.
+      var _tituloEsc = sanitize(d.escalaNome || d.escala || 'Escala');
+      if (_tituloEsc.length > 52) _tituloEsc = _tituloEsc.substring(0,52);
+      doc.text(_tituloEsc + ' - RELATORIO', 105, 12, {align:'center'});
+      // Subtitulo com o formulario/versao, quando a escala informar.
+      if (d.formulario) { doc.setFontSize(9); doc.setFont(undefined,'italic'); doc.text('Formulario: ' + sanitize(d.formulario), 105, 18, {align:'center'}); }
       doc.setFontSize(10); doc.setFont(undefined,'normal');
-      doc.text('Paciente: ' + sanitize(d.paciente||'N/I'), 105, 21, {align:'center'});
-      doc.text('Data: ' + (r.date ? new Date(r.date).toLocaleDateString('pt-BR') : '-') + (d.sexo ? '   |   Sexo: ' + d.sexo : ''), 105, 27, {align:'center'});
+      doc.text('Paciente: ' + sanitize(d.paciente||'N/I'), 105, 24, {align:'center'});
+      doc.text('Data: ' + (r.date ? new Date(r.date).toLocaleDateString('pt-BR') : '-') + (d.sexo ? '   |   Sexo: ' + d.sexo : ''), 105, 29, {align:'center'});
       var y = 38;
-      // Box de dados pessoais
-      doc.setFillColor(248,249,250); doc.rect(15,y,180,18,'F');
-      doc.setDrawColor(46,125,50); doc.setLineWidth(0.8); doc.line(15,y,15,y+18);
+      // Box de dados pessoais (altura ajustavel: cresce se houver respondente)
+      var _temResp = !!(d.respondente || d.nomeRespondente);
+      var _boxH = _temResp ? 24 : 18;
+      doc.setFillColor(248,249,250); doc.rect(15,y,180,_boxH,'F');
+      doc.setDrawColor(46,125,50); doc.setLineWidth(0.8); doc.line(15,y,15,y+_boxH);
       doc.setTextColor(46,125,50); doc.setFontSize(9); doc.setFont(undefined,'bold');
       doc.text('DADOS DO AVALIANDO', 20, y+5);
       doc.setTextColor(40,40,40); doc.setFontSize(8.5); doc.setFont(undefined,'normal');
@@ -12150,7 +12166,13 @@
       if (dadosLinha1) doc.text(dadosLinha1, 20, y+11);
       var dadosLinha2 = 'Data: ' + (r.date ? new Date(r.date).toLocaleDateString('pt-BR') : '-');
       doc.text(dadosLinha2, 20, y+16);
-      y += 24;
+      // Linha extra: respondente/vinculo (heterorrelato) — so aparece quando enviado.
+      if (_temResp) {
+        var _respTxt = 'Respondente: ' + sanitize(d.nomeRespondente || '-');
+        if (d.respondente) _respTxt += ' (' + sanitize(d.respondente) + ')';
+        doc.text(_respTxt, 20, y+21);
+      }
+      y += _boxH + 6;
       // Box de classificacao com cor
       if (d.classificacao || (d.escore != null && d.escore !== undefined && d.escore !== '')) {
         var corR=46, corG=125, corB=50;
@@ -12164,7 +12186,7 @@
         var textoClass = '';
         // Arredonda escore/media para no maximo 2 casas decimais (evita 3.02777777...).
         function _fmtNum(v) { var n = Number(v); return isFinite(n) ? (Math.round(n * 100) / 100) : v; }
-        if (d.escore != null && d.escore !== undefined && d.escore !== '') textoClass += 'Escore: ' + _fmtNum(d.escore) + '   |   ';
+        if (d.escore != null && d.escore !== undefined && d.escore !== '') textoClass += (d.escoreRotulo ? sanitize(d.escoreRotulo) : 'Escore') + ': ' + _fmtNum(d.escore) + '   |   ';
         if (d.classificacao) textoClass += sanitize(d.classificacao);
         if (d.media != null) textoClass += '   |   Media: ' + _fmtNum(d.media);
         doc.text(textoClass, 105, y+8, {align:'center'});
@@ -12672,6 +12694,34 @@
         doc.text('(R) = item reverso (pontuacao invertida no calculo). Valores mostrados sao as respostas brutas do paciente.', 15, yr);
       }
 
+      // OBSERVACOES (so se a escala enviou d.observacoes) — aditivo, nao afeta outras escalas.
+      if (d.observacoes && String(d.observacoes).trim()) {
+        if (y + 20 > maxY) { doc.addPage(); y = 15; }
+        y += 4;
+        doc.setFillColor(96,125,139); doc.rect(15, y-3, 180, 8, 'F');
+        doc.setTextColor(255,255,255); doc.setFontSize(9); doc.setFont(undefined,'bold');
+        doc.text('OBSERVACOES', 20, y+2); y += 11;
+        doc.setTextColor(50,50,50); doc.setFontSize(8.5); doc.setFont(undefined,'normal');
+        var _obsLines = doc.splitTextToSize(sanitize(String(d.observacoes)), 175);
+        for (var _oi = 0; _oi < _obsLines.length; _oi++) { if (y > maxY) { doc.addPage(); y = 15; } doc.text(_obsLines[_oi], 18, y); y += 5; }
+        y += 4;
+      }
+      // REFERENCIAS (so se a escala enviou d.referencias) — aditivo, nao afeta outras escalas.
+      if (d.referencias && String(d.referencias).trim()) {
+        if (y + 24 > maxY) { doc.addPage(); y = 15; }
+        y += 4;
+        doc.setFillColor(46,125,50); doc.rect(15, y-3, 180, 8, 'F');
+        doc.setTextColor(255,255,255); doc.setFontSize(9); doc.setFont(undefined,'bold');
+        doc.text('REFERENCIAS', 20, y+2); y += 11;
+        doc.setTextColor(60,60,60); doc.setFontSize(7.5); doc.setFont(undefined,'normal');
+        // Cada referencia separada por ' | ' vira um paragrafo.
+        var _refs = String(d.referencias).split(' | ');
+        for (var _fi = 0; _fi < _refs.length; _fi++) {
+          var _rLines = doc.splitTextToSize(sanitize(_refs[_fi]), 175);
+          for (var _rj = 0; _rj < _rLines.length; _rj++) { if (y > maxY) { doc.addPage(); y = 15; } doc.text(_rLines[_rj], 18, y); y += 4; }
+          y += 2;
+        }
+      }
       // Rodape profissional
       var totalPages = doc.internal.getNumberOfPages();
       for (var pg = 1; pg <= totalPages; pg++) {
