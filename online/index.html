@@ -12735,7 +12735,16 @@
       doc.save((d.escala||'Escala').replace(/[\s\/]+/g,'_') + '_' + (d.paciente||'').replace(/\s+/g,'_') + '_' + tsStr + '.pdf');
       } catch (err) {
         console.error('Erro ao gerar PDF da escala:', err);
-        alert('ERRO ao gerar PDF:\n\n' + (err && err.message ? err.message : err) + '\n\n(A mensagem tambem foi registrada no Console do navegador - tecla F12.)');
+        // Registra a falha no Monitor do admin (tipo 'erro-pdf'), incluindo o nome do paciente.
+        try {
+          var _rNome = (r && r.data) ? (r.data.paciente || '') : '';
+          var _rEsc = (r && r.data && r.data.escala) ? r.data.escala : 'Escala';
+          if (typeof window._registrarFalhaPDF === 'function') {
+            window._registrarFalhaPDF('gerarPDFEscala (' + _rEsc + ')', (err && err.message ? err.message : String(err)), _rNome);
+          }
+        } catch (e2) {}
+        // Avisa o usuario (profissional) para que ele possa reportar a falha.
+        alert('Nao foi possivel gerar o PDF desta escala.\n\nDetalhe tecnico: ' + (err && err.message ? err.message : err) + '\n\nOs dados do paciente continuam salvos. Por favor, avise o suporte para que a falha seja corrigida.');
       }
     }
 
