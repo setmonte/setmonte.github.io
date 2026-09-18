@@ -218,6 +218,32 @@ var mediaRecorder = null;
 var audioChunks = [];
 var versaoTexto = '';
 var categoriaTexto = '';
+// Formato de gravacao efetivamente usado (definido em iniciarTeste conforme o suporte do navegador).
+// Guardado aqui porque e usado tanto na criacao do MediaRecorder quanto na montagem do Blob final.
+var audioMimeType = 'audio/webm;codecs=opus';
+
+// ===== ESCOLHA DO MELHOR FORMATO DE AUDIO SUPORTADO =====
+// Nem todo navegador grava webm/opus (o Safari/iOS, por exemplo, historicamente nao grava).
+// Testamos a lista em ordem de preferencia e usamos o primeiro que o navegador suportar.
+// Se nenhum for suportado explicitamente, retornamos '' (deixa o navegador escolher o padrao dele).
+function _escolherMimeAudio() {
+    var candidatos = [
+        'audio/webm;codecs=opus',
+        'audio/webm',
+        'audio/ogg;codecs=opus',
+        'audio/mp4',
+        'audio/mp4;codecs=mp4a.40.2',
+        'audio/aac'
+    ];
+    try {
+        if (typeof MediaRecorder !== 'undefined' && typeof MediaRecorder.isTypeSupported === 'function') {
+            for (var i = 0; i < candidatos.length; i++) {
+                if (MediaRecorder.isTypeSupported(candidatos[i])) return candidatos[i];
+            }
+        }
+    } catch (e) {}
+    return '';
+}
 
 // ===== UTILIDADES =====
 function calcularIdade() {
@@ -514,7 +540,19 @@ async function iniciarTeste() {
     try {
         var stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         audioChunks = [];
-        mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus', audioBitsPerSecond: 32000 });
+        // CORRECAO 4: escolhe o formato suportado pelo navegador (evita quebra no Safari/iOS,
+        // que nao grava webm/opus). CORRECAO 5: bitrate maior (32k -> 96k) melhora o
+        // reconhecimento da fala pelo Whisper, principalmente com ruido ou voz baixa.
+        audioMimeType = _escolherMimeAudio();
+        var _opcoesRec = { audioBitsPerSecond: 96000 };
+        if (audioMimeType) _opcoesRec.mimeType = audioMimeType;
+        try {
+            mediaRecorder = new MediaRecorder(stream, _opcoesRec);
+        } catch (eRec) {
+            // Se o navegador recusar as opcoes (mimeType/bitrate), cria no padrao dele.
+            mediaRecorder = new MediaRecorder(stream);
+            audioMimeType = mediaRecorder.mimeType || '';
+        }
         mediaRecorder.ondataavailable = function(e) {
             if (e.data.size > 0) audioChunks.push(e.data);
         };
@@ -575,8 +613,21 @@ async function finalizarGravacao() {
     document.getElementById('progressFill').style.width = '10%';
     document.getElementById('progressText').textContent = 'Preparando \u00e1udio...';
 
-    // Converter audio para base64 (agora o audio ja esta completo, garantido pelo onstop acima)
-    var audioBlob = new Blob(audioChunks, { type: 'audio/webm;codecs=opus' });
+    // Converter audio para base64 (agora o audio ja esta completo, garantido pelo onstop acima).
+    // CORRECAO 4: usa o mesmo formato escolhido na gravacao (audioMimeType), nao mais webm/opus fixo.
+    var _tipoBlob = audioMimeType || 'audio/webm';
+    var audioBlob = new Blob(audioChunks, { type: _tipoBlob });
+
+    // CORRECAO 2: VALIDAR O AUDIO ANTES DE ENVIAR.
+    // Se a gravacao ficou vazia ou minuscula (bug de captacao, microfone mudo, permissao caiu no meio),
+    // nao adianta enviar para transcrever - so gastaria a chamada e geraria um alerta no painel.
+    // Detectamos isso na hora e pedimos para refazer, sem consumir a transcricao.
+    // Limiar: menos de 1 chunk OU blob menor que ~2KB (1 min de fala real gera dezenas de KB).
+    if (audioChunks.length === 0 || audioBlob.size < 2048) {
+        _mostrarFalhaCaptacao();
+        return;
+    }
+
     var audioBase64 = await blobToBase64(audioBlob);
 
     document.getElementById('progressFill').style.width = '30%';
@@ -584,13 +635,35 @@ async function finalizarGravacao() {
 
     var audioS3Key = '';
     try {
-        // Enviar audio para Lambda que transcreve via OpenAI Whisper
-        var resp = await fetch(API_URL + '/transcribe-audio', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ audioBase64: audioBase64, sessionId: sessionInfo.sessionId || '' })
-        });
-        var data = await resp.json();
+        // Enviar audio para Lambda que transcreve via OpenAI Whisper.
+        // CORRECAO 3: ate 3 tentativas. Uma oscilacao rapida de internet nao deve
+        // transformar um audio bom em erro. So desistimos apos 3 falhas seguidas.
+        var data = null;
+        var resp = null;
+        var _tentativas = 0;
+        var _ultimoErroRede = false;
+        while (_tentativas < 3 && !data) {
+            _tentativas++;
+            try {
+                resp = await fetch(API_URL + '/transcribe-audio', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ audioBase64: audioBase64, sessionId: sessionInfo.sessionId || '' })
+                });
+                data = await resp.json();
+            } catch (eRede) {
+                _ultimoErroRede = true;
+                data = null;
+                // Pequena espera crescente entre tentativas (0.8s, 1.6s) antes de tentar de novo.
+                if (_tentativas < 3) { await new Promise(function(r){ setTimeout(r, 800 * _tentativas); }); }
+            }
+        }
+        // Se as 3 tentativas falharam por rede, preserva o audio (se houver s3Key) e avisa.
+        if (!data) {
+            await salvarResultadoErro(_ultimoErroRede ? 'Falha de rede ao transcrever (3 tentativas)' : 'Sem resposta da transcricao', audioBase64, '');
+            _mostrarFalhaCaptacao();
+            return;
+        }
         audioS3Key = data.s3Key || '';
         if (!resp.ok) throw new Error(data.error || 'Erro na transcricao');
         var transcricao = (typeof data.text === 'string') ? data.text : '';
