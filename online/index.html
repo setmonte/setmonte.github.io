@@ -12132,6 +12132,7 @@
 
     function gerarPDFEscala(idx) {
       function sanitize(s){if(!s)return '';return s.replace(/[\u2600-\u27BF\uD800-\uDFFF\uFE00-\uFE0F\u200D]/g,'').replace(/[^\x20-\x7E\xA0-\xFF\u0100-\u024F]/g,'').trim();}
+      try {
       var r = _escalasResultCache[idx];
       if (!r) return;
       var dd=(r.data||{}); if(dd.pdfBase64 && dd.pdfBase64.length > 100){var ts=new Date();var tsStr=ts.getFullYear()+String(ts.getMonth()+1).padStart(2,'0')+String(ts.getDate()).padStart(2,'0')+String(ts.getHours()).padStart(2,'0')+String(ts.getMinutes()).padStart(2,'0');var a=document.createElement('a');a.href=dd.pdfBase64;a.download=(dd.escala||'Escala').replace(/[\s\/]+/g,'_')+'_'+(dd.paciente||'').replace(/\s+/g,'_')+'_'+tsStr+'.pdf';document.body.appendChild(a);a.click();document.body.removeChild(a);return;}
@@ -12732,6 +12733,10 @@
       }
       var tsNow=new Date();var tsStr=tsNow.getFullYear()+String(tsNow.getMonth()+1).padStart(2,'0')+String(tsNow.getDate()).padStart(2,'0')+String(tsNow.getHours()).padStart(2,'0')+String(tsNow.getMinutes()).padStart(2,'0');
       doc.save((d.escala||'Escala').replace(/[\s\/]+/g,'_') + '_' + (d.paciente||'').replace(/\s+/g,'_') + '_' + tsStr + '.pdf');
+      } catch (err) {
+        console.error('Erro ao gerar PDF da escala:', err);
+        alert('ERRO ao gerar PDF:\n\n' + (err && err.message ? err.message : err) + '\n\n(A mensagem tambem foi registrada no Console do navegador - tecla F12.)');
+      }
     }
 
     function toggleEscalasSelectAll(master) {
