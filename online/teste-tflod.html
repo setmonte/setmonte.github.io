@@ -540,10 +540,28 @@ async function finalizarGravacao() {
     // Parar cronometro
     if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
 
-    // Parar gravacao
+    // Parar gravacao ESPERANDO o audio ficar 100% pronto.
+    // ANTES: dava stop() e esperava 500ms "no chute" antes de montar o blob. Como os chunks
+    // sao emitidos a cada 1s (start(1000)) e o stop e assincrono, o ultimo pedaco de audio
+    // podia chegar DEPOIS dos 500ms -> blob incompleto/vazio -> transcricao vazia (PCPM zero).
+    // AGORA: escutamos o evento oficial 'onstop', que so dispara quando TODOS os chunks foram
+    // entregues. So paramos o microfone (tracks) depois disso. Ha um limite de seguranca de 3s
+    // para nunca travar a tela do paciente caso o evento nao dispare em algum navegador antigo.
     if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-        mediaRecorder.stop();
-        mediaRecorder.stream.getTracks().forEach(function(t) { t.stop(); });
+        var _mr = mediaRecorder;
+        await new Promise(function(resolve) {
+            var _finalizado = false;
+            var _concluir = function() {
+                if (_finalizado) return;
+                _finalizado = true;
+                try { _mr.stream.getTracks().forEach(function(t) { t.stop(); }); } catch (e) {}
+                resolve();
+            };
+            _mr.onstop = _concluir;
+            // Rede de seguranca: se o onstop nao disparar em 3s, segue mesmo assim.
+            setTimeout(_concluir, 3000);
+            try { _mr.stop(); } catch (e) { _concluir(); }
+        });
     }
 
     // Sair fullscreen e restaurar cursor
@@ -557,10 +575,7 @@ async function finalizarGravacao() {
     document.getElementById('progressFill').style.width = '10%';
     document.getElementById('progressText').textContent = 'Preparando \u00e1udio...';
 
-    // Esperar mediaRecorder finalizar
-    await new Promise(function(resolve) { setTimeout(resolve, 500); });
-
-    // Converter audio para base64
+    // Converter audio para base64 (agora o audio ja esta completo, garantido pelo onstop acima)
     var audioBlob = new Blob(audioChunks, { type: 'audio/webm;codecs=opus' });
     var audioBase64 = await blobToBase64(audioBlob);
 
