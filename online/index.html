@@ -1682,6 +1682,12 @@
             <button class="btn btn-blue" style="padding:8px 16px;font-size:12px;" onclick="carregarLogCreditos()">Carregar Historico</button>
             <div id="logCreditosArea" style="margin-top:12px;max-height:400px;overflow-y:auto;"></div>
           </div>
+          <div style="background:#f3e5f5;border:2px solid #7b1fa2;border-radius:10px;padding:15px;margin:10px 0;">
+            <p style="font-size:13px;font-weight:bold;color:#7b1fa2;margin-bottom:8px;">&#128270; Auditoria de Creditos (cruzamento automatico)</p>
+            <p style="font-size:11px;color:#777;margin-bottom:10px;">Cruza vendas, saldos e creditos rastreados como pagos. Aponta divergencias com semaforo (OK / Conferir / Alerta). Nao altera nada.</p>
+            <button class="btn" style="padding:8px 16px;font-size:12px;background:#7b1fa2;color:white;" onclick="auditarCreditos()">Rodar Auditoria</button>
+            <div id="auditoriaCreditosArea" style="margin-top:12px;max-height:500px;overflow-y:auto;"></div>
+          </div>
             </div><!-- /sub creditos -->
 
             <!-- SUB-ABA: Resultados -->
@@ -6995,6 +7001,109 @@
         area.innerHTML = html;
       } catch(e) {
         area.innerHTML = '<p style="color:#c62828;font-size:12px;">Erro: ' + e.message + '</p>';
+      }
+    }
+
+    // ===== AUDITORIA / CRUZAMENTO AUTOMATICO DE CREDITOS =====
+    // Cruza 3 fontes por usuario/tipo:
+    //   - Vendas registradas (comprado real, via /get-vendas?todas=1)
+    //   - Campo *Pago do saldo (comprado que o sistema rastreou), via /admin-list-users-full
+    //   - Saldo total atual (referencia)
+    // Aponta divergencias com semaforo. NAO altera nada (so leitura).
+    // IMPORTANTE: divergencias em amarelo sao esperadas para compras por LINK MANUAL
+    // (creditadas na mao) e para compras ANTES da separacao de potes. Verde = coerente.
+    async function auditarCreditos() {
+      var area = document.getElementById('auditoriaCreditosArea');
+      if (!area) return;
+      area.innerHTML = '<p style="color:#777;">Cruzando vendas, saldos e log... aguarde.</p>';
+      try {
+        // Fonte 1: vendas (comprado real)
+        var respV = await fetch(API_URL + '/get-vendas?todas=1&email=' + encodeURIComponent(currentUser));
+        var dataV = await respV.json();
+        var vendas = dataV.vendas || [];
+        // Fonte 2: usuarios com saldos e campos *Pago
+        var respU = await fetch(API_URL + '/admin-list-users-full?email=' + encodeURIComponent(currentUser));
+        var dataU = await respU.json();
+        var usuarios = dataU.users || [];
+
+        // Lista fixa dos tipos pagos (independente do DOM, para a auditoria ser robusta).
+        var testes = [
+          { id: 'tecfe', nome: 'TECFE' }, { id: 'bae', nome: 'BAE' }, { id: 'trmv', nome: 'TRMV' },
+          { id: 'tref', nome: 'TREF' }, { id: 'taav', nome: 'TAAV' }, { id: 'tflod', nome: 'TFLOD' },
+          { id: 'ideia', nome: 'IDEIA' }, { id: 'prontuario', nome: 'PRONTUARIO' }
+        ];
+        // Soma comprado por email+tipo a partir das vendas
+        var compradoPorChave = {}; // chave: email|tipo -> total creditos comprados
+        vendas.forEach(function(v) {
+          var d = v.data || {};
+          var em = (d.comprador || '').toLowerCase();
+          var tp = (d.teste || '').toLowerCase();
+          var qt = parseInt(d.creditos) || 0;
+          if (!em || !tp) return;
+          var k = em + '|' + tp;
+          compradoPorChave[k] = (compradoPorChave[k] || 0) + qt;
+        });
+
+        // Monta linhas de auditoria (so mostra usuario/tipo que tem algo relevante)
+        var linhas = [];
+        var contVerde = 0, contAmarelo = 0, contVermelho = 0;
+        usuarios.forEach(function(u) {
+          var em = (u.email || '').toLowerCase();
+          testes.forEach(function(t) {
+            var campoTotal = t.id === 'tecfe' ? 'credits' : t.id + 'Credits';
+            var campoPago = campoTotal + 'Pago';
+            var saldoTotal = parseInt(u[campoTotal]) || 0;
+            var pagoRastreado = parseInt(u[campoPago]) || 0;
+            var compradoVendas = compradoPorChave[em + '|' + t.id] || 0;
+            // So audita se ha QUALQUER sinal de dinheiro/credito neste tipo
+            if (saldoTotal === 0 && pagoRastreado === 0 && compradoVendas === 0) return;
+            var cor, motivo;
+            if (pagoRastreado > 0 && compradoVendas === 0) {
+              cor = 'vermelho'; motivo = 'Saldo marcado como PAGO sem venda registrada. Investigar.'; contVermelho++;
+            } else if (compradoVendas > pagoRastreado) {
+              cor = 'amarelo'; motivo = 'Comprou ' + compradoVendas + ' (vendas) mas so ' + pagoRastreado + ' rastreado como pago. Normal se compra antiga ou por link manual.'; contAmarelo++;
+            } else {
+              cor = 'verde'; motivo = 'Coerente.'; contVerde++;
+            }
+            linhas.push({ email: u.email, tipo: t.nome, saldoTotal: saldoTotal, pagoRastreado: pagoRastreado, compradoVendas: compradoVendas, cortesiaEstim: Math.max(0, saldoTotal - pagoRastreado), cor: cor, motivo: motivo });
+          });
+        });
+
+        // Ordena: vermelho primeiro, depois amarelo, depois verde
+        var ordem = { vermelho: 0, amarelo: 1, verde: 2 };
+        linhas.sort(function(a, b) { return ordem[a.cor] - ordem[b.cor]; });
+
+        var mapCor = { verde: '#2e7d32', amarelo: '#ef6c00', vermelho: '#c62828' };
+        var mapBg = { verde: '#e8f5e9', amarelo: '#fff8e1', vermelho: '#fdecea' };
+        var mapTxt = { verde: 'OK', amarelo: 'CONFERIR', vermelho: 'ALERTA' };
+        var html = '<div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">';
+        html += '<span style="background:#e8f5e9;color:#2e7d32;padding:3px 10px;border-radius:6px;font-size:12px;font-weight:bold;">OK: ' + contVerde + '</span>';
+        html += '<span style="background:#fff8e1;color:#ef6c00;padding:3px 10px;border-radius:6px;font-size:12px;font-weight:bold;">Conferir: ' + contAmarelo + '</span>';
+        html += '<span style="background:#fdecea;color:#c62828;padding:3px 10px;border-radius:6px;font-size:12px;font-weight:bold;">Alerta: ' + contVermelho + '</span>';
+        html += '</div>';
+        html += '<p style="font-size:11px;color:#777;margin-bottom:8px;">Amarelo (Conferir) e normal para compras antigas ou vendidas por link manual. Vermelho (Alerta) merece investigacao: credito pago sem venda que o justifique.</p>';
+        if (linhas.length === 0) {
+          html += '<p style="color:#777;">Nenhum credito para auditar.</p>';
+        } else {
+          html += '<table style="width:100%;border-collapse:collapse;font-size:0.8em;">';
+          html += '<tr style="background:#1565c0;color:white;"><th style="padding:5px;">Status</th><th style="padding:5px;">Email</th><th style="padding:5px;">Teste</th><th style="padding:5px;">Saldo</th><th style="padding:5px;">Comprado (vendas)</th><th style="padding:5px;">Pago (rastreado)</th><th style="padding:5px;">Cortesia (estim.)</th><th style="padding:5px;">Observacao</th></tr>';
+          linhas.forEach(function(l) {
+            html += '<tr style="border-bottom:1px solid #eee;background:' + mapBg[l.cor] + ';">';
+            html += '<td style="padding:4px;font-weight:bold;color:' + mapCor[l.cor] + ';">' + mapTxt[l.cor] + '</td>';
+            html += '<td style="padding:4px;font-size:10px;word-break:break-all;">' + l.email + '</td>';
+            html += '<td style="padding:4px;">' + l.tipo + '</td>';
+            html += '<td style="padding:4px;text-align:center;">' + l.saldoTotal + '</td>';
+            html += '<td style="padding:4px;text-align:center;font-weight:bold;color:#2e7d32;">' + l.compradoVendas + '</td>';
+            html += '<td style="padding:4px;text-align:center;">' + l.pagoRastreado + '</td>';
+            html += '<td style="padding:4px;text-align:center;color:#777;">' + l.cortesiaEstim + '</td>';
+            html += '<td style="padding:4px;font-size:10px;color:' + mapCor[l.cor] + ';">' + l.motivo + '</td>';
+            html += '</tr>';
+          });
+          html += '</table>';
+        }
+        area.innerHTML = html;
+      } catch(e) {
+        area.innerHTML = '<p style="color:#c62828;font-size:12px;">Erro ao auditar: ' + e.message + '</p>';
       }
     }
 
