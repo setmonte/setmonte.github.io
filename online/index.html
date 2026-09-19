@@ -6076,17 +6076,18 @@
       verificarMsgSuporteNovas();
     }
 
-    async function carregarVendas() {
+    async function carregarVendas(mostrarTodas) {
       var el = document.getElementById('adminVendasList');
       el.innerHTML = '<p style="color:#555;">Carregando...</p>';
       try {
-        var resp = await fetch(API_URL + '/get-vendas?email=' + encodeURIComponent(currentUser));
+        var urlVendas = API_URL + '/get-vendas?email=' + encodeURIComponent(currentUser) + (mostrarTodas ? '&todas=1' : '');
+        var resp = await fetch(urlVendas);
         var data = await resp.json();
         var vendas = data.vendas || [];
-        if (vendas.length === 0) { el.innerHTML = '<p style="color:#888;">Nenhuma venda nova.</p>'; return; }
+        if (vendas.length === 0) { el.innerHTML = '<p style="color:#888;">' + (mostrarTodas ? 'Nenhuma venda no historico.' : 'Nenhuma venda nova.') + '</p>'; return; }
         window._vendasIds = vendas.map(function(v) { return v.sessionId; });
         window._vendasCache = vendas; // guarda para gerar o PDF do log de pagamentos
-        var html = '<table class="results-table"><tr><th>Data</th><th>Comprador</th><th>Teste</th><th>Creditos</th><th>Valor</th><th>Prazo 7 dias</th></tr>';
+        var html = '<table class="results-table"><tr><th>Data</th><th>Comprador</th><th>Teste</th><th>Creditos</th><th>Valor</th><th>Prazo 7 dias</th>' + (mostrarTodas ? '<th>Status</th>' : '') + '</tr>';
         vendas.forEach(function(v) {
           var d = v.data || {};
           var dataStr = v.date ? new Date(v.date).toLocaleString('pt-BR', {timeZone:'America/Sao_Paulo'}) : '-';
@@ -6102,21 +6103,35 @@
           html += '<td style="font-weight:bold;color:#2e7d32;">' + (d.creditos || '-') + '</td>';
           html += '<td>R$ ' + (d.valor ? parseFloat(d.valor).toFixed(2) : '-') + '</td>';
           html += '<td style="font-weight:bold;color:' + prazoCor + ';">' + prazoTxt + '</td>';
+          if (mostrarTodas) { html += '<td style="color:' + (v.lida ? '#999' : '#1565c0') + ';">' + (v.lida ? 'Lida' : 'Nova') + '</td>'; }
           html += '</tr>';
         });
         html += '</table>';
         html += '<button class="btn btn-blue" style="margin-top:10px;padding:6px 14px;font-size:12px;" onclick="imprimirLogPagamentos()">Imprimir Log de Pagamentos (PDF)</button> ';
-        html += '<button class="btn btn-red" style="margin-top:10px;padding:6px 14px;font-size:12px;" onclick="limparVendas()">Marcar como lidas (apagar)</button>';
+        if (!mostrarTodas) {
+          html += '<button class="btn btn-green" style="margin-top:10px;padding:6px 14px;font-size:12px;" onclick="carregarVendas(true)">Ver Historico Completo</button> ';
+          html += '<button class="btn btn-orange" style="margin-top:10px;padding:6px 14px;font-size:12px;" onclick="limparVendas()">Marcar como lidas</button>';
+          html += '<p style="font-size:11px;color:#777;margin-top:6px;">As vendas marcadas como lidas somem desta lista mas continuam guardadas como comprovante. O botao Historico Completo mostra todas (inclusive lidas).</p>';
+        } else {
+          html += '<button class="btn btn-blue" style="margin-top:10px;padding:6px 14px;font-size:12px;" onclick="carregarVendas(false)">Ver so as Novas</button>';
+          html += '<p style="font-size:11px;color:#777;margin-top:6px;">Historico completo (inclui vendas ja lidas). Nada aqui pode ser apagado — serve como comprovante permanente.</p>';
+        }
         el.innerHTML = html;
       } catch(e) { el.innerHTML = '<p style="color:#c62828;">Erro ao carregar vendas.</p>'; }
     }
 
     // Gera um PDF com o log de pagamentos (vendas de creditos) para servir de comprovante.
-    // Usa o cache carregado por carregarVendas(). Cada venda mostra data, comprador, teste,
+    // Busca SEMPRE o historico COMPLETO no servidor (?todas=1), inclusive vendas ja lidas,
+    // para o comprovante nunca ficar incompleto. Cada venda mostra data, comprador, teste,
     // creditos, valor e o status do prazo de arrependimento (7 dias, CDC art. 49).
-    function imprimirLogPagamentos() {
-      var vendas = window._vendasCache || [];
-      if (!vendas.length) { alert('Nao ha vendas carregadas. Clique em Carregar antes de imprimir.'); return; }
+    async function imprimirLogPagamentos() {
+      var vendas = [];
+      try {
+        var respPdf = await fetch(API_URL + '/get-vendas?todas=1&email=' + encodeURIComponent(currentUser));
+        var dataPdf = await respPdf.json();
+        vendas = dataPdf.vendas || [];
+      } catch(e) { vendas = window._vendasCache || []; }
+      if (!vendas.length) { alert('Nao ha vendas no historico para imprimir.'); return; }
       var jsPDF = window.jspdf.jsPDF;
       var doc = new jsPDF('l'); // paisagem para caber as colunas
       var pageW = 297;
@@ -6179,12 +6194,12 @@
 
     async function limparVendas() {
       if (!window._vendasIds || window._vendasIds.length === 0) return;
-      if (!confirm('Apagar ' + window._vendasIds.length + ' registro(s) de venda?')) return;
+      if (!confirm('Marcar ' + window._vendasIds.length + ' venda(s) como lidas? Elas somem desta lista mas continuam guardadas como comprovante.')) return;
       try {
         await fetch(API_URL + '/clear-vendas', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ids: window._vendasIds, email: currentUser}) });
-        document.getElementById('adminVendasList').innerHTML = '<p style="color:#2e7d32;">Vendas limpas com sucesso.</p>';
+        document.getElementById('adminVendasList').innerHTML = '<p style="color:#2e7d32;">Vendas marcadas como lidas (preservadas no historico).</p>';
         window._vendasIds = [];
-      } catch(e) { alert('Erro ao limpar.'); }
+      } catch(e) { alert('Erro ao marcar como lidas.'); }
     }
 
     // ===== MONITOR DE ATIVIDADE (ALERTAS ADMIN) =====
