@@ -260,6 +260,9 @@ var dadosForm = {};
 var sessionInfo = {};
 var mediaRecorder = null;
 var audioChunks = [];
+// Formato de gravacao efetivamente usado (definido conforme o suporte do navegador).
+// Usado tanto na criacao do MediaRecorder quanto na montagem do Blob final.
+var audioMimeType = 'audio/webm;codecs=opus';
 var timerInterval = null;
 var tempoTotal = 600; // 10 minutos em segundos
 var tempoRestante = 600;
@@ -351,6 +354,29 @@ function blobToBase64(blob) {
         };
         reader.readAsDataURL(blob);
     });
+}
+
+// ===== ESCOLHA DO MELHOR FORMATO DE AUDIO SUPORTADO =====
+// Nem todo navegador grava webm/opus (o Safari/iOS, por exemplo, historicamente nao grava).
+// Testamos a lista em ordem de preferencia e usamos o primeiro que o navegador suportar.
+// Se nenhum for suportado explicitamente, retornamos '' (deixa o navegador escolher o padrao dele).
+function _escolherMimeAudio() {
+    var candidatos = [
+        'audio/webm;codecs=opus',
+        'audio/webm',
+        'audio/ogg;codecs=opus',
+        'audio/mp4',
+        'audio/mp4;codecs=mp4a.40.2',
+        'audio/aac'
+    ];
+    try {
+        if (typeof MediaRecorder !== 'undefined' && typeof MediaRecorder.isTypeSupported === 'function') {
+            for (var i = 0; i < candidatos.length; i++) {
+                if (MediaRecorder.isTypeSupported(candidatos[i])) return candidatos[i];
+            }
+        }
+    } catch (e) {}
+    return '';
 }
 
 // ===== CLASSIFICACAO =====
@@ -489,7 +515,17 @@ async function iniciarTeste() {
     try {
         var stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         audioChunks = [];
-        mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus', audioBitsPerSecond: 32000 });
+        // Escolhe o formato suportado pelo navegador (evita quebra no Safari/iOS) e usa
+        // bitrate maior (32k -> 96k) para melhorar o reconhecimento da fala pelo Whisper.
+        audioMimeType = _escolherMimeAudio();
+        var _opcoesRec = { audioBitsPerSecond: 96000 };
+        if (audioMimeType) _opcoesRec.mimeType = audioMimeType;
+        try {
+            mediaRecorder = new MediaRecorder(stream, _opcoesRec);
+        } catch (eRec) {
+            mediaRecorder = new MediaRecorder(stream);
+            audioMimeType = mediaRecorder.mimeType || '';
+        }
         mediaRecorder.ondataavailable = function(e) {
             if (e.data.size > 0) audioChunks.push(e.data);
         };
@@ -716,10 +752,24 @@ async function finalizarTeste() {
     // Esconder check-in se visivel
     document.getElementById('checkinOverlay').classList.remove('show');
 
-    // Parar gravacao
+    // Parar gravacao ESPERANDO o audio ficar 100% pronto.
+    // Escutamos o evento oficial 'onstop' (dispara quando TODOS os chunks foram entregues),
+    // em vez de esperar um tempo fixo "no chute". So paramos o microfone depois disso.
+    // Ha um limite de seguranca de 3s para nunca travar a tela do paciente.
     if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-        mediaRecorder.stop();
-        mediaRecorder.stream.getTracks().forEach(function(t) { t.stop(); });
+        var _mr = mediaRecorder;
+        await new Promise(function(resolve) {
+            var _finalizado = false;
+            var _concluir = function() {
+                if (_finalizado) return;
+                _finalizado = true;
+                try { _mr.stream.getTracks().forEach(function(t) { t.stop(); }); } catch (e) {}
+                resolve();
+            };
+            _mr.onstop = _concluir;
+            setTimeout(_concluir, 3000);
+            try { _mr.stop(); } catch (e) { _concluir(); }
+        });
     }
 
     // Fechar analisador de volume
@@ -730,11 +780,18 @@ async function finalizarTeste() {
     document.getElementById('progressFill').style.width = '10%';
     document.getElementById('progressText').textContent = 'Preparando \u00e1udio...';
 
-    // Esperar mediaRecorder finalizar
-    await new Promise(function(resolve) { setTimeout(resolve, 800); });
+    // Converter audio para base64 (usa o formato escolhido na gravacao, nao mais webm/opus fixo).
+    var _tipoBlob = audioMimeType || 'audio/webm';
+    var audioBlob = new Blob(audioChunks, { type: _tipoBlob });
 
-    // Converter audio para base64
-    var audioBlob = new Blob(audioChunks, { type: 'audio/webm;codecs=opus' });
+    // Validar o audio ANTES de enviar: se ficou vazio/minusculo (falha de captacao), nao adianta
+    // enviar para transcrever. Salva como erro (preservando o audio) e avisa, sem gastar a chamada.
+    if (audioChunks.length === 0 || audioBlob.size < 2048) {
+        await salvarResultadoErro('Audio vazio ou nao captado', '', '');
+        document.getElementById('progressText').textContent = 'Nao conseguimos captar o audio. Por favor, refaca o teste.';
+        return;
+    }
+
     var audioBase64 = await blobToBase64(audioBlob);
 
     document.getElementById('progressFill').style.width = '30%';
@@ -742,13 +799,33 @@ async function finalizarTeste() {
 
     var audioS3Key = '';
     try {
-        // Enviar audio para Lambda que transcreve via Whisper
-        var resp = await fetch(API_URL + '/transcribe-audio', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ audioBase64: audioBase64, sessionId: sessionInfo.sessionId || '' })
-        });
-        var data = await resp.json();
+        // Enviar audio para Lambda que transcreve via Whisper.
+        // Ate 3 tentativas: uma oscilacao rapida de internet nao deve virar erro.
+        var data = null;
+        var resp = null;
+        var _tentativas = 0;
+        var _ultimoErroRede = false;
+        while (_tentativas < 3 && !data) {
+            _tentativas++;
+            try {
+                resp = await fetch(API_URL + '/transcribe-audio', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ audioBase64: audioBase64, sessionId: sessionInfo.sessionId || '' })
+                });
+                data = await resp.json();
+            } catch (eRede) {
+                _ultimoErroRede = true;
+                data = null;
+                if (_tentativas < 3) { await new Promise(function(r){ setTimeout(r, 800 * _tentativas); }); }
+            }
+        }
+        if (!data) {
+            // 3 tentativas falharam por rede: preserva o audio inline para reprocessar e avisa.
+            await salvarResultadoErro(_ultimoErroRede ? 'Falha de rede ao transcrever (3 tentativas)' : 'Sem resposta da transcricao', '', audioBase64);
+            document.getElementById('progressText').textContent = 'Falha de conexao ao processar. Os dados foram salvos; tente novamente.';
+            return;
+        }
         audioS3Key = data.s3Key || '';
         if (!resp.ok) throw new Error(data.error || 'Erro na transcricao');
         var transcricao = (typeof data.text === 'string') ? data.text : '';
