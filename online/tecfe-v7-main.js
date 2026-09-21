@@ -311,7 +311,7 @@
     setTimeout(function () {
       // Tentar gerar laudo com IA antes de exportar
       var aiTimeout = new Promise(function(_, reject) {
-        setTimeout(function() { reject('timeout'); }, 10000);
+        setTimeout(function() { reject('timeout'); }, 30000);
       });
       var aiPromise = TECFEAI.generateReport(formData, stats, abandoned);
 
