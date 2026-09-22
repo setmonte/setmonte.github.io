@@ -7142,18 +7142,21 @@
           html += '<span style="font-size:10px;color:#777;margin-left:8px;">(fonte: DynamoDB + Cognito cruzados)</span>';
           html += '</div>';
           var testes = detectarTestesPagos();
-          html += '<table class="results-table"><tr><th><input type="checkbox" onclick="adminToggleInativos(this)"></th><th>Email</th><th>Ultimo Acesso</th><th>Fonte</th><th>Status</th>';
+          html += '<table class="results-table"><tr><th><input type="checkbox" onclick="adminToggleInativos(this)"></th><th>Email</th><th>Ultimo Acesso</th><th>Hora</th><th>Fonte</th><th>Status</th>';
           testes.forEach(function(t) { html += '<th>' + t.nome + '</th>'; });
           html += '</tr>';
           data.users.forEach(function(u) {
             var ativo = u.lastAccess && new Date(u.lastAccess) > limite40;
             var lastStr = u.lastAccess ? new Date(u.lastAccess).toLocaleDateString('pt-BR') : 'Nunca';
+            // Hora do ultimo acesso (coluna separada, antes da Fonte). So mostra se houver data.
+            var horaStr = u.lastAccess ? new Date(u.lastAccess).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '-';
             var fonteStr = u.lastAccessSource === 'cognito' ? '<span style="color:#7b1fa2;font-size:9px;">Cognito</span>' : u.lastAccessSource === 'dynamo' ? '<span style="color:#1565c0;font-size:9px;">DynamoDB</span>' : '<span style="color:#999;font-size:9px;">-</span>';
             var statusBadge = ativo ? '<span style="color:#2e7d32;font-weight:bold;font-size:10px;">ATIVO</span>' : '<span style="color:#c62828;font-weight:bold;font-size:10px;">INATIVO</span>';
             html += '<tr style="' + (ativo ? '' : 'opacity:0.7;background:#fff8f8;') + '">';
             html += '<td><input type="checkbox" class="admin-inativo-check" data-email="' + u.email + '" ' + (ativo ? 'disabled' : '') + '></td>';
             html += '<td style="font-size:11px;">' + u.email + '</td>';
             html += '<td style="font-size:10px;">' + lastStr + '</td>';
+            html += '<td style="font-size:10px;">' + horaStr + '</td>';
             html += '<td>' + fonteStr + '</td>';
             html += '<td>' + statusBadge + '</td>';
             testes.forEach(function(t) {
