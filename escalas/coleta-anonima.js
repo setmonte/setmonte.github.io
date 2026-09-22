@@ -148,9 +148,9 @@
             var instrumento = _identificarInstrumento();
 
             // Validacoes obrigatorias para nao contaminar a coleta
-            if (!instrumento) return;              // sem instrumento = nao envia
-            if (instrumento.length < 3) return;    // sigla com menos de 3 chars = invalida
-            if (!idade) return;                    // sem idade = nao envia
+            if (!instrumento) { window._coletaStatus = 'bloqueado: sem instrumento (_escalaDados.escala)'; return; }
+            if (instrumento.length < 3) { window._coletaStatus = 'bloqueado: sigla curta (' + instrumento + ')'; return; }
+            if (!idade) { window._coletaStatus = 'bloqueado: sem idade'; return; }
 
             var pontuacao = '';
             var dominios = '';
@@ -166,7 +166,7 @@
             }
 
             // Sem pontuacao E sem dominios = teste nao foi calculado, nao enviar
-            if (!pontuacao && !dominios) return;
+            if (!pontuacao && !dominios) { window._coletaStatus = 'bloqueado: sem pontuacao e sem dominios'; return; }
 
             var pacote = {
                 email: _extrairEmailProfissional(),
@@ -186,8 +186,9 @@
                 body: JSON.stringify(pacote)
             }).catch(function() {});
 
+            window._coletaStatus = 'ENVIADO: ' + instrumento + ' | idade ' + idade + ' | pont ' + pontuacao;
             _jaEnviou = true;
-        } catch(e) {}
+        } catch(e) { window._coletaStatus = 'erro: ' + (e && e.message ? e.message : e); }
     }
 
     // Expor a coleta para que escalas possam disparar diretamente (reforco, alem da interceptacao).
