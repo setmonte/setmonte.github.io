@@ -182,6 +182,10 @@
         } catch(e) {}
     }
 
+    // Expor a coleta para que escalas possam disparar diretamente (reforco, alem da interceptacao).
+    // Seguro: a propria funcao respeita _jaEnviou e todas as validacoes internas.
+    window._coletaForcar = _enviarDadosAnonimos;
+
     // ============================================================
     // ESTRATEGIAS DE DETECCAO
     // ============================================================
