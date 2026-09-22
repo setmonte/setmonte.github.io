@@ -7694,6 +7694,57 @@
       });
     }
 
+    // Seleciona a escolaridade no select do teste tentando casar com o valor
+    // cadastrado, mesmo quando as listas de opcoes sao diferentes entre cadastro
+    // e teste. Ordem: (1) exato, (2) equivalencia mapeada, (3) aproximado por
+    // normalizacao, (4) adiciona a opcao para nao perder o dado.
+    function _normalizarEsc(v) {
+      if (!v) return '';
+      // remove acentos, coloca minusculo, tira sufixos EF/EM e a palavra "ensino"
+      var s = ('' + v).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+      s = s.replace(/\bensino\b/g, ' ');
+      s = s.replace(/\bef\b/g, ' ').replace(/\bem\b/g, ' ');
+      s = s.replace(/[^a-z0-9]+/g, ' ').trim();
+      return s;
+    }
+    function _selecionarEscolaridade(campoEsc, valorCadastro) {
+      if (!campoEsc || !valorCadastro) return;
+      var opts = campoEsc.options;
+      // 1) Match exato pelo value/texto exatamente igual ao cadastro
+      for (var i = 0; i < opts.length; i++) {
+        if (opts[i].value === valorCadastro || opts[i].text === valorCadastro) { campoEsc.value = opts[i].value; return; }
+      }
+      // 2) Equivalencia mapeada: traduz o padrao do cadastro para candidatos do teste.
+      // As series 1o..9o ano do cadastro sao consideradas Ensino Fundamental por padrao.
+      var mapa = {
+        '1o ano': ['1o ano EF'], '2o ano': ['2o ano EF'], '3o ano': ['3o ano EF'],
+        '4o ano': ['4o ano EF'], '5o ano': ['5o ano EF'], '6o ano': ['6o ano EF'],
+        '7o ano': ['7o ano EF'], '8o ano': ['8o ano EF'], '9o ano': ['9o ano EF'],
+        'Ensino Medio': ['Medio completo', 'Medio incompleto', '1o ano EM'],
+        'Superior Incompleto': ['Superior incompleto'],
+        'Superior Completo': ['Superior completo'],
+        'Pos-graduacao': ['Pos-graduacao']
+      };
+      var candidatos = mapa[valorCadastro] || [];
+      for (var c = 0; c < candidatos.length; c++) {
+        for (var j = 0; j < opts.length; j++) {
+          if (opts[j].value === candidatos[c] || opts[j].text === candidatos[c]) { campoEsc.value = opts[j].value; return; }
+        }
+      }
+      // 3) Match aproximado por normalizacao (ignora acento/maiuscula/sufixo)
+      var alvo = _normalizarEsc(valorCadastro);
+      for (var k = 0; k < opts.length; k++) {
+        var txt = opts[k].text || opts[k].value;
+        if (txt && _normalizarEsc(txt) === alvo && alvo !== '') { campoEsc.value = opts[k].value; return; }
+      }
+      // 4) Fallback: adiciona o valor do cadastro como nova opcao (dado nao some)
+      var nova = document.createElement('option');
+      nova.value = valorCadastro;
+      nova.text = valorCadastro;
+      campoEsc.appendChild(nova);
+      campoEsc.value = valorCadastro;
+    }
+
     function preencherPaciente(tipo) {
       var sel = document.getElementById(tipo + 'SelPac');
       if (!sel) return;
@@ -7757,7 +7808,11 @@
       // Escolaridade
       var campoEsc = document.getElementById(tipo + 'Escolaridade') || document.getElementById(tipo + 'Esc') || document.getElementById(tipo + 'Education');
       if (!campoEsc && tipo === 'tecfe') campoEsc = document.getElementById('onEducation');
-      if (campoEsc && pac.escolaridade) campoEsc.value = pac.escolaridade;
+      // Usa casamento inteligente: a lista de escolaridade do cadastro pode ser
+      // diferente da lista do teste (ex: cadastro "1o ano" vs BAE "1o ano EF").
+      // A funcao tenta casar exato, depois por equivalencia/aproximado e, se nada
+      // casar, adiciona o valor como opcao para o dado nunca sumir.
+      if (campoEsc && pac.escolaridade) _selecionarEscolaridade(campoEsc, pac.escolaridade);
       // Lateralidade
       var campoLat = document.getElementById(tipo + 'Lateralidade') || document.getElementById(tipo + 'Laterality');
       if (!campoLat && tipo === 'tecfe') campoLat = document.getElementById('onLaterality');
