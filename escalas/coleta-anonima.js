@@ -33,6 +33,14 @@
             var num = parseInt(campo.value);
             if (!isNaN(num)) return num;
         }
+        // Fallback: idade guardada no proprio _escalaDados (pode ser texto "X anos..." ou numero)
+        if (window._escalaDados && window._escalaDados.idade) {
+            var ie = String(window._escalaDados.idade);
+            var mi = ie.match(/(\d+)\s*ano/);
+            if (mi) return parseInt(mi[1]);
+            var ni = parseInt(ie);
+            if (!isNaN(ni) && ni > 0 && ni < 120) return ni;
+        }
         // resultadosBAE (BAE online)
         if (window.resultadosBAE && window.resultadosBAE.paciente) {
             if (window.resultadosBAE.paciente.idadeAnos) return window.resultadosBAE.paciente.idadeAnos;
