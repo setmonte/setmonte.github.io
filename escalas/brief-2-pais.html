@@ -238,6 +238,11 @@ var PARES_INCONSISTENCIA = [
 {a:6, b:16}
 ];
 
+// Itens de Negatividade: perguntas "capciosas" (numeros 1-63) que, mesmo numa crianca com
+// quadro grave, raramente seriam "Frequentemente" (sabe o proprio nome, conta ate tres, acha a
+// porta de casa). Marcar 1 ou mais no nivel maximo sinaliza vies do informante ou desatencao dele.
+var ITENS_NEGATIVIDADE = [18, 36, 54];
+
 // === FUNCOES UTILITARIAS ===
 function calcularIdade() {
     var d = document.getElementById('dataNascimento').value;
@@ -249,14 +254,14 @@ function calcularIdade() {
     document.getElementById('idadeCalculada').value = a + ' anos, ' + m + ' meses e ' + di + ' dias';
 }
 
-// Calcula validade: Negatividade (% de itens no nivel maximo) e Inconsistencia (divergencia entre pares)
+// Calcula validade: Negatividade (itens capciosos no maximo) e Inconsistencia (divergencia entre pares)
 function calcularValidade(respostas) {
-    // Negatividade: quantos itens marcados no nivel maximo (3 = Frequentemente)
-    var maximos = 0;
-    for (var i = 0; i < respostas.length; i++) { if (respostas[i] === 3) maximos++; }
-    var pctNeg = Math.round((maximos / respostas.length) * 100);
+    // Negatividade: quantos itens capciosos foram marcados no nivel maximo (3 = Frequentemente)
+    var negMax = 0;
+    ITENS_NEGATIVIDADE.forEach(function(num) { if (respostas[num - 1] === 3) negMax++; });
     var neg;
-    if (pctNeg >= 10) neg = {texto: "Investigar poss\u00edvel vi\u00e9s negativo do informante", cor: "#c62828", alerta: true};
+    // 1 ou mais ja sinaliza: item improvavel no maximo indica vies ou desatencao do informante.
+    if (negMax >= 1) neg = {texto: "Investigar (vi\u00e9s ou desaten\u00e7\u00e3o do informante)", cor: "#c62828", alerta: true};
     else neg = {texto: "Dentro do esperado", cor: "#2e7d32", alerta: false};
 
     // Inconsistencia: soma das diferencas absolutas entre os pares / maximo possivel
@@ -273,7 +278,7 @@ function calcularValidade(respostas) {
     else inc = {texto: "Respostas consistentes", cor: "#2e7d32", alerta: false};
 
     return {
-        maximos: maximos, pctNeg: pctNeg, negatividade: neg,
+        negMax: negMax, negTotal: ITENS_NEGATIVIDADE.length, negatividade: neg,
         somaDif: somaDif, maxDif: maxDif, pctInc: pctInc, inconsistencia: inc
     };
 }
@@ -378,9 +383,9 @@ function calcularResultados() {
     h += '<p style="font-size:0.88em;color:#666;margin-bottom:12px;">Estes indicadores n\u00e3o avaliam a crian\u00e7a: eles checam a confiabilidade do preenchimento pelo informante. S\u00e3o pistas para o profissional investigar, nunca conclus\u00f5es.</p>';
     if (conv) h += '<p style="margin-bottom:10px;"><strong>Frequ\u00eancia de conv\u00edvio informada:</strong> ' + conv + '</p>';
     h += '<div class="dominio-card" style="border-left-color:' + val.negatividade.cor + ';"><h4 style="color:' + val.negatividade.cor + ';">Negatividade</h4>';
-    h += '<p>Itens marcados no n\u00edvel m\u00e1ximo (Frequentemente): <strong>' + val.maximos + '/' + ITENS.length + '</strong> (' + val.pctNeg + '%)</p>';
+    h += '<p>Itens capciosos marcados no n\u00edvel m\u00e1ximo (Frequentemente): <strong>' + val.negMax + '/' + val.negTotal + '</strong></p>';
     h += '<p>Status: <span class="badge" style="background:' + val.negatividade.cor + ';">' + val.negatividade.texto + '</span></p>';
-    h += '<p style="font-size:0.82em;color:#777;margin-top:6px;">Crit\u00e9rio adaptado: a partir de 10% dos itens no n\u00edvel m\u00e1ximo, investigar poss\u00edvel vi\u00e9s negativo do informante.</p></div>';
+    h += '<p style="font-size:0.82em;color:#777;margin-top:6px;">Crit\u00e9rio adaptado: usa itens improv\u00e1veis (ex.: esquecer o pr\u00f3prio nome, n\u00e3o contar at\u00e9 tr\u00eas). Marcar 1 ou mais no m\u00e1ximo sugere vi\u00e9s ou desaten\u00e7\u00e3o do informante \u2014 investigar.</p></div>';
     h += '<div class="dominio-card" style="border-left-color:' + val.inconsistencia.cor + ';"><h4 style="color:' + val.inconsistencia.cor + ';">Inconsist\u00eancia</h4>';
     h += '<p>Diverg\u00eancia entre pares de itens equivalentes: <strong>' + val.somaDif + '/' + val.maxDif + '</strong> (' + val.pctInc + '%)</p>';
     h += '<p>Status: <span class="badge" style="background:' + val.inconsistencia.cor + ';">' + val.inconsistencia.texto + '</span></p>';
@@ -404,12 +409,12 @@ function calcularResultados() {
         _domObj[k] = {pontuacao: ri.soma, max: ri.max, classificacao: 'Bruto ' + ri.soma + '/' + ri.max + ' (' + ri.pctMax + '%)'};
     });
     window._escalaDados = {
-        escala: 'BRIEF-2 Pais',
+        escala: 'BRIEF-2-Pais',
         paciente: nome,
         escore: somaGlobal,
         classificacao: 'IGFE bruto ' + somaGlobal + '/' + maxGlobal + ' (' + Math.round((somaGlobal/maxGlobal)*100) + '%)',
         dominios: _domObj,
-        validade: {negatividadePct: val.pctNeg, negatividadeAlerta: val.negatividade.alerta, inconsistenciaPct: val.pctInc, inconsistenciaAlerta: val.inconsistencia.alerta},
+        validade: {negMax: val.negMax, negTotal: val.negTotal, negatividadeAlerta: val.negatividade.alerta, inconsistenciaPct: val.pctInc, inconsistenciaAlerta: val.inconsistencia.alerta},
         convivio: conv,
         respostas: (function(){var o={};for(var i=0;i<respostas.length;i++){o[i+1]=respostas[i];}return o;})(),
         idPaciente: document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '',
@@ -574,7 +579,7 @@ async function _enviarResultadosPainel() {
     var calcFn = window.calcularResultados;
     if (calcFn && !window._escalaDados) { try { calcFn(); } catch(e) {} }
     var dados = window._escalaDados || {};
-    if (!dados.escala) dados.escala = 'BRIEF-2 Pais';
+    if (!dados.escala) dados.escala = 'BRIEF-2-Pais';
     dados.idPaciente = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
     dados.pacienteId = _sessionInfo ? (_sessionInfo.pacienteId || '') : '';
     dados.data = new Date().toISOString();
