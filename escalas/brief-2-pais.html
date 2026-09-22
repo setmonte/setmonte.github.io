@@ -111,6 +111,7 @@
                     <div class="form-group"><label for="informante">Informante:</label><select id="informante"><option value="">Selecione</option><option value="Mae">M&#227;e</option><option value="Pai">Pai</option><option value="Ambos">Ambos</option><option value="Outro cuidador">Outro cuidador</option></select></div>
                 </div>
                 <div class="form-row">
+                    <div class="form-group"><label for="convivio">Frequ&#234;ncia de conv&#237;vio com a crian&#231;a:</label><select id="convivio"><option value="">Selecione</option><option value="Diario (mora com a crianca)">Di&#225;rio (mora com a crian&#231;a)</option><option value="Quase diario (maioria dos dias)">Quase di&#225;rio (maioria dos dias)</option><option value="Semanal (alguns dias por semana)">Semanal (alguns dias por semana)</option><option value="Fins de semana / esporadico">Fins de semana / espor&#225;dico</option><option value="Contato pontual (raro)">Contato pontual (raro)</option></select></div>
                     <div class="form-group"><label for="observacoes">Observa&#231;&#245;es (opcional):</label><input type="text" id="observacoes" placeholder="Informa&#231;&#245;es adicionais"></div>
                 </div>
             </div>
@@ -227,6 +228,16 @@ IRCog: {nome:"IRCog \u2014 \u00cdndice de Regula\u00e7\u00e3o Cognitiva", escala
 
 var OPCOES = [{valor:1, texto:"Nunca"},{valor:2, texto:"\u00c0s vezes"},{valor:3, texto:"Frequentemente"}];
 
+// Pares de itens semanticamente equivalentes (numeros dos itens 1-63) para a Escala de Inconsistencia.
+// Quem conhece bem a crianca responde igual nos dois; divergencia sinaliza investigar.
+var PARES_INCONSISTENCIA = [
+{a:4, b:20},
+{a:9, b:55},
+{a:25, b:23},
+{a:34, b:51},
+{a:6, b:16}
+];
+
 // === FUNCOES UTILITARIAS ===
 function calcularIdade() {
     var d = document.getElementById('dataNascimento').value;
@@ -236,6 +247,35 @@ function calcularIdade() {
     if (di < 0) { m--; di += new Date(h.getFullYear(), h.getMonth(), 0).getDate(); }
     if (m < 0) { a--; m += 12; }
     document.getElementById('idadeCalculada').value = a + ' anos, ' + m + ' meses e ' + di + ' dias';
+}
+
+// Calcula validade: Negatividade (% de itens no nivel maximo) e Inconsistencia (divergencia entre pares)
+function calcularValidade(respostas) {
+    // Negatividade: quantos itens marcados no nivel maximo (3 = Frequentemente)
+    var maximos = 0;
+    for (var i = 0; i < respostas.length; i++) { if (respostas[i] === 3) maximos++; }
+    var pctNeg = Math.round((maximos / respostas.length) * 100);
+    var neg;
+    if (pctNeg >= 10) neg = {texto: "Investigar poss\u00edvel vi\u00e9s negativo do informante", cor: "#c62828", alerta: true};
+    else neg = {texto: "Dentro do esperado", cor: "#2e7d32", alerta: false};
+
+    // Inconsistencia: soma das diferencas absolutas entre os pares / maximo possivel
+    var somaDif = 0, maxDif = 0;
+    PARES_INCONSISTENCIA.forEach(function(par) {
+        var va = respostas[par.a - 1], vb = respostas[par.b - 1];
+        somaDif += Math.abs(va - vb);
+        maxDif += 2; // diferenca maxima por par (3-1)
+    });
+    var pctInc = maxDif > 0 ? Math.round((somaDif / maxDif) * 100) : 0;
+    var inc;
+    // Sensivel: quem conhece a crianca nao se contradiz. Qualquer divergencia relevante sinaliza.
+    if (pctInc > 0) inc = {texto: "Respostas inconsistentes \u2014 investigar/reaplicar", cor: "#ef6c00", alerta: true};
+    else inc = {texto: "Respostas consistentes", cor: "#2e7d32", alerta: false};
+
+    return {
+        maximos: maximos, pctNeg: pctNeg, negatividade: neg,
+        somaDif: somaDif, maxDif: maxDif, pctInc: pctInc, inconsistencia: inc
+    };
 }
 
 function gerarQuestionario() {
@@ -316,10 +356,9 @@ function calcularResultados() {
         h += '<p>Pontua\u00e7\u00e3o bruta: <strong>' + ri.soma + ' / ' + ri.max + '</strong> (' + ri.pctMax + '% do m\u00e1ximo)</p></div>';
     });
 
-    // Tabela de escalas com campo T
+    // Tabela de escalas (pontuacao bruta)
     h += '<div class="analise-texto"><h3>Escalas Cl\u00ednicas \u2014 Pontua\u00e7\u00e3o Bruta</h3>';
-    h += '<p style="font-size:0.88em;color:#666;margin-bottom:10px;">Insira o escore T de cada escala (da tabela normativa oficial, por idade e sexo) para obter a classifica\u00e7\u00e3o cl\u00ednica. T &#8805; 65 = clinicamente elevado; T 60-64 = levemente elevado.</p>';
-    h += '<table class="tab-res"><tr><th>Escala</th><th>&#205;ndice</th><th>Bruto</th><th>M&#233;dia</th><th>% m&#225;x.</th><th>Escore T</th><th>Classifica&#231;&#227;o</th></tr>';
+    h += '<table class="tab-res"><tr><th>Escala</th><th>&#205;ndice</th><th>Bruto</th><th>M&#233;dia</th><th>% m&#225;x.</th></tr>';
     ESCALAS.forEach(function(esc) {
         var r = resEscalas[esc.nome];
         h += '<tr>';
@@ -328,13 +367,27 @@ function calcularResultados() {
         h += '<td><strong>' + r.soma + '</strong>/' + r.max + '</td>';
         h += '<td>' + r.media + '</td>';
         h += '<td>' + r.pctMax + '%</td>';
-        h += '<td><input type="number" class="campo-t" min="30" max="120" data-escala="' + esc.nome + '" oninput="classificarT(this)"></td>';
-        h += '<td class="classif-t" id="ct_' + esc.nome.replace(/[^A-Za-z]/g,'') + '">\u2014</td>';
         h += '</tr>';
     });
     h += '</table></div>';
 
-    h += '<div class="disclaimer"><strong>IMPORTANTE:</strong> As pontua\u00e7\u00f5es brutas acima s\u00e3o de leitura direta (rastreio). A classifica\u00e7\u00e3o cl\u00ednica do BRIEF-2 depende da convers\u00e3o em escore T pelas tabelas normativas oficiais (por idade e sexo), de uso restrito do kit do teste. Este formul\u00e1rio n\u00e3o substitui a corre\u00e7\u00e3o oficial nem avalia\u00e7\u00e3o profissional. Interpreta\u00e7\u00e3o exclusiva por profissional qualificado.</div>';
+    // Escalas de validade (Negatividade e Inconsistencia) - adaptadas
+    var val = calcularValidade(respostas);
+    var conv = document.getElementById('convivio') ? document.getElementById('convivio').value : '';
+    h += '<div class="analise-texto"><h3>Indicadores de Validade do Preenchimento</h3>';
+    h += '<p style="font-size:0.88em;color:#666;margin-bottom:12px;">Estes indicadores n\u00e3o avaliam a crian\u00e7a: eles checam a confiabilidade do preenchimento pelo informante. S\u00e3o pistas para o profissional investigar, nunca conclus\u00f5es.</p>';
+    if (conv) h += '<p style="margin-bottom:10px;"><strong>Frequ\u00eancia de conv\u00edvio informada:</strong> ' + conv + '</p>';
+    h += '<div class="dominio-card" style="border-left-color:' + val.negatividade.cor + ';"><h4 style="color:' + val.negatividade.cor + ';">Negatividade</h4>';
+    h += '<p>Itens marcados no n\u00edvel m\u00e1ximo (Frequentemente): <strong>' + val.maximos + '/' + ITENS.length + '</strong> (' + val.pctNeg + '%)</p>';
+    h += '<p>Status: <span class="badge" style="background:' + val.negatividade.cor + ';">' + val.negatividade.texto + '</span></p>';
+    h += '<p style="font-size:0.82em;color:#777;margin-top:6px;">Crit\u00e9rio adaptado: a partir de 10% dos itens no n\u00edvel m\u00e1ximo, investigar poss\u00edvel vi\u00e9s negativo do informante.</p></div>';
+    h += '<div class="dominio-card" style="border-left-color:' + val.inconsistencia.cor + ';"><h4 style="color:' + val.inconsistencia.cor + ';">Inconsist\u00eancia</h4>';
+    h += '<p>Diverg\u00eancia entre pares de itens equivalentes: <strong>' + val.somaDif + '/' + val.maxDif + '</strong> (' + val.pctInc + '%)</p>';
+    h += '<p>Status: <span class="badge" style="background:' + val.inconsistencia.cor + ';">' + val.inconsistencia.texto + '</span></p>';
+    h += '<p style="font-size:0.82em;color:#777;margin-top:6px;">Crit\u00e9rio adaptado: quem conhece bem a crian\u00e7a responde de forma coerente nos pares; qualquer diverg\u00eancia sinaliza investigar.</p></div>';
+    h += '</div>';
+
+    h += '<div class="disclaimer"><strong>IMPORTANTE:</strong> As pontua\u00e7\u00f5es s\u00e3o brutas (leitura direta / rastreio). Os indicadores de Negatividade e Inconsist\u00eancia s\u00e3o <strong>adapta\u00e7\u00f5es</strong> (n\u00e3o s\u00e3o o c\u00e1lculo propriet\u00e1rio do BRIEF-2) e servem apenas para orientar a investiga\u00e7\u00e3o do profissional. A escala \u00e9 uma ferramenta de apoio, n\u00e3o um ju\u00edzo sobre a crian\u00e7a nem substitui avalia\u00e7\u00e3o profissional. Interpreta\u00e7\u00e3o exclusiva por profissional qualificado.</div>';
 
     el.innerHTML = h;
     el.style.display = 'block';
@@ -354,8 +407,10 @@ function calcularResultados() {
         escala: 'BRIEF-2 Pais',
         paciente: nome,
         escore: somaGlobal,
-        classificacao: 'IGFE bruto ' + somaGlobal + '/' + maxGlobal + ' (' + Math.round((somaGlobal/maxGlobal)*100) + '%) - requer convers\u00e3o em escore T',
+        classificacao: 'IGFE bruto ' + somaGlobal + '/' + maxGlobal + ' (' + Math.round((somaGlobal/maxGlobal)*100) + '%)',
         dominios: _domObj,
+        validade: {negatividadePct: val.pctNeg, negatividadeAlerta: val.negatividade.alerta, inconsistenciaPct: val.pctInc, inconsistenciaAlerta: val.inconsistencia.alerta},
+        convivio: conv,
         respostas: (function(){var o={};for(var i=0;i<respostas.length;i++){o[i+1]=respostas[i];}return o;})(),
         idPaciente: document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '',
         idade: idade,
@@ -364,20 +419,6 @@ function calcularResultados() {
         data: new Date().toISOString()
     };
     if (window.injetarBotaoSalvar) injetarBotaoSalvar('resultados');
-}
-
-function classificarT(input) {
-    var esc = input.getAttribute('data-escala');
-    var id = 'ct_' + esc.replace(/[^A-Za-z]/g,'');
-    var cel = document.getElementById(id);
-    if (!cel) return;
-    var t = parseInt(input.value);
-    if (isNaN(t)) { cel.innerHTML = '\u2014'; return; }
-    var txt, cor;
-    if (t >= 65) { txt = 'Clinicamente elevado'; cor = '#c62828'; }
-    else if (t >= 60) { txt = 'Levemente elevado'; cor = '#ef6c00'; }
-    else { txt = 'Dentro da m\u00e9dia'; cor = '#2e7d32'; }
-    cel.innerHTML = '<span class="badge" style="background:' + cor + ';">T=' + t + ' ' + txt + '</span>';
 }
 
 function gerarRelatorioPDF() {
@@ -436,12 +477,21 @@ function gerarRelatorioPDF() {
     doc.setFont(undefined,'bold');
     doc.text('IGFE (Global): ' + dados.escore, 22, y); y += 10;
 
+    // Indicadores de validade
+    doc.setTextColor(69,39,160); doc.setFontSize(10); doc.setFont(undefined,'bold');
+    doc.text('INDICADORES DE VALIDADE DO PREENCHIMENTO:', 20, y); y += 7;
+    doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont(undefined,'normal');
+    var _v = dados.validade || {};
+    if (dados.convivio) { doc.text('Frequencia de convivio: ' + dados.convivio, 22, y); y += 6; }
+    doc.text('Negatividade: ' + (_v.negatividadePct || 0) + '% dos itens no nivel maximo' + (_v.negatividadeAlerta ? ' - INVESTIGAR' : ' - dentro do esperado'), 22, y); y += 6;
+    doc.text('Inconsistencia: ' + (_v.inconsistenciaPct || 0) + '% de divergencia entre pares' + (_v.inconsistenciaAlerta ? ' - INVESTIGAR' : ' - consistente'), 22, y); y += 10;
+
     doc.setFillColor(255,248,235); doc.rect(15,y,180,26,'F');
     doc.setTextColor(180,90,0); doc.setFontSize(7); doc.setFont(undefined,'normal');
-    doc.text('IMPORTANTE: As pontuacoes sao brutas (rastreio). A classificacao clinica do BRIEF-2 depende da', 20, y+5);
-    doc.text('conversao em escore T pelas tabelas normativas oficiais (idade/sexo), de uso restrito do kit do teste.', 20, y+10);
-    doc.text('T >= 65 = clinicamente elevado; T 60-64 = levemente elevado. Este relatorio nao substitui a correcao', 20, y+15);
-    doc.text('oficial nem avaliacao profissional. Interpretacao exclusiva por profissional qualificado.', 20, y+20);
+    doc.text('IMPORTANTE: As pontuacoes sao brutas (leitura direta / rastreio). Os indicadores de Negatividade e', 20, y+5);
+    doc.text('Inconsistencia sao adaptacoes (nao sao o calculo proprietario do BRIEF-2) e servem apenas para orientar', 20, y+10);
+    doc.text('a investigacao do profissional. A escala e ferramenta de apoio, nao um juizo sobre a crianca. Nao', 20, y+15);
+    doc.text('substitui avaliacao profissional. Interpretacao exclusiva por profissional qualificado.', 20, y+20);
 
     doc.addPage();
     doc.setFillColor(69,39,160); doc.rect(0,0,210,20,'F');
