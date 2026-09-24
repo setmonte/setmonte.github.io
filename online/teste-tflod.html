@@ -33,6 +33,15 @@ body{font-family:'Segoe UI',sans-serif;background:#f5f5f5;min-height:100vh}
 #tela-processando{background:linear-gradient(135deg,#e3f2fd,#bbdefb)}
 .instrucao-box{background:#e3f2fd;border:2px solid #1565c0;border-radius:12px;padding:20px;margin:15px 0;text-align:left}
 .instrucao-box p{margin-bottom:8px;color:#0d47a1;font-size:0.95em;line-height:1.6}
+.aviso-voz{background:#fff8e1;border:2px solid #f9a825;border-radius:12px;padding:16px;margin:15px 0;text-align:left}
+.aviso-voz .titulo{color:#e65100;font-weight:700;font-size:1em;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.aviso-voz ul{margin:0;padding-left:20px}
+.aviso-voz li{color:#5d4037;font-size:0.92em;line-height:1.6;margin-bottom:4px}
+/* Medidor de volume AO VIVO durante a leitura (mostra ao paciente que a voz esta sendo captada) */
+.vu-wrap{display:flex;align-items:center;gap:8px}
+.vu-bar{width:120px;height:14px;background:rgba(255,255,255,0.25);border-radius:7px;overflow:hidden}
+.vu-fill{height:100%;width:0%;background:linear-gradient(90deg,#81d4fa,#4caf50);border-radius:7px;transition:width 0.1s}
+.vu-aviso{background:#c62828;color:#fff;text-align:center;padding:8px;font-size:0.9em;font-weight:600;display:none}
 .progress-container{width:80%;max-width:400px;margin:20px auto}
 .progress-bar{height:8px;background:#e0e0e0;border-radius:4px;overflow:hidden}
 .progress-fill{height:100%;background:#1565c0;border-radius:4px;transition:width 0.3s;width:0%}
@@ -108,8 +117,15 @@ body.cursor-hidden, body.cursor-hidden * { cursor: none !important; }
             <p>Leia o texto <strong>em voz alta</strong>, no seu ritmo normal, como se estivesse lendo para alguém.</p>
             <p>O sistema vai gravar sua leitura por <strong>1 minuto</strong>.</p>
             <p>Quando o tempo acabar, o teste para automaticamente e sua leitura será analisada.</p>
-            <p><strong>Importante:</strong> Fique em um ambiente silencioso e fale com clareza.</p>
-            <p>🎧 Preferencialmente use um microfone (headset ou fone com microfone) para melhor captação.</p>
+        </div>
+        <div class="aviso-voz">
+            <div class="titulo">⚠️ Para o áudio ser reconhecido corretamente</div>
+            <ul>
+                <li><strong>Fale em bom volume</strong>, com clareza, como se lesse para alguém ao seu lado.</li>
+                <li><strong>Aproxime-se do microfone</strong> (ideal: headset ou fone com microfone).</li>
+                <li>Fique em um <strong>ambiente silencioso</strong>, sem TV, música ou conversas ao fundo.</li>
+                <li>Durante a leitura, uma <strong>barrinha verde</strong> mostra sua voz sendo captada. Se ela ficar parada, fale mais alto.</li>
+            </ul>
         </div>
         <div style="text-align:center;margin-top:15px">
             <button class="btn btn-primary" id="btnIniciar" onclick="testarMicrofone()">Verificar Microfone</button>
@@ -144,9 +160,15 @@ body.cursor-hidden, body.cursor-hidden * { cursor: none !important; }
 <!-- TELA TESTE (leitura em andamento) -->
 <div id="tela-teste" class="tela">
     <div class="teste-header">
-        <div class="mic-status"><span class="rec-dot"></span> Gravando</div>
+        <div class="mic-status">
+            <span class="rec-dot"></span> Gravando
+            <span class="vu-wrap">
+                <div class="vu-bar"><div class="vu-fill" id="vuFill"></div></div>
+            </span>
+        </div>
         <div class="timer" id="timer">60</div>
     </div>
+    <div class="vu-aviso" id="vuAviso">🔈 Volume baixo — fale mais alto e aproxime o microfone</div>
     <div class="texto-leitura" id="textoLeitura"></div>
 </div>
 
@@ -436,6 +458,59 @@ var _micAnalyser = null;
 var _micAnimFrame = null;
 var _micDetected = false;
 
+// Medidor de volume AO VIVO durante a leitura (feedback visual para o paciente).
+// E apenas LEITURA do audio (analisa o volume); nao interfere na gravacao/MediaRecorder.
+var _vuCtx = null;
+var _vuAnalyser = null;
+var _vuAnimFrame = null;
+var _vuBaixoContador = 0;
+
+// Liga um analisador de volume ao mesmo stream que esta sendo gravado e anima a barrinha.
+// Se falhar em algum navegador, apenas nao mostra o medidor - o teste continua normal.
+function _iniciarMedidorAoVivo(stream) {
+    try {
+        _vuCtx = new (window.AudioContext || window.webkitAudioContext)();
+        var source = _vuCtx.createMediaStreamSource(stream);
+        _vuAnalyser = _vuCtx.createAnalyser();
+        _vuAnalyser.fftSize = 256;
+        source.connect(_vuAnalyser);
+        var dados = new Uint8Array(_vuAnalyser.frequencyBinCount);
+        var fill = document.getElementById('vuFill');
+        var aviso = document.getElementById('vuAviso');
+        _vuBaixoContador = 0;
+        function _animar() {
+            _vuAnalyser.getByteFrequencyData(dados);
+            var soma = 0;
+            for (var i = 0; i < dados.length; i++) soma += dados[i];
+            var media = soma / dados.length;
+            var pct = Math.min(100, Math.round((media / 40) * 100));
+            if (fill) fill.style.width = pct + '%';
+            // Se o volume ficar muito baixo por varios quadros seguidos (~1.5s), avisa para falar mais alto.
+            if (pct <= 5) {
+                _vuBaixoContador++;
+                if (_vuBaixoContador >= 90 && aviso) aviso.style.display = 'block';
+            } else {
+                _vuBaixoContador = 0;
+                if (aviso) aviso.style.display = 'none';
+            }
+            _vuAnimFrame = requestAnimationFrame(_animar);
+        }
+        _animar();
+    } catch (e) {}
+}
+
+// Para e libera o medidor ao vivo (chamado ao finalizar a gravacao).
+function _pararMedidorAoVivo() {
+    if (_vuAnimFrame) { cancelAnimationFrame(_vuAnimFrame); _vuAnimFrame = null; }
+    if (_vuCtx) { try { _vuCtx.close(); } catch (e) {} _vuCtx = null; }
+    _vuAnalyser = null;
+    _vuBaixoContador = 0;
+    var aviso = document.getElementById('vuAviso');
+    if (aviso) aviso.style.display = 'none';
+    var fill = document.getElementById('vuFill');
+    if (fill) fill.style.width = '0%';
+}
+
 function testarMicrofone() {
     trocarTela('tela-mic');
     _micDetected = false;
@@ -557,6 +632,8 @@ async function iniciarTeste() {
             if (e.data.size > 0) audioChunks.push(e.data);
         };
         mediaRecorder.start(1000);
+        // Liga o medidor de volume ao vivo no MESMO stream (so leitura, nao afeta a gravacao).
+        _iniciarMedidorAoVivo(stream);
     } catch (erro) {
         alert('N\u00e3o foi poss\u00edvel acessar o microfone. Verifique as permiss\u00f5es do navegador.');
         trocarTela('tela-instrucoes');
@@ -577,6 +654,9 @@ async function iniciarTeste() {
 async function finalizarGravacao() {
     // Parar cronometro
     if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+
+    // Parar o medidor de volume ao vivo (libera o AudioContext e cancela a animacao).
+    _pararMedidorAoVivo();
 
     // Parar gravacao ESPERANDO o audio ficar 100% pronto.
     // ANTES: dava stop() e esperava 500ms "no chute" antes de montar o blob. Como os chunks
@@ -683,18 +763,19 @@ async function finalizarGravacao() {
         if (!isFinite(_pcpm)) { _pcpm = 0; resultado.pcpm = 0; }
         if (!resultado.erros) resultado.erros = [];
 
-        // PROTECAO ANTI-RESULTADO-FALSO:
-        // Se o PCPM deu 0 (nenhuma palavra correta reconhecida), a leitura NAO foi captada.
-        // Isso NAO e um resultado clinico real (ninguem le a 0 palavras por minuto). Tratamos como
-        // falha de captacao: salvamos como 'erro_transcricao' (entra no radar de alertas do painel,
-        // com o audio preservado para reprocessamento) e avisamos o paciente para refazer.
-        // Sem isso, um teste falho seria salvo como 'finalizado' e passaria despercebido.
-        var _acertos = Number(resultado.acertos) || 0;
-        if (_pcpm <= 0 || _acertos <= 0) {
-            await salvarResultadoErro('PCPM zero (audio sem leitura reconhecivel)', audioBase64, audioS3Key || '');
+        // PENEIRA POS-WHISPER (substitui o antigo "pcpm<=0 || acertos<=0 = erro").
+        // Antes: QUALQUER zero de acerto virava falha tecnica, o que podia DESCARTAR um leitor
+        // com muita dificuldade que de fato leu (leitura pobre = resultado clinico legitimo).
+        // Agora: _avaliarCaptacao distingue leitura real (mesmo pobre) de falha tecnica/alucinacao.
+        // Ver _avaliarCaptacao e FUNDAMENTACAO-TFLOD-captacao.md.
+        var _veredito = _avaliarCaptacao(resultado);
+        if (!_veredito.valido) {
+            await salvarResultadoErro(_veredito.motivo || 'Audio sem leitura reconhecivel', audioBase64, audioS3Key || '');
             _mostrarFalhaCaptacao();
             return;
         }
+        // Chegou aqui: houve leitura real do texto (ainda que com PCPM baixo). Segue como
+        // resultado clinico valido, sem descartar o desempenho do paciente.
 
         // Coleta anonima
         window._escalaDados = {escala:'TFLOD', escore:_pcpm, classificacao:resultado.classificacao||'Nao classificado', versaoTexto:resultado.versaoTexto||'', dominios:{PCPM:_pcpm, Acertos:resultado.acertos||0, Erros:resultado.erros.length, PalavrasAlcancadas:resultado.palavrasAlcancadas||0}};
@@ -719,6 +800,69 @@ async function finalizarGravacao() {
         // para o paciente ler e conseguir refazer o teste).
         _mostrarFalhaCaptacao();
     }
+}
+
+// ===== PENEIRA POS-WHISPER: leitura dificil real x falha tecnica =====
+// "Mini-inteligencia de regras" (mesma filosofia do THEDUGA do FDT, adaptada ao TFLOD).
+// Objetivo clinico: NAO descartar um leitor com muita dificuldade (que leu pouco, devagar,
+// baixinho) como se fosse falha tecnica; e ao mesmo tempo NAO aceitar audio sem fala real
+// (mudo, grunhido, silencio) que o Whisper as vezes "alucina" transformando em palavras.
+// Ver FUNDAMENTACAO-TFLOD-captacao.md para a base clinica/tecnica e referencias.
+//
+// PARAMETRO CLINICO (ajustavel pelo neuropsicologo responsavel):
+// minimo de palavras REAIS DO TEXTO reconhecidas para dizer "a pessoa leu, ainda que pouco".
+// Valor inicial conservador = 3. Abaixo disso, tratamos como falha tecnica (pedir refazer).
+var TFLOD_MIN_PALAVRAS_LEITURA = 3;
+
+// Detecta sinal de alucinacao do Whisper: uma unica palavra/token que domina a transcricao
+// (repeticao excessiva) costuma indicar audio sem fala real, nao leitura.
+function _pareceAlucinacaoRepetida(transcricao) {
+    if (typeof transcricao !== 'string') return false;
+    var toks = transcricao.toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[.,!?;:"""''()\-]/g, '')
+        .split(/\s+/)
+        .filter(function(p) { return p.length > 0; });
+    if (toks.length < 6) return false; // curto demais para julgar repeticao
+    var cont = {};
+    var maisFreq = 0;
+    for (var i = 0; i < toks.length; i++) {
+        cont[toks[i]] = (cont[toks[i]] || 0) + 1;
+        if (cont[toks[i]] > maisFreq) maisFreq = cont[toks[i]];
+    }
+    // Se uma so palavra representa 70%+ de tudo que foi "ouvido", e padrao de alucinacao.
+    return (maisFreq / toks.length) >= 0.7;
+}
+
+// Decide o veredito da captacao a partir do resultado ja calculado.
+// Retorna { valido: true } quando ha leitura real (mesmo pobre), ou
+// { valido: false, motivo: '...' } quando deve ser tratado como falha tecnica.
+function _avaliarCaptacao(resultado) {
+    var transcricao = (resultado && typeof resultado.transcricao === 'string') ? resultado.transcricao : '';
+    var palavrasOuvidas = Number(resultado && resultado.totalPalavrasLidas) || 0; // tudo que o Whisper ouviu
+    var acertos = Number(resultado && resultado.acertos) || 0;                    // palavras do texto que casaram (LCS)
+
+    // 1) Transcricao vazia -> audio sem fala reconhecivel -> falha tecnica.
+    if (!transcricao.trim() || palavrasOuvidas === 0) {
+        return { valido: false, motivo: 'Transcricao vazia (audio sem fala reconhecivel)' };
+    }
+    // 2) Padrao de alucinacao (uma palavra repetida dominando tudo) -> falha tecnica.
+    if (_pareceAlucinacaoRepetida(transcricao)) {
+        return { valido: false, motivo: 'Transcricao com repeticao anomala (possivel audio sem fala real)' };
+    }
+    // 3) Reconheceu palavras REAIS DO TEXTO acima do limiar clinico -> leitura real (ainda que pobre).
+    //    'acertos' vem do alinhamento LCS com o texto-alvo, entao mede palavras do texto, nao ruido.
+    if (acertos >= TFLOD_MIN_PALAVRAS_LEITURA) {
+        return { valido: true };
+    }
+    // 4) Ouviu bastante coisa, mas quase nada casou com o texto-alvo -> provavelmente nao e
+    //    leitura deste texto (ruido/fala aleatoria/alucinacao dispersa) -> falha tecnica.
+    if (acertos < TFLOD_MIN_PALAVRAS_LEITURA && palavrasOuvidas >= 8) {
+        return { valido: false, motivo: 'Poucas palavras do texto reconhecidas (leitura nao captada)' };
+    }
+    // 5) Caso limite: ouviu pouco E casou pouco. Conservador: trata como falha tecnica (refazer),
+    //    pois nao ha evidencia suficiente de leitura real do texto.
+    return { valido: false, motivo: 'Evidencia insuficiente de leitura do texto' };
 }
 
 // ===== MENSAGEM DE FALHA DE CAPTACAO (audio nao reconhecido) =====
