@@ -15483,7 +15483,9 @@ var data=await resp.json();
 var results=data.results||data||[];
 if(!Array.isArray(results))results=[];
 var lidas=JSON.parse(localStorage.getItem('notif_sistema_lidas')||'[]');
-var novas=results.filter(function(r){return lidas.indexOf(r.sessionId||r.id||'')===-1;});
+// Esconde as que ja foram marcadas como lidas NO SERVIDOR (d.lida) - vale para qualquer
+// aparelho - E tambem as lidas so neste navegador (localStorage), como reforco.
+var novas=results.filter(function(r){var d=r.data||{};if(d.lida===true)return false;return lidas.indexOf(r.sessionId||r.id||'')===-1;});
 _notifSistemaCache=novas;
 var card=document.getElementById('notifSistemaCard');
 var countEl=document.getElementById('notifSistemaCount');
@@ -15509,11 +15511,15 @@ if(listEl)listEl.innerHTML=html;
 
 function marcarNotifSistemaLida(){
 var lidas=JSON.parse(localStorage.getItem('notif_sistema_lidas')||'[]');
+var ids=[];
 for(var i=0;i<_notifSistemaCache.length;i++){
 var id=_notifSistemaCache[i].sessionId||_notifSistemaCache[i].id||'';
-if(id&&lidas.indexOf(id)===-1)lidas.push(id);
+if(id){ids.push(id);if(lidas.indexOf(id)===-1)lidas.push(id);}
 }
+// Reforco local imediato (localStorage)
 localStorage.setItem('notif_sistema_lidas',JSON.stringify(lidas));
+// Marca como lida NO SERVIDOR (persiste em qualquer aparelho; evita que voltem a aparecer)
+if(ids.length){try{fetch(API_URL+'/marcar-notif-lida',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionIds:ids})});}catch(e){}}
 _notifSistemaCache=[];
 var card=document.getElementById('notifSistemaCard');
 if(card)card.style.display='none';
