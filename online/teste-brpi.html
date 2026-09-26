@@ -216,6 +216,12 @@ var BRPI_API_URL = 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-
    modoOnline fica true quando a URL tem ?s= (link curto) ou ?d= (fallback). */
 var modoOnline = false;
 
+/* Controle da rede de seguranca ao fechar a aba.
+   bateriaEmAndamento = true entre o inicio e o fim da bateria (ativa o aviso).
+   brpiJaEnviado = true quando a bateria terminou normalmente (nao sobrescreve). */
+var bateriaEmAndamento = false;
+var brpiJaEnviado = false;
+
 /* ===== CATALOGO DE MODULOS (a ordem A -> D e os arquivos) ===== */
 var MODULOS = [
     { id: 'A', arquivo: 'brpi/modulo-a.html', nome: 'Amplitude de Mem\u00f3ria', desc: 'Sequ\u00eancias auditivas e visuais, direta e inversa' },
@@ -332,6 +338,7 @@ function iniciarBateria() {
 
     indiceAtual = 0;
     resultados = {};
+    bateriaEmAndamento = true; // ativa o aviso ao fechar a aba
 
     mostrarTela('tela-teste');
     abrirModuloAtual();
@@ -384,6 +391,9 @@ window.addEventListener('message', function(evento) {
    FIM DA BATERIA
    ============================================================ */
 function finalizarBateria() {
+    // A bateria terminou normalmente: desliga o aviso de fechar aba.
+    bateriaEmAndamento = false;
+
     // Lista o que foi aplicado (por enquanto so exibe; IA e PDF vem depois)
     var ul = document.getElementById('listaConcluidos');
     var html = '';
@@ -427,6 +437,7 @@ function enviarResultadosBRPI() {
             dataAplicacao: new Date().toISOString()
         }
     };
+    brpiJaEnviado = true; // resultado completo enviado: o beforeunload nao deve sobrescrever
     try {
         fetch(BRPI_API_URL + '/save-result', {
             method: 'POST',
@@ -471,6 +482,7 @@ function aplicarSessaoOnline(data) {
 
     indiceAtual = 0;
     resultados = {};
+    bateriaEmAndamento = true; // ativa o aviso ao fechar a aba
 
     // Pula o formulario: vai direto para a tela do teste e abre o primeiro modulo
     mostrarTela('tela-teste');
@@ -513,6 +525,48 @@ function iniciarModoOnline(params) {
         }
     }
 }
+
+/* ============================================================
+   REDE DE SEGURANCA AO FECHAR A ABA (padrao do BAE, reforcado)
+   Camada 1: aviso nativo do navegador ("tem certeza que quer sair?").
+             So aparece se a bateria estiver em andamento.
+   Camada 2: sendBeacon de emergencia - salva os modulos ja feitos
+             como status 'abandonado' (so no modo online e se ainda
+             nao enviou o resultado completo).
+   ============================================================ */
+window.addEventListener('beforeunload', function(e) {
+    // Se a bateria nao esta rolando (tela inicial ou ja terminou), nao interfere.
+    if (!bateriaEmAndamento) { return; }
+
+    // Camada 2: salva o que ja foi feito, se estiver online e ainda nao enviou tudo.
+    if (modoOnline && !brpiJaEnviado && sessionData.sessionId) {
+        var feitos = [];
+        ['A', 'B', 'C', 'D'].forEach(function(id) { if (resultados[id]) { feitos.push(id); } });
+        if (feitos.length > 0) {
+            var pacote = {
+                sessionId: sessionData.sessionId,
+                email: sessionData.email || '',
+                tipo: 'brpi',
+                data: {
+                    formData: sessionData,
+                    status: 'abandonado',
+                    modulosAplicados: feitos,
+                    A: resultados.A || null,
+                    B: resultados.B || null,
+                    C: resultados.C || null,
+                    D: resultados.D || null,
+                    dataAplicacao: new Date().toISOString()
+                }
+            };
+            try { navigator.sendBeacon(BRPI_API_URL + '/save-result', JSON.stringify(pacote)); } catch (err) {}
+        }
+    }
+
+    // Camada 1: pede confirmacao ao navegador (texto e generico, controlado pelo navegador).
+    e.preventDefault();
+    e.returnValue = '';
+    return '';
+});
 
 /* ===== INICIALIZACAO (direta, no fim do script) ===== */
 var _brpiParams = new URLSearchParams(window.location.search);
