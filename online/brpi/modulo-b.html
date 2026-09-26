@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BRPI - Bateria de Rastreio do Processamento da Inteligencia (Modulo B)</title>
+<style>
+    /* ===== ESTILO GERAL ===== */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+        font-family: 'Segoe UI', Arial, sans-serif;
+        background: linear-gradient(135deg, #1a237e, #283593);
+        color: #333;
+        min-height: 100vh;
+        padding: 20px;
+    }
+    .container {
+        max-width: 900px;
+        margin: 0 auto;
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        overflow: hidden;
+    }
+    /* ===== CABECALHO ===== */
+    header {
+        background: linear-gradient(135deg, #3949ab, #5c6bc0);
+        color: #fff;
+        padding: 30px;
+        text-align: center;
+    }
+    header h1 { font-size: 1.9em; margin-bottom: 6px; }
+    header p { opacity: 0.9; font-size: 1em; }
+
+    /* ===== SECOES / TELAS ===== */
+    .tela { padding: 30px; display: none; }
+    .tela.ativa { display: block; }
+
+    /* ===== FORMULARIO ===== */
+    .campo { margin-bottom: 16px; }
+    .campo label { display: block; font-weight: 600; margin-bottom: 5px; color: #283593; }
+    .campo input, .campo select {
+        width: 100%; padding: 10px; border: 2px solid #c5cae9;
+        border-radius: 8px; font-size: 1em;
+    }
+    .campo input:focus, .campo select:focus { outline: none; border-color: #3949ab; }
+
+    /* ===== BOTOES ===== */
+    .botoes { text-align: center; margin-top: 24px; }
+    .btn {
+        padding: 14px 30px; border: none; border-radius: 25px;
+        font-size: 1.05em; font-weight: 600; cursor: pointer;
+        margin: 6px; transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.2); }
+    .btn-primary { background: linear-gradient(135deg, #3949ab, #5c6bc0); color: #fff; }
+    .btn-secondary { background: linear-gradient(135deg, #2e7d32, #43a047); color: #fff; }
+    .btn-danger { background: linear-gradient(135deg, #e53935, #ef5350); color: #fff; }
+
+    /* ===== AREA DO TESTE ===== */
+    #areaEstimulo {
+        min-height: 200px; display: flex; align-items: center; justify-content: center;
+        font-size: 5em; font-weight: bold; color: #1a237e;
+        background: #f5f6fa; border-radius: 12px; margin: 20px 0;
+        letter-spacing: 8px;
+    }
+    .opcoes { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .opcao {
+        padding: 18px; font-size: 1.6em; font-weight: bold; text-align: center;
+        background: #e8eaf6; border: 3px solid transparent; border-radius: 12px;
+        cursor: pointer; letter-spacing: 4px; transition: all 0.15s; color: #283593;
+    }
+    .opcao:hover { background: #c5cae9; border-color: #3949ab; }
+
+    /* ===== INFORMACOES DE PROGRESSO ===== */
+    .progresso {
+        text-align: center; color: #5c6bc0; font-size: 0.95em; margin-bottom: 10px;
+    }
+    .badge-trilha {
+        display: inline-block; background: #3949ab; color: #fff;
+        padding: 6px 16px; border-radius: 20px; font-weight: 600; margin-bottom: 14px;
+    }
+
+    /* ===== TRANSICAO ===== */
+    .transicao-texto {
+        text-align: center; font-size: 1.15em; line-height: 1.7; color: #444;
+        padding: 20px; background: #f5f6fa; border-radius: 12px; margin-bottom: 20px;
+    }
+    .transicao-texto strong { color: #1a237e; }
+
+    /* ===== RESULTADOS ===== */
+    .info-tecnica {
+        background: #e8eaf6; border-left: 5px solid #3949ab;
+        padding: 16px; border-radius: 8px; margin-bottom: 20px; font-size: 0.95em; line-height: 1.6;
+    }
+    table.tabela-spans { width: 100%; border-collapse: collapse; margin: 20px 0; }
+    table.tabela-spans th, table.tabela-spans td {
+        border: 1px solid #c5cae9; padding: 10px; text-align: center;
+    }
+    table.tabela-spans th { background: #3949ab; color: #fff; }
+    table.tabela-spans tr:nth-child(even) { background: #f5f6fa; }
+    .analise-box {
+        background: #f5f6fa; border-radius: 12px; padding: 20px; margin: 20px 0; line-height: 1.7;
+    }
+    .analise-box h3 { color: #1a237e; margin-bottom: 10px; }
+    #graficoLinhas { width: 100%; max-width: 840px; height: auto; border: 1px solid #c5cae9; border-radius: 12px; background: #fff; }
+
+    @media (max-width: 600px) {
+        .opcoes { grid-template-columns: 1fr; }
+        #areaEstimulo { font-size: 3em; }
+        header h1 { font-size: 1.4em; }
+    }
+</style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>&#129504; BRPI &mdash; Bateria de Rastreio do Processamento da Intelig&ecirc;ncia</h1>
+        <p>M&oacute;dulo B &mdash; Organiza&ccedil;&atilde;o e Manipula&ccedil;&atilde;o Simb&oacute;lica</p>
+    </header>
+
+    <!-- ===== TELA 1: FORMULARIO ===== -->
+    <section id="telaFormulario" class="tela ativa">
+        <div class="info-tecnica">
+            <strong>Sobre o M&oacute;dulo B:</strong> avalia como a pessoa <strong>organiza e reorganiza</strong> sequ&ecirc;ncias
+            de informa&ccedil;&atilde;o apresentadas de forma <strong>auditiva</strong> (ouvida) e <strong>visual</strong> (vista).
+            Em vez de repetir a sequ&ecirc;ncia, a pessoa deve coloc&aacute;-la em ordem <strong>crescente</strong> e
+            <strong>decrescente</strong>, com n&uacute;meros e letras. Dura&ccedil;&atilde;o aproximada: 10&ndash;15 minutos.
+        </div>
+        <div class="campo">
+            <label for="nome">Nome</label>
+            <input type="text" id="nome" placeholder="Nome do avaliando">
+        </div>
+        <div class="campo">
+            <label for="dataNascimento">Data de Nascimento</label>
+            <input type="date" id="dataNascimento" onchange="calcularIdade()">
+        </div>
+        <div class="campo">
+            <label for="idadeCalculada">Idade</label>
+            <input type="text" id="idadeCalculada" readonly placeholder="Calculada automaticamente">
+        </div>
+        <div class="campo">
+            <label for="sexo">Sexo</label>
+            <select id="sexo">
+                <option value="">Selecione</option>
+                <option value="Masculino">Masculino</option>
+                <option value="Feminino">Feminino</option>
+            </select>
+        </div>
+        <div class="campo">
+            <label for="escolaridade">Escolaridade</label>
+            <input type="text" id="escolaridade" placeholder="Ex.: Ensino Medio completo">
+        </div>
+        <div class="campo">
+            <label for="data">Data da Avalia&ccedil;&atilde;o</label>
+            <input type="date" id="data">
+        </div>
+        <div class="botoes">
+            <button class="btn btn-primary" onclick="iniciarTeste()">Iniciar Teste</button>
+        </div>
+    </section>
+
+    <!-- ===== TELA 2: TRANSICAO / INSTRUCOES ===== -->
+    <section id="telaTransicao" class="tela">
+        <div class="transicao-texto" id="transicaoTexto"></div>
+        <div class="botoes">
+            <button class="btn btn-primary" onclick="comecarFaseAtual()">Come&ccedil;ar</button>
+        </div>
+    </section>
+
+    <!-- ===== TELA 3: TESTE ===== -->
+    <section id="telaTeste" class="tela">
+        <div class="progresso" id="progressoTexto"></div>
+        <div style="text-align:center;">
+            <span class="badge-trilha" id="badgeTrilha"></span>
+        </div>
+        <div id="areaEstimulo"></div>
+        <div class="opcoes" id="areaOpcoes"></div>
+        <div class="botoes" id="areaBotaoRepetir" style="display:none;">
+            <button class="btn btn-secondary" id="btnApresentar" onclick="apresentarEstimulo()">Apresentar</button>
+        </div>
+    </section>
+
+    <!-- ===== TELA 4: RESULTADOS ===== -->
+    <section id="telaResultados" class="tela">
+        <h2 style="color:#1a237e; text-align:center; margin-bottom:16px;">Resultados &mdash; BRPI M&oacute;dulo B</h2>
+        <div class="info-tecnica" id="resumoPaciente"></div>
+        <canvas id="graficoLinhas" width="840" height="420"></canvas>
+        <table class="tabela-spans" id="tabelaSpans"></table>
+        <div class="analise-box" id="analiseTexto"></div>
+        <div class="analise-box" id="detalhamentoRespostas"></div>
+        <div class="botoes">
+            <button class="btn btn-secondary" onclick="baixarDados()">Baixar Dados (CSV)</button>
+            <button class="btn btn-danger" onclick="location.reload()">Novo Teste</button>
+        </div>
+    </section>
+</div>
+
+<script>
+/* ============================================================
+   BRPI - MODULO B (Organizacao e Manipulacao Simbolica)
+   Bateria de Rastreio do Processamento da Inteligencia
+   Mesmo motor do Modulo A, mas a operacao muda: em vez de reproduzir a
+   sequencia (direta/inversa), a pessoa deve ORDENA-LA em ordem crescente
+   ou decrescente. Numeros: menor<->maior. Letras: A<->Z (ordem do conjunto).
+   Arquivo unico, sem dependencias externas.
+   NOTA: dentro deste <script> nao usamos acentos diretos
+   (usamos \u escapes) para evitar quebra em ambientes que
+   nao interpretam UTF-8 corretamente.
+   ============================================================ */
+
+/* ===== CONFIGURACOES (ajustaveis) ===== */
+var EXTENSAO_MIN = 2;              // comprimento inicial da sequencia
+var EXTENSAO_MAX = 13;             // teto maximo geral (limite fisico do teste)
+var TENTATIVAS_POR_COMPRIMENTO = 2; // quantas sequencias por comprimento (2 = duas chances)
+                                    // errar TODAS as tentativas do comprimento encerra a trilha
+var TEMPO_EXIBICAO_VISUAL = 1000;  // ms que cada item pisca na tela (modo visual)
+var TEMPO_ENTRE_ITENS = 300;       // ms de intervalo entre um item e outro (modo visual)
+var TEMPO_FALA_LETRA = 900;        // ms estimado por item na fala (fallback do audio)
+
+/* ===== CONJUNTOS DE ESTIMULOS =====
+   No Modulo B os itens de uma sequencia NAO se repetem (para a ordenacao ser
+   inequivoca). Por isso o teto de cada tipo e limitado ao tamanho do conjunto:
+   numeros vao no maximo ate 10 (so existem 10 digitos); letras ate 13. */
+var NUMEROS = ['0','1','2','3','4','5','6','7','8','9'];
+var LETRAS = ['A','B','C','D','E','F','G','H','J','L','M','P','R','S','T'];
+
+/* Retorna o teto maximo possivel para um tipo, respeitando o tamanho do conjunto */
+function tetoMaximo(tipo) {
+    var tamConjunto = (tipo === 'numero') ? NUMEROS.length : LETRAS.length;
+    return Math.min(EXTENSAO_MAX, tamConjunto);
+}
+
+/* ===== DEFINICAO DAS 4 FASES (2 blocos x 2 ordens) =====
+   Cada fase combina modalidade + ordem. Dentro de cada fase, as duas
+   subtrilhas (numeros e letras) sobem INTERCALADAS no mesmo comprimento:
+   1-2 (num) -> A-B (letra) -> 1-2-3 (num) -> A-B-C (letra) ...
+
+   Regra de parada (fluxo padrao do BRPI, vale para todos os modulos):
+   - Cada comprimento oferece DUAS tentativas (duas sequencias diferentes).
+   - Acertar QUALQUER uma das duas -> sobe para o proximo comprimento.
+   - Errar as DUAS -> a subtrilha encerra e registra o TETO (maior comprimento
+     que a pessoa acertou). A outra subtrilha continua sozinha ate encerrar.
+   - Quando ambas encerram, passa para a proxima fase.
+
+   Ordem de execucao:
+   Bloco AUDITIVO (Crescente -> Decrescente) -> Bloco VISUAL (Crescente -> Decrescente)
+*/
+var FASES = [
+    { modalidade: 'auditivo', ordem: 'crescente',   idNum: 'aud_cre_num', idLet: 'aud_cre_let' },
+    { modalidade: 'auditivo', ordem: 'decrescente', idNum: 'aud_dec_num', idLet: 'aud_dec_let' },
+    { modalidade: 'visual',   ordem: 'crescente',   idNum: 'vis_cre_num', idLet: 'vis_cre_let' },
+    { modalidade: 'visual',   ordem: 'decrescente', idNum: 'vis_dec_num', idLet: 'vis_dec_let' }
+];
+
+/* Lista de todos os ids de subtrilha (usada por tabela, grafico e CSV) */
+var TODAS_TRILHAS = [
+    { id: 'aud_cre_num', tipo: 'numero' }, { id: 'aud_cre_let', tipo: 'letra' },
+    { id: 'aud_dec_num', tipo: 'numero' }, { id: 'aud_dec_let', tipo: 'letra' },
+    { id: 'vis_cre_num', tipo: 'numero' }, { id: 'vis_cre_let', tipo: 'letra' },
+    { id: 'vis_dec_num', tipo: 'numero' }, { id: 'vis_dec_let', tipo: 'letra' }
+];
+
+/* Rotulos legiveis (com escapes unicode para acentos) */
+var ROTULOS = {
+    aud_cre_num: 'Auditivo - Crescente - N\u00fameros',
+    aud_cre_let: 'Auditivo - Crescente - Letras',
+    aud_dec_num: 'Auditivo - Decrescente - N\u00fameros',
+    aud_dec_let: 'Auditivo - Decrescente - Letras',
+    vis_cre_num: 'Visual - Crescente - N\u00fameros',
+    vis_cre_let: 'Visual - Crescente - Letras',
+    vis_dec_num: 'Visual - Decrescente - N\u00fameros',
+    vis_dec_let: 'Visual - Decrescente - Letras'
+};
+
+/* ===== ESTADO GLOBAL =====
+   Cada subtrilha (aud_cre_num, etc.) tem seu proprio controle independente:
+   - comprimento: o comprimento que ela esta tentando agora
+   - tentativa: qual tentativa deste comprimento (1a ou 2a)
+   - spans: o teto (maior comprimento acertado)
+   - encerrada: true quando errou as duas tentativas ou chegou no teto maximo
+   Isso permite que uma continue sozinha quando a outra encerra, sem travar. */
+var estado = {
+    faseIndex: 0,          // qual fase estamos rodando (0 a 3)
+    turno: 'numero',       // de quem e a vez agora dentro da fase: 'numero' ou 'letra'
+    comprimento: {},       // id da subtrilha -> comprimento atual em teste
+    tentativa: {},         // id da subtrilha -> numero da tentativa no comprimento atual (1 ou 2)
+    spans: {},             // id da subtrilha -> teto (maior comprimento acertado)
+    encerrada: {},         // id da subtrilha -> true quando parou
+    itemAtual: null,       // objeto do item em andamento
+    subtrilhaAtual: null,  // { id, modalidade, ordem, tipo } da subtrilha em andamento
+    tempoInicioResposta: 0
+};
+
+var registros = [];        // registro rico de todas as tentativas respondidas
+var pacienteDados = {};    // dados do formulario
+
+/* ============================================================
+   FUNCOES UTILITARIAS
+   ============================================================ */
+
+/* Calcula idade em anos, meses e dias a partir da data de nascimento */
+function calcularIdade() {
+    var nascEl = document.getElementById('dataNascimento');
+    var idadeEl = document.getElementById('idadeCalculada');
+    if (!nascEl.value) { idadeEl.value = ''; return; }
+    var nasc = new Date(nascEl.value + 'T00:00:00');
+    var hoje = new Date();
+    var anos = hoje.getFullYear() - nasc.getFullYear();
+    var meses = hoje.getMonth() - nasc.getMonth();
+    var dias = hoje.getDate() - nasc.getDate();
+    if (dias < 0) { meses--; var ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth(), 0).getDate(); dias += ultimoDia; }
+    if (meses < 0) { anos--; meses += 12; }
+    idadeEl.value = anos + ' anos, ' + meses + ' meses e ' + dias + ' dias';
+}
+
+/* Embaralha um array (Fisher-Yates) */
+function embaralhar(arr) {
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+    }
+    return a;
+}
+
+/* Sorteia uma sequencia de N itens SEM REPETICAO.
+   No Modulo B os itens nao podem repetir, senao a ordenacao (crescente/
+   decrescente) ficaria ambigua (ex.: 5-5-3 nao tem ordem crescente unica).
+   Se N for maior que o tamanho do conjunto, limita ao tamanho do conjunto. */
+function sortearSequencia(conjunto, n) {
+    var baralho = embaralhar(conjunto);      // embaralha todo o conjunto
+    var qtd = Math.min(n, baralho.length);   // nao da para pegar mais itens do que existem
+    return baralho.slice(0, qtd);            // pega os N primeiros (todos distintos)
+}
+
+/* Ordena uma sequencia conforme a regra da fase.
+   Numeros: comparados por valor numerico. Letras: pela posicao no conjunto LETRAS
+   (que ja esta em ordem alfabetica), garantindo A<...<Z de forma consistente. */
+function ordenarSequencia(seq, tipo, ordem) {
+    var arr = seq.slice();
+    arr.sort(function(a, b) {
+        var va, vb;
+        if (tipo === 'numero') { va = parseInt(a, 10); vb = parseInt(b, 10); }
+        else { va = LETRAS.indexOf(a); vb = LETRAS.indexOf(b); }
+        return va - vb; // crescente por padrao
+    });
+    if (ordem === 'decrescente') { arr.reverse(); }
+    return arr;
+}
+
+/* Retorna o vizinho de um item (para o distrator de "identidade"):
+   numero -> numero +/- 1 ; letra -> letra adjacente no conjunto usado */
+function vizinho(item, tipo) {
+    if (tipo === 'numero') {
+        var n = parseInt(item, 10);
+        var delta = Math.random() > 0.5 ? 1 : -1;
+        var novo = n + delta;
+        if (novo < 0) novo = 1;
+        if (novo > 9) novo = 8;
+        return String(novo);
+    } else {
+        var idx = LETRAS.indexOf(item);
+        var d = Math.random() > 0.5 ? 1 : -1;
+        var ni = idx + d;
+        if (ni < 0) ni = 1;
+        if (ni >= LETRAS.length) ni = LETRAS.length - 2;
+        return LETRAS[ni];
+    }
+}
+
+/* ============================================================
+   GERADORES DE DISTRATORES (cada um garante opcao unica)
+   'usados' e um array de assinaturas (itens.join('|')) ja em uso.
+   Cada funcao registra a nova assinatura em 'usados' antes de retornar.
+   ============================================================ */
+
+/* Verifica se uma sequencia ja foi usada (colisao com outra opcao) */
+function jaUsado(arr, usados) {
+    return usados.indexOf(arr.join('|')) !== -1;
+}
+
+/* DISTRATOR DE DIRECAO: a ordenacao na regra OPOSTA a pedida.
+   Ex.: pediu crescente 2-3-7-9 -> distrator decrescente 9-7-3-2.
+   Este e o erro mais importante do B (a pessoa aplicou a regra inversa).
+   Como a correta ja esta ordenada, a direcao oposta e simplesmente o reverso. */
+function gerarDistratorDirecao(correta, tipo, usados) {
+    var dir = correta.slice().reverse();
+    if (!jaUsado(dir, usados)) { usados.push(dir.join('|')); return dir; }
+    // Colidiu (raro, ex.: 2 itens que ao reverter coincidem com outra opcao)
+    return gerarDistratorIdentidade(dir, tipo, usados);
+}
+
+/* DISTRATOR DE ORDENACAO PARCIAL: a sequencia quase ordenada, mas com dois
+   itens ADJACENTES fora de lugar (a regra nao foi concluida corretamente).
+   Ex.: correta 2-3-7-9 -> 2-3-9-7 (os dois ultimos trocados). */
+function gerarDistratorParcial(correta, tipo, usados) {
+    var n = correta.length;
+    // Pares adjacentes com valores diferentes (sempre havera, pois nao ha repeticao)
+    var candidatos = [];
+    for (var i = 0; i < n - 1; i++) {
+        if (correta[i] !== correta[i + 1]) { candidatos.push(i); }
+    }
+    candidatos = embaralhar(candidatos);
+    for (var c = 0; c < candidatos.length; c++) {
+        var arr = correta.slice();
+        var p = candidatos[c];
+        var tmp = arr[p]; arr[p] = arr[p + 1]; arr[p + 1] = tmp;
+        if (!jaUsado(arr, usados)) { usados.push(arr.join('|')); return arr; }
+    }
+    // Nao foi possivel gerar ordenacao parcial inedita (tipico em sequencias
+    // de 2 itens, onde "trocar os dois" e igual a "direcao"). Nesse caso, usa
+    // um distrator de identidade, que sempre e viavel e igualmente informativo.
+    return gerarDistratorIdentidade(correta, tipo, usados);
+}
+
+/* DISTRATOR DE IDENTIDADE: substitui UM item por um valor que NAO esta na
+   sequencia, preferindo um vizinho (valor proximo) para ficar plausivel.
+   No B, a sequencia mostrada continua ordenada, so que um item foi trocado. */
+function gerarDistratorIdentidade(correta, tipo, usados) {
+    var n = correta.length;
+    var posicoes = embaralhar((function() { var arr = []; for (var i = 0; i < n; i++) arr.push(i); return arr; })());
+    for (var pi = 0; pi < posicoes.length; pi++) {
+        var pos = posicoes[pi];
+        // Primeiro tenta um vizinho que nao colida com nenhum item ja presente
+        var candidato = vizinho(correta[pos], tipo);
+        var novo = correta.slice();
+        if (correta.indexOf(candidato) === -1) {
+            novo[pos] = candidato;
+            if (!jaUsado(novo, usados)) { usados.push(novo.join('|')); return novo; }
+        }
+        // Se o vizinho colidiu, procura qualquer valor do conjunto que sirva
+        var conjunto = (tipo === 'numero') ? NUMEROS : LETRAS;
+        var opcoesValor = embaralhar(conjunto);
+        for (var v = 0; v < opcoesValor.length; v++) {
+            var val = opcoesValor[v];
+            if (val !== correta[pos] && correta.indexOf(val) === -1) {
+                novo = correta.slice();
+                novo[pos] = val;
+                if (!jaUsado(novo, usados)) { usados.push(novo.join('|')); return novo; }
+            }
+        }
+    }
+    // Fallback improvavel: troca o primeiro item por um vizinho qualquer
+    var fb = correta.slice();
+    fb[0] = vizinho(fb[0], tipo);
+    usados.push(fb.join('|'));
+    return fb;
+}
+
+/* DISTRATOR DE OMISSAO: a sequencia correta com UM item a menos (mais curta).
+   Representa a pessoa que "perdeu" um item da memoria. E propositalmente mais
+   curta, pois quem nao reteve tudo tende a gravitar para essa opcao. */
+function gerarDistratorOmissao(correta, tipo, usados) {
+    var n = correta.length;
+    var posicoes = embaralhar((function() { var a = []; for (var i = 0; i < n; i++) a.push(i); return a; })());
+    for (var pi = 0; pi < posicoes.length; pi++) {
+        var arr = correta.slice();
+        arr.splice(posicoes[pi], 1);
+        if (!jaUsado(arr, usados)) { usados.push(arr.join('|')); return arr; }
+    }
+    var fb = correta.slice(0, n - 1);
+    usados.push(fb.join('|'));
+    return fb;
+}
+
+/* ============================================================
+   GERACAO DE ITEM (sequencia + resposta correta + distratores)
+   ============================================================ */
+
+/* Gera um item completo para uma trilha numa dada extensao.
+   No Modulo B a resposta correta e a sequencia ORDENADA (crescente/decrescente),
+   e os distratores representam os erros tipicos de organizacao.
+   Retorna: { sequencia, correta, opcoes:[{arr, tipoErro}], ... } */
+function gerarItem(trilha, extensao) {
+    var conjunto = (trilha.tipo === 'numero') ? NUMEROS : LETRAS;
+    // Sequencia apresentada: itens distintos, em ordem aleatoria (embaralhada)
+    var sequencia = sortearSequencia(conjunto, extensao);
+
+    // A resposta correta e a sequencia ORDENADA conforme a regra da fase
+    var correta = ordenarSequencia(sequencia, trilha.tipo, trilha.ordem);
+
+    // ----- DISTRATORES (cada um carrega o tipo de erro que representa) -----
+    // As 5 opcoes precisam ser TODAS distintas entre si (garantido pelas funcoes).
+    var opcoes = [];
+    opcoes.push({ arr: correta.slice(), tipoErro: 'correta' });
+
+    // Conjunto de textos ja usados, para garantir que nenhuma opcao se repita
+    var usados = [correta.join('|')];
+
+    // 1) DIRECAO / PERSEVERACAO: ordenou na regra OPOSTA (o reverso da correta).
+    //    - Na fase CRESCENTE: e um erro de DIRECAO (inverteu a regra pedida).
+    //    - Na fase DECRESCENTE: e um erro de PERSEVERACAO (continuou dando crescente,
+    //      que era a regra da fase anterior). E fisicamente a mesma opcao (o reverso),
+    //      mas o tipo de erro depende da fase.
+    var tipoReverso = (trilha.ordem === 'decrescente') ? 'perseveracao' : 'direcao';
+    opcoes.push({ arr: gerarDistratorDirecao(correta, trilha.tipo, usados), tipoErro: tipoReverso });
+
+    // 2) ORDENACAO PARCIAL: quase ordenado, mas dois itens fora de lugar
+    //    Ex.: correta 2-3-7-9  ->  2-3-9-7
+    opcoes.push({ arr: gerarDistratorParcial(correta, trilha.tipo, usados), tipoErro: 'ordenacao_parcial' });
+
+    // 3) IDENTIDADE: um item foi trocado por outro valor
+    //    Ex.: correta 2-3-7-9  ->  2-4-7-9
+    opcoes.push({ arr: gerarDistratorIdentidade(correta, trilha.tipo, usados), tipoErro: 'identidade' });
+
+    // 4) OMISSAO: a sequencia ordenada com um item a menos (mais curta)
+    //    Ex.: correta 2-3-7-9  ->  2-3-9 (perdeu um item)
+    opcoes.push({ arr: gerarDistratorOmissao(correta, trilha.tipo, usados), tipoErro: 'omissao' });
+
+    // Embaralha a ordem das 5 opcoes na tela (a correta aparece em posicao aleatoria)
+    opcoes = embaralhar(opcoes);
+
+    return {
+        trilha: trilha,
+        extensao: extensao,
+        sequencia: sequencia,
+        correta: correta,
+        opcoes: opcoes
+    };
+}
+
+/* ============================================================
+   FLUXO PRINCIPAL DO TESTE
+   ============================================================ */
+
+function iniciarTeste() {
+    // Validacao minima
+    var nome = document.getElementById('nome').value.trim();
+    if (!nome) { alert('Por favor, preencha o nome antes de iniciar.'); return; }
+    if (!document.getElementById('dataNascimento').value) { alert('Por favor, preencha a data de nascimento.'); return; }
+
+    // Salva dados do paciente
+    pacienteDados = {
+        nome: nome,
+        idade: document.getElementById('idadeCalculada').value,
+        sexo: document.getElementById('sexo').value,
+        escolaridade: document.getElementById('escolaridade').value,
+        data: document.getElementById('data').value
+    };
+
+    // Inicializa estado: cada subtrilha comeca no comprimento minimo, tentativa 1, teto 0
+    estado.faseIndex = 0;
+    TODAS_TRILHAS.forEach(function(t) {
+        estado.comprimento[t.id] = EXTENSAO_MIN;
+        estado.tentativa[t.id] = 1;
+        estado.spans[t.id] = 0;
+        estado.encerrada[t.id] = false;
+    });
+    registros = [];
+
+    // Vai para a primeira fase
+    prepararFase();
+}
+
+/* Mostra a tela de transicao antes de cada bloco novo (mudanca de fase) */
+function mostrarTela(id) {
+    var telas = document.querySelectorAll('.tela');
+    telas.forEach(function(t) { t.classList.remove('ativa'); });
+    document.getElementById(id).classList.add('ativa');
+}
+
+/* Prepara uma nova fase: reinicia comprimento, turno e mostra a transicao.
+   Pula fases cujas duas subtrilhas ja nasceriam encerradas (nao ocorre no fluxo
+   normal, mas mantem o codigo seguro). */
+function prepararFase() {
+    if (estado.faseIndex >= FASES.length) { finalizarTeste(); return; }
+
+    // A vez sempre comeca pelo numero em cada fase
+    estado.turno = 'numero';
+
+    var fase = FASES[estado.faseIndex];
+    mostrarTransicao(fase);
+}
+
+/* Monta o texto explicativo de cada fase */
+function mostrarTransicao(fase) {
+    var modal = (fase.modalidade === 'auditivo')
+        ? 'Voc\u00ea vai <strong>ouvir</strong> uma sequ\u00eancia falada.'
+        : 'Voc\u00ea vai <strong>ver</strong> uma sequ\u00eancia aparecer na tela, um item de cada vez.';
+    var ordem = (fase.ordem === 'crescente')
+        ? 'Depois, escolha a op\u00e7\u00e3o com a sequ\u00eancia <strong>em ordem crescente</strong> (do menor para o maior; letras de A para Z).'
+        : 'Depois, escolha a op\u00e7\u00e3o com a sequ\u00eancia <strong>em ordem decrescente</strong> (do maior para o menor; letras de Z para A).';
+
+    var txt = '<h2 style="color:#1a237e; margin-bottom:14px;">' +
+          (fase.modalidade === 'auditivo' ? '&#128266; Fase Auditiva' : '&#128065; Fase Visual') +
+          ' &mdash; ' + (fase.ordem === 'crescente' ? 'Ordem Crescente' : 'Ordem Decrescente') + '</h2>' +
+          '<p>' + modal + '</p><p style="margin-top:10px;">' + ordem + '</p>' +
+          '<p style="margin-top:14px; color:#5c6bc0;">Nesta fase, sequ\u00eancias de <strong>n\u00fameros</strong> e de ' +
+          '<strong>letras</strong> se alternam e v\u00e3o aumentando de tamanho aos poucos. ' +
+          'Responda com calma; se n\u00e3o tiver certeza, escolha a op\u00e7\u00e3o que parecer mais correta.</p>';
+
+    document.getElementById('transicaoTexto').innerHTML = txt;
+    mostrarTela('telaTransicao');
+}
+
+/* Botao "Comecar" da tela de transicao */
+function comecarFaseAtual() {
+    mostrarTela('telaTeste');
+    proximoItem();
+}
+
+/* Decide qual e a proxima subtrilha a apresentar dentro da fase atual,
+   respeitando a alternancia numero <-> letra e pulando as ja encerradas.
+   Retorna o objeto da subtrilha ou null se a fase acabou. */
+function escolherProximaSubtrilha() {
+    var fase = FASES[estado.faseIndex];
+    var numEncerrada = estado.encerrada[fase.idNum];
+    var letEncerrada = estado.encerrada[fase.idLet];
+
+    // Se as duas encerraram, a fase acabou
+    if (numEncerrada && letEncerrada) { return null; }
+
+    // Determina de quem e a vez, respeitando encerramentos
+    var vez = estado.turno;
+    if (vez === 'numero' && numEncerrada) { vez = 'letra'; }
+    if (vez === 'letra' && letEncerrada) { vez = 'numero'; }
+
+    var id = (vez === 'numero') ? fase.idNum : fase.idLet;
+    return {
+        id: id,
+        modalidade: fase.modalidade,
+        ordem: fase.ordem,
+        tipo: vez
+    };
+}
+
+/* Prepara e apresenta o proximo item da fase atual */
+function proximoItem() {
+    var sub = escolherProximaSubtrilha();
+
+    // Se nao ha mais subtrilha ativa, encerrou a fase -> proxima fase
+    if (!sub) {
+        estado.faseIndex++;
+        prepararFase();
+        return;
+    }
+
+    estado.subtrilhaAtual = sub;
+
+    // Comprimento e tentativa desta subtrilha especifica
+    var comp = estado.comprimento[sub.id];
+    var tent = estado.tentativa[sub.id];
+
+    // Gera o item no comprimento atual desta subtrilha
+    estado.itemAtual = gerarItem(sub, comp);
+
+    // Atualiza rotulos de progresso
+    document.getElementById('badgeTrilha').textContent = ROTULOS[sub.id];
+    document.getElementById('progressoTexto').textContent =
+        'Sequ\u00eancia de ' + comp + ' itens  (tentativa ' + tent + ' de ' + TENTATIVAS_POR_COMPRIMENTO + ')';
+
+    // Limpa area de opcoes e estimulo
+    document.getElementById('areaOpcoes').innerHTML = '';
+    document.getElementById('areaEstimulo').textContent = '';
+
+    // Apresenta o estimulo (audio ou visual)
+    apresentarEstimulo();
+}
+
+/* Apresenta o estimulo conforme a modalidade */
+function apresentarEstimulo() {
+    var trilha = estado.subtrilhaAtual;
+    var item = estado.itemAtual;
+    document.getElementById('areaOpcoes').innerHTML = '';
+    document.getElementById('areaBotaoRepetir').style.display = 'none';
+
+    if (trilha.modalidade === 'auditivo') {
+        apresentarAudio(item.sequencia, function() { mostrarOpcoes(item); });
+    } else {
+        apresentarVisual(item.sequencia, function() { mostrarOpcoes(item); });
+    }
+}
+
+/* ===== APRESENTACAO AUDITIVA (voz sintetizada do navegador) ===== */
+function apresentarAudio(sequencia, callback) {
+    var area = document.getElementById('areaEstimulo');
+    area.textContent = '\u266b';  // simbolo de nota musical enquanto fala
+
+    // Verifica suporte a sintese de voz
+    if (!('speechSynthesis' in window)) {
+        // Fallback: mostra em texto por alguns segundos
+        fallbackTexto(sequencia, callback);
+        return;
+    }
+
+    window.speechSynthesis.cancel();
+    var idx = 0;
+    function falarProximo() {
+        if (idx >= sequencia.length) {
+            area.textContent = '?';
+            callback();
+            return;
+        }
+        var u = new SpeechSynthesisUtterance(sequencia[idx]);
+        u.lang = 'pt-BR';
+        u.rate = 0.9;
+        u.onend = function() { idx++; setTimeout(falarProximo, 250); };
+        u.onerror = function() { idx++; setTimeout(falarProximo, 250); };
+        window.speechSynthesis.speak(u);
+    }
+    falarProximo();
+}
+
+/* Fallback textual caso o navegador nao tenha sintese de voz */
+function fallbackTexto(sequencia, callback) {
+    var area = document.getElementById('areaEstimulo');
+    var idx = 0;
+    function mostrar() {
+        if (idx >= sequencia.length) { area.textContent = '?'; callback(); return; }
+        area.textContent = sequencia[idx];
+        idx++;
+        setTimeout(function() { area.textContent = ''; setTimeout(mostrar, TEMPO_ENTRE_ITENS); }, TEMPO_FALA_LETRA);
+    }
+    mostrar();
+}
+
+/* ===== APRESENTACAO VISUAL (item por item, cronometrado) ===== */
+function apresentarVisual(sequencia, callback) {
+    var area = document.getElementById('areaEstimulo');
+    var idx = 0;
+    function mostrar() {
+        if (idx >= sequencia.length) {
+            area.textContent = '?';
+            callback();
+            return;
+        }
+        area.textContent = sequencia[idx];
+        idx++;
+        setTimeout(function() {
+            area.textContent = '';
+            setTimeout(mostrar, TEMPO_ENTRE_ITENS);
+        }, TEMPO_EXIBICAO_VISUAL);
+    }
+    mostrar();
+}
+
+/* ===== MOSTRA AS 4 OPCOES DE RESPOSTA ===== */
+function mostrarOpcoes(item) {
+    var area = document.getElementById('areaOpcoes');
+    area.innerHTML = '';
+    estado.tempoInicioResposta = performance.now();
+
+    item.opcoes.forEach(function(opcao) {
+        var div = document.createElement('div');
+        div.className = 'opcao';
+        div.textContent = opcao.arr.join(' ');
+        div.onclick = function() { registrarResposta(item, opcao); };
+        area.appendChild(div);
+    });
+}
+
+/* ===== REGISTRA A RESPOSTA E APLICA A LOGICA ADAPTATIVA =====
+   Regra do BRPI (duas tentativas por comprimento):
+   - Acertou -> registra o teto, sobe o comprimento desta subtrilha, volta a tentativa 1.
+   - Errou na 1a tentativa -> vai para a 2a tentativa (mesmo comprimento, nova sequencia).
+     Isso e a "escorregada": fica registrada para analise posterior.
+   - Errou na 2a tentativa -> encerra a subtrilha (teto = ultimo comprimento acertado).
+   Apos cada resposta, a vez passa para a outra subtrilha (alternancia num<->letra).
+*/
+function registrarResposta(item, opcao) {
+    var trilha = item.trilha; // { id, modalidade, ordem, tipo }
+    var comp = estado.comprimento[trilha.id];
+    var tent = estado.tentativa[trilha.id];
+    var tempoResposta = Math.round(performance.now() - estado.tempoInicioResposta);
+    var acertou = (opcao.tipoErro === 'correta');
+
+    // Registro rico da tentativa (inclui escorregadas)
+    registros.push({
+        trilhaId: trilha.id,
+        rotulo: ROTULOS[trilha.id],
+        modalidade: trilha.modalidade,
+        ordem: trilha.ordem,
+        tipo: trilha.tipo,
+        extensao: comp,
+        tentativa: tent,
+        sequencia: item.sequencia.join(''),
+        correta: item.correta.join(''),
+        respostaEscolhida: opcao.arr.join(''),
+        tipoErro: acertou ? 'nenhum' : opcao.tipoErro,
+        acertou: acertou ? 1 : 0,
+        tempoRespostaMs: tempoResposta
+    });
+
+    if (acertou) {
+        // Acertou: este comprimento vira o novo teto da subtrilha
+        estado.spans[trilha.id] = comp;
+        if (comp >= tetoMaximo(trilha.tipo)) {
+            // Atingiu o limite fisico do teste (para este tipo): encerra a subtrilha
+            estado.encerrada[trilha.id] = true;
+        } else {
+            // Sobe para o proximo comprimento, recomecando na tentativa 1
+            estado.comprimento[trilha.id] = comp + 1;
+            estado.tentativa[trilha.id] = 1;
+        }
+    } else {
+        // Errou: se ainda ha tentativas neste comprimento, oferece a proxima
+        if (tent < TENTATIVAS_POR_COMPRIMENTO) {
+            estado.tentativa[trilha.id] = tent + 1;
+        } else {
+            // Errou todas as tentativas deste comprimento: encerra a subtrilha
+            estado.encerrada[trilha.id] = true;
+        }
+    }
+
+    // Passa a vez para a outra subtrilha (alternancia numero <-> letra)
+    estado.turno = (trilha.tipo === 'numero') ? 'letra' : 'numero';
+
+    // Segue para o proximo item (ou proxima fase, se ambas encerraram)
+    proximoItem();
+}
+
+/* ============================================================
+   FINALIZACAO E RESULTADOS
+   ============================================================ */
+
+function finalizarTeste() {
+    window.speechSynthesis && window.speechSynthesis.cancel();
+    calcularEMostrarResultados();
+    mostrarTela('telaResultados');
+}
+
+/* Calcula metricas, monta tabela, grafico e analise textual */
+function calcularEMostrarResultados() {
+    // Resumo do paciente
+    document.getElementById('resumoPaciente').innerHTML =
+        '<strong>Nome:</strong> ' + (pacienteDados.nome || '-') + ' &nbsp;|&nbsp; ' +
+        '<strong>Idade:</strong> ' + (pacienteDados.idade || '-') + '<br>' +
+        '<strong>Sexo:</strong> ' + (pacienteDados.sexo || '-') + ' &nbsp;|&nbsp; ' +
+        '<strong>Escolaridade:</strong> ' + (pacienteDados.escolaridade || '-') + ' &nbsp;|&nbsp; ' +
+        '<strong>Data:</strong> ' + (pacienteDados.data || '-');
+
+    montarTabelaSpans();
+    desenharGrafico();
+    montarAnaliseTextual();
+    montarDetalhamentoRespostas();
+}
+
+/* Tabela com o span de cada trilha */
+function montarTabelaSpans() {
+    var tabela = document.getElementById('tabelaSpans');
+    var html = '<tr><th>Trilha</th><th>Span (maior sequencia correta)</th></tr>';
+    TODAS_TRILHAS.forEach(function(t) {
+        html += '<tr><td>' + ROTULOS[t.id] + '</td><td><strong>' + estado.spans[t.id] + '</strong></td></tr>';
+    });
+    // Linhas de sintese
+    var spanCrescenteMedia = media([estado.spans.aud_cre_num, estado.spans.aud_cre_let, estado.spans.vis_cre_num, estado.spans.vis_cre_let]);
+    var spanDecrescenteMedia = media([estado.spans.aud_dec_num, estado.spans.aud_dec_let, estado.spans.vis_dec_num, estado.spans.vis_dec_let]);
+    html += '<tr style="background:#e8eaf6;"><td><strong>M\u00e9dia Crescente</strong></td><td><strong>' + spanCrescenteMedia.toFixed(1) + '</strong></td></tr>';
+    html += '<tr style="background:#e8eaf6;"><td><strong>M\u00e9dia Decrescente</strong></td><td><strong>' + spanDecrescenteMedia.toFixed(1) + '</strong></td></tr>';
+    tabela.innerHTML = html;
+}
+
+function media(arr) {
+    var soma = 0;
+    for (var i = 0; i < arr.length; i++) { soma += arr[i]; }
+    return arr.length ? soma / arr.length : 0;
+}
+
+/* ===== GRAFICO DE LINHAS EM CANVAS PURO =====
+   Mostra 4 linhas comparando trajetorias:
+   - Auditivo Numeros, Auditivo Letras, Visual Numeros, Visual Letras
+   Cada linha tem 2 pontos: span Direta e span Inversa.
+   Isso deixa visivel: numeros x letras, auditivo x visual, direta x inversa.
+*/
+function desenharGrafico() {
+    var canvas = document.getElementById('graficoLinhas');
+    var ctx = canvas.getContext('2d');
+    var W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    // Margens do grafico
+    var margemEsq = 60, margemDir = 200, margemTopo = 40, margemBase = 60;
+    var areaW = W - margemEsq - margemDir;
+    var areaH = H - margemTopo - margemBase;
+
+    // Eixo Y: span de 0 ate EXTENSAO_MAX
+    var maxY = EXTENSAO_MAX;
+
+    // As series a desenhar (dir = ponto Crescente; inv = ponto Decrescente)
+    var series = [
+        { nome: 'Auditivo N\u00fameros', cor: '#3949ab', dir: estado.spans.aud_cre_num, inv: estado.spans.aud_dec_num },
+        { nome: 'Auditivo Letras',   cor: '#00897b', dir: estado.spans.aud_cre_let, inv: estado.spans.aud_dec_let },
+        { nome: 'Visual N\u00fameros',   cor: '#e53935', dir: estado.spans.vis_cre_num, inv: estado.spans.vis_dec_num },
+        { nome: 'Visual Letras',     cor: '#fb8c00', dir: estado.spans.vis_cre_let, inv: estado.spans.vis_dec_let }
+    ];
+
+    // Posicoes X dos dois grupos (Crescente e Decrescente)
+    var xDir = margemEsq + areaW * 0.25;
+    var xInv = margemEsq + areaW * 0.75;
+
+    // Funcao para converter valor de span em posicao Y
+    function posY(valor) {
+        return margemTopo + areaH - (valor / maxY) * areaH;
+    }
+
+    // ----- Grade e eixos -----
+    ctx.strokeStyle = '#e0e0e0';
+    ctx.lineWidth = 1;
+    ctx.font = '12px Arial';
+    ctx.fillStyle = '#666';
+    ctx.textAlign = 'right';
+    for (var v = 0; v <= maxY; v++) {
+        var y = posY(v);
+        ctx.beginPath();
+        ctx.moveTo(margemEsq, y);
+        ctx.lineTo(margemEsq + areaW, y);
+        ctx.stroke();
+        ctx.fillText(String(v), margemEsq - 8, y + 4);
+    }
+
+    // Rotulos do eixo X
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#1a237e';
+    ctx.font = 'bold 14px Arial';
+    ctx.fillText('Crescente', xDir, margemTopo + areaH + 30);
+    ctx.fillText('Decrescente', xInv, margemTopo + areaH + 30);
+
+    // Titulo eixo Y
+    ctx.save();
+    ctx.translate(16, margemTopo + areaH / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillStyle = '#666';
+    ctx.font = '12px Arial';
+    ctx.fillText('Span (n\u00famero de itens)', 0, 0);
+    ctx.restore();
+
+    // ----- Desenha cada serie -----
+    series.forEach(function(s, i) {
+        ctx.strokeStyle = s.cor;
+        ctx.fillStyle = s.cor;
+        ctx.lineWidth = 3;
+
+        var y1 = posY(s.dir);
+        var y2 = posY(s.inv);
+
+        // Linha
+        ctx.beginPath();
+        ctx.moveTo(xDir, y1);
+        ctx.lineTo(xInv, y2);
+        ctx.stroke();
+
+        // Pontos
+        ctx.beginPath(); ctx.arc(xDir, y1, 5, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(xInv, y2, 5, 0, Math.PI * 2); ctx.fill();
+
+        // Legenda (lado direito)
+        var ly = margemTopo + 10 + i * 24;
+        ctx.fillRect(margemEsq + areaW + 20, ly - 8, 16, 4);
+        ctx.textAlign = 'left';
+        ctx.fillStyle = '#333';
+        ctx.font = '13px Arial';
+        ctx.fillText(s.nome, margemEsq + areaW + 42, ly - 3);
+        ctx.fillStyle = s.cor;
+    });
+}
+
+/* ===== ANALISE TEXTUAL AUTOMATICA ===== */
+function montarAnaliseTextual() {
+    var s = estado.spans;
+
+    // Comparacoes principais (medias por dimensao)
+    var audMedia = media([s.aud_cre_num, s.aud_cre_let, s.aud_dec_num, s.aud_dec_let]);
+    var visMedia = media([s.vis_cre_num, s.vis_cre_let, s.vis_dec_num, s.vis_dec_let]);
+    var numMedia = media([s.aud_cre_num, s.aud_dec_num, s.vis_cre_num, s.vis_dec_num]);
+    var letMedia = media([s.aud_cre_let, s.aud_dec_let, s.vis_cre_let, s.vis_dec_let]);
+    var creMedia = media([s.aud_cre_num, s.aud_cre_let, s.vis_cre_num, s.vis_cre_let]);
+    var decMedia = media([s.aud_dec_num, s.aud_dec_let, s.vis_dec_num, s.vis_dec_let]);
+
+    var txt = '<h3>Leitura Comparativa (explorat\u00f3ria)</h3>';
+
+    // Auditivo x Visual
+    txt += '<p><strong>Auditivo x Visual:</strong> ';
+    if (Math.abs(audMedia - visMedia) < 0.6) {
+        txt += 'desempenho semelhante nas duas modalidades (auditivo ' + audMedia.toFixed(1) + ' vs visual ' + visMedia.toFixed(1) + ').</p>';
+    } else if (audMedia > visMedia) {
+        txt += 'melhor desempenho na modalidade <strong>auditiva</strong> (' + audMedia.toFixed(1) + ' vs ' + visMedia.toFixed(1) + ').</p>';
+    } else {
+        txt += 'melhor desempenho na modalidade <strong>visual</strong> (' + visMedia.toFixed(1) + ' vs ' + audMedia.toFixed(1) + ').</p>';
+    }
+
+    // Numeros x Letras
+    txt += '<p><strong>N\u00fameros x Letras:</strong> ';
+    if (Math.abs(numMedia - letMedia) < 0.6) {
+        txt += 'desempenho semelhante com n\u00fameros e letras (' + numMedia.toFixed(1) + ' vs ' + letMedia.toFixed(1) + ').</p>';
+    } else if (numMedia > letMedia) {
+        txt += 'melhor desempenho com <strong>n\u00fameros</strong> (' + numMedia.toFixed(1) + ' vs ' + letMedia.toFixed(1) + ').</p>';
+    } else {
+        txt += 'melhor desempenho com <strong>letras</strong> (' + letMedia.toFixed(1) + ' vs ' + numMedia.toFixed(1) + ').</p>';
+    }
+
+    // Crescente x Decrescente
+    txt += '<p><strong>Crescente x Decrescente:</strong> ';
+    var queda = creMedia - decMedia;
+    if (Math.abs(queda) < 0.6) {
+        txt += 'pouca diferen\u00e7a entre organizar em ordem crescente e decrescente (' + creMedia.toFixed(1) + ' vs ' + decMedia.toFixed(1) + '), sugerindo boa flexibilidade para aplicar as duas regras.</p>';
+    } else if (queda > 0) {
+        txt += 'melhor desempenho na ordem <strong>crescente</strong> (' + creMedia.toFixed(1) + ' vs ' + decMedia.toFixed(1) + '). A maior dificuldade em inverter a regra pode indicar custo para reorganizar a informa\u00e7\u00e3o no sentido oposto.</p>';
+    } else {
+        txt += 'melhor desempenho na ordem <strong>decrescente</strong> (' + decMedia.toFixed(1) + ' vs ' + creMedia.toFixed(1) + ').</p>';
+    }
+
+    // Tipos de erro mais frequentes (contexto de organizacao) - 5 tipos
+    txt += '<h3 style="margin-top:16px;">Padr\u00e3o de Erros</h3>';
+    var contagemErros = { direcao: 0, perseveracao: 0, ordenacao_parcial: 0, identidade: 0, omissao: 0 };
+    registros.forEach(function(r) {
+        if (r.acertou === 0 && contagemErros.hasOwnProperty(r.tipoErro)) { contagemErros[r.tipoErro]++; }
+    });
+    txt += '<p>Dire\u00e7\u00e3o (regra invertida na fase crescente): <strong>' + contagemErros.direcao + '</strong><br>' +
+           'Persevera\u00e7\u00e3o (deu crescente na fase decrescente): <strong>' + contagemErros.perseveracao + '</strong><br>' +
+           'Ordena\u00e7\u00e3o parcial (n\u00e3o concluiu a ordem): <strong>' + contagemErros.ordenacao_parcial + '</strong><br>' +
+           'Identidade (item trocado por outro): <strong>' + contagemErros.identidade + '</strong><br>' +
+           'Omiss\u00e3o (faltou um item): <strong>' + contagemErros.omissao + '</strong></p>';
+
+    // ----- PERSEVERACAO (flexibilidade cognitiva) -----
+    // Agora e um tipo de erro direto: escolher a ordem crescente numa fase decrescente.
+    txt += '<h3 style="margin-top:16px;">Persevera\u00e7\u00e3o (flexibilidade cognitiva)</h3>';
+    if (contagemErros.perseveracao >= 2) {
+        txt += '<p style="color:#e65100;">Foram observadas <strong>' + contagemErros.perseveracao + '</strong> respostas perseverativas: ' +
+               'na fase decrescente, a pessoa continuou organizando em ordem <strong>crescente</strong> (a regra anterior). ' +
+               'Isso sugere dificuldade de <strong>flexibilidade cognitiva</strong> ao alternar a estrat\u00e9gia de organiza\u00e7\u00e3o.</p>';
+    } else if (contagemErros.perseveracao === 1) {
+        txt += '<p>Houve <strong>1</strong> resposta perseverativa (crescente na fase decrescente). Isoladamente, pode ser apenas um lapso; ' +
+               'observe se h\u00e1 repeti\u00e7\u00e3o do padr\u00e3o.</p>';
+    } else {
+        txt += '<p>N\u00e3o h\u00e1 sinais de perseverac\u00e3o: a mudan\u00e7a de regra (crescente para decrescente) foi acompanhada adequadamente.</p>';
+    }
+
+    // Indicador de padrao de resposta a tarefa (nao fala em honestidade)
+    // Combina dois sinais: respostas muito rapidas e erros de direcao na 1a parte (crescente).
+    txt += '<h3 style="margin-top:16px;">Padr\u00e3o de Resposta \u00e0 Tarefa</h3>';
+    var respostasRapidas = registros.filter(function(r) { return r.tempoRespostaMs < 600; }).length;
+    var proporcaoRapida = registros.length ? (respostasRapidas / registros.length) : 0;
+    // Erros de direcao na 1a parte (fase crescente): caminho pouco natural -> alerta
+    var direcaoPrimeiraParte = registros.filter(function(r) {
+        return r.acertou === 0 && r.tipoErro === 'direcao' && r.ordem === 'crescente';
+    }).length;
+
+    var alertas = [];
+    if (proporcaoRapida > 0.4) {
+        alertas.push('parte consider\u00e1vel das respostas foi muito r\u00e1pida (' + (proporcaoRapida * 100).toFixed(0) + '%), o que no M\u00f3dulo B pode indicar que a pessoa n\u00e3o chegou a reorganizar a informa\u00e7\u00e3o');
+    }
+    if (direcaoPrimeiraParte >= 2) {
+        alertas.push('houve <strong>' + direcaoPrimeiraParte + '</strong> erros de dire\u00e7\u00e3o na 1\u00aa parte (ordem crescente), uma resposta pouco natural nessa fase que, quando frequente, sugere chute ou baixo engajamento');
+    }
+
+    if (alertas.length > 0) {
+        txt += '<p style="color:#c62828;">Aten\u00e7\u00e3o: ' + alertas.join('; ') + '. ' +
+               'Recomenda-se <strong>investigar</strong> a execu\u00e7\u00e3o antes de interpretar os resultados.</p>';
+    } else {
+        txt += '<p>O padr\u00e3o de resposta est\u00e1 dentro do esperado. Vale lembrar que, no M\u00f3dulo B, tempos maiores ' +
+               'costumam refletir o esfor\u00e7o de <strong>transformar</strong> a informa\u00e7\u00e3o, e n\u00e3o apenas record\u00e1-la.</p>';
+    }
+
+    // Disclaimer
+    txt += '<p style="margin-top:16px; font-size:0.9em; color:#777;"><em>Instrumento de rastreio explorat\u00f3rio, ' +
+           'sem valida\u00e7\u00e3o psicom\u00e9trica formal. Os resultados devem ser interpretados por profissional qualificado ' +
+           'e complementados por outras fontes de informa\u00e7\u00e3o.</em></p>';
+
+    document.getElementById('analiseTexto').innerHTML = txt;
+}
+
+/* ===== DETALHAMENTO DAS RESPOSTAS (tentativa a tentativa) =====
+   Mostra, por trilha, o que foi apresentado, o que a pessoa respondeu e qual
+   foi o tipo de erro. Destaca as ESCORREGADAS (erro na 1a, acerto na 2a) e os
+   erros perto do teto, ajudando a distinguir falha de atencao de padrao de
+   raciocinio no limite da capacidade. */
+function montarDetalhamentoRespostas() {
+    var nomeErro = {
+        direcao: 'Dire\u00e7\u00e3o (aplicou a regra invertida)',
+        perseveracao: 'Persevera\u00e7\u00e3o (continuou na regra crescente anterior)',
+        ordenacao_parcial: 'Ordena\u00e7\u00e3o parcial (n\u00e3o concluiu a ordem)',
+        identidade: 'Identidade (um item trocado por outro)',
+        omissao: 'Omiss\u00e3o (faltou um item)',
+        nenhum: 'Correto'
+    };
+
+    var html = '<h3>Detalhamento das Respostas</h3>' +
+        '<p style="font-size:0.9em; color:#777;">Cada linha e uma tentativa. ' +
+        'Uma <strong>escorregada</strong> (errar e acertar no mesmo comprimento) costuma indicar falha de aten\u00e7\u00e3o; ' +
+        'j\u00e1 erros repetidos perto do teto refletem o limite da capacidade.</p>';
+
+    // Agrupa os registros por trilha, na ordem de TODAS_TRILHAS
+    TODAS_TRILHAS.forEach(function(t) {
+        var doTrilha = registros.filter(function(r) { return r.trilhaId === t.id; });
+        if (doTrilha.length === 0) { return; }
+
+        html += '<div style="margin-top:14px;"><strong style="color:#1a237e;">' + ROTULOS[t.id] +
+                '</strong> &mdash; Teto: <strong>' + estado.spans[t.id] + '</strong></div>';
+        html += '<table class="tabela-spans" style="margin:6px 0 0 0;">' +
+                '<tr><th>Comp.</th><th>Tent.</th><th>Apresentado</th><th>Esperado</th><th>Respondeu</th><th>Resultado</th><th>Tempo</th></tr>';
+
+        doTrilha.forEach(function(r) {
+            // Detecta escorregada: erro numa tentativa que teve acerto depois no mesmo comprimento
+            var houveAcertoDepois = doTrilha.some(function(o) {
+                return o.extensao === r.extensao && o.acertou === 1;
+            });
+            var ehEscorregada = (r.acertou === 0 && houveAcertoDepois);
+
+            var corLinha = r.acertou === 1 ? '#e8f5e9' : (ehEscorregada ? '#fff8e1' : '#ffebee');
+            var resultado = r.acertou === 1 ? 'Correto'
+                          : (ehEscorregada ? 'Escorregada: ' + nomeErro[r.tipoErro] : nomeErro[r.tipoErro]);
+
+            html += '<tr style="background:' + corLinha + ';">' +
+                    '<td>' + r.extensao + '</td>' +
+                    '<td>' + r.tentativa + '</td>' +
+                    '<td>' + espacar(r.sequencia) + '</td>' +
+                    '<td>' + espacar(r.correta) + '</td>' +
+                    '<td>' + espacar(r.respostaEscolhida) + '</td>' +
+                    '<td>' + resultado + '</td>' +
+                    '<td>' + (r.tempoRespostaMs / 1000).toFixed(1) + 's</td>' +
+                    '</tr>';
+        });
+        html += '</table>';
+    });
+
+    document.getElementById('detalhamentoRespostas').innerHTML = html;
+}
+
+/* Coloca espacos entre os caracteres de uma string para leitura (ex.: 482 -> 4 8 2) */
+function espacar(str) {
+    return String(str).split('').join(' ');
+}
+
+/* ===== EXPORTACAO DOS DADOS (CSV) ===== */
+function baixarDados() {
+    var linhas = [];
+    // Cabecalho
+    linhas.push(['trilha','modalidade','ordem','tipo','comprimento','tentativa','apresentado','esperado','resposta','tipo_erro','acertou','tempo_ms'].join(';'));
+    registros.forEach(function(r) {
+        linhas.push([r.rotulo, r.modalidade, r.ordem, r.tipo, r.extensao, r.tentativa, r.sequencia, r.correta, r.respostaEscolhida, r.tipoErro, r.acertou, r.tempoRespostaMs].join(';'));
+    });
+    // Spans finais
+    linhas.push('');
+    linhas.push('SPANS FINAIS');
+    TODAS_TRILHAS.forEach(function(t) { linhas.push([ROTULOS[t.id], estado.spans[t.id]].join(';')); });
+
+    var conteudo = linhas.join('\n');
+    var blob = new Blob(['\ufeff' + conteudo], { type: 'text/csv;charset=utf-8;' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    var nomeArq = 'BRPI_ModuloB_' + (pacienteDados.nome || 'sem_nome').replace(/\s+/g, '_') + '.csv';
+    a.href = url; a.download = nomeArq; a.click();
+    URL.revokeObjectURL(url);
+}
+
+/* ===== INICIALIZACAO (direta, no final do script) ===== */
+document.getElementById('data').value = new Date().toISOString().split('T')[0];
+
+/* ============================================================
+   INTEGRACAO COM A BATERIA BRPI (o "sino")
+   Quando este modulo roda DENTRO do controlador (brpi.html), a URL traz
+   ?bateria=1. Nesse caso, ao chegar na tela de resultados, avisamos o
+   controlador (window.parent) por postMessage, enviando os dados coletados.
+   No modo sozinho (sem ?bateria=1), nada disso acontece: o modulo funciona
+   exatamente como antes. Isso preserva o uso autonomo de cada modulo.
+   ============================================================ */
+(function() {
+    var _p = new URLSearchParams(window.location.search);
+    if (_p.get('bateria') !== '1') { return; } // modo autonomo: nao faz nada
+    var _moduloId = _p.get('modulo') || 'B';
+
+    // ----- RECEBE OS DADOS DO PACIENTE (vindos do controlador em ?p=) -----
+    function _preencherEComecar() {
+        var _dados = {};
+        try {
+            var _raw = _p.get('p');
+            if (_raw) { _dados = JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(_raw))))); }
+        } catch (e) { _dados = {}; }
+
+        function _set(id, val) { var el = document.getElementById(id); if (el && val) { el.value = val; } }
+        _set('nome', _dados.patientName);
+        _set('dataNascimento', _dados.birthDate);
+        _set('sexo', _dados.sex);
+        _set('escolaridade', _dados.education);
+        _set('data', _dados.dataAval);
+        if (typeof calcularIdade === 'function') { try { calcularIdade(); } catch (e) {} }
+
+        if (typeof iniciarTeste === 'function' && _dados.patientName) {
+            setTimeout(function() { try { iniciarTeste(); } catch (e) {} }, 150);
+        }
+    }
+    setTimeout(_preencherEComecar, 60);
+
+    function _pacoteBRPI() {
+        return {
+            modulo: _moduloId,
+            spans: (typeof estado !== 'undefined' && estado.spans) ? estado.spans : null,
+            registros: (typeof registros !== 'undefined') ? registros : [],
+            paciente: (typeof pacienteDados !== 'undefined') ? pacienteDados : {}
+        };
+    }
+
+    function _tocarSino() {
+        try {
+            window.parent.postMessage({ tipo: 'brpi-modulo-fim', modulo: _moduloId, dados: _pacoteBRPI() }, '*');
+        } catch (e) {}
+    }
+
+    if (typeof window.finalizarTeste === 'function' && !window._brpiSinoLigado) {
+        var _origFinalizar = window.finalizarTeste;
+        window.finalizarTeste = function() {
+            var _r = _origFinalizar.apply(this, arguments);
+            setTimeout(_tocarSino, 400);
+            return _r;
+        };
+        window._brpiSinoLigado = true;
+    }
+})();
+</script>
+</body>
+</html>

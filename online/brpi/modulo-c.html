@@ -1,0 +1,1260 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BRPI - Bateria de Rastreio do Processamento da Inteligencia (Modulo C)</title>
+<style>
+    /* ===== ESTILO GERAL ===== */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+        font-family: 'Segoe UI', Arial, sans-serif;
+        background: linear-gradient(135deg, #1a237e, #283593);
+        color: #333;
+        min-height: 100vh;
+        padding: 20px;
+    }
+    .container {
+        max-width: 900px;
+        margin: 0 auto;
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        overflow: hidden;
+    }
+    /* ===== CABECALHO ===== */
+    header {
+        background: linear-gradient(135deg, #3949ab, #5c6bc0);
+        color: #fff;
+        padding: 30px;
+        text-align: center;
+    }
+    header h1 { font-size: 1.9em; margin-bottom: 6px; }
+    header p { opacity: 0.9; font-size: 1em; }
+
+    /* ===== SECOES / TELAS ===== */
+    .tela { padding: 30px; display: none; }
+    .tela.ativa { display: block; }
+
+    /* ===== FORMULARIO ===== */
+    .campo { margin-bottom: 16px; }
+    .campo label { display: block; font-weight: 600; margin-bottom: 5px; color: #283593; }
+    .campo input, .campo select {
+        width: 100%; padding: 10px; border: 2px solid #c5cae9;
+        border-radius: 8px; font-size: 1em;
+    }
+    .campo input:focus, .campo select:focus { outline: none; border-color: #3949ab; }
+
+    /* ===== BOTOES ===== */
+    .botoes { text-align: center; margin-top: 24px; }
+    .btn {
+        padding: 14px 30px; border: none; border-radius: 25px;
+        font-size: 1.05em; font-weight: 600; cursor: pointer;
+        margin: 6px; transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.2); }
+    .btn-primary { background: linear-gradient(135deg, #3949ab, #5c6bc0); color: #fff; }
+    .btn-secondary { background: linear-gradient(135deg, #2e7d32, #43a047); color: #fff; }
+    .btn-danger { background: linear-gradient(135deg, #e53935, #ef5350); color: #fff; }
+
+    /* ===== AREA DO TESTE ===== */
+    /* No Modulo C a area de estimulo mostra os EXEMPLOS da relacao (ex.: 2 -> 4) */
+    #areaEstimulo {
+        min-height: 160px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+        font-size: 2.2em; font-weight: bold; color: #1a237e;
+        background: #f5f6fa; border-radius: 12px; margin: 20px 0; padding: 20px;
+        line-height: 1.5;
+    }
+    #areaEstimulo .par { margin: 4px 0; letter-spacing: 4px; }
+    #areaEstimulo .incognita { color: #e53935; }
+
+    /* 9 opcoes: grade de 3 colunas */
+    .opcoes { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+    .opcao {
+        padding: 16px; font-size: 1.4em; font-weight: bold; text-align: center;
+        background: #e8eaf6; border: 3px solid transparent; border-radius: 12px;
+        cursor: pointer; letter-spacing: 3px; transition: all 0.15s; color: #283593;
+    }
+    .opcao:hover { background: #c5cae9; border-color: #3949ab; }
+
+    /* ===== INFORMACOES DE PROGRESSO ===== */
+    .progresso {
+        text-align: center; color: #5c6bc0; font-size: 0.95em; margin-bottom: 10px;
+    }
+    .badge-trilha {
+        display: inline-block; background: #3949ab; color: #fff;
+        padding: 6px 16px; border-radius: 20px; font-weight: 600; margin-bottom: 14px;
+    }
+    .enunciado {
+        text-align: center; color: #444; font-size: 1.05em; margin-bottom: 8px;
+    }
+
+    /* ===== TRANSICAO ===== */
+    .transicao-texto {
+        text-align: center; font-size: 1.15em; line-height: 1.7; color: #444;
+        padding: 20px; background: #f5f6fa; border-radius: 12px; margin-bottom: 20px;
+    }
+    .transicao-texto strong { color: #1a237e; }
+
+    /* ===== RESULTADOS ===== */
+    .info-tecnica {
+        background: #e8eaf6; border-left: 5px solid #3949ab;
+        padding: 16px; border-radius: 8px; margin-bottom: 20px; font-size: 0.95em; line-height: 1.6;
+    }
+    table.tabela-spans { width: 100%; border-collapse: collapse; margin: 20px 0; }
+    table.tabela-spans th, table.tabela-spans td {
+        border: 1px solid #c5cae9; padding: 10px; text-align: center;
+    }
+    table.tabela-spans th { background: #3949ab; color: #fff; }
+    table.tabela-spans tr:nth-child(even) { background: #f5f6fa; }
+    .analise-box {
+        background: #f5f6fa; border-radius: 12px; padding: 20px; margin: 20px 0; line-height: 1.7;
+    }
+    .analise-box h3 { color: #1a237e; margin-bottom: 10px; }
+    #graficoLinhas { width: 100%; max-width: 840px; height: auto; border: 1px solid #c5cae9; border-radius: 12px; background: #fff; }
+
+    @media (max-width: 600px) {
+        .opcoes { grid-template-columns: 1fr 1fr; }
+        #areaEstimulo { font-size: 1.6em; }
+        header h1 { font-size: 1.4em; }
+    }
+</style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>&#129504; BRPI &mdash; Bateria de Rastreio do Processamento da Intelig&ecirc;ncia</h1>
+        <p>M&oacute;dulo C &mdash; Racioc&iacute;nio Relacional</p>
+    </header>
+
+    <!-- ===== TELA 1: FORMULARIO ===== -->
+    <section id="telaFormulario" class="tela ativa">
+        <div class="info-tecnica">
+            <strong>Sobre o M&oacute;dulo C:</strong> avalia como a pessoa <strong>descobre a rela&ccedil;&atilde;o</strong>
+            (a regra) que transforma um elemento em outro. A pessoa v&ecirc; ou ouve alguns exemplos e escolhe, entre v&aacute;rias
+            op&ccedil;&otilde;es, o resultado que completa a rela&ccedil;&atilde;o. A dificuldade cresce em 7 n&iacute;veis, com
+            n&uacute;meros e letras. N&atilde;o h&aacute; tempo limite; responda com calma.
+        </div>
+        <div class="campo">
+            <label for="nome">Nome</label>
+            <input type="text" id="nome" placeholder="Nome do avaliando">
+        </div>
+        <div class="campo">
+            <label for="dataNascimento">Data de Nascimento</label>
+            <input type="date" id="dataNascimento" onchange="calcularIdade()">
+        </div>
+        <div class="campo">
+            <label for="idadeCalculada">Idade</label>
+            <input type="text" id="idadeCalculada" readonly placeholder="Calculada automaticamente">
+        </div>
+        <div class="campo">
+            <label for="sexo">Sexo</label>
+            <select id="sexo">
+                <option value="">Selecione</option>
+                <option value="Masculino">Masculino</option>
+                <option value="Feminino">Feminino</option>
+            </select>
+        </div>
+        <div class="campo">
+            <label for="escolaridade">Escolaridade</label>
+            <input type="text" id="escolaridade" placeholder="Ex.: Ensino Medio completo">
+        </div>
+        <div class="campo">
+            <label for="data">Data da Avalia&ccedil;&atilde;o</label>
+            <input type="date" id="data">
+        </div>
+        <div class="botoes">
+            <button class="btn btn-primary" onclick="iniciarTeste()">Iniciar Teste</button>
+        </div>
+    </section>
+
+    <!-- ===== TELA 2: TRANSICAO / INSTRUCOES ===== -->
+    <section id="telaTransicao" class="tela">
+        <div class="transicao-texto" id="transicaoTexto"></div>
+        <div class="botoes">
+            <button class="btn btn-primary" onclick="comecarFaseAtual()">Come&ccedil;ar</button>
+        </div>
+    </section>
+
+    <!-- ===== TELA 3: TESTE ===== -->
+    <section id="telaTeste" class="tela">
+        <div class="progresso" id="progressoTexto"></div>
+        <div style="text-align:center;">
+            <span class="badge-trilha" id="badgeTrilha"></span>
+        </div>
+        <div class="enunciado" id="enunciado">Descubra a regra e escolha o resultado que completa:</div>
+        <div id="reguaLetras" style="display:none; text-align:center; font-size:15px; font-weight:600; color:#1a237e; background:#fff8e1; border:1px solid #ffe082; border-radius:8px; padding:8px; margin-bottom:12px;"></div>
+        <div id="areaEstimulo"></div>
+        <div class="opcoes" id="areaOpcoes"></div>
+        <div class="botoes" id="areaBotaoRepetir" style="display:none;">
+            <button class="btn btn-secondary" id="btnApresentar" onclick="apresentarEstimulo()">Ouvir novamente</button>
+        </div>
+    </section>
+
+    <!-- ===== TELA 4: RESULTADOS ===== -->
+    <section id="telaResultados" class="tela">
+        <h2 style="color:#1a237e; text-align:center; margin-bottom:16px;">Resultados &mdash; BRPI M&oacute;dulo C</h2>
+        <div class="info-tecnica" id="resumoPaciente"></div>
+        <canvas id="graficoLinhas" width="840" height="420"></canvas>
+        <table class="tabela-spans" id="tabelaSpans"></table>
+        <div class="analise-box" id="analiseTexto"></div>
+        <div class="analise-box" id="detalhamentoRespostas"></div>
+        <div class="botoes">
+            <button class="btn btn-secondary" onclick="baixarDados()">Baixar Dados (CSV)</button>
+            <button class="btn btn-danger" onclick="location.reload()">Novo Teste</button>
+        </div>
+    </section>
+</div>
+
+<script>
+/* ============================================================
+   BRPI - MODULO C (Raciocinio Relacional)
+   Bateria de Rastreio do Processamento da Inteligencia
+
+   A pessoa descobre a REGRA que transforma um elemento em outro.
+   Ve/ouve exemplos (ex.: 2->4, 3->6) e escolhe o resultado da incognita
+   entre 9 alternativas, cada uma representando uma HIPOTESE de raciocinio.
+
+   A "10a hipotese" nao e um botao: e a deteccao pelo TEMPO. Responder
+   abaixo do tempo minimo do nivel = possivel chute (resposta aleatoria),
+   independente da opcao escolhida (mesmo se acertou).
+
+   NOTA: dentro deste <script> nao usamos acentos diretos (usamos \u escapes)
+   nem emojis, para evitar quebra em ambientes que nao interpretam UTF-8.
+   ============================================================ */
+
+/* ===== CONFIGURACOES (ajustaveis) ===== */
+var NIVEL_MIN = 1;
+var NIVEL_MAX = 7;                  // 7 niveis de complexidade
+var TENTATIVAS_POR_NIVEL = 2;       // duas tentativas por nivel; errar as duas encerra
+var NUM_OPCOES = 9;                 // 9 hipoteses de raciocinio na tela
+var TEMPO_EXIBICAO_VISUAL = 1400;   // ms que cada exemplo pisca (modo visual)
+var TEMPO_ENTRE_ITENS = 400;        // ms entre um exemplo e outro (modo visual)
+var ACRESCIMO_AUDITIVO = 3;         // segundos extras esperados no canal auditivo
+
+/* Tempo minimo esperado por nivel (em SEGUNDOS), para a fase VISUAL.
+   Abaixo disso, a resposta e marcada como possivel chute (4a dimensao: tempo).
+   No canal auditivo soma-se ACRESCIMO_AUDITIVO. Valores baseados na literatura
+   de raciocinio (matrizes/series) para QI medio (90-110); ajustaveis. */
+var TEMPO_MINIMO_NIVEL = { 1: 5, 2: 7, 3: 10, 4: 15, 5: 20, 6: 25, 7: 30 };
+
+/* Nome de cada nivel de complexidade */
+var NOME_NIVEL = {
+    1: 'Transforma\u00e7\u00e3o simples',
+    2: 'Transforma\u00e7\u00e3o multiplicativa',
+    3: 'Transforma\u00e7\u00e3o composta',
+    4: 'Rela\u00e7\u00e3o entre elementos',
+    5: 'Reversibilidade',
+    6: 'Padr\u00e3o progressivo',
+    7: 'Padr\u00e3o progressivo + reversibilidade'
+};
+
+/* ===== CONJUNTOS DE ESTIMULOS ===== */
+var NUMEROS = ['0','1','2','3','4','5','6','7','8','9'];
+/* Letras limitadas a 10 (A-J), como ESPELHO exato dos digitos 0-9:
+   A=0, B=1, C=2, D=3, E=4, F=5, G=6, H=7, I=8, J=9.
+   Assim numeros e letras usam a mesma faixa (0..9) e nunca surge "BA"/"CA". */
+var ALFABETO = 'ABCDEFGHIJ'.split('');
+/* Texto da regua de equivalencia, mostrado ao avaliando nas questoes de letra */
+var REGUA_LETRAS = 'A=0  B=1  C=2  D=3  E=4  F=5  G=6  H=7  I=8  J=9';
+
+/* ===== DEFINICAO DAS FASES (2 blocos x numeros/letras) =====
+   Diferente do A/B: aqui nao ha "direta/inversa" de apresentacao. As duas
+   condicoes sao os CANAIS (auditivo e visual). Dentro de cada canal, numeros e
+   letras sobem intercalados de nivel, com duas tentativas por nivel.
+   Ordem: AUDITIVO (numeros+letras) -> VISUAL (numeros+letras).
+*/
+var FASES = [
+    { modalidade: 'auditivo', idNum: 'aud_num', idLet: 'aud_let' },
+    { modalidade: 'visual',   idNum: 'vis_num', idLet: 'vis_let' }
+];
+
+var TODAS_TRILHAS = [
+    { id: 'aud_num', tipo: 'numero' }, { id: 'aud_let', tipo: 'letra' },
+    { id: 'vis_num', tipo: 'numero' }, { id: 'vis_let', tipo: 'letra' }
+];
+
+var ROTULOS = {
+    aud_num: 'Auditivo - N\u00fameros',
+    aud_let: 'Auditivo - Letras',
+    vis_num: 'Visual - N\u00fameros',
+    vis_let: 'Visual - Letras'
+};
+
+/* Nomes das hipoteses de raciocinio (para relatorio) */
+var NOME_HIPOTESE = {
+    correta: 'Correta',
+    soma: 'Regra de soma',
+    subtracao: 'Regra de subtra\u00e7\u00e3o',
+    multiplicacao: 'Regra de multiplica\u00e7\u00e3o',
+    divisao: 'Regra de divis\u00e3o',
+    progressao: 'Progress\u00e3o / continua\u00e7\u00e3o',
+    invertida: 'Regra invertida',
+    inducao: 'Indu\u00e7\u00e3o pelo exemplo anterior',
+    distancia: 'Erro de dist\u00e2ncia / quantifica\u00e7\u00e3o',
+    aleatoria: 'Resposta aleat\u00f3ria (chute pelo tempo)'
+};
+
+/* ===== ESTADO GLOBAL ===== */
+var estado = {
+    faseIndex: 0,
+    turno: 'numero',          // vez dentro da fase: 'numero' ou 'letra'
+    nivel: {},                // id da subtrilha -> nivel atual em teste
+    tentativa: {},            // id da subtrilha -> tentativa no nivel atual (1 ou 2)
+    teto: {},                 // id da subtrilha -> maior nivel resolvido
+    encerrada: {},            // id da subtrilha -> true quando parou
+    itemAtual: null,
+    subtrilhaAtual: null,
+    tempoInicioResposta: 0
+};
+
+var registros = [];
+var pacienteDados = {};
+
+/* ============================================================
+   FUNCOES UTILITARIAS
+   ============================================================ */
+
+function calcularIdade() {
+    var nascEl = document.getElementById('dataNascimento');
+    var idadeEl = document.getElementById('idadeCalculada');
+    if (!nascEl.value) { idadeEl.value = ''; return; }
+    var nasc = new Date(nascEl.value + 'T00:00:00');
+    var hoje = new Date();
+    var anos = hoje.getFullYear() - nasc.getFullYear();
+    var meses = hoje.getMonth() - nasc.getMonth();
+    var dias = hoje.getDate() - nasc.getDate();
+    if (dias < 0) { meses--; var ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth(), 0).getDate(); dias += ultimoDia; }
+    if (meses < 0) { anos--; meses += 12; }
+    idadeEl.value = anos + ' anos, ' + meses + ' meses e ' + dias + ' dias';
+}
+
+function embaralhar(arr) {
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+    }
+    return a;
+}
+
+function inteiroEntre(min, max) {
+    return min + Math.floor(Math.random() * (max - min + 1));
+}
+
+/* Converte numero <-> letra. As letras representam o numero escrito DIGITO A DIGITO,
+   com A=0, B=1, ... J=9. Assim 15 -> "BF" (1=B,5=F); 20 -> "CA"; 100 -> "BAA".
+   Isso deixa a trilha de letras equivalente a de numeros, so que "codificada".
+   toItem: transforma um valor numerico no simbolo exibido (numero ou letra). */
+function toItem(valor, tipo) {
+    if (tipo === 'numero') { return String(valor); }
+    // letra: converte cada digito do numero em sua letra (A=0..J=9)
+    var str = String(Math.abs(Math.round(valor)));
+    var out = '';
+    for (var i = 0; i < str.length; i++) {
+        var d = parseInt(str.charAt(i), 10);
+        out += ALFABETO[d];
+    }
+    return out;
+}
+/* valorDe: pega o valor numerico de um item.
+   Para letras, le cada letra como um digito (A=0..J=9) e remonta o numero. */
+function valorDe(item, tipo) {
+    if (tipo === 'numero') { return parseInt(item, 10); }
+    var s = '';
+    for (var i = 0; i < item.length; i++) {
+        var pos = ALFABETO.indexOf(item.charAt(i));
+        if (pos < 0) pos = 0;
+        s += String(pos);
+    }
+    return parseInt(s, 10);
+}
+
+/* ============================================================
+   GERACAO DE PROBLEMAS POR NIVEL
+
+   Cada gerador retorna um objeto "regra" com:
+   - aplica(x): funcao que transforma um valor de entrada no de saida
+   - exemplos: lista de pares [entrada, saida] mostrados a pessoa
+   - incognitaEntrada: a entrada cuja saida a pessoa deve descobrir
+   - correta: valor numerico da resposta certa
+   - meta: informacoes para gerar as 9 hipoteses (tipo de regra, parametros)
+
+   Trabalhamos sempre com VALORES numericos internamente; a conversao para
+   numero/letra acontece so na hora de exibir (toItem).
+   ============================================================ */
+
+/* Faixa de valores segura para cada tipo (para nao estourar o alfabeto/digito) */
+function faixaValores(tipo) {
+    // Numeros: 0..9 na entrada; saidas podem passar de 9 (ex.: 6x2=12), tudo bem exibir.
+    // Letras: 0..25 (A..Z). Precisamos manter entradas e saidas dentro de 0..25.
+    // Numeros e letras usam a MESMA faixa de valores: as letras apenas exibem
+    // o numero codificado (15 -> BF). Entradas ficam de 1..9; saidas ate 99.
+    return { min: 1, max: 9, teto: 99 };
+}
+
+/* Garante que um valor de saida seja valido. Como as letras agora codificam
+   qualquer numero digito a digito, a regra e a mesma para os dois tipos. */
+function saidaValida(v, tipo) {
+    return v >= 0 && v <= 99;
+}
+
+/* Gera a regra do problema conforme o nivel. Retorna { desc, aplica, params, categoria } */
+function gerarRegra(nivel, tipo) {
+    var f = faixaValores(tipo);
+    var tentativa = 0;
+    while (tentativa < 200) {
+        tentativa++;
+        var regra = construirRegra(nivel, tipo, f);
+        if (regra) { return regra; }
+    }
+    // Fallback simples: soma de 2
+    return { categoria: 'soma', k: 2, aplica: function(x) { return x + 2; }, desc: '+2' };
+}
+
+/* Constroi uma regra candidata (pode retornar null se gerar valores invalidos) */
+function construirRegra(nivel, tipo, f) {
+    // Numeros e letras usam a MESMA matematica; a letra so exibe o numero codificado.
+    if (nivel === 1) {
+        // Transformacao simples: soma de constante pequena
+        var k = inteiroEntre(1, 3);
+        return { categoria: 'soma', k: k, desc: '+' + k, aplica: function(x) { return x + k; } };
+    }
+    if (nivel === 2) {
+        // Transformacao multiplicativa
+        var m = inteiroEntre(2, 3);
+        return { categoria: 'multiplicacao', k: m, desc: 'x' + m, aplica: function(x) { return x * m; } };
+    }
+    if (nivel === 3) {
+        // Transformacao composta: duas operacoes encadeadas (x m + a)
+        var mc = inteiroEntre(2, 3), ac = inteiroEntre(1, 2);
+        return { categoria: 'composta', m: mc, a: ac, desc: 'x' + mc + '+' + ac, aplica: function(x) { return x * mc + ac; } };
+    }
+    if (nivel === 4) {
+        // Relacao entre elementos: dois termos de entrada geram um terceiro (soma dos dois)
+        return { categoria: 'relacao_dois', op: 'soma', desc: 'a+b', aplica: null, dois: true,
+                 aplica2: function(a, b) { return a + b; } };
+    }
+    if (nivel === 5) {
+        // Reversibilidade: regra composta apresentada, mas a incognita pede desfazer
+        var m5 = inteiroEntre(2, 3), a5 = inteiroEntre(1, 3);
+        return { categoria: 'reversibilidade', m: m5, a: a5, desc: 'inverter x' + m5 + '+' + a5,
+                 aplica: function(x) { return x * m5 + a5; }, inverso: function(y) { return (y - a5) / m5; } };
+    }
+    if (nivel === 6) {
+        // Padrao progressivo: a diferenca cresce a cada passo (+p, +p+1, +p+2, ...)
+        var passoInicial = inteiroEntre(1, 2);
+        return { categoria: 'progressao', passo: passoInicial, desc: 'passo crescente a partir de +' + passoInicial, progressiva: true };
+    }
+    if (nivel === 7) {
+        // Padrao REGRESSIVO: sequencia decrescente com passo variavel (-p, -(p+1), ...).
+        // Cognitivamente mais dificil que o nivel 6: descer e controlado, nao automatico.
+        var passo7 = inteiroEntre(1, 2);
+        return { categoria: 'progressao_reg', passo: passo7, desc: 'passo decrescente a partir de -' + passo7, progressiva: true, regressiva: true };
+    }
+    return null;
+}
+
+/* Monta um item completo (problema) para uma subtrilha num dado nivel. */
+function gerarItem(trilha, nivel) {
+    var tipo = trilha.tipo;
+    var f = faixaValores(tipo);
+
+    for (var tentativaGeral = 0; tentativaGeral < 300; tentativaGeral++) {
+        var regra = gerarRegra(nivel, tipo);
+        var problema = montarProblema(regra, nivel, tipo, f);
+        if (problema) { problema.trilha = trilha; problema.nivel = nivel; return problema; }
+    }
+    // Fallback bem simples (nivel 1) se algo falhar
+    var reg = { categoria: 'soma', k: 2, aplica: function(x) { return x + 2; }, desc: '+2' };
+    var p = montarProblema(reg, 1, tipo, f);
+    p.trilha = trilha; p.nivel = nivel;
+    return p;
+}
+
+/* Monta o problema concreto (exemplos + incognita + correta) a partir da regra.
+   Retorna null se gerar valores fora da faixa (para tentar de novo). */
+function montarProblema(regra, nivel, tipo, f) {
+    // ---- NIVEL 4: relacao entre dois elementos (a,b -> a+b) ----
+    if (regra.dois) {
+        var pares = [];
+        for (var i = 0; i < 2; i++) {
+            var a = inteiroEntre(f.min, tipo === 'numero' ? 6 : 12);
+            var b = inteiroEntre(f.min, tipo === 'numero' ? 6 : 12);
+            var s = regra.aplica2(a, b);
+            if (!saidaValida(s, tipo)) { return null; }
+            pares.push({ a: a, b: b, s: s });
+        }
+        var ia = inteiroEntre(f.min, tipo === 'numero' ? 6 : 12);
+        var ib = inteiroEntre(f.min, tipo === 'numero' ? 6 : 12);
+        var corr = regra.aplica2(ia, ib);
+        if (!saidaValida(corr, tipo)) { return null; }
+        return {
+            tipo: tipo, categoria: regra.categoria, regra: regra,
+            exemplos: pares.map(function(p) { return { entrada: [p.a, p.b], saida: p.s }; }),
+            incognitaEntrada: [ia, ib],
+            correta: corr,
+            dois: true
+        };
+    }
+
+    // ---- NIVEL 6 (crescente) e NIVEL 7 (decrescente): progressao com passo variavel ----
+    if (regra.progressiva) {
+        var regressiva = (regra.regressiva === true);
+        var seq, difs, d, prox, proxCorreta, k;
+
+        if (!regressiva) {
+            // NIVEL 6 - CRESCENTE: comeca baixo, diferencas +passo, +(passo+1), +(passo+2)...
+            var v0 = inteiroEntre(f.min, 3);
+            seq = [v0]; difs = []; d = regra.passo;
+            for (k = 0; k < 3; k++) { // mostra 4 termos, pede o 5o
+                prox = seq[seq.length - 1] + d;
+                if (!saidaValida(prox, tipo)) { return null; }
+                seq.push(prox); difs.push(d); d++;
+            }
+            proxCorreta = seq[seq.length - 1] + d;
+            if (!saidaValida(proxCorreta, tipo)) { return null; }
+            difs.push(d);
+        } else {
+            // NIVEL 7 - DECRESCENTE: comeca alto, diferencas -passo, -(passo+1), -(passo+2)...
+            // Precisa comecar alto o suficiente para nao ficar negativo ate o 5o termo.
+            var vTopo = inteiroEntre(30, 45);
+            seq = [vTopo]; difs = []; d = regra.passo;
+            for (k = 0; k < 3; k++) {
+                prox = seq[seq.length - 1] - d;
+                if (!saidaValida(prox, tipo)) { return null; }
+                seq.push(prox); difs.push(-d); d++;
+            }
+            proxCorreta = seq[seq.length - 1] - d;
+            if (!saidaValida(proxCorreta, tipo)) { return null; }
+            difs.push(-d);
+        }
+
+        return {
+            tipo: tipo, categoria: regra.categoria, regra: regra,
+            sequencia: seq, difs: difs,
+            incognitaEntrada: null,
+            correta: proxCorreta,
+            progressiva: true,
+            regressiva: regressiva
+        };
+    }
+
+    // ---- NIVEL 5: reversibilidade (mostra a regra direta, pede desfazer) ----
+    if (regra.categoria === 'reversibilidade') {
+        var exs = [];
+        var entradas = embaralhar([1, 2, 3, 4, 5]).slice(0, 2);
+        for (var e = 0; e < entradas.length; e++) {
+            var x = entradas[e];
+            var y = regra.aplica(x);
+            if (!saidaValida(y, tipo) || !saidaValida(x, tipo)) { return null; }
+            exs.push({ entrada: x, saida: y });
+        }
+        // A incognita da o RESULTADO e pede a origem (desfazer)
+        var origem = inteiroEntre(2, tipo === 'numero' ? 6 : 10);
+        var resultado = regra.aplica(origem);
+        if (!saidaValida(resultado, tipo) || !saidaValida(origem, tipo)) { return null; }
+        return {
+            tipo: tipo, categoria: regra.categoria, regra: regra,
+            exemplos: exs.map(function(p) { return { entrada: p.entrada, saida: p.saida }; }),
+            incognitaEntrada: resultado,   // mostrado como "resultado -> ?"
+            correta: origem,               // a pessoa deve achar a origem
+            reversibilidade: true
+        };
+    }
+
+    // ---- NIVEIS 1,2,3: transformacao de um termo (entrada -> saida) ----
+    var exemplos = [];
+    var usadasEntradas = [];
+    var baseEntradas = embaralhar([1, 2, 3, 4, 5, 6]).slice(0, 2);
+    for (var j = 0; j < baseEntradas.length; j++) {
+        var xin = baseEntradas[j];
+        var yout = regra.aplica(xin);
+        if (!saidaValida(yout, tipo)) { return null; }
+        exemplos.push({ entrada: xin, saida: yout });
+        usadasEntradas.push(xin);
+    }
+    // Incognita: uma entrada diferente das usadas
+    var inc;
+    var tent = 0;
+    do { inc = inteiroEntre(f.min, tipo === 'numero' ? 8 : 12); tent++; }
+    while (usadasEntradas.indexOf(inc) !== -1 && tent < 20);
+    var corretaSaida = regra.aplica(inc);
+    if (!saidaValida(corretaSaida, tipo)) { return null; }
+    return {
+        tipo: tipo, categoria: regra.categoria, regra: regra,
+        exemplos: exemplos.map(function(p) { return { entrada: p.entrada, saida: p.saida }; }),
+        incognitaEntrada: inc,
+        correta: corretaSaida
+    };
+}
+
+/* ============================================================
+   GERACAO DAS 9 HIPOTESES DE RESPOSTA
+
+   Cada hipotese e uma estrategia de raciocinio plausivel; calculamos o valor
+   que ela produziria para aquele problema. Garantimos 9 opcoes DISTINTAS.
+   ============================================================ */
+
+function gerarOpcoes(problema) {
+    var tipo = problema.tipo;
+    var correta = problema.correta;
+    var hipoteses = []; // { valor, hipotese }
+    var usados = {};
+
+    function tentarAdd(valor, hipotese) {
+        if (valor === null || valor === undefined || isNaN(valor)) { return; }
+        if (!saidaValida(valor, tipo)) { return; }
+        var chave = String(valor);
+        if (usados[chave]) { return; }        // ja existe esse valor
+        usados[chave] = true;
+        hipoteses.push({ valor: valor, hipotese: hipotese });
+    }
+
+    // 1) A correta sempre entra primeiro
+    tentarAdd(correta, 'correta');
+
+    // Calcula valores de referencia dependendo do formato do problema
+    if (problema.dois) {
+        // relacao a,b -> resultado
+        var a = problema.incognitaEntrada[0], b = problema.incognitaEntrada[1];
+        tentarAdd(a * b, 'multiplicacao');
+        tentarAdd(Math.abs(a - b), 'subtracao');
+        tentarAdd(a + b + 1, 'distancia');
+        tentarAdd(a + b - 1, 'distancia');
+        tentarAdd(problema.exemplos[problema.exemplos.length - 1].saida, 'inducao');
+        tentarAdd(a, 'aleatoria'); tentarAdd(b, 'aleatoria');
+        tentarAdd(a + b + 2, 'progressao');
+    } else if (problema.progressiva) {
+        // sequencia; hipoteses tipicas de continuacao
+        var seq = problema.sequencia;
+        var ultimo = seq[seq.length - 1];
+        var ultDif = problema.difs[problema.difs.length - 2]; // penultima diferenca (a que a pessoa "veria")
+        tentarAdd(ultimo + ultDif, 'inducao');          // repetiu a ultima diferenca (nao percebeu o crescimento)
+        tentarAdd(ultimo + ultDif + 2, 'distancia');    // exagerou o passo
+        tentarAdd(ultimo * 2, 'multiplicacao');         // achou que dobrava
+        tentarAdd(ultimo + 1, 'soma');                  // somou constante 1
+        tentarAdd(ultimo - ultDif, 'invertida');        // aplicou no sentido contrario
+        tentarAdd(ultimo + ultDif + 1, 'progressao');   // quase certo (off by one)
+        tentarAdd(seq[seq.length - 2], 'aleatoria');
+    } else if (problema.reversibilidade) {
+        // resultado -> origem (desfazer). Hipoteses de quem nao inverteu.
+        var res = problema.incognitaEntrada;
+        var r = problema.regra;
+        // quem aplica a regra pra frente (em vez de inverter):
+        if (r.aplica) { tentarAdd(r.aplica(res), 'invertida'); }
+        tentarAdd(res, 'inducao');                      // repetiu o proprio resultado
+        if (r.k !== undefined) { tentarAdd(res + r.k, 'soma'); tentarAdd(res - r.k - 1, 'distancia'); }
+        if (r.m !== undefined) { tentarAdd(res * r.m, 'multiplicacao'); tentarAdd(Math.round(res / r.m), 'divisao'); }
+        tentarAdd(correta + 1, 'distancia');
+        tentarAdd(correta - 1, 'distancia');
+        tentarAdd(res - 2, 'aleatoria');
+    } else {
+        // transformacao de 1 termo (niveis 1-3)
+        var inc = problema.incognitaEntrada;
+        var r2 = problema.regra;
+        tentarAdd(inc + 1, 'soma');
+        tentarAdd(inc - 1, 'subtracao');
+        tentarAdd(inc * 2, 'multiplicacao');
+        tentarAdd(inc * 3, 'multiplicacao');
+        tentarAdd(Math.round(inc / 2), 'divisao');
+        tentarAdd(problema.exemplos[problema.exemplos.length - 1].saida, 'inducao'); // repetiu ultima saida
+        tentarAdd(correta + 1, 'distancia');
+        tentarAdd(correta - 1, 'distancia');
+        tentarAdd(correta + 2, 'distancia');
+        // regra invertida: se a regra soma, tenta subtrair a mesma constante
+        if (r2 && r2.k !== undefined) { tentarAdd(inc - r2.k, 'invertida'); }
+        if (r2 && r2.m !== undefined) { tentarAdd(Math.round(inc / r2.m), 'invertida'); }
+    }
+
+    // Completa ate NUM_OPCOES com distratores "aleatorios" plausiveis (proximos da correta)
+    var raio = 1;
+    while (hipoteses.length < NUM_OPCOES && raio < 40) {
+        tentarAdd(correta + raio, 'aleatoria');
+        tentarAdd(correta - raio, 'aleatoria');
+        raio++;
+    }
+
+    // Se ainda faltar (tipos com pouca margem), completa com valores quaisquer validos
+    var extra = 0;
+    while (hipoteses.length < NUM_OPCOES && extra < 200) {
+        var cand = inteiroEntre(0, tipo === 'numero' ? 99 : 25);
+        tentarAdd(cand, 'aleatoria');
+        extra++;
+    }
+
+    // Pega as primeiras NUM_OPCOES, embaralha a ordem na tela
+    var final = hipoteses.slice(0, NUM_OPCOES);
+    final = embaralhar(final);
+    return final;
+}
+
+/* ============================================================
+   FLUXO PRINCIPAL DO TESTE
+   ============================================================ */
+
+function iniciarTeste() {
+    var nome = document.getElementById('nome').value.trim();
+    if (!nome) { alert('Por favor, preencha o nome antes de iniciar.'); return; }
+    if (!document.getElementById('dataNascimento').value) { alert('Por favor, preencha a data de nascimento.'); return; }
+
+    pacienteDados = {
+        nome: nome,
+        idade: document.getElementById('idadeCalculada').value,
+        sexo: document.getElementById('sexo').value,
+        escolaridade: document.getElementById('escolaridade').value,
+        data: document.getElementById('data').value
+    };
+
+    estado.faseIndex = 0;
+    TODAS_TRILHAS.forEach(function(t) {
+        estado.nivel[t.id] = NIVEL_MIN;
+        estado.tentativa[t.id] = 1;
+        estado.teto[t.id] = 0;
+        estado.encerrada[t.id] = false;
+    });
+    registros = [];
+    prepararFase();
+}
+
+function mostrarTela(id) {
+    var telas = document.querySelectorAll('.tela');
+    telas.forEach(function(t) { t.classList.remove('ativa'); });
+    document.getElementById(id).classList.add('ativa');
+}
+
+function prepararFase() {
+    if (estado.faseIndex >= FASES.length) { finalizarTeste(); return; }
+    estado.turno = 'numero';
+    var fase = FASES[estado.faseIndex];
+    mostrarTransicao(fase);
+}
+
+function mostrarTransicao(fase) {
+    var modal = (fase.modalidade === 'auditivo')
+        ? 'Voc\u00ea vai <strong>ouvir</strong> os exemplos da rela\u00e7\u00e3o.'
+        : 'Voc\u00ea vai <strong>ver</strong> os exemplos da rela\u00e7\u00e3o na tela.';
+    var txt = '<h2 style="color:#1a237e; margin-bottom:14px;">' +
+        (fase.modalidade === 'auditivo' ? '&#128266; Fase Auditiva' : '&#128065; Fase Visual') + '</h2>' +
+        '<p>' + modal + ' Em cada quest\u00e3o, descubra a <strong>regra</strong> que transforma um elemento no outro ' +
+        'e escolha, entre as op\u00e7\u00f5es, o resultado que completa a rela\u00e7\u00e3o.</p>' +
+        '<p style="margin-top:12px; color:#5c6bc0;">As quest\u00f5es come\u00e7am f\u00e1ceis e v\u00e3o ficando mais dif\u00edceis. ' +
+        'N\u00e3o h\u00e1 tempo limite: pense com calma antes de responder. Cada n\u00edvel tem duas chances.</p>' +
+        '<p style="margin-top:12px; background:#fff8e1; border:1px solid #ffe082; border-radius:8px; padding:10px; color:#1a237e; font-weight:600;">' +
+        'Nas quest\u00f5es com <strong>letras</strong>, cada letra vale um algarismo: ' + REGUA_LETRAS + '.<br>' +
+        'Ex.: o n\u00famero <strong>15</strong> aparece como <strong>BF</strong> (1=B, 5=F). Essa tabela fica vis\u00edvel na tela.</p>';
+    document.getElementById('transicaoTexto').innerHTML = txt;
+    mostrarTela('telaTransicao');
+}
+
+function comecarFaseAtual() {
+    mostrarTela('telaTeste');
+    proximoItem();
+}
+
+function escolherProximaSubtrilha() {
+    var fase = FASES[estado.faseIndex];
+    var numEnc = estado.encerrada[fase.idNum];
+    var letEnc = estado.encerrada[fase.idLet];
+    if (numEnc && letEnc) { return null; }
+    var vez = estado.turno;
+    if (vez === 'numero' && numEnc) { vez = 'letra'; }
+    if (vez === 'letra' && letEnc) { vez = 'numero'; }
+    var id = (vez === 'numero') ? fase.idNum : fase.idLet;
+    return { id: id, modalidade: fase.modalidade, tipo: vez };
+}
+
+function proximoItem() {
+    var sub = escolherProximaSubtrilha();
+    if (!sub) { estado.faseIndex++; prepararFase(); return; }
+    estado.subtrilhaAtual = sub;
+
+    var nivel = estado.nivel[sub.id];
+    var tent = estado.tentativa[sub.id];
+    estado.itemAtual = gerarItem(sub, nivel);
+    estado.itemAtual.opcoes = gerarOpcoes(estado.itemAtual);
+
+    document.getElementById('badgeTrilha').textContent = ROTULOS[sub.id];
+    document.getElementById('progressoTexto').textContent =
+        'N\u00edvel ' + nivel + ' de ' + NIVEL_MAX + ' \u2014 ' + NOME_NIVEL[nivel] +
+        '  (tentativa ' + tent + ' de ' + TENTATIVAS_POR_NIVEL + ')';
+
+    // Regua de equivalencia: so aparece nas questoes de LETRA
+    var reguaEl = document.getElementById('reguaLetras');
+    if (sub.tipo === 'letra') {
+        reguaEl.innerHTML = 'Aten\u00e7\u00e3o: cada letra vale um algarismo &rarr; ' + REGUA_LETRAS;
+        reguaEl.style.display = 'block';
+    } else {
+        reguaEl.style.display = 'none';
+    }
+
+    document.getElementById('areaOpcoes').innerHTML = '';
+    document.getElementById('areaEstimulo').innerHTML = '';
+    apresentarEstimulo();
+}
+
+/* ===== APRESENTACAO DO PROBLEMA (auditivo ou visual) ===== */
+function apresentarEstimulo() {
+    var sub = estado.subtrilhaAtual;
+    var item = estado.itemAtual;
+    document.getElementById('areaOpcoes').innerHTML = '';
+    document.getElementById('areaBotaoRepetir').style.display = 'none';
+
+    if (sub.modalidade === 'auditivo') {
+        apresentarAudio(item, function() { mostrarProblemaVisual(item, true); mostrarOpcoes(item); });
+    } else {
+        apresentarVisual(item, function() { mostrarOpcoes(item); });
+    }
+}
+
+/* Monta o texto falado dos exemplos */
+function textoFaladoDoItem(item) {
+    var tipo = item.tipo;
+    var partes = [];
+    if (item.dois) {
+        item.exemplos.forEach(function(ex) {
+            partes.push(toItem(ex.entrada[0], tipo) + ' e ' + toItem(ex.entrada[1], tipo) + ' resulta em ' + toItem(ex.saida, tipo));
+        });
+        partes.push(toItem(item.incognitaEntrada[0], tipo) + ' e ' + toItem(item.incognitaEntrada[1], tipo) + ' resulta em ?');
+    } else if (item.progressiva) {
+        partes.push('a sequ\u00eancia \u00e9: ' + item.sequencia.map(function(v) { return toItem(v, tipo); }).join(', '));
+        partes.push('qual \u00e9 o pr\u00f3ximo?');
+    } else if (item.reversibilidade) {
+        item.exemplos.forEach(function(ex) { partes.push(toItem(ex.entrada, tipo) + ' vira ' + toItem(ex.saida, tipo)); });
+        partes.push('se o resultado \u00e9 ' + toItem(item.incognitaEntrada, tipo) + ', qual era o valor de origem?');
+    } else {
+        item.exemplos.forEach(function(ex) { partes.push(toItem(ex.entrada, tipo) + ' vira ' + toItem(ex.saida, tipo)); });
+        partes.push(toItem(item.incognitaEntrada, tipo) + ' vira ?');
+    }
+    return partes.join('. ');
+}
+
+function apresentarAudio(item, callback) {
+    var area = document.getElementById('areaEstimulo');
+    area.innerHTML = '<div style="font-size:2em;">\u266b</div>';
+    if (!('speechSynthesis' in window)) { mostrarProblemaVisual(item, false); callback(); return; }
+    window.speechSynthesis.cancel();
+    var u = new SpeechSynthesisUtterance(textoFaladoDoItem(item));
+    u.lang = 'pt-BR';
+    u.rate = 0.95;
+    u.onend = function() { callback(); };
+    u.onerror = function() { callback(); };
+    window.speechSynthesis.speak(u);
+    // botao "ouvir novamente"
+    document.getElementById('areaBotaoRepetir').style.display = 'block';
+}
+
+/* Exibe os exemplos na tela, cronometrado (modo visual) */
+function apresentarVisual(item, callback) {
+    var area = document.getElementById('areaEstimulo');
+    var linhas = montarLinhasProblema(item);
+    var idx = 0;
+    area.innerHTML = '';
+    function mostrarProx() {
+        if (idx >= linhas.length) { mostrarProblemaVisual(item, true); callback(); return; }
+        area.innerHTML = '<div class="par">' + linhas[idx] + '</div>';
+        idx++;
+        setTimeout(function() {
+            setTimeout(mostrarProx, TEMPO_ENTRE_ITENS);
+        }, TEMPO_EXIBICAO_VISUAL);
+    }
+    mostrarProx();
+}
+
+/* Monta as linhas de texto do problema (para exibir) */
+function montarLinhasProblema(item) {
+    var tipo = item.tipo;
+    var linhas = [];
+    if (item.dois) {
+        item.exemplos.forEach(function(ex) {
+            linhas.push(toItem(ex.entrada[0], tipo) + ' , ' + toItem(ex.entrada[1], tipo) + ' &rarr; ' + toItem(ex.saida, tipo));
+        });
+        linhas.push(toItem(item.incognitaEntrada[0], tipo) + ' , ' + toItem(item.incognitaEntrada[1], tipo) + ' &rarr; <span class="incognita">?</span>');
+    } else if (item.progressiva) {
+        linhas.push(item.sequencia.map(function(v) { return toItem(v, tipo); }).join('  ') + '  <span class="incognita">?</span>');
+    } else if (item.reversibilidade) {
+        item.exemplos.forEach(function(ex) { linhas.push(toItem(ex.entrada, tipo) + ' &rarr; ' + toItem(ex.saida, tipo)); });
+        linhas.push('<span class="incognita">?</span> &rarr; ' + toItem(item.incognitaEntrada, tipo));
+    } else {
+        item.exemplos.forEach(function(ex) { linhas.push(toItem(ex.entrada, tipo) + ' &rarr; ' + toItem(ex.saida, tipo)); });
+        linhas.push(toItem(item.incognitaEntrada, tipo) + ' &rarr; <span class="incognita">?</span>');
+    }
+    return linhas;
+}
+
+/* Mostra o problema completo (todas as linhas de uma vez) - usado apos apresentacao */
+function mostrarProblemaVisual(item, mostrar) {
+    if (!mostrar) return;
+    var area = document.getElementById('areaEstimulo');
+    var linhas = montarLinhasProblema(item);
+    area.innerHTML = linhas.map(function(l) { return '<div class="par">' + l + '</div>'; }).join('');
+}
+
+/* ===== MOSTRA AS 9 OPCOES ===== */
+function mostrarOpcoes(item) {
+    var area = document.getElementById('areaOpcoes');
+    area.innerHTML = '';
+    estado.tempoInicioResposta = performance.now();
+    item.opcoes.forEach(function(opcao) {
+        var div = document.createElement('div');
+        div.className = 'opcao';
+        div.textContent = toItem(opcao.valor, item.tipo);
+        div.onclick = function() { registrarResposta(item, opcao); };
+        area.appendChild(div);
+    });
+}
+
+/* ===== REGISTRA A RESPOSTA E APLICA A LOGICA ADAPTATIVA ===== */
+function registrarResposta(item, opcao) {
+    var trilha = item.trilha;
+    var nivel = estado.nivel[trilha.id];
+    var tent = estado.tentativa[trilha.id];
+    var tempoMs = Math.round(performance.now() - estado.tempoInicioResposta);
+    var tempoS = tempoMs / 1000;
+    var acertou = (opcao.hipotese === 'correta');
+
+    // Tempo minimo esperado para este nivel/canal (a "4a dimensao")
+    var tempoMin = TEMPO_MINIMO_NIVEL[nivel];
+    if (trilha.modalidade === 'auditivo') { tempoMin += ACRESCIMO_AUDITIVO; }
+    var abaixoDoMinimo = (tempoS < tempoMin);
+
+    // Hipotese efetiva: se respondeu rapido demais, marca como aleatoria (chute),
+    // independente da opcao escolhida (mesmo acerto).
+    var hipoteseEfetiva = abaixoDoMinimo ? 'aleatoria' : opcao.hipotese;
+
+    registros.push({
+        trilhaId: trilha.id,
+        rotulo: ROTULOS[trilha.id],
+        modalidade: trilha.modalidade,
+        tipo: trilha.tipo,
+        nivel: nivel,
+        nomeNivel: NOME_NIVEL[nivel],
+        tentativa: tent,
+        problema: descreverProblema(item),
+        correta: toItem(item.correta, item.tipo),
+        respostaEscolhida: toItem(opcao.valor, item.tipo),
+        hipoteseBruta: opcao.hipotese,
+        hipoteseEfetiva: hipoteseEfetiva,
+        chuteTempo: abaixoDoMinimo ? 1 : 0,
+        acertou: acertou ? 1 : 0,
+        tempoRespostaMs: tempoMs,
+        tempoMinimoS: tempoMin
+    });
+
+    if (acertou) {
+        estado.teto[trilha.id] = nivel;
+        if (nivel >= NIVEL_MAX) {
+            estado.encerrada[trilha.id] = true;
+        } else {
+            estado.nivel[trilha.id] = nivel + 1;
+            estado.tentativa[trilha.id] = 1;
+        }
+    } else {
+        if (tent < TENTATIVAS_POR_NIVEL) {
+            estado.tentativa[trilha.id] = tent + 1;
+        } else {
+            estado.encerrada[trilha.id] = true;
+        }
+    }
+
+    estado.turno = (trilha.tipo === 'numero') ? 'letra' : 'numero';
+    proximoItem();
+}
+
+/* Descreve o problema em texto curto (para registro/relatorio) */
+function descreverProblema(item) {
+    var tipo = item.tipo;
+    if (item.dois) {
+        return item.exemplos.map(function(ex) { return toItem(ex.entrada[0], tipo) + ',' + toItem(ex.entrada[1], tipo) + '->' + toItem(ex.saida, tipo); }).join(' ; ') +
+               ' ; ' + toItem(item.incognitaEntrada[0], tipo) + ',' + toItem(item.incognitaEntrada[1], tipo) + '->?';
+    } else if (item.progressiva) {
+        return item.sequencia.map(function(v) { return toItem(v, tipo); }).join(' ') + ' ?';
+    } else if (item.reversibilidade) {
+        return item.exemplos.map(function(ex) { return toItem(ex.entrada, tipo) + '->' + toItem(ex.saida, tipo); }).join(' ; ') +
+               ' ; ?->' + toItem(item.incognitaEntrada, tipo);
+    } else {
+        return item.exemplos.map(function(ex) { return toItem(ex.entrada, tipo) + '->' + toItem(ex.saida, tipo); }).join(' ; ') +
+               ' ; ' + toItem(item.incognitaEntrada, tipo) + '->?';
+    }
+}
+
+/* ============================================================
+   FINALIZACAO E RESULTADOS
+   ============================================================ */
+
+function finalizarTeste() {
+    window.speechSynthesis && window.speechSynthesis.cancel();
+    calcularEMostrarResultados();
+    mostrarTela('telaResultados');
+}
+
+function calcularEMostrarResultados() {
+    document.getElementById('resumoPaciente').innerHTML =
+        '<strong>Nome:</strong> ' + (pacienteDados.nome || '-') + ' &nbsp;|&nbsp; ' +
+        '<strong>Idade:</strong> ' + (pacienteDados.idade || '-') + '<br>' +
+        '<strong>Sexo:</strong> ' + (pacienteDados.sexo || '-') + ' &nbsp;|&nbsp; ' +
+        '<strong>Escolaridade:</strong> ' + (pacienteDados.escolaridade || '-') + ' &nbsp;|&nbsp; ' +
+        '<strong>Data:</strong> ' + (pacienteDados.data || '-');
+    montarTabelaTetos();
+    desenharGrafico();
+    montarAnaliseTextual();
+    montarDetalhamentoRespostas();
+}
+
+function media(arr) {
+    var soma = 0; for (var i = 0; i < arr.length; i++) { soma += arr[i]; }
+    return arr.length ? soma / arr.length : 0;
+}
+
+function montarTabelaTetos() {
+    var tabela = document.getElementById('tabelaSpans');
+    var html = '<tr><th>Trilha</th><th>Teto (n\u00edvel m\u00e1ximo resolvido)</th></tr>';
+    TODAS_TRILHAS.forEach(function(t) {
+        var teto = estado.teto[t.id];
+        var txtTeto = (teto >= NIVEL_MAX) ? (teto + ' (teto superior n\u00e3o estabelecido)') : String(teto);
+        html += '<tr><td>' + ROTULOS[t.id] + '</td><td><strong>' + txtTeto + '</strong></td></tr>';
+    });
+    var mediaNum = media([estado.teto.aud_num, estado.teto.vis_num]);
+    var mediaLet = media([estado.teto.aud_let, estado.teto.vis_let]);
+    var mediaAud = media([estado.teto.aud_num, estado.teto.aud_let]);
+    var mediaVis = media([estado.teto.vis_num, estado.teto.vis_let]);
+    html += '<tr style="background:#e8eaf6;"><td><strong>M\u00e9dia N\u00fameros</strong></td><td><strong>' + mediaNum.toFixed(1) + '</strong></td></tr>';
+    html += '<tr style="background:#e8eaf6;"><td><strong>M\u00e9dia Letras</strong></td><td><strong>' + mediaLet.toFixed(1) + '</strong></td></tr>';
+    html += '<tr style="background:#e8eaf6;"><td><strong>M\u00e9dia Auditivo</strong></td><td><strong>' + mediaAud.toFixed(1) + '</strong></td></tr>';
+    html += '<tr style="background:#e8eaf6;"><td><strong>M\u00e9dia Visual</strong></td><td><strong>' + mediaVis.toFixed(1) + '</strong></td></tr>';
+    tabela.innerHTML = html;
+}
+
+/* Grafico de linhas: 2 series (Numeros, Letras), 2 pontos (Auditivo, Visual) */
+function desenharGrafico() {
+    var canvas = document.getElementById('graficoLinhas');
+    var ctx = canvas.getContext('2d');
+    var W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+    var margemEsq = 60, margemDir = 200, margemTopo = 40, margemBase = 60;
+    var areaW = W - margemEsq - margemDir;
+    var areaH = H - margemTopo - margemBase;
+    var maxY = NIVEL_MAX;
+
+    var series = [
+        { nome: 'N\u00fameros', cor: '#3949ab', aud: estado.teto.aud_num, vis: estado.teto.vis_num },
+        { nome: 'Letras',   cor: '#e53935', aud: estado.teto.aud_let, vis: estado.teto.vis_let }
+    ];
+    var xAud = margemEsq + areaW * 0.25;
+    var xVis = margemEsq + areaW * 0.75;
+    function posY(v) { return margemTopo + areaH - (v / maxY) * areaH; }
+
+    ctx.strokeStyle = '#e0e0e0'; ctx.lineWidth = 1;
+    ctx.font = '12px Arial'; ctx.fillStyle = '#666'; ctx.textAlign = 'right';
+    for (var v = 0; v <= maxY; v++) {
+        var y = posY(v);
+        ctx.beginPath(); ctx.moveTo(margemEsq, y); ctx.lineTo(margemEsq + areaW, y); ctx.stroke();
+        ctx.fillText(String(v), margemEsq - 8, y + 4);
+    }
+    ctx.textAlign = 'center'; ctx.fillStyle = '#1a237e'; ctx.font = 'bold 14px Arial';
+    ctx.fillText('Auditivo', xAud, margemTopo + areaH + 30);
+    ctx.fillText('Visual', xVis, margemTopo + areaH + 30);
+    ctx.save(); ctx.translate(16, margemTopo + areaH / 2); ctx.rotate(-Math.PI / 2);
+    ctx.fillStyle = '#666'; ctx.font = '12px Arial'; ctx.fillText('N\u00edvel (teto)', 0, 0); ctx.restore();
+
+    series.forEach(function(s, i) {
+        ctx.strokeStyle = s.cor; ctx.fillStyle = s.cor; ctx.lineWidth = 3;
+        var y1 = posY(s.aud), y2 = posY(s.vis);
+        ctx.beginPath(); ctx.moveTo(xAud, y1); ctx.lineTo(xVis, y2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(xAud, y1, 5, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(xVis, y2, 5, 0, Math.PI * 2); ctx.fill();
+        var ly = margemTopo + 10 + i * 24;
+        ctx.fillRect(margemEsq + areaW + 20, ly - 8, 16, 4);
+        ctx.textAlign = 'left'; ctx.fillStyle = '#333'; ctx.font = '13px Arial';
+        ctx.fillText(s.nome, margemEsq + areaW + 42, ly - 3);
+        ctx.fillStyle = s.cor;
+    });
+}
+
+function montarAnaliseTextual() {
+    var t = estado.teto;
+    var numMedia = media([t.aud_num, t.vis_num]);
+    var letMedia = media([t.aud_let, t.vis_let]);
+    var audMedia = media([t.aud_num, t.aud_let]);
+    var visMedia = media([t.vis_num, t.vis_let]);
+
+    var txt = '<h3>Leitura Comparativa (explorat\u00f3ria)</h3>';
+
+    txt += '<p><strong>N\u00fameros x Letras:</strong> ';
+    if (Math.abs(numMedia - letMedia) < 0.6) { txt += 'desempenho semelhante (n\u00fameros ' + numMedia.toFixed(1) + ' vs letras ' + letMedia.toFixed(1) + ').</p>'; }
+    else if (numMedia > letMedia) { txt += 'melhor com <strong>n\u00fameros</strong> (' + numMedia.toFixed(1) + ' vs ' + letMedia.toFixed(1) + ').</p>'; }
+    else { txt += 'melhor com <strong>letras</strong> (' + letMedia.toFixed(1) + ' vs ' + numMedia.toFixed(1) + ').</p>'; }
+
+    txt += '<p><strong>Auditivo x Visual:</strong> ';
+    if (Math.abs(audMedia - visMedia) < 0.6) { txt += 'desempenho semelhante nos dois canais (auditivo ' + audMedia.toFixed(1) + ' vs visual ' + visMedia.toFixed(1) + ').</p>'; }
+    else if (audMedia > visMedia) { txt += 'melhor no canal <strong>auditivo</strong> (' + audMedia.toFixed(1) + ' vs ' + visMedia.toFixed(1) + ').</p>'; }
+    else { txt += 'melhor no canal <strong>visual</strong> (' + visMedia.toFixed(1) + ' vs ' + audMedia.toFixed(1) + ').</p>'; }
+
+    // Distribuicao das hipoteses de raciocinio (COMO a pessoa tentou raciocinar)
+    txt += '<h3 style="margin-top:16px;">Como a pessoa tentou raciocinar (hip\u00f3teses escolhidas nos erros)</h3>';
+    var contag = {};
+    registros.forEach(function(r) {
+        if (r.acertou === 0) {
+            var h = r.hipoteseEfetiva;
+            contag[h] = (contag[h] || 0) + 1;
+        }
+    });
+    var chaves = Object.keys(contag);
+    if (chaves.length === 0) {
+        txt += '<p>N\u00e3o houve erros para analisar as hip\u00f3teses.</p>';
+    } else {
+        txt += '<p>';
+        chaves.forEach(function(h) { txt += (NOME_HIPOTESE[h] || h) + ': <strong>' + contag[h] + '</strong><br>'; });
+        txt += '</p><p style="font-size:0.9em; color:#777;">As escolhas s\u00e3o <em>compat\u00edveis</em> com essas hip\u00f3teses de raciocinio; ' +
+               'n\u00e3o afirmam com certeza a estrat\u00e9gia usada, mas indicam tend\u00eancias.</p>';
+    }
+
+    // 4a dimensao: tempo e possivel chute
+    txt += '<h3 style="margin-top:16px;">Padr\u00e3o de Resposta \u00e0 Tarefa (tempo)</h3>';
+    var totalResp = registros.length;
+    var chutes = registros.filter(function(r) { return r.chuteTempo === 1; }).length;
+    // Excecao: rapido + acerto consistente nos niveis dificeis (4+) = raciocinio veloz
+    var rapidosCertosDificeis = registros.filter(function(r) { return r.chuteTempo === 1 && r.acertou === 1 && r.nivel >= 4; }).length;
+    var acertosDificeis = registros.filter(function(r) { return r.acertou === 1 && r.nivel >= 4; }).length;
+    var raciocinioVeloz = (acertosDificeis >= 3 && rapidosCertosDificeis >= 3);
+
+    if (totalResp === 0) {
+        txt += '<p>Sem respostas registradas.</p>';
+    } else if (raciocinioVeloz) {
+        txt += '<p style="color:#2e7d32;">A pessoa respondeu rapidamente, por\u00e9m com <strong>acertos consistentes nos n\u00edveis dif\u00edceis</strong> (4 ou mais). ' +
+               'Isso sugere <strong>racioc\u00ednio r\u00e1pido e eficiente</strong>, e n\u00e3o chute.</p>';
+    } else if (chutes / totalResp > 0.3) {
+        txt += '<p style="color:#c62828;">Aten\u00e7\u00e3o: <strong>' + chutes + '</strong> de ' + totalResp + ' respostas foram dadas ' +
+               'abaixo do tempo m\u00ednimo esperado para o n\u00edvel. Isso sugere poss\u00edvel <strong>chute</strong> ou baixo engajamento ' +
+               '(a resposta n\u00e3o teve tempo de ser raciocinada). Recomenda-se <strong>investigar</strong> a execu\u00e7\u00e3o antes de interpretar.</p>';
+    } else if (chutes > 0) {
+        txt += '<p>Houve <strong>' + chutes + '</strong> resposta(s) abaixo do tempo m\u00ednimo esperado. Observe se h\u00e1 concentra\u00e7\u00e3o num n\u00edvel espec\u00edfico.</p>';
+    } else {
+        txt += '<p>Os tempos de resposta est\u00e3o dentro do esperado para o racioc\u00ednio de cada n\u00edvel.</p>';
+    }
+
+    txt += '<p style="margin-top:16px; font-size:0.9em; color:#777;"><em>Instrumento de rastreio explorat\u00f3rio, ' +
+           'sem valida\u00e7\u00e3o psicom\u00e9trica formal. Os resultados devem ser interpretados por profissional qualificado ' +
+           'e complementados por outras fontes de informa\u00e7\u00e3o.</em></p>';
+
+    document.getElementById('analiseTexto').innerHTML = txt;
+}
+
+function montarDetalhamentoRespostas() {
+    var html = '<h3>Detalhamento das Respostas</h3>' +
+        '<p style="font-size:0.9em; color:#777;">Para cada quest\u00e3o: o problema apresentado, a resposta certa, ' +
+        'o que a pessoa escolheu, a hip\u00f3tese compat\u00edvel e o tempo. Linhas em amarelo indicam resposta abaixo do tempo m\u00ednimo (poss\u00edvel chute).</p>';
+
+    TODAS_TRILHAS.forEach(function(t) {
+        var doTrilha = registros.filter(function(r) { return r.trilhaId === t.id; });
+        if (doTrilha.length === 0) { return; }
+        html += '<div style="margin-top:14px;"><strong style="color:#1a237e;">' + ROTULOS[t.id] +
+                '</strong> &mdash; Teto: <strong>' + estado.teto[t.id] + '</strong></div>';
+        html += '<table class="tabela-spans" style="margin:6px 0 0 0; font-size:0.9em;">' +
+                '<tr><th>N\u00edvel</th><th>Tent.</th><th>Problema</th><th>Certa</th><th>Respondeu</th><th>Hip\u00f3tese</th><th>Tempo</th></tr>';
+        doTrilha.forEach(function(r) {
+            var cor = r.acertou === 1 ? '#e8f5e9' : '#ffebee';
+            if (r.chuteTempo === 1) { cor = '#fff8e1'; }
+            var hip = r.acertou === 1 ? 'Correta' : (NOME_HIPOTESE[r.hipoteseEfetiva] || r.hipoteseEfetiva);
+            html += '<tr style="background:' + cor + ';">' +
+                    '<td>' + r.nivel + '</td>' +
+                    '<td>' + r.tentativa + '</td>' +
+                    '<td style="text-align:left;">' + r.problema + '</td>' +
+                    '<td>' + r.correta + '</td>' +
+                    '<td>' + r.respostaEscolhida + '</td>' +
+                    '<td>' + hip + '</td>' +
+                    '<td>' + (r.tempoRespostaMs / 1000).toFixed(1) + 's</td>' +
+                    '</tr>';
+        });
+        html += '</table>';
+    });
+    document.getElementById('detalhamentoRespostas').innerHTML = html;
+}
+
+/* ===== EXPORTACAO CSV ===== */
+function baixarDados() {
+    var linhas = [];
+    linhas.push(['trilha','modalidade','tipo','nivel','nome_nivel','tentativa','problema','correta','resposta','hipotese_bruta','hipotese_efetiva','chute_tempo','acertou','tempo_ms','tempo_min_s'].join(';'));
+    registros.forEach(function(r) {
+        linhas.push([r.rotulo, r.modalidade, r.tipo, r.nivel, r.nomeNivel, r.tentativa, r.problema, r.correta, r.respostaEscolhida, r.hipoteseBruta, r.hipoteseEfetiva, r.chuteTempo, r.acertou, r.tempoRespostaMs, r.tempoMinimoS].join(';'));
+    });
+    linhas.push('');
+    linhas.push('TETOS FINAIS');
+    TODAS_TRILHAS.forEach(function(t) { linhas.push([ROTULOS[t.id], estado.teto[t.id]].join(';')); });
+
+    var conteudo = linhas.join('\n');
+    var blob = new Blob(['\ufeff' + conteudo], { type: 'text/csv;charset=utf-8;' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'BRPI_ModuloC_' + (pacienteDados.nome || 'sem_nome').replace(/\s+/g, '_') + '.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+/* ===== INICIALIZACAO (direta, no final do script) ===== */
+document.getElementById('data').value = new Date().toISOString().split('T')[0];
+
+/* ============================================================
+   INTEGRACAO COM A BATERIA BRPI (o "sino")
+   Quando este modulo roda DENTRO do controlador (brpi.html), a URL traz
+   ?bateria=1. Nesse caso, ao chegar na tela de resultados, avisamos o
+   controlador (window.parent) por postMessage, enviando os dados coletados.
+   No modo sozinho (sem ?bateria=1), nada disso acontece: o modulo funciona
+   exatamente como antes. Isso preserva o uso autonomo de cada modulo.
+   ============================================================ */
+(function() {
+    var _p = new URLSearchParams(window.location.search);
+    if (_p.get('bateria') !== '1') { return; } // modo autonomo: nao faz nada
+    var _moduloId = _p.get('modulo') || 'C';
+
+    // ----- RECEBE OS DADOS DO PACIENTE (vindos do controlador em ?p=) -----
+    function _preencherEComecar() {
+        var _dados = {};
+        try {
+            var _raw = _p.get('p');
+            if (_raw) { _dados = JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(_raw))))); }
+        } catch (e) { _dados = {}; }
+
+        function _set(id, val) { var el = document.getElementById(id); if (el && val) { el.value = val; } }
+        _set('nome', _dados.patientName);
+        _set('dataNascimento', _dados.birthDate);
+        _set('sexo', _dados.sex);
+        _set('escolaridade', _dados.education);
+        _set('data', _dados.dataAval);
+        if (typeof calcularIdade === 'function') { try { calcularIdade(); } catch (e) {} }
+
+        if (typeof iniciarTeste === 'function' && _dados.patientName) {
+            setTimeout(function() { try { iniciarTeste(); } catch (e) {} }, 150);
+        }
+    }
+    setTimeout(_preencherEComecar, 60);
+
+    function _pacoteBRPI() {
+        return {
+            modulo: _moduloId,
+            teto: (typeof estado !== 'undefined' && estado.teto) ? estado.teto : null,
+            registros: (typeof registros !== 'undefined') ? registros : [],
+            paciente: (typeof pacienteDados !== 'undefined') ? pacienteDados : {}
+        };
+    }
+
+    function _tocarSino() {
+        try {
+            window.parent.postMessage({ tipo: 'brpi-modulo-fim', modulo: _moduloId, dados: _pacoteBRPI() }, '*');
+        } catch (e) {}
+    }
+
+    if (typeof window.finalizarTeste === 'function' && !window._brpiSinoLigado) {
+        var _origFinalizar = window.finalizarTeste;
+        window.finalizarTeste = function() {
+            var _r = _origFinalizar.apply(this, arguments);
+            setTimeout(_tocarSino, 400);
+            return _r;
+        };
+        window._brpiSinoLigado = true;
+    }
+})();
+</script>
+</body>
+</html>

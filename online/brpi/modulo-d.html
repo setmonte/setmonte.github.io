@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BRPI - Bateria de Rastreio do Processamento da Inteligencia (Modulo D)</title>
+<style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+        font-family: 'Segoe UI', Arial, sans-serif;
+        background: linear-gradient(135deg, #1a237e, #283593);
+        color: #333; min-height: 100vh; padding: 20px;
+    }
+    .container {
+        max-width: 900px; margin: 0 auto; background: #fff;
+        border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); overflow: hidden;
+    }
+    header {
+        background: linear-gradient(135deg, #3949ab, #5c6bc0);
+        color: #fff; padding: 30px; text-align: center;
+    }
+    header h1 { font-size: 1.9em; margin-bottom: 6px; }
+    header p { opacity: 0.9; font-size: 1em; }
+
+    .tela { padding: 30px; display: none; }
+    .tela.ativa { display: block; }
+
+    .campo { margin-bottom: 16px; }
+    .campo label { display: block; font-weight: 600; margin-bottom: 5px; color: #283593; }
+    .campo input, .campo select {
+        width: 100%; padding: 10px; border: 2px solid #c5cae9; border-radius: 8px; font-size: 1em;
+    }
+    .campo input:focus, .campo select:focus { outline: none; border-color: #3949ab; }
+
+    .botoes { text-align: center; margin-top: 24px; }
+    .btn {
+        padding: 14px 30px; border: none; border-radius: 25px;
+        font-size: 1.05em; font-weight: 600; cursor: pointer; margin: 6px;
+        transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.2); }
+    .btn-primary { background: linear-gradient(135deg, #3949ab, #5c6bc0); color: #fff; }
+    .btn-secondary { background: linear-gradient(135deg, #2e7d32, #43a047); color: #fff; }
+    .btn-danger { background: linear-gradient(135deg, #e53935, #ef5350); color: #fff; }
+
+    /* Area do estimulo: mostra a legenda figura=valor e o enunciado */
+    #areaEstimulo {
+        min-height: 150px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+        font-size: 2em; font-weight: bold; color: #1a237e;
+        background: #f5f6fa; border-radius: 12px; margin: 16px 0; padding: 20px; line-height: 1.5;
+    }
+    #areaEstimulo .legenda { font-size: 1.4em; letter-spacing: 6px; margin-bottom: 10px; }
+    #areaEstimulo .pergunta { font-size: 0.95em; color: #444; margin-top: 8px; }
+    /* Regua de resposta (digito = figura), sempre visivel nos itens simbolicos */
+    #areaEstimulo .regua-figuras {
+        margin-top: 14px; padding: 10px 14px; background: #eef1fb; border: 1px dashed #9fa8da;
+        border-radius: 10px; font-size: 1em; letter-spacing: 2px; line-height: 1.8; color: #283593;
+    }
+    #areaEstimulo .regua-figuras .regua-rotulo { font-size: 0.7em; letter-spacing: 0; color: #5c6bc0; font-weight: 700; }
+    /* Figuras com tamanho UNIFORME (resolve triangulo/naipes de tamanhos diferentes) */
+    #areaEstimulo .legenda, #areaEstimulo .regua-figuras, .opcao-figura {
+        font-family: 'Segoe UI Symbol', 'Arial Unicode MS', Arial, sans-serif;
+    }
+    .opcao-figura { font-size: 1.7em !important; letter-spacing: 6px; }
+    /* Botao-janela extra (ex.: NRA): texto, nao figura. Visual mais discreto. */
+    .opcao-extra { font-size: 0.95em !important; letter-spacing: 0; font-weight: 600; color: #5c6bc0; background: #eef1fb; grid-column: 1 / -1; }
+    .opcao-extra:hover { background: #e8eaf6; }
+
+    .opcoes { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .opcao {
+        padding: 18px; font-size: 1.5em; font-weight: bold; text-align: center;
+        background: #e8eaf6; border: 3px solid transparent; border-radius: 12px;
+        cursor: pointer; letter-spacing: 4px; transition: all 0.15s; color: #283593;
+    }
+    .opcao:hover { background: #c5cae9; border-color: #3949ab; }
+
+    .progresso { text-align: center; color: #5c6bc0; font-size: 0.95em; margin-bottom: 10px; }
+    .badge-trilha {
+        display: inline-block; background: #3949ab; color: #fff;
+        padding: 6px 16px; border-radius: 20px; font-weight: 600; margin-bottom: 14px;
+    }
+    .enunciado { text-align: center; color: #444; font-size: 1.05em; margin-bottom: 8px; }
+
+    .transicao-texto {
+        text-align: center; font-size: 1.15em; line-height: 1.7; color: #444;
+        padding: 20px; background: #f5f6fa; border-radius: 12px; margin-bottom: 20px;
+    }
+    .transicao-texto strong { color: #1a237e; }
+
+    .info-tecnica {
+        background: #e8eaf6; border-left: 5px solid #3949ab;
+        padding: 16px; border-radius: 8px; margin-bottom: 20px; font-size: 0.95em; line-height: 1.6;
+    }
+    table.tabela-spans { width: 100%; border-collapse: collapse; margin: 20px 0; }
+    table.tabela-spans th, table.tabela-spans td { border: 1px solid #c5cae9; padding: 10px; text-align: center; }
+    table.tabela-spans th { background: #3949ab; color: #fff; }
+    table.tabela-spans tr:nth-child(even) { background: #f5f6fa; }
+    .analise-box { background: #f5f6fa; border-radius: 12px; padding: 20px; margin: 20px 0; line-height: 1.7; }
+    .analise-box h3 { color: #1a237e; margin-bottom: 10px; }
+    #graficoLinhas { width: 100%; max-width: 840px; height: auto; border: 1px solid #c5cae9; border-radius: 12px; background: #fff; }
+
+    @media (max-width: 600px) {
+        .opcoes { grid-template-columns: 1fr; }
+        #areaEstimulo { font-size: 1.5em; }
+        header h1 { font-size: 1.4em; }
+    }
+</style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>&#129504; BRPI &mdash; Bateria de Rastreio do Processamento da Intelig&ecirc;ncia</h1>
+        <p>M&oacute;dulo D &mdash; Integra&ccedil;&atilde;o e Decis&atilde;o</p>
+    </header>
+
+    <!-- TELA 1: FORMULARIO -->
+    <section id="telaFormulario" class="tela ativa">
+        <div class="info-tecnica">
+            <strong>Sobre o M&oacute;dulo D:</strong> avalia como a pessoa <strong>integra informa&ccedil;&otilde;es</strong>
+            de fontes diferentes (ouvidas e vistas), associa figuras a valores e aplica regras para decidir a resposta.
+            &Eacute; o m&oacute;dulo final da bateria. Cada figura corresponde a um n&uacute;mero. N&atilde;o h&aacute; tempo limite;
+            responda com aten&ccedil;&atilde;o.
+        </div>
+        <div class="campo"><label for="nome">Nome</label><input type="text" id="nome" placeholder="Nome do avaliando"></div>
+        <div class="campo"><label for="dataNascimento">Data de Nascimento</label><input type="date" id="dataNascimento" onchange="calcularIdade()"></div>
+        <div class="campo"><label for="idadeCalculada">Idade</label><input type="text" id="idadeCalculada" readonly placeholder="Calculada automaticamente"></div>
+        <div class="campo"><label for="sexo">Sexo</label>
+            <select id="sexo"><option value="">Selecione</option><option value="Masculino">Masculino</option><option value="Feminino">Feminino</option></select>
+        </div>
+        <div class="campo"><label for="escolaridade">Escolaridade</label><input type="text" id="escolaridade" placeholder="Ex.: Ensino Medio completo"></div>
+        <div class="campo"><label for="data">Data da Avalia&ccedil;&atilde;o</label><input type="date" id="data"></div>
+        <div class="botoes"><button class="btn btn-primary" onclick="iniciarTeste()">Iniciar Teste</button></div>
+    </section>
+
+    <!-- TELA 2: TRANSICAO -->
+    <section id="telaTransicao" class="tela">
+        <div class="transicao-texto" id="transicaoTexto"></div>
+        <div class="botoes"><button class="btn btn-primary" onclick="comecarCondicaoAtual()">Come&ccedil;ar</button></div>
+    </section>
+
+    <!-- TELA 3: TESTE -->
+    <section id="telaTeste" class="tela">
+        <div class="progresso" id="progressoTexto"></div>
+        <div style="text-align:center;"><span class="badge-trilha" id="badgeTrilha"></span></div>
+        <div class="enunciado" id="enunciado"></div>
+        <div id="areaEstimulo"></div>
+        <div class="opcoes" id="areaOpcoes"></div>
+        <div class="botoes" id="areaBotaoRepetir" style="display:none;">
+            <button class="btn btn-secondary" id="btnApresentar" onclick="ouvirDeNovo()">Ouvir novamente</button>
+        </div>
+    </section>
+
+    <!-- TELA 4: RESULTADOS -->
+    <section id="telaResultados" class="tela">
+        <h2 style="color:#1a237e; text-align:center; margin-bottom:16px;">Resultados &mdash; BRPI M&oacute;dulo D</h2>
+        <div class="info-tecnica" id="resumoPaciente"></div>
+        <canvas id="graficoLinhas" width="840" height="420"></canvas>
+        <table class="tabela-spans" id="tabelaSpans"></table>
+        <div class="analise-box" id="analiseTexto"></div>
+        <div class="analise-box" id="detalhamentoRespostas"></div>
+        <div class="botoes">
+            <button class="btn btn-secondary" onclick="baixarDados()">Baixar Dados (CSV)</button>
+            <button class="btn btn-danger" onclick="location.reload()">Novo Teste</button>
+        </div>
+    </section>
+</div>
+
+<script>
+/* ============================================================
+   BRPI - MODULO D (Integracao e Decisao)
+   Bateria de Rastreio do Processamento da Inteligencia
+
+   A pessoa integra informacoes (ouvidas e vistas), associa FIGURAS a valores
+   (cada figura = um numero de 1 a 9) e aplica regras para decidir a resposta.
+
+   4 CONDICOES (canais):
+   D1 - Auditivo -> Visual  (ouve a informacao, responde vendo)
+   D2 - Visual -> Visual    (ve a informacao, responde vendo)
+   D3 - Auditivo + Visual   (integra as duas fontes)
+   D4 - Integracao + Regra  (escolhe/aplica uma regra sobre a informacao)
+
+   5 niveis de complexidade por condicao, 2 tentativas por nivel (na 2a tentativa
+   gera-se um problema NOVO de mesma complexidade). Errar as duas encerra a
+   condicao e estabelece o teto. Resolver o nivel 5 = teto superior nao estabelecido.
+
+   Registra: tempo, resposta, acerto/erro e TIPO de erro observavel (nao diagnostico).
+
+   NOTA: dentro deste <script> nao usamos acentos diretos (usamos \u escapes) nem
+   emojis; figuras entram por escape unicode (ex.: \u25B2 = triangulo).
+   ============================================================ */
+
+/* ===== CONFIGURACOES ===== */
+var NIVEL_MIN = 1;
+var NIVEL_MAX = 5;
+var TENTATIVAS_POR_NIVEL = 2;
+var TEMPO_EXIBICAO_VISUAL = 1400;   // ms de exibicao da legenda no modo visual
+var TEMPO_APOS_AUDIO = 400;         // ms de folga apos a fala
+var LIMITE_IMPULSIVIDADE_MS = 800;  // resposta abaixo disso + erro = impulsividade
+
+/* ===== BOTOES-JANELA EXTRAS (alem das opcoes de figura) =====
+   Cada botao aqui e uma "janela" para um tipo de raciocinio observavel.
+   Aparecem SEMPRE, em todos os niveis, apos as opcoes de figura.
+   Filosofia da BRPI: nao interessa so o certo/errado, mas COMO a pessoa raciocina;
+   cada botao tem um significado clinico proprio, desambiguado pelo padrao geral
+   das respostas (o "modus operandi"). Para acrescentar novas janelas no futuro,
+   basta adicionar itens neste array.
+   - rotulo: texto exibido no botao
+   - tipoErro: etiqueta registrada quando escolhido
+   - ehExtra: marca que nao e uma opcao de figura (nao tem valor numerico) */
+var BOTOES_JANELA = [
+    { rotulo: 'NRA \u2014 Nenhuma das respostas anteriores', tipoErro: 'nra', ehExtra: true }
+];
+
+/* ===== CATALOGO DE 10 FIGURAS (uma para cada digito 0..9) =====
+   Formas bem distintas entre si (sem pentagono/hexagono, que se confundiam).
+   Escape unicode para respeitar a regra ASCII dentro do <script>. */
+var CATALOGO_FIGURAS = [
+    { sym: '\u2B24', nome: 'c\u00edrculo' },   // 0 circulo grande
+    { sym: '\u25A0', nome: 'quadrado' },        // 1 quadrado
+    { sym: '\u25B2', nome: 'tri\u00e2ngulo' },  // 2 triangulo
+    { sym: '\u2605', nome: 'estrela' },          // 3 estrela
+    { sym: '\u2665', nome: 'cora\u00e7\u00e3o' },// 4 coracao
+    { sym: '\u25C6', nome: 'losango' },          // 5 losango
+    { sym: '\u2660', nome: 'espada' },           // 6 espada (naipe)
+    { sym: '\u2663', nome: 'paus' },             // 7 paus (naipe)
+    { sym: '\u271A', nome: 'cruz' },             // 8 cruz
+    { sym: '\u25AC', nome: 'barra' }             // 9 barra
+];
+
+/* ===== REGUA DA QUESTAO (figura <-> digito), ALEATORIA a cada item =====
+   A cada questao sorteamos qual figura representa cada digito 0..9. Assim a
+   pessoa nao decora: precisa remapear figura<->digito em cada problema.
+
+   IMPORTANTE (coerencia): esta e a UNICA tabela figura<->valor da questao.
+   Ela vale para TUDO: o valor de cada figura no enunciado E a traducao do
+   resultado em figuras. Se o coracao vale 8 no enunciado, entao o digito 8
+   do resultado tambem e o coracao. (Antes havia duas tabelas independentes,
+   o que gerava incoerencia; corrigido.)
+
+   Estrutura:
+     simDe[d]  = simbolo da figura que representa o digito d
+     nomeDe[d] = nome falado dessa figura
+     valDe[sym]= valor (digito) de cada simbolo (caminho inverso) */
+function sortearRegua() {
+    var idx = embaralhar([0,1,2,3,4,5,6,7,8,9]); // qual figura vai para cada digito
+    var simDe = {}, nomeDe = {}, valDe = {};
+    for (var d = 0; d <= 9; d++) {
+        var figura = CATALOGO_FIGURAS[idx[d]];
+        simDe[d] = figura.sym;
+        nomeDe[d] = figura.nome;
+        valDe[figura.sym] = d;
+    }
+    return { simDe: simDe, nomeDe: nomeDe, valDe: valDe };
+}
+
+/* Converte um numero (>=0) na SEQUENCIA de figuras dos seus digitos, pela regua.
+   Ex.: 14 com regua -> figura(1) + figura(4) juntas. */
+function numeroParaFiguras(n, regua) {
+    var s = String(Math.abs(Math.round(n)));
+    var out = '';
+    for (var i = 0; i < s.length; i++) { out += regua.simDe[parseInt(s.charAt(i), 10)]; }
+    return out;
+}
+/* Versao falada (para o modo auditivo): "circulo, triangulo" para 14 */
+function numeroParaFigurasFalado(n, regua) {
+    var s = String(Math.abs(Math.round(n)));
+    var partes = [];
+    for (var i = 0; i < s.length; i++) { partes.push(regua.nomeDe[parseInt(s.charAt(i), 10)]); }
+    return partes.join(', ');
+}
+
+/* ===== CONDICOES ===== */
+var CONDICOES = [
+    { id: 'D1', modalidade: 'auditivo', nome: 'D1 - Auditivo \u2192 Visual' },
+    { id: 'D2', modalidade: 'visual',   nome: 'D2 - Visual \u2192 Visual' },
+    { id: 'D3', modalidade: 'integrado', nome: 'D3 - Auditivo + Visual' },
+    { id: 'D4', modalidade: 'regra',    nome: 'D4 - Integra\u00e7\u00e3o + Regra' }
+];
+
+var NOME_NIVEL = {
+    1: 'Associa\u00e7\u00e3o simples',
+    2: 'Associa\u00e7\u00e3o + sele\u00e7\u00e3o',
+    3: 'Integra\u00e7\u00e3o de informa\u00e7\u00f5es',
+    4: 'Aplica\u00e7\u00e3o de regra',
+    5: 'Descoberta/sele\u00e7\u00e3o + aplica\u00e7\u00e3o de regra'
+};
+
+/* Nomes dos tipos de erro observaveis (nao diagnosticos) */
+var NOME_ERRO = {
+    correta: 'Correta',
+    erro_associacao: 'Erro de associa\u00e7\u00e3o (figura/valor trocado)',
+    erro_selecao: 'Erro de sele\u00e7\u00e3o (escolheu o valor errado do conjunto)',
+    erro_operacional: 'Erro operacional (regra certa, conta errada)',
+    regra_errada: 'Regra errada (aplicou outra opera\u00e7\u00e3o)',
+    resposta_automatica: 'Resposta autom\u00e1tica (mais evidente, contra a regra)',
+    perseveracao: 'Persevera\u00e7\u00e3o (manteve a regra anterior)',
+    inversao: 'Invers\u00e3o (ordem/sentido trocado)',
+    omissao: 'Omiss\u00e3o (faltou um elemento)',
+    impulsividade: 'Impulsividade (resposta muito r\u00e1pida + erro)',
+    nra: 'NRA (concluiu que a resposta n\u00e3o estava entre as op\u00e7\u00f5es)'
+};
+
+/* ===== ESTADO ===== */
+var estado = {
+    condicaoIndex: 0,
+    nivel: NIVEL_MIN,
+    tentativa: 1,
+    teto: { D1: 0, D2: 0, D3: 0, D4: 0 },
+    itemAtual: null,
+    tempoInicioResposta: 0,
+    regraAnterior: null,  // para detectar perseveracao entre itens
+    ouvirDeNovoCont: 0    // quantas vezes a pessoa pediu para ouvir de novo (nivel 5)
+};
+var registros = [];
+var pacienteDados = {};
+
+/* ============================================================
+   UTILITARIOS
+   ============================================================ */
+function calcularIdade() {
+    var nascEl = document.getElementById('dataNascimento');
+    var idadeEl = document.getElementById('idadeCalculada');
+    if (!nascEl.value) { idadeEl.value = ''; return; }
+    var nasc = new Date(nascEl.value + 'T00:00:00');
+    var hoje = new Date();
+    var anos = hoje.getFullYear() - nasc.getFullYear();
+    var meses = hoje.getMonth() - nasc.getMonth();
+    var dias = hoje.getDate() - nasc.getDate();
+    if (dias < 0) { meses--; var ud = new Date(hoje.getFullYear(), hoje.getMonth(), 0).getDate(); dias += ud; }
+    if (meses < 0) { anos--; meses += 12; }
+    idadeEl.value = anos + ' anos, ' + meses + ' meses e ' + dias + ' dias';
+}
+
+function embaralhar(arr) {
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+}
+function inteiroEntre(min, max) { return min + Math.floor(Math.random() * (max - min + 1)); }
+
+/* Escolhe 2 figuras do conjunto e as ORDENA sempre do MAIOR para o MENOR valor.
+   Assim, no enunciado, a figura da esquerda sempre vale mais que a da direita.
+   Evita subtracoes que dariam negativo (ex.: 2 - 9) e deixa toda operacao coerente
+   com numeros naturais, lida na ordem natural (esquerda para a direita). */
+function parMaiorPrimeiro(conj) {
+    var par = embaralhar(conj.figs).slice(0, 2);
+    par.sort(function(a, b) { return conj.mapa[b] - conj.mapa[a]; }); // maior valor primeiro
+    return par;
+}
+
+/* ============================================================
+   GERACAO DE PROBLEMAS
+
+   Um "conjunto" e um mapa figura->valor mostrado a pessoa, ex.:
+   { figuras: [3,5,7], valores: {3:2, 5:6, 7:9} }  (a figura 3 vale 2, etc.)
+   O problema pergunta algo que exige integrar/aplicar regra sobre esse conjunto.
+   Cada item traz: enunciado, conjunto, pergunta, opcoes [{texto, valor, tipoErro}].
+   ============================================================ */
+
+/* Monta um conjunto de K figuras para o enunciado, TODAS coerentes com a regua.
+   O enunciado escolhe k VALORES (digitos 1..9); a figura de cada valor vem da
+   REGUA (regua.simDe[valor]). Assim, se o coracao representa o 8 na regua, ele
+   aparece valendo 8 no enunciado E representa o 8 no resultado. Uma tabela so. */
+function montarConjunto(k, regua) {
+    // Escolhe k digitos distintos de 1..9 como VALORES das figuras do enunciado
+    var vals = embaralhar([1,2,3,4,5,6,7,8,9]).slice(0, k);
+    var figs = [];   // ids sequenciais 0..k-1 (indices internos)
+    var mapa = {};   // id interno -> valor (digito)
+    var sym = {};    // id interno -> simbolo da figura (VEM DA REGUA)
+    var nome = {};   // id interno -> nome falado (VEM DA REGUA)
+    for (var i = 0; i < k; i++) {
+        figs.push(i);
+        mapa[i] = vals[i];
+        sym[i] = regua.simDe[vals[i]];   // coerente: figura do valor pela regua
+        nome[i] = regua.nomeDe[vals[i]];
+    }
+    return { figs: figs, mapa: mapa, sym: sym, nome: nome, regua: regua };
+}
+
+/* Simbolo da figura do enunciado para um id interno */
+function figEnun(conj, id) { return conj.sym[id]; }
+
+/* Texto da legenda "figura = valor" do enunciado (para exibir) */
+function legendaTexto(conj) {
+    return conj.figs.map(function(f) { return conj.sym[f] + ' = ' + conj.mapa[f]; }).join('   ');
+}
+function legendaFalada(conj) {
+    return conj.figs.map(function(f) { return conj.nome[f] + ' vale ' + conj.mapa[f]; }).join('. ');
+}
+
+/* Texto da REGUA de resposta (digito -> figura), sempre visivel na tela.
+   Ex.: 0=... 1=... 2=... para a pessoa montar a resposta em figuras. */
+function reguaTexto(regua) {
+    var partes = [];
+    for (var d = 0; d <= 9; d++) { partes.push(d + '=' + regua.simDe[d]); }
+    return partes.join('   ');
+}
+
+/* Gera opcoes distintas a partir de uma correta e uma lista de distratores tipados.
+   distratores: array de { valor, tipoErro }. Completa/garante unicidade. */
+function montarOpcoes(correta, distratores) {
+    var usados = {};
+    var opcoes = [];
+    function add(valor, tipoErro) {
+        if (valor === null || valor === undefined || isNaN(valor)) { return; }
+        var chave = String(valor);
+        if (usados[chave]) { return; }
+        usados[chave] = true;
+        opcoes.push({ valor: valor, tipoErro: tipoErro });
+    }
+    add(correta, 'correta');
+    for (var i = 0; i < distratores.length; i++) { add(distratores[i].valor, distratores[i].tipoErro); }
+    // completa ate 4 opcoes com valores proximos (distratores nao sistematicos)
+    var raio = 1;
+    while (opcoes.length < 4 && raio < 30) {
+        add(correta + raio, 'erro_selecao');
+        add(correta - raio, 'erro_selecao');
+        raio++;
+    }
+    return embaralhar(opcoes).slice(0, Math.max(4, opcoes.length));
+}
+
+/* MONTA OPCOES EM FIGURAS (para os niveis de operacao do D com resposta simbolica).
+   Recebe a correta (numero) e distratores [{valor, tipoErro}] e a regua da questao.
+   Converte cada valor na sequencia de figuras correspondente. Garante unicidade
+   por VALOR (nao pode haver dois valores iguais). Guarda em cada opcao:
+     - valor: o numero (para registro/logica)
+     - figuras: a sequencia de figuras a exibir/clicar
+     - tipoErro: o tipo (correta ou o erro que representa) */
+function montarOpcoesFigura(correta, distratores, regua) {
+    var usados = {};
+    var opcoes = [];
+    function add(valor, tipoErro) {
+        if (valor === null || valor === undefined || isNaN(valor)) { return; }
+        if (valor < 0) { return; } // resultado negativo nao vira figura (usamos |x-y|)
+        var chave = String(valor);
+        if (usados[chave]) { return; }
+        usados[chave] = true;
+        opcoes.push({ valor: valor, figuras: numeroParaFiguras(valor, regua), tipoErro: tipoErro });
+    }
+    add(correta, 'correta');
+    for (var i = 0; i < distratores.length; i++) { add(distratores[i].valor, distratores[i].tipoErro); }
+    // completa ate 4 opcoes com valores proximos (distratores nao sistematicos)
+    var raio = 1;
+    while (opcoes.length < 4 && raio < 30) {
+        add(correta + raio, 'erro_selecao');
+        if (correta - raio >= 0) { add(correta - raio, 'erro_selecao'); }
+        raio++;
+    }
+    return embaralhar(opcoes).slice(0, Math.max(4, opcoes.length));
+}
+
+/* Fecha um item com resposta EM FIGURAS (niveis de operacao). */
+function finalizeItemFigura(condicao, nivel, conj, pergunta, instrucao, correta, distratores, meta) {
+    var opcoes = montarOpcoesFigura(correta, distratores, conj.regua);
+    meta = meta || {};
+    return {
+        condicao: condicao, nivel: nivel, conjunto: conj,
+        pergunta: pergunta, instrucao: instrucao,
+        correta: correta,                                   // valor numerico (registro)
+        corretaFiguras: numeroParaFiguras(correta, conj.regua), // sequencia de figuras
+        respostaEmFigura: true,                              // marca este item como simbolico
+        soAudio: meta.soAudio === true,                      // nivel 5: tudo por audio, nada escrito
+        opcoes: opcoes, meta: meta
+    };
+}
+
+/* Gera um item conforme a condicao e o nivel. */
+function gerarItem(condicao, nivel) {
+    var modal = condicao.modalidade;
+
+    // Numero de figuras no conjunto cresce com o nivel
+    var k = Math.min(3 + Math.floor((nivel - 1) / 2), 5); // 3,3,4,4,5
+
+    // Sorteia a REGUA desta questao (figura<->digito), sempre nova e aleatoria
+    var regua = sortearRegua();
+
+    // D4: escolha e aplicacao de regra (tratado a parte, tambem com resposta em figuras)
+    if (modal === 'regra') { return gerarItemRegra(nivel, regua); }
+
+    var conj = montarConjunto(k, regua);
+
+    // A "pergunta" depende do nivel (complexidade crescente).
+    // TODOS os niveis respondem EM FIGURAS (raciocinio simbolico).
+
+    if (nivel === 1) {
+        // Associacao simples: "qual o valor de <figura>?" -> responde com a FIGURA do valor
+        // (resultado de 1 digito = 1 figura). Como a regua e coerente, a figura da
+        // resposta e a MESMA figura do enunciado, so que a pessoa a reconhece pela regua.
+        var alvo = conj.figs[inteiroEntre(0, conj.figs.length - 1)];
+        var correta = conj.mapa[alvo];
+        var outros = conj.figs.filter(function(f) { return f !== alvo; });
+        var dist = [];
+        outros.forEach(function(f) { dist.push({ valor: conj.mapa[f], tipoErro: 'erro_associacao' }); });
+        return finalizeItemFigura(condicao, nivel, conj,
+            'Responda em figuras: qual o valor de ' + figEnun(conj, alvo) + ' ?',
+            'Diga o valor da figura indicada e responda com a FIGURA desse valor (use a r\u00e9gua).',
+            correta, dist, { alvo: alvo });
+    }
+
+    if (nivel === 2) {
+        // Associacao + selecao: "qual o MAIOR (ou menor) valor?" -> responde com a FIGURA
+        var pedirMaior = Math.random() > 0.5;
+        var valores = conj.figs.map(function(f) { return conj.mapa[f]; });
+        var correta2 = pedirMaior ? Math.max.apply(null, valores) : Math.min.apply(null, valores);
+        var oposto = pedirMaior ? Math.min.apply(null, valores) : Math.max.apply(null, valores);
+        var dist2 = [{ valor: oposto, tipoErro: 'resposta_automatica' }];
+        valores.forEach(function(v) { if (v !== correta2 && v !== oposto) dist2.push({ valor: v, tipoErro: 'erro_selecao' }); });
+        return finalizeItemFigura(condicao, nivel, conj,
+            'Qual o ' + (pedirMaior ? 'MAIOR' : 'MENOR') + ' valor? (responda em figuras)',
+            'Encontre o ' + (pedirMaior ? 'maior' : 'menor') + ' valor e responda com a FIGURA dele (use a r\u00e9gua).',
+            correta2, dist2, { regra: pedirMaior ? 'maior' : 'menor' });
+    }
+
+    // ----- NIVEIS 3, 4, 5: RESPOSTA EM FIGURAS (raciocinio simbolico) -----
+    // A pessoa calcula, decompoe o resultado em digitos e responde com as figuras
+    // correspondentes na REGUA da questao (que fica sempre visivel na tela).
+
+    if (nivel === 3) {
+        // Integracao: soma de duas figuras indicadas -> resposta em figuras
+        var dois = parMaiorPrimeiro(conj);   // figura da esquerda sempre vale mais
+        var va = conj.mapa[dois[0]], vb = conj.mapa[dois[1]];
+        var correta3 = va + vb;
+        var dist3 = [
+            { valor: Math.abs(va - vb), tipoErro: 'regra_errada' },   // subtraiu
+            { valor: va * vb, tipoErro: 'regra_errada' },             // multiplicou
+            { valor: Math.max(va, vb), tipoErro: 'erro_selecao' }     // pegou so um
+        ];
+        return finalizeItemFigura(condicao, nivel, conj,
+            'Some e responda em figuras: ' + figEnun(conj, dois[0]) + ' + ' + figEnun(conj, dois[1]),
+            'Some os valores das duas figuras e responda com as FIGURAS do resultado (use a r\u00e9gua).',
+            correta3, dist3, { figuras: dois, regra: 'soma' });
+    }
+
+    if (nivel === 4) {
+        // Aplicacao de regra dada -> resposta em figuras
+        var par = parMaiorPrimeiro(conj);   // figura da esquerda sempre vale mais
+        var x = conj.mapa[par[0]], y = conj.mapa[par[1]];
+        var regras = ['soma', 'subtracao', 'maior', 'menor'];
+        var r = regras[inteiroEntre(0, regras.length - 1)];
+        var correta4 = aplicarRegra(r, x, y);
+        var dist4 = [];
+        regras.forEach(function(rr) { if (rr !== r) dist4.push({ valor: aplicarRegra(rr, x, y), tipoErro: 'regra_errada' }); });
+        return finalizeItemFigura(condicao, nivel, conj,
+            'Regra: ' + nomeRegra(r) + '  \u2192  ' + figEnun(conj, par[0]) + ' e ' + figEnun(conj, par[1]),
+            'Aplique a regra e responda com as FIGURAS do resultado (use a r\u00e9gua).',
+            correta4, dist4, { figuras: par, regra: r });
+    }
+
+    // nivel 5: descoberta/selecao + aplicacao -> resposta em figuras
+    // escolhe as duas figuras de MAIOR valor e soma
+    var ordenadas = conj.figs.slice().sort(function(a, b) { return conj.mapa[b] - conj.mapa[a]; });
+    var maior1 = conj.mapa[ordenadas[0]], maior2 = conj.mapa[ordenadas[1]];
+    var correta5 = maior1 + maior2;
+    var todos = conj.figs.map(function(f) { return conj.mapa[f]; });
+    var menorSoma = todos.slice().sort(function(a,b){return a-b;}).slice(0,2).reduce(function(a,b){return a+b;},0);
+    var dist5 = [
+        { valor: maior1, tipoErro: 'erro_selecao' },            // pegou so o maior
+        { valor: menorSoma, tipoErro: 'resposta_automatica' },  // somou os menores
+        { valor: maior1 * maior2, tipoErro: 'regra_errada' }    // multiplicou
+    ];
+    // NIVEL 5 = so audio: nada aparece escrito (nem instrucao, nem regua de valores).
+    // A pessoa ouve tudo e segura na memoria. Botao "ouvir de novo" com contador.
+    return finalizeItemFigura(condicao, nivel, conj,
+        'Some os DOIS maiores valores e responda em figuras',
+        'Descubra os dois maiores valores, some-os e responda com as FIGURAS do resultado.',
+        correta5, dist5, { regra: 'dois_maiores', soAudio: true });
+}
+
+/* D4: primeiro a pessoa ESCOLHE uma regra, depois aplica.
+   Aqui simplificamos: o item ja traz a regra a aplicar, mas registra a mudanca
+   de regra entre niveis para permitir detectar perseveracao. */
+function gerarItemRegra(nivel, regua) {
+    var condicao = CONDICOES[3];
+    var k = Math.min(3 + Math.floor((nivel - 1) / 2), 5);
+    var conj = montarConjunto(k, regua);
+    var par = parMaiorPrimeiro(conj);   // figura da esquerda sempre vale mais
+    var x = conj.mapa[par[0]], y = conj.mapa[par[1]];
+    var regras = ['soma', 'subtracao', 'maior', 'menor'];
+    var r = regras[inteiroEntre(0, regras.length - 1)];
+    var correta = aplicarRegra(r, x, y);
+    var dist = [];
+    regras.forEach(function(rr) {
+        if (rr !== r) {
+            // se a regra escolhida difere da anterior, o valor da regra anterior vira "perseveracao"
+            var tipo = (estado.regraAnterior && rr === estado.regraAnterior) ? 'perseveracao' : 'regra_errada';
+            dist.push({ valor: aplicarRegra(rr, x, y), tipoErro: tipo });
+        }
+    });
+    // D4 tambem responde EM FIGURAS (raciocinio simbolico + regra que muda).
+    // No nivel 5, tudo por audio (soAudio), como nas demais condicoes.
+    var item = finalizeItemFigura(condicao, nivel, conj,
+        'Regra: ' + nomeRegra(r) + '  \u2192  ' + figEnun(conj, par[0]) + ' e ' + figEnun(conj, par[1]),
+        'Aplique a regra e responda com as FIGURAS do resultado. Aten\u00e7\u00e3o: a regra pode mudar a cada quest\u00e3o.',
+        correta, dist, { figuras: par, regra: r, soAudio: (nivel === 5) });
+    return item;
+}
+
+function aplicarRegra(r, x, y) {
+    if (r === 'soma') { return x + y; }
+    if (r === 'subtracao') { return Math.abs(x - y); }
+    if (r === 'maior') { return Math.max(x, y); }
+    if (r === 'menor') { return Math.min(x, y); }
+    return x + y;
+}
+function nomeRegra(r) {
+    if (r === 'soma') { return 'somar'; }
+    if (r === 'subtracao') { return 'subtrair'; }
+    if (r === 'maior') { return 'escolher o maior'; }
+    if (r === 'menor') { return 'escolher o menor'; }
+    return r;
+}
+
+/* Fecha a montagem do item: legenda, pergunta, opcoes */
+function finalizeItem(condicao, nivel, conj, pergunta, instrucao, correta, distratores, meta) {
+    var opcoes = montarOpcoes(correta, distratores);
+    return {
+        condicao: condicao, nivel: nivel, conjunto: conj,
+        pergunta: pergunta, instrucao: instrucao,
+        correta: correta, opcoes: opcoes, meta: meta || {}
+    };
+}
+
+/* ============================================================
+   FLUXO
+   ============================================================ */
+function iniciarTeste() {
+    var nome = document.getElementById('nome').value.trim();
+    if (!nome) { alert('Por favor, preencha o nome antes de iniciar.'); return; }
+    if (!document.getElementById('dataNascimento').value) { alert('Por favor, preencha a data de nascimento.'); return; }
+    pacienteDados = {
+        nome: nome, idade: document.getElementById('idadeCalculada').value,
+        sexo: document.getElementById('sexo').value,
+        escolaridade: document.getElementById('escolaridade').value,
+        data: document.getElementById('data').value
+    };
+    estado.condicaoIndex = 0; estado.nivel = NIVEL_MIN; estado.tentativa = 1;
+    estado.teto = { D1: 0, D2: 0, D3: 0, D4: 0 };
+    estado.regraAnterior = null;
+    registros = [];
+    prepararCondicao();
+}
+
+function mostrarTela(id) {
+    var telas = document.querySelectorAll('.tela');
+    telas.forEach(function(t) { t.classList.remove('ativa'); });
+    document.getElementById(id).classList.add('ativa');
+}
+
+function prepararCondicao() {
+    if (estado.condicaoIndex >= CONDICOES.length) { finalizarTeste(); return; }
+    estado.nivel = NIVEL_MIN; estado.tentativa = 1;
+    var c = CONDICOES[estado.condicaoIndex];
+    var txt = {
+        auditivo: 'As informa\u00e7\u00f5es (figura = valor) ser\u00e3o <strong>faladas</strong>. Depois escolha a resposta na tela.',
+        visual: 'As informa\u00e7\u00f5es aparecer\u00e3o na <strong>tela</strong> por alguns segundos. Depois escolha a resposta.',
+        integrado: 'Voc\u00ea vai <strong>ver e ouvir</strong> as informa\u00e7\u00f5es e precisar\u00e1 <strong>integr\u00e1-las</strong> para responder.',
+        regra: 'Voc\u00ea receber\u00e1 uma <strong>regra</strong> e dever\u00e1 aplic\u00e1-la. A regra pode <strong>mudar</strong> a cada quest\u00e3o \u2014 fique atento.'
+    };
+    document.getElementById('transicaoTexto').innerHTML =
+        '<h2 style="color:#1a237e; margin-bottom:14px;">' + c.nome + '</h2>' +
+        '<p>' + txt[c.modalidade] + '</p>' +
+        '<p style="margin-top:12px; color:#5c6bc0;">Cada figura corresponde a um n\u00famero. ' +
+        'As quest\u00f5es ficam mais dif\u00edceis a cada n\u00edvel. Cada n\u00edvel tem duas tentativas. Sem tempo limite.</p>';
+    mostrarTela('telaTransicao');
+}
+
+function comecarCondicaoAtual() {
+    mostrarTela('telaTeste');
+    proximoItem();
+}
+
+function proximoItem() {
+    var c = CONDICOES[estado.condicaoIndex];
+    estado.itemAtual = gerarItem(c, estado.nivel);
+
+    document.getElementById('badgeTrilha').textContent = c.nome;
+    document.getElementById('progressoTexto').textContent =
+        'N\u00edvel ' + estado.nivel + ' de ' + NIVEL_MAX + ' \u2014 ' + NOME_NIVEL[estado.nivel] +
+        '  (tentativa ' + estado.tentativa + ' de ' + TENTATIVAS_POR_NIVEL + ')';
+    // No nivel 5 (soAudio) a instrucao NAO aparece escrita (a pessoa ouve)
+    document.getElementById('enunciado').textContent = estado.itemAtual.soAudio ? '' : estado.itemAtual.instrucao;
+    document.getElementById('areaOpcoes').innerHTML = '';
+    document.getElementById('areaEstimulo').innerHTML = '';
+    apresentarEstimulo();
+}
+
+/* Apresenta o conjunto (figura=valor) conforme a modalidade da condicao */
+function apresentarEstimulo() {
+    var item = estado.itemAtual;
+    var modal = item.condicao.modalidade;
+    document.getElementById('areaOpcoes').innerHTML = '';
+    document.getElementById('areaBotaoRepetir').style.display = 'none';
+
+    // NIVEL 5 (soAudio): a REGUA (figura=valor) APARECE na tela, como nos outros
+    // niveis, para consulta. So a OPERACAO/instrucao fica no audio (nao aparece
+    // escrita). A pessoa precisa segurar a REGRA na memoria; os valores ela consulta.
+    // Botao "ouvir de novo" fica visivel e conta as reoudicoes.
+    if (item.soAudio) {
+        estado.ouvirDeNovoCont = 0;                 // zera o contador ao entrar no item
+        mostrarLegenda(item, false);                // mostra legenda + regua (sem a pergunta escrita)
+        falarItemSoAudio(item, function() { mostrarPerguntaEOpcoes(item); });
+        return;
+    }
+
+    if (modal === 'auditivo' || modal === 'integrado') {
+        // fala a legenda; no integrado tambem mostra na tela
+        if (modal === 'integrado') { mostrarLegenda(item, true); }
+        falarLegenda(item, function() { mostrarLegenda(item, true); mostrarPerguntaEOpcoes(item); });
+    } else {
+        // visual e regra: mostra a legenda cronometrada, depois pergunta + opcoes
+        apresentarVisual(item, function() { mostrarPerguntaEOpcoes(item); });
+    }
+}
+
+/* Botao "ouvir de novo": conta quantas vezes a pessoa pediu para reouvir (metrica
+   de atencao/memoria no nivel 5) e reproduz o audio novamente. */
+function ouvirDeNovo() {
+    estado.ouvirDeNovoCont++;
+    var item = estado.itemAtual;
+    if (item && item.soAudio) { falarItemSoAudio(item, function() {}); }
+    else { falarLegenda(item, function() {}); }
+}
+
+function mostrarLegenda(item, comPergunta) {
+    var area = document.getElementById('areaEstimulo');
+    // No nivel 5 (soAudio), a legenda/regua APARECE, mas a operacao (pergunta) NAO
+    // e escrita: ela fica so no audio. Por isso forcamos comPergunta=false aqui.
+    if (item.soAudio) { comPergunta = false; }
+    var html = '<div class="legenda">' + legendaTexto(item.conjunto) + '</div>';
+    if (comPergunta) { html += '<div class="pergunta">' + item.pergunta + '</div>'; }
+    // Nos itens com resposta em figuras, mostra a REGUA (digito -> figura) sempre visivel
+    if (item.respostaEmFigura && item.conjunto && item.conjunto.regua) {
+        html += '<div class="regua-figuras"><span class="regua-rotulo">R\u00e9gua (n\u00famero = figura):</span><br>' +
+                reguaTexto(item.conjunto.regua) + '</div>';
+    }
+    area.innerHTML = html;
+}
+
+/* Monta o texto falado quando NADA aparece na tela (nivel 5): fala a regua de
+   SO a operacao/instrucao. Os valores e a regua ficam VISIVEIS na tela (o que
+   fica na memoria e a REGRA, nao os valores). */
+function textoSoAudioFalado(item) {
+    return item.instrucao;
+}
+
+function falarItemSoAudio(item, callback) {
+    if (!('speechSynthesis' in window)) {
+        // Sem sintese de voz: como fallback, mostra o texto por alguns segundos
+        document.getElementById('areaEstimulo').innerHTML =
+            '<div class="pergunta">' + textoSoAudioFalado(item) + '</div>';
+        setTimeout(callback, 4000);
+        return;
+    }
+    window.speechSynthesis.cancel();
+    var u = new SpeechSynthesisUtterance(textoSoAudioFalado(item));
+    u.lang = 'pt-BR'; u.rate = 0.9;
+    u.onend = function() { setTimeout(callback, TEMPO_APOS_AUDIO); };
+    u.onerror = function() { setTimeout(callback, TEMPO_APOS_AUDIO); };
+    window.speechSynthesis.speak(u);
+    document.getElementById('areaBotaoRepetir').style.display = 'block';
+}
+
+function falarLegenda(item, callback) {
+    var area = document.getElementById('areaEstimulo');
+    if (item.condicao.modalidade === 'auditivo') { area.innerHTML = '<div style="font-size:1.6em;">\u266b</div>'; }
+    if (!('speechSynthesis' in window)) { mostrarLegenda(item, true); setTimeout(callback, TEMPO_APOS_AUDIO); return; }
+    window.speechSynthesis.cancel();
+    var texto = legendaFalada(item.conjunto) + '. ' + item.pergunta;
+    var u = new SpeechSynthesisUtterance(texto);
+    u.lang = 'pt-BR'; u.rate = 0.9;
+    u.onend = function() { setTimeout(callback, TEMPO_APOS_AUDIO); };
+    u.onerror = function() { setTimeout(callback, TEMPO_APOS_AUDIO); };
+    window.speechSynthesis.speak(u);
+    document.getElementById('areaBotaoRepetir').style.display = 'block';
+}
+
+function apresentarVisual(item, callback) {
+    mostrarLegenda(item, false);
+    setTimeout(function() { callback(); }, TEMPO_EXIBICAO_VISUAL);
+}
+
+function mostrarPerguntaEOpcoes(item) {
+    mostrarLegenda(item, true);
+    var area = document.getElementById('areaOpcoes');
+    area.innerHTML = '';
+    estado.tempoInicioResposta = performance.now();
+    item.opcoes.forEach(function(op) {
+        var div = document.createElement('div');
+        div.className = 'opcao';
+        // Item simbolico: mostra a sequencia de FIGURAS. Senao, mostra o numero.
+        if (item.respostaEmFigura) { div.textContent = op.figuras; div.classList.add('opcao-figura'); }
+        else { div.textContent = op.valor; }
+        div.onclick = function() { registrarResposta(item, op); };
+        area.appendChild(div);
+    });
+    // BOTOES-JANELA EXTRAS (ex.: NRA), sempre apos as opcoes de figura.
+    BOTOES_JANELA.forEach(function(b) {
+        var div = document.createElement('div');
+        div.className = 'opcao opcao-extra';
+        div.textContent = b.rotulo;
+        div.onclick = function() { registrarResposta(item, { tipoErro: b.tipoErro, ehExtra: true }); };
+        area.appendChild(div);
+    });
+}
+
+/* ===== REGISTRO E LOGICA ADAPTATIVA ===== */
+function registrarResposta(item, op) {
+    var c = item.condicao;
+    var tempoMs = Math.round(performance.now() - estado.tempoInicioResposta);
+    var acertou = (op.tipoErro === 'correta');
+
+    // Classificacao do erro, com sobreposicao de impulsividade (rapido + erro).
+    // Botoes-janela extras (ex.: NRA) nunca sao "correta" e mantem seu proprio tipo
+    // (nao viram 'impulsividade' mesmo se rapidos: NRA rapido tambem e informativo,
+    // mas preservamos a etiqueta 'nra' para o neuro ler pelo padrao geral).
+    var tipoErro = acertou ? 'nenhum' : op.tipoErro;
+    if (!acertou && !op.ehExtra && tempoMs < LIMITE_IMPULSIVIDADE_MS) { tipoErro = 'impulsividade'; }
+
+    // Texto da resposta escolhida (NRA nao tem figura/valor)
+    var respTexto;
+    if (op.ehExtra) { respTexto = 'NRA'; }
+    else if (item.respostaEmFigura) { respTexto = op.figuras + ' (=' + op.valor + ')'; }
+    else { respTexto = op.valor; }
+
+    registros.push({
+        condicao: c.id, nomeCondicao: c.nome,
+        nivel: estado.nivel, nomeNivel: NOME_NIVEL[estado.nivel],
+        tentativa: estado.tentativa,
+        legenda: legendaTexto(item.conjunto).replace(/\s+/g, ' '),
+        pergunta: item.pergunta,
+        correta: item.respostaEmFigura ? (item.corretaFiguras + ' (=' + item.correta + ')') : item.correta,
+        respostaEscolhida: respTexto,
+        ouvirDeNovo: item.soAudio ? estado.ouvirDeNovoCont : 0,
+        tipoErro: tipoErro,
+        acertou: acertou ? 1 : 0,
+        tempoRespostaMs: tempoMs
+    });
+
+    // Guarda a regra deste item para detectar perseveracao no proximo (D4)
+    if (item.meta && item.meta.regra) { estado.regraAnterior = item.meta.regra; }
+
+    if (acertou) {
+        estado.teto[c.id] = estado.nivel;
+        if (estado.nivel >= NIVEL_MAX) { encerrarCondicao(); }
+        else { estado.nivel++; estado.tentativa = 1; proximoItem(); }
+    } else {
+        if (estado.tentativa < TENTATIVAS_POR_NIVEL) {
+            estado.tentativa++;
+            proximoItem(); // gera um problema NOVO de mesma complexidade
+        } else {
+            encerrarCondicao();
+        }
+    }
+}
+
+function encerrarCondicao() {
+    estado.condicaoIndex++;
+    prepararCondicao();
+}
+
+/* ============================================================
+   RESULTADOS
+   ============================================================ */
+function finalizarTeste() {
+    window.speechSynthesis && window.speechSynthesis.cancel();
+    calcularEMostrarResultados();
+    mostrarTela('telaResultados');
+}
+
+function calcularEMostrarResultados() {
+    document.getElementById('resumoPaciente').innerHTML =
+        '<strong>Nome:</strong> ' + (pacienteDados.nome || '-') + ' &nbsp;|&nbsp; ' +
+        '<strong>Idade:</strong> ' + (pacienteDados.idade || '-') + '<br>' +
+        '<strong>Sexo:</strong> ' + (pacienteDados.sexo || '-') + ' &nbsp;|&nbsp; ' +
+        '<strong>Escolaridade:</strong> ' + (pacienteDados.escolaridade || '-') + ' &nbsp;|&nbsp; ' +
+        '<strong>Data:</strong> ' + (pacienteDados.data || '-');
+    montarTabelaTetos();
+    desenharGrafico();
+    montarAnaliseTextual();
+    montarDetalhamento();
+}
+
+function montarTabelaTetos() {
+    var tabela = document.getElementById('tabelaSpans');
+    var html = '<tr><th>Condi\u00e7\u00e3o</th><th>Teto (n\u00edvel m\u00e1ximo resolvido)</th></tr>';
+    CONDICOES.forEach(function(c) {
+        var teto = estado.teto[c.id];
+        var txt = (teto >= NIVEL_MAX) ? (teto + ' (teto superior n\u00e3o estabelecido)') : String(teto);
+        html += '<tr><td>' + c.nome + '</td><td><strong>' + txt + '</strong></td></tr>';
+    });
+    tabela.innerHTML = html;
+}
+
+/* Grafico: uma linha ligando os tetos das 4 condicoes (D1..D4) */
+function desenharGrafico() {
+    var canvas = document.getElementById('graficoLinhas');
+    var ctx = canvas.getContext('2d');
+    var W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+    var mEsq = 60, mDir = 40, mTopo = 40, mBase = 60;
+    var areaW = W - mEsq - mDir, areaH = H - mTopo - mBase;
+    var maxY = NIVEL_MAX;
+    function posY(v) { return mTopo + areaH - (v / maxY) * areaH; }
+
+    ctx.strokeStyle = '#e0e0e0'; ctx.lineWidth = 1;
+    ctx.font = '12px Arial'; ctx.fillStyle = '#666'; ctx.textAlign = 'right';
+    for (var v = 0; v <= maxY; v++) {
+        var y = posY(v);
+        ctx.beginPath(); ctx.moveTo(mEsq, y); ctx.lineTo(mEsq + areaW, y); ctx.stroke();
+        ctx.fillText(String(v), mEsq - 8, y + 4);
+    }
+    var xs = [];
+    for (var i = 0; i < CONDICOES.length; i++) { xs.push(mEsq + (areaW * (i / (CONDICOES.length - 1)))); }
+
+    ctx.textAlign = 'center'; ctx.fillStyle = '#1a237e'; ctx.font = 'bold 13px Arial';
+    CONDICOES.forEach(function(c, i) { ctx.fillText(c.id, xs[i], mTopo + areaH + 28); });
+    ctx.save(); ctx.translate(16, mTopo + areaH / 2); ctx.rotate(-Math.PI / 2);
+    ctx.fillStyle = '#666'; ctx.font = '12px Arial'; ctx.fillText('N\u00edvel (teto)', 0, 0); ctx.restore();
+
+    ctx.strokeStyle = '#3949ab'; ctx.fillStyle = '#3949ab'; ctx.lineWidth = 3;
+    ctx.beginPath();
+    CONDICOES.forEach(function(c, i) {
+        var y = posY(estado.teto[c.id]);
+        if (i === 0) { ctx.moveTo(xs[i], y); } else { ctx.lineTo(xs[i], y); }
+    });
+    ctx.stroke();
+    CONDICOES.forEach(function(c, i) {
+        var y = posY(estado.teto[c.id]);
+        ctx.beginPath(); ctx.arc(xs[i], y, 5, 0, Math.PI * 2); ctx.fill();
+    });
+}
+
+function montarAnaliseTextual() {
+    var txt = '<h3>Leitura Comparativa (explorat\u00f3ria)</h3>';
+    var t = estado.teto;
+    // Auditivo (D1) x Visual (D2)
+    txt += '<p><strong>Auditivo (D1) x Visual (D2):</strong> ';
+    if (t.D1 === t.D2) { txt += 'desempenho igual nas duas entradas (ambos n\u00edvel ' + t.D1 + ').</p>'; }
+    else if (t.D1 > t.D2) { txt += 'melhor com entrada <strong>auditiva</strong> (D1=' + t.D1 + ' vs D2=' + t.D2 + ').</p>'; }
+    else { txt += 'melhor com entrada <strong>visual</strong> (D2=' + t.D2 + ' vs D1=' + t.D1 + ').</p>'; }
+    // Integracao (D3)
+    txt += '<p><strong>Integra\u00e7\u00e3o (D3):</strong> ';
+    var menorSimples = Math.min(t.D1, t.D2);
+    if (t.D3 < menorSimples) { txt += 'a integra\u00e7\u00e3o de duas fontes (D3=' + t.D3 + ') foi mais dif\u00edcil que usar uma fonte s\u00f3, sugerindo custo ao combinar informa\u00e7\u00f5es.</p>'; }
+    else { txt += 'a integra\u00e7\u00e3o (D3=' + t.D3 + ') foi t\u00e3o boa quanto usar uma fonte isolada.</p>'; }
+    // Regra (D4)
+    txt += '<p><strong>Aplica\u00e7\u00e3o de regra (D4=' + t.D4 + '):</strong> ' +
+        'reflete a capacidade de aplicar e alternar regras sobre a informa\u00e7\u00e3o integrada.</p>';
+
+    // Perfil de erros observaveis
+    txt += '<h3 style="margin-top:16px;">Perfil de Erros (comportamentos observados)</h3>';
+    var cont = {};
+    registros.forEach(function(r) { if (r.acertou === 0) { cont[r.tipoErro] = (cont[r.tipoErro] || 0) + 1; } });
+    var chaves = Object.keys(cont);
+    if (chaves.length === 0) { txt += '<p>Nenhum erro registrado.</p>'; }
+    else {
+        txt += '<p>';
+        chaves.forEach(function(h) { txt += (NOME_ERRO[h] || h) + ': <strong>' + cont[h] + '</strong><br>'; });
+        txt += '</p><p style="font-size:0.9em; color:#777;">Os r\u00f3tulos descrevem <em>comportamentos observados</em>, ' +
+            'n\u00e3o diagn\u00f3sticos. O padr\u00e3o sugere em que etapa do processamento a informa\u00e7\u00e3o parece se perder.</p>';
+    }
+
+    // Impulsividade / padrao de resposta
+    var impulsivos = registros.filter(function(r) { return r.tipoErro === 'impulsividade'; }).length;
+    txt += '<h3 style="margin-top:16px;">Padr\u00e3o de Resposta \u00e0 Tarefa</h3>';
+    if (impulsivos >= 2) {
+        txt += '<p style="color:#c62828;">Foram observadas <strong>' + impulsivos + '</strong> respostas muito r\u00e1pidas seguidas de erro, ' +
+            'padr\u00e3o compat\u00edvel com <strong>impulsividade</strong>. Recomenda-se cautela na interpreta\u00e7\u00e3o.</p>';
+    } else {
+        txt += '<p>N\u00e3o h\u00e1 sinais marcantes de respostas impulsivas.</p>';
+    }
+
+    txt += '<p style="margin-top:16px; font-size:0.9em; color:#777;"><em>Instrumento de rastreio explorat\u00f3rio, ' +
+        'sem valida\u00e7\u00e3o psicom\u00e9trica formal. Interpreta\u00e7\u00e3o por profissional qualificado.</em></p>';
+    document.getElementById('analiseTexto').innerHTML = txt;
+}
+
+function montarDetalhamento() {
+    var html = '<h3>Detalhamento das Respostas</h3>' +
+        '<p style="font-size:0.9em; color:#777;">Amarelo = resposta muito r\u00e1pida com erro (poss\u00edvel impulsividade).</p>';
+    CONDICOES.forEach(function(c) {
+        var doC = registros.filter(function(r) { return r.condicao === c.id; });
+        if (doC.length === 0) { return; }
+        html += '<div style="margin-top:14px;"><strong style="color:#1a237e;">' + c.nome +
+            '</strong> &mdash; Teto: <strong>' + estado.teto[c.id] + '</strong></div>';
+        html += '<table class="tabela-spans" style="margin:6px 0 0 0; font-size:0.9em;">' +
+            '<tr><th>N\u00edvel</th><th>Tent.</th><th>Pergunta</th><th>Certa</th><th>Respondeu</th><th>Classifica\u00e7\u00e3o</th><th>Tempo</th></tr>';
+        doC.forEach(function(r) {
+            var cor = r.acertou === 1 ? '#e8f5e9' : (r.tipoErro === 'impulsividade' ? '#fff8e1' : '#ffebee');
+            var cls = r.acertou === 1 ? 'Correta' : (NOME_ERRO[r.tipoErro] || r.tipoErro);
+            html += '<tr style="background:' + cor + ';">' +
+                '<td>' + r.nivel + '</td><td>' + r.tentativa + '</td>' +
+                '<td style="text-align:left;">' + r.pergunta + '</td>' +
+                '<td>' + r.correta + '</td><td>' + r.respostaEscolhida + '</td>' +
+                '<td>' + cls + '</td><td>' + (r.tempoRespostaMs / 1000).toFixed(1) + 's</td></tr>';
+        });
+        html += '</table>';
+    });
+    document.getElementById('detalhamentoRespostas').innerHTML = html;
+}
+
+function baixarDados() {
+    var linhas = [];
+    linhas.push(['condicao','nivel','nome_nivel','tentativa','legenda','pergunta','correta','resposta','tipo_erro','acertou','tempo_ms','ouvir_de_novo'].join(';'));
+    registros.forEach(function(r) {
+        linhas.push([r.condicao, r.nivel, r.nomeNivel, r.tentativa, r.legenda, r.pergunta, r.correta, r.respostaEscolhida, r.tipoErro, r.acertou, r.tempoRespostaMs, (r.ouvirDeNovo || 0)].join(';'));
+    });
+    linhas.push(''); linhas.push('TETOS FINAIS');
+    CONDICOES.forEach(function(c) { linhas.push([c.nome, estado.teto[c.id]].join(';')); });
+    var conteudo = linhas.join('\n');
+    var blob = new Blob(['\ufeff' + conteudo], { type: 'text/csv;charset=utf-8;' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'BRPI_ModuloD_' + (pacienteDados.nome || 'sem_nome').replace(/\s+/g, '_') + '.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+/* ===== INICIALIZACAO ===== */
+document.getElementById('data').value = new Date().toISOString().split('T')[0];
+
+/* ============================================================
+   INTEGRACAO COM A BATERIA BRPI (o "sino")
+   Quando este modulo roda DENTRO do controlador (brpi.html), a URL traz
+   ?bateria=1. Nesse caso, ao chegar na tela de resultados, avisamos o
+   controlador (window.parent) por postMessage, enviando os dados coletados.
+   No modo sozinho (sem ?bateria=1), nada disso acontece: o modulo funciona
+   exatamente como antes. Isso preserva o uso autonomo de cada modulo.
+   ============================================================ */
+(function() {
+    var _p = new URLSearchParams(window.location.search);
+    if (_p.get('bateria') !== '1') { return; } // modo autonomo: nao faz nada
+    var _moduloId = _p.get('modulo') || 'D';
+
+    // ----- RECEBE OS DADOS DO PACIENTE (vindos do controlador em ?p=) -----
+    function _preencherEComecar() {
+        var _dados = {};
+        try {
+            var _raw = _p.get('p');
+            if (_raw) { _dados = JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(_raw))))); }
+        } catch (e) { _dados = {}; }
+
+        function _set(id, val) { var el = document.getElementById(id); if (el && val) { el.value = val; } }
+        _set('nome', _dados.patientName);
+        _set('dataNascimento', _dados.birthDate);
+        _set('sexo', _dados.sex);
+        _set('escolaridade', _dados.education);
+        _set('data', _dados.dataAval);
+        if (typeof calcularIdade === 'function') { try { calcularIdade(); } catch (e) {} }
+
+        if (typeof iniciarTeste === 'function' && _dados.patientName) {
+            setTimeout(function() { try { iniciarTeste(); } catch (e) {} }, 150);
+        }
+    }
+    setTimeout(_preencherEComecar, 60);
+
+    function _pacoteBRPI() {
+        return {
+            modulo: _moduloId,
+            teto: (typeof estado !== 'undefined' && estado.teto) ? estado.teto : null,
+            registros: (typeof registros !== 'undefined') ? registros : [],
+            paciente: (typeof pacienteDados !== 'undefined') ? pacienteDados : {}
+        };
+    }
+
+    function _tocarSino() {
+        try {
+            window.parent.postMessage({ tipo: 'brpi-modulo-fim', modulo: _moduloId, dados: _pacoteBRPI() }, '*');
+        } catch (e) {}
+    }
+
+    if (typeof window.finalizarTeste === 'function' && !window._brpiSinoLigado) {
+        var _origFinalizar = window.finalizarTeste;
+        window.finalizarTeste = function() {
+            var _r = _origFinalizar.apply(this, arguments);
+            setTimeout(_tocarSino, 400);
+            return _r;
+        };
+        window._brpiSinoLigado = true;
+    }
+})();
+</script>
+</body>
+</html>
