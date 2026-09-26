@@ -60,6 +60,21 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: #f5f5f5; min-heig
 #listaConcluidos li { padding: 8px 12px; background: #f1f8e9; border-radius: 8px; margin-bottom: 6px; color: #33691e; font-weight: 600; }
 
 .rodape-info { color: #fff; opacity: 0.75; font-size: 0.75em; margin-top: 16px; text-align: center; }
+
+/* Botao SAIR: retangulo deitado (~2x1cm) no canto superior esquerdo, fundo branco, borda vermelha */
+#btnSair { position: fixed; top: 12px; left: 12px; z-index: 9998; width: 76px; height: 38px; background: #fff; border: 2px solid #c62828; color: #c62828; font-weight: 800; font-size: 0.85em; border-radius: 6px; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.25); display: none; }
+#btnSair:hover { background: #ffebee; }
+
+/* Aviso customizado ao sair (centralizado, fonte grande, caixa alta, negrito) */
+#overlaySair { display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.55); align-items: center; justify-content: center; padding: 20px; }
+#overlaySair.aberto { display: flex; }
+#overlaySair .caixa-aviso { background: #fff; border-radius: 14px; border-top: 6px solid #c62828; padding: 32px 28px; max-width: 460px; width: 100%; text-align: center; box-shadow: 0 8px 30px rgba(0,0,0,0.4); }
+#overlaySair .titulo-aviso { color: #c62828; font-size: 1.6em; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px; }
+#overlaySair .texto-aviso { color: #333; font-size: 1.1em; font-weight: 700; text-transform: uppercase; line-height: 1.5; margin-bottom: 24px; }
+#overlaySair .botoes-aviso { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+#overlaySair button { padding: 14px 24px; border: none; border-radius: 8px; font-size: 1em; font-weight: 800; cursor: pointer; text-transform: uppercase; }
+#overlaySair .btn-continuar { background: #2e7d32; color: #fff; }
+#overlaySair .btn-sair-mesmo { background: #c62828; color: #fff; }
 </style>
 </head>
 <body>
@@ -185,16 +200,39 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: #f5f5f5; min-heig
     <iframe id="moduloFrame" title="Modulo em execucao"></iframe>
 </div>
 
-<!-- ===== TELA 3: FIM ===== -->
+<!-- Botao SAIR (aparece so durante a bateria) -->
+<button id="btnSair" onclick="abrirAvisoSair()">SAIR</button>
+
+<!-- Aviso customizado ao clicar em SAIR -->
+<div id="overlaySair">
+    <div class="caixa-aviso">
+        <div class="titulo-aviso">Deseja mesmo sair?</div>
+        <div class="texto-aviso">Se sair agora, a aplica&#231;&#227;o ser&#225; encerrada e este link n&#227;o poder&#225; ser usado de novo.</div>
+        <div class="botoes-aviso">
+            <button class="btn-continuar" onclick="fecharAvisoSair()">Continuar o teste</button>
+            <button class="btn-sair-mesmo" onclick="confirmarSair()">Sair mesmo assim</button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== TELA 3: FIM (programa encerrado, pode fechar a aba) - estilo BAE ===== -->
 <div id="tela-fim" class="tela">
     <div class="caixa-final">
-        <h1>&#127881; Bateria Conclu&#237;da</h1>
-        <p style="color:#555;">Os seguintes m&#243;dulos foram aplicados:</p>
-        <ul id="listaConcluidos"></ul>
-        <p style="color:#888; font-size:0.85em; margin-bottom:16px;">
-            (Nas pr&#243;ximas etapas, aqui sair&#227;o os relat&#243;rios de cada m&#243;dulo e a an&#225;lise integrada da IA.)
-        </p>
-        <button class="btn btn-secondary" onclick="location.reload()">Nova Bateria</button>
+        <div style="font-size:2.2em;">&#127881;</div>
+        <h1>Aplica&#231;&#227;o conclu&#237;da!</h1>
+        <p style="color:#555;">Obrigado pela sua participa&#231;&#227;o.</p>
+        <p style="color:#555;">Os resultados foram enviados ao avaliador.</p>
+        <ul id="listaConcluidos" style="display:none;"></ul>
+        <p style="margin-top:24px;color:#888;font-size:0.85em;">Voc&#234; j&#225; pode fechar esta janela.</p>
+    </div>
+</div>
+
+<!-- ===== TELA 4: ENCERRADO POR SAIDA (pode fechar a aba) ===== -->
+<div id="tela-encerrado" class="tela">
+    <div class="caixa-final">
+        <h1 style="color:#c62828;">Aplica&#231;&#227;o encerrada</h1>
+        <p style="color:#555;">A aplica&#231;&#227;o foi encerrada.</p>
+        <p style="margin-top:24px;color:#888;font-size:0.85em;">Voc&#234; j&#225; pode fechar esta janela.</p>
     </div>
 </div>
 
@@ -320,6 +358,62 @@ function mostrarTela(id) {
 }
 
 /* ============================================================
+   BOTAO SAIR + AVISO CUSTOMIZADO (centralizado, caixa alta, negrito)
+   ============================================================ */
+function mostrarBotaoSair(mostrar) {
+    var b = document.getElementById('btnSair');
+    if (b) { b.style.display = mostrar ? 'block' : 'none'; }
+}
+function abrirAvisoSair() {
+    var o = document.getElementById('overlaySair');
+    if (o) { o.classList.add('aberto'); }
+}
+function fecharAvisoSair() {
+    var o = document.getElementById('overlaySair');
+    if (o) { o.classList.remove('aberto'); }
+}
+/* Confirmou sair: salva o que ja foi feito (abandonado) e mostra a tela de encerrado. */
+function confirmarSair() {
+    fecharAvisoSair();
+    bateriaEmAndamento = false;   // desliga o aviso de fechar aba
+    mostrarBotaoSair(false);
+    if (modoOnline && !brpiJaEnviado && sessionData.sessionId) {
+        enviarAbandonoBRPI();
+    }
+    mostrarTela('tela-encerrado');
+}
+
+/* Envia os modulos ja feitos com status 'abandonado' (usa fetch normal aqui,
+   pois nao estamos no momento de fechar a aba). */
+function enviarAbandonoBRPI() {
+    var feitos = [];
+    ['A', 'B', 'C', 'D'].forEach(function(id) { if (resultados[id]) { feitos.push(id); } });
+    var pacote = {
+        sessionId: sessionData.sessionId,
+        email: sessionData.email || '',
+        tipo: 'brpi',
+        data: {
+            formData: sessionData,
+            status: 'abandonado',
+            modulosAplicados: feitos,
+            A: resultados.A || null,
+            B: resultados.B || null,
+            C: resultados.C || null,
+            D: resultados.D || null,
+            dataAplicacao: new Date().toISOString()
+        }
+    };
+    brpiJaEnviado = true;
+    try {
+        fetch(BRPI_API_URL + '/save-result', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(pacote)
+        }).catch(function(){});
+    } catch (e) {}
+}
+
+/* ============================================================
    INICIO DA BATERIA
    ============================================================ */
 function iniciarBateria() {
@@ -339,6 +433,7 @@ function iniciarBateria() {
     indiceAtual = 0;
     resultados = {};
     bateriaEmAndamento = true; // ativa o aviso ao fechar a aba
+    mostrarBotaoSair(true);
 
     mostrarTela('tela-teste');
     abrirModuloAtual();
@@ -393,6 +488,7 @@ window.addEventListener('message', function(evento) {
 function finalizarBateria() {
     // A bateria terminou normalmente: desliga o aviso de fechar aba.
     bateriaEmAndamento = false;
+    mostrarBotaoSair(false);
 
     // Lista o que foi aplicado (por enquanto so exibe; IA e PDF vem depois)
     var ul = document.getElementById('listaConcluidos');
@@ -483,6 +579,10 @@ function aplicarSessaoOnline(data) {
     indiceAtual = 0;
     resultados = {};
     bateriaEmAndamento = true; // ativa o aviso ao fechar a aba
+    mostrarBotaoSair(true);
+
+    // Marca a sessao como 'em andamento' no servidor (trava de reuso do link).
+    marcarSessaoIniciada();
 
     // Pula o formulario: vai direto para a tela do teste e abre o primeiro modulo
     mostrarTela('tela-teste');
@@ -498,6 +598,31 @@ function telaMensagemBRPI(titulo, texto) {
         '<p style="font-size:1em;color:#555;">' + texto + '</p></div>';
 }
 
+/* Marca a sessao como 'em_andamento' no servidor assim que a bateria comeca.
+   Isso faz o /session-status parar de retornar 'aguardando', bloqueando o
+   reuso do mesmo link em outra aba (mesma logica do BAE). */
+function marcarSessaoIniciada() {
+    if (!sessionData.sessionId) { return; }
+    var pacote = {
+        sessionId: sessionData.sessionId,
+        email: sessionData.email || '',
+        tipo: 'brpi',
+        data: {
+            formData: sessionData,
+            status: 'em_andamento',
+            modulosAplicados: fila.slice(),
+            dataInicio: new Date().toISOString()
+        }
+    };
+    try {
+        fetch(BRPI_API_URL + '/save-result', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(pacote)
+        }).catch(function(){});
+    } catch (e) {}
+}
+
 /* Ponto de entrada do modo online: decide entre ?s= (servidor) e ?d= (base64) */
 function iniciarModoOnline(params) {
     modoOnline = true;
@@ -505,7 +630,19 @@ function iniciarModoOnline(params) {
     var d = params.get('d');
 
     if (s) {
-        fetch(BRPI_API_URL + '/get-session?id=' + encodeURIComponent(s)).then(function(r) {
+        // Primeiro checa se o link ja foi usado (status != aguardando). Igual ao BAE.
+        fetch(BRPI_API_URL + '/session-status?sessionId=' + encodeURIComponent(s)).then(function(r) {
+            return r.json();
+        }).then(function(st) {
+            var status = st && st.status ? st.status : 'not_found';
+            if (status !== 'aguardando' && status !== 'not_found') {
+                telaMensagemBRPI('Este link j\u00e1 foi utilizado.', 'Solicite um novo link ao seu avaliador.');
+                throw new Error('link_usado');
+            }
+            // Link valido: busca os dados da sessao e comeca.
+            return fetch(BRPI_API_URL + '/get-session?id=' + encodeURIComponent(s));
+        }).then(function(r) {
+            if (!r) { return null; }
             if (r.status === 410) {
                 telaMensagemBRPI('Este link j\u00e1 foi utilizado.', 'Solicite um novo link ao seu avaliador.');
                 throw new Error('link_usado');
@@ -513,7 +650,7 @@ function iniciarModoOnline(params) {
             return r.json();
         }).then(function(data) {
             if (data && data.sessionId) { aplicarSessaoOnline(data); }
-            else { telaMensagemBRPI('Link inv\u00e1lido ou expirado.', 'Solicite um novo link ao seu avaliador.'); }
+            else if (data !== null) { telaMensagemBRPI('Link inv\u00e1lido ou expirado.', 'Solicite um novo link ao seu avaliador.'); }
         }).catch(function(){});
     } else if (d) {
         try {
