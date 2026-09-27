@@ -822,9 +822,8 @@ function apresentarEstimulo() {
         // fala SO o valor da figura de audio + o comando. A pessoa junta as duas fontes.
         mostrarLegenda(item, true);
         falarIntegrado(item, function() { mostrarPerguntaEOpcoes(item); });
-    } else if (modal === 'auditivo' || modal === 'integrado') {
-        // fala a legenda; no integrado tambem mostra na tela
-        if (modal === 'integrado') { mostrarLegenda(item, true); }
+    } else if (modal === 'auditivo') {
+        // D1: fala a legenda inteira (auditivo puro)
         falarLegenda(item, function() { mostrarLegenda(item, true); mostrarPerguntaEOpcoes(item); });
     } else {
         // visual e regra: mostra a legenda cronometrada, depois pergunta + opcoes
@@ -876,7 +875,7 @@ function falarItemSoAudio(item, callback) {
     }
     window.speechSynthesis.cancel();
     var u = new SpeechSynthesisUtterance(textoSoAudioFalado(item));
-    u.lang = 'pt-BR'; u.rate = 0.9;
+    u.lang = 'pt-BR'; u.rate = 0.9; u.volume = 1;
     u.onend = function() { setTimeout(callback, TEMPO_APOS_AUDIO); };
     u.onerror = function() { setTimeout(callback, TEMPO_APOS_AUDIO); };
     window.speechSynthesis.speak(u);
@@ -895,7 +894,7 @@ function falarIntegrado(item, callback) {
     }
     window.speechSynthesis.cancel();
     var u = new SpeechSynthesisUtterance(texto);
-    u.lang = 'pt-BR'; u.rate = 0.9;
+    u.lang = 'pt-BR'; u.rate = 0.9; u.volume = 1;
     u.onend = function() { setTimeout(callback, TEMPO_APOS_AUDIO); };
     u.onerror = function() { setTimeout(callback, TEMPO_APOS_AUDIO); };
     window.speechSynthesis.speak(u);
@@ -909,7 +908,7 @@ function falarLegenda(item, callback) {
     window.speechSynthesis.cancel();
     var texto = legendaFalada(item.conjunto) + '. ' + item.pergunta;
     var u = new SpeechSynthesisUtterance(texto);
-    u.lang = 'pt-BR'; u.rate = 0.9;
+    u.lang = 'pt-BR'; u.rate = 0.9; u.volume = 1;
     u.onend = function() { setTimeout(callback, TEMPO_APOS_AUDIO); };
     u.onerror = function() { setTimeout(callback, TEMPO_APOS_AUDIO); };
     window.speechSynthesis.speak(u);
@@ -1191,7 +1190,7 @@ document.getElementById('data').value = new Date().toISOString().split('T')[0];
         _set('data', _dados.dataAval);
         if (typeof calcularIdade === 'function') { try { calcularIdade(); } catch (e) {} }
 
-        if (typeof iniciarTeste === 'function' && _dados.patientName) {
+        if (typeof iniciarTeste === 'function' && _dados.patientName && _dados.birthDate) {
             setTimeout(function() { try { iniciarTeste(); } catch (e) {} }, 150);
         }
     }
