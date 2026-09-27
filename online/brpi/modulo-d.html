@@ -392,10 +392,15 @@ function legendaFalada(conj) {
 }
 
 /* Texto da REGUA de resposta (digito -> figura), sempre visivel na tela.
-   Ex.: 0=... 1=... 2=... para a pessoa montar a resposta em figuras. */
-function reguaTexto(regua) {
+   Ex.: 0=... 1=... 2=... para a pessoa montar a resposta em figuras.
+   digitoOculto (opcional): esconde da regua o digito cujo valor so foi dito no
+   audio (usado no D3 - integracao), forcando a pessoa a usar o que ouviu. */
+function reguaTexto(regua, digitoOculto) {
     var partes = [];
-    for (var d = 0; d <= 9; d++) { partes.push(d + '=' + regua.simDe[d]); }
+    for (var d = 0; d <= 9; d++) {
+        if (digitoOculto !== undefined && d === digitoOculto) { continue; }
+        partes.push(d + '=' + regua.simDe[d]);
+    }
     return partes.join('   ');
 }
 
@@ -480,6 +485,11 @@ function gerarItem(condicao, nivel) {
 
     // D4: escolha e aplicacao de regra (tratado a parte, tambem com resposta em figuras)
     if (modal === 'regra') { return gerarItemRegra(nivel, regua); }
+
+    // D3: integracao AUDITIVO + VISUAL de verdade (caminho proprio, isolado).
+    // Uma figura tem o valor dito SO no audio (e some da regua visivel); a outra
+    // aparece na tela. A pessoa precisa juntar as duas fontes para responder.
+    if (modal === 'integrado') { return gerarItemIntegrado(condicao, nivel, regua); }
 
     var conj = montarConjunto(k, regua);
 
@@ -568,6 +578,107 @@ function gerarItem(condicao, nivel) {
         'Some os DOIS maiores valores e responda em figuras',
         'Descubra os dois maiores valores, some-os e responda com as FIGURAS do resultado.',
         correta5, dist5, { regra: 'dois_maiores', soAudio: true });
+}
+
+/* ============================================================
+   D3 - INTEGRACAO AUDITIVO + VISUAL (de verdade)
+   Uma figura tem o valor dito SO no audio (valorAudio) e NAO aparece na regua
+   visivel; a outra figura aparece na tela (regua visivel). A pessoa soma as duas
+   e responde em figuras. Para responder, os digitos do resultado precisam existir
+   na regua visivel (garantimos isso escolhendo o valorAudio fora desses digitos).
+   Complexidade cresce com o nivel (nivel 1-2: valor simples; 3+: soma).
+   ============================================================ */
+function gerarItemIntegrado(condicao, nivel, regua) {
+    // Escalada de dificuldade por nivel (definida pelo autor):
+    //   N1: 2 numeros, soma < 10   (resultado de 1 digito)
+    //   N2: 2 numeros, soma >= 10  (resultado de 2 digitos)
+    //   N3: 3 numeros, soma < 10
+    //   N4: 3 numeros, soma >= 10
+    //   N5: 4 numeros, soma >= 10
+    // Em TODOS os niveis: exatamente 1 operando e FALADO (so no audio, sai da regua);
+    // os demais sao VISTOS na tela. A pessoa integra as duas fontes.
+    var cfg = {
+        1: { n: 2, min: 3, max: 9 },     // 2 numeros, soma < 10
+        2: { n: 2, min: 10, max: 18 },   // 2 numeros, soma >= 10
+        3: { n: 3, min: 6, max: 9 },     // 3 numeros, soma < 10
+        4: { n: 3, min: 10, max: 27 },   // 3 numeros, soma >= 10
+        5: { n: 4, min: 10, max: 36 }    // 4 numeros, soma >= 10
+    }[nivel] || { n: 2, min: 3, max: 9 };
+
+    var tentativas = 0;
+    var vals, vAudio, vistos, resultado, ok;
+    do {
+        ok = true;
+        // Sorteia n valores em 1..9 (com repeticao permitida entre vistos, mas o
+        // falado deve ser distinto dos demais para nao gerar ambiguidade na regua).
+        vals = [];
+        for (var i = 0; i < cfg.n; i++) { vals.push(inteiroEntre(1, 9)); }
+        resultado = vals.reduce(function(a, b) { return a + b; }, 0);
+
+        // Faixa de soma do nivel
+        if (resultado < cfg.min || resultado > cfg.max) { ok = false; }
+
+        // Escolhe qual valor sera o FALADO (sai da regua). Tenta achar um valor
+        // cujo digito NAO apareca nos digitos do resultado (senao faltaria a figura).
+        if (ok) {
+            var digitosResultado = String(resultado).split('');
+            var candidatosAudio = [];
+            for (var j = 0; j < vals.length; j++) {
+                if (digitosResultado.indexOf(String(vals[j])) === -1) { candidatosAudio.push(vals[j]); }
+            }
+            if (candidatosAudio.length === 0) { ok = false; }
+            else { vAudio = candidatosAudio[inteiroEntre(0, candidatosAudio.length - 1)]; }
+        }
+        tentativas++;
+    } while (!ok && tentativas < 120);
+
+    // Fallback raro: se nao achou combinacao ideal, usa a ultima e escolhe como
+    // falado o primeiro valor (aceita a chance de o digito coincidir - caso raro).
+    if (!ok) {
+        vals = []; for (var f = 0; f < cfg.n; f++) { vals.push(inteiroEntre(1, 9)); }
+        resultado = vals.reduce(function(a, b) { return a + b; }, 0);
+        vAudio = vals[0];
+    }
+
+    // Separa o valor falado dos vistos (remove 1 ocorrencia do falado)
+    vistos = vals.slice();
+    vistos.splice(vistos.indexOf(vAudio), 1);
+
+    var nomeAudio = regua.nomeDe[vAudio];
+
+    // Conjunto com as figuras VISTAS (aparecem na legenda/regua). O valor falado
+    // fica de fora da parte visivel (a pessoa so o conhece pelo audio).
+    var conj = { figs: [], mapa: {}, sym: {}, nome: {}, regua: regua, digitoOculto: vAudio };
+    for (var v = 0; v < vistos.length; v++) {
+        conj.figs.push(v);
+        conj.mapa[v] = vistos[v];
+        conj.sym[v] = regua.simDe[vistos[v]];
+        conj.nome[v] = regua.nomeDe[vistos[v]];
+    }
+
+    var correta = resultado;
+    // Distratores tipados
+    var somaVistos = vistos.reduce(function(a, b) { return a + b; }, 0);
+    var dist = [
+        { valor: somaVistos, tipoErro: 'erro_selecao' },                 // ignorou o audio
+        { valor: vAudio, tipoErro: 'erro_selecao' },                     // pegou so o audio
+        { valor: Math.abs(resultado - 2 * vAudio), tipoErro: 'regra_errada' } // subtraiu o falado
+    ];
+
+    // Texto: lista as figuras vistas + o comando de somar com a figura do audio
+    var listaVistas = conj.figs.map(function(id) { return conj.sym[id]; }).join(' + ');
+    var pergunta = 'Some as figuras da tela (' + listaVistas + ') com a figura dita no \u00e1udio. Responda em figuras.';
+    var instrucao = 'A figura ' + nomeAudio + ' vale ' + vAudio + '. Some com ' +
+                    (vistos.length > 1 ? 'as figuras' : 'a figura') + ' da tela e responda com as FIGURAS do resultado (use a r\u00e9gua).';
+
+    var item = finalizeItemFigura(condicao, nivel, conj, pergunta, instrucao, correta, dist,
+        { regra: 'soma', integracao: true, valorAudio: vAudio, nOperandos: cfg.n });
+    item.integracaoAV = true;
+    item.digitoOculto = vAudio;
+    item.textoAudioIntegrado = 'A figura ' + nomeAudio + ' vale ' + vAudio + '. ' +
+        'Some com ' + (vistos.length > 1 ? 'as figuras' : 'a figura') + ' que est\u00e1' +
+        (vistos.length > 1 ? 'o' : '') + ' na tela e responda em figuras.';
+    return item;
 }
 
 /* D4: primeiro a pessoa ESCOLHE uma regra, depois aplica.
@@ -706,7 +817,12 @@ function apresentarEstimulo() {
         return;
     }
 
-    if (modal === 'auditivo' || modal === 'integrado') {
+    if (item.integracaoAV) {
+        // D3 integracao: mostra a tela (figura vista + regua sem o digito falado) e
+        // fala SO o valor da figura de audio + o comando. A pessoa junta as duas fontes.
+        mostrarLegenda(item, true);
+        falarIntegrado(item, function() { mostrarPerguntaEOpcoes(item); });
+    } else if (modal === 'auditivo' || modal === 'integrado') {
         // fala a legenda; no integrado tambem mostra na tela
         if (modal === 'integrado') { mostrarLegenda(item, true); }
         falarLegenda(item, function() { mostrarLegenda(item, true); mostrarPerguntaEOpcoes(item); });
@@ -722,6 +838,7 @@ function ouvirDeNovo() {
     estado.ouvirDeNovoCont++;
     var item = estado.itemAtual;
     if (item && item.soAudio) { falarItemSoAudio(item, function() {}); }
+    else if (item && item.integracaoAV) { falarIntegrado(item, function() {}); }
     else { falarLegenda(item, function() {}); }
 }
 
@@ -732,10 +849,12 @@ function mostrarLegenda(item, comPergunta) {
     if (item.soAudio) { comPergunta = false; }
     var html = '<div class="legenda">' + legendaTexto(item.conjunto) + '</div>';
     if (comPergunta) { html += '<div class="pergunta">' + item.pergunta + '</div>'; }
-    // Nos itens com resposta em figuras, mostra a REGUA (digito -> figura) sempre visivel
+    // Nos itens com resposta em figuras, mostra a REGUA (digito -> figura) sempre visivel.
+    // No D3 (integracao), a regua OMITE o digito cujo valor so foi dito no audio.
     if (item.respostaEmFigura && item.conjunto && item.conjunto.regua) {
+        var oculto = item.integracaoAV ? item.digitoOculto : undefined;
         html += '<div class="regua-figuras"><span class="regua-rotulo">R\u00e9gua (n\u00famero = figura):</span><br>' +
-                reguaTexto(item.conjunto.regua) + '</div>';
+                reguaTexto(item.conjunto.regua, oculto) + '</div>';
     }
     area.innerHTML = html;
 }
@@ -757,6 +876,25 @@ function falarItemSoAudio(item, callback) {
     }
     window.speechSynthesis.cancel();
     var u = new SpeechSynthesisUtterance(textoSoAudioFalado(item));
+    u.lang = 'pt-BR'; u.rate = 0.9;
+    u.onend = function() { setTimeout(callback, TEMPO_APOS_AUDIO); };
+    u.onerror = function() { setTimeout(callback, TEMPO_APOS_AUDIO); };
+    window.speechSynthesis.speak(u);
+    document.getElementById('areaBotaoRepetir').style.display = 'block';
+}
+
+/* D3 integracao: fala SO o valor da figura de audio + o comando de somar.
+   O outro valor a pessoa ve na tela; o valor falado NAO esta na regua visivel. */
+function falarIntegrado(item, callback) {
+    var texto = item.textoAudioIntegrado || item.instrucao;
+    if (!('speechSynthesis' in window)) {
+        // Fallback sem voz: mostra o texto do audio por alguns segundos e segue.
+        var a = document.getElementById('areaBotaoRepetir');
+        setTimeout(callback, 4000);
+        return;
+    }
+    window.speechSynthesis.cancel();
+    var u = new SpeechSynthesisUtterance(texto);
     u.lang = 'pt-BR'; u.rate = 0.9;
     u.onend = function() { setTimeout(callback, TEMPO_APOS_AUDIO); };
     u.onerror = function() { setTimeout(callback, TEMPO_APOS_AUDIO); };
