@@ -6418,8 +6418,11 @@
           var d = r.data || {};
           var ts = d.date ? new Date(d.date).getTime() : (r.timestamp || 0);
           if (ts < limite48h) return;
-          // Resolvido fica no SERVIDOR (vale para qualquer dispositivo), nao mais no localStorage
-          if (d.alertaResolvido) return;
+          // MUDANCA: o aviso "resolvido" NAO some mais. Ele continua aparecendo, mas ganha um
+          // carimbo verde "LIDA". Por isso, em vez de "return" quando alertaResolvido, apenas
+          // guardamos o estado (_lido) e a data (_lidoEm) para carimbar na montagem do HTML.
+          var _lido = d.alertaResolvido === true;
+          var _lidoEm = d.alertaResolvidoEm || '';
           var usuario = r.email || '?';
           var fd = d.formData || {};
           var paciente = fd.nome || d.paciente || '-';
@@ -6428,7 +6431,7 @@
           if (d.status === 'erro_transcricao') {
             // Audio pode estar salvo de 3 formas: base64 embutido, referencia no S3, ou flag _temAudio
             var _temAudioErro = !!(d.audioBase64 || d.audioS3Key || d._temAudio);
-            errosTranscricao.push({usuario: usuario, paciente: paciente, tipo: (r.tipo || '?'), data: d.date, temAudio: _temAudioErro, erro: d.erro || '', sessionId: r.sessionId || ''});
+            errosTranscricao.push({usuario: usuario, paciente: paciente, tipo: (r.tipo || '?'), data: d.date, temAudio: _temAudioErro, erro: d.erro || '', sessionId: r.sessionId || '', lido: _lido, lidoEm: _lidoEm});
             _ehAlerta = true;
           }
           // FALHA SILENCIOSA: teste TFLOD salvo como 'finalizado' mas com PCPM 0 (nenhuma
@@ -6438,18 +6441,18 @@
             var _pcpmFin = (d.resultados && d.resultados.pcpm !== undefined) ? Number(d.resultados.pcpm) : null;
             if (_pcpmFin !== null && (!isFinite(_pcpmFin) || _pcpmFin <= 0)) {
               var _temAudioFin = !!(d.audioBase64 || d.audioS3Key || d._temAudio);
-              errosTranscricao.push({usuario: usuario, paciente: paciente, tipo: (r.tipo || '?'), data: d.date, temAudio: _temAudioFin, erro: 'PCPM 0 (leitura nao captada) - salvo como finalizado', sessionId: r.sessionId || ''});
+              errosTranscricao.push({usuario: usuario, paciente: paciente, tipo: (r.tipo || '?'), data: d.date, temAudio: _temAudioFin, erro: 'PCPM 0 (leitura nao captada) - salvo como finalizado', sessionId: r.sessionId || '', lido: _lido, lidoEm: _lidoEm});
               _ehAlerta = true;
             }
           }
           // Abandonados
           if (d.status === 'abandonado') {
-            abandonados.push({usuario: usuario, paciente: paciente, tipo: r.tipo || '?', data: d.date, sessionId: r.sessionId || ''});
+            abandonados.push({usuario: usuario, paciente: paciente, tipo: r.tipo || '?', data: d.date, sessionId: r.sessionId || '', lido: _lido, lidoEm: _lidoEm});
             _ehAlerta = true;
           }
           // Aguardando (sessoes nao completadas)
           if (d.status === 'aguardando') {
-            aguardando.push({usuario: usuario, paciente: paciente, tipo: r.tipo || '?', data: d.date, sessionId: r.sessionId || ''});
+            aguardando.push({usuario: usuario, paciente: paciente, tipo: r.tipo || '?', data: d.date, sessionId: r.sessionId || '', lido: _lido, lidoEm: _lidoEm});
             _ehAlerta = true;
           }
           // Contar logins por usuario (apenas ultimas 48h - metrica de curto prazo)
@@ -6459,19 +6462,33 @@
           }
           // Bonus suspeito (>=80% de similaridade) - anti-abuso
           if (r.tipo === 'bonus-log' && d.alerta && d.alerta.scoreSuspeita >= 80) {
-            bonusSuspeitos.push({ usuario: usuario, score: d.alerta.scoreSuspeita, motivo: d.alerta.motivo || '', similarA: d.alerta.similarA || '', data: d.date, desfecho: d.desfecho || 'liberado', degrau: (d.degrau != null ? d.degrau : 0) });
+            bonusSuspeitos.push({ usuario: usuario, score: d.alerta.scoreSuspeita, motivo: d.alerta.motivo || '', similarA: d.alerta.similarA || '', data: d.date, desfecho: d.desfecho || 'liberado', degrau: (d.degrau != null ? d.degrau : 0), sessionId: r.sessionId || '', lido: _lido, lidoEm: _lidoEm });
             _ehAlerta = true;
           }
           // Falha na geracao de PDF (registrada pelo navegador do usuario)
           if (r.tipo === 'erro-pdf') {
-            errosPDF.push({ usuario: usuario, tipoTeste: d.tipoTeste || '?', erro: d.erro || '', data: d.date, sessionId: r.sessionId || '' });
+            errosPDF.push({ usuario: usuario, tipoTeste: d.tipoTeste || '?', erro: d.erro || '', data: d.date, sessionId: r.sessionId || '', lido: _lido, lidoEm: _lidoEm });
             _ehAlerta = true;
           }
-          // Guarda o identificador para poder marcar como resolvido no servidor
-          if (_ehAlerta && r.sessionId) {
+          // Guarda o identificador para poder marcar como resolvido no servidor.
+          // Agora so entram na lista do botao "marcar todos" os que AINDA NAO foram lidos.
+          if (_ehAlerta && r.sessionId && !_lido) {
             window._alertasVisiveis.push({ sessionId: r.sessionId, email: r.email || currentUser, tipo: r.tipo || '', data: d });
           }
         });
+        // Funcao unica que gera o "carimbo" ao lado de cada aviso.
+        // - Se ainda NAO foi lido: mostra um quadrinho (checkbox) para marcar como lida.
+        // - Se JA foi lido: mostra o selo verde "LIDA" com a data em que foi marcado.
+        // O checkbox chama marcarAlertaLido(sessionId), que grava no servidor e recarrega o Monitor.
+        function _carimboAlerta(item) {
+          if (!item || !item.sessionId) return '';
+          var sid = String(item.sessionId).replace(/'/g, '');
+          if (item.lido) {
+            var quando = item.lidoEm ? (' em ' + new Date(item.lidoEm).toLocaleDateString('pt-BR')) : '';
+            return ' <span style="display:inline-block;font-size:9px;font-weight:700;background:#2e7d32;color:#fff;padding:2px 8px;border-radius:8px;margin-left:4px;">&#10003; LIDA' + quando + '</span>';
+          }
+          return ' <label style="font-size:10px;color:#2e7d32;cursor:pointer;white-space:nowrap;margin-left:4px;"><input type="checkbox" onchange="if(this.checked)marcarAlertaLido(\'' + sid + '\', this)" style="vertical-align:middle;cursor:pointer;"> marcar lida</label>';
+        }
         // Montar HTML dos alertas (classificados por responsabilidade)
         var html = '';
         if (errosTranscricao.length > 0) {
@@ -6481,8 +6498,7 @@
           errosTranscricao.forEach(function(e) {
             var dataStr = e.data ? new Date(e.data).toLocaleString('pt-BR') : '';
             var tipoStr = (e.tipo || '?').toUpperCase();
-            var btnResE = e.sessionId ? ' <button onclick="resolverAlertaItem(\'' + String(e.sessionId).replace(/'/g,'') + '\', this)" style="font-size:9px;padding:1px 8px;border:none;border-radius:8px;background:#2e7d32;color:#fff;cursor:pointer;">Resolver</button>' : '';
-            html += '<span style="font-size:11px;">&#128100; ' + e.usuario + ' | &#127919; ' + tipoStr + ' | &#128113; ' + e.paciente + ' | ' + (e.temAudio ? '&#127925; audio salvo (reprocessavel)' : '&#9888; sem audio (perdido)') + ' | &#128337; ' + dataStr + btnResE + '</span><br>';
+            html += '<span style="font-size:11px;">&#128100; ' + e.usuario + ' | &#127919; ' + tipoStr + ' | &#128113; ' + e.paciente + ' | ' + (e.temAudio ? '&#127925; audio salvo (reprocessavel)' : '&#9888; sem audio (perdido)') + ' | &#128337; ' + dataStr + _carimboAlerta(e) + '</span><br>';
             if (e.erro) html += '<span style="font-size:10px;color:#888;margin-left:16px;">Erro: ' + e.erro.slice(0,80) + '</span><br>';
           });
           html += '</div>';
@@ -6494,8 +6510,7 @@
           html += '<span style="font-size:10px;color:#888;">O PDF nao foi gerado no navegador do usuario. Os dados do teste continuam salvos.</span><br>';
           errosPDF.forEach(function(e) {
             var dataStr = e.data ? new Date(e.data).toLocaleString('pt-BR') : '';
-            var btnResP = e.sessionId ? ' <button onclick="resolverAlertaItem(\'' + String(e.sessionId).replace(/'/g,'') + '\', this)" style="font-size:9px;padding:1px 8px;border:none;border-radius:8px;background:#2e7d32;color:#fff;cursor:pointer;">Resolver</button>' : '';
-            html += '<span style="font-size:11px;">&#128100; ' + e.usuario + ' | &#127919; ' + (e.tipoTeste || '?').toUpperCase() + ' | &#128337; ' + dataStr + btnResP + '</span><br>';
+            html += '<span style="font-size:11px;">&#128100; ' + e.usuario + ' | &#127919; ' + (e.tipoTeste || '?').toUpperCase() + ' | &#128337; ' + dataStr + _carimboAlerta(e) + '</span><br>';
             if (e.erro) html += '<span style="font-size:10px;color:#888;margin-left:16px;">Erro: ' + e.erro.slice(0,80) + '</span><br>';
           });
           html += '</div>';
@@ -6507,8 +6522,7 @@
           html += '<span style="font-size:10px;color:#888;">Pode ser: link nao aberto pelo paciente, teste que travou, ou conexao caiu.</span><br>';
           aguardando.forEach(function(a) {
             var dataStr = a.data ? new Date(a.data).toLocaleString('pt-BR') : '';
-            var btnResA = a.sessionId ? ' <button onclick="resolverAlertaItem(\'' + String(a.sessionId).replace(/'/g,'') + '\', this)" style="font-size:9px;padding:1px 8px;border:none;border-radius:8px;background:#f57f17;color:#fff;cursor:pointer;">Resolver</button>' : '';
-            html += '<span style="font-size:11px;">&#128100; ' + a.usuario + ' | &#128113; ' + a.paciente + ' | &#127919; ' + a.tipo.toUpperCase() + ' | &#128337; ' + dataStr + btnResA + '</span><br>';
+            html += '<span style="font-size:11px;">&#128100; ' + a.usuario + ' | &#128113; ' + a.paciente + ' | &#127919; ' + a.tipo.toUpperCase() + ' | &#128337; ' + dataStr + _carimboAlerta(a) + '</span><br>';
           });
           html += '</div>';
         }
@@ -6542,6 +6556,7 @@
             if (b.desfecho === 'bloqueado-pendente') {
               html += ' <button onclick="liberarBonusManual(\'' + b.usuario.replace(/'/g,'') + '\', this)" style="margin-left:6px;padding:2px 10px;border:none;border-radius:8px;font-size:11px;cursor:pointer;background:#2e7d32;color:#fff;">Liberar bonus</button>';
             }
+            html += _carimboAlerta(b);
             html += '</div>';
           });
           html += '</div>';
@@ -6553,8 +6568,7 @@
           html += '<span style="font-size:10px;color:#888;">Paciente ou avaliador fechou a aba antes de concluir. Decisao deles.</span><br>';
           abandonados.forEach(function(a) {
             var dataStr = a.data ? new Date(a.data).toLocaleString('pt-BR') : '';
-            var btnResAb = a.sessionId ? ' <button onclick="resolverAlertaItem(\'' + String(a.sessionId).replace(/'/g,'') + '\', this)" style="font-size:9px;padding:1px 8px;border:none;border-radius:8px;background:#4caf50;color:#fff;cursor:pointer;">Resolver</button>' : '';
-            html += '<span style="font-size:11px;">&#128100; ' + a.usuario + ' | &#128113; ' + a.paciente + ' | &#127919; ' + a.tipo.toUpperCase() + ' | &#128337; ' + dataStr + btnResAb + '</span><br>';
+            html += '<span style="font-size:11px;">&#128100; ' + a.usuario + ' | &#128113; ' + a.paciente + ' | &#127919; ' + a.tipo.toUpperCase() + ' | &#128337; ' + dataStr + _carimboAlerta(a) + '</span><br>';
           });
           html += '</div>';
         }
@@ -6563,9 +6577,14 @@
           card.style.borderColor = '#2e7d32';
           card.style.background = '#e8f5e9';
         } else {
-          html += '<div style="text-align:center;margin-top:10px;padding-top:10px;border-top:1px solid #e0e0e0;">';
-          html += '<button onclick="resolverAlertasAdmin()" style="padding:8px 20px;border:none;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#2e7d32,#66bb6a);color:white;">&#9989; Resolvido — Limpar alertas</button>';
-          html += '</div>';
+          // O botao geral so carimba os que AINDA nao foram lidos (window._alertasVisiveis).
+          // Se todos ja estiverem lidos, nao mostra o botao (nada a fazer).
+          var _pendentes = (window._alertasVisiveis || []).length;
+          if (_pendentes > 0) {
+            html += '<div style="text-align:center;margin-top:10px;padding-top:10px;border-top:1px solid #e0e0e0;">';
+            html += '<button onclick="resolverAlertasAdmin()" style="padding:8px 20px;border:none;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#2e7d32,#66bb6a);color:white;">&#10003; Marcar todos como lidos (' + _pendentes + ')</button>';
+            html += '</div>';
+          }
         }
         el.innerHTML = html;
         card.style.display = 'block';
@@ -6621,30 +6640,30 @@
         } catch(e) {}
       }
       window._alertasVisiveis = [];
-      var card = document.getElementById('adminAlertasCard');
-      if (el) el.innerHTML = '<p style="color:#2e7d32;font-weight:bold;">&#9989; Tudo certo! Alertas resolvidos (em todos os dispositivos).</p>';
-      if (card) { card.style.borderColor = '#2e7d32'; card.style.background = '#e8f5e9'; }
+      // Nao "limpa" a tela: recarrega o Monitor para que cada aviso reapareca ja com o carimbo "LIDA".
+      if (typeof carregarAlertasAdmin === 'function') carregarAlertasAdmin();
     }
 
-    // Resolve UM unico alerta (botao por item). Marca so aquele sessionId como resolvido
-    // no servidor, sem tocar nos demais. Depois recarrega o monitor para refletir.
-    async function resolverAlertaItem(sessionId, btn) {
+    // Marca UM aviso como LIDO (quadrinho por item). Grava a flag no servidor (vale para
+    // qualquer dispositivo) e recarrega o Monitor para o aviso reaparecer com o carimbo "LIDA".
+    // O aviso NAO some — so ganha o selo verde, para o admin reconhecer que ja foi tratado.
+    async function marcarAlertaLido(sessionId, chk) {
       if (!sessionId) return;
-      if (btn) { btn.disabled = true; btn.textContent = '...'; }
+      if (chk) { chk.disabled = true; }
       try {
         await fetch(API_URL + '/resolver-alerta', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ sessionId: sessionId })
         });
-        // Remove da lista em memoria e recarrega o monitor
+        // Tira da lista de "pendentes" (para o contador do botao geral ficar certo) e recarrega.
         if (window._alertasVisiveis) {
           window._alertasVisiveis = window._alertasVisiveis.filter(function(a) { return a.sessionId !== sessionId; });
         }
         if (typeof carregarAlertasAdmin === 'function') carregarAlertasAdmin();
       } catch(e) {
-        if (btn) { btn.disabled = false; btn.textContent = 'Resolver'; }
-        alert('Erro ao resolver o alerta. Tente novamente.');
+        if (chk) { chk.disabled = false; chk.checked = false; }
+        alert('Erro ao marcar como lida. Tente novamente.');
       }
     }
 
@@ -11042,30 +11061,41 @@
       var doc = new JsPDF();
       var d = r.data || {};
       var p = d.formData || d.paciente || {};
+      // Margem de 0,5 cm (5 mm) em cada lado. A4 tem 210 mm de largura,
+      // entao a largura util e 210 - 5 - 5 = 200 mm.
+      var MARGEM = 5;
+      var LARGURA_UTIL = 210 - (MARGEM * 2);
       var y = 20;
       doc.setFontSize(16); doc.setTextColor(57, 73, 171);
-      doc.text('BRPI - Relatorio de Rastreio', 15, y); y += 8;
+      doc.text('BRPI - Relatorio de Rastreio', MARGEM, y); y += 8;
       doc.setFontSize(10); doc.setTextColor(60, 60, 60);
-      doc.text('Bateria de Rastreio do Processamento da Inteligencia', 15, y); y += 10;
+      doc.text('Bateria de Rastreio do Processamento da Inteligencia', MARGEM, y); y += 10;
       doc.setFontSize(11); doc.setTextColor(0, 0, 0);
-      doc.text('Paciente: ' + (p.patientName || p.nome || '-'), 15, y); y += 6;
-      doc.text('Nascimento: ' + (p.birthDate || '-'), 15, y); y += 6;
-      doc.text('Escolaridade: ' + (p.education || '-'), 15, y); y += 6;
-      doc.text('Data: ' + (d.dataAplicacao ? new Date(d.dataAplicacao).toLocaleString('pt-BR') : '-'), 15, y); y += 10;
+      doc.text('Paciente: ' + (p.patientName || p.nome || '-'), MARGEM, y); y += 6;
+      doc.text('ID do paciente: ' + (p.pacienteId || p.idPaciente || d.pacienteId || '-'), MARGEM, y); y += 6;
+      doc.text('Nascimento: ' + (p.birthDate || '-'), MARGEM, y); y += 6;
+      doc.text('Escolaridade: ' + (p.education || '-'), MARGEM, y); y += 6;
+      doc.text('Data: ' + (d.dataAplicacao ? new Date(d.dataAplicacao).toLocaleString('pt-BR') : '-'), MARGEM, y); y += 10;
       doc.setFontSize(12); doc.setTextColor(57, 73, 171);
-      doc.text('Modulos aplicados', 15, y); y += 7;
+      doc.text('Modulos aplicados', MARGEM, y); y += 7;
       doc.setFontSize(10); doc.setTextColor(40, 40, 40);
       ['A', 'B', 'C', 'D'].forEach(function(m) {
         var dados = d[m];
         var linha = 'Modulo ' + m + ' (' + _brpiNomesModulos[m] + '): ' + (dados ? 'aplicado' : 'nao aplicado');
-        if (dados && typeof dados.teto !== 'undefined') { linha += ' | teto: ' + dados.teto; }
-        if (dados && typeof dados.spans !== 'undefined') { linha += ' | spans: ' + JSON.stringify(dados.spans); }
-        doc.text(linha, 15, y); y += 6;
+        // teto e spans sao OBJETOS: serializar com JSON.stringify (evita "[object Object]")
+        if (dados && typeof dados.teto !== 'undefined' && dados.teto !== null) { linha += ' | teto: ' + JSON.stringify(dados.teto); }
+        if (dados && typeof dados.spans !== 'undefined' && dados.spans !== null) { linha += ' | spans: ' + JSON.stringify(dados.spans); }
+        // Quebra a linha na largura util para nao vazar pela borda direita.
+        var linhasQuebradas = doc.splitTextToSize(linha, LARGURA_UTIL);
+        doc.text(linhasQuebradas, MARGEM, y);
+        y += 6 * linhasQuebradas.length;
       });
       y += 8;
       doc.setFontSize(8); doc.setTextColor(120, 120, 120);
-      doc.text('Instrumento de rastreio exploratorio, sem normatizacao formal. Uso por profissional qualificado.', 15, y);
-      var nomeArq = 'BRPI_' + ((p.patientName || 'paciente').replace(/[^a-zA-Z0-9]/g, '') || 'paciente') + '_' + new Date().toISOString().slice(0, 10).replace(/-/g, '') + '.pdf';
+      doc.text('Instrumento de rastreio exploratorio, sem normatizacao formal. Uso por profissional qualificado.', MARGEM, y);
+      var tsNow = new Date();
+      var tsStr = tsNow.getFullYear() + String(tsNow.getMonth() + 1).padStart(2, '0') + String(tsNow.getDate()).padStart(2, '0') + String(tsNow.getHours()).padStart(2, '0') + String(tsNow.getMinutes()).padStart(2, '0');
+      var nomeArq = 'BRPI_' + ((p.patientName || 'paciente').replace(/[^a-zA-Z0-9]/g, '') || 'paciente') + '_' + tsStr + '.pdf';
       doc.save(nomeArq);
     }
 
