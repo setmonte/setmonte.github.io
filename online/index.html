@@ -1118,7 +1118,7 @@
             <input type="date" id="duDataNasc" onchange="_recalcularIdUsuario()" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:10px;box-sizing:border-box;">
 
             <label style="font-size:0.85em;color:#555;">ID (gerado automaticamente):</label>
-            <input type="text" id="duId" readonly placeholder="3 primeiras letras do nome + data de nascimento" style="width:100%;padding:8px;border:1px solid #eee;border-radius:6px;margin-bottom:10px;box-sizing:border-box;background:#f5f5f5;color:#555;">
+            <input type="text" id="duId" readonly placeholder="Gerado ao preencher nome e data de nascimento" style="width:100%;padding:8px;border:1px solid #eee;border-radius:6px;margin-bottom:10px;box-sizing:border-box;background:#f5f5f5;color:#2e7d32;font-weight:bold;font-family:monospace;text-align:center;">
 
             <label style="font-size:0.85em;color:#555;">CPF:</label>
             <input type="text" id="duCPF" placeholder="XXX.XXX.XXX-XX" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:10px;box-sizing:border-box;">
@@ -10468,13 +10468,17 @@
     // pela anamnese. O logo do usuario vai em "dadosUsuarioLogo" (base64), tambem na AWS.
     var _duLogoBase64 = '';
 
-    // ID = 3 primeiras letras do nome (sem acento, minusculas) + data de nascimento (AAAA-MM-DD).
-    // Ex.: "Sergio" + "1980-05-10" => "ser1980-05-10". So exibe; nao e editavel.
+    // ID no MESMO formato dos testes: usa gerarIdPacienteHash (algoritmo do id-paciente.js,
+    // hash djb2 de "nascimento + 3 primeiras letras do nome", prefixado com "P"). Assim o ID
+    // exibido aqui e identico ao que aparece nos resultados dos instrumentos. So exibe; nao edita.
     function _recalcularIdUsuario() {
       var nome = (document.getElementById('duNome') || {}).value || '';
       var dn = (document.getElementById('duDataNasc') || {}).value || '';
-      var pref = nome.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z]/g, '').toLowerCase().substring(0, 3);
-      var id = (pref && dn) ? (pref + dn) : '';
+      var id = '';
+      if (nome && dn && typeof gerarIdPacienteHash === 'function') {
+        var h = gerarIdPacienteHash(nome, dn);
+        if (h && h !== '-') id = h;
+      }
       var el = document.getElementById('duId');
       if (el) el.value = id;
       return id;
