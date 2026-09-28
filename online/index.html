@@ -10586,7 +10586,31 @@
         // Deixa disponivel para o pre-preenchimento automatico dos testes.
         window._dadosUsuario = d;
         try { localStorage.setItem('dadosUsuario', JSON.stringify(d)); } catch (e) {}
+        _preencherProfissionalNosFormularios();
       } catch (e) {}
+    }
+
+    // Pre-preenche o campo do PROFISSIONAL (nome + CRP) nos formularios dos testes, usando os
+    // Dados do Usuario (aba 1). So preenche se o campo estiver VAZIO, para nunca sobrescrever
+    // algo que o profissional tenha digitado a mao. Se a aba nao foi preenchida, nao faz nada
+    // (o profissional continua informando manualmente). Feito em lotes: aqui vao os 3 primeiros.
+    function _preencherProfissionalNosFormularios() {
+      var d = window._dadosUsuario || {};
+      var nome = d.nome || '';
+      var crp = d.crp || '';
+      if (!nome && !crp) return;
+      // Cada par: [idNome, idCrp]. Lote 1: BAE, TRMV, TAAV.
+      var pares = [
+        ['baeEvaluator', 'baeCrp'],
+        ['trmvEvaluator', 'trmvCrp'],
+        ['taavEvaluator', 'taavCrp']
+      ];
+      pares.forEach(function(par) {
+        var elNome = document.getElementById(par[0]);
+        if (elNome && nome && !elNome.value) elNome.value = nome;
+        var elCrp = document.getElementById(par[1]);
+        if (elCrp && crp && !elCrp.value) elCrp.value = crp;
+      });
     }
 
     // Aplica um objeto de config (venha do localStorage ou do servidor) nos campos da tela.
