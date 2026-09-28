@@ -6497,10 +6497,26 @@
           }
           return ' <label style="font-size:10px;color:#2e7d32;cursor:pointer;white-space:nowrap;margin-left:4px;"><input type="checkbox" onchange="if(this.checked)marcarAlertaLido(\'' + sid + '\', this)" style="vertical-align:middle;cursor:pointer;"> marcar lida</label>';
         }
-        // Devolve a classe CSS de cada linha de aviso. Linhas ja lidas recebem "_alertaLido",
-        // que o botao "Ocultar avisos lidos" usa para esconde-las da tela (via classe no card).
+        // Devolve a classe CSS de cada linha de aviso (mantida por compatibilidade visual).
         function _classeLinha(item) {
           return (item && item.lido) ? '_alertaLido' : '_alertaPendente';
+        }
+        // Conta o total de avisos JA LIDOS (antes de qualquer filtro) — usado no rotulo do botao.
+        var _totalLidos = errosTranscricao.filter(function(x){return x.lido;}).length
+          + errosPDF.filter(function(x){return x.lido;}).length
+          + aguardando.filter(function(x){return x.lido;}).length
+          + abandonados.filter(function(x){return x.lido;}).length
+          + bonusSuspeitos.filter(function(x){return x.lido;}).length;
+        // Se o modo "ocultar lidos" estiver ligado, removemos os itens ja lidos de CADA lista
+        // ANTES de montar. Assim o bloco inteiro (titulo + contagem) so aparece se sobrar algo
+        // pendente. Isso resolve o caso em que so os cabecalhos continuavam na tela.
+        if (localStorage.getItem('monitor_ocultar_lidos') === '1') {
+          var _soPendentes = function(x){ return !x.lido; };
+          errosTranscricao = errosTranscricao.filter(_soPendentes);
+          errosPDF = errosPDF.filter(_soPendentes);
+          aguardando = aguardando.filter(_soPendentes);
+          abandonados = abandonados.filter(_soPendentes);
+          bonusSuspeitos = bonusSuspeitos.filter(_soPendentes);
         }
         // Montar HTML dos alertas (classificados por responsabilidade)
         var html = '';
@@ -6589,13 +6605,15 @@
           html = '<p style="color:#2e7d32;font-weight:bold;">&#9989; Tudo certo! Nenhum problema pendente.</p>';
           card.style.borderColor = '#2e7d32';
           card.style.background = '#e8f5e9';
+          // Mesmo sem pendentes: se ha avisos lidos ocultos, oferece o botao para mostra-los
+          // de volta (senao o admin ficaria preso no modo oculto sem conseguir reverter).
+          if (_totalLidos > 0 && localStorage.getItem('monitor_ocultar_lidos') === '1') {
+            html += '<div style="text-align:center;margin-top:10px;">';
+            html += '<button onclick="alternarOcultarLidos()" style="padding:6px 16px;border:none;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;background:#607d8b;color:white;">&#128065; Mostrar avisos lidos (' + _totalLidos + ')</button>';
+            html += '</div>';
+          }
         } else {
-          // Conta quantos avisos ja foram lidos (para mostrar o botao "Ocultar avisos lidos").
-          var _totalLidos = (typeof errosTranscricao !== 'undefined' ? errosTranscricao : []).filter(function(x){return x.lido;}).length
-            + errosPDF.filter(function(x){return x.lido;}).length
-            + aguardando.filter(function(x){return x.lido;}).length
-            + abandonados.filter(function(x){return x.lido;}).length
-            + bonusSuspeitos.filter(function(x){return x.lido;}).length;
+          // _totalLidos ja foi calculado la em cima (antes do filtro). Aqui so usamos.
           var _pendentes = (window._alertasVisiveis || []).length;
           html += '<div style="text-align:center;margin-top:10px;padding-top:10px;border-top:1px solid #e0e0e0;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">';
           // Botao 1: marcar todos os pendentes como lidos (so aparece se houver pendentes).
