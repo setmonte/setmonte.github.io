@@ -6393,6 +6393,14 @@
       var card = document.getElementById('adminAlertasCard');
       var el = document.getElementById('adminAlertasContent');
       if (!card || !el) return;
+      // Injeta (uma unica vez) a regra CSS que esconde as linhas ja lidas quando o card
+      // tem a classe "_ocultarLidos". Assim o botao "Ocultar avisos lidos" limpa a tela.
+      if (!document.getElementById('_estiloOcultarLidos')) {
+        var _st = document.createElement('style');
+        _st.id = '_estiloOcultarLidos';
+        _st.textContent = '#adminAlertasCard._ocultarLidos ._alertaLido{display:none !important;}';
+        document.head.appendChild(_st);
+      }
       try {
         // Buscar todos os resultados das ultimas 48h de TODOS os usuarios
         var resp = await fetch(API_URL + '/admin-get-all-results?email=' + encodeURIComponent(currentUser) + '&horas=8760');
@@ -6489,6 +6497,11 @@
           }
           return ' <label style="font-size:10px;color:#2e7d32;cursor:pointer;white-space:nowrap;margin-left:4px;"><input type="checkbox" onchange="if(this.checked)marcarAlertaLido(\'' + sid + '\', this)" style="vertical-align:middle;cursor:pointer;"> marcar lida</label>';
         }
+        // Devolve a classe CSS de cada linha de aviso. Linhas ja lidas recebem "_alertaLido",
+        // que o botao "Ocultar avisos lidos" usa para esconde-las da tela (via classe no card).
+        function _classeLinha(item) {
+          return (item && item.lido) ? '_alertaLido' : '_alertaPendente';
+        }
         // Montar HTML dos alertas (classificados por responsabilidade)
         var html = '';
         if (errosTranscricao.length > 0) {
@@ -6498,8 +6511,8 @@
           errosTranscricao.forEach(function(e) {
             var dataStr = e.data ? new Date(e.data).toLocaleString('pt-BR') : '';
             var tipoStr = (e.tipo || '?').toUpperCase();
-            html += '<span style="font-size:11px;">&#128100; ' + e.usuario + ' | &#127919; ' + tipoStr + ' | &#128113; ' + e.paciente + ' | ' + (e.temAudio ? '&#127925; audio salvo (reprocessavel)' : '&#9888; sem audio (perdido)') + ' | &#128337; ' + dataStr + _carimboAlerta(e) + '</span><br>';
-            if (e.erro) html += '<span style="font-size:10px;color:#888;margin-left:16px;">Erro: ' + e.erro.slice(0,80) + '</span><br>';
+            html += '<span class="' + _classeLinha(e) + '" style="font-size:11px;">&#128100; ' + e.usuario + ' | &#127919; ' + tipoStr + ' | &#128113; ' + e.paciente + ' | ' + (e.temAudio ? '&#127925; audio salvo (reprocessavel)' : '&#9888; sem audio (perdido)') + ' | &#128337; ' + dataStr + _carimboAlerta(e) + '</span><br class="' + _classeLinha(e) + '">';
+            if (e.erro) html += '<span class="' + _classeLinha(e) + '" style="font-size:10px;color:#888;margin-left:16px;">Erro: ' + e.erro.slice(0,80) + '</span><br class="' + _classeLinha(e) + '">';
           });
           html += '</div>';
         }
@@ -6510,8 +6523,8 @@
           html += '<span style="font-size:10px;color:#888;">O PDF nao foi gerado no navegador do usuario. Os dados do teste continuam salvos.</span><br>';
           errosPDF.forEach(function(e) {
             var dataStr = e.data ? new Date(e.data).toLocaleString('pt-BR') : '';
-            html += '<span style="font-size:11px;">&#128100; ' + e.usuario + ' | &#127919; ' + (e.tipoTeste || '?').toUpperCase() + ' | &#128337; ' + dataStr + _carimboAlerta(e) + '</span><br>';
-            if (e.erro) html += '<span style="font-size:10px;color:#888;margin-left:16px;">Erro: ' + e.erro.slice(0,80) + '</span><br>';
+            html += '<span class="' + _classeLinha(e) + '" style="font-size:11px;">&#128100; ' + e.usuario + ' | &#127919; ' + (e.tipoTeste || '?').toUpperCase() + ' | &#128337; ' + dataStr + _carimboAlerta(e) + '</span><br class="' + _classeLinha(e) + '">';
+            if (e.erro) html += '<span class="' + _classeLinha(e) + '" style="font-size:10px;color:#888;margin-left:16px;">Erro: ' + e.erro.slice(0,80) + '</span><br class="' + _classeLinha(e) + '">';
           });
           html += '</div>';
         }
@@ -6522,7 +6535,7 @@
           html += '<span style="font-size:10px;color:#888;">Pode ser: link nao aberto pelo paciente, teste que travou, ou conexao caiu.</span><br>';
           aguardando.forEach(function(a) {
             var dataStr = a.data ? new Date(a.data).toLocaleString('pt-BR') : '';
-            html += '<span style="font-size:11px;">&#128100; ' + a.usuario + ' | &#128113; ' + a.paciente + ' | &#127919; ' + a.tipo.toUpperCase() + ' | &#128337; ' + dataStr + _carimboAlerta(a) + '</span><br>';
+            html += '<span class="' + _classeLinha(a) + '" style="font-size:11px;">&#128100; ' + a.usuario + ' | &#128113; ' + a.paciente + ' | &#127919; ' + a.tipo.toUpperCase() + ' | &#128337; ' + dataStr + _carimboAlerta(a) + '</span><br class="' + _classeLinha(a) + '">';
           });
           html += '</div>';
         }
@@ -6552,7 +6565,7 @@
             if (b.desfecho === 'bloqueado-pendente') _selo = ' <span style="background:#c62828;color:#fff;padding:1px 6px;border-radius:8px;font-size:10px;">BLOQUEADO (3a) - aguarda voce</span>';
             else if (b.desfecho === 'bloqueado-final') _selo = ' <span style="background:#7b1fa2;color:#fff;padding:1px 6px;border-radius:8px;font-size:10px;">BLOQUEADO (4a+) automatico</span>';
             else _selo = ' <span style="background:#2e7d32;color:#fff;padding:1px 6px;border-radius:8px;font-size:10px;">liberado</span>';
-            html += '<div style="margin:4px 0;font-size:11px;">&#128100; ' + b.usuario + ' &#8776; ' + b.similarA + ' | &#127919; ' + b.score + '% (' + b.motivo + ') | &#128337; ' + dataStr + _selo;
+            html += '<div class="' + _classeLinha(b) + '" style="margin:4px 0;font-size:11px;">&#128100; ' + b.usuario + ' &#8776; ' + b.similarA + ' | &#127919; ' + b.score + '% (' + b.motivo + ') | &#128337; ' + dataStr + _selo;
             if (b.desfecho === 'bloqueado-pendente') {
               html += ' <button onclick="liberarBonusManual(\'' + b.usuario.replace(/'/g,'') + '\', this)" style="margin-left:6px;padding:2px 10px;border:none;border-radius:8px;font-size:11px;cursor:pointer;background:#2e7d32;color:#fff;">Liberar bonus</button>';
             }
@@ -6568,7 +6581,7 @@
           html += '<span style="font-size:10px;color:#888;">Paciente ou avaliador fechou a aba antes de concluir. Decisao deles.</span><br>';
           abandonados.forEach(function(a) {
             var dataStr = a.data ? new Date(a.data).toLocaleString('pt-BR') : '';
-            html += '<span style="font-size:11px;">&#128100; ' + a.usuario + ' | &#128113; ' + a.paciente + ' | &#127919; ' + a.tipo.toUpperCase() + ' | &#128337; ' + dataStr + _carimboAlerta(a) + '</span><br>';
+            html += '<span class="' + _classeLinha(a) + '" style="font-size:11px;">&#128100; ' + a.usuario + ' | &#128113; ' + a.paciente + ' | &#127919; ' + a.tipo.toUpperCase() + ' | &#128337; ' + dataStr + _carimboAlerta(a) + '</span><br class="' + _classeLinha(a) + '">';
           });
           html += '</div>';
         }
@@ -6577,16 +6590,31 @@
           card.style.borderColor = '#2e7d32';
           card.style.background = '#e8f5e9';
         } else {
-          // O botao geral so carimba os que AINDA nao foram lidos (window._alertasVisiveis).
-          // Se todos ja estiverem lidos, nao mostra o botao (nada a fazer).
+          // Conta quantos avisos ja foram lidos (para mostrar o botao "Ocultar avisos lidos").
+          var _totalLidos = (typeof errosTranscricao !== 'undefined' ? errosTranscricao : []).filter(function(x){return x.lido;}).length
+            + errosPDF.filter(function(x){return x.lido;}).length
+            + aguardando.filter(function(x){return x.lido;}).length
+            + abandonados.filter(function(x){return x.lido;}).length
+            + bonusSuspeitos.filter(function(x){return x.lido;}).length;
           var _pendentes = (window._alertasVisiveis || []).length;
+          html += '<div style="text-align:center;margin-top:10px;padding-top:10px;border-top:1px solid #e0e0e0;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">';
+          // Botao 1: marcar todos os pendentes como lidos (so aparece se houver pendentes).
           if (_pendentes > 0) {
-            html += '<div style="text-align:center;margin-top:10px;padding-top:10px;border-top:1px solid #e0e0e0;">';
             html += '<button onclick="resolverAlertasAdmin()" style="padding:8px 20px;border:none;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#2e7d32,#66bb6a);color:white;">&#10003; Marcar todos como lidos (' + _pendentes + ')</button>';
-            html += '</div>';
           }
+          // Botao 2: ocultar/mostrar os avisos ja lidos (so aparece se houver algum lido).
+          // A preferencia fica salva no navegador (localStorage) para o admin manter a tela limpa.
+          if (_totalLidos > 0) {
+            var _ocultando = localStorage.getItem('monitor_ocultar_lidos') === '1';
+            var _rotulo = _ocultando ? ('&#128065; Mostrar avisos lidos (' + _totalLidos + ')') : ('&#128683; Ocultar avisos lidos (' + _totalLidos + ')');
+            html += '<button onclick="alternarOcultarLidos()" style="padding:8px 20px;border:none;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;background:#607d8b;color:white;">' + _rotulo + '</button>';
+          }
+          html += '</div>';
         }
         el.innerHTML = html;
+        // Aplica a preferencia atual de ocultar os avisos lidos (esconde as linhas _alertaLido).
+        if (localStorage.getItem('monitor_ocultar_lidos') === '1') card.classList.add('_ocultarLidos');
+        else card.classList.remove('_ocultarLidos');
         card.style.display = 'block';
       } catch(e) {
         // Se a rota nao existe ainda, esconder o card silenciosamente
@@ -6641,6 +6669,15 @@
       }
       window._alertasVisiveis = [];
       // Nao "limpa" a tela: recarrega o Monitor para que cada aviso reapareca ja com o carimbo "LIDA".
+      if (typeof carregarAlertasAdmin === 'function') carregarAlertasAdmin();
+    }
+
+    // Alterna entre OCULTAR e MOSTRAR os avisos ja lidos no Monitor. A escolha fica salva no
+    // navegador (localStorage) para a tela continuar do jeito que o admin deixou. Nao apaga nada:
+    // so esconde/mostra visualmente as linhas ja carimbadas como "LIDA".
+    function alternarOcultarLidos() {
+      var atual = localStorage.getItem('monitor_ocultar_lidos') === '1';
+      localStorage.setItem('monitor_ocultar_lidos', atual ? '0' : '1');
       if (typeof carregarAlertasAdmin === 'function') carregarAlertasAdmin();
     }
 
