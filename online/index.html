@@ -1111,36 +1111,48 @@
             <p style="font-size:12px;color:#555;margin-top:5px;max-width:640px;margin-left:auto;margin-right:auto;">Preencha seus dados profissionais uma vez. Se preencher, seu <strong>nome</strong> e <strong>CRP</strong> j&#225; entram automaticamente como identifica&#231;&#227;o nos resultados dos testes. Preencher &#233; opcional &#8212; se deixar em branco, voc&#234; informa manualmente em cada teste.</p>
           </div>
           <div style="max-width:640px;margin:0 auto;background:#fff;border:1px solid #c8e6c9;border-radius:10px;padding:20px;">
+
+            <!-- Logo no topo, centralizado -->
+            <div style="text-align:center;margin-bottom:18px;">
+              <label style="font-size:0.85em;color:#555;display:block;margin-bottom:8px;">Logo (opcional):</label>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+                <img id="duLogoPreview" src="" alt="" style="max-height:90px;max-width:180px;display:none;border:1px solid #eee;border-radius:8px;padding:4px;background:#fff;">
+                <div style="display:flex;align-items:center;gap:10px;justify-content:center;">
+                  <input type="file" id="duLogoInput" accept="image/*" onchange="_selecionarLogoUsuario(this)" style="font-size:12px;">
+                  <button type="button" id="duLogoRemover" onclick="_removerLogoUsuario()" style="display:none;padding:4px 10px;font-size:11px;border:none;border-radius:6px;background:#e57373;color:#fff;cursor:pointer;">Remover logo</button>
+                </div>
+              </div>
+            </div>
+
             <label style="font-size:0.85em;color:#555;">Nome:</label>
             <input type="text" id="duNome" oninput="_recalcularIdUsuario()" placeholder="Seu nome completo" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:10px;box-sizing:border-box;">
 
-            <label style="font-size:0.85em;color:#555;">Data de Nascimento:</label>
-            <input type="date" id="duDataNasc" onchange="_recalcularIdUsuario()" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:10px;box-sizing:border-box;">
-
-            <label style="font-size:0.85em;color:#555;">ID (gerado automaticamente):</label>
-            <input type="text" id="duId" readonly placeholder="Gerado ao preencher nome e data de nascimento" style="width:100%;padding:8px;border:1px solid #eee;border-radius:6px;margin-bottom:10px;box-sizing:border-box;background:#f5f5f5;color:#2e7d32;font-weight:bold;font-family:monospace;text-align:center;">
+            <!-- Data de nascimento + ID (caixa menor) lado a lado, ID a esquerda -->
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+              <div style="width:150px;">
+                <label style="font-size:0.85em;color:#555;">ID:</label>
+                <input type="text" id="duId" readonly placeholder="auto" title="Gerado ao preencher nome e data de nascimento" style="width:100%;padding:8px;border:1px solid #eee;border-radius:6px;box-sizing:border-box;background:#f5f5f5;color:#2e7d32;font-weight:bold;font-family:monospace;text-align:center;">
+              </div>
+              <div style="flex:1;min-width:180px;">
+                <label style="font-size:0.85em;color:#555;">Data de Nascimento:</label>
+                <input type="date" id="duDataNasc" onchange="_recalcularIdUsuario()" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;box-sizing:border-box;">
+              </div>
+            </div>
 
             <label style="font-size:0.85em;color:#555;">CPF:</label>
-            <input type="text" id="duCPF" placeholder="XXX.XXX.XXX-XX" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:10px;box-sizing:border-box;">
+            <input type="text" id="duCPF" oninput="maskCPF(this)" maxlength="14" placeholder="XXX.XXX.XXX-XX" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:10px;box-sizing:border-box;">
 
             <label style="font-size:0.85em;color:#555;">CNPJ:</label>
-            <input type="text" id="duCNPJ" placeholder="XX.XXX.XXX/XXXX-XX" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:10px;box-sizing:border-box;">
+            <input type="text" id="duCNPJ" oninput="maskCNPJ(this)" maxlength="18" placeholder="XX.XXX.XXX/XXXX-XX" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:10px;box-sizing:border-box;">
 
             <label style="font-size:0.85em;color:#555;">CRP:</label>
-            <input type="text" id="duCRP" placeholder="XX/XXXXXX-X" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:10px;box-sizing:border-box;">
+            <input type="text" id="duCRP" oninput="maskCRP(this)" maxlength="11" placeholder="XX/XXXXXX-X" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:10px;box-sizing:border-box;">
 
             <label style="font-size:0.85em;color:#555;">Telefone / WhatsApp:</label>
-            <input type="text" id="duTelefone" placeholder="(XX)9XXXX-XXXX" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:10px;box-sizing:border-box;">
+            <input type="text" id="duTelefone" oninput="maskTelefone(this)" maxlength="14" placeholder="(XX)9XXXX-XXXX" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:10px;box-sizing:border-box;">
 
             <label style="font-size:0.85em;color:#555;">Endere&#231;o:</label>
             <input type="text" id="duEndereco" placeholder="Rua, n&#250;mero, bairro, cidade/UF" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:10px;box-sizing:border-box;">
-
-            <label style="font-size:0.85em;color:#555;">Logo (opcional):</label>
-            <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
-              <input type="file" id="duLogoInput" accept="image/*" onchange="_selecionarLogoUsuario(this)" style="font-size:12px;">
-              <img id="duLogoPreview" src="" alt="" style="max-height:60px;max-width:120px;display:none;border:1px solid #eee;border-radius:6px;padding:2px;background:#fff;">
-              <button type="button" id="duLogoRemover" onclick="_removerLogoUsuario()" style="display:none;padding:4px 10px;font-size:11px;border:none;border-radius:6px;background:#e57373;color:#fff;cursor:pointer;">Remover logo</button>
-            </div>
 
             <div style="text-align:center;margin-top:8px;">
               <button type="button" onclick="salvarDadosUsuario(this)" class="btn btn-green" style="padding:10px 28px;font-size:14px;border:none;border-radius:25px;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#2e7d32,#43a047);color:#fff;">&#128190; Salvar Dados</button>
@@ -3658,6 +3670,16 @@
       var v = el.value.replace(/\D/g, '').slice(0, 9);
       if (v.length > 8) v = v.slice(0,2) + '/' + v.slice(2,8) + '-' + v.slice(8);
       else if (v.length > 2) v = v.slice(0,2) + '/' + v.slice(2);
+      el.value = v;
+    }
+
+    function maskCNPJ(el) {
+      // Formato CNPJ: XX.XXX.XXX/XXXX-XX (14 digitos)
+      var v = el.value.replace(/\D/g, '').slice(0, 14);
+      if (v.length > 12) v = v.slice(0,2) + '.' + v.slice(2,5) + '.' + v.slice(5,8) + '/' + v.slice(8,12) + '-' + v.slice(12);
+      else if (v.length > 8) v = v.slice(0,2) + '.' + v.slice(2,5) + '.' + v.slice(5,8) + '/' + v.slice(8);
+      else if (v.length > 5) v = v.slice(0,2) + '.' + v.slice(2,5) + '.' + v.slice(5);
+      else if (v.length > 2) v = v.slice(0,2) + '.' + v.slice(2);
       el.value = v;
     }
 
