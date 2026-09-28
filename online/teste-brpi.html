@@ -74,6 +74,7 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: #f5f5f5; min-heig
 #overlaySair .botoes-aviso { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
 #overlaySair button { padding: 14px 24px; border: none; border-radius: 8px; font-size: 1em; font-weight: 800; cursor: pointer; text-transform: uppercase; }
 #overlaySair .btn-continuar { background: #2e7d32; color: #fff; }
+#overlaySair .btn-pular { background: #ef6c00; color: #fff; }
 #overlaySair .btn-sair-mesmo { background: #c62828; color: #fff; }
 </style>
 </head>
@@ -210,7 +211,8 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: #f5f5f5; min-heig
         <div class="texto-aviso">Se sair agora, a aplica&#231;&#227;o ser&#225; encerrada e este link n&#227;o poder&#225; ser usado de novo.</div>
         <div class="botoes-aviso">
             <button class="btn-continuar" onclick="fecharAvisoSair()">Continuar o teste</button>
-            <button class="btn-sair-mesmo" onclick="confirmarSair()">Sair mesmo assim</button>
+            <button class="btn-pular" onclick="pularModuloAtual()">Pular este m&#243;dulo</button>
+            <button class="btn-sair-mesmo" onclick="confirmarSair()">Sair de tudo</button>
         </div>
     </div>
 </div>
@@ -272,6 +274,7 @@ var MODULOS = [
 var fila = [];              // ids dos modulos escolhidos, na ordem (ex.: ['A','C'])
 var indiceAtual = 0;        // "o dedo" apontando para o modulo da vez
 var resultados = {};        // "quadro de avisos": resultados[id] = dados do modulo
+var modulosCobrados = {};   // anti-cobranca-dupla: modulosCobrados[id]=true quando ja debitou 1 credito daquele modulo nesta sessao
 
 /* sessionData: os dados do paciente/avaliador, com as MESMAS chaves do site
    (patientName, birthDate, sex, education, laterality, correcaoVisual, cpf,
@@ -383,6 +386,16 @@ function confirmarSair() {
     mostrarTela('tela-encerrado');
 }
 
+/* Pular este modulo: fecha o aviso e avanca para o proximo modulo da fila
+   SEM registrar resultado do modulo atual. O modulo pulado nao gera dados;
+   o proximo passa normalmente pela cobranca em abrirModuloAtual (so paga o
+   que for efetivamente iniciado). Se era o ultimo, a bateria finaliza. */
+function pularModuloAtual() {
+    fecharAvisoSair();
+    indiceAtual++;              // move o dedo para o proximo (nao guarda resultado do pulado)
+    abrirModuloAtual();         // abre o proximo (cobra 1 credito) ou finaliza a bateria
+}
+
 /* Envia os modulos ja feitos com status 'abandonado' (usa fetch normal aqui,
    pois nao estamos no momento de fechar a aba). */
 function enviarAbandonoBRPI() {
@@ -445,21 +458,69 @@ function moduloPorId(id) {
     return null;
 }
 
+/* ============================================================
+   COBRANCA DE CREDITO POR MODULO (modelo BAE/TFLOD)
+   Debita 1 credito no momento em que o modulo vai iniciar.
+   - Admin (setmonte@gmail.com) e modo local NAO consomem credito.
+   - Anti-cobranca-dupla: se o modulo ja foi cobrado nesta sessao
+     (modulosCobrados[id]), nao cobra de novo (ex.: reload).
+   - Fail-closed: so retorna true (libera o modulo) se o servidor
+     respondeu OK. Sem credito / erro de rede => retorna false.
+   Retorna uma Promise que resolve para true (pode abrir) ou false (bloquear). */
+function cobrarModulo(id) {
+    // Modo local (arquivo aberto direto, sem link do painel): nao cobra.
+    if (!modoOnline) { return Promise.resolve(true); }
+    var email = (sessionData && sessionData.email) ? sessionData.email : '';
+    // Admin nao consome credito.
+    if (email === 'setmonte@gmail.com') { return Promise.resolve(true); }
+    // Sem identificacao nao da para cobrar: bloqueia (fail-closed).
+    if (!email) { return Promise.resolve(false); }
+    // Ja cobrado antes nesta sessao (ex.: reload do mesmo modulo): nao cobra 2x.
+    if (modulosCobrados[id]) { return Promise.resolve(true); }
+    return fetch(BRPI_API_URL + '/use-credit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email, tipo: 'brpi' })
+    }).then(function(r) {
+        // Fail-closed: 403 (sem credito) ou qualquer erro nao libera.
+        if (!r.ok) { return false; }
+        modulosCobrados[id] = true;   // marca como pago para nao cobrar de novo
+        return true;
+    }).catch(function() {
+        // Falha de rede/servidor: NAO liberar o modulo.
+        return false;
+    });
+}
+
 /* Abre o modulo da vez dentro do iframe. Passa ?bateria=1 para o modulo
    saber que esta rodando dentro do controlador (e deve "tocar o sino"), e
    inclui os dados do paciente em ?p= (JSON em base64) para o modulo preencher
-   o formulario sozinho e comecar direto (sem pedir dados de novo). */
+   o formulario sozinho e comecar direto (sem pedir dados de novo).
+   Antes de abrir, cobra 1 credito daquele modulo (ver cobrarModulo). */
 function abrirModuloAtual() {
     if (indiceAtual >= fila.length) { finalizarBateria(); return; }
     var id = fila[indiceAtual];
     var mod = moduloPorId(id);
     var frame = document.getElementById('moduloFrame');
 
-    // Empacota os dados do paciente para o modulo (base64 de JSON, seguro na URL)
-    var pacote = '';
-    try { pacote = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(sessionData))))); } catch (e) { pacote = ''; }
-
-    frame.src = mod.arquivo + '?bateria=1&modulo=' + id + (pacote ? '&p=' + pacote : '');
+    // COBRANCA POR MODULO: so abre se o credito foi debitado com sucesso.
+    cobrarModulo(id).then(function(liberado) {
+        if (!liberado) {
+            // Sem credito (ou erro): nao abre este modulo. Avisa e encerra a bateria,
+            // preservando os modulos ja feitos (o fim/abandono cuida de salvar).
+            alert('Cr\u00e9ditos insuficientes para iniciar o m\u00f3dulo ' + id + '.\n\nOs m\u00f3dulos j\u00e1 realizados foram preservados. Solicite mais cr\u00e9ditos ao seu avaliador.');
+            // Encerra: se online e ainda nao enviou o completo, salva o que ha como abandonado.
+            bateriaEmAndamento = false;
+            mostrarBotaoSair(false);
+            if (modoOnline && !brpiJaEnviado && sessionData.sessionId) { enviarAbandonoBRPI(); }
+            mostrarTela('tela-encerrado');
+            return;
+        }
+        // Liberado: empacota os dados do paciente e abre o modulo no iframe.
+        var pacote = '';
+        try { pacote = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(sessionData))))); } catch (e) { pacote = ''; }
+        frame.src = mod.arquivo + '?bateria=1&modulo=' + id + (pacote ? '&p=' + pacote : '');
+    });
 }
 
 /* ============================================================
