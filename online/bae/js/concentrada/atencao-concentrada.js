@@ -23,10 +23,19 @@ async function startTesteConcentrada() {
   if (window.dispositivoBAE) window.dispositivoBAE.iniciarTeste('concentrada');
   console.log("Iniciando startTesteConcentrada");
 
-  const birthDate = localStorage.getItem('dataNascimento');
+  // Data de nascimento: no modo online ela vem do sessionData e e gravada no localStorage
+  // por _preencherCamposBAE(). Se por algum motivo nao estiver no localStorage (ordem de
+  // carregamento, cache), buscamos o campo oculto #dataNascimento como fallback (igual a
+  // Dividida ja faz). Antes, quando faltava, o teste travava aqui na instrucao com um alerta
+  // e NAO iniciava. Agora nao travamos mais: se nao houver data, seguimos com o padrao adulto
+  // (obterConfigConcentrada assume 25 anos quando nao ha data), e o paciente consegue iniciar.
+  var birthDate = localStorage.getItem('dataNascimento');
   if (!birthDate) {
-    alert("Por favor, preencha a data de nascimento.");
-    return;
+    var _campoDN = document.getElementById('dataNascimento');
+    if (_campoDN && _campoDN.value) {
+      birthDate = _campoDN.value;
+      localStorage.setItem('dataNascimento', birthDate);
+    }
   }
 
   // Obtém configuração por faixa etária

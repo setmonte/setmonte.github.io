@@ -86,11 +86,16 @@ async function startTesteSeletiva() {
   if (typeof marcarBypassados === 'function') marcarBypassados();
   if (window.dispositivoBAE) window.dispositivoBAE.iniciarTeste('seletiva');
   console.log("Iniciando startTesteSeletiva");
-  
-  const birthDate = localStorage.getItem('dataNascimento');
+
+  // Mesmo fallback da Concentrada/Dividida: usa localStorage; se faltar, le o campo oculto
+  // #dataNascimento; se ainda faltar, NAO trava (obterConfigSeletiva assume 25 anos = adulto).
+  var birthDate = localStorage.getItem('dataNascimento');
   if (!birthDate) {
-    alert("Por favor, preencha a data de nascimento.");
-    return;
+    var _campoDN = document.getElementById('dataNascimento');
+    if (_campoDN && _campoDN.value) {
+      birthDate = _campoDN.value;
+      localStorage.setItem('dataNascimento', birthDate);
+    }
   }
 
   // Configuração por faixa etária
