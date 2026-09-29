@@ -803,7 +803,10 @@ async function finalizarGravacao() {
                 resp = await fetch(API_URL + '/transcribe-audio', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ audioBase64: audioBase64, sessionId: sessionInfo.sessionId || '' })
+                    // Envia tambem o formato realmente gravado pelo navegador (mimeType).
+                    // A Lambda usa isso para etiquetar o audio corretamente ao enviar ao Whisper
+                    // (webm/mp4/ogg). Se a Lambda for antiga e ignorar, nada quebra (ela usa webm).
+                    body: JSON.stringify({ audioBase64: audioBase64, sessionId: sessionInfo.sessionId || '', mimeType: audioMimeType || 'audio/webm' })
                 });
                 data = await resp.json();
             } catch (eRede) {
