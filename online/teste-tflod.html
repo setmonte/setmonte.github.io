@@ -21,6 +21,8 @@ body{font-family:'Segoe UI',sans-serif;background:#f5f5f5;min-height:100vh}
 .btn{padding:12px 30px;border:none;border-radius:8px;font-size:1em;font-weight:700;cursor:pointer;margin:5px}
 .btn-primary{background:#1565c0;color:#fff}
 .btn-primary:hover{background:#0d47a1}
+.btn-terminei{background:#0d47a1;color:#fff;border:2px solid #90caf9;box-shadow:0 3px 10px rgba(13,71,161,0.3)}
+.btn-terminei:hover{background:#1565c0}
 .info-tecnica{background:#e3f2fd;border-left:4px solid #1565c0;padding:12px;border-radius:0 8px 8px 0;margin-bottom:15px;font-size:0.75em;color:#555}
 #tela-teste{background:#fff;padding:0;align-items:stretch;justify-content:flex-start}
 .teste-header{background:#0d47a1;color:#fff;padding:15px 20px;display:flex;justify-content:space-between;align-items:center;width:100%}
@@ -100,6 +102,12 @@ body.cursor-hidden, body.cursor-hidden * { cursor: none !important; }
             <option value="Óculos multifocal">Óculos multifocal</option>
             <option value="Lentes de contato">Lentes de contato</option>
             <option value="Não estava usando no teste">Tem, mas não estava usando no teste</option>
+            <!-- Opcoes ocultas que aceitam os valores enviados pelo painel do avaliador
+                 (tflodCorrecaoVisual usa outra lista). Ficam hidden para nao poluir a lista
+                 quando o teste e aberto direto, mas permitem que o valor do painel encaixe no select. -->
+            <option value="Nenhuma" hidden>Nenhuma</option>
+            <option value="Oculos" hidden>Óculos</option>
+            <option value="Lente de contato" hidden>Lente de contato</option>
         </select>
         <div style="text-align:center;margin-top:15px">
             <button class="btn btn-primary" onclick="mostrarInstrucoes()">Continuar</button>
@@ -170,6 +178,10 @@ body.cursor-hidden, body.cursor-hidden * { cursor: none !important; }
     </div>
     <div class="vu-aviso" id="vuAviso">🔈 Volume baixo — fale mais alto e aproxime o microfone</div>
     <div class="texto-leitura" id="textoLeitura"></div>
+    <div style="text-align:center;padding:10px 20px 40px 20px;">
+        <button class="btn btn-terminei" id="btnTerminei" onclick="finalizarGravacao()">&#9989; Terminei a leitura</button>
+        <p style="color:#888;font-size:0.8em;margin-top:8px;">Clique aqui quando terminar de ler o texto todo.</p>
+    </div>
 </div>
 
 <!-- TELA PROCESSANDO -->
@@ -243,6 +255,17 @@ var categoriaTexto = '';
 // Formato de gravacao efetivamente usado (definido em iniciarTeste conforme o suporte do navegador).
 // Guardado aqui porque e usado tanto na criacao do MediaRecorder quanto na montagem do Blob final.
 var audioMimeType = 'audio/webm;codecs=opus';
+
+// Restricoes de captacao do microfone com filtros nativos do navegador ligados.
+// noiseSuppression reduz chiado/ruido de fundo, echoCancellation remove eco,
+// autoGainControl estabiliza o volume. Ajuda MUITO com microfones ruidosos
+// (ex: webcam adaptada), melhorando o reconhecimento da fala pelo Whisper.
+var AUDIO_CONSTRAINTS = { audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } };
+
+// Indica que o teste foi aberto a partir do painel do avaliador (modo ?s= ou ?d=).
+// Nesse caso, os dados clinicos (inclusive correcao visual) foram preenchidos pelo
+// profissional no painel, entao NAO cobramos a correcao visual do paciente de novo.
+var _veioDoPainel = false;
 
 // ===== ESCOLHA DO MELHOR FORMATO DE AUDIO SUPORTADO =====
 // Nem todo navegador grava webm/opus (o Safari/iOS, por exemplo, historicamente nao grava).
@@ -434,7 +457,9 @@ function mostrarInstrucoes() {
     var escolaridade = document.getElementById('escolaridade').value;
     var correcaoVisual = document.getElementById('correcaoVisual').value;
     if (!nome || !dataNasc || !escolaridade) { alert('Preencha Nome, Data de Nascimento e Escolaridade!'); return; }
-    if (!correcaoVisual) { alert('Informe se usa ou n\u00e3o corre\u00e7\u00e3o visual (\u00f3culos/lentes). Esta informa\u00e7\u00e3o \u00e9 importante para a an\u00e1lise.'); return; }
+    // A correcao visual so e cobrada quando o teste e aberto direto (sem painel).
+    // Vindo do painel, quem informa isso e o profissional; nao travamos o paciente.
+    if (!_veioDoPainel && !correcaoVisual) { alert('Informe se usa ou n\u00e3o corre\u00e7\u00e3o visual (\u00f3culos/lentes). Esta informa\u00e7\u00e3o \u00e9 importante para a an\u00e1lise.'); return; }
     calcularIdade();
     gerarID();
     dadosForm = {
@@ -445,7 +470,8 @@ function mostrarInstrucoes() {
         escolaridade: escolaridade,
         dataAval: document.getElementById('dataAval').value || new Date().toISOString().split('T')[0],
         obs: document.getElementById('obs').value,
-        correcaoVisual: document.getElementById('correcaoVisual').value,
+        // Usa o valor do select; se veio do painel e nao encaixou no select, cai no valor do painel.
+        correcaoVisual: document.getElementById('correcaoVisual').value || (sessionInfo && sessionInfo.correcaoVisual) || '',
         id: document.getElementById('idPaciente').value,
         pacienteId: sessionInfo.pacienteId || ''
     };
@@ -522,7 +548,7 @@ function testarMicrofone() {
     document.getElementById('micStatus').style.background = '#e3f2fd';
     document.getElementById('micStatus').style.color = '#0d47a1';
 
-    navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
+    navigator.mediaDevices.getUserMedia(AUDIO_CONSTRAINTS).then(function(stream) {
         _micStream = stream;
         document.getElementById('micStatus').textContent = '\u2705 Microfone conectado! Fale algo para testar.';
         document.getElementById('micStatus').style.background = '#e8f5e9';
@@ -609,11 +635,15 @@ async function iniciarTeste() {
 
     // Mostrar texto na tela
     document.getElementById('textoLeitura').textContent = textoEscolhido;
+    // Garante que o botao "Terminei a leitura" comece habilitado e a trava zerada.
+    _finalizacaoIniciada = false;
+    var _btnTerm = document.getElementById('btnTerminei');
+    if (_btnTerm) { _btnTerm.disabled = false; _btnTerm.style.opacity = '1'; _btnTerm.style.cursor = 'pointer'; }
     trocarTela('tela-teste');
 
     // Iniciar gravacao de audio
     try {
-        var stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        var stream = await navigator.mediaDevices.getUserMedia(AUDIO_CONSTRAINTS);
         audioChunks = [];
         // CORRECAO 4: escolhe o formato suportado pelo navegador (evita quebra no Safari/iOS,
         // que nao grava webm/opus). CORRECAO 5: bitrate maior (32k -> 96k) melhora o
@@ -651,7 +681,17 @@ async function iniciarTeste() {
 }
 
 // ===== FINALIZAR E ENVIAR PARA API =====
+var _finalizacaoIniciada = false;
 async function finalizarGravacao() {
+    // Trava contra chamada dupla: o cronometro (tempo zerou) e o botao "Terminei a leitura"
+    // poderiam disparar juntos. So deixamos finalizar uma unica vez.
+    if (_finalizacaoIniciada) return;
+    _finalizacaoIniciada = true;
+
+    // Desabilita o botao "Terminei a leitura" para nao clicar de novo.
+    var _btnT = document.getElementById('btnTerminei');
+    if (_btnT) { _btnT.disabled = true; _btnT.style.opacity = '0.5'; _btnT.style.cursor = 'default'; }
+
     // Parar cronometro
     if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
 
@@ -1210,6 +1250,9 @@ async function salvarResultadoErro(mensagemErro, audioBase64, audioS3Key) {
 // ===== DADOS DA URL =====
 // Preenche os campos da tela a partir de sessionInfo (comum aos modos ?s= e ?d=)
 function _aplicarSessionInfoTflod() {
+    // Marca que os dados vieram do painel do avaliador. A partir daqui, a correcao
+    // visual nao e mais cobrada do paciente (ja foi informada pelo profissional).
+    _veioDoPainel = true;
     if (sessionInfo.patientName) document.getElementById('nome').value = sessionInfo.patientName;
     if (sessionInfo.birthDate) document.getElementById('dataNasc').value = sessionInfo.birthDate;
     if (sessionInfo.education) document.getElementById('escolaridade').value = sessionInfo.education;
@@ -1218,6 +1261,11 @@ function _aplicarSessionInfoTflod() {
     if (_cvEl && sessionInfo.correcaoVisual) _cvEl.value = sessionInfo.correcaoVisual;
     calcularIdade();
     gerarID();
+    // Vindo do painel, os dados ja foram digitados pelo profissional. Nao faz sentido
+    // mostrar de novo o formulario preenchido para o paciente (redundante e feio).
+    // Pulamos direto para as instrucoes. mostrarInstrucoes() valida e monta o dadosForm;
+    // como _veioDoPainel esta ligado, a correcao visual nao trava aqui.
+    mostrarInstrucoes();
 }
 
 function decodificarURL() {
