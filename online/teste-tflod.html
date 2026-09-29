@@ -21,12 +21,15 @@ body{font-family:'Segoe UI',sans-serif;background:#f5f5f5;min-height:100vh}
 .btn{padding:12px 30px;border:none;border-radius:8px;font-size:1em;font-weight:700;cursor:pointer;margin:5px}
 .btn-primary{background:#1565c0;color:#fff}
 .btn-primary:hover{background:#0d47a1}
-.btn-terminei{background:#0d47a1;color:#fff;border:2px solid #90caf9;box-shadow:0 3px 10px rgba(13,71,161,0.3)}
+.btn-terminei{background:#0d47a1;color:#fff;border:2px solid #90caf9;box-shadow:0 3px 10px rgba(13,71,161,0.3);padding:16px 40px;font-size:1.1em}
 .btn-terminei:hover{background:#1565c0}
 /* Barra fixa no rodape da tela com o botao "Terminei a leitura" (nao fica colada ao texto) */
-.rodape-terminei{position:fixed;left:0;right:0;bottom:0;text-align:center;padding:14px;background:linear-gradient(to top,rgba(255,255,255,0.98),rgba(255,255,255,0.85));box-shadow:0 -2px 10px rgba(0,0,0,0.08);z-index:50}
+.rodape-terminei{position:fixed;left:0;right:0;bottom:0;text-align:center;padding:16px;background:linear-gradient(to top,rgba(255,255,255,0.99),rgba(255,255,255,0.92));box-shadow:0 -2px 12px rgba(0,0,0,0.12);z-index:9999}
+/* O rodape e o botao SEMPRE mostram o cursor, mesmo com o modo cursor-oculto ligado.
+   Sem isso, o paciente move o mouse ate o botao mas nao ve o ponteiro e acha que nao da para clicar. */
+body.cursor-hidden .rodape-terminei, body.cursor-hidden .rodape-terminei * { cursor: pointer !important; }
 /* Espaco extra no fim do texto para o rodape fixo nao cobrir a ultima linha */
-#tela-teste .texto-leitura{padding-bottom:90px}
+#tela-teste .texto-leitura{padding-bottom:110px}
 .info-tecnica{background:#e3f2fd;border-left:4px solid #1565c0;padding:12px;border-radius:0 8px 8px 0;margin-bottom:15px;font-size:0.75em;color:#555}
 #tela-teste{background:#fff;padding:0;align-items:stretch;justify-content:flex-start}
 .teste-header{background:#0d47a1;color:#fff;padding:15px 20px;display:flex;justify-content:space-between;align-items:center;width:100%}
@@ -182,7 +185,7 @@ body.cursor-hidden, body.cursor-hidden * { cursor: none !important; }
     </div>
     <div class="vu-aviso" id="vuAviso">🔈 Volume baixo — fale mais alto e aproxime o microfone</div>
     <div class="texto-leitura" id="textoLeitura"></div>
-    <div class="rodape-terminei">
+    <div class="rodape-terminei" onmousemove="_mostrarCursorTemporario()">
         <button class="btn btn-terminei" id="btnTerminei" onclick="finalizarGravacao()">&#9989; Terminei a leitura</button>
     </div>
 </div>
@@ -776,7 +779,7 @@ async function finalizarGravacao() {
     // Detectamos isso na hora e pedimos para refazer, sem consumir a transcricao.
     // Limiar: menos de 1 chunk OU blob menor que ~2KB (1 min de fala real gera dezenas de KB).
     if (audioChunks.length === 0 || audioBlob.size < 2048) {
-        _mostrarFalhaCaptacao();
+        _mostrarFalhaCaptacao('Audio vazio ou muito curto (' + audioBlob.size + ' bytes). Possivel: leitura muito rapida antes do 1o trecho ser gravado, ou microfone mudo.');
         return;
     }
 
@@ -812,8 +815,9 @@ async function finalizarGravacao() {
         }
         // Se as 3 tentativas falharam por rede, preserva o audio (se houver s3Key) e avisa.
         if (!data) {
-            await salvarResultadoErro(_ultimoErroRede ? 'Falha de rede ao transcrever (3 tentativas)' : 'Sem resposta da transcricao', audioBase64, '');
-            _mostrarFalhaCaptacao();
+            var _motivoRede = _ultimoErroRede ? 'Falha de rede ao transcrever (3 tentativas)' : 'Sem resposta da transcricao';
+            await salvarResultadoErro(_motivoRede, audioBase64, '');
+            _mostrarFalhaCaptacao(_motivoRede);
             return;
         }
         audioS3Key = data.s3Key || '';
@@ -842,8 +846,9 @@ async function finalizarGravacao() {
         // Ver _avaliarCaptacao e FUNDAMENTACAO-TFLOD-captacao.md.
         var _veredito = _avaliarCaptacao(resultado);
         if (!_veredito.valido) {
-            await salvarResultadoErro(_veredito.motivo || 'Audio sem leitura reconhecivel', audioBase64, audioS3Key || '');
-            _mostrarFalhaCaptacao();
+            var _motivoVer = _veredito.motivo || 'Audio sem leitura reconhecivel';
+            await salvarResultadoErro(_motivoVer, audioBase64, audioS3Key || '');
+            _mostrarFalhaCaptacao(_motivoVer);
             return;
         }
         // Chegou aqui: houve leitura real do texto (ainda que com PCPM baixo). Segue como
@@ -869,8 +874,8 @@ async function finalizarGravacao() {
         // Tenta salvar o que tem (incluindo audio para reprocessamento)
         await salvarResultadoErro(erro.message, audioBase64, audioS3Key || '');
         // Mostra mensagem clara de falha de captacao (sem auto-fechar a aba,
-        // para o paciente ler e conseguir refazer o teste).
-        _mostrarFalhaCaptacao();
+        // para o paciente ler e conseguir refazer o teste). Inclui o motivo tecnico.
+        _mostrarFalhaCaptacao(erro && erro.message ? erro.message : '');
     }
 }
 
@@ -940,7 +945,14 @@ function _avaliarCaptacao(resultado) {
 // ===== MENSAGEM DE FALHA DE CAPTACAO (audio nao reconhecido) =====
 // Exibe um aviso claro na tela de processamento e NAO fecha a aba automaticamente,
 // para o paciente entender que precisa refazer o teste.
-function _mostrarFalhaCaptacao() {
+function _mostrarFalhaCaptacao(motivo) {
+    // Loga o motivo tecnico no console (F12) para o profissional diagnosticar sem ir ao monitor.
+    if (motivo) { try { console.warn('[TFLOD] Falha de captacao. Motivo tecnico: ' + motivo); } catch (e) {} }
+    // Sanitiza o motivo para exibir com seguranca (evita quebrar o HTML).
+    var _motivoSeguro = '';
+    if (motivo) {
+        _motivoSeguro = String(motivo).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
     try {
         var tela = document.getElementById('tela-processando');
         if (tela) {
@@ -949,6 +961,7 @@ function _mostrarFalhaCaptacao() {
                 '<h2 style="color:#1565c0;font-size:1.6em;margin-bottom:12px;">Ops! Tivemos um probleminha t\u00e9cnico</h2>' +
                 '<p style="color:#555;font-size:1.05em;line-height:1.6;margin-bottom:18px;">O sistema n\u00e3o conseguiu processar a grava\u00e7\u00e3o desta vez. \u00c9 s\u00f3 um ajuste t\u00e9cnico da nossa parte &#8212; <strong>nada a ver com a leitura realizada</strong>. Basta refazer o teste.</p>' +
                 '<button onclick="location.reload()" style="padding:14px 32px;border:none;border-radius:8px;font-size:1em;font-weight:700;cursor:pointer;background:#1565c0;color:#fff;">&#128260; Refazer o teste</button>' +
+                (_motivoSeguro ? '<p style="color:#aaa;font-size:0.7em;margin-top:22px;">Detalhe t\u00e9cnico (para o profissional): ' + _motivoSeguro + '</p>' : '') +
                 '</div>';
         } else {
             var pt = document.getElementById('progressText');
