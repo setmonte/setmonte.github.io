@@ -785,124 +785,65 @@ async function finalizarGravacao() {
 
     var audioBase64 = await blobToBase64(audioBlob);
 
-    document.getElementById('progressFill').style.width = '30%';
-    document.getElementById('progressText').textContent = 'Transcrevendo com IA (5-10 segundos)...';
+    document.getElementById('progressFill').style.width = '40%';
+    document.getElementById('progressText').textContent = 'Enviando \u00e1udio ao painel...';
 
+    // ===== NOVO FLUXO (set/2026): o PACIENTE NAO TRANSCREVE NA HORA =====
+    // Motivo: a transcricao no momento do teste era vitima do "soluco transitorio" do Whisper
+    // (respostas OK mas vazias), gerando falso "erro" na cara do paciente, ainda por cima em
+    // conexoes ruins (contextos diferentes: Nordeste, Sul, etc.). Agora o paciente apenas ENVIA
+    // o audio para o painel (modo apenasSalvar da Lambda: salva no S3, nao chama o Whisper).
+    // Quem transcreve e o profissional, clicando "Processar" no painel (1x, com calma). O credito
+    // ja foi consumido no inicio do teste; processar/reprocessar no painel nao cobra de novo.
     var audioS3Key = '';
     try {
-        // Enviar audio para Lambda que transcreve via OpenAI Whisper.
-        // Estrategia de robustez em CAMADAS contra o "soluco transitorio" do Whisper
-        // (respostas OK mas com texto VAZIO, observadas em producao mesmo com audio bom):
-        //  - Ate 3 tentativas para ERRO DE REDE (oscilacao rapida de internet).
-        //  - Ate 2 rodadas COMPLETAS quando a transcricao volta VAZIA: reenviamos o mesmo
-        //    audio depois de uma espera maior (o audio ja esta salvo no S3), dando tempo ao
-        //    Whisper se recuperar. So apos esgotar tudo isso e que tratamos como erro real.
-        var data = null;
-        var resp = null;
-        var transcricao = '';
-        var _rodadaVazia = 0;
-        var MAX_RODADAS_VAZIA = 2; // rodadas extras quando a transcricao volta vazia
-        var _ultimoErroRede = false;
-
-        while (_rodadaVazia <= MAX_RODADAS_VAZIA) {
-            // --- Bloco de envio com retry para erro de REDE (ate 3 tentativas) ---
-            data = null;
-            resp = null;
-            var _tentativas = 0;
-            while (_tentativas < 3 && !data) {
-                _tentativas++;
-                try {
-                    resp = await fetch(API_URL + '/transcribe-audio', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        // Envia tambem o formato realmente gravado pelo navegador (mimeType).
-                        // A Lambda usa isso para etiquetar o audio corretamente ao enviar ao Whisper
-                        // (webm/mp4/ogg). Se a Lambda for antiga e ignorar, nada quebra (ela usa webm).
-                        body: JSON.stringify({ audioBase64: audioBase64, sessionId: sessionInfo.sessionId || '', mimeType: audioMimeType || 'audio/webm' })
-                    });
-                    data = await resp.json();
-                } catch (eRede) {
-                    _ultimoErroRede = true;
-                    data = null;
-                    // Pequena espera crescente entre tentativas (0.8s, 1.6s) antes de tentar de novo.
-                    if (_tentativas < 3) { await new Promise(function(r){ setTimeout(r, 800 * _tentativas); }); }
-                }
-            }
-            // Se as 3 tentativas falharam por rede, preserva o audio e avisa (nao insiste em rodada vazia).
-            if (!data) {
-                var _motivoRede = _ultimoErroRede ? 'Falha de rede ao transcrever (3 tentativas)' : 'Sem resposta da transcricao';
-                await salvarResultadoErro(_motivoRede, audioBase64, '');
-                _mostrarFalhaCaptacao(_motivoRede);
-                return;
-            }
-            audioS3Key = data.s3Key || audioS3Key || '';
-            if (!resp.ok) throw new Error(data.error || 'Erro na transcricao');
-            transcricao = (typeof data.text === 'string') ? data.text : '';
-
-            // Se veio texto, seguimos normalmente. Se veio VAZIO, tentamos mais uma rodada
-            // (reprocessamento automatico) antes de desistir - o soluco costuma passar.
-            if (transcricao.trim()) { break; }
-
-            _rodadaVazia++;
-            if (_rodadaVazia <= MAX_RODADAS_VAZIA) {
-                // Avisa discretamente e espera um pouco mais antes de reprocessar.
-                try { document.getElementById('progressText').textContent = 'Ajustando a transcricao, aguarde...'; } catch (e) {}
-                await new Promise(function(r){ setTimeout(r, 2500 * _rodadaVazia); }); // 2.5s, 5s
+        // Envia o audio para o painel (so salva no S3), com ate 3 tentativas para erro de rede.
+        var _dataSalvar = null;
+        var _respSalvar = null;
+        var _tentSalvar = 0;
+        var _erroRedeSalvar = false;
+        while (_tentSalvar < 3 && !_dataSalvar) {
+            _tentSalvar++;
+            try {
+                _respSalvar = await fetch(API_URL + '/transcribe-audio', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ audioBase64: audioBase64, sessionId: sessionInfo.sessionId || '', mimeType: audioMimeType || 'audio/webm', apenasSalvar: true })
+                });
+                _dataSalvar = await _respSalvar.json();
+            } catch (eRedeS) {
+                _erroRedeSalvar = true;
+                _dataSalvar = null;
+                if (_tentSalvar < 3) { await new Promise(function(r){ setTimeout(r, 800 * _tentSalvar); }); }
             }
         }
-
-        // Se depois de todas as rodadas ainda esta vazia, ai sim e erro real.
-        if (!transcricao.trim()) {
-            throw new Error('Transcricao vazia (audio sem fala reconhecivel)');
-        }
-
-        document.getElementById('progressFill').style.width = '80%';
-        document.getElementById('progressText').textContent = 'Calculando resultados...';
-
-        // Calcular resultados (blindado: resultado sempre objeto, pcpm sempre numero)
-        var resultado = calcularResultados(transcricao) || {};
-        var _pcpm = Number(resultado.pcpm);
-        if (!isFinite(_pcpm)) { _pcpm = 0; resultado.pcpm = 0; }
-        if (!resultado.erros) resultado.erros = [];
-
-        // PENEIRA POS-WHISPER (substitui o antigo "pcpm<=0 || acertos<=0 = erro").
-        // Antes: QUALQUER zero de acerto virava falha tecnica, o que podia DESCARTAR um leitor
-        // com muita dificuldade que de fato leu (leitura pobre = resultado clinico legitimo).
-        // Agora: _avaliarCaptacao distingue leitura real (mesmo pobre) de falha tecnica/alucinacao.
-        // Ver _avaliarCaptacao e FUNDAMENTACAO-TFLOD-captacao.md.
-        var _veredito = _avaliarCaptacao(resultado);
-        if (!_veredito.valido) {
-            var _motivoVer = _veredito.motivo || 'Audio sem leitura reconhecivel';
-            await salvarResultadoErro(_motivoVer, audioBase64, audioS3Key || '');
-            _mostrarFalhaCaptacao(_motivoVer);
+        // Se nem salvar o audio deu certo (rede), avisa para refazer (o audio nao chegou ao painel).
+        if (!_dataSalvar || !(_dataSalvar.ok || _dataSalvar.s3Key)) {
+            _mostrarFalhaCaptacao(_erroRedeSalvar ? 'Falha de rede ao enviar o audio (3 tentativas)' : 'Nao foi possivel enviar o audio ao painel');
             return;
         }
-        // Chegou aqui: houve leitura real do texto (ainda que com PCPM baixo). Segue como
-        // resultado clinico valido, sem descartar o desempenho do paciente.
+        audioS3Key = _dataSalvar.s3Key || '';
 
-        // Coleta anonima
-        window._escalaDados = {escala:'TFLOD', escore:_pcpm, classificacao:resultado.classificacao||'Nao classificado', versaoTexto:resultado.versaoTexto||'', dominios:{PCPM:_pcpm, Acertos:resultado.acertos||0, Erros:resultado.erros.length, PalavrasAlcancadas:resultado.palavrasAlcancadas||0}};
+        document.getElementById('progressFill').style.width = '90%';
+        document.getElementById('progressText').textContent = 'Finalizando...';
+
+        // Salva o registro no painel como "aguardando processamento" (sem resultado numerico).
+        // O profissional vai clicar "Processar" para gerar o resultado/PDF.
+        await salvarAudioParaPainel(audioS3Key);
 
         document.getElementById('progressFill').style.width = '100%';
-        document.getElementById('progressText').textContent = 'Enviando resultados...';
 
-        // Salvar resultados + audio no banco
-        await salvarResultado(resultado, audioBase64, audioS3Key);
+        // Mostra a mensagem tranquila ao paciente (audio recebido, sem erro, sem refazer).
+        _mostrarAudioEnviado();
 
-        // Coleta anonima via sendBeacon (garante envio antes de fechar aba)
-        try{var _cUrl='https://script.google.com/macros/s/AKfycbzYl7-ageXnHHyvrKMb6iS_7gX2l6ZBngPpbCHNfj7YYbXylcZ_vQ9iJkrbko8ICPcW/exec';var _idadeEl=document.getElementById('idade');var _idadeVal=null;if(_idadeEl&&_idadeEl.value){var _m=_idadeEl.value.match(/(\d+)\s*ano/);if(_m)_idadeVal=parseInt(_m[1]);}if(!_idadeVal&&dadosForm.idadeAnos)_idadeVal=dadosForm.idadeAnos;if(_idadeVal&&window._escalaDados&&window._escalaDados.escala){var _pkt={email:sessionInfo.email||'',escala:window._escalaDados.escala,idade:_idadeVal,sexo:sessionInfo.sex||'',escolaridade:dadosForm.escolaridade||'',pontuacao:(window._escalaDados.escore!==undefined&&window._escalaDados.escore!==null)?parseFloat(window._escalaDados.escore).toFixed(2):'',dominios:'PCPM:'+window._escalaDados.dominios.PCPM+'; Acertos:'+window._escalaDados.dominios.Acertos+'; Erros:'+window._escalaDados.dominios.Erros+'; PalavrasAlcancadas:'+window._escalaDados.dominios.PalavrasAlcancadas,classificacao:window._escalaDados.classificacao||''};navigator.sendBeacon(_cUrl,JSON.stringify(_pkt));window._jaEnviou=true;}}catch(e){}
-
-        // Auto-fechar aba
-        setTimeout(function(){var _s=document.createElement('script');_s.src='auto-close.js';_s.onload=function(){if(window._autoFechar)_autoFechar();};document.body.appendChild(_s);},2000);
+        // Auto-fechar aba apos alguns segundos.
+        setTimeout(function(){var _s=document.createElement('script');_s.src='auto-close.js';_s.onload=function(){if(window._autoFechar)_autoFechar();};document.body.appendChild(_s);},4000);
 
     } catch (erro) {
-        console.error('Erro na transcri\u00e7\u00e3o:', erro);
-        // Tenta salvar o que tem (incluindo audio para reprocessamento)
-        await salvarResultadoErro(erro.message, audioBase64, audioS3Key || '');
-        // Mostra mensagem clara de falha de captacao (sem auto-fechar a aba,
-        // para o paciente ler e conseguir refazer o teste). Inclui o motivo tecnico.
-        _mostrarFalhaCaptacao(erro && erro.message ? erro.message : '');
+        console.error('Erro ao enviar audio:', erro);
+        _mostrarFalhaCaptacao(erro && erro.message ? erro.message : 'Erro ao enviar o audio');
     }
+    return;
 }
 
 // ===== PENEIRA POS-WHISPER: leitura dificil real x falha tecnica =====
@@ -1243,6 +1184,70 @@ function classificarDesempenho(pcpm, categoria) {
         if (pcpm >= 80) return 'Lim\u00edtrofe';
         return 'Insuficiente';
     }
+}
+
+// ===== NOVO FLUXO: salvar o audio no painel como "aguardando processamento" =====
+// Nao ha resultado numerico ainda; o profissional gera clicando "Processar" no painel.
+// Guardamos os dados necessarios para o painel recalcular o PCPM depois (texto/tempo/categoria).
+async function salvarAudioParaPainel(audioS3Key) {
+    if (!sessionInfo.email || !sessionInfo.sessionId) return;
+    var _tempoUsado = 60 - tempoRestante;
+    if (_tempoUsado <= 0) _tempoUsado = 60;
+    var dados = {
+        email: sessionInfo.email,
+        tipo: 'tflod',
+        sessionId: sessionInfo.sessionId,
+        data: {
+            status: 'aguardando_processamento',
+            date: new Date().toISOString(),
+            formData: {
+                nome: dadosForm.nome,
+                idade: dadosForm.idade,
+                idadeAnos: dadosForm.idadeAnos,
+                escolaridade: dadosForm.escolaridade,
+                dataNasc: dadosForm.dataNasc,
+                dataAval: dadosForm.dataAval,
+                obs: dadosForm.obs,
+                correcaoVisual: dadosForm.correcaoVisual,
+                sexo: dadosForm.sexo || (sessionInfo && sessionInfo.sex) || '',
+                id: dadosForm.id,
+                pacienteId: sessionInfo.pacienteId || ''
+            },
+            audioS3Key: audioS3Key || '',
+            _temAudio: true,
+            // Dados para o painel recalcular o PCPM ao processar:
+            textoUsado: textoEscolhido,
+            versaoTexto: versaoTexto,
+            categoria: categoriaTexto,
+            tempoUsado: _tempoUsado,
+            totalPalavrasTexto: palavrasTexto.length
+        }
+    };
+    dados.idPaciente = dadosForm.id || '';
+    dados.data.pacienteId = sessionInfo.pacienteId || '';
+    dados.data.idPaciente = dadosForm.id || '';
+    try {
+        await fetch(API_URL + '/save-result', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(dados)
+        });
+    } catch (e) { console.error('Erro ao salvar audio no painel:', e); }
+}
+
+// ===== NOVO FLUXO: mensagem tranquila ao paciente (audio recebido) =====
+function _mostrarAudioEnviado() {
+    try {
+        var tela = document.getElementById('tela-processando');
+        if (tela) {
+            tela.innerHTML = '<div style="text-align:center;padding:50px 25px;max-width:520px;margin:0 auto;">' +
+                '<div style="font-size:3em;margin-bottom:10px;">&#9989;</div>' +
+                '<h2 style="color:#2e7d32;font-size:1.7em;margin-bottom:12px;">\u00c1udio captado com sucesso!</h2>' +
+                '<p style="color:#555;font-size:1.1em;line-height:1.6;margin-bottom:10px;">Sua leitura foi enviada ao painel do profissional.</p>' +
+                '<p style="color:#777;font-size:0.95em;line-height:1.6;">O resultado ser\u00e1 processado pelo seu avaliador. Voc\u00ea pode fechar esta janela.</p>' +
+                '</div>';
+        }
+    } catch (e) { console.error('Erro ao exibir mensagem de audio enviado:', e); }
 }
 
 // ===== ENVIAR RESULTADOS =====

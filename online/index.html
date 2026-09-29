@@ -15149,15 +15149,21 @@
           // So e "erro de sistema" quando: status de erro OU vazio-com-audio, e AO MESMO TEMPO
           // NAO foi reprocessado com sucesso E NAO ha sinal de fala real (ou seja, silencio/falha).
           var _pareceFalha = (d.status === 'erro_transcricao') || (_resVazio && temAudio);
-          var isErro = _pareceFalha && !_foiReprocessado && !_temFalaReal;
-          var bgRow = isErro ? 'background:#fff3e0;' : '';
+          // NOVO FLUXO: audio enviado pelo paciente, aguardando o profissional clicar "Processar".
+          // Nao e erro - e o estado normal de um teste que ainda nao foi processado.
+          var _aguardando = (d.status === 'aguardando_processamento') && !_foiReprocessado;
+          var isErro = _pareceFalha && !_foiReprocessado && !_temFalaReal && !_aguardando;
+          var bgRow = isErro ? 'background:#fff3e0;' : (_aguardando ? 'background:#e3f2fd;' : '');
           html += '<tr style="' + bgRow + '"><td style="padding:5px;border-bottom:1px solid #eee;text-align:center;"><input type="checkbox" class="tflod-check" value="' + (r.sessionId || '') + '"></td>';
           html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (d.date ? new Date(d.date).toLocaleString('pt-BR') : '') + '</td>';
           html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (fd.nome || '') + '</td>';
           html += '<td style="padding:5px;border-bottom:1px solid #eee;font-size:10px;font-family:monospace;color:#2e7d32;">' + (d.idPaciente || fd.id || (fd.nome && fd.birthDate ? gerarIdPacienteHash(fd.nome, fd.birthDate) : '-')) + '</td>';
-          if (isErro) {
+          if (_aguardando) {
+            html += '<td style="padding:5px;border-bottom:1px solid #eee;color:#1565c0;font-weight:bold;">AGUARDANDO</td>';
+            html += '<td style="padding:5px;border-bottom:1px solid #eee;color:#1565c0;font-size:10px;">Audio recebido &#8212; clique em Processar</td>';
+          } else if (isErro) {
             html += '<td style="padding:5px;border-bottom:1px solid #eee;color:#c62828;font-weight:bold;">ERRO</td>';
-            html += '<td style="padding:5px;border-bottom:1px solid #eee;color:#c62828;font-size:10px;">' + (d.erro || 'Transcricao vazia - use Reprocessar') + '</td>';
+            html += '<td style="padding:5px;border-bottom:1px solid #eee;color:#c62828;font-size:10px;">' + (d.erro || 'Transcricao vazia - clique em Processar') + '</td>';
           } else {
             // Ha um resultado real processado? (tem transcricao ou foi reprocessado) -> mostra o numero,
             // mesmo que seja 0 (PCPM 0 legitimo de quem tentou ler mas nao conseguiu). Senao, "-".
@@ -15167,17 +15173,21 @@
             html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (res.classificacao || '-') + '</td>';
           }
           html += '<td style="padding:5px;border-bottom:1px solid #eee;text-align:center;">';
-          // PDF: so faz sentido quando ja ha resultado (nao e erro/limbo).
-          if (!isErro) {
+          // PDF: so faz sentido quando ja ha resultado (nao e erro, nem aguardando).
+          if (!isErro && !_aguardando) {
             html += '<button id="btnPdfTflod' + i + '" onclick="gerarPdfTflod(' + i + ')" class="btn btn-blue" style="padding:4px 10px;font-size:0.8em;">PDF</button> ';
           }
           if (temAudio) {
-            // Reprocessar: SEMPRE visivel quando ha audio (erro, limbo ou ja classificado).
-            // Ao clicar, pede confirmacao e consome 1 credito TFLOD (so se der certo).
-            html += '<button onclick="reprocessarTflod(' + i + ', this)" class="btn btn-orange" style="padding:4px 10px;font-size:0.8em;">&#128260; Reprocessar</button> ';
+            // PROCESSAR: transcreve o audio ja captado e gera o resultado (1 clique).
+            // Se precisar apertar de novo (soluco transitorio do Whisper), tambem processa,
+            // SEM cobrar credito (o credito ja foi pago no inicio do teste pelo paciente).
+            // O botao trava durante o processo (_tflodBotaoEstado) para evitar reclique.
+            var _rotuloProc = _aguardando ? '\u25B6 Processar' : (isErro ? '\u25B6 Processar' : '\u{1F504} Processar de novo');
+            var _corProc = (_aguardando || isErro) ? 'btn-blue' : 'btn-orange';
+            html += '<button onclick="reprocessarTflod(' + i + ', this)" class="btn ' + _corProc + '" style="padding:4px 10px;font-size:0.8em;">' + _rotuloProc + '</button> ';
             html += '<button onclick="ouvirAudioTflod(' + i + ')" class="btn btn-green" style="padding:4px 10px;font-size:0.8em;">&#9654; Ouvir</button> ';
             html += '<button onclick="baixarAudioTflod(' + i + ')" style="padding:4px 10px;font-size:0.8em;border:none;border-radius:6px;cursor:pointer;background:#607d8b;color:white;">&#11015; Baixar</button>';
-          } else if (isErro) {
+          } else if (isErro || _aguardando) {
             html += '<span style="font-size:10px;color:#999;">Audio nao salvo</span>';
           }
           html += '</td></tr>';
@@ -15635,7 +15645,7 @@
         identificando: { txt: '\u{1F50D} Identificando texto...', bg: '#1565c0', disabled: true },
         salvando:      { txt: '\u{1F4BE} Salvando resultado...', bg: '#1565c0', disabled: true },
         ok:            { txt: '\u2705 Pronto!',             bg: '#2e7d32', disabled: true },
-        reset:         { txt: '\u{1F504} Reprocessar',       bg: '',        disabled: false }
+        reset:         { txt: '\u25B6 Processar',            bg: '',        disabled: false }
       };
       var e = mapa[estado] || mapa.reset;
       btn.disabled = e.disabled;
@@ -15674,35 +15684,12 @@
       var escolaridade = fd.escolaridade || '';
       var podeRecalcular = !!(textoUsado && tempoUsado);
 
-      // === CONFIRMACAO COM AVISO DE CREDITO (modal responsivo) ===
-      var confirmou = await _tflodConfirmar(
-        '\u{1F504} Reprocessar resultado',
-        'Gostaria de usar 1 credito para reprocessar? O credito so sera cobrado se o reprocessamento der certo.',
-        'Sim, usar 1 credito',
-        'Nao'
-      );
-      if (!confirmou) return;
-
-      // === VERIFICACAO DE CREDITO (sem gastar ainda) ===
-      // Admin e modo gratuito nao consomem. Para os demais, confere se ha saldo TFLOD.
-      var isadmin = (currentUser === 'setmonte@gmail.com') || (typeof isFreeModeActive === 'function' && isFreeModeActive());
-      if (!isadmin) {
-        try {
-          var credResp = await fetch(API_URL + '/credits?email=' + encodeURIComponent(currentUser));
-          var credData = await credResp.json();
-          if ((credData.tflodCredits || 0) < 1) {
-            await _tflodConfirmar('Creditos insuficientes', 'Voce nao tem creditos TFLOD disponiveis. Adquira creditos para reprocessar este resultado.', 'Entendi', ' ');
-            return;
-          }
-        } catch(e) {
-          await _tflodConfirmar('Sem conexao', 'Nao foi possivel verificar seus creditos. Verifique sua internet e tente novamente.', 'Entendi', ' ');
-          return;
-        }
-      }
-
+      // === SEM COBRANCA DE CREDITO ===
+      // Novo fluxo (set/2026): o credito ja foi consumido quando o PACIENTE iniciou o teste.
+      // "Processar" no painel apenas transcreve o audio ja captado e gera o resultado. Se
+      // precisar apertar de novo (soluco transitorio do Whisper), tambem NAO cobra: o
+      // reprocessamento e por conta do sistema, pois a falha e do servico, nao do paciente.
       _tflodBotaoEstado(btn, 'processando');
-      // Flag que controla se cobramos o credito no final (so se der certo).
-      var _reprocessouComSucesso = false;
       try {
         // 1. Transcrever audio via Whisper, com ate 3 tentativas (forca maior/congestionamento).
         var transcricao = '';
@@ -15726,9 +15713,9 @@
         if (!transcricao) {
           _tflodBotaoEstado(btn, 'reset');
           if (ultimoErroRede) {
-            await _tflodConfirmar('Conexao instavel', 'Parece que sua internet esta baixa ou instavel. O audio nao pode ser reenviado. Nenhum credito foi cobrado. Tente novamente com uma conexao melhor.', 'Entendi', ' ');
+            await _tflodConfirmar('Conexao instavel', 'Sua internet parece instavel e o audio nao pode ser enviado para processar. O audio do paciente esta guardado. Tente clicar em Processar novamente com uma conexao melhor.', 'Entendi', ' ');
           } else {
-            await _tflodConfirmar('Nao foi possivel agora', 'Tentamos 3 vezes e o servico de transcricao nao respondeu (pode ser congestionamento). Nenhum credito foi cobrado. Por favor, tente novamente mais tarde.', 'Entendi', ' ');
+            await _tflodConfirmar('Nao foi possivel agora', 'O servico de transcricao nao respondeu desta vez (pode ser um congestionamento momentaneo). O audio esta guardado. Clique em Processar novamente em alguns instantes.', 'Entendi', ' ');
           }
           return;
         }
@@ -15755,7 +15742,6 @@
               }
             })
           });
-          _reprocessouComSucesso = true;
           _tflodBotaoEstado(btn, 'ok');
           await _tflodConfirmar('\u2705 Resultado recalculado', 'PCPM: ' + resultado.pcpm + '  |  ' + resultado.classificacao + '\nAcertos: ' + resultado.acertos + '\n\nJa aparece classificado no painel.', 'Entendi', ' ');
         } else {
@@ -15796,7 +15782,6 @@
                 }
               })
             });
-            _reprocessouComSucesso = true;
             _tflodBotaoEstado(btn, 'ok');
             await _tflodConfirmar('\u2705 Resultado recuperado', 'PCPM: ' + resultado2.pcpm + '  |  ' + resultado2.classificacao + '\nAcertos: ' + resultado2.acertos + '\nTempo de leitura (do audio): ' + duracao + 's\nTexto: ' + ident.versao + ' (' + resultado2.similaridadeTexto + '% de coincidencia)\n\nReconstruido do audio e ja classificado no painel.', 'Entendi', ' ');
           } else {
@@ -15806,7 +15791,7 @@
             var motivo = duracao <= 0
               ? 'nao foi possivel medir a duracao do audio'
               : 'a transcricao nao bateu com nenhum texto conhecido com seguranca (melhor coincidencia: ' + (ident ? Math.round(ident.similaridade * 100) : 0) + '%)';
-            await _tflodConfirmar('Nao foi possivel reconstruir', 'A transcricao foi recuperada e salva (nenhum credito cobrado), mas o PCPM nao pode ser reconstruido porque ' + motivo + '. Se precisar do resultado numerico, o teste pode ser reaplicado.', 'Entendi', ' ');
+            await _tflodConfirmar('Nao foi possivel reconstruir', 'A transcricao foi recuperada e salva, mas o PCPM nao pode ser reconstruido porque ' + motivo + '. Se precisar do resultado numerico, o teste pode ser reaplicado.', 'Entendi', ' ');
             await fetch(API_URL + '/save-result', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -15820,24 +15805,11 @@
           }
         }
 
-        // === COBRANCA DO CREDITO: so agora, e SO se o reprocessamento deu certo ===
-        // (admin e modo gratuito nao consomem). Se falhou, nada e cobrado.
-        if (_reprocessouComSucesso && !isadmin) {
-          try {
-            await fetch(API_URL + '/use-credit', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ email: currentUser, tipo: 'tflod' })
-            });
-            // Atualiza o contador de creditos na tela, se a funcao existir.
-            if (typeof atualizarCreditos === 'function') { try { atualizarCreditos(); } catch(e) {} }
-          } catch(e) { /* Falha ao cobrar nao deve travar o resultado ja salvo. */ }
-        }
-
+        // Sem cobranca de credito aqui: o credito ja foi pago quando o paciente iniciou o teste.
         loadTflodResults();
       } catch(e) {
-        // Erro inesperado durante o processamento. Nenhum credito e cobrado (a cobranca so ocorre no sucesso).
-        await _tflodConfirmar('Algo deu errado', 'Ocorreu um erro inesperado ao reprocessar. Nenhum credito foi cobrado. Tente novamente; se persistir, tente mais tarde.', 'Entendi', ' ');
+        // Erro inesperado durante o processamento. O audio do paciente continua guardado.
+        await _tflodConfirmar('Algo deu errado', 'Ocorreu um erro inesperado ao processar. O audio esta guardado. Clique em Processar novamente; se persistir, tente mais tarde.', 'Entendi', ' ');
         _tflodBotaoEstado(btn, 'reset');
       }
     }
