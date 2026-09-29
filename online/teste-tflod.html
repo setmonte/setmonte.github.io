@@ -23,6 +23,10 @@ body{font-family:'Segoe UI',sans-serif;background:#f5f5f5;min-height:100vh}
 .btn-primary:hover{background:#0d47a1}
 .btn-terminei{background:#0d47a1;color:#fff;border:2px solid #90caf9;box-shadow:0 3px 10px rgba(13,71,161,0.3)}
 .btn-terminei:hover{background:#1565c0}
+/* Barra fixa no rodape da tela com o botao "Terminei a leitura" (nao fica colada ao texto) */
+.rodape-terminei{position:fixed;left:0;right:0;bottom:0;text-align:center;padding:14px;background:linear-gradient(to top,rgba(255,255,255,0.98),rgba(255,255,255,0.85));box-shadow:0 -2px 10px rgba(0,0,0,0.08);z-index:50}
+/* Espaco extra no fim do texto para o rodape fixo nao cobrir a ultima linha */
+#tela-teste .texto-leitura{padding-bottom:90px}
 .info-tecnica{background:#e3f2fd;border-left:4px solid #1565c0;padding:12px;border-radius:0 8px 8px 0;margin-bottom:15px;font-size:0.75em;color:#555}
 #tela-teste{background:#fff;padding:0;align-items:stretch;justify-content:flex-start}
 .teste-header{background:#0d47a1;color:#fff;padding:15px 20px;display:flex;justify-content:space-between;align-items:center;width:100%}
@@ -178,9 +182,8 @@ body.cursor-hidden, body.cursor-hidden * { cursor: none !important; }
     </div>
     <div class="vu-aviso" id="vuAviso">🔈 Volume baixo — fale mais alto e aproxime o microfone</div>
     <div class="texto-leitura" id="textoLeitura"></div>
-    <div style="text-align:center;padding:10px 20px 40px 20px;">
+    <div class="rodape-terminei">
         <button class="btn btn-terminei" id="btnTerminei" onclick="finalizarGravacao()">&#9989; Terminei a leitura</button>
-        <p style="color:#888;font-size:0.8em;margin-top:8px;">Clique aqui quando terminar de ler o texto todo.</p>
     </div>
 </div>
 
@@ -600,6 +603,32 @@ function pararTesteMic() {
     _micAnalyser = null;
 }
 
+// ===== AUTO-OCULTAR CURSOR DURANTE A LEITURA =====
+// O cursor some quando fica parado (~2.5s) e reaparece assim que o paciente mexe no mouse
+// (comportamento de player de video). Assim ele nao atrapalha a leitura, mas o botao
+// "Terminei a leitura" continua acessivel: basta mover o mouse que o cursor volta.
+var _cursorTimer = null;
+var _cursorMoveHandler = null;
+function _mostrarCursorTemporario() {
+    document.body.classList.remove('cursor-hidden');
+    if (_cursorTimer) clearTimeout(_cursorTimer);
+    // Depois de 2.5s sem mover, esconde de novo.
+    _cursorTimer = setTimeout(function() {
+        document.body.classList.add('cursor-hidden');
+    }, 2500);
+}
+function _iniciarAutoOcultarCursor() {
+    // Esconde de imediato ao entrar na leitura; o primeiro movimento ja o traz de volta.
+    document.body.classList.add('cursor-hidden');
+    _cursorMoveHandler = function() { _mostrarCursorTemporario(); };
+    document.addEventListener('mousemove', _cursorMoveHandler);
+}
+function _pararAutoOcultarCursor() {
+    if (_cursorTimer) { clearTimeout(_cursorTimer); _cursorTimer = null; }
+    if (_cursorMoveHandler) { document.removeEventListener('mousemove', _cursorMoveHandler); _cursorMoveHandler = null; }
+    document.body.classList.remove('cursor-hidden');
+}
+
 async function iniciarTeste() {
     pararTesteMic();
     // Verificar credito antes de iniciar (fail-closed). Admin nao consome.
@@ -629,8 +658,8 @@ async function iniciarTeste() {
     else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
     else if (el.msRequestFullscreen) el.msRequestFullscreen();
 
-    // Esconder mouse durante a leitura
-    document.body.classList.add('cursor-hidden');
+    // Cursor some quando parado e reaparece ao mover (estilo player de video).
+    _iniciarAutoOcultarCursor();
 
     // Escolher texto (agora async - busca historico do paciente)
     await escolherTexto();
@@ -726,7 +755,7 @@ async function finalizarGravacao() {
     }
 
     // Sair fullscreen e restaurar cursor
-    document.body.classList.remove('cursor-hidden');
+    _pararAutoOcultarCursor();
     if (document.exitFullscreen) document.exitFullscreen();
     else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
     else if (document.msExitFullscreen) document.msExitFullscreen();
