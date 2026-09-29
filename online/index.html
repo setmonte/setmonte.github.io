@@ -15655,6 +15655,38 @@
       else { btn.style.background = ''; btn.style.color = ''; }
     }
 
+    // ===== COLETA ANONIMA DO TFLOD (a partir do painel) =====
+    // No novo fluxo, o paciente nao calcula o resultado (so envia o audio). Portanto a coleta
+    // anonima normativa (planilha Google) passou a ser feita AQUI, quando o profissional
+    // clica "Processar" e o resultado e gerado. Mesma URL/formato das demais escalas.
+    // Idade/sexo/escolaridade vem do formData salvo no teste do paciente.
+    function _tflodColetaAnonima(fd, resultado) {
+      try {
+        var _cUrl = 'https://script.google.com/macros/s/AKfycbzYl7-ageXnHHyvrKMb6iS_7gX2l6ZBngPpbCHNfj7YYbXylcZ_vQ9iJkrbko8ICPcW/exec';
+        // Idade em anos: usa idadeAnos, senao extrai de "X anos..."
+        var _idade = null;
+        if (fd && fd.idadeAnos) { _idade = parseInt(fd.idadeAnos); }
+        if (!_idade && fd && fd.idade) { var _m = String(fd.idade).match(/(\d+)\s*ano/); if (_m) _idade = parseInt(_m[1]); }
+        if (!_idade) return; // sem idade, nao contamina a coleta
+        var _pcpm = (resultado && resultado.pcpm !== undefined && resultado.pcpm !== null) ? parseFloat(resultado.pcpm).toFixed(2) : '';
+        var _dom = 'PCPM:' + (resultado && resultado.pcpm !== undefined ? resultado.pcpm : 0)
+          + '; Acertos:' + (resultado && resultado.acertos !== undefined ? resultado.acertos : 0)
+          + '; Erros:' + (resultado && resultado.erros ? resultado.erros.length : 0)
+          + '; PalavrasAlcancadas:' + (resultado && (resultado.palavrasAlcancadas !== undefined ? resultado.palavrasAlcancadas : (resultado.totalPalavrasLidas || 0)));
+        var _pkt = {
+          email: currentUser || '',
+          escala: 'TFLOD',
+          idade: _idade,
+          sexo: (fd && fd.sexo) || '',
+          escolaridade: (fd && fd.escolaridade) || '',
+          pontuacao: _pcpm,
+          dominios: _dom,
+          classificacao: (resultado && resultado.classificacao) || ''
+        };
+        fetch(_cUrl, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(_pkt) }).catch(function(){});
+      } catch (e) { /* coleta e best-effort, nunca trava o resultado */ }
+    }
+
     // ===== REPROCESSAR TFLOD (quando deu erro_transcricao mas tem audio salvo) =====
     // O segundo parametro (btnEl) e o proprio botao clicado (passado via 'this' no onclick),
     // capturado logo aqui para nao se perder ao longo dos varios await.
@@ -15743,6 +15775,7 @@
             })
           });
           _tflodBotaoEstado(btn, 'ok');
+          _tflodColetaAnonima(fd, resultado);
           await _tflodConfirmar('\u2705 Resultado recalculado', 'PCPM: ' + resultado.pcpm + '  |  ' + resultado.classificacao + '\nAcertos: ' + resultado.acertos + '\n\nJa aparece classificado no painel.', 'Entendi', ' ');
         } else {
           // 2b. RECUPERACAO INTELIGENTE (erro antigo, sem texto/tempo salvos).
@@ -15783,6 +15816,7 @@
               })
             });
             _tflodBotaoEstado(btn, 'ok');
+            _tflodColetaAnonima(fd, resultado2);
             await _tflodConfirmar('\u2705 Resultado recuperado', 'PCPM: ' + resultado2.pcpm + '  |  ' + resultado2.classificacao + '\nAcertos: ' + resultado2.acertos + '\nTempo de leitura (do audio): ' + duracao + 's\nTexto: ' + ident.versao + ' (' + resultado2.similaridadeTexto + '% de coincidencia)\n\nReconstruido do audio e ja classificado no painel.', 'Entendi', ' ');
           } else {
             // Nao foi possivel identificar o texto com seguranca (ou audio sem duracao).
