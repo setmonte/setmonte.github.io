@@ -15173,21 +15173,28 @@
             html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (res.classificacao || '-') + '</td>';
           }
           html += '<td style="padding:5px;border-bottom:1px solid #eee;text-align:center;">';
-          // PDF: so faz sentido quando ja ha resultado (nao e erro, nem aguardando).
-          if (!isErro && !_aguardando) {
+          // "Ja processado" = tem resultado real (PCPM numerico + transcricao/foi reprocessado/classificacao).
+          // Nesse caso o fluxo do teste TERMINOU: mostra so PDF + Ouvir (sem botao Processar).
+          var _jaProcessado = (typeof res.pcpm === 'number') && (res.transcricao || _foiReprocessado || res.classificacao) && !isErro && !_aguardando;
+          // "Precisa processar" = tem audio mas ainda nao ha resultado (aguardando ou erro).
+          var _precisaProcessar = temAudio && !_jaProcessado;
+
+          if (_jaProcessado) {
+            // FIM DO FLUXO: PDF + Ouvir (o botao Processar SOME apos gerar o resultado).
             html += '<button id="btnPdfTflod' + i + '" onclick="gerarPdfTflod(' + i + ')" class="btn btn-blue" style="padding:4px 10px;font-size:0.8em;">PDF</button> ';
-          }
-          if (temAudio) {
-            // PROCESSAR: transcreve o audio ja captado e gera o resultado (1 clique).
-            // Se precisar apertar de novo (soluco transitorio do Whisper), tambem processa,
-            // SEM cobrar credito (o credito ja foi pago no inicio do teste pelo paciente).
-            // O botao trava durante o processo (_tflodBotaoEstado) para evitar reclique.
-            var _rotuloProc = _aguardando ? '\u25B6 Processar' : (isErro ? '\u25B6 Processar' : '\u{1F504} Processar de novo');
-            var _corProc = (_aguardando || isErro) ? 'btn-blue' : 'btn-orange';
-            html += '<button onclick="reprocessarTflod(' + i + ', this)" class="btn ' + _corProc + '" style="padding:4px 10px;font-size:0.8em;">' + _rotuloProc + '</button> ';
+            if (temAudio) {
+              html += '<button onclick="ouvirAudioTflod(' + i + ')" class="btn btn-green" style="padding:4px 10px;font-size:0.8em;">&#9654; Ouvir</button> ';
+              html += '<button onclick="baixarAudioTflod(' + i + ')" style="padding:4px 10px;font-size:0.8em;border:none;border-radius:6px;cursor:pointer;background:#607d8b;color:white;">&#11015; Baixar</button>';
+            }
+          } else if (_precisaProcessar) {
+            // AGUARDANDO PROCESSAMENTO: Processar + Ouvir (sem PDF, pois ainda nao ha resultado).
+            // PROCESSAR transcreve o audio 1x e gera o resultado. Se der erro (soluco do Whisper),
+            // o botao volta e o profissional aperta de novo (reprocessamento embutido), SEM cobrar
+            // credito (ja foi pago no inicio do teste). O botao trava durante o processo (anti-reclique).
+            html += '<button onclick="reprocessarTflod(' + i + ', this)" class="btn btn-blue" style="padding:4px 10px;font-size:0.8em;">\u25B6 Processar</button> ';
             html += '<button onclick="ouvirAudioTflod(' + i + ')" class="btn btn-green" style="padding:4px 10px;font-size:0.8em;">&#9654; Ouvir</button> ';
             html += '<button onclick="baixarAudioTflod(' + i + ')" style="padding:4px 10px;font-size:0.8em;border:none;border-radius:6px;cursor:pointer;background:#607d8b;color:white;">&#11015; Baixar</button>';
-          } else if (isErro || _aguardando) {
+          } else {
             html += '<span style="font-size:10px;color:#999;">Audio nao salvo</span>';
           }
           html += '</td></tr>';
