@@ -791,44 +791,67 @@ async function finalizarGravacao() {
     var audioS3Key = '';
     try {
         // Enviar audio para Lambda que transcreve via OpenAI Whisper.
-        // CORRECAO 3: ate 3 tentativas. Uma oscilacao rapida de internet nao deve
-        // transformar um audio bom em erro. So desistimos apos 3 falhas seguidas.
+        // Estrategia de robustez em CAMADAS contra o "soluco transitorio" do Whisper
+        // (respostas OK mas com texto VAZIO, observadas em producao mesmo com audio bom):
+        //  - Ate 3 tentativas para ERRO DE REDE (oscilacao rapida de internet).
+        //  - Ate 2 rodadas COMPLETAS quando a transcricao volta VAZIA: reenviamos o mesmo
+        //    audio depois de uma espera maior (o audio ja esta salvo no S3), dando tempo ao
+        //    Whisper se recuperar. So apos esgotar tudo isso e que tratamos como erro real.
         var data = null;
         var resp = null;
-        var _tentativas = 0;
+        var transcricao = '';
+        var _rodadaVazia = 0;
+        var MAX_RODADAS_VAZIA = 2; // rodadas extras quando a transcricao volta vazia
         var _ultimoErroRede = false;
-        while (_tentativas < 3 && !data) {
-            _tentativas++;
-            try {
-                resp = await fetch(API_URL + '/transcribe-audio', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    // Envia tambem o formato realmente gravado pelo navegador (mimeType).
-                    // A Lambda usa isso para etiquetar o audio corretamente ao enviar ao Whisper
-                    // (webm/mp4/ogg). Se a Lambda for antiga e ignorar, nada quebra (ela usa webm).
-                    body: JSON.stringify({ audioBase64: audioBase64, sessionId: sessionInfo.sessionId || '', mimeType: audioMimeType || 'audio/webm' })
-                });
-                data = await resp.json();
-            } catch (eRede) {
-                _ultimoErroRede = true;
-                data = null;
-                // Pequena espera crescente entre tentativas (0.8s, 1.6s) antes de tentar de novo.
-                if (_tentativas < 3) { await new Promise(function(r){ setTimeout(r, 800 * _tentativas); }); }
+
+        while (_rodadaVazia <= MAX_RODADAS_VAZIA) {
+            // --- Bloco de envio com retry para erro de REDE (ate 3 tentativas) ---
+            data = null;
+            resp = null;
+            var _tentativas = 0;
+            while (_tentativas < 3 && !data) {
+                _tentativas++;
+                try {
+                    resp = await fetch(API_URL + '/transcribe-audio', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        // Envia tambem o formato realmente gravado pelo navegador (mimeType).
+                        // A Lambda usa isso para etiquetar o audio corretamente ao enviar ao Whisper
+                        // (webm/mp4/ogg). Se a Lambda for antiga e ignorar, nada quebra (ela usa webm).
+                        body: JSON.stringify({ audioBase64: audioBase64, sessionId: sessionInfo.sessionId || '', mimeType: audioMimeType || 'audio/webm' })
+                    });
+                    data = await resp.json();
+                } catch (eRede) {
+                    _ultimoErroRede = true;
+                    data = null;
+                    // Pequena espera crescente entre tentativas (0.8s, 1.6s) antes de tentar de novo.
+                    if (_tentativas < 3) { await new Promise(function(r){ setTimeout(r, 800 * _tentativas); }); }
+                }
+            }
+            // Se as 3 tentativas falharam por rede, preserva o audio e avisa (nao insiste em rodada vazia).
+            if (!data) {
+                var _motivoRede = _ultimoErroRede ? 'Falha de rede ao transcrever (3 tentativas)' : 'Sem resposta da transcricao';
+                await salvarResultadoErro(_motivoRede, audioBase64, '');
+                _mostrarFalhaCaptacao(_motivoRede);
+                return;
+            }
+            audioS3Key = data.s3Key || audioS3Key || '';
+            if (!resp.ok) throw new Error(data.error || 'Erro na transcricao');
+            transcricao = (typeof data.text === 'string') ? data.text : '';
+
+            // Se veio texto, seguimos normalmente. Se veio VAZIO, tentamos mais uma rodada
+            // (reprocessamento automatico) antes de desistir - o soluco costuma passar.
+            if (transcricao.trim()) { break; }
+
+            _rodadaVazia++;
+            if (_rodadaVazia <= MAX_RODADAS_VAZIA) {
+                // Avisa discretamente e espera um pouco mais antes de reprocessar.
+                try { document.getElementById('progressText').textContent = 'Ajustando a transcricao, aguarde...'; } catch (e) {}
+                await new Promise(function(r){ setTimeout(r, 2500 * _rodadaVazia); }); // 2.5s, 5s
             }
         }
-        // Se as 3 tentativas falharam por rede, preserva o audio (se houver s3Key) e avisa.
-        if (!data) {
-            var _motivoRede = _ultimoErroRede ? 'Falha de rede ao transcrever (3 tentativas)' : 'Sem resposta da transcricao';
-            await salvarResultadoErro(_motivoRede, audioBase64, '');
-            _mostrarFalhaCaptacao(_motivoRede);
-            return;
-        }
-        audioS3Key = data.s3Key || '';
-        if (!resp.ok) throw new Error(data.error || 'Erro na transcricao');
-        var transcricao = (typeof data.text === 'string') ? data.text : '';
 
-        // Se a transcricao veio vazia, o audio nao teve fala reconhecivel.
-        // Trata como erro (mantendo o audio salvo para reprocessamento) em vez de estourar.
+        // Se depois de todas as rodadas ainda esta vazia, ai sim e erro real.
         if (!transcricao.trim()) {
             throw new Error('Transcricao vazia (audio sem fala reconhecivel)');
         }
