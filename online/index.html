@@ -15271,7 +15271,7 @@
     // ===== EXPORTAR EXCEL TFLOD =====
     function exportarExcelTflod() {
       if (_tflodResultCache.length === 0) { alert('Nenhum resultado para exportar.'); return; }
-      var csv = 'Data;Nome;Idade;Escolaridade;Correcao Visual;PCPM;Classificacao;Acertos;Erros;Palavras Lidas;Tempo\n';
+      var csv = 'Data;Nome;Idade;Sexo;Escolaridade;Correcao Visual;PCPM;Classificacao;Acertos;Erros;Palavras Lidas;Tempo\n';
       for (var i = 0; i < _tflodResultCache.length; i++) {
         var r = _tflodResultCache[i];
         var d = r.data || {};
@@ -15280,6 +15280,7 @@
         csv += (d.date ? new Date(d.date).toLocaleString('pt-BR') : '') + ';';
         csv += (fd.nome || '') + ';';
         csv += (fd.idade || '') + ';';
+        csv += (fd.sexo || '') + ';';
         csv += (fd.escolaridade || '') + ';';
         csv += (fd.correcaoVisual || '') + ';';
         csv += (res.pcpm || 0) + ';';
@@ -15923,7 +15924,7 @@
 
         var aiPrompt = 'Voce e uma equipe multidisciplinar composta por neuropsicologo, fonoaudiologo e psicopedagogo. ' +
           'Gere um PARECER CLINICO breve (max 15 linhas) sobre a leitura oral deste paciente.\n\n' +
-          'DADOS: Idade: ' + (fd.idadeAnos || 'N/I') + ' anos, Escolaridade: ' + (fd.escolaridade || 'N/I') + '\n' +
+          'DADOS: Idade: ' + (fd.idadeAnos || 'N/I') + ' anos, Sexo: ' + (fd.sexo || 'N/I') + ', Escolaridade: ' + (fd.escolaridade || 'N/I') + '\n' +
           'Correcao visual: ' + (fd.correcaoVisual || 'Nao informado') + '\n' +
           'Texto: ' + (res.categoria || '') + ' (' + (res.totalPalavrasTexto || 0) + ' palavras)\n' +
           'PCPM (palavras corretas por minuto): ' + (res.pcpm || 0) + '\n' +
@@ -15986,7 +15987,7 @@
       doc.text('DADOS DO PACIENTE', ml, y); y += 7;
       doc.setTextColor(0); doc.setFont(undefined, 'normal'); doc.setFontSize(9);
       doc.text('Nome: ' + (fd.nome || '-') + '    ID: ' + (fd.id || '-'), ml, y); y += 5;
-      doc.text('Idade: ' + (fd.idade || '-') + '    Escolaridade: ' + (fd.escolaridade || '-'), ml, y); y += 5;
+      doc.text('Idade: ' + (fd.idade || '-') + '    Sexo: ' + (fd.sexo || 'Nao informado') + '    Escolaridade: ' + (fd.escolaridade || '-'), ml, y); y += 5;
       doc.text('Data da Avaliacao: ' + (fd.dataAval || '-') + '    Correcao visual: ' + (fd.correcaoVisual || 'Nao informado'), ml, y); y += 5;
       if (fd.obs) { doc.text('Obs: ' + fd.obs, ml, y); y += 5; }
       y += 8;
