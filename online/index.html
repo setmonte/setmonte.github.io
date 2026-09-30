@@ -11360,38 +11360,145 @@
       var doc = new JsPDF();
       var d = r.data || {};
       var p = d.formData || d.paciente || {};
-      // Margem de 0,5 cm (5 mm) em cada lado. A4 tem 210 mm de largura,
-      // entao a largura util e 210 - 5 - 5 = 200 mm.
-      var MARGEM = 5;
-      var LARGURA_UTIL = 210 - (MARGEM * 2);
-      var y = 20;
-      doc.setFontSize(16); doc.setTextColor(57, 73, 171);
-      doc.text('BRPI - Relatorio de Rastreio', MARGEM, y); y += 8;
-      doc.setFontSize(10); doc.setTextColor(60, 60, 60);
-      doc.text('Bateria de Rastreio do Processamento da Inteligencia', MARGEM, y); y += 10;
-      doc.setFontSize(11); doc.setTextColor(0, 0, 0);
-      doc.text('Paciente: ' + (p.patientName || p.nome || '-'), MARGEM, y); y += 6;
-      doc.text('ID do paciente: ' + (p.pacienteId || p.idPaciente || d.pacienteId || '-'), MARGEM, y); y += 6;
-      doc.text('Nascimento: ' + (p.birthDate || '-'), MARGEM, y); y += 6;
-      doc.text('Escolaridade: ' + (p.education || '-'), MARGEM, y); y += 6;
-      doc.text('Data: ' + (d.dataAplicacao ? new Date(d.dataAplicacao).toLocaleString('pt-BR') : '-'), MARGEM, y); y += 10;
-      doc.setFontSize(12); doc.setTextColor(57, 73, 171);
-      doc.text('Modulos aplicados', MARGEM, y); y += 7;
-      doc.setFontSize(10); doc.setTextColor(40, 40, 40);
+
+      // ===== CONFIGURACAO DE LAYOUT =====
+      // Margem de 1 cm (10 mm) em cada lado. A4 = 210 mm de largura.
+      var MARGEM = 10;
+      var LARGURA_PAGINA = 210;
+      var LARGURA_UTIL = LARGURA_PAGINA - (MARGEM * 2);   // 190 mm
+      var X_DIR = LARGURA_PAGINA - MARGEM;                // borda direita util
+
+      // Cor tematica de cada modulo (R,G,B) para dar identidade visual.
+      var CORES_MOD = {
+        A: [57, 73, 171],    // azul
+        B: [46, 125, 50],    // verde
+        C: [239, 108, 0],    // laranja
+        D: [106, 27, 154]    // roxo
+      };
+      var AZUL = [57, 73, 171];
+
+      // Rotulos legiveis das subtrilhas (para as tabelas nao mostrarem "aud_dir_num").
+      var ROTULOS_SUB = {
+        // Modulo A - Amplitude de Memoria
+        aud_dir_num: 'Auditivo - Direta - Numeros', aud_dir_let: 'Auditivo - Direta - Letras',
+        aud_inv_num: 'Auditivo - Inversa - Numeros', aud_inv_let: 'Auditivo - Inversa - Letras',
+        vis_dir_num: 'Visual - Direta - Numeros', vis_dir_let: 'Visual - Direta - Letras',
+        vis_inv_num: 'Visual - Inversa - Numeros', vis_inv_let: 'Visual - Inversa - Letras',
+        // Modulo B - Organizacao e Manipulacao
+        aud_cre_num: 'Auditivo - Crescente - Numeros', aud_cre_let: 'Auditivo - Crescente - Letras',
+        aud_dec_num: 'Auditivo - Decrescente - Numeros', aud_dec_let: 'Auditivo - Decrescente - Letras',
+        vis_cre_num: 'Visual - Crescente - Numeros', vis_cre_let: 'Visual - Crescente - Letras',
+        vis_dec_num: 'Visual - Decrescente - Numeros', vis_dec_let: 'Visual - Decrescente - Letras',
+        // Modulo C - Raciocinio Relacional
+        aud_num: 'Auditivo - Numeros', aud_let: 'Auditivo - Letras',
+        vis_num: 'Visual - Numeros', vis_let: 'Visual - Letras',
+        // Modulo D - Integracao e Decisao
+        D1: 'Condicao D1', D2: 'Condicao D2', D3: 'Condicao D3', D4: 'Condicao D4'
+      };
+
+      // Helper: se faltar espaco na pagina, cria uma nova e volta o y ao topo.
+      function _checarPagina(alturaNecessaria) {
+        if (y + alturaNecessaria > 285) { doc.addPage(); y = 20; }
+      }
+
+      // ===== CABECALHO (faixa azul) =====
+      doc.setFillColor(AZUL[0], AZUL[1], AZUL[2]);
+      doc.rect(0, 0, LARGURA_PAGINA, 26, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(17); doc.setFont(undefined, 'bold');
+      doc.text('BRPI - Relatorio de Rastreio', MARGEM, 13);
+      doc.setFontSize(10); doc.setFont(undefined, 'normal');
+      doc.text('Bateria de Rastreio do Processamento da Inteligencia', MARGEM, 20);
+      var y = 36;
+
+      // ===== CAIXA DE DADOS DO PACIENTE (fundo cinza claro) =====
+      var alturaCaixa = 34;
+      doc.setFillColor(245, 246, 250);
+      doc.setDrawColor(220, 222, 230);
+      doc.roundedRect(MARGEM, y, LARGURA_UTIL, alturaCaixa, 2, 2, 'FD');
+      var yTexto = y + 7;
+      doc.setTextColor(40, 40, 40); doc.setFontSize(10);
+      var col2 = MARGEM + (LARGURA_UTIL / 2);
+      doc.setFont(undefined, 'bold'); doc.text('Paciente: ', MARGEM + 4, yTexto);
+      doc.setFont(undefined, 'normal'); doc.text(String(p.patientName || p.nome || '-'), MARGEM + 25, yTexto);
+      doc.setFont(undefined, 'bold'); doc.text('ID: ', col2, yTexto);
+      doc.setFont(undefined, 'normal'); doc.text(String(p.pacienteId || p.idPaciente || d.pacienteId || '-'), col2 + 8, yTexto);
+      yTexto += 7;
+      doc.setFont(undefined, 'bold'); doc.text('Nascimento: ', MARGEM + 4, yTexto);
+      doc.setFont(undefined, 'normal'); doc.text(String(p.birthDate || '-'), MARGEM + 32, yTexto);
+      doc.setFont(undefined, 'bold'); doc.text('Sexo: ', col2, yTexto);
+      doc.setFont(undefined, 'normal'); doc.text(String(p.sex || '-'), col2 + 14, yTexto);
+      yTexto += 7;
+      doc.setFont(undefined, 'bold'); doc.text('Escolaridade: ', MARGEM + 4, yTexto);
+      doc.setFont(undefined, 'normal'); doc.text(String(p.education || '-'), MARGEM + 33, yTexto);
+      yTexto += 7;
+      doc.setFont(undefined, 'bold'); doc.text('Data da aplicacao: ', MARGEM + 4, yTexto);
+      doc.setFont(undefined, 'normal'); doc.text(d.dataAplicacao ? new Date(d.dataAplicacao).toLocaleString('pt-BR') : '-', MARGEM + 44, yTexto);
+      y += alturaCaixa + 10;
+
+      // ===== BLOCO POR MODULO =====
       ['A', 'B', 'C', 'D'].forEach(function(m) {
         var dados = d[m];
-        var linha = 'Modulo ' + m + ' (' + _brpiNomesModulos[m] + '): ' + (dados ? 'aplicado' : 'nao aplicado');
-        // teto e spans sao OBJETOS: serializar com JSON.stringify (evita "[object Object]")
-        if (dados && typeof dados.teto !== 'undefined' && dados.teto !== null) { linha += ' | teto: ' + JSON.stringify(dados.teto); }
-        if (dados && typeof dados.spans !== 'undefined' && dados.spans !== null) { linha += ' | spans: ' + JSON.stringify(dados.spans); }
-        // Quebra a linha na largura util para nao vazar pela borda direita.
-        var linhasQuebradas = doc.splitTextToSize(linha, LARGURA_UTIL);
-        doc.text(linhasQuebradas, MARGEM, y);
-        y += 6 * linhasQuebradas.length;
+        var cor = CORES_MOD[m];
+        _checarPagina(20);
+
+        // Titulo do modulo com barrinha colorida na lateral
+        doc.setFillColor(cor[0], cor[1], cor[2]);
+        doc.rect(MARGEM, y - 4, 3, 8, 'F');   // barrinha vertical
+        doc.setTextColor(cor[0], cor[1], cor[2]);
+        doc.setFontSize(12); doc.setFont(undefined, 'bold');
+        doc.text('Modulo ' + m + ' - ' + _brpiNomesModulos[m], MARGEM + 6, y + 2);
+        y += 8;
+
+        if (!dados) {
+          doc.setTextColor(150, 150, 150); doc.setFontSize(9); doc.setFont(undefined, 'italic');
+          doc.text('Nao aplicado.', MARGEM + 6, y + 2); y += 10;
+          doc.setFont(undefined, 'normal');
+          return;
+        }
+
+        // Descobre o conjunto de pares (rotulo -> valor) deste modulo.
+        var mapaValores = dados.spans || dados.teto || {};
+        var chaves = Object.keys(mapaValores);
+
+        // Cabecalho da tabela
+        doc.setFillColor(cor[0], cor[1], cor[2]);
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(9); doc.setFont(undefined, 'bold');
+        doc.rect(MARGEM, y, LARGURA_UTIL, 7, 'F');
+        doc.text('Subtrilha', MARGEM + 3, y + 5);
+        doc.text('Resultado', X_DIR - 25, y + 5);
+        y += 7;
+
+        // Linhas da tabela (zebradas)
+        doc.setFont(undefined, 'normal'); doc.setFontSize(9);
+        chaves.forEach(function(k, idx) {
+          _checarPagina(8);
+          if (idx % 2 === 1) {
+            doc.setFillColor(245, 246, 250);
+            doc.rect(MARGEM, y, LARGURA_UTIL, 6, 'F');
+          }
+          doc.setTextColor(50, 50, 50);
+          doc.text(String(ROTULOS_SUB[k] || k), MARGEM + 3, y + 4.2);
+          doc.setFont(undefined, 'bold'); doc.setTextColor(cor[0], cor[1], cor[2]);
+          doc.text(String(mapaValores[k]), X_DIR - 22, y + 4.2);
+          doc.setFont(undefined, 'normal');
+          y += 6;
+        });
+        // Borda externa da tabela
+        doc.setDrawColor(220, 222, 230);
+        y += 8;
       });
-      y += 8;
-      doc.setFontSize(8); doc.setTextColor(120, 120, 120);
-      doc.text('Instrumento de rastreio exploratorio, sem normatizacao formal. Uso por profissional qualificado.', MARGEM, y);
+
+      // ===== RODAPE (aviso) =====
+      _checarPagina(16);
+      doc.setDrawColor(220, 222, 230);
+      doc.line(MARGEM, y, X_DIR, y); y += 6;
+      doc.setFontSize(8); doc.setTextColor(120, 120, 120); doc.setFont(undefined, 'italic');
+      var aviso = doc.splitTextToSize('Instrumento de rastreio exploratorio, sem normatizacao formal. Uso restrito a profissional qualificado. Os resultados devem ser interpretados no contexto de uma avaliacao mais ampla.', LARGURA_UTIL);
+      doc.text(aviso, MARGEM, y);
+      doc.setFont(undefined, 'normal');
+
       var tsNow = new Date();
       var tsStr = tsNow.getFullYear() + String(tsNow.getMonth() + 1).padStart(2, '0') + String(tsNow.getDate()).padStart(2, '0') + String(tsNow.getHours()).padStart(2, '0') + String(tsNow.getMinutes()).padStart(2, '0');
       var nomeArq = 'BRPI_' + ((p.patientName || 'paciente').replace(/[^a-zA-Z0-9]/g, '') || 'paciente') + '_' + tsStr + '.pdf';
