@@ -11425,6 +11425,61 @@
         if (y + alturaNecessaria > 285) { doc.addPage(); y = 20; }
       }
 
+      // Calcula a media de "numeros" vs "letras" de um mapa de subtrilhas (modulos A, B, C).
+      // Retorna null se o modulo nao tiver essa divisao (ex.: D, que usa condicoes).
+      function _mediaNumLetra(mapa) {
+        var somaN = 0, qtdN = 0, somaL = 0, qtdL = 0;
+        Object.keys(mapa).forEach(function(k) {
+          var v = Number(mapa[k]) || 0;
+          if (k.indexOf('num') !== -1) { somaN += v; qtdN++; }
+          else if (k.indexOf('let') !== -1) { somaL += v; qtdL++; }
+        });
+        if (qtdN === 0 && qtdL === 0) { return null; }
+        return { numeros: qtdN ? somaN / qtdN : 0, letras: qtdL ? somaL / qtdL : 0 };
+      }
+
+      // Media geral de um mapa (para o grafico final por modulo).
+      function _mediaGeral(mapa) {
+        var soma = 0, qtd = 0;
+        Object.keys(mapa).forEach(function(k) { soma += (Number(mapa[k]) || 0); qtd++; });
+        return qtd ? soma / qtd : 0;
+      }
+
+      // Desenha um grafico de barras verticais. barras = [{rotulo, valor, cor}].
+      // (x0,yTopo) = canto superior esquerdo da area; larg/alt = dimensoes; valorMax = escala do eixo Y.
+      function _graficoBarras(x0, yTopo, larg, alt, barras, valorMax, titulo) {
+        var padTopo = titulo ? 6 : 2;      // espaco pro titulo
+        var padBase = 8;                    // espaco pros rotulos embaixo
+        var areaAlt = alt - padTopo - padBase;
+        var baseY = yTopo + padTopo + areaAlt;
+        if (titulo) {
+          doc.setFontSize(7.5); doc.setFont(undefined, 'bold'); doc.setTextColor(90, 90, 90);
+          doc.text(titulo, x0, yTopo + 3);
+        }
+        // eixo base
+        doc.setDrawColor(200, 200, 205); doc.setLineWidth(0.3);
+        doc.line(x0, baseY, x0 + larg, baseY);
+        var n = barras.length;
+        var espaco = larg / n;
+        var larguraBarra = Math.min(espaco * 0.55, 14);
+        for (var i = 0; i < n; i++) {
+          var b = barras[i];
+          var hBarra = valorMax > 0 ? (b.valor / valorMax) * areaAlt : 0;
+          var bx = x0 + i * espaco + (espaco - larguraBarra) / 2;
+          var by = baseY - hBarra;
+          var c = b.cor || [120, 120, 120];
+          doc.setFillColor(c[0], c[1], c[2]);
+          doc.rect(bx, by, larguraBarra, hBarra, 'F');
+          // valor no topo da barra
+          doc.setFontSize(7); doc.setFont(undefined, 'bold'); doc.setTextColor(70, 70, 70);
+          doc.text(String(Math.round(b.valor * 10) / 10), bx + larguraBarra / 2, by - 1.5, { align: 'center' });
+          // rotulo embaixo
+          doc.setFontSize(6.5); doc.setFont(undefined, 'normal'); doc.setTextColor(100, 100, 100);
+          doc.text(String(b.rotulo), bx + larguraBarra / 2, baseY + 4, { align: 'center' });
+        }
+        doc.setFont(undefined, 'normal');
+      }
+
       // ===== CABECALHO (faixa azul) =====
       doc.setFillColor(AZUL[0], AZUL[1], AZUL[2]);
       doc.rect(0, 0, LARGURA_PAGINA, 26, 'F');
@@ -11505,34 +11560,87 @@
         var mapaValores = dados.spans || dados.teto || {};
         var chaves = Object.keys(mapaValores);
 
-        // Cabecalho da tabela
+        // A tabela agora ocupa so a METADE ESQUERDA; a metade direita recebe o grafico.
+        var LARG_TABELA = LARGURA_UTIL * 0.52;   // ~99 mm
+        var X_RESULT = MARGEM + LARG_TABELA - 18; // coluna "Resultado" perto do rotulo
+        var yInicioBloco = y;
+
+        // Cabecalho da tabela (compacto, metade esquerda)
         doc.setFillColor(cor[0], cor[1], cor[2]);
         doc.setTextColor(255, 255, 255);
-        doc.setFontSize(9); doc.setFont(undefined, 'bold');
-        doc.rect(MARGEM, y, LARGURA_UTIL, 7, 'F');
+        doc.setFontSize(8.5); doc.setFont(undefined, 'bold');
+        doc.rect(MARGEM, y, LARG_TABELA, 7, 'F');
         doc.text('Subtrilha', MARGEM + 3, y + 5);
-        doc.text('Resultado', X_DIR - 25, y + 5);
+        doc.text('Resultado', X_RESULT, y + 5);
         y += 7;
 
-        // Linhas da tabela (zebradas)
-        doc.setFont(undefined, 'normal'); doc.setFontSize(9);
+        // Linhas da tabela (zebradas, na metade esquerda)
+        doc.setFont(undefined, 'normal'); doc.setFontSize(8.5);
         chaves.forEach(function(k, idx) {
           _checarPagina(8);
           if (idx % 2 === 1) {
             doc.setFillColor(245, 246, 250);
-            doc.rect(MARGEM, y, LARGURA_UTIL, 6, 'F');
+            doc.rect(MARGEM, y, LARG_TABELA, 6, 'F');
           }
           doc.setTextColor(50, 50, 50);
           doc.text(String(ROTULOS_SUB[k] || k), MARGEM + 3, y + 4.2);
           doc.setFont(undefined, 'bold'); doc.setTextColor(cor[0], cor[1], cor[2]);
-          doc.text(String(mapaValores[k]), X_DIR - 22, y + 4.2);
+          doc.text(String(mapaValores[k]), X_RESULT + 2, y + 4.2);
           doc.setFont(undefined, 'normal');
           y += 6;
         });
-        // Borda externa da tabela
+        var yFimTabela = y;
+
+        // ===== GRAFICO DA METADE DIREITA =====
+        var gx = MARGEM + LARG_TABELA + 6;                 // inicio da area do grafico
+        var gLarg = X_DIR - gx;                            // largura disponivel a direita
+        var gAlt = yFimTabela - yInicioBloco;              // mesma altura do bloco da tabela
+        var barras = [];
+        var mnl = _mediaNumLetra(mapaValores);
+        if (mnl) {
+          // Modulos A, B, C: comparar media Numeros vs Letras
+          barras = [
+            { rotulo: 'Numeros', valor: mnl.numeros, cor: cor },
+            { rotulo: 'Letras', valor: mnl.letras, cor: [cor[0], cor[1], cor[2]] }
+          ];
+          // deixa a barra de letras um tom mais claro para diferenciar
+          barras[1].cor = [Math.min(cor[0] + 90, 235), Math.min(cor[1] + 90, 235), Math.min(cor[2] + 90, 235)];
+        } else {
+          // Modulo D: mostrar as 4 condicoes (D1..D4)
+          barras = chaves.map(function(k) { return { rotulo: k, valor: Number(mapaValores[k]) || 0, cor: cor }; });
+        }
+        // Escala do eixo Y: 13 (teto do A/B) ou o maior valor presente, o que for maior
+        var maxLocal = Math.max.apply(null, barras.map(function(b){ return b.valor; }).concat([1]));
+        var escalaLocal = Math.max(maxLocal, mnl ? 9 : 5);
+        if (gAlt >= 22 && gLarg >= 30) {
+          _graficoBarras(gx, yInicioBloco, gLarg, gAlt, barras, escalaLocal, mnl ? 'Numeros vs Letras' : 'Condicoes');
+        }
+
         doc.setDrawColor(220, 222, 230);
-        y += 8;
+        y = yFimTabela + 8;
       });
+
+      // ===== GRAFICO GERAL: media de cada modulo (A, B, C, D) =====
+      _checarPagina(58);
+      doc.setTextColor(AZUL[0], AZUL[1], AZUL[2]);
+      doc.setFontSize(12); doc.setFont(undefined, 'bold');
+      doc.text('Desempenho geral por modulo', MARGEM, y); y += 4;
+      doc.setTextColor(90, 90, 90); doc.setFontSize(8); doc.setFont(undefined, 'italic');
+      doc.text('Media de cada modulo, para comparar em que area a pessoa se sai melhor.', MARGEM, y + 3);
+      doc.setFont(undefined, 'normal'); y += 8;
+      var barrasGerais = [];
+      ['A', 'B', 'C', 'D'].forEach(function(m) {
+        var dd = d[m];
+        if (dd) {
+          var mapa = dd.spans || dd.teto || {};
+          barrasGerais.push({ rotulo: 'Mod ' + m, valor: _mediaGeral(mapa), cor: CORES_MOD[m] });
+        }
+      });
+      if (barrasGerais.length > 0) {
+        var maxGeral = Math.max.apply(null, barrasGerais.map(function(b){ return b.valor; }).concat([9]));
+        _graficoBarras(MARGEM, y, LARGURA_UTIL, 48, barrasGerais, maxGeral, null);
+        y += 52;
+      }
 
       // ===== RODAPE (aviso) =====
       _checarPagina(16);
