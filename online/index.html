@@ -11990,12 +11990,18 @@
           var res = d.resultados || {};
           var fd = d.formData || {};
           var isErro = (d.status === 'erro_transcricao');
-          var bgRow = isErro ? 'background:#fff3e0;' : '';
+          // NOVO FLUXO: audio enviado pelo paciente, aguardando o profissional clicar "Processar".
+          // Nao e erro - e o estado normal de um teste que ainda nao foi processado.
+          var _aguardando = (d.status === 'aguardando_processamento') && !(res && res.classificacao);
+          var bgRow = isErro ? 'background:#fff3e0;' : (_aguardando ? 'background:#e3f2fd;' : '');
           html += '<tr style="' + bgRow + '"><td style="padding:5px;border-bottom:1px solid #eee;text-align:center;"><input type="checkbox" class="ideia-check" value="' + (r.sessionId || '') + '"></td>';
           html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (d.date ? new Date(d.date).toLocaleString('pt-BR') : '') + '</td>';
           html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (fd.nome || '') + '</td>';
           html += '<td style="padding:5px;border-bottom:1px solid #eee;font-size:10px;font-family:monospace;color:#e65100;">' + (d.idPaciente || fd.id || '-') + '</td>';
-          if (isErro) {
+          if (_aguardando) {
+            html += '<td style="padding:5px;border-bottom:1px solid #eee;color:#1565c0;font-weight:bold;">AGUARDANDO</td>';
+            html += '<td style="padding:5px;border-bottom:1px solid #eee;color:#1565c0;font-size:10px;" colspan="2">Audio recebido &#8212; clique em Processar</td>';
+          } else if (isErro) {
             html += '<td style="padding:5px;border-bottom:1px solid #eee;color:#c62828;font-weight:bold;" colspan="3">ERRO — ' + (d.erro || 'Falha na transcricao') + '</td>';
           } else {
             html += '<td style="padding:5px;border-bottom:1px solid #eee;font-weight:bold;">' + (res.totalIdeias || '-') + '</td>';
@@ -12004,12 +12010,18 @@
           }
           html += '<td style="padding:5px;border-bottom:1px solid #eee;text-align:center;">';
           var temAudio = d._temAudio || d.audioS3Key;
-          if (isErro && temAudio) {
+          if (_aguardando && temAudio) {
+            // AGUARDANDO PROCESSAMENTO: Processar + Ouvir + Baixar (sem PDF, pois ainda nao ha resultado).
+            // "Processar" transcreve o audio, analisa com IA e gera o resultado (funcao reprocessarIdeia).
+            html += '<button id="btnReprocIdeia' + i + '" onclick="reprocessarIdeia(' + i + ')" class="btn btn-blue" style="padding:4px 10px;font-size:0.8em;">&#9654; Processar</button> ';
+            html += '<button onclick="ouvirAudioIdeia(' + i + ')" class="btn btn-green" style="padding:4px 10px;font-size:0.8em;">&#9654; Ouvir</button> ';
+            html += '<button onclick="baixarAudioIdeia(' + i + ')" style="padding:4px 10px;font-size:0.8em;border:none;border-radius:6px;cursor:pointer;background:#607d8b;color:white;">&#11015; Baixar</button>';
+          } else if (isErro && temAudio) {
             // Erro com audio salvo: reprocessar + ouvir + baixar (mesmo padrao do TFLOD)
             html += '<button id="btnReprocIdeia' + i + '" onclick="reprocessarIdeia(' + i + ')" class="btn btn-orange" style="padding:4px 10px;font-size:0.8em;">&#128260; Reprocessar</button> ';
             html += '<button onclick="ouvirAudioIdeia(' + i + ')" class="btn btn-green" style="padding:4px 10px;font-size:0.8em;">&#9654; Ouvir</button> ';
             html += '<button onclick="baixarAudioIdeia(' + i + ')" style="padding:4px 10px;font-size:0.8em;border:none;border-radius:6px;cursor:pointer;background:#607d8b;color:white;">&#11015; Baixar</button>';
-          } else if (isErro && !temAudio) {
+          } else if ((isErro || _aguardando) && !temAudio) {
             html += '<span style="font-size:10px;color:#999;">Audio nao salvo</span>';
           } else {
             html += '<button onclick="gerarPdfIdeia(' + i + ')" class="btn btn-blue" style="padding:4px 10px;font-size:0.8em;">PDF</button> ';
@@ -12096,16 +12108,22 @@
       } catch(e) { alert('Erro ao baixar audio: ' + (e.message || e)); }
     }
 
-    // ===== REPROCESSAR IDEIA (erro_transcricao com audio salvo) =====
-    // Refaz o caminho que falhou: busca o audio no S3, transcreve (Whisper),
-    // analisa com IA (Gemini) e recalcula os resultados, salvando como finalizado.
+    // ===== PROCESSAR / REPROCESSAR IDEIA (audio salvo) =====
+    // Serve para os dois casos: (a) fluxo novo, teste "aguardando_processamento" (o paciente
+    // so enviou o audio); (b) recuperacao de "erro_transcricao". Busca o audio no S3,
+    // transcreve (Whisper), analisa com IA (Gemini) e calcula os resultados, salvando finalizado.
     async function reprocessarIdeia(idx) {
       var r = _ideiaResultCache[idx];
       if (!r) return;
       var d = r.data || {};
       // Aceita audio salvo de duas formas: base64 inline (fallback) ou no S3.
-      if (!d.audioS3Key && !d.audioBase64) { alert('Este resultado nao tem audio salvo para reprocessar.'); return; }
-      if (!confirm('Reenviar o audio para a IA? Isso vai transcrever novamente e substituir o resultado com erro.')) return;
+      if (!d.audioS3Key && !d.audioBase64) { alert('Este resultado nao tem audio salvo para processar.'); return; }
+      // Mensagem adequada ao estado: "aguardando" e fluxo normal; "erro" e recuperacao.
+      var _aguardando = (d.status === 'aguardando_processamento');
+      var _msgConfirm = _aguardando
+        ? 'Processar este audio? Vou transcrever a fala, analisar as ideias com a IA e gerar o resultado.'
+        : 'Reenviar o audio para a IA? Isso vai transcrever novamente e substituir o resultado com erro.';
+      if (!confirm(_msgConfirm)) return;
       var btn = document.getElementById('btnReprocIdeia' + idx);
       if (btn) { btn.disabled = true; btn.textContent = 'Processando...'; }
       try {
