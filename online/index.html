@@ -11445,6 +11445,36 @@
         return qtd ? soma / qtd : 0;
       }
 
+      // Calcula a idade (anos completos) a partir de birthDate (YYYY-MM-DD). Retorna null se invalido.
+      function _idadeAnos(bd) {
+        if (!bd) { return null; }
+        var nasc = new Date(bd + 'T00:00:00');
+        if (isNaN(nasc.getTime())) { return null; }
+        var hoje = new Date();
+        var anos = hoje.getFullYear() - nasc.getFullYear();
+        var m = hoje.getMonth() - nasc.getMonth();
+        if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) { anos--; }
+        return anos;
+      }
+
+      // Span de memoria ESPERADO por idade (ordem direta), da literatura (Wechsler/Miller e estudos de
+      // desenvolvimento). Provisorio - a BRPI nao tem normas proprias. Usado nos modulos A e B.
+      function _spanEsperadoPorIdade(idade) {
+        if (idade === null) { return 6; }        // sem idade: usa referencia adulta media
+        if (idade <= 7) { return 4; }
+        if (idade <= 9) { return 5; }
+        if (idade <= 12) { return 5.5; }
+        if (idade <= 16) { return 6.5; }
+        return 7;                                  // adulto (17+)
+      }
+
+      // Classifica um valor observado contra um esperado, com tolerancia (DP). Retorna {texto, cor}.
+      function _classificar(obs, esperado, dp) {
+        if (obs < esperado - dp) { return { texto: 'Abaixo do esperado', cor: [198, 40, 40] }; }
+        if (obs > esperado + dp) { return { texto: 'Acima do esperado', cor: [46, 125, 50] }; }
+        return { texto: 'Dentro do esperado', cor: [57, 73, 171] };
+      }
+
       // Desenha um grafico de barras verticais. barras = [{rotulo, valor, cor}].
       // (x0,yTopo) = canto superior esquerdo da area; larg/alt = dimensoes; valorMax = escala do eixo Y.
       function _graficoBarras(x0, yTopo, larg, alt, barras, valorMax, titulo) {
@@ -11640,6 +11670,77 @@
         var maxGeral = Math.max.apply(null, barrasGerais.map(function(b){ return b.valor; }).concat([9]));
         _graficoBarras(MARGEM, y, LARGURA_UTIL, 48, barrasGerais, maxGeral, null);
         y += 52;
+      }
+
+      // ===== TABELA DE CLASSIFICACAO (referencia provisoria por idade) =====
+      _checarPagina(50);
+      var idadePac = _idadeAnos(p.birthDate);
+      doc.setTextColor(AZUL[0], AZUL[1], AZUL[2]);
+      doc.setFontSize(12); doc.setFont(undefined, 'bold');
+      doc.text('Classificacao de referencia', MARGEM, y); y += 5;
+      doc.setTextColor(90, 90, 90); doc.setFontSize(8); doc.setFont(undefined, 'italic');
+      var subC = 'Idade do avaliando: ' + (idadePac !== null ? idadePac + ' anos' : 'nao informada') + '. A e B comparados ao span esperado para a idade (literatura); C e D pela metade da escala (' + '\u00b1' + '1).';
+      var subCl = doc.splitTextToSize(subC, LARGURA_UTIL);
+      doc.text(subCl, MARGEM, y + 3); y += subCl.length * 4 + 5;
+      doc.setFont(undefined, 'normal');
+
+      // Cabecalho da tabela
+      doc.setFillColor(AZUL[0], AZUL[1], AZUL[2]); doc.setTextColor(255, 255, 255);
+      doc.setFontSize(8.5); doc.setFont(undefined, 'bold');
+      doc.rect(MARGEM, y, LARGURA_UTIL, 7, 'F');
+      doc.text('Modulo', MARGEM + 3, y + 5);
+      doc.text('Media', MARGEM + 70, y + 5);
+      doc.text('Esperado', MARGEM + 92, y + 5);
+      doc.text('Classificacao', MARGEM + 120, y + 5);
+      y += 7;
+
+      var spanEsp = _spanEsperadoPorIdade(idadePac);
+      doc.setFont(undefined, 'normal'); doc.setFontSize(8.5);
+      var linhaIdx = 0;
+      ['A', 'B', 'C', 'D'].forEach(function(m) {
+        var dd = d[m];
+        if (!dd) { return; }
+        var mapa = dd.spans || dd.teto || {};
+        var media = _mediaGeral(mapa);
+        var esperado, dp, espTxt;
+        if (m === 'A' || m === 'B') { esperado = spanEsp; dp = 1; espTxt = '~' + esperado + ' (idade)'; }
+        else if (m === 'C') { esperado = 3.5; dp = 1; espTxt = '3,5 (metade)'; }
+        else { esperado = 2.5; dp = 1; espTxt = '2,5 (metade)'; }
+        var cls = _classificar(media, esperado, dp);
+        _checarPagina(8);
+        if (linhaIdx % 2 === 1) { doc.setFillColor(245, 246, 250); doc.rect(MARGEM, y, LARGURA_UTIL, 6, 'F'); }
+        doc.setTextColor(50, 50, 50); doc.setFont(undefined, 'normal');
+        doc.text('Mod ' + m + ' - ' + _brpiNomesModulos[m], MARGEM + 3, y + 4.2);
+        doc.text(String(Math.round(media * 10) / 10), MARGEM + 70, y + 4.2);
+        doc.text(espTxt, MARGEM + 92, y + 4.2);
+        doc.setFont(undefined, 'bold'); doc.setTextColor(cls.cor[0], cls.cor[1], cls.cor[2]);
+        doc.text(cls.texto, MARGEM + 120, y + 4.2);
+        doc.setFont(undefined, 'normal');
+        y += 6; linhaIdx++;
+      });
+      y += 4;
+
+      // Nota provisoria + orientacao clinica
+      doc.setTextColor(120, 120, 120); doc.setFontSize(7.5); doc.setFont(undefined, 'italic');
+      var notaCls = doc.splitTextToSize('Classificacao PROVISORIA, baseada na literatura dos paradigmas - a BRPI nao possui normas proprias. Como rastreio, um desempenho muito abaixo do esperado sugere aprofundar com teste padronizado. Nao substitui avaliacao normatizada.', LARGURA_UTIL);
+      _checarPagina(notaCls.length * 4 + 4);
+      doc.text(notaCls, MARGEM, y); y += notaCls.length * 4 + 4;
+      doc.setFont(undefined, 'normal');
+
+      // ===== AVISO PIAGET (so para idade < 9 anos) =====
+      if (idadePac !== null && idadePac < 9) {
+        _checarPagina(30);
+        doc.setFillColor(255, 248, 225); doc.setDrawColor(255, 152, 0);
+        var txtPiaget = 'Avaliando em faixa etaria de transicao (Piaget: estagio pre-operatorio / inicio do operatorio concreto). Os modulos de seriacao (B), raciocinio relacional (C) e integracao simbolica (D) podem estar acima do estagio cognitivo tipico desta idade; eventuais falhas nesses modulos sao esperadas e devem ser interpretadas a luz do desenvolvimento, nao necessariamente como deficit. Em avaliandos com indicadores de altas habilidades, o desempenho acima do esperado para a idade e, em si, um dado clinico relevante (zona de desenvolvimento proximal, Vygotsky).';
+        doc.setFontSize(8); doc.setFont(undefined, 'normal'); doc.setTextColor(120, 80, 0);
+        var linhasP = doc.splitTextToSize(txtPiaget, LARGURA_UTIL - 8);
+        var altBox = linhasP.length * 4 + 8;
+        doc.rect(MARGEM, y, LARGURA_UTIL, altBox, 'FD');
+        doc.setFont(undefined, 'bold');
+        doc.text('Nota sobre o desenvolvimento (idade < 9 anos)', MARGEM + 4, y + 5);
+        doc.setFont(undefined, 'normal');
+        doc.text(linhasP, MARGEM + 4, y + 10);
+        y += altBox + 6;
       }
 
       // ===== RODAPE (aviso) =====
