@@ -11351,7 +11351,68 @@
       if (!r) { alert('Resultado nao encontrado.'); return; }
       _gerarPdfBrpiReal(r);
     }
-    function _gerarPdfBrpiReal(r) {
+
+    // Monta o prompt com os dados dos modulos aplicados e chama a IA (/generate-ai),
+    // com as MESMAS segurancas do BAE/SMART: anonimizacao invisivel do nome + tratamento
+    // de erro em camadas (nunca quebra o PDF; em caso de falha, retorna null e o PDF segue
+    // sem a secao de analise). Retorna o texto da analise (string) ou null.
+    async function _analisarBrpiIA(d) {
+      try {
+        var p = d.formData || d.paciente || {};
+        var nome = p.patientName || p.nome || '';
+        var nomes = { A: 'Amplitude de Memoria', B: 'Organizacao e Manipulacao', C: 'Raciocinio Relacional', D: 'Integracao e Decisao' };
+        // Monta um resumo textual dos resultados por modulo (rotulo -> valor).
+        var linhas = [];
+        ['A', 'B', 'C', 'D'].forEach(function(m) {
+          var dd = d[m];
+          if (!dd) { return; }
+          var mapa = dd.spans || dd.teto || {};
+          var pares = Object.keys(mapa).map(function(k) { return k + '=' + mapa[k]; }).join(', ');
+          linhas.push('Modulo ' + m + ' (' + nomes[m] + '): ' + pares);
+        });
+        if (linhas.length === 0) { return null; }
+
+        var prompt = '';
+        prompt += 'Voce e um neuropsicologo analisando os resultados da BRPI (Bateria de Rastreio do Processamento da Inteligencia), um instrumento de RASTREIO exploratorio, SEM normas proprias. ';
+        prompt += 'A BRPI observa COMO a pessoa processa a informacao (reter, organizar, descobrir regras, integrar), valorizando o padrao de respostas, nao apenas o acerto. ';
+        prompt += 'Os modulos: A = amplitude de memoria (span, ordem direta/inversa, auditivo/visual, numeros/letras); B = organizacao/manipulacao (ordenar crescente/decrescente); C = raciocinio relacional (descobrir regras, 7 niveis); D = integracao e decisao simbolica (5 niveis, condicoes D1-D4). Valores maiores = melhor desempenho.\n\n';
+        prompt += 'Dados do avaliando';
+        var idade = _idadeAnos(p.birthDate);
+        if (idade !== null) { prompt += ' (idade: ' + idade + ' anos)'; }
+        prompt += ':\n' + linhas.join('\n') + '\n\n';
+        prompt += 'Escreva uma analise clinica integrada e exploratoria (2 a 4 paragrafos), comparando o desempenho entre os modulos e destacando pontos fortes e fragilidades no processamento. ';
+        if (idade !== null && idade < 9) { prompt += 'ATENCAO: o avaliando tem menos de 9 anos; segundo Piaget, os modulos B, C e D dependem de operacoes concretas que se consolidam por volta dos 7-8 anos, entao falhas neles podem ser esperadas pelo estagio de desenvolvimento, nao necessariamente deficit. '; }
+        prompt += 'Use linguagem de PADRAO DE RESPOSTA (observavel), NUNCA afirme diagnostico, intencao ou honestidade. Deixe claro que e um rastreio que orienta hipoteses e nao substitui avaliacao normatizada. ';
+        prompt += 'Responda em portugues, apenas o texto da analise, sem titulos nem marcadores.';
+
+        // === ANONIMIZACAO INVISIVEL (mesma protecao do BAE) ===
+        var anon = (typeof Anonimizador !== 'undefined') ? Anonimizador.mascararPrompt(prompt, { paciente: nome }) : { textoLimpo: prompt, mapa: {} };
+        var promptSeguro = anon.textoLimpo;
+        var mapa = anon.mapa;
+
+        // === CHAMADA COM TRATAMENTO DE ERRO EM CAMADAS (nunca quebra o PDF) ===
+        var aiResp;
+        try {
+          aiResp = await fetch(API_URL + '/generate-ai', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt: promptSeguro })
+          });
+        } catch (eNet) { return null; }
+        if (!aiResp.ok) { return null; }
+        var aiData;
+        try { aiData = await aiResp.json(); } catch (eJson) { return null; }
+        if (!aiData || aiData.error) { return null; }
+        var texto = aiData.text || '';
+        if (!texto.trim()) { return null; }
+        // === DESANONIMIZACAO INVISIVEL ===
+        if (typeof Anonimizador !== 'undefined' && mapa && Object.keys(mapa).length > 0) {
+          texto = Anonimizador.desmascarar(texto, mapa);
+        }
+        return texto.trim();
+      } catch (e) { return null; }
+    }
+
+    async function _gerarPdfBrpiReal(r) {
       if (typeof window.jspdf === 'undefined' && typeof jsPDF === 'undefined') {
         alert('Biblioteca de PDF ainda carregando. Tente novamente em alguns segundos.');
         return;
@@ -11360,6 +11421,10 @@
       var doc = new JsPDF();
       var d = r.data || {};
       var p = d.formData || d.paciente || {};
+
+      // Busca a analise da IA ANTES de desenhar (chamada assincrona com as segurancas do BAE).
+      // Se falhar ou nao houver dados, retorna null e o PDF e gerado sem a secao de analise.
+      var analiseTexto = await _analisarBrpiIA(d);
 
       // ===== CONFIGURACAO DE LAYOUT =====
       // Margem de 1 cm (10 mm) em cada lado. A4 = 210 mm de largura.
@@ -11726,6 +11791,30 @@
       _checarPagina(notaCls.length * 4 + 4);
       doc.text(notaCls, MARGEM, y); y += notaCls.length * 4 + 4;
       doc.setFont(undefined, 'normal');
+
+      // ===== ANALISE POR IA (logo depois da tabela de classificacao) =====
+      // 'analiseTexto' foi obtida ANTES de comecar a desenhar o PDF (ver inicio da funcao),
+      // com as segurancas do BAE (anonimizacao + tratamento de erro). Pode ser null (falha/sem dados).
+      if (analiseTexto) {
+        _checarPagina(24);
+        doc.setTextColor(AZUL[0], AZUL[1], AZUL[2]);
+        doc.setFontSize(12); doc.setFont(undefined, 'bold');
+        doc.text('Analise por Inteligencia Artificial', MARGEM, y); y += 6;
+        doc.setTextColor(50, 50, 50); doc.setFontSize(9); doc.setFont(undefined, 'normal');
+        var linhasIA = doc.splitTextToSize(analiseTexto, LARGURA_UTIL);
+        linhasIA.forEach(function(ln) {
+          _checarPagina(6);
+          doc.text(ln, MARGEM, y);
+          y += 4.5;
+        });
+        y += 3;
+        // Disclaimer da IA (mesmo espirito do manual)
+        doc.setTextColor(120, 120, 120); doc.setFontSize(7.5); doc.setFont(undefined, 'italic');
+        var discIA = doc.splitTextToSize('Esta analise e um apoio a interpretacao, jamais um substituto do julgamento clinico. Ela organiza e destaca padroes para que o profissional os avalie a luz da historia do paciente e das demais fontes.', LARGURA_UTIL);
+        _checarPagina(discIA.length * 4 + 4);
+        doc.text(discIA, MARGEM, y); y += discIA.length * 4 + 5;
+        doc.setFont(undefined, 'normal');
+      }
 
       // ===== AVISO PIAGET (so para idade < 9 anos) =====
       if (idadePac !== null && idadePac < 9) {
