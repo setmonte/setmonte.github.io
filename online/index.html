@@ -11346,10 +11346,15 @@
     }
 
     // PDF proprio da BRPI (resumo dos modulos aplicados)
-    function gerarPdfBrpi(idx) {
+    async function gerarPdfBrpi(idx) {
       var r = _brpiResultCache[idx];
       if (!r) { alert('Resultado nao encontrado.'); return; }
-      _gerarPdfBrpiReal(r);
+      try {
+        await _gerarPdfBrpiReal(r);
+      } catch (e) {
+        console.log('[BRPI PDF] erro ao gerar:', e && e.message);
+        alert('Ocorreu um erro ao gerar o PDF. Tente novamente.');
+      }
     }
 
     // Monta o prompt com os dados dos modulos aplicados e chama a IA (/generate-ai),
@@ -11386,30 +11391,38 @@
         prompt += 'Responda em portugues, apenas o texto da analise, sem titulos nem marcadores.';
 
         // === ANONIMIZACAO INVISIVEL (mesma protecao do BAE) ===
-        var anon = (typeof Anonimizador !== 'undefined') ? Anonimizador.mascararPrompt(prompt, { paciente: nome }) : { textoLimpo: prompt, mapa: {} };
-        var promptSeguro = anon.textoLimpo;
-        var mapa = anon.mapa;
-
-        // === CHAMADA COM TRATAMENTO DE ERRO EM CAMADAS (nunca quebra o PDF) ===
-        var aiResp;
+        // Se o Anonimizador falhar por algum motivo, segue sem ele (nao pode travar a analise).
+        var promptSeguro = prompt;
+        var mapa = {};
         try {
-          aiResp = await fetch(API_URL + '/generate-ai', {
+          if (typeof Anonimizador !== 'undefined') {
+            var anon = Anonimizador.mascararPrompt(prompt, { paciente: nome });
+            promptSeguro = anon.textoLimpo;
+            mapa = anon.mapa || {};
+          }
+        } catch (eAnon) { promptSeguro = prompt; mapa = {}; }
+
+        // === CHAMADA COM TIMEOUT (30s, como o TECFE) E TRATAMENTO DE ERRO (nunca quebra o PDF) ===
+        var aiData = null;
+        try {
+          var aiTimeout = new Promise(function(_, rej) { setTimeout(function() { rej(new Error('timeout')); }, 30000); });
+          var aiCall = fetch(API_URL + '/generate-ai', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ prompt: promptSeguro })
-          });
-        } catch (eNet) { return null; }
-        if (!aiResp.ok) { return null; }
-        var aiData;
-        try { aiData = await aiResp.json(); } catch (eJson) { return null; }
-        if (!aiData || aiData.error) { return null; }
+          }).then(function(resp) { return resp.json(); });
+          aiData = await Promise.race([aiCall, aiTimeout]);
+        } catch (eNet) { console.log('[BRPI IA] falha na chamada:', eNet && eNet.message); return null; }
+        if (!aiData || aiData.error) { console.log('[BRPI IA] resposta com erro:', aiData && aiData.error); return null; }
         var texto = aiData.text || '';
-        if (!texto.trim()) { return null; }
+        if (!texto.trim()) { console.log('[BRPI IA] resposta vazia'); return null; }
         // === DESANONIMIZACAO INVISIVEL ===
-        if (typeof Anonimizador !== 'undefined' && mapa && Object.keys(mapa).length > 0) {
-          texto = Anonimizador.desmascarar(texto, mapa);
-        }
+        try {
+          if (typeof Anonimizador !== 'undefined' && mapa && Object.keys(mapa).length > 0) {
+            texto = Anonimizador.desmascarar(texto, mapa);
+          }
+        } catch (eDes) { /* mantem o texto como veio */ }
         return texto.trim();
-      } catch (e) { return null; }
+      } catch (e) { console.log('[BRPI IA] erro inesperado:', e && e.message); return null; }
     }
 
     async function _gerarPdfBrpiReal(r) {
