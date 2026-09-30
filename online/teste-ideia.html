@@ -263,6 +263,11 @@ var audioChunks = [];
 // Formato de gravacao efetivamente usado (definido conforme o suporte do navegador).
 // Usado tanto na criacao do MediaRecorder quanto na montagem do Blob final.
 var audioMimeType = 'audio/webm;codecs=opus';
+// Restricoes de captacao do microfone com filtros nativos do navegador ligados.
+// noiseSuppression reduz chiado/ruido de fundo, echoCancellation remove eco,
+// autoGainControl estabiliza/reforca o volume. Ajuda MUITO com microfones fracos
+// (ex: webcam ou mic embutido), fazendo a voz ser detectada e melhorando o Whisper.
+var AUDIO_CONSTRAINTS = { audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } };
 var timerInterval = null;
 var tempoTotal = 600; // 10 minutos em segundos
 var tempoRestante = 600;
@@ -431,7 +436,7 @@ function testarMicrofone() {
     document.getElementById('micStatus').style.background = '#e0f2f1';
     document.getElementById('micStatus').style.color = '#004d40';
 
-    navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
+    navigator.mediaDevices.getUserMedia(AUDIO_CONSTRAINTS).then(function(stream) {
         _micStream = stream;
         document.getElementById('micStatus').textContent = '\u2705 Microfone conectado! Fale algo para testar.';
         document.getElementById('micStatus').style.background = '#e8f5e9';
@@ -513,7 +518,7 @@ async function iniciarTeste() {
 
     // Iniciar gravacao de audio
     try {
-        var stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        var stream = await navigator.mediaDevices.getUserMedia(AUDIO_CONSTRAINTS);
         audioChunks = [];
         // Escolhe o formato suportado pelo navegador (evita quebra no Safari/iOS) e usa
         // bitrate maior (32k -> 96k) para melhorar o reconhecimento da fala pelo Whisper.
