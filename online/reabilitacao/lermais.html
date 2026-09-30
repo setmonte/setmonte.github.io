@@ -1190,6 +1190,17 @@ function novaLeitura() {
 }
 
 // ===== MODO PAINEL (sessao unica) =====
+// Quando o LERMAIS e aberto pelo painel, o profissional ja preencheu os dados do paciente la.
+// Nao faz sentido pedir os mesmos dados de novo aqui. Esconde o bloco de dados pessoais e as
+// instrucoes longas. Os campos continuam no HTML (apenas ocultos), pois o codigo le nome/sexo/
+// idade para sortear o texto e calcular - o painel ja preencheu esses campos.
+function _ocultarFormularioPainel() {
+    var dados = document.querySelector('.dados-pessoais');
+    if (dados) dados.style.display = 'none';
+    var infoEls = document.querySelectorAll('.instrucoes');
+    infoEls.forEach(function(el) { el.style.display = 'none'; });
+}
+
 function _decodificarURL() {
     try {
         var params = new URLSearchParams(window.location.search);
@@ -1206,9 +1217,8 @@ function _decodificarURL() {
         var cvEl = document.getElementById('correcaoVisual');
         if (cvEl && dados.correcaoVisual) { cvEl.value = dados.correcaoVisual; }
         _sessionInfo = dados;
-        // Esconde info tecnica no modo painel
-        var infoEls = document.querySelectorAll('.instrucoes');
-        infoEls.forEach(function(el) { el.style.display = 'none'; });
+        // Esconde o formulario de dados e as instrucoes no modo painel (dados vieram do painel).
+        _ocultarFormularioPainel();
     } catch(e) { console.log('Erro decodificar URL:', e); }
 }
 // Overlay de confirmacao em tela cheia (fixed): aparece por cima de tudo, centralizado,
@@ -1323,6 +1333,8 @@ if (params.get('s')) {
             if (latEl2 && data.lateralidade) { latEl2.value = data.lateralidade; }
             var cvEl2 = document.getElementById('correcaoVisual');
             if (cvEl2 && data.correcaoVisual) { cvEl2.value = data.correcaoVisual; }
+            // Esconde o formulario de dados e as instrucoes (dados vieram do painel).
+            _ocultarFormularioPainel();
             _criarBotaoEnviar();
         }
     }).catch(function() {});
