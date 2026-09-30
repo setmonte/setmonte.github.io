@@ -818,7 +818,10 @@ function pararTesteMic() {
 function fecharMicEIniciar() {
     pararTesteMic();
     document.getElementById('micModal').style.display = 'none';
-    iniciarLeitura();
+    // Pequeno respiro: soltar o microfone do teste e iniciar o reconhecimento no MESMO instante
+    // faz o Chrome falhar (o start() nao pega). Esperar ~300ms deixa o navegador liberar o
+    // microfone antes de o SpeechRecognition assumir. Evita ficar preso no cinza "parado".
+    setTimeout(function() { iniciarLeitura(); }, 300);
 }
 
 // ===== CONTROLE DA LEITURA =====
@@ -829,7 +832,23 @@ function iniciarLeitura() {
     isListening = true;
     leituraFinalizada = false;
 
-    try { recognition.start(); } catch(e) {}
+    // Iniciar o reconhecimento de voz. Antes o erro era engolido (catch vazio): quando o start()
+    // falhava, a bolinha ficava cinza sem avisar. Agora, se falhar, tentamos UMA vez de novo apos
+    // um instante e, se ainda assim nao iniciar, mostramos uma mensagem clara em vez de travar mudo.
+    function _iniciarReconhecimento(tentativa) {
+        try {
+            recognition.start();
+        } catch (e) {
+            console.log('LERMAIS: falha ao iniciar reconhecimento (' + (e && e.message ? e.message : e) + ')');
+            if (tentativa < 2 && isListening && !leituraFinalizada) {
+                setTimeout(function() { _iniciarReconhecimento(tentativa + 1); }, 400);
+            } else {
+                var _mt = document.getElementById('micTexto');
+                if (_mt) _mt.innerHTML = '<span style="color:#c62828;font-weight:bold;">Nao foi possivel iniciar o reconhecimento de voz. Verifique se esta no Google Chrome com internet e se o microfone tem permissao, e tente novamente.</span>';
+            }
+        }
+    }
+    _iniciarReconhecimento(1);
 
     document.getElementById('btnIniciar').style.display = 'none';
     document.getElementById('btnParar').style.display = 'inline-block';
