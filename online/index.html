@@ -11396,6 +11396,30 @@
         D1: 'Condicao D1', D2: 'Condicao D2', D3: 'Condicao D3', D4: 'Condicao D4'
       };
 
+      // Resumo do teste (baseado no item 1 do manual). Explica em poucas linhas o que e a BRPI.
+      var RESUMO_TESTE = 'A BRPI e um instrumento digital de rastreio do processamento cognitivo: observa COMO a pessoa lida com a informacao quando precisa rete-la, organiza-la, descobrir regras e integra-la para decidir. Nao e um teste de inteligencia normatizado, e sim um mapa exploratorio que ajuda a levantar hipoteses. Diferente dos testes que medem "quanto" a pessoa acerta, a BRPI se interessa por "como" ela chega a resposta: cada opcao foi desenhada para ter um significado, e o padrao das escolhas ao longo do teste conta uma historia sobre o raciocinio. E composta por quatro modulos independentes (A, B, C e D) - quatro janelas para aspectos diferentes do processamento: reter, organizar, descobrir regras e integrar.';
+
+      // Explicacao curta de cada modulo (resumida do manual, secao 3).
+      var EXPLICACAO_MOD = {
+        A: 'Mede a amplitude de memoria: quanto a pessoa consegue reter e reproduzir. Apresenta sequencias que crescem, cruzando modalidade (ouvida ou vista) e ordem (direta ou inversa), com numeros e letras. A ordem inversa exige manipular mentalmente o que foi retido, nao so repetir.',
+        B: 'Avalia a organizacao e manipulacao: a pessoa recebe uma sequencia e precisa reorganiza-la segundo uma regra (crescente ou decrescente). Separa duas capacidades que se confundem - manter a informacao e operar sobre ela.',
+        C: 'Entra no raciocinio fluido: descobrir a regra que liga os elementos e aplica-la, em sete niveis de complexidade crescente. Cada alternativa de resposta representa uma hipotese de raciocinio (soma, subtracao, multiplicacao, progressao, regra invertida, etc.), revelando qual estrategia a pessoa usou.',
+        D: 'O mais complexo: integrar informacoes, aplicar regras e decidir ao mesmo tempo, com raciocinio simbolico (cada figura vale um numero, por uma regua que muda a cada questao). A pessoa faz a operacao e traduz o resultado de volta para figuras. Tem quatro condicoes (D1 auditiva, D2 visual, D3 integracao das duas, D4 regra que pode mudar).'
+      };
+
+      // Referencias (ABNT), as mesmas do manual tecnico.
+      var REFERENCIAS = [
+        'FLANAGAN, D. P.; McGREW, K. S.; ORTIZ, S. O. The Wechsler Intelligence Scales and Gf-Gc theory. Boston: Allyn & Bacon, 2000.',
+        'McGREW, K. S. CHC theory and the human cognitive abilities project. Intelligence, v. 37, n. 1, p. 1-10, 2009.',
+        'BADDELEY, A. Working memory: looking back and looking forward. Nature Reviews Neuroscience, v. 4, n. 10, p. 829-839, 2003.',
+        'BARKLEY, R. A. Behavioral inhibition, sustained attention, and executive functions. Psychological Bulletin, v. 121, n. 1, p. 65-94, 1997.',
+        'BARKLEY, R. A. Executive functions: what they are, how they work, and why they evolved. New York: Guilford Press, 2012.',
+        'WECHSLER, D. WAIS-III: Escala de Inteligencia Wechsler para Adultos. Adaptacao brasileira: Elizabeth do Nascimento. Sao Paulo: Casa do Psicologo, 2004.',
+        'WECHSLER, D. WISC-IV: Escala Wechsler de Inteligencia para Criancas. Adaptacao brasileira: Ana Paula Porto Noronha; Acacia A. A. dos Santos. Sao Paulo: Casa do Psicologo, 2013.',
+        'BOCCALANDRO, N. E. R. G-36: Teste Nao Verbal de Inteligencia. Sao Paulo: Vetor Editora.',
+        'BOCCALANDRO, N. E. R. G-38: Teste Nao Verbal de Inteligencia. Sao Paulo: Vetor Editora.'
+      ];
+
       // Helper: se faltar espaco na pagina, cria uma nova e volta o y ao topo.
       function _checarPagina(alturaNecessaria) {
         if (y + alturaNecessaria > 285) { doc.addPage(); y = 20; }
@@ -11436,6 +11460,16 @@
       doc.setFont(undefined, 'normal'); doc.text(d.dataAplicacao ? new Date(d.dataAplicacao).toLocaleString('pt-BR') : '-', MARGEM + 44, yTexto);
       y += alturaCaixa + 10;
 
+      // ===== SOBRE O TESTE (resumo do item 1 do manual) =====
+      doc.setTextColor(AZUL[0], AZUL[1], AZUL[2]);
+      doc.setFontSize(12); doc.setFont(undefined, 'bold');
+      doc.text('Sobre o teste', MARGEM, y); y += 6;
+      doc.setTextColor(60, 60, 60); doc.setFontSize(9); doc.setFont(undefined, 'normal');
+      var resumoLinhas = doc.splitTextToSize(RESUMO_TESTE, LARGURA_UTIL);
+      _checarPagina(resumoLinhas.length * 4.5 + 6);
+      doc.text(resumoLinhas, MARGEM, y);
+      y += resumoLinhas.length * 4.5 + 8;
+
       // ===== BLOCO POR MODULO =====
       ['A', 'B', 'C', 'D'].forEach(function(m) {
         var dados = d[m];
@@ -11448,7 +11482,17 @@
         doc.setTextColor(cor[0], cor[1], cor[2]);
         doc.setFontSize(12); doc.setFont(undefined, 'bold');
         doc.text('Modulo ' + m + ' - ' + _brpiNomesModulos[m], MARGEM + 6, y + 2);
-        y += 8;
+        y += 7;
+
+        // Explicacao do modulo (resumo do manual), logo abaixo do titulo
+        if (EXPLICACAO_MOD[m]) {
+          doc.setTextColor(90, 90, 90); doc.setFontSize(8); doc.setFont(undefined, 'italic');
+          var expLinhas = doc.splitTextToSize(EXPLICACAO_MOD[m], LARGURA_UTIL - 6);
+          _checarPagina(expLinhas.length * 4 + 4);
+          doc.text(expLinhas, MARGEM + 6, y + 2);
+          y += expLinhas.length * 4 + 4;
+          doc.setFont(undefined, 'normal');
+        }
 
         if (!dados) {
           doc.setTextColor(150, 150, 150); doc.setFontSize(9); doc.setFont(undefined, 'italic');
@@ -11497,6 +11541,25 @@
       doc.setFontSize(8); doc.setTextColor(120, 120, 120); doc.setFont(undefined, 'italic');
       var aviso = doc.splitTextToSize('Instrumento de rastreio exploratorio, sem normatizacao formal. Uso restrito a profissional qualificado. Os resultados devem ser interpretados no contexto de uma avaliacao mais ampla.', LARGURA_UTIL);
       doc.text(aviso, MARGEM, y);
+      y += aviso.length * 4 + 8;
+      doc.setFont(undefined, 'normal');
+
+      // ===== REFERENCIAS (as mesmas do manual tecnico) =====
+      _checarPagina(20);
+      doc.setTextColor(AZUL[0], AZUL[1], AZUL[2]);
+      doc.setFontSize(11); doc.setFont(undefined, 'bold');
+      doc.text('Referencias', MARGEM, y); y += 6;
+      doc.setTextColor(70, 70, 70); doc.setFontSize(7.5); doc.setFont(undefined, 'normal');
+      REFERENCIAS.forEach(function(ref) {
+        var refLinhas = doc.splitTextToSize(ref, LARGURA_UTIL);
+        _checarPagina(refLinhas.length * 3.5 + 2);
+        doc.text(refLinhas, MARGEM, y);
+        y += refLinhas.length * 3.5 + 2.5;
+      });
+      doc.setTextColor(140, 140, 140); doc.setFontSize(6.5); doc.setFont(undefined, 'italic');
+      _checarPagina(8);
+      var obsRef = doc.splitTextToSize('As referencias embasam os paradigmas em que a BRPI se inspira (memoria de trabalho, teoria CHC, escalas Wechsler e a analise qualitativa de erros dos testes G-36/G-38), e nao a BRPI em si, que ainda nao possui estudos de validacao publicados.', LARGURA_UTIL);
+      doc.text(obsRef, MARGEM, y);
       doc.setFont(undefined, 'normal');
 
       var tsNow = new Date();
