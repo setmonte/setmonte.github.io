@@ -587,18 +587,15 @@ function initSpeechRecognition() {
     recognition.maxAlternatives = 3;
 
     recognition.onstart = function() {
-        console.log('[LERMAIS-DIAG] onstart (reconhecimento iniciou). lang=' + recognition.lang);
         isListening = true;
         document.getElementById('micIndicator').className = 'mic-indicator ativo';
         document.getElementById('micTexto').textContent = 'Escutando...';
     };
 
     recognition.onresult = function(event) {
-        console.log('[LERMAIS-DIAG] onresult disparou. results=' + event.results.length + ' resultIndex=' + event.resultIndex);
         if (leituraFinalizada) return;
         for (var i = event.resultIndex; i < event.results.length; i++) {
             var result = event.results[i];
-            console.log('[LERMAIS-DIAG] result ' + i + ' isFinal=' + result.isFinal + ' texto="' + (result[0] ? result[0].transcript : '') + '" conf=' + (result[0] ? result[0].confidence : '?'));
             if (result.isFinal) {
                 var transcript = result[0].transcript.trim();
                 var confidence = result[0].confidence || 0.5;
@@ -612,7 +609,6 @@ function initSpeechRecognition() {
     };
 
     recognition.onerror = function(event) {
-        console.log('[LERMAIS-DIAG] onerror: ' + event.error);
         if (event.error === 'no-speech') return;
         if (event.error === 'not-allowed') {
             document.getElementById('micTexto').textContent = 'Permissao do microfone negada';
@@ -620,10 +616,6 @@ function initSpeechRecognition() {
         }
         console.log('Erro voz:', event.error);
     };
-
-    recognition.onaudiostart = function() { console.log('[LERMAIS-DIAG] onaudiostart (microfone comecou a captar audio)'); };
-    recognition.onsoundstart = function() { console.log('[LERMAIS-DIAG] onsoundstart (algum som detectado)'); };
-    recognition.onspeechstart = function() { console.log('[LERMAIS-DIAG] onspeechstart (fala detectada)'); };
 
     recognition.onend = function() {
         if (isListening && !leituraFinalizada) {
