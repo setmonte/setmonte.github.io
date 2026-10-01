@@ -561,8 +561,6 @@
       else if (document.msExitFullscreen) document.msExitFullscreen();
 
       navegarPara('pagina-concluido');
-      // Auto-fechar aba
-      setTimeout(function(){var _s=document.createElement('script');_s.src='auto-close.js';_s.onload=function(){if(window._autoFechar)_autoFechar();};document.body.appendChild(_s);},2000);
       // Coleta anonima
       var _rec1c = estadoTeste.resultados.naoSemantico.reconhecimento1;
       var _rec2c = estadoTeste.resultados.naoSemantico.reconhecimento2;
@@ -590,13 +588,21 @@
         for (var _i = 0; _i < _raw.length; _i++) _h = ((_h << 5) + _h) + _raw.charCodeAt(_i);
         _idPac = 'P' + Math.abs(_h).toString(36).toUpperCase();
       }
+      // Payload do resultado para o painel do profissional
+      var _payloadPainel = JSON.stringify({ sessionId: sessionData.sessionId, email: sessionData.email, tipo: 'trmv', idPaciente: _idPac, data: resultData });
+      // Reforco: sendBeacon garante a entrega mesmo que a aba feche/navegue (internet lenta).
+      // E disparado ANTES do fetch e ANTES de agendar o auto-close, como rede de seguranca.
+      try { navigator.sendBeacon(API_URL + '/save-result', new Blob([_payloadPainel], {type:'application/json'})); } catch(e) {}
+      // Envio principal via fetch, aguardado ate concluir antes de agendar o fechamento da aba.
       try {
         await fetch(API_URL + '/save-result', {
           method: 'POST',
           headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({ sessionId: sessionData.sessionId, email: sessionData.email, tipo: 'trmv', idPaciente: _idPac, data: resultData })
+          body: _payloadPainel
         });
       } catch(e) { console.error('Erro ao salvar resultado:', e); }
+      // Auto-fechar aba SOMENTE depois de o envio do resultado ter sido concluido/garantido.
+      setTimeout(function(){var _s=document.createElement('script');_s.src='auto-close.js';_s.onload=function(){if(window._autoFechar)_autoFechar();};document.body.appendChild(_s);},2000);
     }
 
     // ===== MODULO DE ESTIMULOS (inline) =====
