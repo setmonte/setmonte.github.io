@@ -11382,7 +11382,17 @@
         prompt += 'A BRPI observa COMO a pessoa processa a informacao (reter, organizar, descobrir regras, integrar), valorizando o padrao de respostas, nao apenas o acerto. ';
         prompt += 'Os modulos: A = amplitude de memoria (span, ordem direta/inversa, auditivo/visual, numeros/letras); B = organizacao/manipulacao (ordenar crescente/decrescente); C = raciocinio relacional (descobrir regras, 7 niveis); D = integracao e decisao simbolica (5 niveis, condicoes D1-D4). Valores maiores = melhor desempenho.\n\n';
         prompt += 'Dados do avaliando';
-        var idade = _idadeAnos(p.birthDate);
+        // Calcula a idade inline (nao depende de funcao externa de outro escopo).
+        var idade = null;
+        if (p.birthDate) {
+          var _n = new Date(p.birthDate + 'T00:00:00');
+          if (!isNaN(_n.getTime())) {
+            var _h = new Date();
+            idade = _h.getFullYear() - _n.getFullYear();
+            var _mm = _h.getMonth() - _n.getMonth();
+            if (_mm < 0 || (_mm === 0 && _h.getDate() < _n.getDate())) { idade--; }
+          }
+        }
         if (idade !== null) { prompt += ' (idade: ' + idade + ' anos)'; }
         prompt += ':\n' + linhas.join('\n') + '\n\n';
         prompt += 'Escreva uma analise clinica integrada e exploratoria (2 a 4 paragrafos), comparando o desempenho entre os modulos e destacando pontos fortes e fragilidades no processamento. ';
