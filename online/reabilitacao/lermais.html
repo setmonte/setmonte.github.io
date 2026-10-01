@@ -747,64 +747,30 @@ var _micAnimFrame = null;
 var _micDetected = false;
 var _micAudioCtx = null; // AudioContext do medidor de volume (guardado para acordar/fechar)
 
+// NOVO FLUXO (simplificado): sem o pop-up de verificacao que travava.
+// Antes, o modal so liberava o botao quando a barra de volume passava de 5% - se a barra
+// nao subisse (extensao, ambiente, etc.), o usuario ficava preso e nunca comecava a ler.
+// Agora: pedimos a permissao do microfone UMA vez; se concedida, vamos DIRETO para a leitura;
+// se negada ou falhar, mostramos um aviso claro (sem travar). Nao dependemos mais da barra.
 function testarMicrofone() {
-    var modal = document.getElementById('micModal');
-    modal.style.display = 'flex';
-    _micDetected = false;
-    document.getElementById('btnIniciarReal').disabled = true;
-    document.getElementById('btnIniciarReal').style.opacity = '0.5';
-    document.getElementById('micHint').textContent = 'O bot\u00e3o ser\u00e1 liberado quando detectarmos sua voz.';
-    document.getElementById('micFeedback').textContent = '';
-    document.getElementById('micStatusModal').textContent = 'Solicitando acesso ao microfone...';
-    document.getElementById('micStatusModal').style.background = '#e8f5e9';
-    document.getElementById('micStatusModal').style.color = '#2e7d32';
+    var _mt = document.getElementById('micTexto');
+    if (_mt) _mt.textContent = 'Preparando microfone...';
+    // Desabilita o botao Iniciar enquanto pede a permissao (evita duplo clique).
+    var _btnIni = document.getElementById('btnIniciar');
+    if (_btnIni) { _btnIni.disabled = true; _btnIni.style.opacity = '0.6'; }
 
     navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
-        _micStream = stream;
-        document.getElementById('micStatusModal').textContent = '\u2705 Microfone conectado! Fale algo para testar.';
-
-        var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        _micAudioCtx = audioCtx;
-        // O Chrome cria o AudioContext no estado "suspended" (dormindo) por politica de autoplay.
-        // Sem acordar (resume), o analisador so devolve zeros: a barrinha nao mexe e o botao
-        // nunca libera. O resume precisa acontecer apos um gesto do usuario (o clique no botao
-        // que chamou testarMicrofone conta), por isso e seguro chamar aqui.
-        try { if (audioCtx.state === 'suspended' && audioCtx.resume) audioCtx.resume(); } catch (e) {}
-        var source = audioCtx.createMediaStreamSource(stream);
-        _micAnalyser = audioCtx.createAnalyser();
-        _micAnalyser.fftSize = 256;
-        source.connect(_micAnalyser);
-
-        var dataArray = new Uint8Array(_micAnalyser.frequencyBinCount);
-        var peakCount = 0;
-
-        function monitorar() {
-            _micAnalyser.getByteFrequencyData(dataArray);
-            var sum = 0;
-            for (var i = 0; i < dataArray.length; i++) sum += dataArray[i];
-            var avg = sum / dataArray.length;
-            var pct = Math.min(100, Math.round((avg / 40) * 100));
-            // Blindagem: se o elemento da barra nao existir, nao deixa o erro travar o loop.
-            var _lvl = document.getElementById('micLevel');
-            if (_lvl) _lvl.style.width = pct + '%';
-            if (pct > 5) {
-                peakCount++;
-                if (peakCount >= 5 && !_micDetected) {
-                    _micDetected = true;
-                    document.getElementById('micFeedback').innerHTML = '<span style="color:#2e7d32;font-weight:700;">\u2705 Voz detectada! Microfone funcionando.</span>';
-                    document.getElementById('btnIniciarReal').disabled = false;
-                    document.getElementById('btnIniciarReal').style.opacity = '1';
-                    document.getElementById('micHint').textContent = 'Tudo pronto! Clique para iniciar.';
-                }
-            }
-            _micAnimFrame = requestAnimationFrame(monitorar);
-        }
-        monitorar();
+        // Permissao concedida. Liberamos imediatamente este stream de teste: quem vai usar o
+        // microfone de verdade e o SpeechRecognition, logo em seguida. Nao segurar o microfone
+        // aqui evita conflito de "quem esta usando o mic".
+        try { stream.getTracks().forEach(function(t) { t.stop(); }); } catch (e) {}
+        if (_btnIni) { _btnIni.disabled = false; _btnIni.style.opacity = '1'; }
+        // Pequeno respiro antes de iniciar o reconhecimento (o Chrome falha se for no mesmo instante).
+        setTimeout(function() { iniciarLeitura(); }, 300);
     }).catch(function(err) {
-        document.getElementById('micStatusModal').textContent = '\u274c Microfone bloqueado ou n\u00e3o encontrado.';
-        document.getElementById('micStatusModal').style.background = '#ffebee';
-        document.getElementById('micStatusModal').style.color = '#c62828';
-        document.getElementById('micFeedback').innerHTML = '<span style="color:#c62828;">Verifique as permiss\u00f5es do navegador.<br>Clique no cadeado na barra de endere\u00e7o.</span>';
+        // Permissao negada ou microfone indisponivel: avisa com clareza, sem travar.
+        if (_btnIni) { _btnIni.disabled = false; _btnIni.style.opacity = '1'; }
+        if (_mt) _mt.innerHTML = '<span style="color:#c62828;font-weight:bold;">Nao foi possivel acessar o microfone. Clique no cadeado na barra de endereco, permita o microfone para este site e tente novamente.</span>';
     });
 }
 
@@ -815,12 +781,11 @@ function pararTesteMic() {
     _micAnalyser = null;
 }
 
+// Mantida por compatibilidade: o modal nao e mais usado, mas se algo chamar, vai direto a leitura.
 function fecharMicEIniciar() {
     pararTesteMic();
-    document.getElementById('micModal').style.display = 'none';
-    // Pequeno respiro: soltar o microfone do teste e iniciar o reconhecimento no MESMO instante
-    // faz o Chrome falhar (o start() nao pega). Esperar ~300ms deixa o navegador liberar o
-    // microfone antes de o SpeechRecognition assumir. Evita ficar preso no cinza "parado".
+    var modal = document.getElementById('micModal');
+    if (modal) modal.style.display = 'none';
     setTimeout(function() { iniciarLeitura(); }, 300);
 }
 
@@ -1355,15 +1320,35 @@ if (params.get('s')) {
             // Esconde o formulario de dados e as instrucoes (dados vieram do painel).
             _ocultarFormularioPainel();
             _criarBotaoEnviar();
+            // Sorteia o texto automaticamente e vai direto para a leitura (sem cliques extras).
+            _iniciarAutoPainel();
         }
     }).catch(function() {});
 } else if (params.get('d')) {
     _decodificarURL();
     _criarBotaoEnviar();
+    _iniciarAutoPainel();
 } else if (params.get('print')) {
     // Modo impressao - nao aplicavel para este programa
 } else {
     // Acesso direto - funciona normalmente (modo standalone ou "Abrir Direto" do painel)
+}
+
+// NOVO (modo painel): sortear o texto automaticamente e ja preparar a leitura, sem exigir
+// que o paciente clique em "Sortear Texto". Os dados (nome, nascimento, sexo) vieram do painel.
+// Chamamos com um pequeno atraso para garantir que calcularIdade()/aplicarTema() ja rodaram.
+// So dispara se os dados essenciais existirem; senao, o fluxo manual continua disponivel.
+function _iniciarAutoPainel() {
+    setTimeout(function() {
+        var nomeEl = document.getElementById('nome');
+        var sexoEl = document.getElementById('sexo');
+        var temNome = nomeEl && nomeEl.value.trim();
+        var temSexo = sexoEl && sexoEl.value;
+        // idadeAnos e calculada por calcularIdade() a partir da data de nascimento.
+        if (temNome && temSexo && idadeAnos) {
+            try { sortearTexto(); } catch (e) { return; }
+        }
+    }, 400);
 }
 
 function _criarBotaoEnviar() {
