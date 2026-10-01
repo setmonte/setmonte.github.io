@@ -11641,7 +11641,7 @@
       doc.setTextColor(60, 60, 60); doc.setFontSize(9); doc.setFont(undefined, 'normal');
       var resumoLinhas = doc.splitTextToSize(RESUMO_TESTE, LARGURA_UTIL);
       _checarPagina(resumoLinhas.length * 4.5 + 6);
-      doc.text(resumoLinhas, MARGEM, y);
+      doc.text(resumoLinhas, MARGEM, y, { align: 'justify', maxWidth: LARGURA_UTIL });
       y += resumoLinhas.length * 4.5 + 8;
 
       // ===== BLOCO POR MODULO =====
@@ -11663,7 +11663,7 @@
           doc.setTextColor(90, 90, 90); doc.setFontSize(8); doc.setFont(undefined, 'italic');
           var expLinhas = doc.splitTextToSize(EXPLICACAO_MOD[m], LARGURA_UTIL - 6);
           _checarPagina(expLinhas.length * 4 + 4);
-          doc.text(expLinhas, MARGEM + 6, y + 2);
+          doc.text(expLinhas, MARGEM + 6, y + 2, { align: 'justify', maxWidth: LARGURA_UTIL - 6 });
           y += expLinhas.length * 4 + 4;
           doc.setFont(undefined, 'normal');
         }
@@ -11826,9 +11826,20 @@
         doc.text('Analise por Inteligencia Artificial', MARGEM, y); y += 6;
         doc.setTextColor(50, 50, 50); doc.setFontSize(9); doc.setFont(undefined, 'normal');
         var linhasIA = doc.splitTextToSize(analiseTexto, LARGURA_UTIL);
-        linhasIA.forEach(function(ln) {
+        // Justifica linha a linha, exceto a ultima de cada paragrafo (ela fica alinhada a esquerda,
+        // senao os espacos ficam esticados). Uma linha e "ultima" se a proxima estiver vazia ou nao existir,
+        // ou se ela propria for curta (nao preenche a largura).
+        linhasIA.forEach(function(ln, i) {
           _checarPagina(6);
-          doc.text(ln, MARGEM, y);
+          var prox = linhasIA[i + 1];
+          var ehUltimaDoParagrafo = (prox === undefined || prox === '' || !prox.trim());
+          var larguraLinha = doc.getTextWidth(ln);
+          var preencheLargura = larguraLinha >= (LARGURA_UTIL - 12); // margem de folga
+          if (ehUltimaDoParagrafo || !preencheLargura) {
+            doc.text(ln, MARGEM, y);
+          } else {
+            doc.text(ln, MARGEM, y, { align: 'justify', maxWidth: LARGURA_UTIL });
+          }
           y += 4.5;
         });
         y += 3;
