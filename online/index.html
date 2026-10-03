@@ -6286,7 +6286,18 @@
           html += '</div></div>';
         }
         if (novas.length > 10) html += '<p style="color:#777;font-size:11px;">... e mais ' + (novas.length - 10) + ' mensagens</p>';
-        if (listEl) listEl.innerHTML = html;
+        // PROTECAO ANTI-APAGAO: esta funcao roda sozinha a cada 60s (polling). Se o admin
+        // estiver digitando uma resposta, redesenhar a lista apagaria a caixa de texto e o
+        // texto digitado. Entao, se alguma caixa de resposta ja existe e esta em foco OU ja
+        // tem algo digitado, pulamos o redesenho nesta rodada (tenta de novo no proximo ciclo).
+        if (listEl) {
+          var _digitando = false;
+          var _caixas = listEl.querySelectorAll('input[id^="respSup_"]');
+          for (var _k = 0; _k < _caixas.length; _k++) {
+            if (_caixas[_k] === document.activeElement || (_caixas[_k].value && _caixas[_k].value.length > 0)) { _digitando = true; break; }
+          }
+          if (!_digitando) listEl.innerHTML = html;
+        }
       } catch (e) {}
     }
 
