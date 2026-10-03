@@ -1768,6 +1768,18 @@
             <button class="btn" style="padding:8px 16px;font-size:12px;background:#7b1fa2;color:white;" onclick="auditarCreditos()">Rodar Auditoria</button>
             <div id="auditoriaCreditosArea" style="margin-top:12px;max-height:500px;overflow-y:auto;"></div>
           </div>
+          <!-- Card de RETIRADA de creditos (acao sensivel: cor de alerta amarela) -->
+          <div style="background:#fff8e1;border:2px solid #f9a825;border-radius:10px;padding:15px;margin:10px 0;">
+            <p style="font-size:13px;font-weight:bold;color:#e65100;margin-bottom:8px;">&#9888;&#65039; Retirar Cr&#233;ditos</p>
+            <p style="font-size:11px;color:#777;margin-bottom:10px;">A&#231;&#227;o sens&#237;vel: remove cr&#233;ditos do saldo de um usu&#225;rio. Use para corrigir concess&#245;es indevidas. O saldo nunca fica negativo e a opera&#231;&#227;o fica registrada no Hist&#243;rico de Cr&#233;ditos.</p>
+            <div class="form-row">
+              <label>Email: <input type="text" id="adminRemoveEmail" placeholder="email@exemplo.com" style="width:200px;"></label>
+              <label>Tipo: <select id="adminRemoveTipo" style="width:100px;"></select></label>
+              <label>Qtd: <input type="number" id="adminRemoveQtd" value="1" min="1" style="width:60px;"></label>
+              <button class="btn" style="padding:8px 16px;font-size:12px;margin-top:18px;background:#f9a825;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:bold;" onclick="adminRemoveCredits()">Retirar</button>
+            </div>
+            <p id="adminRemoveMsg" style="font-size:11px;color:#555;margin-top:5px;"></p>
+          </div>
             </div><!-- /sub creditos -->
 
             <!-- SUB-ABA: Resultados -->
@@ -3232,6 +3244,14 @@
         selCredito.innerHTML = '';
         testes.forEach(function(t) {
           selCredito.innerHTML += '<option value="' + t.id + '">' + t.nome + '</option>';
+        });
+      }
+      // Dropdown de RETIRAR Creditos (mesmos tipos do Adicionar)
+      var selRemove = document.getElementById('adminRemoveTipo');
+      if (selRemove) {
+        selRemove.innerHTML = '';
+        testes.forEach(function(t) {
+          selRemove.innerHTML += '<option value="' + t.id + '">' + t.nome + '</option>';
         });
       }
       // Dropdown de Buscar Resultados (com "Todos" + "Escalas" + "TFLOD" + "Depoimentos")
@@ -7465,6 +7485,31 @@
         var data = await resp.json();
         if (data.ok) msg.textContent = 'OK! ' + qtd + ' credito(s) ' + tipo.toUpperCase() + ' adicionados para ' + email;
         else msg.textContent = 'Erro: ' + JSON.stringify(data);
+      } catch(e) { msg.textContent = 'Erro: ' + e.message; }
+    }
+
+    // RETIRAR creditos de um usuario (acao sensivel). Usa o endpoint /remove-credits,
+    // que nunca deixa o saldo negativo e registra o log com acao "remover".
+    async function adminRemoveCredits() {
+      var email = document.getElementById('adminRemoveEmail').value.trim();
+      var tipo = document.getElementById('adminRemoveTipo').value;
+      var qtd = parseInt(document.getElementById('adminRemoveQtd').value || '0');
+      var msg = document.getElementById('adminRemoveMsg');
+      if (!email || qtd <= 0) { alert('Preencha email e quantidade.'); return; }
+      if (!confirm('Retirar ' + qtd + ' credito(s) ' + tipo.toUpperCase() + ' de ' + email + '?\n\nEsta acao reduz o saldo do usuario e fica registrada no Historico de Creditos.')) return;
+      msg.textContent = 'Retirando...';
+      try {
+        var resp = await fetch(API_URL + '/remove-credits', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ email: currentUser, targetEmail: email, tipo: tipo, amount: qtd }) });
+        var data = await resp.json();
+        if (data.ok) {
+          msg.textContent = 'OK! Retirado(s) ' + data.retirado + ' credito(s) ' + tipo.toUpperCase() + ' de ' + email + '. Novo saldo: ' + data.saldoNovo + '.';
+          // Atualiza a tabela de usuarios para refletir o novo saldo, se ela estiver aberta.
+          if (typeof adminListarUsuarios === 'function' && document.getElementById('adminUsersList') && document.getElementById('adminUsersList').innerHTML.indexOf('<table') >= 0) {
+            try { adminListarUsuarios(); } catch(e) {}
+          }
+        } else {
+          msg.textContent = 'Erro: ' + (data.error || JSON.stringify(data));
+        }
       } catch(e) { msg.textContent = 'Erro: ' + e.message; }
     }
 
