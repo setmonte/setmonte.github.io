@@ -1,12 +1,20 @@
 // ===== LERMAIS - Banco de Textos Motivacionais Relacionais =====
 // Programa de Leitura Motivacional para Reabilitacao
 // Temas: relacoes familiares, amizades, ansiedade social, limites, convivencia
-// Faixa 1: 6-12 anos (linguagem simples, frases curtas)
-// Faixa 2: 13-18 anos (linguagem mais elaborada, reflexiva)
+//
+// ESTRUTURA DE ESCOLHA DO TEXTO:
+// - Dificuldade 0 (Sem indicacao): usa a IDADE para escolher a faixa.
+//     Faixa 1: 6-12 anos (crianca)  |  Faixa 2: 13+ anos (adolescente/adulto)
+// - Dificuldade 1, 2 ou 3: IGNORA a idade. Sorteia entre os textos encurtados
+//     do nivel indicado (uso clinico: pessoa que ainda nao le os textos normais,
+//     ex.: crianca em alfabetizacao, adulto pos-AVC, etc.).
+//     Nivel 1 = mais dificil (2 paragrafos) | Nivel 2 = 1 paragrafo | Nivel 3 = mais facil (3 linhas)
+// Todos os textos tem numero EXATO de palavras (sem padronizacao forcada);
+// a evolucao e medida por PPM e precisao, que independem do tamanho do texto.
 
 var TEXTOS_LERMAIS = {
 
-  // ===== FAIXA 1: CRIANCAS (6 a 12 anos) =====
+  // ===== FAIXA 1: CRIANCAS (6 a 12 anos) - usada quando dificuldade = 0 =====
   crianca: [
     {
       id: 'c1',
@@ -40,7 +48,7 @@ var TEXTOS_LERMAIS = {
     }
   ],
 
-  // ===== FAIXA 2: ADOLESCENTES (13 a 18 anos) =====
+  // ===== FAIXA 2: ADOLESCENTES (13 a 18 anos) - usada quando dificuldade = 0 =====
   adolescente: [
     {
       id: 'a1',
@@ -52,7 +60,7 @@ var TEXTOS_LERMAIS = {
       id: 'a2',
       titulo: 'O Lugar na Mesa',
       tema: 'pertencimento e ansiedade social',
-      texto: 'Camila mudou de cidade no meio do ano letivo. Na escola nova, todos ja tinham seus grupos formados. No refeitorio, ela segurava a bandeja procurando um lugar para sentar, sentindo que todos a observavam. Na primeira semana, comeu sozinha fingindo mexer no celular. O estomago doía nao de fome, mas de ansiedade. Na segunda semana, uma garota chamada Luisa sentou ao lado dela e puxou conversa sobre musica. Camila quase nao conseguiu responder de tao nervosa. Mas Luisa era paciente e continuou voltando nos dias seguintes. Aos poucos, Camila foi apresentada a outras pessoas. Descobriu que nao precisava ser extrovertida para ser aceita. Bastava ser genuina. Tres meses depois, tinha um grupo pequeno mas verdadeiro de amigas. Olhando para tras, Camila percebeu que o mais dificil nao era encontrar pessoas legais. Era acreditar que merecia estar ali. A ansiedade social mente para a gente. Diz que somos demais ou de menos para qualquer grupo. A verdade e que todos se sentem deslocados em algum momento. A diferenca esta em quem decide ficar mesmo desconfortavel, ate que o desconforto diminua e o lugar se torne casa.'
+      texto: 'Camila mudou de cidade no meio do ano letivo. Na escola nova, todos ja tinham seus grupos formados. No refeitorio, ela segurava a bandeja procurando um lugar para sentar, sentindo que todos a observavam. Na primeira semana, comeu sozinha fingindo mexer no celular. O estomago doia nao de fome, mas de ansiedade. Na segunda semana, uma garota chamada Luisa sentou ao lado dela e puxou conversa sobre musica. Camila quase nao conseguiu responder de tao nervosa. Mas Luisa era paciente e continuou voltando nos dias seguintes. Aos poucos, Camila foi apresentada a outras pessoas. Descobriu que nao precisava ser extrovertida para ser aceita. Bastava ser genuina. Tres meses depois, tinha um grupo pequeno mas verdadeiro de amigas. Olhando para tras, Camila percebeu que o mais dificil nao era encontrar pessoas legais. Era acreditar que merecia estar ali. A ansiedade social mente para a gente. Diz que somos demais ou de menos para qualquer grupo. A verdade e que todos se sentem deslocados em algum momento. A diferenca esta em quem decide ficar mesmo desconfortavel, ate que o desconforto diminua e o lugar se torne casa.'
     },
     {
       id: 'a3',
@@ -72,14 +80,129 @@ var TEXTOS_LERMAIS = {
       tema: 'conflito familiar e reconstrucao',
       texto: 'Depois da separacao dos pais, Fernanda sentia raiva de tudo. Raiva do pai que saiu, da mae que chorava toda noite, do irmao que fingia que nada aconteceu. Ela descontava em casa. Respondia mal, batia portas, se isolava. Queria que alguem percebesse sua dor sem que ela precisasse dizer. Mas ninguem lia sua mente. Um dia, a mae sentou ao lado dela no quarto e nao disse nada. Ficou ali em silencio. Fernanda achou estranho, mas depois de uns minutos comecou a chorar. E a mae chorou junto. Naquele dia nao resolveram nada com palavras. Mas algo mudou. Fernanda percebeu que a mae tambem estava sofrendo e que nao era sua inimiga. Comecaram aos poucos a conversar mais. Nao sobre coisas profundas toda vez, as vezes so sobre o jantar ou uma serie. Mas essas conversas pequenas foram reconstruindo a ponte entre elas. Recomecar em casa nao significa esquecer o que aconteceu. Significa decidir que as pessoas que ficaram merecem o melhor da gente, mesmo que a gente nao esteja no melhor momento. Curar relacionamentos e um processo lento. Nao acontece num dia, mas comeca com uma escolha. A escolha de ficar quando tudo pede para sair.'
     }
+  ],
+
+  // ===== NIVEL 3: mais facil (3 linhas) - IGNORA a idade =====
+  nivel3: [
+    {
+      id: 'n3_1',
+      titulo: 'Um Novo Amigo',
+      tema: 'fazer amizades',
+      texto: 'Joao era novo na escola. No recreio, ficou sozinho num canto. Entao um colega chegou perto e ofereceu metade do lanche. Os dois conversaram e riram juntos. Joao entendeu que fazer um amigo comeca com um gesto simples.'
+    },
+    {
+      id: 'n3_2',
+      titulo: 'A Casa Nova',
+      tema: 'mudanca de casa',
+      texto: 'Hoje foi o ultimo dia na casa antiga. Pedro guardou seus brinquedos em caixas e olhou o quarto vazio. Amanha vai dormir numa cidade diferente, longe dos amigos. Ele nao sabe como vai ser a escola nova nem quem vai sentar ao seu lado.'
+    },
+    {
+      id: 'n3_3',
+      titulo: 'Os Barulhos',
+      tema: 'escutar vozes',
+      texto: 'As vezes Lucas escuta barulhos que os outros nao escutam. Isso o deixa assustado e confuso. Ele resolveu contar para a mae o que estava sentindo. Ela o abracou e disse que iam procurar ajuda juntos. Falar sobre o que sentimos e o primeiro passo.'
+    },
+    {
+      id: 'n3_4',
+      titulo: 'Antes da Prova',
+      tema: 'ansiedade',
+      texto: 'Amanha tem prova e Mariana nao consegue dormir. O coracao bate rapido e os pensamentos nao param. Ela ja estudou, mas sente um medo que nao vai embora. Fica olhando o teto, imaginando tudo o que pode dar errado.'
+    },
+    {
+      id: 'n3_5',
+      titulo: 'Meu Corpo e Meu',
+      tema: 'autoprotecao',
+      texto: 'Tem segredos bons, como uma festa surpresa. Mas tem segredos que deixam a gente com medo ou desconfortavel. Esses nao devem ser guardados. Se alguem pede um segredo assim, ou toca voce de um jeito que incomoda, conte para um adulto de confianca. Dizer nao e pedir ajuda sempre e o certo.'
+    }
+  ],
+
+  // ===== NIVEL 2: intermediario (1 paragrafo, ~5 linhas) - IGNORA a idade =====
+  nivel2: [
+    {
+      id: 'n2_1',
+      titulo: 'A Mensagem Maldosa',
+      tema: 'bullying',
+      texto: 'Clara recebeu uma mensagem cruel no grupo da turma. Alguns colegas riram, mas ela ficou calada e triste a tarde inteira. No dia seguinte, uma amiga percebeu e sentou ao lado dela. Disse que aquilo era errado e que Clara nao estava sozinha. Juntas, procuraram a professora para contar o que tinha acontecido. Clara aprendeu que pedir ajuda nao e fraqueza, e coragem.'
+    },
+    {
+      id: 'n2_2',
+      titulo: 'A Regra do Meu Pai',
+      tema: 'pais autoritarios',
+      texto: 'Na casa de Bruno, as ordens do pai nao se discutem. Horario para tudo, resposta sempre na ponta da lingua, e um porque eu mandei encerrando qualquer conversa. Bruno queria explicar o seu lado sobre a nota baixa, mas nem teve chance de abrir a boca. Engoliu o choro e subiu para o quarto. La dentro, ficou pensando em tudo o que gostaria de ter dito e nao pode.'
+    },
+    {
+      id: 'n2_3',
+      titulo: 'As Letras que Dancam',
+      tema: 'dificuldade de aprendizado',
+      texto: 'Para Tiago, ler era uma luta. As letras pareciam trocar de lugar e ele demorava o dobro do tempo que os colegas. Sentia vergonha quando a professora pedia leitura em voz alta. Um dia, uma nova professora percebeu a dificuldade e passou a ajuda-lo com um metodo diferente. Aos poucos, as letras foram fazendo mais sentido. Tiago entendeu que seu cerebro so aprendia de outro jeito, e tudo bem.'
+    },
+    {
+      id: 'n2_4',
+      titulo: 'A Explosao',
+      tema: 'controle emocional',
+      texto: 'Gabriel perdeu o jogo e sentiu uma raiva subir que ele nao conseguiu segurar. Jogou o controle no chao, gritou com o irmao e bateu a porta com forca. Minutos depois, sozinho no quarto, o peito ainda estava quente e as maos tremiam. Ele sabia que tinha exagerado, mas naquele momento parecia impossivel frear. A raiva vinha mais rapido do que a vontade de parar.'
+    },
+    {
+      id: 'n2_5',
+      titulo: 'Sete Vezes',
+      tema: 'TOC',
+      texto: 'Antes de sair, Helena precisava verificar a porta sete vezes. Se parasse antes, uma angustia tomava conta dela, como se algo terrivel fosse acontecer. Ela sabia que nao fazia sentido, mas nao conseguia evitar. Cansada, procurou ajuda de uma psicologa. Aprendeu que aqueles pensamentos tinham nome e tratamento. Devagar, foi conseguindo sair de casa verificando so uma vez.'
+    }
+  ],
+
+  // ===== NIVEL 1: mais dificil (2 paragrafos, ~5 linhas cada) - IGNORA a idade =====
+  nivel1: [
+    {
+      id: 'n1_1',
+      titulo: 'O Convite que Nao Veio',
+      tema: 'dificuldade de socializar',
+      texto: 'Rafael viu as fotos da festa nas redes sociais e sentiu um aperto no peito. Todos os colegas da turma estavam la, menos ele. Ninguem o tinha convidado. A primeira reacao foi pensar que havia algo errado consigo mesmo, que talvez ele fosse chato ou invisivel demais para merecer um lugar entre os outros. Passou a noite remoendo essa ideia sozinho no quarto. Na manha seguinte, a simples ideia de entrar na sala e encarar os colegas fazia o estomago embrulhar. E se perguntassem por que ele nao tinha ido? E se percebessem que ninguem o chamou? Rafael parou na porta da escola, respirando fundo, com as pernas pesadas. A vontade de dar meia-volta e voltar para casa era grande.'
+    },
+    {
+      id: 'n1_2',
+      titulo: 'Duas Casas',
+      tema: 'separacao dos pais',
+      texto: 'Quando os pais de Beatriz se separaram, a vida dela virou de cabeca para baixo. Agora eram duas casas, duas camas, duas rotinas. Ela sentia raiva de ter que arrumar a mochila toda semana e culpa por nao conseguir ficar feliz em nenhum dos dois lugares. As vezes achava que, de algum jeito, a separacao era culpa dela. Com o tempo, e conversando com uma psicologa, Beatriz foi entendendo que a separacao era uma decisao dos adultos, e nao algo que ela tivesse causado. Percebeu que continuava sendo amada pelos dois, mesmo que de enderecos diferentes. As duas casas foram, aos poucos, virando dois lugares seguros. Beatriz aprendeu que uma familia pode mudar de forma sem deixar de ser familia.'
+    },
+    {
+      id: 'n1_3',
+      titulo: 'Pode Tudo',
+      tema: 'pais permissivos',
+      texto: 'Na casa de Leo, nao existiam regras. Ele dormia na hora que queria, comia o que bem entendia e passava a noite nos jogos sem ninguem dizer nada. No comeco parecia o sonho de qualquer adolescente. Os amigos ate invejavam a liberdade total que ele tinha dentro de casa. Mas havia algo estranho naquele silencio dos pais. Quando Leo tirava nota baixa, ninguem comentava. Quando sumia o dia inteiro, ninguem perguntava onde tinha ido. Aos poucos, aquela liberdade comecou a parecer outra coisa, como se nao houvesse ninguem ali prestando atencao nele de verdade. Leo as vezes se perguntava se alguem notaria caso ele simplesmente nao voltasse para casa.'
+    },
+    {
+      id: 'n1_4',
+      titulo: 'Rapido Demais',
+      tema: 'altas habilidades',
+      texto: 'Desde pequena, Sofia pensava rapido demais. Terminava as tarefas antes de todos, fazia perguntas que a turma achava estranhas e se entediava nas aulas. Em vez de se sentir especial, muitas vezes se sentia deslocada, como se falasse uma lingua que ninguem ao redor entendia. Comecou a esconder o que sabia so para nao parecer diferente. Um dia, uma professora percebeu o potencial de Sofia e a desafiou com projetos mais complexos. Pela primeira vez, ela sentiu que podia ser ela mesma sem precisar se encolher. Conheceu outros jovens parecidos e descobriu que nao estava sozinha. Sofia entendeu que ser diferente nao era um defeito a esconder, mas uma parte dela que merecia espaco para crescer.'
+    },
+    {
+      id: 'n1_5',
+      titulo: 'O Nome do Diagnostico',
+      tema: 'conviver com um diagnostico',
+      texto: 'No dia em que recebeu o diagnostico, Daniel sentiu um misto de alivio e medo. Alivio porque, finalmente, aquilo que ele sentia ha anos tinha um nome. Medo porque nao sabia o que esse nome significaria dali para frente, nem como as pessoas iriam reagir ao saber. Ficou girando o papel do laudo nas maos, calado. No caminho de volta, Daniel pensava se devia contar aos amigos ou guardar so para si. Imaginava os olhares, as perguntas, os possiveis rotulos. Ao mesmo tempo, uma parte dele queria entender melhor o proprio funcionamento, aprender a lidar, buscar apoio. Entre o receio de ser reduzido a um rotulo e a vontade de finalmente se compreender, Daniel seguia pensando no que fazer com aquela nova informacao.'
+    }
   ]
 };
 
-// Funcao para sortear texto por faixa etaria
-// Recebe a idade em anos e retorna um texto aleatorio da faixa correspondente
-function sortearTextoLermais(idade) {
-  var faixa = (idade >= 6 && idade <= 12) ? 'crianca' : 'adolescente';
-  var textos = TEXTOS_LERMAIS[faixa];
+// Funcao para sortear texto por faixa etaria e nivel de dificuldade.
+// - idade: idade em anos (usada apenas quando dificuldade = 0)
+// - dificuldade: 0 (sem indicacao, usa idade) ou 1, 2, 3 (ignora idade, usa o nivel)
+// Retorna um objeto de texto aleatorio da categoria correspondente.
+function sortearTextoLermais(idade, dificuldade) {
+  var categoria;
+  var nivel = parseInt(dificuldade, 10);
+  if (nivel === 1) {
+    categoria = 'nivel1';
+  } else if (nivel === 2) {
+    categoria = 'nivel2';
+  } else if (nivel === 3) {
+    categoria = 'nivel3';
+  } else {
+    // Dificuldade 0 (ou nao informada): usa a idade para escolher a faixa
+    categoria = (idade >= 6 && idade <= 12) ? 'crianca' : 'adolescente';
+  }
+  var textos = TEXTOS_LERMAIS[categoria];
   if (!textos || textos.length === 0) textos = TEXTOS_LERMAIS['adolescente'];
   var indice = Math.floor(Math.random() * textos.length);
   return textos[indice];

@@ -155,7 +155,19 @@ body.tema-neutro{background:linear-gradient(135deg,#e8f5e9 0%,#c8e6c9 50%,#e8f5e
                         <option value="Lente de contato">Lente de contato</option>
                     </select>
                 </div>
+                <div class="form-group">
+                    <label>N&#237;vel de Dificuldade</label>
+                    <select id="nivelDificuldade">
+                        <option value="0">Sem indica&#231;&#227;o (usa a idade)</option>
+                        <option value="3">N&#237;vel 3 &#8212; mais f&#225;cil (3 linhas)</option>
+                        <option value="2">N&#237;vel 2 &#8212; intermedi&#225;rio (1 par&#225;grafo)</option>
+                        <option value="1">N&#237;vel 1 &#8212; mais dif&#237;cil (2 par&#225;grafos)</option>
+                    </select>
+                </div>
             </div>
+            <p style="font-size:0.8em;color:#777;margin-top:4px;line-height:1.5;">
+                <strong>Sobre o n&#237;vel de dificuldade:</strong> use <strong>Sem indica&#231;&#227;o</strong> para quem j&#225; tem a leitura consolidada (o texto &#233; escolhido pela idade). Para quem ainda n&#227;o l&#234; textos normais (ex.: alfabetiza&#231;&#227;o inicial, reabilita&#231;&#227;o p&#243;s-les&#227;o), escolha um n&#237;vel: 3 &#233; o mais curto e 1 o mais longo. Nos n&#237;veis 1, 2 e 3 a idade n&#227;o influencia o texto.
+            </p>
         </div>
         <!-- INSTRUCOES -->
         <div class="instrucoes">
@@ -280,6 +292,7 @@ var pausasLongas = 0;
 var autocorrecoes = 0;
 var ultimaPalavraTime = 0;
 var idadeAnos = 0;
+var nivelDificuldadeAtual = 0;
 var historicoSessoes = [];
 var leituraFinalizada = false;
 var canvasCtx = null;
@@ -410,11 +423,21 @@ function levenshtein(a, b) {
 function sortearTexto() {
     var nome = document.getElementById('nome').value.trim();
     if (!nome) { alert('Preencha o nome antes de sortear.'); return; }
-    if (!idadeAnos) { alert('Preencha a data de nascimento.'); return; }
-    if (idadeAnos < 6) { alert('Este programa e indicado para pessoas alfabetizadas (a partir de 6 anos).'); return; }
+
+    // Le o nivel de dificuldade escolhido pelo profissional (0 = sem indicacao).
+    var nivelEl = document.getElementById('nivelDificuldade');
+    nivelDificuldadeAtual = nivelEl ? parseInt(nivelEl.value, 10) : 0;
+    if (isNaN(nivelDificuldadeAtual)) nivelDificuldadeAtual = 0;
+
+    // A idade so e obrigatoria no modo "Sem indicacao" (nivel 0), pois so nesse
+    // caso ela decide qual texto sera sorteado. Nos niveis 1/2/3 a idade e ignorada.
+    if (nivelDificuldadeAtual === 0) {
+        if (!idadeAnos) { alert('Preencha a data de nascimento (ou escolha um nivel de dificuldade).'); return; }
+        if (idadeAnos < 6) { alert('Este programa e indicado para pessoas alfabetizadas (a partir de 6 anos). Para iniciantes, escolha um nivel de dificuldade.'); return; }
+    }
     if (!document.getElementById('sexo').value) { alert('Selecione o sexo para aplicar o tema visual.'); return; }
 
-    textoAtual = sortearTextoLermais(idadeAnos);
+    textoAtual = sortearTextoLermais(idadeAnos, nivelDificuldadeAtual);
     palavrasTexto = textoAtual.texto.split(/\s+/);
     palavraAtualIdx = 0;
     palavrasCorretas = 0;
@@ -432,7 +455,10 @@ function sortearTexto() {
     }
     document.getElementById('textoConteudo').innerHTML = html;
     document.getElementById('textoTitulo').textContent = textoAtual.titulo;
-    document.getElementById('textoTema').textContent = 'Tema: ' + textoAtual.tema + ' | Faixa: ' + (idadeAnos <= 12 ? '6-12 anos' : '13+ anos') + ' | ' + palavrasTexto.length + ' palavras';
+    var descFaixaNivel = nivelDificuldadeAtual === 0
+        ? ('Faixa: ' + (idadeAnos <= 12 ? '6-12 anos' : '13+ anos'))
+        : ('Nivel de dificuldade: ' + nivelDificuldadeAtual);
+    document.getElementById('textoTema').textContent = 'Tema: ' + textoAtual.tema + ' | ' + descFaixaNivel + ' | ' + palavrasTexto.length + ' palavras';
     document.getElementById('textoArea').style.display = 'block';
     document.getElementById('graficoArea').style.display = 'block';
     document.getElementById('barraProgresso').style.width = '0%';
@@ -876,6 +902,7 @@ function finalizarLeitura() {
         texto: textoAtual.titulo,
         tema: textoAtual.tema,
         faixa: idadeAnos <= 12 ? 'crianca' : 'adolescente_adulto',
+        nivelDificuldade: nivelDificuldadeAtual,
         totalPalavras: palavrasTexto.length,
         palavrasLidas: palavraAtualIdx,
         corretas: palavrasCorretas,
@@ -938,8 +965,12 @@ function exibirResultados(r) {
     html += '<div style="font-size:1.3em;font-weight:bold;color:#e65100;">' + r.completude + '%</div><div style="font-size:0.8em;color:#777;">Completude</div></div>';
     html += '</div>';
 
+    var descNivel = (r.nivelDificuldade && r.nivelDificuldade !== 0)
+        ? ('Nivel de dificuldade ' + r.nivelDificuldade)
+        : 'Sem indicacao de dificuldade (por idade)';
     html += '<div style="background:#fff;padding:15px;border-radius:8px;margin-top:10px;border:1px solid #e0e0e0;font-size:0.9em;">';
     html += '<p><strong>Texto:</strong> ' + r.texto + ' (' + r.tema + ')</p>';
+    html += '<p><strong>Nivel:</strong> ' + descNivel + ' &#183; ' + r.totalPalavras + ' palavras no texto</p>';
     html += '<p><strong>Tempo total:</strong> ' + r.tempoSegundos + ' segundos</p>';
     html += '<p><strong>Palavras corretas:</strong> ' + r.corretas + '/' + r.palavrasLidas + '</p>';
     html += '<p><strong>Pausas longas (>3s):</strong> ' + r.pausasLongas + '</p>';
@@ -961,6 +992,7 @@ function exibirResultados(r) {
         paciente: r.nome,
         escore: r.indiceLermais,
         classificacao: classificacao,
+        nivelDificuldade: r.nivelDificuldade || 0,
         dominios: {
             'Velocidade (PPM)': { pontuacao: r.ppm, max: 200, classificacao: r.ppm >= 120 ? 'Rapida' : r.ppm >= 80 ? 'Adequada' : r.ppm >= 50 ? 'Lenta' : 'Muito lenta' },
             'Precisao': { pontuacao: r.precisao, max: 100, classificacao: r.precisao >= 90 ? 'Alta' : r.precisao >= 70 ? 'Adequada' : r.precisao >= 50 ? 'Baixa' : 'Muito baixa' },
@@ -1069,16 +1101,18 @@ function toggleHistorico() {
     }
 
     // === TABELA DETALHADA ===
-    html += '<table class="tabela-historico"><tr><th>Sess\u00e3o</th><th>Data</th><th>Texto</th><th>PPM</th><th>Precis\u00e3o</th><th>Flu\u00eancia</th><th>\u00cdndice</th></tr>';
+    html += '<table class="tabela-historico"><tr><th>Sess\u00e3o</th><th>Data</th><th>Texto</th><th>N\u00edvel</th><th>PPM</th><th>Precis\u00e3o</th><th>Flu\u00eancia</th><th>\u00cdndice</th></tr>';
     for (var i = historicoSessoes.length - 1; i >= 0; i--) {
         var s = historicoSessoes[i];
         var dataStr = s.data ? new Date(s.data).toLocaleDateString('pt-BR') : '-';
         var numSessao = i + 1;
         var corIdx = (s.indiceLermais || 0) >= 65 ? '#2e7d32' : (s.indiceLermais || 0) >= 50 ? '#ff9800' : '#c62828';
+        var nivelStr = (s.nivelDificuldade && s.nivelDificuldade !== 0) ? ('N' + s.nivelDificuldade) : 'Idade';
         html += '<tr>';
         html += '<td>' + numSessao + '\u00aa</td>';
         html += '<td>' + dataStr + '</td>';
         html += '<td style="font-size:0.85em;">' + (s.texto || '-') + '</td>';
+        html += '<td>' + nivelStr + '</td>';
         html += '<td>' + (s.ppm || 0) + '</td>';
         html += '<td>' + (s.precisao || 0) + '%</td>';
         html += '<td>' + (s.fluencia || 0) + '/10</td>';
@@ -1125,6 +1159,7 @@ function salvarNaAPI(resultado) {
         texto: resultado.texto || '',
         tema: resultado.tema || '',
         faixa: resultado.faixa || '',
+        nivelDificuldade: resultado.nivelDificuldade || 0,
         tempoSegundos: resultado.tempoSegundos || 0,
         pausasLongas: resultado.pausasLongas || 0,
         data: new Date().toISOString()
@@ -1200,6 +1235,8 @@ function _decodificarURL() {
         if (latEl && dados.lateralidade) { latEl.value = dados.lateralidade; }
         var cvEl = document.getElementById('correcaoVisual');
         if (cvEl && dados.correcaoVisual) { cvEl.value = dados.correcaoVisual; }
+        var nivEl = document.getElementById('nivelDificuldade');
+        if (nivEl && (dados.nivelDificuldade !== undefined && dados.nivelDificuldade !== null)) { nivEl.value = String(dados.nivelDificuldade); }
         _sessionInfo = dados;
         // Esconde o formulario de dados e as instrucoes no modo painel (dados vieram do painel).
         _ocultarFormularioPainel();
@@ -1317,6 +1354,8 @@ if (params.get('s')) {
             if (latEl2 && data.lateralidade) { latEl2.value = data.lateralidade; }
             var cvEl2 = document.getElementById('correcaoVisual');
             if (cvEl2 && data.correcaoVisual) { cvEl2.value = data.correcaoVisual; }
+            var nivEl2 = document.getElementById('nivelDificuldade');
+            if (nivEl2 && (data.nivelDificuldade !== undefined && data.nivelDificuldade !== null)) { nivEl2.value = String(data.nivelDificuldade); }
             // Esconde o formulario de dados e as instrucoes (dados vieram do painel).
             _ocultarFormularioPainel();
             _criarBotaoEnviar();
@@ -1342,10 +1381,15 @@ function _iniciarAutoPainel() {
     setTimeout(function() {
         var nomeEl = document.getElementById('nome');
         var sexoEl = document.getElementById('sexo');
+        var nivEl = document.getElementById('nivelDificuldade');
         var temNome = nomeEl && nomeEl.value.trim();
         var temSexo = sexoEl && sexoEl.value;
-        // idadeAnos e calculada por calcularIdade() a partir da data de nascimento.
-        if (temNome && temSexo && idadeAnos) {
+        var nivel = nivEl ? parseInt(nivEl.value, 10) : 0;
+        if (isNaN(nivel)) nivel = 0;
+        // No modo "Sem indicacao" (nivel 0) a idade e necessaria para escolher o texto.
+        // Nos niveis 1/2/3 o texto independe da idade, entao basta nome e sexo.
+        var temRequisitoTexto = (nivel !== 0) || idadeAnos;
+        if (temNome && temSexo && temRequisitoTexto) {
             try { sortearTexto(); } catch (e) { return; }
         }
     }, 400);
