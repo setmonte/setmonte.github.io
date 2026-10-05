@@ -1306,6 +1306,22 @@ async function _enviarResultadosPainel() {
     var nomeEl = document.getElementById('nome');
     if (!nomeEl || !nomeEl.value.trim()) { alert('Preencha o nome antes de enviar.'); return; }
     if (!leituraFinalizada) { alert('Finalize a leitura antes de enviar.'); return; }
+
+    // PROTECAO CONTRA ENVIO VAZIO (causa do "resultado nao saiu no perfil"):
+    // window._escalaDados so e preenchido por exibirResultados(). Quando o microfone
+    // nao capta nada, a leitura e tratada como falha e exibirResultados() NAO roda,
+    // deixando _escalaDados sem resultado. Antes, o envio prosseguia mesmo assim e
+    // gravava no servidor uma "casca" (escala + status, sem escore/ppm/precisao),
+    // que nao aparece como resultado no perfil do paciente. Agora bloqueamos esse
+    // envio e orientamos a refazer a leitura. Criterio: precisa ter sido lida ao
+    // menos 1 palavra (palavraAtualIdx > 0) E existir _escalaDados com escore.
+    var _ed = window._escalaDados;
+    var _temResultado = _ed && (_ed.escore !== undefined && _ed.escore !== null && _ed.escore !== '') && (palavraAtualIdx > 0);
+    if (!_temResultado) {
+        alert('Ainda nao ha um resultado para enviar. O microfone pode nao ter captado a leitura. Clique em "Nova Leitura", verifique o microfone (cadeado na barra de endereco) e leia novamente antes de enviar.');
+        return;
+    }
+
     var dados = window._escalaDados || {};
     if (!dados.escala) dados.escala = 'LERMAIS';
     dados.tipo = 'lermais';
