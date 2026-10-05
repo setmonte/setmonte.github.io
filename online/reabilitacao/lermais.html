@@ -1213,6 +1213,32 @@ function novaLeitura() {
 // Nao faz sentido pedir os mesmos dados de novo aqui. Esconde o bloco de dados pessoais e as
 // instrucoes longas. Os campos continuam no HTML (apenas ocultos), pois o codigo le nome/sexo/
 // idade para sortear o texto e calcular - o painel ja preencheu esses campos.
+// Extrai o nivel de dificuldade dos dados vindos do painel.
+// O servidor (Lambda) NAO preserva campos desconhecidos como "nivelDificuldade",
+// mas preserva o campo "extras". Por isso o painel envia o nivel tambem dentro de
+// extras (JSON). Aqui procuramos nas duas fontes: campo direto e dentro de extras.
+// Retorna um numero (0, 1, 2, 3) ou null se nao houver indicacao.
+function _extrairNivelDificuldade(dados) {
+    if (!dados) return null;
+    // 1) Campo direto (funciona no modo ?d=, que nao passa pelo servidor)
+    if (dados.nivelDificuldade !== undefined && dados.nivelDificuldade !== null && dados.nivelDificuldade !== '') {
+        var n = parseInt(dados.nivelDificuldade, 10);
+        if (!isNaN(n)) return n;
+    }
+    // 2) Dentro de extras (funciona no modo ?s=, pois o servidor preserva extras)
+    if (dados.extras) {
+        var ex = dados.extras;
+        if (typeof ex === 'string') {
+            try { ex = JSON.parse(ex); } catch (e) { ex = null; }
+        }
+        if (ex && ex.nivelDificuldade !== undefined && ex.nivelDificuldade !== null && ex.nivelDificuldade !== '') {
+            var n2 = parseInt(ex.nivelDificuldade, 10);
+            if (!isNaN(n2)) return n2;
+        }
+    }
+    return null;
+}
+
 function _ocultarFormularioPainel() {
     var dados = document.querySelector('.dados-pessoais');
     if (dados) dados.style.display = 'none';
@@ -1236,7 +1262,8 @@ function _decodificarURL() {
         var cvEl = document.getElementById('correcaoVisual');
         if (cvEl && dados.correcaoVisual) { cvEl.value = dados.correcaoVisual; }
         var nivEl = document.getElementById('nivelDificuldade');
-        if (nivEl && (dados.nivelDificuldade !== undefined && dados.nivelDificuldade !== null)) { nivEl.value = String(dados.nivelDificuldade); }
+        var nivelRecebido = _extrairNivelDificuldade(dados);
+        if (nivEl && nivelRecebido !== null) { nivEl.value = String(nivelRecebido); }
         _sessionInfo = dados;
         // Esconde o formulario de dados e as instrucoes no modo painel (dados vieram do painel).
         _ocultarFormularioPainel();
@@ -1355,7 +1382,8 @@ if (params.get('s')) {
             var cvEl2 = document.getElementById('correcaoVisual');
             if (cvEl2 && data.correcaoVisual) { cvEl2.value = data.correcaoVisual; }
             var nivEl2 = document.getElementById('nivelDificuldade');
-            if (nivEl2 && (data.nivelDificuldade !== undefined && data.nivelDificuldade !== null)) { nivEl2.value = String(data.nivelDificuldade); }
+            var nivelRecebido = _extrairNivelDificuldade(data);
+            if (nivEl2 && nivelRecebido !== null) { nivEl2.value = String(nivelRecebido); }
             // Esconde o formulario de dados e as instrucoes (dados vieram do painel).
             _ocultarFormularioPainel();
             _criarBotaoEnviar();

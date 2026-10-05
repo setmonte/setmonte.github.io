@@ -580,12 +580,20 @@
                   <option value="Ambidestro">Ambidestro</option>
                 </select>
                 <label style="font-size:0.85em;color:#555;">Correcao Visual:</label>
-                <select id="lermaisCorrecaoVisual" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:12px;">
+                <select id="lermaisCorrecaoVisual" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
                   <option value="">Selecione...</option>
                   <option value="Nenhuma">Nenhuma</option>
                   <option value="Oculos">Oculos</option>
                   <option value="Lente de contato">Lente de contato</option>
                 </select>
+                <label style="font-size:0.85em;color:#555;">Nivel de Dificuldade:</label>
+                <select id="lermaisNivelDificuldade" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:4px;">
+                  <option value="0">Sem indicacao (usa a idade)</option>
+                  <option value="3">Nivel 3 - mais facil (3 linhas)</option>
+                  <option value="2">Nivel 2 - intermediario (1 paragrafo)</option>
+                  <option value="1">Nivel 1 - mais dificil (2 paragrafos)</option>
+                </select>
+                <p style="font-size:0.72em;color:#888;line-height:1.4;margin-bottom:12px;">Use "Sem indicacao" para leitura ja consolidada (texto pela idade). Niveis 1/2/3 entregam textos curtos e ignoram a idade (ex.: alfabetizacao inicial, reabilitacao pos-lesao).</p>
               </div>
               <div style="display:flex;gap:8px;flex-wrap:wrap;">
                 <button onclick="iniciarLermais()" class="btn btn-green" style="flex:1;min-width:120px;padding:12px;font-size:13px;">▶ Iniciar Sessao</button>
@@ -8269,8 +8277,11 @@
       var escolaridade = document.getElementById('lermaisEscolaridade') ? document.getElementById('lermaisEscolaridade').value : '';
       var lateralidade = document.getElementById('lermaisLateralidade') ? document.getElementById('lermaisLateralidade').value : '';
       var correcaoVisual = document.getElementById('lermaisCorrecaoVisual') ? document.getElementById('lermaisCorrecaoVisual').value : '';
+      var nivelDificuldade = document.getElementById('lermaisNivelDificuldade') ? parseInt(document.getElementById('lermaisNivelDificuldade').value, 10) : 0;
+      if (isNaN(nivelDificuldade)) nivelDificuldade = 0;
       if (!nome) { alert('Preencha o nome do paciente.'); return; }
-      if (!dn) { alert('Preencha a data de nascimento.'); return; }
+      // A data de nascimento so e obrigatoria quando o nivel e 0 (texto escolhido pela idade).
+      if (!dn && nivelDificuldade === 0) { alert('Preencha a data de nascimento (ou escolha um nivel de dificuldade).'); return; }
       // Buscar pacienteId do cadastro (se existir)
       var pacienteId = '';
       if (window._pacientesCache) {
@@ -8281,7 +8292,7 @@
           }
         }
       }
-      var dados = { nome: nome, dn: dn, sexo: sexo, escolaridade: escolaridade, lateralidade: lateralidade, correcaoVisual: correcaoVisual, email: currentUser || '', pacienteId: pacienteId };
+      var dados = { nome: nome, dn: dn, sexo: sexo, escolaridade: escolaridade, lateralidade: lateralidade, correcaoVisual: correcaoVisual, nivelDificuldade: nivelDificuldade, email: currentUser || '', pacienteId: pacienteId };
       // CORRECAO: "Aplicar Aqui" agora cria uma sessao no servidor primeiro (modo ?s=),
       // igual ao REOCUPA. Sem isso, o envio dos resultados falhava (sem sessionId o
       // servidor nao reconhecia a sessao). Se a criacao da sessao falhar, cai no ?d= como plano B.
@@ -8298,6 +8309,8 @@
           education: escolaridade,
           lateralidade: lateralidade,
           correcaoVisual: correcaoVisual,
+          nivelDificuldade: nivelDificuldade,
+          extras: JSON.stringify({ nivelDificuldade: nivelDificuldade }),
           pacienteId: pacienteId
         };
         var _rsL = await fetch(API_URL + '/save-session', {
@@ -8351,7 +8364,11 @@
       var escolaridade = document.getElementById('lermaisEscolaridade') ? document.getElementById('lermaisEscolaridade').value : '';
       var lateralidade = document.getElementById('lermaisLateralidade') ? document.getElementById('lermaisLateralidade').value : '';
       var correcaoVisual = document.getElementById('lermaisCorrecaoVisual') ? document.getElementById('lermaisCorrecaoVisual').value : '';
-      if (!nome || !dn) { alert('Preencha nome e data de nascimento.'); return; }
+      var nivelDificuldade = document.getElementById('lermaisNivelDificuldade') ? parseInt(document.getElementById('lermaisNivelDificuldade').value, 10) : 0;
+      if (isNaN(nivelDificuldade)) nivelDificuldade = 0;
+      if (!nome) { alert('Preencha o nome do paciente.'); return; }
+      // A data de nascimento so e obrigatoria quando o nivel e 0 (texto escolhido pela idade).
+      if (!dn && nivelDificuldade === 0) { alert('Preencha a data de nascimento (ou escolha um nivel de dificuldade).'); return; }
       // Buscar pacienteId do cadastro
       var pacienteId = '';
       if (window._pacientesCache) {
@@ -8374,6 +8391,8 @@
           education: escolaridade,
           lateralidade: lateralidade,
           correcaoVisual: correcaoVisual,
+          nivelDificuldade: nivelDificuldade,
+          extras: JSON.stringify({ nivelDificuldade: nivelDificuldade }),
           pacienteId: pacienteId
         };
         var resp = await fetch(API_URL + '/save-session', {
