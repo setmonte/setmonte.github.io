@@ -9271,8 +9271,9 @@
           html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (fd.nome || '') + '</td>';
           html += '<td style="padding:5px;border-bottom:1px solid #eee;font-size:10px;font-family:monospace;color:#6a1b9a;">' + (d.idPaciente || fd.id || '-') + '</td>';
           html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (d.status || '-') + '</td>';
-          html += '<td style="padding:5px;border-bottom:1px solid #eee;text-align:center;">';
-          html += '<button onclick="verDetalhePfister(' + i + ')" class="btn btn-blue" style="padding:4px 10px;font-size:0.8em;">Ver</button>';
+          html += '<td style="padding:5px;border-bottom:1px solid #eee;text-align:center;white-space:nowrap;">';
+          html += '<button onclick="verDetalhePfister(' + i + ')" class="btn btn-blue" style="padding:4px 10px;font-size:0.8em;">Ver</button> ';
+          html += '<button onclick="pfisterGerarPDF(' + i + ')" style="padding:4px 12px;border:none;border-radius:12px;background:#6a1b9a;color:white;font-size:11px;cursor:pointer;font-weight:600;">PDF</button>';
           html += '</td></tr>';
         }
         html += '</table>';
@@ -9305,6 +9306,149 @@
       var d = r.data || {};
       var res = d.resultados || {};
       alert('Detalhes do Pfister:\n\nPaciente: ' + ((d.formData || {}).nome || '-') + '\nStatus: ' + (d.status || '-') + '\nData: ' + (d.date || '-'));
+    }
+
+    // Gera o PDF do Pfister a partir dos dados ja salvos no painel.
+    // Carrega o jsPDF local; se nao estiver disponivel, busca do CDN como fallback.
+    async function pfisterGerarPDF(idx) {
+      var r = _pfisterResultCache[idx];
+      if (!r) { alert('Resultado nao encontrado.'); return; }
+      if (!window.jspdf || !window.jspdf.jsPDF) {
+        await new Promise(function(resolve) {
+          var s = document.createElement('script');
+          s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+          s.onload = resolve;
+          s.onerror = resolve;
+          document.head.appendChild(s);
+        });
+      }
+      if (!window.jspdf || !window.jspdf.jsPDF) {
+        alert('Nao foi possivel carregar o gerador de PDF. Verifique sua conexao e tente novamente.');
+        return;
+      }
+      _pfisterGerarPDFReal(r);
+    }
+
+    function _pfisterGerarPDFReal(r) {
+      var jsPDF = window.jspdf.jsPDF;
+      var doc = new jsPDF();
+      var d = r.data || {};
+      var fd = d.formData || {};
+      var res = d.resultados || {};
+      var ROXO = [106, 27, 154];       // #6a1b9a
+      var ROXO_H = [142, 68, 173];
+      var y = 20;
+      function checkPage(espaco) { if (y + (espaco || 0) > 280) { doc.addPage(); y = 20; } }
+
+      // Cabecalho
+      doc.setFillColor(ROXO_H[0], ROXO_H[1], ROXO_H[2]);
+      doc.rect(0, 0, 210, 30, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(15);
+      doc.text('Teste das Piramides Coloridas de Pfister', 105, 13, { align: 'center' });
+      doc.setFontSize(10);
+      doc.text('Relatorio de Resultados', 105, 23, { align: 'center' });
+      y = 42;
+
+      // Dados do paciente
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(11);
+      doc.text('Paciente: ' + (fd.nome || '-'), 15, y); y += 7;
+      doc.text('Idade: ' + (fd.idade || '-') + '  |  Escolaridade: ' + (fd.escolaridade || '-'), 15, y); y += 7;
+      doc.text('Data de Nascimento: ' + (fd.dataNasc || '-'), 15, y); y += 7;
+      doc.text('ID do Paciente: ' + (d.idPaciente || fd.id || '-'), 15, y); y += 7;
+      doc.text('Data da Avaliacao: ' + (d.date ? new Date(d.date).toLocaleString('pt-BR') : '-'), 15, y); y += 12;
+
+      // Formula cromatica (contagem de cores)
+      checkPage(20);
+      doc.setFontSize(13);
+      doc.setTextColor(ROXO[0], ROXO[1], ROXO[2]);
+      doc.text('Formula Cromatica (cores mais utilizadas)', 15, y); y += 8;
+      doc.setFontSize(10);
+      doc.setTextColor(0, 0, 0);
+      var cont = res.contagemCores || {};
+      var paresCor = [];
+      for (var ck in cont) { if (cont.hasOwnProperty(ck)) { paresCor.push([ck, cont[ck]]); } }
+      paresCor.sort(function(a, b) { return b[1] - a[1]; });
+      if (paresCor.length === 0) {
+        doc.text('Sem dados de contagem de cores.', 20, y); y += 7;
+      } else {
+        var totalCor = 0;
+        for (var tc = 0; tc < paresCor.length; tc++) { totalCor += paresCor[tc][1]; }
+        for (var pc = 0; pc < paresCor.length; pc++) {
+          var pct = totalCor > 0 ? Math.round((paresCor[pc][1] / totalCor) * 100) : 0;
+          doc.text('- ' + paresCor[pc][0] + ': ' + paresCor[pc][1] + ' (' + pct + '%)', 20, y);
+          y += 6; checkPage(6);
+        }
+      }
+      y += 6;
+
+      // Sindromes cromaticas
+      checkPage(20);
+      doc.setFontSize(13);
+      doc.setTextColor(ROXO[0], ROXO[1], ROXO[2]);
+      doc.text('Sindromes Cromaticas', 15, y); y += 8;
+      doc.setFontSize(10);
+      doc.setTextColor(0, 0, 0);
+      var sind = res.sindromes || {};
+      var temSind = false;
+      for (var sk in sind) {
+        if (sind.hasOwnProperty(sk)) {
+          temSind = true;
+          var valor = typeof sind[sk] === 'number' ? sind[sk].toFixed(1) + '%' : String(sind[sk]);
+          var linhasSk = doc.splitTextToSize('- ' + sk + ': ' + valor, 175);
+          for (var ls = 0; ls < linhasSk.length; ls++) { doc.text(linhasSk[ls], 20, y); y += 6; checkPage(6); }
+        }
+      }
+      if (!temSind) { doc.text('Sem dados de sindromes.', 20, y); y += 6; }
+      y += 6;
+
+      // Preferencias (piramide que mais/menos gostou)
+      var resp = res.respostas || {};
+      if (resp.piramideMaisGostou || resp.piramideMenosGostou) {
+        checkPage(20);
+        doc.setFontSize(13);
+        doc.setTextColor(ROXO[0], ROXO[1], ROXO[2]);
+        doc.text('Preferencias do Paciente', 15, y); y += 8;
+        doc.setFontSize(10);
+        doc.setTextColor(0, 0, 0);
+        if (resp.piramideMaisGostou) { doc.text('Piramide que mais gostou: Piramide ' + resp.piramideMaisGostou, 20, y); y += 6; }
+        if (resp.piramideMenosGostou) { doc.text('Piramide que menos gostou: Piramide ' + resp.piramideMenosGostou, 20, y); y += 6; }
+        y += 6;
+      }
+
+      // Referencias (ABNT)
+      checkPage(30);
+      doc.setFontSize(13);
+      doc.setTextColor(ROXO[0], ROXO[1], ROXO[2]);
+      doc.text('Referencias', 15, y); y += 8;
+      doc.setFontSize(9);
+      doc.setTextColor(0, 0, 0);
+      var refs = [
+        'VILLEMOR-AMARAL, A. E. As Piramides Coloridas de Pfister. Sao Paulo: Centro Editor de Testes e Pesquisas em Psicologia, 2012.',
+        'VILLEMOR-AMARAL, A. E.; PRIMI, R. Teste das Piramides Coloridas de Pfister. 2. ed. Sao Paulo: Casa do Psicologo, 2009.'
+      ];
+      for (var rf = 0; rf < refs.length; rf++) {
+        var linhasRef = doc.splitTextToSize(refs[rf], 180);
+        for (var lr = 0; lr < linhasRef.length; lr++) { doc.text(linhasRef[lr], 15, y); y += 5; checkPage(5); }
+        y += 2;
+      }
+
+      // Rodape em todas as paginas
+      var totalPag = doc.internal.getNumberOfPages();
+      var geradoEm = new Date().toLocaleString('pt-BR');
+      for (var pg = 1; pg <= totalPag; pg++) {
+        doc.setPage(pg);
+        doc.setFontSize(8);
+        doc.setTextColor(150, 150, 150);
+        doc.text('Gerado em ' + geradoEm + '  -  Pagina ' + pg + ' de ' + totalPag, 105, 290, { align: 'center' });
+      }
+
+      // Salvar
+      var agora = new Date();
+      var ts = agora.getFullYear() + String(agora.getMonth() + 1).padStart(2, '0') + String(agora.getDate()).padStart(2, '0') + String(agora.getHours()).padStart(2, '0') + String(agora.getMinutes()).padStart(2, '0');
+      var nomeArq = 'Pfister_' + String(fd.nome || 'Paciente').replace(/\s+/g, '_') + '_' + ts + '.pdf';
+      doc.save(nomeArq);
     }
 
     async function startPfisterOnlineTest(abrirLocal) {

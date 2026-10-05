@@ -827,6 +827,9 @@ function mostrarResultados() {
         escolaridade: document.getElementById('escolaridade').value,
         data: new Date().toISOString()
     };
+    // Dispara a coleta anonima (planilha de normatizacao). _coletaForcar respeita
+    // as validacoes internas e o controle de "ja enviou", entao e seguro chamar.
+    if (typeof window._coletaForcar === 'function') { setTimeout(window._coletaForcar, 300); }
 }
 function reiniciarTeste() {
     if (!confirm('Reiniciar o teste? Todos os dados ser\u00e3o perdidos.')) return;
@@ -1043,6 +1046,9 @@ async function _prepararDadosEEnviar() {
         escolaridade: document.getElementById('escolaridade').value,
         data: new Date().toISOString()
     };
+    // Dispara a coleta anonima (planilha de normatizacao). _coletaForcar respeita
+    // as validacoes internas e o controle de "ja enviou", entao e seguro chamar.
+    if (typeof window._coletaForcar === 'function') { setTimeout(window._coletaForcar, 300); }
     // Mostrar tela de envio ao paciente
     mostrarSecao('secaoResultados');
     document.getElementById('resultados').style.display = 'none';
@@ -1110,6 +1116,12 @@ async function _enviarResultadosPainel() {
     }
 }
 // === INICIALIZACAO (direta, sem DOMContentLoaded) ===
+// Expor funcoes no window para que a coleta anonima (coleta-anonima.js) consiga
+// interceptar o fim do teste. Sem isso, a coleta so dependia do polling, que
+// expira em 2 min e nao alcancava o fim do Corsi (teste mais longo).
+window._prepararDadosEEnviar = _prepararDadosEEnviar;
+window._enviarResultadosPainel = _enviarResultadosPainel;
+window.mostrarResultados = mostrarResultados;
 document.getElementById('data').value = new Date().toISOString().split('T')[0];
 var params = new URLSearchParams(window.location.search);
 if (params.get('s')) {
