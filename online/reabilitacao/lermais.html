@@ -703,6 +703,13 @@ function processarFala(transcript) {
             palavrasCorretas++;
             palavraAtualIdx++;
 
+            // A leitura esta acontecendo: limpa qualquer aviso (ex.: o alerta de 10s
+            // "Nenhuma palavra detectada") e volta ao estado normal "Escutando...".
+            // Antes, se a pessoa demorava mais de 10s para comecar, o aviso vermelho
+            // ficava preso na tela mesmo com a leitura fluindo. Agora ele some sozinho.
+            var _mtOk = document.getElementById('micTexto');
+            if (_mtOk && isListening && !leituraFinalizada) { _mtOk.textContent = 'Escutando...'; }
+
             // Sem destaque visual na proxima palavra (removido para acessibilidade)
 
             // Atualizar progresso
@@ -847,13 +854,17 @@ function iniciarLeitura() {
     // Iniciar timer de silencio (so ativa apos primeira palavra detectada)
     iniciarTimerSilencio();
 
-    // Alerta se nenhuma palavra for detectada em 10 segundos
+    // Alerta se nenhuma palavra for detectada apos 15 segundos.
+    // Observacao: assim que a primeira palavra for reconhecida, o texto volta
+    // para "Escutando..." (ver processarFala), entao este aviso nao fica preso
+    // na tela se a pessoa apenas demorou para comecar a ler. Usamos laranja
+    // (nao vermelho) porque muitas vezes e so uma demora normal, nao uma falha.
     setTimeout(function() {
         if (!leituraFinalizada && isListening && palavraAtualIdx === 0) {
             var micTexto = document.getElementById('micTexto');
-            if (micTexto) micTexto.innerHTML = '<span style="color:#c62828;font-weight:bold;">Nenhuma palavra detectada. Verifique se o microfone esta ativo e fale mais perto do aparelho.</span>';
+            if (micTexto) micTexto.innerHTML = '<span style="color:#e65100;font-weight:bold;">Aguardando a leitura. Se ja estiver lendo e isto nao mudar, verifique se o microfone esta ativo e fale mais perto do aparelho.</span>';
         }
-    }, 10000);
+    }, 15000);
 }
 
 function finalizarLeitura() {
