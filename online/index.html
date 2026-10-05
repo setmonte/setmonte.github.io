@@ -9391,6 +9391,107 @@
       return t.trim() || 'Padrao equilibrado de escolhas cromaticas.';
     }
 
+    // Aspectos formais de uma piramide. Reproduz analisarAspectoFormal da pagina
+    // do teste, com textos em ASCII (regra do projeto: sem acento no script).
+    function _pfisterAspectoFormal(piramide) {
+      if (!piramide) return ['Dados insuficientes.'];
+      var aspectos = [];
+      var niveis = [[piramide[0]], [piramide[1], piramide[2]], [piramide[3], piramide[4], piramide[5]], [piramide[6], piramide[7], piramide[8], piramide[9]], [piramide[10], piramide[11], piramide[12], piramide[13], piramide[14]]];
+      function nFilled(arr) { var n = 0; for (var i = 0; i < arr.length; i++) { if (arr[i]) n++; } return n; }
+      var basePreenchida = nFilled(niveis[4]) === 5;
+      var topoVazio = !niveis[0][0];
+      var nivel2Vazio = nFilled(niveis[1]) < 2;
+      if (basePreenchida && (topoVazio || nivel2Vazio)) aspectos.push('TAPETE - Construcao horizontal/achatada. Indica dificuldade de elaboracao, pensamento concreto.');
+      var vaziosBase = 5 - nFilled(niveis[4]);
+      if (vaziosBase > 0 && !topoVazio) aspectos.push('TAPETE FURADO - Espacos vazios na base. Indica falhas na elaboracao, possivel desorganizacao.');
+      if (topoVazio && nFilled(niveis[1]) > 0) aspectos.push('PIRAMIDE DECEPADA - Sem vertice. Indica dificuldade de finalizacao, falta de objetivos claros.');
+      var simetriaNivel2 = niveis[1][0] === niveis[1][1];
+      var simetriaNivel4 = niveis[3][0] === niveis[3][3] && niveis[3][1] === niveis[3][2];
+      var simetricaBase = niveis[4][0] === niveis[4][4] && niveis[4][1] === niveis[4][3];
+      if (simetriaNivel2 && simetriaNivel4 && simetricaBase) aspectos.push('FORMACAO SIMETRICA - Organizacao equilibrada, busca de harmonia.');
+      else aspectos.push('FORMACAO ASSIMETRICA - Espontaneidade, menor rigidez.');
+      var camadasDefinidas = true;
+      for (var ni = 0; ni < niveis.length; ni++) {
+        if (ni === 0) continue;
+        var coresNivel = [];
+        for (var cj = 0; cj < niveis[ni].length; cj++) { if (niveis[ni][cj]) coresNivel.push(niveis[ni][cj]); }
+        if (coresNivel.length !== 0) {
+          var todasIguais = true;
+          for (var ck2 = 0; ck2 < coresNivel.length; ck2++) { if (coresNivel[ck2] !== coresNivel[0]) { todasIguais = false; break; } }
+          if (!todasIguais) { camadasDefinidas = false; break; }
+        }
+      }
+      if (camadasDefinidas) aspectos.push('CAMADAS BEM DEFINIDAS - Organizacao, planejamento, controle.');
+      var unicas = {};
+      for (var u = 0; u < piramide.length; u++) { if (piramide[u]) unicas[piramide[u]] = true; }
+      var coresUnicas = 0; for (var uk in unicas) { if (unicas.hasOwnProperty(uk)) coresUnicas++; }
+      if (coresUnicas > 2) {
+        var rupturas = 0;
+        for (var rp = 0; rp < piramide.length - 1; rp++) { if (piramide[rp] && piramide[rp + 1] && piramide[rp] !== piramide[rp + 1]) rupturas++; }
+        if (rupturas > 10) aspectos.push('TAPETE RASGADO - Muitas rupturas cromaticas. Indica possivel dissociacao, conflitos graves.');
+      }
+      return aspectos.length > 0 ? aspectos : ['Formacao adequada sem aspectos formais patologicos evidentes.'];
+    }
+
+    // Modo de colocacao. Reproduz analisarModoColocacao da pagina do teste.
+    function _pfisterModoColocacao(sequencia) {
+      if (!sequencia || sequencia.length < 15) return 'Dados insuficientes';
+      var iguais = 0;
+      for (var i = 0; i < sequencia.length - 1; i++) {
+        var ca = sequencia[i].cor || sequencia[i];
+        var cp = sequencia[i + 1].cor || sequencia[i + 1];
+        if (ca === cp) iguais++;
+      }
+      if (iguais > 8) return 'POR CAMADAS - Metodico, organizado, planejamento previo.';
+      if (iguais < 3) return 'MOSAICO - Alternancia constante, criatividade, possivel impulsividade.';
+      return 'MISTO - Combinacao de estrategias, flexibilidade.';
+    }
+
+    // Modo de execucao. Reproduz analisarModoExecucao da pagina do teste.
+    function _pfisterModoExecucao(tempo, pausas, mudancas) {
+      var aspectos = [];
+      if (tempo < 60) aspectos.push('EXECUCAO RAPIDA - Impulsividade, pouca reflexao.');
+      else if (tempo > 180) aspectos.push('EXECUCAO LENTA - Reflexao excessiva, duvida, possivel ansiedade.');
+      else aspectos.push('TEMPO ADEQUADO - Equilibrio entre reflexao e acao.');
+      var nPausas = (pausas && pausas.length) ? pausas.length : 0;
+      if (nPausas > 3) aspectos.push('HESITACOES (' + nPausas + ' pausas) - Duvida, conflito na escolha.');
+      if (mudancas > 10) aspectos.push('MUITAS MUDANCAS DE COR - Instabilidade, dificuldade de manter escolha.');
+      else if (mudancas < 3 && mudancas !== undefined) aspectos.push('POUCAS MUDANCAS - Persistencia, possivel rigidez.');
+      return aspectos;
+    }
+
+    // Analise sequencial entre as 3 piramides. Reproduz analisarSequencial.
+    function _pfisterSequencial(piramides) {
+      var aspectos = [];
+      var amplitudes = [];
+      for (var p = 0; p < piramides.length; p++) {
+        var cont = {};
+        for (var q = 0; q < piramides[p].length; q++) { var c = piramides[p][q]; if (c) cont[c] = (cont[c] || 0) + 1; }
+        var n = 0; for (var k in cont) { if (cont.hasOwnProperty(k)) n++; }
+        amplitudes.push(n);
+      }
+      aspectos.push('AMPLITUDE CROMATICA: P1=' + (amplitudes[0] || 0) + ', P2=' + (amplitudes[1] || 0) + ', P3=' + (amplitudes[2] || 0) + ' cores');
+      if (amplitudes[2] > amplitudes[0] + 3) aspectos.push('EXPANSAO PROGRESSIVA - Aumento de cores. Indica maior espontaneidade no inconsciente.');
+      else if (amplitudes[2] < amplitudes[0] - 3) aspectos.push('CONSTRICAO PROGRESSIVA - Reducao de cores. Indica maior controle/inibicao no inconsciente.');
+      else aspectos.push('ESTABILIDADE CROMATICA - Consistencia entre piramides.');
+      return aspectos;
+    }
+
+    // Analise maturacional por faixa etaria. Reproduz analisarMaturacional.
+    function _pfisterMaturacional(idadeStr) {
+      var aspectos = [];
+      var m = String(idadeStr || '').match(/(\d+)\s*ano/);
+      if (!m) return ['Idade nao identificada para analise maturacional.'];
+      var anos = parseInt(m[1]);
+      if (anos < 6) { aspectos.push('FAIXA ETARIA: Pre-escolar'); aspectos.push('ESPERADO: Uso de cores primarias, pouca organizacao formal, predominio de vermelho e amarelo.'); }
+      else if (anos <= 11) { aspectos.push('FAIXA ETARIA: Crianca/Pre-adolescente'); aspectos.push('ESPERADO: Amplitude cromatica ampla (8-10 cores), preferencia por cores vivas, menor estabilidade entre piramides.'); }
+      else if (anos <= 17) { aspectos.push('FAIXA ETARIA: Adolescente'); aspectos.push('ESPERADO: Instabilidade cromatica, aumento de violeta, busca de identidade nas cores.'); }
+      else if (anos <= 25) { aspectos.push('FAIXA ETARIA: Adulto jovem'); aspectos.push('ESPERADO: Estabilizacao cromatica, equilibrio azul-vermelho, uso moderado de verde.'); }
+      else if (anos <= 59) { aspectos.push('FAIXA ETARIA: Adulto'); aspectos.push('ESPERADO: Estabilidade cromatica, preferencia por azul e verde, menor uso de cores acromaticas.'); }
+      else { aspectos.push('FAIXA ETARIA: Idoso'); aspectos.push('ESPERADO: Menor uso de azul e cores acromaticas, maior uso de vermelho, amarelo e marrom (conforme normas para idosos).'); }
+      return aspectos;
+    }
+
     function _pfisterFmtTempo(seg) {
       if (seg === undefined || seg === null || isNaN(seg)) return '-';
       seg = Math.floor(seg);
@@ -9403,77 +9504,63 @@
       var d = r.data || {};
       var fd = d.formData || {};
       var res = d.resultados || {};
-      var ROXO = [106, 27, 154];       // #6a1b9a
-      var ROXO_H = [142, 68, 173];
-      var y = 20;
-      function checkPage(espaco) { if (y + (espaco || 0) > 280) { doc.addPage(); y = 20; } }
-
-      // ===== PAGINA 1: Cabecalho + dados + tempos =====
-      doc.setFillColor(ROXO_H[0], ROXO_H[1], ROXO_H[2]);
-      doc.rect(0, 0, 210, 30, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(15);
-      doc.text('Teste das Piramides Coloridas de Pfister', 105, 13, { align: 'center' });
-      doc.setFontSize(10);
-      doc.text('Relatorio de Resultados', 105, 23, { align: 'center' });
-      y = 42;
-
-      doc.setTextColor(0, 0, 0);
-      doc.setFontSize(11);
-      doc.text('Paciente: ' + (fd.nome || '-'), 15, y); y += 7;
-      doc.text('Idade: ' + (fd.idade || '-') + '  |  Escolaridade: ' + (fd.escolaridade || '-'), 15, y); y += 7;
-      doc.text('Data de Nascimento: ' + (fd.dataNasc || '-'), 15, y); y += 7;
-      doc.text('ID do Paciente: ' + (d.idPaciente || fd.id || '-'), 15, y); y += 7;
-      doc.text('Data da Avaliacao: ' + (d.date ? new Date(d.date).toLocaleString('pt-BR') : '-'), 15, y); y += 12;
-
-      // Tempos de execucao (se vierem salvos)
-      var tempos = res.tempos || {};
-      if (tempos.inicio && tempos.fim) {
-        var tTotal = Math.floor((tempos.fim - tempos.inicio) / 1000);
-        doc.setFontSize(13);
-        doc.setTextColor(ROXO[0], ROXO[1], ROXO[2]);
-        doc.text('Tempos de Execucao', 15, y); y += 8;
-        doc.setFontSize(10);
-        doc.setTextColor(0, 0, 0);
-        doc.text('Tempo total: ' + _pfisterFmtTempo(tTotal), 20, y); y += 6;
-        if (tempos.piramide1 !== undefined) { doc.text('Piramide 1: ' + _pfisterFmtTempo(tempos.piramide1), 20, y); y += 6; }
-        if (tempos.piramide2 !== undefined) { doc.text('Piramide 2: ' + _pfisterFmtTempo(tempos.piramide2), 20, y); y += 6; }
-        if (tempos.piramide3 !== undefined) { doc.text('Piramide 3: ' + _pfisterFmtTempo(tempos.piramide3), 20, y); y += 6; }
-        y += 6;
-      }
-
-      // ===== PAGINA 2: Analise por piramide (com desenho) =====
+      var POSICOES = ['A1', 'B1', 'B2', 'C1', 'C2', 'C3', 'D1', 'D2', 'D3', 'D4', 'E1', 'E2', 'E3', 'E4', 'E5'];
       var piramides = res.piramides || [];
       var sequencias = res.sequenciaColocacao || [];
-      if (piramides.length > 0) {
-        doc.addPage(); y = 20;
-        doc.setFontSize(14);
-        doc.setTextColor(ROXO[0], ROXO[1], ROXO[2]);
-        doc.text('Analise das Piramides', 105, y, { align: 'center' }); y += 12;
+      var pausas = res.pausas || [];
+      var mudancas = res.mudancasCor || [];
+      var tempos = res.tempos || {};
+      var y = 20;
+      function checkPage(espaco) { if (y + (espaco || 0) > 282) { doc.addPage(); y = 20; } }
 
+      // ===== PAGINA 1: Identificacao + tempos =====
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(18); doc.text('TESTE DAS PIRAMIDES COLORIDAS DE PFISTER', 105, 20, { align: 'center' });
+      doc.setFontSize(14); doc.text('DADOS DE IDENTIFICACAO', 20, 40);
+      doc.setFontSize(11);
+      y = 55;
+      doc.text('Nome: ' + (fd.nome || '-'), 20, y);
+      doc.text('Data de Nascimento: ' + (fd.dataNasc ? _pfisterData(fd.dataNasc) : '-'), 20, y += 7);
+      doc.text('Idade: ' + (fd.idade || '-'), 20, y += 7);
+      if (fd.cpf) doc.text('CPF: ' + fd.cpf, 20, y += 7);
+      doc.text('ID Paciente: ' + (d.idPaciente || fd.id || 'N/A'), 20, y += 7);
+      doc.text('Escolaridade: ' + (fd.escolaridade || '-'), 20, y += 7);
+      if (fd.psicologo) doc.text('Psicologo: ' + fd.psicologo, 20, y += 7);
+      if (fd.crp) doc.text('CRP: ' + fd.crp, 20, y += 7);
+      doc.text('Data da Avaliacao: ' + (d.date ? new Date(d.date).toLocaleString('pt-BR') : '-'), 20, y += 7);
+
+      // Tempos de execucao (se vierem salvos)
+      if (tempos.inicio && tempos.fim) {
+        var tTotal = Math.floor((tempos.fim - tempos.inicio) / 1000);
+        doc.setFontSize(14); doc.text('TEMPOS DE EXECUCAO', 20, y += 14);
+        doc.setFontSize(11);
+        doc.text('Tempo Total: ' + _pfisterFmtTempo(tTotal), 20, y += 8);
+        if (tempos.piramide1 !== undefined) doc.text('Piramide 1: ' + _pfisterFmtTempo(tempos.piramide1), 20, y += 6);
+        if (tempos.piramide2 !== undefined) doc.text('Piramide 2: ' + _pfisterFmtTempo(tempos.piramide2), 20, y += 6);
+        if (tempos.piramide3 !== undefined) doc.text('Piramide 3: ' + _pfisterFmtTempo(tempos.piramide3), 20, y += 6);
+      }
+
+      // ===== PAGINA 2: Analise das piramides (desenho + mapa + direcao + hesitacoes) =====
+      if (piramides.length > 0) {
+        doc.addPage();
+        doc.setFontSize(14); doc.text('ANALISE DAS PIRAMIDES', 105, 15, { align: 'center' });
         var espP = 86;
-        for (var pi = 0; pi < piramides.length; pi++) {
-          var baseY = y + (pi % 3) * espP;
-          if (pi > 0 && pi % 3 === 0) { doc.addPage(); baseY = 20; y = 20; }
-          doc.setFontSize(12);
-          doc.setTextColor(ROXO[0], ROXO[1], ROXO[2]);
-          doc.text('PIRAMIDE ' + (pi + 1), 15, baseY);
-          // Desenho da piramide a direita
-          _pfisterDesenharPiramide(doc, piramides[pi], 178, baseY + 2);
+        for (var i = 0; i < piramides.length; i++) {
+          var baseY = 25 + (i * espP);
+          doc.setFontSize(12); doc.setFont(undefined, 'bold'); doc.text('PIRAMIDE ' + (i + 1), 20, baseY); doc.setFont(undefined, 'normal');
+          _pfisterDesenharPiramide(doc, piramides[i], 178, baseY + 2);
 
           // Contagem de cores desta piramide
           var cP = {};
-          for (var q = 0; q < piramides[pi].length; q++) { var cc = piramides[pi][q]; if (cc) cP[cc] = (cP[cc] || 0) + 1; }
+          for (var q = 0; q < piramides[i].length; q++) { var cc = piramides[i][q]; if (cc) cP[cc] = (cP[cc] || 0) + 1; }
           var paresP = [];
           for (var kp in cP) { if (cP.hasOwnProperty(kp)) paresP.push([kp, cP[kp]]); }
           paresP.sort(function(a, b) { return b[1] - a[1]; });
 
-          var yl = baseY + 7;
           doc.setFontSize(9);
-          doc.setTextColor(0, 0, 0);
+          var yl = baseY + 8;
           for (var pp = 0; pp < paresP.length; pp++) {
-            var pctP = ((paresP[pp][1] / 15) * 100).toFixed(1);
-            doc.text('- ' + paresP[pp][0] + ': ' + paresP[pp][1] + ' (' + pctP + '%)', 20, yl);
+            doc.text(paresP[pp][0] + ': ' + paresP[pp][1] + ' (' + ((paresP[pp][1] / 15) * 100).toFixed(1) + '%)', 20, yl);
             yl += 4;
           }
           // Mais/menos usada
@@ -9481,95 +9568,125 @@
             var maxQ = paresP[0][1], minQ = paresP[paresP.length - 1][1];
             var mais = [], menos = [];
             for (var mm = 0; mm < paresP.length; mm++) { if (paresP[mm][1] === maxQ) mais.push(paresP[mm][0]); if (paresP[mm][1] === minQ) menos.push(paresP[mm][0]); }
-            yl += 2;
-            doc.text('Mais usada: ' + mais.join(', ') + ' (' + maxQ + 'x)', 20, yl); yl += 4;
-            doc.text('Menos usada: ' + menos.join(', ') + ' (' + minQ + 'x)', 20, yl); yl += 4;
+            doc.setFont(undefined, 'bold');
+            doc.text('Mais usada: ' + mais.join(', ') + ' (' + maxQ + 'x)', 20, yl += 6);
+            doc.text('Menos usada: ' + menos.join(', ') + ' (' + minQ + 'x)', 20, yl += 5);
+            doc.setFont(undefined, 'normal');
           }
-          // Direcao de preenchimento
-          var dir = _pfisterDirecao(sequencias[pi]);
-          doc.text('Direcao: ' + dir, 20, yl); yl += 5;
+          // Mapa de posicoes (A1..E5)
+          yl += 6; doc.setFontSize(8); doc.setFont(undefined, 'bold'); doc.text('Mapa de Posicoes:', 20, yl); doc.setFont(undefined, 'normal'); yl += 4;
+          for (var mp = 0; mp < POSICOES.length; mp++) {
+            var corMp = piramides[i][mp];
+            if (corMp) { doc.text(POSICOES[mp] + ':' + corMp, 20 + (mp % 5) * 28, yl); if ((mp + 1) % 5 === 0) yl += 4; }
+          }
+          if (POSICOES.length % 5 !== 0) yl += 4;
+          // Direcao
+          var dir = _pfisterDirecao(sequencias[i]);
+          doc.text('Direcao: ' + dir, 20, yl); yl += 4;
+          // Hesitacoes (so se vierem salvas)
+          var pausasI = pausas[i];
+          if (pausasI && pausasI.length > 0) { doc.text('Hesitacoes: ' + pausasI.length + ' pausas (' + pausasI.join('s, ') + 's)', 20, yl); yl += 4; }
           // Interpretacao resumida
+          yl += 3; doc.setFontSize(8);
           var interp = _pfisterInterpretacao(cP);
-          doc.setFontSize(8);
-          var linhasInt = doc.splitTextToSize(interp, 150);
+          var linhasInt = doc.splitTextToSize(interp, 120);
           for (var li = 0; li < Math.min(linhasInt.length, 3); li++) { doc.text(linhasInt[li], 20, yl); yl += 4; }
-          // Linha separadora
-          if (pi % 3 !== 2 && pi < piramides.length - 1) { doc.setDrawColor(200); doc.line(15, baseY + espP - 6, 195, baseY + espP - 6); }
-          y = Math.max(y, yl);
+          // Linha separadora entre piramides
+          if (i < piramides.length - 1) { doc.setDrawColor(180); doc.line(20, baseY + espP - 5, 190, baseY + espP - 5); }
         }
       }
 
-      // ===== Frequencia total das cores =====
-      doc.addPage(); y = 20;
-      doc.setFontSize(14);
-      doc.setTextColor(ROXO[0], ROXO[1], ROXO[2]);
-      doc.text('Frequencia Total de Cores (45 quadrados)', 105, y, { align: 'center' }); y += 12;
-      doc.setFontSize(10);
-      doc.setTextColor(0, 0, 0);
+      // ===== PAGINA 3: Analise qualitativa =====
+      if (piramides.length > 0) {
+        doc.addPage();
+        doc.setFontSize(14); doc.setFont(undefined, 'bold'); doc.text('ANALISE QUALITATIVA', 105, 15, { align: 'center' }); doc.setFont(undefined, 'normal');
+        y = 25;
+        // Aspectos formais
+        for (var af = 0; af < piramides.length; af++) {
+          doc.setFontSize(11); doc.setFont(undefined, 'bold'); doc.text('PIRAMIDE ' + (af + 1) + ' - ASPECTOS FORMAIS:', 20, y); doc.setFont(undefined, 'normal'); doc.setFontSize(9); y += 6;
+          var aspectos = _pfisterAspectoFormal(piramides[af]);
+          for (var ax = 0; ax < aspectos.length; ax++) { var la = doc.splitTextToSize(aspectos[ax], 170); for (var lax = 0; lax < la.length; lax++) { checkPage(5); doc.text(la[lax], 20, y); y += 4; } }
+          y += 3;
+        }
+        // Modo de colocacao
+        checkPage(14);
+        y += 3; doc.setFontSize(11); doc.setFont(undefined, 'bold'); doc.text('MODO DE COLOCACAO:', 20, y); doc.setFont(undefined, 'normal'); doc.setFontSize(9); y += 6;
+        for (var mc = 0; mc < piramides.length; mc++) { checkPage(5); doc.text('Piramide ' + (mc + 1) + ': ' + _pfisterModoColocacao(sequencias[mc]), 20, y); y += 5; }
+        // Modo de execucao
+        checkPage(14);
+        y += 3; doc.setFontSize(11); doc.setFont(undefined, 'bold'); doc.text('MODO DE EXECUCAO:', 20, y); doc.setFont(undefined, 'normal'); doc.setFontSize(9); y += 6;
+        for (var me = 0; me < piramides.length; me++) {
+          var tempoMe = tempos['piramide' + (me + 1)];
+          var aspME = _pfisterModoExecucao(tempoMe, pausas[me], mudancas[me]);
+          checkPage(5); doc.text('Piramide ' + (me + 1) + ':', 20, y); y += 5;
+          for (var me2 = 0; me2 < aspME.length; me2++) { var lme = doc.splitTextToSize('  ' + aspME[me2], 170); for (var lme2 = 0; lme2 < lme.length; lme2++) { checkPage(5); doc.text(lme[lme2], 20, y); y += 4; } }
+        }
+        // Analise sequencial
+        checkPage(14);
+        y += 3; doc.setFontSize(11); doc.setFont(undefined, 'bold'); doc.text('ANALISE SEQUENCIAL:', 20, y); doc.setFont(undefined, 'normal'); doc.setFontSize(9); y += 6;
+        var seq = _pfisterSequencial(piramides);
+        for (var sx = 0; sx < seq.length; sx++) { var ls = doc.splitTextToSize(seq[sx], 170); for (var ls2 = 0; ls2 < ls.length; ls2++) { checkPage(5); doc.text(ls[ls2], 20, y); y += 4; } }
+        // Analise psicodinamica
+        checkPage(24);
+        y += 3; doc.setFontSize(11); doc.setFont(undefined, 'bold'); doc.text('ANALISE PSICODINAMICA:', 20, y); doc.setFont(undefined, 'normal'); doc.setFontSize(9); y += 6;
+        doc.text('- Piramide 1 (Consciente): Persona, adaptacao social', 20, y); y += 5;
+        doc.text('- Piramide 2 (Pre-consciente): Transicao, conflitos em elaboracao', 20, y); y += 5;
+        doc.text('- Piramide 3 (Inconsciente): Conteudos profundos, impulsos primitivos', 20, y); y += 5;
+        // Analise maturacional
+        checkPage(18);
+        y += 3; doc.setFontSize(11); doc.setFont(undefined, 'bold'); doc.text('ANALISE MATURACIONAL:', 20, y); doc.setFont(undefined, 'normal'); doc.setFontSize(9); y += 6;
+        var mat = _pfisterMaturacional(fd.idade);
+        for (var mx = 0; mx < mat.length; mx++) { var lm = doc.splitTextToSize(mat[mx], 170); for (var lm2 = 0; lm2 < lm.length; lm2++) { checkPage(5); doc.text(lm[lm2], 20, y); y += 4; } }
+      }
+
+      // ===== PAGINA 4: Frequencia total + sindromes + preferencias + referencias =====
+      doc.addPage();
+      doc.setFontSize(14); doc.setFont(undefined, 'normal'); doc.text('FREQUENCIA TOTAL DE CORES (45 quadrados)', 105, 20, { align: 'center' });
       var cont = res.contagemCores || {};
       var paresCor = [];
       for (var ck in cont) { if (cont.hasOwnProperty(ck) && cont[ck] > 0) { paresCor.push([ck, cont[ck]]); } }
       paresCor.sort(function(a, b) { return b[1] - a[1]; });
+      y = 40;
       if (paresCor.length === 0) {
-        doc.text('Sem dados de contagem de cores.', 20, y); y += 7;
+        doc.setFontSize(10); doc.text('Sem dados de contagem de cores.', 20, y); y += 8;
       } else {
-        for (var pc = 0; pc < paresCor.length; pc++) {
-          var pct = ((paresCor[pc][1] / 45) * 100).toFixed(1);
-          // quadradinho colorido
-          var hex = _PFISTER_CORES[paresCor[pc][0]];
-          if (hex) { doc.setFillColor(hex); doc.setDrawColor(120, 120, 120); doc.rect(20, y - 3.5, 4, 4, 'FD'); }
-          doc.text(paresCor[pc][0] + ': ' + paresCor[pc][1] + ' (' + pct + '%)', 27, y);
-          y += 6; checkPage(6);
-        }
+        doc.setFontSize(9); doc.setFont(undefined, 'bold'); doc.text('Cor', 105, y, { align: 'center' });
+        y += 8; var x = 20; var esp = 22;
+        for (var cf = 0; cf < paresCor.length; cf++) { var nome = paresCor[cf][0].length > 10 ? paresCor[cf][0].substring(0, 10) : paresCor[cf][0]; doc.text(nome, x, y, { align: 'center' }); x += esp; }
+        y += 8; x = 20; for (var cf2 = 0; cf2 < paresCor.length; cf2++) { doc.text(String(paresCor[cf2][1]), x, y, { align: 'center' }); x += esp; }
+        y += 8; x = 20; for (var cf3 = 0; cf3 < paresCor.length; cf3++) { doc.text(((paresCor[cf3][1] / 45) * 100).toFixed(1) + '%', x, y, { align: 'center' }); x += esp; }
+        doc.setFont(undefined, 'normal');
       }
-      y += 8;
 
-      // ===== Sindromes cromaticas =====
-      checkPage(24);
-      doc.setFontSize(13);
-      doc.setTextColor(ROXO[0], ROXO[1], ROXO[2]);
-      doc.text('Sindromes Cromaticas', 15, y); y += 8;
-      doc.setFontSize(10);
-      doc.setTextColor(0, 0, 0);
+      // Sindromes
+      y += 12; doc.setFontSize(12); doc.setFont(undefined, 'bold'); doc.text('SINDROMES CROMATICAS:', 20, y); doc.setFont(undefined, 'normal'); doc.setFontSize(10);
       var sind = res.sindromes || {};
-      var temSind = false;
+      y += 8;
       for (var sk in sind) {
         if (sind.hasOwnProperty(sk)) {
-          temSind = true;
           var valor = typeof sind[sk] === 'number' ? sind[sk].toFixed(1) + '%' : String(sind[sk]);
-          var linhasSk = doc.splitTextToSize('- ' + sk + ': ' + valor, 175);
-          for (var ls = 0; ls < linhasSk.length; ls++) { doc.text(linhasSk[ls], 20, y); y += 6; checkPage(6); }
+          var lsk = doc.splitTextToSize(sk + ': ' + valor, 175);
+          for (var lsk2 = 0; lsk2 < lsk.length; lsk2++) { checkPage(6); doc.text(lsk[lsk2], 20, y); y += 6; }
         }
       }
-      if (!temSind) { doc.text('Sem dados de sindromes.', 20, y); y += 6; }
-      y += 8;
 
-      // ===== Preferencias declaradas =====
+      // Preferencias declaradas
       var resp = res.respostas || {};
       var temPref = resp.corMaisGosta || resp.corMenosGosta || resp.corMaisGostouTeste || resp.corMenosGostouTeste || resp.piramideMaisGostou || resp.piramideMenosGostou;
       if (temPref) {
-        checkPage(30);
-        doc.setFontSize(13);
-        doc.setTextColor(ROXO[0], ROXO[1], ROXO[2]);
-        doc.text('Preferencias Declaradas', 15, y); y += 8;
-        doc.setFontSize(10);
-        doc.setTextColor(0, 0, 0);
-        if (resp.corMaisGosta) { doc.text('Cor que mais gosta em geral: ' + resp.corMaisGosta, 20, y); y += 6; }
-        if (resp.corMenosGosta) { doc.text('Cor que menos gosta em geral: ' + resp.corMenosGosta, 20, y); y += 6; }
-        if (resp.corMaisGostouTeste) { doc.text('Cor que mais gostou no teste: ' + resp.corMaisGostouTeste, 20, y); y += 6; }
-        if (resp.corMenosGostouTeste) { doc.text('Cor que menos gostou no teste: ' + resp.corMenosGostouTeste, 20, y); y += 6; }
-        if (resp.piramideMaisGostou) { doc.text('Piramide que mais gostou: Piramide ' + resp.piramideMaisGostou, 20, y); y += 6; }
-        if (resp.piramideMenosGostou) { doc.text('Piramide que menos gostou: Piramide ' + resp.piramideMenosGostou, 20, y); y += 6; }
-        y += 8;
+        checkPage(50);
+        y += 15; doc.setFontSize(14); doc.setFont(undefined, 'bold'); doc.text('PREFERENCIAS DECLARADAS', 20, y); doc.setFont(undefined, 'normal'); doc.setFontSize(11); y += 10;
+        if (resp.corMaisGosta) { doc.text('Cor que mais gosta em geral: ' + resp.corMaisGosta, 20, y); y += 7; }
+        if (resp.corMenosGosta) { doc.text('Cor que menos gosta em geral: ' + resp.corMenosGosta, 20, y); y += 7; }
+        if (resp.corMaisGostouTeste) { doc.text('Cor que mais gostou no teste: ' + resp.corMaisGostouTeste, 20, y); y += 7; }
+        if (resp.corMenosGostouTeste) { doc.text('Cor que menos gostou no teste: ' + resp.corMenosGostouTeste, 20, y); y += 7; }
+        if (resp.piramideMaisGostou) { doc.text('Piramide que mais gostou: Piramide ' + resp.piramideMaisGostou, 20, y); y += 7; }
+        if (resp.piramideMenosGostou) { doc.text('Piramide que menos gostou: Piramide ' + resp.piramideMenosGostou, 20, y); y += 7; }
       }
 
-      // ===== Referencias (ABNT) =====
+      // Referencias
       checkPage(40);
-      doc.setFontSize(13);
-      doc.setTextColor(ROXO[0], ROXO[1], ROXO[2]);
-      doc.text('Referencias', 15, y); y += 8;
-      doc.setFontSize(9);
-      doc.setTextColor(0, 0, 0);
+      y += 15; doc.setFontSize(14); doc.setFont(undefined, 'bold'); doc.text('REFERENCIAS', 20, y); doc.setFont(undefined, 'normal'); doc.setFontSize(9); y += 8;
       var refs = [
         'VILLEMOR-AMARAL, A. E. As Piramides Coloridas de Pfister. Sao Paulo: Centro Editor de Testes e Pesquisas em Psicologia, 2012.',
         'VILLEMOR-AMARAL, A. E.; PRIMI, R. Teste das Piramides Coloridas de Pfister. 2. ed. Sao Paulo: Casa do Psicologo, 2009.',
@@ -9577,20 +9694,12 @@
         'OLIVEIRA, S. E. S.; BANDEIRA, D. R.; VAZ, C. E. Estudo normativo do Teste das Piramides Coloridas de Pfister para populacao idosa. Avaliacao Psicologica, v. 6, n. 1, p. 61-69, 2007.'
       ];
       for (var rf = 0; rf < refs.length; rf++) {
-        var linhasRef = doc.splitTextToSize(refs[rf], 180);
-        for (var lr = 0; lr < linhasRef.length; lr++) { doc.text(linhasRef[lr], 15, y); y += 5; checkPage(5); }
+        var lr = doc.splitTextToSize(refs[rf], 170);
+        for (var lr2 = 0; lr2 < lr.length; lr2++) { checkPage(5); doc.text(lr[lr2], 20, y); y += 5; }
         y += 2;
       }
 
-      // Disclaimer
-      checkPage(20);
-      doc.setFontSize(8);
-      doc.setTextColor(90, 90, 90);
-      var disc = 'Instrumento de avaliacao neuropsicologica. Os resultados devem ser interpretados por profissional qualificado, dentro do contexto clinico e em conjunto com outros instrumentos. As pausas/hesitacoes, dados de identificacao estendida e o laudo por IA constam apenas no relatorio gerado na propria aplicacao.';
-      var linhasDisc = doc.splitTextToSize(disc, 180);
-      for (var dz = 0; dz < linhasDisc.length; dz++) { doc.text(linhasDisc[dz], 15, y); y += 4; }
-
-      // ===== Rodape em todas as paginas =====
+      // Rodape em todas as paginas
       var totalPag = doc.internal.getNumberOfPages();
       var geradoEm = new Date().toLocaleString('pt-BR');
       for (var pg = 1; pg <= totalPag; pg++) {
@@ -9598,6 +9707,7 @@
         doc.setFontSize(8);
         doc.setTextColor(150, 150, 150);
         doc.text('Gerado em ' + geradoEm + '  -  Pagina ' + pg + ' de ' + totalPag, 105, 290, { align: 'center' });
+        doc.setTextColor(0, 0, 0);
       }
 
       // Salvar
@@ -9605,6 +9715,13 @@
       var ts = agora.getFullYear() + String(agora.getMonth() + 1).padStart(2, '0') + String(agora.getDate()).padStart(2, '0') + String(agora.getHours()).padStart(2, '0') + String(agora.getMinutes()).padStart(2, '0');
       var nomeArq = 'Pfister_' + String(fd.nome || 'Paciente').replace(/\s+/g, '_') + '_' + ts + '.pdf';
       doc.save(nomeArq);
+    }
+
+    // Formata uma data ISO (YYYY-MM-DD) para dd/mm/aaaa. Se nao reconhecer, devolve como veio.
+    function _pfisterData(iso) {
+      var m = String(iso).match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (m) return m[3] + '/' + m[2] + '/' + m[1];
+      return String(iso);
     }
 
     async function startPfisterOnlineTest(abrirLocal) {
