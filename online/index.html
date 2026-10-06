@@ -3429,6 +3429,9 @@
       try { fetch(API_URL + '/save-result', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:currentUser,tipo:'login',sessionId:'login-'+Date.now().toString(36),data:{status:'login',timestamp:new Date().toISOString()}})}); } catch(e){}
       // Seguranca: registra presenca deste aparelho e ja checa se ha outro aberto
       try { registrarPresenca(); checarSessaoSimultanea(); } catch(e){}
+      // Contabiliza o acesso ao painel (uma vez por entrada). O servidor ignora
+      // os e-mails administrativos/de teste; demais usuarios contam normal.
+      try { contarAcessoPainel(); } catch(e){}
       // Mostrar aba Depoimentos e Admin apenas para admin
       if (currentUser === 'setmonte@gmail.com') {
         document.getElementById('tabDepoimentos').classList.remove('hidden');
@@ -7938,6 +7941,7 @@
         html += '<div style="background:#fce4ec;padding:10px;border-radius:6px;text-align:center;"><strong style="font-size:20px;color:#c62828;">' + (data.totalPacientes || 0) + '</strong><br><span style="font-size:11px;">Pacientes</span></div>';
         html += '<div style="background:#fff3e0;padding:10px;border-radius:6px;text-align:center;"><strong style="font-size:20px;color:#e65100;">' + (data.totalVisits || 0) + '</strong><br><span style="font-size:11px;">Visitas Site</span></div>';
         html += '<div style="background:#ede7f6;padding:10px;border-radius:6px;text-align:center;"><strong style="font-size:20px;color:#4a148c;">' + (data.visitsYesterday || 0) + '</strong><br><span style="font-size:11px;">Visitas ontem</span></div>';
+        html += '<div style="background:#e0f2f1;padding:10px;border-radius:6px;text-align:center;"><strong style="font-size:20px;color:#00695c;">' + (data.panelYesterday || 0) + '</strong><br><span style="font-size:11px;">Painel ontem</span></div>';
         html += '</div>';
         if (data.porTipo) {
           html += _renderRankingCategorias(data.porTipo);
@@ -9504,6 +9508,31 @@
       var d = r.data || {};
       var fd = d.formData || {};
       var res = d.resultados || {};
+
+      // Dados do profissional (aba 1 - Dados do Usuario) para identificacao do laudo.
+      var _du = window._dadosUsuario || {};
+      var _psicologo = fd.psicologo || _du.nome || '';
+      var _crp = fd.crp || _du.crp || '';
+
+      // CPF do paciente: busca na aba 2 (Pacientes) casando pelo pacienteId do
+      // resultado; se nao achar por id, tenta por nome + data de nascimento. Assim
+      // funciona inclusive para testes aplicados antes desta mudanca.
+      var _cpf = fd.cpf || '';
+      try {
+        if (!_cpf && typeof _pacientesCache !== 'undefined' && _pacientesCache && _pacientesCache.length) {
+          var _pacId = d.pacienteId || r.pacienteId || '';
+          var _pac = null;
+          if (_pacId) { _pac = _pacientesCache.filter(function(p) { return p.id === _pacId; })[0]; }
+          if (!_pac && fd.nome) {
+            _pac = _pacientesCache.filter(function(p) {
+              return (p.nome || '').trim().toLowerCase() === String(fd.nome).trim().toLowerCase()
+                && (!fd.dataNasc || !p.dataNascimento || p.dataNascimento === fd.dataNasc);
+            })[0];
+          }
+          if (_pac && _pac.cpf) _cpf = _pac.cpf;
+        }
+      } catch (e) {}
+
       var POSICOES = ['A1', 'B1', 'B2', 'C1', 'C2', 'C3', 'D1', 'D2', 'D3', 'D4', 'E1', 'E2', 'E3', 'E4', 'E5'];
       var piramides = res.piramides || [];
       var sequencias = res.sequenciaColocacao || [];
@@ -9522,11 +9551,11 @@
       doc.text('Nome: ' + (fd.nome || '-'), 20, y);
       doc.text('Data de Nascimento: ' + (fd.dataNasc ? _pfisterData(fd.dataNasc) : '-'), 20, y += 7);
       doc.text('Idade: ' + (fd.idade || '-'), 20, y += 7);
-      if (fd.cpf) doc.text('CPF: ' + fd.cpf, 20, y += 7);
+      if (_cpf) doc.text('CPF: ' + _cpf, 20, y += 7);
       doc.text('ID Paciente: ' + (d.idPaciente || fd.id || 'N/A'), 20, y += 7);
       doc.text('Escolaridade: ' + (fd.escolaridade || '-'), 20, y += 7);
-      if (fd.psicologo) doc.text('Psicologo: ' + fd.psicologo, 20, y += 7);
-      if (fd.crp) doc.text('CRP: ' + fd.crp, 20, y += 7);
+      if (_psicologo) doc.text('Psicologo: ' + _psicologo, 20, y += 7);
+      if (_crp) doc.text('CRP: ' + _crp, 20, y += 7);
       doc.text('Data da Avaliacao: ' + (d.date ? new Date(d.date).toLocaleString('pt-BR') : '-'), 20, y += 7);
 
       // Tempos de execucao (se vierem salvos)
@@ -17482,6 +17511,20 @@ function registrarPresenca() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: window.currentUser, deviceId: _getDeviceId() })
+    });
+  } catch(e) {}
+}
+
+// Conta um acesso ao painel no servidor (contador diario "panel_YYYY-MM-DD").
+// Chamado uma vez por entrada (no showDashboard). O servidor ignora os e-mails
+// administrativos/de teste; os demais usuarios (inclusive a esposa) contam normal.
+function contarAcessoPainel() {
+  if (!window.currentUser) return;
+  try {
+    fetch(API_URL + '/panel-visit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: window.currentUser })
     });
   } catch(e) {}
 }
