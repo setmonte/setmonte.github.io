@@ -1896,6 +1896,7 @@
         <div id="percepcaoTab" class="tab-content">
           <div class="sub-tab-bar">
             <button class="sub-tab-btn active" id="subTabTref" onclick="switchSubTab('percepcao','tref')">TREF</button>
+            <button class="sub-tab-btn hidden" id="subTabTpvset" onclick="switchSubTab('percepcao','tpvset')">TPV-SET</button>
           </div>
           <!-- Sub-aba TREF -->
           <div id="subTrefContent" class="sub-tab-content active">
@@ -1937,6 +1938,20 @@
               <button class="btn btn-blue" onclick="showTrefResults()">Resultados</button>
               <a href="#" class="btn btn-orange" onclick="document.getElementById('trefPlansSection').classList.toggle('hidden');return false;">Comprar Creditos</a>
               <a href="manual-tref.html" target="_blank" class="btn" style="background:#607d8b;color:#fff;">&#128212; Manual T&#233;cnico</a>
+            </div>
+          </div>
+          <!-- Sub-aba TPV-SET -->
+          <div id="subTpvsetContent" class="sub-tab-content">
+            <div style="background:#f3e5f5;border:1px solid #ce93d8;border-radius:8px;padding:12px;margin:10px 0;font-size:0.82em;color:#4a148c;line-height:1.6;">
+              <strong>&#129504; TPV-SET — Teste de Percep&#231;&#227;o Visual (adapta&#231;&#227;o do jogo SET)</strong><br>
+              Avalia a percep&#231;&#227;o visual r&#225;pida, a busca visual e o controle inibit&#243;rio sob press&#227;o de tempo.<br>
+              O paciente localiza combina&#231;&#245;es v&#225;lidas (SETs) em uma grade de cartas, integrando m&#250;ltiplas caracter&#237;sticas visuais.<br>
+              <strong>Popula&#231;&#227;o:</strong> a partir de 6 anos | <strong>Resultado:</strong> m&#233;dia de SETs por rodada e classifica&#231;&#227;o por faixa et&#225;ria<br>
+              <strong>Gratuito e explorat&#243;rio</strong> — instrumento sem valida&#231;&#227;o emp&#237;rica formal.
+            </div>
+            <div class="btn-row">
+              <button class="btn btn-green" id="btnNewTpvset" onclick="showNewTpvset()">Nova Aplicacao</button>
+              <button class="btn btn-blue" onclick="showTpvsetResults()">Resultados</button>
             </div>
           </div>
         </div>
@@ -2797,6 +2812,58 @@
       <!-- RESULTADOS CORSI -->
       <div id="corsiResultsSection" class="card hidden"></div>
 
+      <!-- NOVA APLICACAO TPV-SET -->
+      <div id="newTpvsetSection" class="card hidden">
+        <h2>Nova Aplicacao TPV-SET</h2>
+        <p style="margin-bottom:10px;color:#555;font-size:0.9em;">Teste de Percepcao Visual (adaptacao do jogo SET) — percepcao visual rapida, busca visual e controle inibitorio (gratuito e exploratorio)</p>
+        <label style="font-size:0.85em;color:#555;">Paciente cadastrado:</label>
+        <select id="tpvsetSelPac" onchange="preencherPaciente('tpvset')" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:10px;">
+          <option value="">-- Selecione ou preencha abaixo --</option>
+        </select>
+        <label style="font-size:0.85em;color:#555;">Nome:</label>
+        <input type="text" id="tpvsetNome" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+        <label style="font-size:0.85em;color:#555;">Data de Nascimento:</label>
+        <input type="date" id="tpvsetDn" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+        <label style="font-size:0.85em;color:#555;">Sexo:</label>
+        <select id="tpvsetSexo" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+          <option value="">Selecione...</option>
+          <option value="Masculino">Masculino</option>
+          <option value="Feminino">Feminino</option>
+        </select>
+        <label style="font-size:0.85em;color:#555;">Escolaridade:</label>
+        <select id="tpvsetEscolaridade" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+          <option value="">Selecione...</option>
+          <option value="1o ano">1o ano</option>
+          <option value="2o ano">2o ano</option>
+          <option value="3o ano">3o ano</option>
+          <option value="4o ano">4o ano</option>
+          <option value="5o ano">5o ano</option>
+          <option value="6o ano">6o ano</option>
+          <option value="7o ano">7o ano</option>
+          <option value="8o ano">8o ano</option>
+          <option value="9o ano">9o ano</option>
+          <option value="Ensino Medio">Ensino Medio</option>
+          <option value="Superior Incompleto">Superior Incompleto</option>
+          <option value="Superior Completo">Superior Completo</option>
+          <option value="Pos-graduacao">Pos-graduacao</option>
+        </select>
+        <label style="font-size:0.85em;color:#555;">Observacoes:</label>
+        <input type="text" id="tpvsetObs" placeholder="Opcional" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:12px;">
+        <button onclick="startTpvsetTest()" class="btn btn-green" style="width:48%;">Gerar Link do Paciente</button>
+        <button onclick="startTpvsetTest(true)" class="btn btn-blue" style="width:48%;">Aplicar Localmente</button>
+        <div id="tpvsetLinkResult" class="hidden" style="margin-top:15px;padding:12px;background:#e8f5e9;border-radius:8px;">
+          <p style="font-size:0.8em;color:#555;margin-bottom:5px;">Link gerado:</p>
+          <p id="tpvsetSessionLink" style="word-break:break-all;font-size:0.75em;color:#1565c0;"></p>
+          <div style="margin-top:10px;display:flex;gap:8px;">
+            <button onclick="copyTpvsetLink()" class="btn btn-blue" style="font-size:0.85em;">Copiar</button>
+            <button onclick="whatsappTpvsetLink()" class="btn btn-green" style="font-size:0.85em;">WhatsApp</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RESULTADOS TPV-SET -->
+      <div id="tpvsetResultsSection" class="card hidden"></div>
+
       <!-- NOVA APLICACAO TTE -->
       <div id="newTteSection" class="card hidden">
         <h2>Nova Aplicacao TTE</h2>
@@ -3438,6 +3505,7 @@
         document.getElementById('tabAdmin').classList.remove('hidden');
         document.getElementById('tabReabilitacao').classList.remove('hidden');
         document.getElementById('tabProgramasOcultos').classList.remove('hidden');
+        var _btnTpvset = document.getElementById('subTabTpvset'); if (_btnTpvset) _btnTpvset.classList.remove('hidden');
         var suporteArea = document.getElementById('suporteBtnArea');
         if (suporteArea) suporteArea.style.display = 'none';
         initFreeModeToggle();
@@ -5978,7 +6046,7 @@
         var tipo = r.tipo || 'tecfe';
         if (tipo === 'escala') return 'escala';
         if (tipo === 'prontuario' || tipo === 'anamnese') return 'consulta';
-        return 'teste'; // tecfe, bae, trmv, taav, tref, tflod, corsi, tte
+        return 'teste'; // tecfe, bae, trmv, taav, tref, tflod, corsi, tte, tpvset
       }
       // Gerar resumo de resultado
       function resumoResultado(r) {
@@ -6013,6 +6081,10 @@
         if (tipo === 'corsi') {
           var sp = d.span || d.acertos || '-';
           return 'CORSI(' + dateStr + ':' + sp + ')';
+        }
+        if (tipo === 'tpvset') {
+          var tsv = (d.escore != null) ? d.escore : '-';
+          return 'TPV-SET(' + dateStr + ':' + tsv + ')';
         }
         if (tipo === 'tte') {
           var te = d.escore || '-';
@@ -8089,7 +8161,7 @@
       listaOrdenada.forEach(function(p) {
         opcoesHtml += '<option value="' + p.id + '" data-nome="' + (p.nome||'').replace(/"/g,'') + '" data-dn="' + (p.dataNascimento||'') + '" data-cpf="' + (p.cpf||'') + '" data-sexo="' + (p.sexo||'') + '" data-esc="' + (p.escolaridade||'') + '" data-lat="' + (p.lateralidade||'') + '" data-cv="' + (p.correcaoVisual||'') + '">' + (p.nome||'') + ' (' + (p.dataNascimento||'?') + ')</option>';
       });
-      ['baeSelPac','trmvSelPac','taavSelPac','tecfeSelPac','trefSelPac','tflodSelPac','corsiSelPac','tteSelPac','tetaylorSelPac','tetaylorsimpSelPac','escalaSelPac','anamneseSelPac','reocupaSelPac','pfisterSelPac','neoSelPac','agendaSelPac','prontuarioSelPac','srs2SelPac','srs2aaSelPac','srs2ahSelPac','lermaisSelPac','pratSelPac','etdahSelPac','criadSelPac','bvrtSelPac','vineland3SelPac','ideiaSelPac','brpiSelPac'].forEach(function(id) {
+      ['baeSelPac','trmvSelPac','taavSelPac','tecfeSelPac','trefSelPac','tflodSelPac','corsiSelPac','tpvsetSelPac','tteSelPac','tetaylorSelPac','tetaylorsimpSelPac','escalaSelPac','anamneseSelPac','reocupaSelPac','pfisterSelPac','neoSelPac','agendaSelPac','prontuarioSelPac','srs2SelPac','srs2aaSelPac','srs2ahSelPac','lermaisSelPac','pratSelPac','etdahSelPac','criadSelPac','bvrtSelPac','vineland3SelPac','ideiaSelPac','brpiSelPac'].forEach(function(id) {
         var sel = document.getElementById(id);
         if (!sel) return;
         var val = sel.value;
@@ -8183,6 +8255,7 @@
       else if (tipo === 'escala') { campoNome = document.getElementById('escalaNome'); campoDN = document.getElementById('escalaDn'); }
       else if (tipo === 'tflod') { campoNome = document.getElementById('tflodNome'); campoDN = document.getElementById('tflodDn'); }
       else if (tipo === 'corsi') { campoNome = document.getElementById('corsiNome'); campoDN = document.getElementById('corsiDn'); }
+      else if (tipo === 'tpvset') { campoNome = document.getElementById('tpvsetNome'); campoDN = document.getElementById('tpvsetDn'); }
       else if (tipo === 'tte') { campoNome = document.getElementById('tteNome'); campoDN = document.getElementById('tteDn'); }
       else if (tipo === 'tetaylor') { campoNome = document.getElementById('tetaylorNome'); campoDN = document.getElementById('tetaylorDn'); }
       else if (tipo === 'tetaylorsimp') { campoNome = document.getElementById('tetaylorsimpNome'); campoDN = document.getElementById('tetaylorsimpDn'); }
@@ -8823,6 +8896,12 @@
               if (d.erros !== undefined) trefP.push('Err:' + d.erros);
               detalhe = trefP.length > 0 ? trefP.join(' | ') : 'Status: ' + (d.status||'-');
             }
+            else if (tipo === 'tpvset') {
+              var tp2 = [];
+              if (d.escore != null) tp2.push('Media: ' + d.escore);
+              if (d.classificacao) tp2.push(d.classificacao);
+              detalhe = tp2.length > 0 ? tp2.join(' | ') : 'Status: ' + (d.status||'-');
+            }
             else if (tipo === 'tflod') {
               var res = d.resultados || {};
               var tflP = [];
@@ -8962,6 +9041,10 @@
           if (d.erros !== undefined) trp.push('Erros: ' + d.erros);
           escores = trp.length > 0 ? trp.join(' | ') : '-';
           if (d.tempoExecucao) tempo = d.tempoExecucao + 's';
+        }
+        else if (r.tipo === 'tpvset') {
+          resultado = d.classificacao || '-';
+          escores = 'Media: ' + (d.escore != null ? d.escore : '-');
         }
         else if (r.tipo === 'tflod') {
           var res = d.resultados || {};
@@ -10489,6 +10572,9 @@
         if (d.movimentos != null) fp.push('Movimentos: ' + d.movimentos);
         if (d.erros != null) fp.push('Erros: ' + d.erros);
         det = fp.length > 0 ? fp.join(', ') : (d.status||'-');
+      }
+      else if (tp === 'tpvset') {
+        det = 'Media SETs/rodada: ' + (d.escore != null ? d.escore : '-') + (d.classificacao ? ', ' + d.classificacao : '');
       }
       else if (tp === 'tflod') {
         var res = d.resultados || {};
@@ -13254,6 +13340,104 @@
           html += '<td style="padding:5px;border-bottom:1px solid #eee;text-align:center;">' + (d.pontuacaoTotal || '-') + '</td>';
           html += '<td style="padding:5px;border-bottom:1px solid #eee;font-size:0.8em;">' + (d.classificacaoDireto || '') + ' / ' + (d.classificacaoInverso || '') + '</td>';
           html += '<td style="padding:5px;border-bottom:1px solid #eee;text-align:center;"><button class="btn btn-green" style="padding:5px 12px;font-size:12px;" onclick="generateCorsiPDF(' + i + ')">PDF</button></td>';
+          html += '</tr>';
+        }
+        html += '</table>';
+        el.innerHTML = html;
+      } catch(e) { el.innerHTML = '<p>Erro ao carregar resultados.</p>'; }
+    }
+
+    // ===== FUNCOES TPV-SET =====
+    function showNewTpvset() {
+      document.getElementById('newTpvsetSection').classList.toggle('hidden');
+      if (document.getElementById('tpvsetResultsSection')) document.getElementById('tpvsetResultsSection').classList.add('hidden');
+      populateTpvsetPacientes();
+    }
+
+    function showTpvsetResults() {
+      if (document.getElementById('tpvsetResultsSection')) document.getElementById('tpvsetResultsSection').classList.toggle('hidden');
+      document.getElementById('newTpvsetSection').classList.add('hidden');
+      loadTpvsetResults();
+    }
+
+    function populateTpvsetPacientes() {
+      var sel = document.getElementById('tpvsetSelPac');
+      if (!sel || !window._pacientesCache) return;
+      sel.innerHTML = '<option value="">-- Selecione ou preencha abaixo --</option>';
+      window._pacientesCache.forEach(function(p) {
+        sel.innerHTML += '<option value="' + (p.id || '') + '" data-nome="' + (p.nome || '') + '" data-dn="' + (p.dataNascimento || '') + '" data-sexo="' + (p.sexo || '') + '" data-esc="' + (p.escolaridade || '') + '">' + (p.nome || 'Sem nome') + '</option>';
+      });
+    }
+
+    async function startTpvsetTest(abrirLocal) {
+      var nome = document.getElementById('tpvsetNome').value.trim();
+      var dn = document.getElementById('tpvsetDn').value;
+      var sexo = document.getElementById('tpvsetSexo').value;
+      if (!nome || !dn) { alert('Preencha nome e data de nascimento.'); return; }
+      var _dnErr = _validarDataNascimento(dn);
+      if (_dnErr) { alert(_dnErr); return; }
+      var sessionId = 'tpvset-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+      var sessionData = {
+        email: currentUser,
+        sessionId: sessionId,
+        tipo: 'tpvset',
+        patientName: nome,
+        birthDate: dn,
+        sex: sexo,
+        education: document.getElementById('tpvsetEscolaridade').value || '',
+        obs: document.getElementById('tpvsetObs').value || '',
+        pacienteId: document.getElementById('tpvsetSelPac').value || ''
+      };
+      // Link CURTO (?s=): salva a sessao no servidor; se falhar, cai no link antigo (?d=).
+      var link = '';
+      try {
+        var resp = await fetch(API_URL + '/save-session', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(sessionData)
+        });
+        var result = await resp.json();
+        if (result.id) { link = 'https://setmonte.github.io/online/teste-tpvset.html?s=' + result.id; }
+      } catch(e) {}
+      if (!link) {
+        var params = safeBtoa(JSON.stringify(sessionData));
+        link = 'https://setmonte.github.io/online/teste-tpvset.html?d=' + encodeURIComponent(params);
+      }
+      if (abrirLocal) { window.open(link, '_blank'); }
+      else { document.getElementById('tpvsetSessionLink').textContent = link; document.getElementById('tpvsetLinkResult').classList.remove('hidden'); }
+    }
+
+    function copyTpvsetLink() {
+      var link = document.getElementById('tpvsetSessionLink').textContent;
+      navigator.clipboard.writeText(link).then(function() { alert('Link copiado!'); });
+    }
+
+    function whatsappTpvsetLink() {
+      var link = document.getElementById('tpvsetSessionLink').textContent;
+      var msg = encodeURIComponent('Acesse o link abaixo para realizar o Teste TPV-SET:\n' + link);
+      window.open('https://wa.me/?text=' + msg, '_blank');
+    }
+
+    var _tpvsetResultCache = [];
+    async function loadTpvsetResults() {
+      var el = document.getElementById('tpvsetResultsSection');
+      if (!el) return;
+      el.innerHTML = '<p>Carregando...</p>';
+      try {
+        var resp = await fetch(API_URL + '/get-results?email=' + encodeURIComponent(currentUser) + '&tipo=tpvset');
+        var data = await resp.json();
+        _tpvsetResultCache = data.results || [];
+        if (_tpvsetResultCache.length === 0) { el.innerHTML = '<p>Nenhum resultado TPV-SET encontrado.</p>'; return; }
+        var html = '<h3>Resultados TPV-SET</h3><table style="width:100%;border-collapse:collapse;font-size:0.85em;"><tr><th style="padding:6px;border-bottom:2px solid #4a148c;">Data</th><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">Paciente</th><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">ID</th><th style="padding:6px;border-bottom:2px solid #4a148c;">Media SETs/rodada</th><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">Classificacao</th></tr>';
+        for (var i = 0; i < _tpvsetResultCache.length; i++) {
+          var r = _tpvsetResultCache[i];
+          var d = r.data || {};
+          html += '<tr>';
+          html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (d.data ? new Date(d.data).toLocaleString('pt-BR') : '') + '</td>';
+          html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (d.paciente || '') + '</td>';
+          html += '<td style="padding:5px;border-bottom:1px solid #eee;font-size:10px;font-family:monospace;color:#2e7d32;">' + (d.idPaciente || (d.paciente && d.dataNascimento ? gerarIdPacienteHash(d.paciente, d.dataNascimento) : '-')) + '</td>';
+          html += '<td style="padding:5px;border-bottom:1px solid #eee;text-align:center;font-weight:bold;">' + (d.escore != null ? d.escore : '-') + '</td>';
+          html += '<td style="padding:5px;border-bottom:1px solid #eee;font-size:0.8em;">' + (d.classificacao || '-') + '</td>';
           html += '</tr>';
         }
         html += '</table>';
