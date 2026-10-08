@@ -81,6 +81,22 @@
         return '';
     }
 
+    // Hipotese diagnostica (coluna F da planilha). Prioriza _escalaDados.hipotese;
+    // alternativamente le o campo id="hipotese" (select) ou id="hipoteseOutro".
+    // Testes sem esse campo enviam vazio (nao quebra nada).
+    function _extrairHipotese() {
+        if (window._escalaDados && window._escalaDados.hipotese) return window._escalaDados.hipotese;
+        var sel = document.getElementById('hipotese');
+        if (sel && sel.value) {
+            if (sel.value === 'Outro') {
+                var outro = document.getElementById('hipoteseOutro');
+                return (outro && outro.value) ? outro.value : 'Outro';
+            }
+            return sel.value;
+        }
+        return '';
+    }
+
     function _identificarInstrumento() {
         // Prioridade 1: window._escalaDados (fonte mais confiavel)
         if (window._escalaDados && window._escalaDados.escala) return window._escalaDados.escala;
@@ -179,6 +195,7 @@
         try {
             var idade = _extrairIdadeAnos();
             var sexo = _extrairSexo();
+            var hipotese = _extrairHipotese();
             var escolaridade = _extrairEscolaridade();
             var instrumento = _identificarInstrumento();
 
@@ -210,6 +227,7 @@
                 escala: instrumento,
                 idade: idade,
                 sexo: sexo,
+                hipotese: hipotese,
                 escolaridade: escolaridade,
                 pontuacao: pontuacao,
                 dominios: dominios,
@@ -406,7 +424,7 @@
     // ============================================================
     var _pollingCount = 0;
     var _isBAE = window.location.pathname.indexOf('teste-bae') !== -1 || document.getElementById('endPage');
-    var _isTesteLongo = _isBAE || window.location.pathname.indexOf('teste.html') !== -1 || window.location.pathname.indexOf('teste-taav') !== -1 || window.location.pathname.indexOf('teste-trmv') !== -1 || window.location.pathname.indexOf('teste-tref') !== -1 || window.location.pathname.indexOf('teste-tflod') !== -1 || window.location.pathname.indexOf('teste-tte') !== -1;
+    var _isTesteLongo = _isBAE || window.location.pathname.indexOf('teste.html') !== -1 || window.location.pathname.indexOf('teste-taav') !== -1 || window.location.pathname.indexOf('teste-trmv') !== -1 || window.location.pathname.indexOf('teste-tref') !== -1 || window.location.pathname.indexOf('teste-tflod') !== -1 || window.location.pathname.indexOf('teste-tte') !== -1 || window.location.pathname.indexOf('teste-tpvset') !== -1;
     var _pollingMax = _isTesteLongo ? 600 : 40; // Testes: 600 x 5s = 50min | Escalas: 40 x 3s = 120s
     var _pollingInterval = _isTesteLongo ? 5000 : 3000; // Testes a cada 5s, escalas a cada 3s
     var _pollingTimer = setInterval(function() {

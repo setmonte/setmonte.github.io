@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-QY1N9587DG"></script>
+    <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-QY1N9587DG');</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TPV-SET &#8212; Teste de Percep&#231;&#227;o Visual (adapta&#231;&#227;o do jogo SET)</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background: linear-gradient(135deg, #1a237e 0%, #4a148c 100%); min-height: 100vh; -webkit-user-select: none; user-select: none; }
+        .nav-bar { padding: 10px 20px; background: #2e7d32; }
+        .nav-bar a { display: inline-block; background: #fff; color: #2e7d32; text-decoration: none; font-family: 'Segoe UI', Arial, sans-serif; font-size: 14px; font-weight: bold; padding: 8px 20px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
+        .container { max-width: 1000px; margin: 0 auto; }
+
+        /* Sistema de telas */
+        .tela { display: none; }
+        .tela.ativa { display: block; }
+
+        .header { background: linear-gradient(135deg, #1a237e 0%, #4a148c 100%); color: white; padding: 30px; text-align: center; border-radius: 0 0 15px 15px; }
+        .header h1 { font-size: 2.2em; margin-bottom: 8px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        .header p { font-size: 1.05em; opacity: 0.92; }
+        .painel-branco { background: #fff; margin: 20px; border-radius: 15px; box-shadow: 0 20px 40px rgba(0,0,0,0.15); padding: 25px; }
+
+        .info-tecnica { background: #ede7f6; padding: 20px; border-radius: 10px; margin-bottom: 25px; border-left: 5px solid #4a148c; }
+        .info-tecnica h2 { color: #4a148c; margin-bottom: 12px; font-size: 1.3em; }
+        .info-tecnica p { color: #555; line-height: 1.7; font-size: 0.92em; }
+
+        .dados-pessoais { background: #f8f9fa; padding: 22px; border-radius: 10px; margin-bottom: 22px; border-left: 5px solid #1a237e; }
+        .dados-pessoais h2 { color: #1a237e; margin-bottom: 18px; font-size: 1.35em; }
+        .form-row { display: flex; gap: 18px; margin-bottom: 14px; flex-wrap: wrap; }
+        .form-group { flex: 1; min-width: 200px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; color: #555; }
+        .form-group input, .form-group select { width: 100%; padding: 11px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 16px; transition: border-color 0.3s; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: #4a148c; }
+
+        .instrucoes { background: #e8eaf6; padding: 20px; border-radius: 10px; margin-bottom: 22px; border-left: 5px solid #1a237e; }
+        .instrucoes h3 { color: #1a237e; margin-bottom: 10px; }
+        .instrucoes p { color: #555; font-size: 0.95em; line-height: 1.7; margin-bottom: 8px; }
+
+        .btn { padding: 14px 32px; border: none; border-radius: 10px; font-size: 1.05em; font-weight: 700; cursor: pointer; margin: 6px; }
+        .btn-primary { background: linear-gradient(135deg, #4a148c, #7c4dff); color: #fff; }
+        .btn-primary:hover { filter: brightness(1.1); }
+        .btn-secondary { background: #2e7d32; color: #fff; }
+        .btn-danger { background: #c62828; color: #fff; }
+        .center { text-align: center; }
+
+        /* Tela de contagem regressiva */
+        #tela-contagem { background: #0d0d1a; min-height: 100vh; display: none; flex-direction: column; align-items: center; justify-content: center; }
+        #tela-contagem.ativa { display: flex; }
+        .contagem-num { font-size: 180px; color: #7c4dff; font-weight: bold; font-family: monospace; text-shadow: 0 0 40px rgba(124,77,255,0.6); }
+        .contagem-texto { color: #b39ddb; font-size: 1.2em; margin-top: 10px; }
+
+        /* Tela de rodada (grid) */
+        #tela-rodada { background: #0d0d1a; min-height: 100vh; display: none; flex-direction: column; align-items: center; justify-content: flex-start; padding: 15px; }
+        #tela-rodada.ativa { display: flex; }
+        .barra-rodada { width: 100%; max-width: 640px; display: flex; justify-content: space-between; align-items: center; color: #fff; margin-bottom: 10px; font-size: 0.95em; }
+        .cronometro { background: rgba(255,255,255,0.1); color: #ff5252; font-weight: bold; font-size: 1.6em; padding: 6px 18px; border-radius: 25px; min-width: 70px; text-align: center; font-family: monospace; }
+        .cronometro.alerta { color: #fff; background: #ff5252; animation: piscar 0.5s ease-in-out infinite; }
+        @keyframes piscar { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .instrucao-topo { color: #b39ddb; font-size: 0.9em; text-align: center; margin-bottom: 12px; }
+
+        .grid-set { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: 100%; max-width: 540px; }
+        .carta { background: #fff; border-radius: 10px; aspect-ratio: 3 / 2; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; border: 4px solid transparent; transition: transform 0.1s, border-color 0.15s; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+        .carta:hover { transform: translateY(-2px); }
+        .carta.selecionada { border-color: #ffd54f; box-shadow: 0 0 18px rgba(255,213,79,0.7); }
+        .carta svg { width: 26px; height: 52px; }
+
+        .painel-botao-set { width: 100%; max-width: 540px; margin-top: 14px; display: flex; justify-content: space-between; align-items: center; }
+        .contador-marcados { color: #b39ddb; font-size: 0.9em; }
+
+        /* Tela concluido */
+        #tela-concluido { min-height: 70vh; display: none; align-items: center; justify-content: center; padding: 30px; }
+        #tela-concluido.ativa { display: flex; }
+        .caixa-conclusao { background: #fff; border-radius: 15px; padding: 35px; max-width: 560px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
+
+        /* Pagina de laboratorio (verificacao interna das tarefas 1-4) */
+        #lab { background:#fff; margin:20px; padding:20px; border-radius:12px; font-size:0.85em; }
+        #lab pre { background:#f0f0f0; padding:10px; border-radius:6px; overflow:auto; white-space:pre-wrap; }
+
+        .referencias { background: #f8f9fa; padding: 20px; border-radius: 10px; margin: 20px; border-left: 5px solid #4a148c; }
+        .referencias h2 { color: #4a148c; margin-bottom: 12px; font-size: 1.25em; }
+        .referencias p { color: #555; line-height: 1.8; font-size: 0.85em; }
+        .creditos { text-align: center; padding: 15px; color: #ddd; font-size: 0.8em; }
+
+        @media (max-width: 768px) {
+            .header h1 { font-size: 1.6em; }
+            .carta svg { width: 20px; height: 42px; }
+            .grid-set { gap: 8px; }
+            .contagem-num { font-size: 120px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="nav-bar"><a href="../">&#11013; Voltar ao In&#237;cio</a></div>
+
+    <!-- ===================== TELA INICIO ===================== -->
+    <div id="tela-inicio" class="tela ativa">
+        <div class="container">
+            <div class="header">
+                <h1>&#128065; TPV-SET</h1>
+                <p>Teste de Percep&#231;&#227;o Visual &#8212; adapta&#231;&#227;o do jogo SET</p>
+            </div>
+            <div class="painel-branco">
+                <div class="info-tecnica">
+                    <h2>&#128218; Informa&#231;&#245;es T&#233;cnicas</h2>
+                    <p>
+                        <strong>Instrumento:</strong> Teste de Percep&#231;&#227;o Visual (TPV-SET), adapta&#231;&#227;o do jogo SET para rastreio perceptivo<br>
+                        <strong>Base te&#243;rica:</strong> Integra&#231;&#227;o de caracter&#237;sticas e busca visual (Treisman); ciclo perceptivo (Neisser); controle inibit&#243;rio (Barkley)<br>
+                        <strong>Estrutura:</strong> 3 rodadas, grade 3x3 de cartas, cron&#244;metro de 10s por rodada<br>
+                        <strong>Tarefa:</strong> clicar nas cartas que formam conjuntos (SET) em linhas, colunas e diagonais<br>
+                        <strong>Resultado:</strong> m&#233;dia de acertos, falsos positivos, curva entre rodadas, perfil por dire&#231;&#227;o<br>
+                        <strong>Popula&#231;&#227;o:</strong> A partir de 6 anos &#8212; instrumento explorat&#243;rio de rastreio<br>
+                        <strong>Normas:</strong> Provis&#243;rias (par&#226;metros de refer&#234;ncia) &#8212; sem valida&#231;&#227;o formal
+                    </p>
+                </div>
+
+                <div class="dados-pessoais">
+                    <h2>&#128203; Dados do Avaliando</h2>
+                    <div class="form-row">
+                        <div class="form-group"><label for="nome">Nome:</label><input type="text" id="nome" placeholder="Nome completo"></div>
+                        <div class="form-group"><label for="dataNascimento">Data de Nascimento:</label><input type="date" id="dataNascimento" onchange="calcularIdade()"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label for="idadeCalculada">Idade:</label><input type="text" id="idadeCalculada" readonly style="background-color:#f0f0f0;" placeholder="Calculada automaticamente"></div>
+                        <div class="form-group"><label for="sexo">Sexo:</label><select id="sexo"><option value="">Selecione</option><option value="Masculino">Masculino</option><option value="Feminino">Feminino</option></select></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label for="escolaridade">Escolaridade:</label><select id="escolaridade"><option value="">Selecione</option><option value="1o ano">1&#186; ano (6-7 anos)</option><option value="2o ano">2&#186; ano (7-8 anos)</option><option value="3o ano">3&#186; ano (8-9 anos)</option><option value="4o ano">4&#186; ano (9-10 anos)</option><option value="5o ano">5&#186; ano (10-11 anos)</option><option value="6o ano">6&#186; ano (11-12 anos)</option><option value="7o ano">7&#186; ano (12-13 anos)</option><option value="8o ano">8&#186; ano (13-14 anos)</option><option value="9o ano">9&#186; ano (14-15 anos)</option><option value="Ensino Medio">Ensino M&#233;dio</option><option value="Superior Incompleto">Superior incompleto</option><option value="Superior Completo">Superior completo</option><option value="Pos-graduacao">P&#243;s-gradua&#231;&#227;o</option></select></div>
+                        <div class="form-group"><label for="data">Data da Avalia&#231;&#227;o:</label><input type="date" id="data"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="hipotese">Hip&#243;tese Diagn&#243;stica / Motivo da avalia&#231;&#227;o:</label>
+                            <select id="hipotese" onchange="_toggleHipoteseOutro()">
+                                <option value="">Selecione</option>
+                                <option value="TDAH">TDAH</option>
+                                <option value="Altas Habilidades">Altas Habilidades / Superdota&#231;&#227;o</option>
+                                <option value="Deficiencia Intelectual">Defici&#234;ncia Intelectual</option>
+                                <option value="Dislexia/Transtorno de Aprendizagem">Dislexia / Transtorno de Aprendizagem</option>
+                                <option value="TEA">TEA (Transtorno do Espectro Autista)</option>
+                                <option value="Sem hipotese/Triagem">Sem hip&#243;tese / Triagem</option>
+                                <option value="Outro">Outro</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="grupoHipoteseOutro" style="display:none;">
+                            <label for="hipoteseOutro">Especifique:</label>
+                            <input type="text" id="hipoteseOutro" placeholder="Descreva a hip&#243;tese">
+                        </div>
+                    </div>
+                    <!-- Campo oculto para id-paciente.js -->
+                    <input type="hidden" id="idPaciente" value="">
+                </div>
+
+                <div class="center">
+                    <button class="btn btn-primary" onclick="irParaInstrucoes()">Iniciar Teste</button>
+                </div>
+            </div>
+
+            <!-- REFERENCIAS -->
+            <div class="referencias">
+                <h2>Refer&#234;ncias</h2>
+                <p>
+                    <strong>SEABRA, A. G.; DIAS, N. M. (orgs.).</strong> Avalia&#231;&#227;o neuropsicol&#243;gica cognitiva: aten&#231;&#227;o e fun&#231;&#245;es executivas. S&#227;o Paulo: Memnon, 2012. v. 1.<br><br>
+                    <strong>TREISMAN, A. M.; GELADE, G.</strong> A feature-integration theory of attention. <em>Cognitive Psychology</em>, v. 12, n. 1, p. 97-136, 1980.<br><br>
+                    <strong>NEISSER, U.</strong> <em>Cognitive psychology</em>. New York: Appleton-Century-Crofts, 1967.<br><br>
+                    <strong>BARKLEY, R. A.</strong> Behavioral inhibition, sustained attention, and executive functions: constructing a unifying theory of ADHD. <em>Psychological Bulletin</em>, v. 121, n. 1, p. 65-94, 1997.
+                </p>
+            </div>
+
+            <div class="creditos">
+                O jogo SET foi criado por Marsha Jean Falco (SET Enterprises). Este teste &#233; uma adapta&#231;&#227;o do conceito para fins de rastreio perceptivo em avalia&#231;&#227;o neuropsicol&#243;gica, sem v&#237;nculo comercial com o jogo original.
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================== TELA INSTRUCOES ===================== -->
+    <div id="tela-instrucoes" class="tela">
+        <div class="container">
+            <div class="header">
+                <h1>&#128073; Como funciona</h1>
+            </div>
+            <div class="painel-branco">
+                <div class="instrucoes">
+                    <h3>O que &#233; um SET?</h3>
+                    <p>Um SET &#233; um grupo de <strong>3 cartas</strong> em que cada caracter&#237;stica (cor, forma, n&#250;mero de s&#237;mbolos e preenchimento) &#233; <strong>toda igual</strong> ou <strong>toda diferente</strong> entre as tr&#234;s cartas.</p>
+                    <p>Neste teste, os SETs sempre est&#227;o em <strong>linha, coluna ou diagonal</strong> da grade 3x3.</p>
+                    <h3 style="margin-top:14px;">O que fazer</h3>
+                    <p>&#8226; Observe a grade de 9 cartas.</p>
+                    <p>&#8226; Clique nas <strong>3 cartas</strong> que voc&#234; acha que formam um SET (em qualquer dire&#231;&#227;o).</p>
+                    <p>&#8226; Marque <strong>todos os SETs</strong> que conseguir enxergar.</p>
+                    <p>&#8226; Voc&#234; tem <strong>10 segundos</strong> por rodada, e s&#227;o <strong>3 rodadas</strong>.</p>
+                    <p style="color:#c62828;"><strong>Aten&#231;&#227;o:</strong> o rel&#243;gio fica vis&#237;vel e corre r&#225;pido. Trabalhe com aten&#231;&#227;o, mas sem demorar.</p>
+                </div>
+                <div class="center">
+                    <button class="btn btn-primary" onclick="iniciarContagem()">Come&#231;ar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================== TELA CONTAGEM ===================== -->
+    <div id="tela-contagem" class="tela">
+        <div class="contagem-num" id="contagemNum">3</div>
+        <div class="contagem-texto" id="contagemTexto">Prepare-se...</div>
+    </div>
+
+    <!-- ===================== TELA RODADA ===================== -->
+    <div id="tela-rodada" class="tela">
+        <div class="barra-rodada">
+            <div id="rotuloRodada">Rodada 1 de 3</div>
+            <div class="cronometro" id="cronometro">10</div>
+        </div>
+        <div class="instrucao-topo">Clique em 3 cartas para marcar cada SET que voc&#234; enxergar</div>
+        <div class="grid-set" id="gridSet"></div>
+        <div class="painel-botao-set">
+            <span class="contador-marcados" id="contadorMarcados">SETs marcados: 0</span>
+            <button class="btn btn-secondary" style="padding:8px 18px;font-size:0.9em;" onclick="encerrarRodadaManual()">Terminei esta rodada</button>
+        </div>
+    </div>
+
+    <!-- ===================== TELA CONCLUIDO ===================== -->
+    <div id="tela-concluido" class="tela">
+        <div class="caixa-conclusao" id="caixaConclusao">
+            <p style="font-size:1.3em;color:#4a148c;font-weight:bold;">Processando...</p>
+        </div>
+    </div>
+
+    <script src="../id-paciente.js"></script>
+    <script>
+// ============================================================
+// TPV-SET - Teste de Percepcao Visual (adaptacao do jogo SET)
+// ============================================================
+// Regras de codigo do projeto: sem acento/emoji cru aqui dentro;
+// usar var; sem template literals; sem DOMContentLoaded.
+// ============================================================
+
+var _API_URL = 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
+var _sessionInfo = null;
+
+// Configuracao definida pela idade
+var CONFIG = {
+    nCaracteristicas: 3,   // 3 (ate 12) ou 4 (13+)
+    nSets: 3,              // 3 (ate 12) ou 4 (13+)
+    perfil: 'facil'        // 'facil' (horiz/vert) | 'dificil' (diagonais/mistas)
+};
+
+var TEMPO_RODADA = 10;     // segundos
+var TOTAL_RODADAS = 3;
+
+// Estado do teste
+var rodadaAtual = 0;       // 0,1,2
+var gridAtual = null;      // { cartas:[9], sets:[...] }
+var selecao = [];          // indices das cartas clicadas na marcacao atual
+var marcacoesRodada = [];  // tentativas da rodada atual
+var resultadosRodadas = []; // uma entrada por rodada
+var cronoTimer = null;
+var tempoRestante = 0;
+
+// ============================================================
+// === TAREFA 1: MOTOR DO SET (logica pura) ===================
+// ============================================================
+// Uma carta e um objeto com 3 ou 4 atributos, cada um com valor 0,1,2.
+// atributos: cor, forma, numero, preenchimento (este so quando 4 caract.)
+
+function _atributosAtivos() {
+    return CONFIG.nCaracteristicas === 4
+        ? ['cor', 'forma', 'numero', 'preench']
+        : ['cor', 'forma', 'numero'];
+}
+
+// Verifica se 3 cartas formam SET: em cada atributo, todos iguais OU todos diferentes.
+function ehSet(a, b, c, atributos) {
+    var attrs = atributos || _atributosAtivos();
+    for (var i = 0; i < attrs.length; i++) {
+        var k = attrs[i];
+        var soma = a[k] + b[k] + c[k];
+        // valores 0,1,2: se todos iguais soma=0,3,6 (multiplo de 3);
+        // se todos diferentes (0+1+2) soma=3 (multiplo de 3).
+        // Se dois iguais e um diferente, soma NAO e multiplo de 3.
+        if (soma % 3 !== 0) return false;
+    }
+    return true;
+}
+
+// Dadas 2 cartas, retorna a 3a que completa o SET (unica).
+function terceiraCarta(a, b, atributos) {
+    var attrs = atributos || _atributosAtivos();
+    var c = {};
+    for (var i = 0; i < attrs.length; i++) {
+        var k = attrs[i];
+        // valor que torna a soma multipla de 3: (-(a+b)) mod 3
+        c[k] = ((3 - ((a[k] + b[k]) % 3)) % 3);
+    }
+    return c;
+}
+
+// Gera o baralho completo (27 ou 81 cartas) conforme nCaracteristicas.
+function gerarBaralho() {
+    var attrs = _atributosAtivos();
+    var baralho = [];
+    function expandir(idx, carta) {
+        if (idx >= attrs.length) { baralho.push(_clonarCarta(carta)); return; }
+        for (var v = 0; v < 3; v++) {
+            carta[attrs[idx]] = v;
+            expandir(idx + 1, carta);
+        }
+    }
+    expandir(0, {});
+    return baralho;
+}
+
+function _clonarCarta(c) {
+    return { cor: c.cor, forma: c.forma, numero: c.numero, preench: (c.preench === undefined ? 0 : c.preench) };
+}
+
+function _cartasIguais(a, b) {
+    var attrs = _atributosAtivos();
+    for (var i = 0; i < attrs.length; i++) { if (a[attrs[i]] !== b[attrs[i]]) return false; }
+    return true;
+}
+
+// ============================================================
+// === TAREFA 2: GERADOR DE GRID 3x3 COM N SETS ALINHADOS =====
+// ============================================================
+// As 8 direcoes do grid 3x3 (indices 0..8, linha a linha):
+// 0 1 2
+// 3 4 5
+// 6 7 8
+var DIRECOES = [
+    { tipo: 'horizontal', celulas: [0, 1, 2] },
+    { tipo: 'horizontal', celulas: [3, 4, 5] },
+    { tipo: 'horizontal', celulas: [6, 7, 8] },
+    { tipo: 'vertical', celulas: [0, 3, 6] },
+    { tipo: 'vertical', celulas: [1, 4, 7] },
+    { tipo: 'vertical', celulas: [2, 5, 8] },
+    { tipo: 'diagonal', celulas: [0, 4, 8] },
+    { tipo: 'diagonal', celulas: [2, 4, 6] }
+];
+
+// Conta quantas direcoes do grid formam SET.
+function contarSetsAlinhados(cartas) {
+    var achados = [];
+    for (var d = 0; d < DIRECOES.length; d++) {
+        var cel = DIRECOES[d].celulas;
+        if (ehSet(cartas[cel[0]], cartas[cel[1]], cartas[cel[2]])) {
+            achados.push({ dir: d, tipo: DIRECOES[d].tipo, celulas: cel.slice() });
+        }
+    }
+    return achados;
+}
+
+function _embaralhar(arr) {
+    for (var i = arr.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+    }
+    return arr;
+}
+
+// Combos de direcoes viaveis, pre-computados offline (geram EXATAMENTE
+// o numero-alvo de SETs sem SETs fantasma, em tempo baixo). Isso evita
+// casos de backtracking lento com certas combinacoes impossiveis.
+var COMBOS_3 = [[0,1,2],[0,1,3],[0,1,4],[0,1,5],[0,1,6],[0,1,7],[0,2,3],[0,2,5],[0,2,6],[0,2,7],[0,3,4],[0,3,5],[0,3,6],[0,3,7],[0,4,5],[0,4,6],[0,4,7],[0,5,6],[0,5,7],[0,6,7],[1,2,3],[1,2,7],[1,3,4],[1,3,6],[1,3,7],[1,4,6],[1,4,7],[1,5,6],[1,6,7],[2,3,4],[2,3,5],[2,3,6],[2,3,7],[2,5,6],[2,5,7],[2,6,7],[3,4,6],[3,4,7],[3,5,6],[3,5,7],[3,6,7],[4,5,6],[4,5,7],[4,6,7],[5,6,7]];
+var COMBOS_4 = [[0,1,2,3],[0,1,2,5],[0,1,2,6],[0,1,2,7],[0,1,3,4],[0,1,3,6],[0,1,3,7],[0,1,4,5],[0,1,4,6],[0,1,4,7],[0,1,5,6],[0,1,5,7],[0,1,6,7],[0,2,3,5],[0,2,3,6],[0,2,3,7],[0,2,5,6],[0,2,5,7],[0,3,4,5],[0,3,4,6],[0,3,4,7],[0,3,5,6],[0,3,5,7],[0,3,6,7],[0,4,5,6],[0,4,5,7],[0,5,6,7],[1,2,3,6],[1,2,3,7],[1,2,5,7],[1,2,6,7],[1,3,4,6],[1,3,4,7],[1,4,6,7],[2,3,5,6],[2,3,6,7],[2,5,6,7],[3,4,5,6],[3,4,5,7],[3,4,6,7],[4,5,6,7]];
+
+function _temDiagonal(combo) {
+    for (var i = 0; i < combo.length; i++) { if (DIRECOES[combo[i]].tipo === 'diagonal') return true; }
+    return false;
+}
+
+// Escolhe um conjunto-alvo de direcoes conforme o perfil (facil = sem diagonal;
+// dificil = com ao menos uma diagonal).
+function _escolherAlvos(nSets, perfil) {
+    var lista = (nSets >= 4) ? COMBOS_4 : COMBOS_3;
+    var filtrada;
+    if (perfil === 'dificil') filtrada = lista.filter(_temDiagonal);
+    else filtrada = lista.filter(function (c) { return !_temDiagonal(c); });
+    if (!filtrada.length) filtrada = lista;
+    return filtrada[Math.floor(Math.random() * filtrada.length)].slice();
+}
+
+// Orcamento (budget) do backtracking: alvo bom resolve em poucos passos; alvo
+// ruim e abandonado rapido para tentar outro sorteio.
+var _budgetGrid = 0;
+// Ordem de preenchimento: centro e cantos primeiro ajudam a podar cedo.
+var ORDEM_PREENCHE = [4, 0, 8, 2, 6, 1, 3, 5, 7];
+
+// Consistencia parcial: direcao totalmente preenchida que e alvo tem que ser SET;
+// direcao nao-alvo nao pode ser SET.
+function _parcialOk(cartas, alvoSet) {
+    for (var d = 0; d < DIRECOES.length; d++) {
+        var c = DIRECOES[d].celulas;
+        if (cartas[c[0]] && cartas[c[1]] && cartas[c[2]]) {
+            var s = ehSet(cartas[c[0]], cartas[c[1]], cartas[c[2]]);
+            if (alvoSet[d] && !s) return false;
+            if (!alvoSet[d] && s) return false;
+        }
+    }
+    return true;
+}
+
+function _validaFinalGrid(cartas, alvoSet) {
+    for (var d = 0; d < DIRECOES.length; d++) {
+        var c = DIRECOES[d].celulas;
+        var s = ehSet(cartas[c[0]], cartas[c[1]], cartas[c[2]]);
+        if (alvoSet[d] && !s) return false;
+        if (!alvoSet[d] && s) return false;
+    }
+    return true;
+}
+
+function _resolverGrid(passo, cartas, alvoSet, deck) {
+    if (_budgetGrid <= 0) return false;
+    _budgetGrid--;
+    if (passo >= 9) return _validaFinalGrid(cartas, alvoSet);
+    var pos = ORDEM_PREENCHE[passo];
+    for (var d = 0; d < deck.length; d++) {
+        var carta = deck[d];
+        var dup = false;
+        for (var p = 0; p < 9; p++) { if (cartas[p] && _cartasIguais(cartas[p], carta)) { dup = true; break; } }
+        if (dup) continue;
+        cartas[pos] = carta;
+        if (_parcialOk(cartas, alvoSet)) {
+            if (_resolverGrid(passo + 1, cartas, alvoSet, deck)) return true;
+        }
+        cartas[pos] = undefined;
+        if (_budgetGrid <= 0) return false;
+    }
+    return false;
+}
+
+// Gera um grid 3x3 com EXATAMENTE nSets SETs alinhados (validado, sem fantasma),
+// respeitando o perfil de disposicao (facil/dificil).
+function gerarGrid(nSets, perfil) {
+    for (var t = 0; t < 500; t++) {
+        var alvos = _escolherAlvos(nSets, perfil);
+        var alvoSet = {};
+        for (var a = 0; a < alvos.length; a++) { alvoSet[alvos[a]] = true; }
+        var cartas = new Array(9);
+        var deck = _embaralhar(gerarBaralho());
+        _budgetGrid = 600;
+        if (_resolverGrid(0, cartas, alvoSet, deck)) {
+            var c = contarSetsAlinhados(cartas);
+            if (c.length === nSets) return { cartas: cartas, sets: c };
+        }
+    }
+    // Fallback de seguranca (raro): grid qualquer com a contagem real informada.
+    var fb = _embaralhar(gerarBaralho()).slice(0, 9);
+    return { cartas: fb, sets: contarSetsAlinhados(fb) };
+}
+
+// ============================================================
+// === TAREFA 3: RENDERIZACAO VISUAL (SVG) ====================
+// ============================================================
+var CORES = ['#d50000', '#6a1b9a', '#2e7d32']; // vermelho, roxo, verde
+
+// Desenha uma carta como HTML (varios simbolos SVG lado a lado).
+function renderCartaHTML(carta) {
+    var qtd = carta.numero + 1; // 1,2,3
+    var simbolos = '';
+    for (var i = 0; i < qtd; i++) { simbolos += _svgSimbolo(carta); }
+    return simbolos;
+}
+
+function _svgSimbolo(carta) {
+    var cor = CORES[carta.cor];
+    var preench = (CONFIG.nCaracteristicas === 4) ? carta.preench : 0; // 0=cheio
+    var fill, extra = '';
+    var idHach = 'h' + Math.floor(Math.random() * 1000000);
+    if (preench === 0) {
+        fill = cor; // cheio
+    } else if (preench === 1) {
+        // listrado via pattern
+        fill = 'url(#' + idHach + ')';
+        extra = '<defs><pattern id="' + idHach + '" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(0)">'
+              + '<rect width="4" height="4" fill="white"/>'
+              + '<line x1="0" y1="0" x2="0" y2="4" stroke="' + cor + '" stroke-width="2"/></pattern></defs>';
+    } else {
+        fill = 'white'; // contorno
+    }
+    var forma = carta.forma;
+    var shape;
+    if (forma === 0) {
+        // oval
+        shape = '<ellipse cx="13" cy="26" rx="9" ry="22" fill="' + fill + '" stroke="' + cor + '" stroke-width="2.5"/>';
+    } else if (forma === 1) {
+        // losango
+        shape = '<polygon points="13,4 22,26 13,48 4,26" fill="' + fill + '" stroke="' + cor + '" stroke-width="2.5"/>';
+    } else {
+        // ondulado (til aproximado por path)
+        shape = '<path d="M5,10 C5,4 21,4 21,14 C21,30 5,22 5,34 C5,46 21,46 21,40" fill="' + fill + '" stroke="' + cor + '" stroke-width="2.5"/>';
+    }
+    return '<svg viewBox="0 0 26 52" aria-hidden="true">' + extra + shape + '</svg>';
+}
+
+function desenharGrid(grid) {
+    var cont = document.getElementById('gridSet');
+    cont.innerHTML = '';
+    for (var i = 0; i < grid.cartas.length; i++) {
+        var div = document.createElement('div');
+        div.className = 'carta';
+        div.setAttribute('data-idx', i);
+        div.innerHTML = renderCartaHTML(grid.cartas[i]);
+        div.onclick = (function (idx) { return function () { clicarCarta(idx); }; })(i);
+        cont.appendChild(div);
+    }
+}
+
+// ============================================================
+// === TAREFA 4: INTERACAO DE CLIQUE (marcar SETs) ============
+// ============================================================
+function clicarCarta(idx) {
+    var el = document.querySelector('.carta[data-idx="' + idx + '"]');
+    if (!el) return;
+    var pos = selecao.indexOf(idx);
+    if (pos >= 0) {
+        // desmarca
+        selecao.splice(pos, 1);
+        el.classList.remove('selecionada');
+    } else {
+        selecao.push(idx);
+        el.classList.add('selecionada');
+    }
+    if (selecao.length === 3) {
+        _registrarMarcacao(selecao.slice());
+        // limpa selecao visual
+        for (var i = 0; i < selecao.length; i++) {
+            var c = document.querySelector('.carta[data-idx="' + selecao[i] + '"]');
+            if (c) c.classList.remove('selecionada');
+        }
+        selecao = [];
+    }
+}
+
+function _registrarMarcacao(trioIdx) {
+    trioIdx.sort(function (a, b) { return a - b; });
+    // evita duplicar a mesma marcacao
+    for (var m = 0; m < marcacoesRodada.length; m++) {
+        if (marcacoesRodada[m].idx.join(',') === trioIdx.join(',')) return;
+    }
+    var cartas = gridAtual.cartas;
+    var correto = ehSet(cartas[trioIdx[0]], cartas[trioIdx[1]], cartas[trioIdx[2]]);
+    var direcao = _descobrirDirecao(trioIdx);
+    marcacoesRodada.push({ idx: trioIdx, correto: correto, direcao: direcao });
+    document.getElementById('contadorMarcados').innerHTML = 'SETs marcados: ' + marcacoesRodada.length;
+}
+
+function _descobrirDirecao(trioIdx) {
+    var chave = trioIdx.join(',');
+    for (var d = 0; d < DIRECOES.length; d++) {
+        var cel = DIRECOES[d].celulas.slice().sort(function (a, b) { return a - b; });
+        if (cel.join(',') === chave) return DIRECOES[d].tipo;
+    }
+    return 'livre'; // trio nao alinhado (nao deveria formar SET valido no grid alinhado)
+}
+
+// ============================================================
+// === TAREFA 5: TELAS, CONTAGEM E CRONOMETRO =================
+// ============================================================
+function trocarTela(id) {
+    var telas = document.querySelectorAll('.tela');
+    for (var i = 0; i < telas.length; i++) { telas[i].classList.remove('ativa'); }
+    document.getElementById(id).classList.add('ativa');
+    window.scrollTo(0, 0);
+}
+
+function irParaInstrucoes() {
+    var nomeEl = document.getElementById('nome');
+    if (!nomeEl || !nomeEl.value.trim()) { alert('Preencha o nome antes de iniciar.'); return; }
+    if (!document.getElementById('dataNascimento').value) { alert('Preencha a data de nascimento.'); return; }
+    _definirDificuldadePorIdade();
+    trocarTela('tela-instrucoes');
+}
+
+function iniciarContagem() {
+    trocarTela('tela-contagem');
+    rodadaAtual = 0;
+    resultadosRodadas = [];
+    var n = 3;
+    var el = document.getElementById('contagemNum');
+    el.innerHTML = n;
+    document.getElementById('contagemTexto').innerHTML = 'Prepare-se...';
+    var ct = setInterval(function () {
+        n--;
+        if (n <= 0) {
+            clearInterval(ct);
+            iniciarRodada();
+        } else {
+            el.innerHTML = n;
+        }
+    }, 1000);
+}
+
+function iniciarRodada() {
+    marcacoesRodada = [];
+    selecao = [];
+    gridAtual = gerarGrid(CONFIG.nSets, CONFIG.perfil);
+    document.getElementById('rotuloRodada').innerHTML = 'Rodada ' + (rodadaAtual + 1) + ' de ' + TOTAL_RODADAS;
+    document.getElementById('contadorMarcados').innerHTML = 'SETs marcados: 0';
+    desenharGrid(gridAtual);
+    trocarTela('tela-rodada');
+    _iniciarCronometro();
+}
+
+function _iniciarCronometro() {
+    tempoRestante = TEMPO_RODADA;
+    var cEl = document.getElementById('cronometro');
+    cEl.innerHTML = tempoRestante;
+    cEl.classList.remove('alerta');
+    if (cronoTimer) clearInterval(cronoTimer);
+    cronoTimer = setInterval(function () {
+        tempoRestante--;
+        cEl.innerHTML = tempoRestante;
+        if (tempoRestante <= 3) cEl.classList.add('alerta');
+        if (tempoRestante <= 0) {
+            clearInterval(cronoTimer);
+            cronoTimer = null;
+            _fecharRodada();
+        }
+    }, 1000);
+}
+
+function encerrarRodadaManual() {
+    if (cronoTimer) { clearInterval(cronoTimer); cronoTimer = null; }
+    _fecharRodada();
+}
+
+function _fecharRodada() {
+    // guarda resultado da rodada
+    var totalSets = gridAtual.sets.length;
+    var acertos = 0, falsos = 0;
+    var acertosPorTipo = { horizontal: 0, vertical: 0, diagonal: 0 };
+    var setsCorretosMarcados = {};
+    for (var m = 0; m < marcacoesRodada.length; m++) {
+        var mk = marcacoesRodada[m];
+        if (mk.correto) {
+            var chave = mk.idx.join(',');
+            if (!setsCorretosMarcados[chave]) {
+                setsCorretosMarcados[chave] = true;
+                acertos++;
+                if (acertosPorTipo[mk.direcao] !== undefined) acertosPorTipo[mk.direcao]++;
+            }
+        } else {
+            falsos++;
+        }
+    }
+    resultadosRodadas.push({
+        rodada: rodadaAtual + 1,
+        totalSets: totalSets,
+        acertos: acertos,
+        falsos: falsos,
+        acertosPorTipo: acertosPorTipo,
+        setsDoGrid: gridAtual.sets.map(function (s) { return s.tipo; }),
+        marcacoes: marcacoesRodada.slice()
+    });
+    rodadaAtual++;
+    if (rodadaAtual < TOTAL_RODADAS) {
+        // intervalo curto entre rodadas via contagem
+        trocarTela('tela-contagem');
+        var n = 3;
+        var el = document.getElementById('contagemNum');
+        document.getElementById('contagemTexto').innerHTML = 'Pr\u00f3xima rodada...';
+        el.innerHTML = n;
+        var ct = setInterval(function () {
+            n--;
+            if (n <= 0) { clearInterval(ct); iniciarRodada(); } else { el.innerHTML = n; }
+        }, 1000);
+    } else {
+        finalizarTeste();
+    }
+}
+
+// ============================================================
+// === TAREFA 6: ABERTURA VIA PAINEL E DIFICULDADE POR IDADE ==
+// ============================================================
+function calcularIdade() {
+    var nascimento = document.getElementById('dataNascimento').value;
+    if (!nascimento) return;
+    var nasc = new Date(nascimento);
+    var hoje = new Date();
+    var anos = hoje.getFullYear() - nasc.getFullYear();
+    var meses = hoje.getMonth() - nasc.getMonth();
+    var dias = hoje.getDate() - nasc.getDate();
+    if (dias < 0) { meses--; dias += 30; }
+    if (meses < 0) { anos--; meses += 12; }
+    document.getElementById('idadeCalculada').value = anos + ' anos, ' + meses + ' meses e ' + dias + ' dias';
+}
+
+function getIdadeAnos() {
+    var nascimento = document.getElementById('dataNascimento').value;
+    if (!nascimento) return null;
+    var nasc = new Date(nascimento);
+    var hoje = new Date();
+    var anos = hoje.getFullYear() - nasc.getFullYear();
+    var m = hoje.getMonth() - nasc.getMonth();
+    if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) anos--;
+    return anos;
+}
+
+function _definirDificuldadePorIdade() {
+    var idade = getIdadeAnos();
+    if (idade === null) idade = 10;
+    if (idade <= 12) {
+        CONFIG.nCaracteristicas = 3;
+        CONFIG.nSets = 3;
+        CONFIG.perfil = (idade <= 8) ? 'facil' : 'equilibrada';
+    } else {
+        CONFIG.nCaracteristicas = 4;
+        CONFIG.nSets = 4;
+        CONFIG.perfil = 'dificil';
+    }
+    // 'equilibrada' tratada como facil-tendendo-neutro no gerador
+    if (CONFIG.perfil === 'equilibrada') CONFIG.perfil = 'facil';
+}
+
+function _toggleHipoteseOutro() {
+    var sel = document.getElementById('hipotese');
+    var grupo = document.getElementById('grupoHipoteseOutro');
+    grupo.style.display = (sel.value === 'Outro') ? 'block' : 'none';
+}
+
+function _obterHipotese() {
+    var sel = document.getElementById('hipotese');
+    if (!sel) return '';
+    if (sel.value === 'Outro') {
+        var outro = document.getElementById('hipoteseOutro');
+        return (outro && outro.value.trim()) ? outro.value.trim() : 'Outro';
+    }
+    return sel.value || '';
+}
+
+// ============================================================
+// === TAREFA 7: CALCULO DE RESULTADOS + INTERPRETACAO ========
+// ============================================================
+// Tabela provisoria de referencia por faixa etaria.
+function _faixaDaIdade(idade) {
+    if (idade <= 8) return { nome: '6-8', esperadoMin: 1.0, esperadoMax: 1.5, corte: 0.7 };
+    if (idade <= 12) return { nome: '9-12', esperadoMin: 1.5, esperadoMax: 2.3, corte: 1.0 };
+    if (idade <= 15) return { nome: '13-15', esperadoMin: 2.0, esperadoMax: 3.0, corte: 1.5 };
+    return { nome: '16+', esperadoMin: 2.5, esperadoMax: 3.5, corte: 2.0 };
+}
+
+function calcularResultados() {
+    var idade = getIdadeAnos();
+    if (idade === null) idade = 10;
+    var faixa = _faixaDaIdade(idade);
+
+    var somaAcertos = 0, somaFalsos = 0;
+    var totPorTipo = { horizontal: 0, vertical: 0, diagonal: 0 };
+    var dispPorTipo = { horizontal: 0, vertical: 0, diagonal: 0 };
+    for (var r = 0; r < resultadosRodadas.length; r++) {
+        var rr = resultadosRodadas[r];
+        somaAcertos += rr.acertos;
+        somaFalsos += rr.falsos;
+        totPorTipo.horizontal += rr.acertosPorTipo.horizontal;
+        totPorTipo.vertical += rr.acertosPorTipo.vertical;
+        totPorTipo.diagonal += rr.acertosPorTipo.diagonal;
+        for (var t = 0; t < rr.setsDoGrid.length; t++) {
+            var tp = rr.setsDoGrid[t];
+            if (dispPorTipo[tp] !== undefined) dispPorTipo[tp]++;
+        }
+    }
+    var nR = resultadosRodadas.length || 1;
+    var mediaAcertos = somaAcertos / nR;
+
+    // Curva: compara rodada 1 vs ultima
+    var curva = 'estavel';
+    if (resultadosRodadas.length >= 2) {
+        var primeiro = resultadosRodadas[0].acertos;
+        var ultimo = resultadosRodadas[resultadosRodadas.length - 1].acertos;
+        if (ultimo > primeiro) curva = 'crescente';
+        else if (ultimo < primeiro) curva = 'decrescente';
+    }
+
+    // Classificacao geral
+    var classificacao;
+    if (mediaAcertos < faixa.corte) classificacao = 'Abaixo do esperado';
+    else if (mediaAcertos < faixa.esperadoMin) classificacao = 'Limitrofe';
+    else if (mediaAcertos <= faixa.esperadoMax) classificacao = 'Dentro do esperado';
+    else classificacao = 'Acima do esperado';
+
+    var interpretacao = _gerarInterpretacao(mediaAcertos, faixa, somaFalsos, curva, totPorTipo, dispPorTipo, classificacao);
+
+    var totalPossivel = CONFIG.nSets * nR;
+
+    window._escalaDados = {
+        escala: 'TPVSET',
+        paciente: document.getElementById('nome').value,
+        escore: parseFloat(mediaAcertos.toFixed(2)),
+        classificacao: classificacao + ' (media ' + mediaAcertos.toFixed(1) + '/' + CONFIG.nSets + ' por rodada; faixa ' + faixa.nome + ')',
+        interpretacao: interpretacao,
+        hipotese: _obterHipotese(),
+        dominios: {
+            'Acuracia (media/rodada)': { pontuacao: parseFloat(mediaAcertos.toFixed(2)), max: CONFIG.nSets, classificacao: classificacao },
+            'Acertos totais': { pontuacao: somaAcertos, max: totalPossivel, classificacao: somaAcertos + ' de ' + totalPossivel },
+            'Falsos SETs': { pontuacao: somaFalsos, max: totalPossivel, classificacao: _classificarFalsos(somaFalsos) },
+            'Curva entre rodadas': { pontuacao: 0, max: 0, classificacao: _rotuloCurva(curva) },
+            'Horizontais': { pontuacao: totPorTipo.horizontal, max: dispPorTipo.horizontal, classificacao: totPorTipo.horizontal + '/' + dispPorTipo.horizontal },
+            'Verticais': { pontuacao: totPorTipo.vertical, max: dispPorTipo.vertical, classificacao: totPorTipo.vertical + '/' + dispPorTipo.vertical },
+            'Diagonais': { pontuacao: totPorTipo.diagonal, max: dispPorTipo.diagonal, classificacao: totPorTipo.diagonal + '/' + dispPorTipo.diagonal }
+        },
+        rodadas: resultadosRodadas.map(function (rr) {
+            return { rodada: rr.rodada, acertos: rr.acertos, falsos: rr.falsos, totalSets: rr.totalSets };
+        }),
+        config: { nCaracteristicas: CONFIG.nCaracteristicas, nSets: CONFIG.nSets, perfil: CONFIG.perfil },
+        idPaciente: document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '',
+        idade: document.getElementById('idadeCalculada').value,
+        sexo: document.getElementById('sexo').value,
+        escolaridade: document.getElementById('escolaridade').value,
+        data: new Date().toISOString()
+    };
+    return window._escalaDados;
+}
+
+function _classificarFalsos(f) {
+    if (f === 0) return 'Nenhum';
+    if (f <= 2) return 'Poucos';
+    if (f <= 5) return 'Moderados';
+    return 'Elevados';
+}
+
+function _rotuloCurva(c) {
+    if (c === 'crescente') return 'Melhora ao longo das rodadas';
+    if (c === 'decrescente') return 'Queda ao longo das rodadas';
+    return 'Estavel';
+}
+
+function _gerarInterpretacao(media, faixa, falsos, curva, totTipo, dispTipo, classificacao) {
+    var p = [];
+    // Acuracia (Treisman)
+    if (classificacao === 'Dentro do esperado' || classificacao === 'Acima do esperado') {
+        p.push('O avaliando apresentou desempenho perceptivo compativel com o esperado para a faixa etaria, sugerindo boa eficiencia na busca visual e na integracao de caracteristicas (Treisman).');
+    } else if (classificacao === 'Limitrofe') {
+        p.push('O desempenho perceptivo situou-se em faixa limitrofe para a idade, indicando eficiencia apenas parcial na varredura visual e na integracao de caracteristicas (Treisman).');
+    } else {
+        p.push('O avaliando apresentou desempenho perceptivo abaixo do esperado para a faixa etaria, o que pode indicar menor eficiencia na varredura visual sistematica e na integracao de caracteristicas (Treisman).');
+    }
+    // Falsos SETs (Barkley)
+    if (falsos === 0) {
+        p.push('Nao houve marcacoes incorretas, indicando estilo de resposta controlado e reflexivo, com boa inibicao de respostas precipitadas sob pressao temporal.');
+    } else if (falsos <= 2) {
+        p.push('Houve poucas marcacoes incorretas, compativeis com erros ocasionais sob pressao temporal, sem indicativo claro de impulsividade.');
+    } else {
+        p.push('O numero elevado de marcacoes incorretas sob pressao temporal sugere padrao de resposta impulsivo, com possivel fragilidade no controle inibitorio (Barkley) e tendencia a responder antes de verificar completamente as caracteristicas.');
+    }
+    // Curva (Neisser)
+    if (curva === 'crescente') {
+        p.push('O aumento do desempenho ao longo das rodadas sugere refinamento do ciclo perceptivo e boa capacidade de ajustar estrategias de busca com a pratica (Neisser).');
+    } else if (curva === 'decrescente') {
+        p.push('A queda de desempenho nas rodadas finais pode sugerir fadiga atencional ou dificuldade de sustentar o foco sob pressao temporal (Neisser).');
+    } else {
+        p.push('O desempenho manteve-se estavel entre as rodadas, sem ganho perceptivo evidente com a repeticao.');
+    }
+    // Perfil por direcao
+    var difDiag = (dispTipo.diagonal > 0 && totTipo.diagonal < dispTipo.diagonal);
+    var bomReto = ((totTipo.horizontal + totTipo.vertical) >= 1);
+    if (difDiag && bomReto) {
+        p.push('Observou-se maior facilidade na deteccao de alinhamentos horizontais e verticais e maior dificuldade com disposicoes diagonais, o que pode refletir uma varredura visual menos flexivel.');
+    } else if (dispTipo.diagonal > 0 && totTipo.diagonal === dispTipo.diagonal) {
+        p.push('As disposicoes diagonais foram detectadas com a mesma eficiencia das demais, sugerindo varredura visual flexivel.');
+    }
+    // Disclaimer
+    p.push('Estes achados sao exploratorios, baseados em parametros provisorios sem validacao formal, e devem ser interpretados por profissional qualificado dentro de uma avaliacao neuropsicologica abrangente.');
+    return p.join(' ');
+}
+
+// ============================================================
+// === TAREFA 8: ENVIO AO PAINEL (gratuito) + CONCLUSAO =======
+// ============================================================
+function finalizarTeste() {
+    trocarTela('tela-concluido');
+    calcularResultados();
+    // A coleta anonima (coleta-anonima.js) intercepta finalizarTeste e le
+    // window._escalaDados; o envio ao painel vai em _prepararDadosEEnviar.
+    _prepararDadosEEnviar();
+}
+
+async function _prepararDadosEEnviar() {
+    var caixa = document.getElementById('caixaConclusao');
+    if (!window._escalaDados) { calcularResultados(); }
+    // Se nao ha sessao (teste aberto solto), apenas mostra conclusao.
+    if (!_sessionInfo || !_sessionInfo.sessionId) {
+        if (caixa) caixa.innerHTML = '<p style="font-size:1.3em;color:#2e7d32;font-weight:bold;">Teste conclu\u00eddo!</p><p style="color:#555;margin-top:8px;">Este teste foi aberto sem v\u00ednculo com o painel, ent\u00e3o os resultados n\u00e3o foram enviados a um profissional.</p>';
+        return;
+    }
+    if (caixa) caixa.innerHTML = '<p style="font-size:1.2em;color:#4a148c;font-weight:bold;">Enviando resultados...</p>';
+    try {
+        var dados = {
+            email: _sessionInfo.email,
+            tipo: 'tpvset',
+            sessionId: _sessionInfo.sessionId,
+            data: window._escalaDados
+        };
+        dados.data.pacienteId = _sessionInfo.pacienteId || '';
+        var resp = await fetch(_API_URL + '/save-result', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(dados)
+        });
+        var result = await resp.json();
+        if (result.ok || resp.ok) {
+            if (caixa) caixa.innerHTML = '<p style="font-size:1.4em;color:#2e7d32;font-weight:bold;">Teste conclu\u00eddo com sucesso!</p><p style="color:#555;margin-top:10px;">Os resultados foram enviados ao profissional.</p><p style="color:#777;margin-top:6px;font-size:0.85em;">Voc\u00ea pode fechar esta p\u00e1gina.</p>';
+        } else {
+            if (caixa) caixa.innerHTML = '<p style="color:#c62828;font-weight:bold;">Erro ao enviar. Tente recarregar a p\u00e1gina.</p>';
+        }
+    } catch (e) {
+        if (caixa) caixa.innerHTML = '<p style="color:#c62828;font-weight:bold;">Erro de conex\u00e3o. Verifique sua internet e tente novamente.</p>';
+    }
+}
+
+// Expor para a coleta anonima interceptar o fim do teste.
+window._prepararDadosEEnviar = _prepararDadosEEnviar;
+window.finalizarTeste = finalizarTeste;
+window.calcularResultados = calcularResultados;
+
+// ============================================================
+// === INICIALIZACAO (direta, sem DOMContentLoaded) ===========
+// ============================================================
+document.getElementById('data').value = new Date().toISOString().split('T')[0];
+
+var params = new URLSearchParams(window.location.search);
+
+if (params.get('s')) {
+    fetch(_API_URL + '/get-session?id=' + params.get('s')).then(function (r) {
+        if (r.status === 410) {
+            document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#e8eaf6,#c5cae9);text-align:center;padding:20px;"><h1 style="color:#c62828;font-size:24px;margin-bottom:10px;">Este link j\u00e1 foi utilizado.</h1><p style="font-size:16px;color:#555;">Solicite um novo link ao seu avaliador.</p></div>';
+            throw new Error('link_usado');
+        }
+        return r.json();
+    }).then(function (data) {
+        if (data.sessionId) {
+            _sessionInfo = data;
+            var nomeEl = document.getElementById('nome');
+            var nascEl = document.getElementById('dataNascimento');
+            var sexoEl = document.getElementById('sexo');
+            var escEl = document.getElementById('escolaridade');
+            if (nomeEl && data.patientName) nomeEl.value = data.patientName;
+            if (nascEl && data.birthDate) nascEl.value = data.birthDate;
+            if (sexoEl && data.sex) sexoEl.value = data.sex;
+            if (escEl && data.education) escEl.value = data.education;
+            if (typeof calcularIdade === 'function') calcularIdade();
+            if (nomeEl) nomeEl.dispatchEvent(new Event('input'));
+            if (nascEl) nascEl.dispatchEvent(new Event('change'));
+        }
+    }).catch(function () { });
+} else {
+    window.location.href = 'https://setmonte.github.io/online/';
+}
+    </script>
+    <script>
+        var _sc = document.createElement('script'); _sc.src = '../escalas/coleta-anonima.js'; document.body.appendChild(_sc);
+    </script>
+    <div style="text-align:center;padding:15px;color:#ccc;font-size:0.75em;">Dados an&#244;nimos e n&#227;o-identific&#225;veis podem ser utilizados para fins de pesquisa e normatiza&#231;&#227;o.</div>
+</body>
+</html>
