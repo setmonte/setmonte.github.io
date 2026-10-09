@@ -129,25 +129,9 @@
                         <div class="form-group"><label for="escolaridade">Escolaridade:</label><select id="escolaridade"><option value="">Selecione</option><option value="1o ano">1&#186; ano (6-7 anos)</option><option value="2o ano">2&#186; ano (7-8 anos)</option><option value="3o ano">3&#186; ano (8-9 anos)</option><option value="4o ano">4&#186; ano (9-10 anos)</option><option value="5o ano">5&#186; ano (10-11 anos)</option><option value="6o ano">6&#186; ano (11-12 anos)</option><option value="7o ano">7&#186; ano (12-13 anos)</option><option value="8o ano">8&#186; ano (13-14 anos)</option><option value="9o ano">9&#186; ano (14-15 anos)</option><option value="Ensino Medio">Ensino M&#233;dio</option><option value="Superior Incompleto">Superior incompleto</option><option value="Superior Completo">Superior completo</option><option value="Pos-graduacao">P&#243;s-gradua&#231;&#227;o</option></select></div>
                         <div class="form-group"><label for="data">Data da Avalia&#231;&#227;o:</label><input type="date" id="data"></div>
                     </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="hipotese">Hip&#243;tese Diagn&#243;stica / Motivo da avalia&#231;&#227;o:</label>
-                            <select id="hipotese" onchange="_toggleHipoteseOutro()">
-                                <option value="">Selecione</option>
-                                <option value="TDAH">TDAH</option>
-                                <option value="Altas Habilidades">Altas Habilidades / Superdota&#231;&#227;o</option>
-                                <option value="Deficiencia Intelectual">Defici&#234;ncia Intelectual</option>
-                                <option value="Dislexia/Transtorno de Aprendizagem">Dislexia / Transtorno de Aprendizagem</option>
-                                <option value="TEA">TEA (Transtorno do Espectro Autista)</option>
-                                <option value="Sem hipotese/Triagem">Sem hip&#243;tese / Triagem</option>
-                                <option value="Outro">Outro</option>
-                            </select>
-                        </div>
-                        <div class="form-group" id="grupoHipoteseOutro" style="display:none;">
-                            <label for="hipoteseOutro">Especifique:</label>
-                            <input type="text" id="hipoteseOutro" placeholder="Descreva a hip&#243;tese">
-                        </div>
-                    </div>
+                    <!-- Hipotese diagnostica: vem do campo "Observacoes" do painel (sessao ?s=).
+                         Nao ha campo visivel aqui para nao duplicar o preenchimento. -->
+                    <input type="hidden" id="hipotese" value="">
                     <!-- Campo oculto para id-paciente.js -->
                     <input type="hidden" id="idPaciente" value="">
                 </div>
@@ -241,12 +225,15 @@ var _sessionInfo = null;
 // Configuracao definida pela idade
 var CONFIG = {
     nCaracteristicas: 3,   // 3 (ate 12) ou 4 (13+)
-    nSets: 3,              // 3 (ate 12) ou 4 (13+)
+    nSets: 3,              // nSets da rodada atual (definido por rodada)
     perfil: 'facil'        // 'facil' (horiz/vert) | 'dificil' (diagonais/mistas)
 };
 
 var TEMPO_RODADA = 10;     // segundos
 var TOTAL_RODADAS = 3;
+// Sequencia de nSets por rodada, sorteada da faixa da idade e embaralhada
+// (criancas 1-4, adultos 2-4). Elimina a expectativa de um padrao fixo.
+var sequenciaSets = [3, 3, 3];
 
 // Estado do teste
 var rodadaAtual = 0;       // 0,1,2
@@ -256,6 +243,8 @@ var marcacoesRodada = [];  // tentativas da rodada atual
 var resultadosRodadas = []; // uma entrada por rodada
 var cronoTimer = null;
 var tempoRestante = 0;
+var cliquesRodada = [];    // sequencia de cliques da rodada: {coord, idx, t}
+var inicioRodadaMs = 0;    // timestamp do inicio da rodada (para medir tempos)
 
 // ============================================================
 // === TAREFA 1: MOTOR DO SET (logica pura) ===================
@@ -361,18 +350,35 @@ function _embaralhar(arr) {
 // Combos de direcoes viaveis, pre-computados offline (geram EXATAMENTE
 // o numero-alvo de SETs sem SETs fantasma, em tempo baixo). Isso evita
 // casos de backtracking lento com certas combinacoes impossiveis.
+// Listas para 1, 2, 3 e 4 SETs. O par [2,4] foi excluido de COMBOS_2
+// por ser custoso demais para o backtracker (ver investigacao).
+var COMBOS_1 = [[0],[1],[2],[3],[4],[5],[6],[7]];
+var COMBOS_2 = [[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[0,7],[1,2],[1,3],[1,4],[1,5],[1,6],[1,7],[2,3],[2,5],[2,6],[2,7],[3,4],[3,5],[3,6],[3,7],[4,5],[4,6],[4,7],[5,6],[5,7],[6,7]];
 var COMBOS_3 = [[0,1,2],[0,1,3],[0,1,4],[0,1,5],[0,1,6],[0,1,7],[0,2,3],[0,2,5],[0,2,6],[0,2,7],[0,3,4],[0,3,5],[0,3,6],[0,3,7],[0,4,5],[0,4,6],[0,4,7],[0,5,6],[0,5,7],[0,6,7],[1,2,3],[1,2,7],[1,3,4],[1,3,6],[1,3,7],[1,4,6],[1,4,7],[1,5,6],[1,6,7],[2,3,4],[2,3,5],[2,3,6],[2,3,7],[2,5,6],[2,5,7],[2,6,7],[3,4,6],[3,4,7],[3,5,6],[3,5,7],[3,6,7],[4,5,6],[4,5,7],[4,6,7],[5,6,7]];
 var COMBOS_4 = [[0,1,2,3],[0,1,2,5],[0,1,2,6],[0,1,2,7],[0,1,3,4],[0,1,3,6],[0,1,3,7],[0,1,4,5],[0,1,4,6],[0,1,4,7],[0,1,5,6],[0,1,5,7],[0,1,6,7],[0,2,3,5],[0,2,3,6],[0,2,3,7],[0,2,5,6],[0,2,5,7],[0,3,4,5],[0,3,4,6],[0,3,4,7],[0,3,5,6],[0,3,5,7],[0,3,6,7],[0,4,5,6],[0,4,5,7],[0,5,6,7],[1,2,3,6],[1,2,3,7],[1,2,5,7],[1,2,6,7],[1,3,4,6],[1,3,4,7],[1,4,6,7],[2,3,5,6],[2,3,6,7],[2,5,6,7],[3,4,5,6],[3,4,5,7],[3,4,6,7],[4,5,6,7]];
+
+// Converte indice 0-8 em coordenada legivel: numero = linha (1-3, cima->baixo),
+// letra = coluna (a-c, esquerda->direita). Ex.: 0 -> "1a", 4 -> "2b", 8 -> "3c".
+function _coord(idx) {
+    var linha = Math.floor(idx / 3) + 1;
+    var colunas = ['a', 'b', 'c'];
+    var col = colunas[idx % 3];
+    return '' + linha + col;
+}
 
 function _temDiagonal(combo) {
     for (var i = 0; i < combo.length; i++) { if (DIRECOES[combo[i]].tipo === 'diagonal') return true; }
     return false;
 }
 
-// Escolhe um conjunto-alvo de direcoes conforme o perfil (facil = sem diagonal;
-// dificil = com ao menos uma diagonal).
+// Escolhe um conjunto-alvo de direcoes conforme nSets (1 a 4) e o perfil
+// (facil = sem diagonal; dificil = com ao menos uma diagonal).
 function _escolherAlvos(nSets, perfil) {
-    var lista = (nSets >= 4) ? COMBOS_4 : COMBOS_3;
+    var lista;
+    if (nSets <= 1) lista = COMBOS_1;
+    else if (nSets === 2) lista = COMBOS_2;
+    else if (nSets === 3) lista = COMBOS_3;
+    else lista = COMBOS_4;
     var filtrada;
     if (perfil === 'dificil') filtrada = lista.filter(_temDiagonal);
     else filtrada = lista.filter(function (c) { return !_temDiagonal(c); });
@@ -513,6 +519,10 @@ function desenharGrid(grid) {
 function clicarCarta(idx) {
     var el = document.querySelector('.carta[data-idx="' + idx + '"]');
     if (!el) return;
+    // Registra o clique na sequencia (coordenada + tempo desde o inicio da rodada),
+    // para analisar o padrao de varredura visual e a velocidade.
+    var tMs = (inicioRodadaMs > 0) ? (Date.now() - inicioRodadaMs) : 0;
+    cliquesRodada.push({ coord: _coord(idx), idx: idx, t: tMs });
     var pos = selecao.indexOf(idx);
     if (pos >= 0) {
         // desmarca
@@ -542,7 +552,9 @@ function _registrarMarcacao(trioIdx) {
     var cartas = gridAtual.cartas;
     var correto = ehSet(cartas[trioIdx[0]], cartas[trioIdx[1]], cartas[trioIdx[2]]);
     var direcao = _descobrirDirecao(trioIdx);
-    marcacoesRodada.push({ idx: trioIdx, correto: correto, direcao: direcao });
+    var coords = [_coord(trioIdx[0]), _coord(trioIdx[1]), _coord(trioIdx[2])];
+    var tMs = (inicioRodadaMs > 0) ? (Date.now() - inicioRodadaMs) : 0;
+    marcacoesRodada.push({ idx: trioIdx, coords: coords, correto: correto, direcao: direcao, t: tMs });
     document.getElementById('contadorMarcados').innerHTML = 'SETs marcados: ' + marcacoesRodada.length;
 }
 
@@ -595,6 +607,10 @@ function iniciarContagem() {
 function iniciarRodada() {
     marcacoesRodada = [];
     selecao = [];
+    cliquesRodada = [];
+    inicioRodadaMs = Date.now();
+    // Define o numero de SETs desta rodada a partir da sequencia sorteada.
+    CONFIG.nSets = sequenciaSets[rodadaAtual] || sequenciaSets[0];
     gridAtual = gerarGrid(CONFIG.nSets, CONFIG.perfil);
     document.getElementById('rotuloRodada').innerHTML = 'Rodada ' + (rodadaAtual + 1) + ' de ' + TOTAL_RODADAS;
     document.getElementById('contadorMarcados').innerHTML = 'SETs marcados: 0';
@@ -645,6 +661,26 @@ function _fecharRodada() {
             falsos++;
         }
     }
+    // Metricas de clique/velocidade (padrao de varredura visual).
+    var totalCliques = cliquesRodada.length;
+    var tempoPrimeiroClique = totalCliques > 0 ? cliquesRodada[0].t : null; // ms ate o 1o clique
+    var intervaloMedio = null;
+    if (totalCliques >= 2) {
+        var somaInt = 0;
+        for (var ci = 1; ci < cliquesRodada.length; ci++) {
+            somaInt += (cliquesRodada[ci].t - cliquesRodada[ci - 1].t);
+        }
+        intervaloMedio = Math.round(somaInt / (totalCliques - 1)); // ms medio entre cliques
+    }
+    // Sequencia de coordenadas clicadas (ordem de exploracao).
+    var sequenciaCoords = cliquesRodada.map(function (c) { return c.coord; });
+    // Erros: marcacoes que NAO formaram SET, com as coordenadas do trio.
+    var errosDetalhe = marcacoesRodada.filter(function (mk) { return !mk.correto; })
+        .map(function (mk) { return mk.coords.join('-'); });
+    // Acertos: coordenadas dos SETs corretos marcados.
+    var acertosDetalhe = marcacoesRodada.filter(function (mk) { return mk.correto; })
+        .map(function (mk) { return mk.coords.join('-') + ' (' + mk.direcao + ')'; });
+
     resultadosRodadas.push({
         rodada: rodadaAtual + 1,
         totalSets: totalSets,
@@ -652,7 +688,13 @@ function _fecharRodada() {
         falsos: falsos,
         acertosPorTipo: acertosPorTipo,
         setsDoGrid: gridAtual.sets.map(function (s) { return s.tipo; }),
-        marcacoes: marcacoesRodada.slice()
+        marcacoes: marcacoesRodada.slice(),
+        totalCliques: totalCliques,
+        tempoPrimeiroClique: tempoPrimeiroClique,
+        intervaloMedio: intervaloMedio,
+        sequenciaCoords: sequenciaCoords,
+        acertosDetalhe: acertosDetalhe,
+        errosDetalhe: errosDetalhe
     });
     rodadaAtual++;
     if (rodadaAtual < TOTAL_RODADAS) {
@@ -701,44 +743,57 @@ function getIdadeAnos() {
 function _definirDificuldadePorIdade() {
     var idade = getIdadeAnos();
     if (idade === null) idade = 10;
+    var faixaSets;
     if (idade <= 12) {
         CONFIG.nCaracteristicas = 3;
-        CONFIG.nSets = 3;
-        CONFIG.perfil = (idade <= 8) ? 'facil' : 'equilibrada';
+        CONFIG.perfil = (idade <= 8) ? 'facil' : 'dificil';
+        faixaSets = [1, 2, 3, 4]; // criancas: 1 a 4 SETs por rodada
     } else {
         CONFIG.nCaracteristicas = 4;
-        CONFIG.nSets = 4;
         CONFIG.perfil = 'dificil';
+        faixaSets = [2, 3, 4];    // adultos: 2 a 4 SETs por rodada
     }
-    // 'equilibrada' tratada como facil-tendendo-neutro no gerador
-    if (CONFIG.perfil === 'equilibrada') CONFIG.perfil = 'facil';
+    sequenciaSets = _sortearSequencia(faixaSets, TOTAL_RODADAS);
+    CONFIG.nSets = sequenciaSets[0];
 }
 
-function _toggleHipoteseOutro() {
-    var sel = document.getElementById('hipotese');
-    var grupo = document.getElementById('grupoHipoteseOutro');
-    grupo.style.display = (sel.value === 'Outro') ? 'block' : 'none';
+// Sorteia 'quantidade' valores da faixa (aleatorio com repeticao permitida),
+// garantindo variacao quando possivel, e embaralha para eliminar expectativa.
+function _sortearSequencia(faixa, quantidade) {
+    var seq = [];
+    for (var i = 0; i < quantidade; i++) {
+        seq.push(faixa[Math.floor(Math.random() * faixa.length)]);
+    }
+    // Se por acaso sairam todos iguais e a faixa tem variedade, re-sorteia um
+    // deles para evitar as 3 rodadas identicas (quebra de expectativa).
+    if (faixa.length > 1) {
+        var todosIguais = seq.every(function (v) { return v === seq[0]; });
+        if (todosIguais) {
+            var novo = seq[0];
+            while (novo === seq[0]) { novo = faixa[Math.floor(Math.random() * faixa.length)]; }
+            seq[Math.floor(Math.random() * seq.length)] = novo;
+        }
+    }
+    return _embaralhar(seq);
 }
 
 function _obterHipotese() {
-    var sel = document.getElementById('hipotese');
-    if (!sel) return '';
-    if (sel.value === 'Outro') {
-        var outro = document.getElementById('hipoteseOutro');
-        return (outro && outro.value.trim()) ? outro.value.trim() : 'Outro';
-    }
-    return sel.value || '';
+    var campo = document.getElementById('hipotese');
+    return (campo && campo.value) ? campo.value : '';
 }
 
 // ============================================================
 // === TAREFA 7: CALCULO DE RESULTADOS + INTERPRETACAO ========
 // ============================================================
-// Tabela provisoria de referencia por faixa etaria.
+// Tabela provisoria de referencia por faixa etaria, agora em PROPORCAO
+// (percentual de SETs percebidos sobre os disponiveis). Como o numero de
+// SETs varia por rodada, a proporcao e a medida justa e comparavel.
+// Valores PROVISORIOS (chutes educados, sem validacao formal).
 function _faixaDaIdade(idade) {
-    if (idade <= 8) return { nome: '6-8', esperadoMin: 1.0, esperadoMax: 1.5, corte: 0.7 };
-    if (idade <= 12) return { nome: '9-12', esperadoMin: 1.5, esperadoMax: 2.3, corte: 1.0 };
-    if (idade <= 15) return { nome: '13-15', esperadoMin: 2.0, esperadoMax: 3.0, corte: 1.5 };
-    return { nome: '16+', esperadoMin: 2.5, esperadoMax: 3.5, corte: 2.0 };
+    if (idade <= 8) return { nome: '6-8', corte: 30, esperadoMin: 45, esperadoMax: 75 };
+    if (idade <= 12) return { nome: '9-12', corte: 40, esperadoMin: 55, esperadoMax: 80 };
+    if (idade <= 15) return { nome: '13-15', corte: 45, esperadoMin: 60, esperadoMax: 85 };
+    return { nome: '16+', corte: 50, esperadoMin: 65, esperadoMax: 90 };
 }
 
 function calcularResultados() {
@@ -746,13 +801,19 @@ function calcularResultados() {
     if (idade === null) idade = 10;
     var faixa = _faixaDaIdade(idade);
 
-    var somaAcertos = 0, somaFalsos = 0;
+    var somaAcertos = 0, somaFalsos = 0, somaDisponivel = 0;
+    var somaProporcoes = 0;
     var totPorTipo = { horizontal: 0, vertical: 0, diagonal: 0 };
     var dispPorTipo = { horizontal: 0, vertical: 0, diagonal: 0 };
     for (var r = 0; r < resultadosRodadas.length; r++) {
         var rr = resultadosRodadas[r];
         somaAcertos += rr.acertos;
         somaFalsos += rr.falsos;
+        somaDisponivel += rr.totalSets;
+        // Proporcao da rodada: quanto a pessoa capturou do que existia (0 a 1).
+        var propRodada = (rr.totalSets > 0) ? (rr.acertos / rr.totalSets) : 0;
+        if (propRodada > 1) propRodada = 1;
+        somaProporcoes += propRodada;
         totPorTipo.horizontal += rr.acertosPorTipo.horizontal;
         totPorTipo.vertical += rr.acertosPorTipo.vertical;
         totPorTipo.diagonal += rr.acertosPorTipo.diagonal;
@@ -762,48 +823,76 @@ function calcularResultados() {
         }
     }
     var nR = resultadosRodadas.length || 1;
-    var mediaAcertos = somaAcertos / nR;
+    // Media das proporcoes das rodadas, em percentual (0 a 100).
+    var mediaProporcao = (somaProporcoes / nR) * 100;
 
-    // Curva: compara rodada 1 vs ultima
+    // Agrega metricas de velocidade/varredura das rodadas.
+    var somaCliques = 0, somaPrimeiro = 0, nPrimeiro = 0, somaIntervalo = 0, nIntervalo = 0;
+    for (var rv = 0; rv < resultadosRodadas.length; rv++) {
+        var rc = resultadosRodadas[rv];
+        somaCliques += (rc.totalCliques || 0);
+        if (rc.tempoPrimeiroClique !== null && rc.tempoPrimeiroClique !== undefined) { somaPrimeiro += rc.tempoPrimeiroClique; nPrimeiro++; }
+        if (rc.intervaloMedio !== null && rc.intervaloMedio !== undefined) { somaIntervalo += rc.intervaloMedio; nIntervalo++; }
+    }
+    var mediaPrimeiroClique = nPrimeiro > 0 ? Math.round(somaPrimeiro / nPrimeiro) : null; // ms
+    var mediaIntervalo = nIntervalo > 0 ? Math.round(somaIntervalo / nIntervalo) : null;   // ms
+
+    // Curva: compara a proporcao da rodada 1 vs a ultima.
     var curva = 'estavel';
     if (resultadosRodadas.length >= 2) {
-        var primeiro = resultadosRodadas[0].acertos;
-        var ultimo = resultadosRodadas[resultadosRodadas.length - 1].acertos;
-        if (ultimo > primeiro) curva = 'crescente';
-        else if (ultimo < primeiro) curva = 'decrescente';
+        var pr0 = resultadosRodadas[0];
+        var prU = resultadosRodadas[resultadosRodadas.length - 1];
+        var p0 = (pr0.totalSets > 0) ? (pr0.acertos / pr0.totalSets) : 0;
+        var pU = (prU.totalSets > 0) ? (prU.acertos / prU.totalSets) : 0;
+        if (pU > p0 + 0.01) curva = 'crescente';
+        else if (pU < p0 - 0.01) curva = 'decrescente';
     }
 
-    // Classificacao geral
+    // Classificacao geral (sobre a proporcao percentual).
     var classificacao;
-    if (mediaAcertos < faixa.corte) classificacao = 'Abaixo do esperado';
-    else if (mediaAcertos < faixa.esperadoMin) classificacao = 'Limitrofe';
-    else if (mediaAcertos <= faixa.esperadoMax) classificacao = 'Dentro do esperado';
+    if (mediaProporcao < faixa.corte) classificacao = 'Abaixo do esperado';
+    else if (mediaProporcao < faixa.esperadoMin) classificacao = 'Limitrofe';
+    else if (mediaProporcao <= faixa.esperadoMax) classificacao = 'Dentro do esperado';
     else classificacao = 'Acima do esperado';
 
-    var interpretacao = _gerarInterpretacao(mediaAcertos, faixa, somaFalsos, curva, totPorTipo, dispPorTipo, classificacao);
-
-    var totalPossivel = CONFIG.nSets * nR;
+    var interpretacao = _gerarInterpretacao(mediaProporcao, faixa, somaFalsos, curva, totPorTipo, dispPorTipo, classificacao, mediaPrimeiroClique, mediaIntervalo);
 
     window._escalaDados = {
         escala: 'TPVSET',
         paciente: document.getElementById('nome').value,
-        escore: parseFloat(mediaAcertos.toFixed(2)),
-        classificacao: classificacao + ' (media ' + mediaAcertos.toFixed(1) + '/' + CONFIG.nSets + ' por rodada; faixa ' + faixa.nome + ')',
+        escore: parseFloat(mediaProporcao.toFixed(1)),
+        classificacao: classificacao + ' (' + mediaProporcao.toFixed(0) + '% dos SETs percebidos; ' + somaAcertos + ' de ' + somaDisponivel + ' em 3 rodadas; faixa ' + faixa.nome + ')',
         interpretacao: interpretacao,
         hipotese: _obterHipotese(),
         dominios: {
-            'Acuracia (media/rodada)': { pontuacao: parseFloat(mediaAcertos.toFixed(2)), max: CONFIG.nSets, classificacao: classificacao },
-            'Acertos totais': { pontuacao: somaAcertos, max: totalPossivel, classificacao: somaAcertos + ' de ' + totalPossivel },
-            'Falsos SETs': { pontuacao: somaFalsos, max: totalPossivel, classificacao: _classificarFalsos(somaFalsos) },
+            'Percepcao (% medio)': { pontuacao: parseFloat(mediaProporcao.toFixed(1)), max: 100, classificacao: classificacao },
+            'SETs percebidos': { pontuacao: somaAcertos, max: somaDisponivel, classificacao: somaAcertos + ' de ' + somaDisponivel },
+            'Falsos SETs': { pontuacao: somaFalsos, max: somaDisponivel, classificacao: _classificarFalsos(somaFalsos) },
             'Curva entre rodadas': { pontuacao: 0, max: 0, classificacao: _rotuloCurva(curva) },
             'Horizontais': { pontuacao: totPorTipo.horizontal, max: dispPorTipo.horizontal, classificacao: totPorTipo.horizontal + '/' + dispPorTipo.horizontal },
             'Verticais': { pontuacao: totPorTipo.vertical, max: dispPorTipo.vertical, classificacao: totPorTipo.vertical + '/' + dispPorTipo.vertical },
             'Diagonais': { pontuacao: totPorTipo.diagonal, max: dispPorTipo.diagonal, classificacao: totPorTipo.diagonal + '/' + dispPorTipo.diagonal }
         },
+        velocidade: {
+            totalCliques: somaCliques,
+            mediaPrimeiroClique: mediaPrimeiroClique,
+            mediaIntervalo: mediaIntervalo
+        },
         rodadas: resultadosRodadas.map(function (rr) {
-            return { rodada: rr.rodada, acertos: rr.acertos, falsos: rr.falsos, totalSets: rr.totalSets };
+            return {
+                rodada: rr.rodada,
+                acertos: rr.acertos,
+                falsos: rr.falsos,
+                totalSets: rr.totalSets,
+                totalCliques: rr.totalCliques,
+                tempoPrimeiroClique: rr.tempoPrimeiroClique,
+                intervaloMedio: rr.intervaloMedio,
+                sequenciaCoords: rr.sequenciaCoords,
+                acertosDetalhe: rr.acertosDetalhe,
+                errosDetalhe: rr.errosDetalhe
+            };
         }),
-        config: { nCaracteristicas: CONFIG.nCaracteristicas, nSets: CONFIG.nSets, perfil: CONFIG.perfil },
+        config: { nCaracteristicas: CONFIG.nCaracteristicas, sequenciaSets: sequenciaSets.slice(), perfil: CONFIG.perfil },
         idPaciente: document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '',
         idade: document.getElementById('idadeCalculada').value,
         sexo: document.getElementById('sexo').value,
@@ -826,7 +915,7 @@ function _rotuloCurva(c) {
     return 'Estavel';
 }
 
-function _gerarInterpretacao(media, faixa, falsos, curva, totTipo, dispTipo, classificacao) {
+function _gerarInterpretacao(media, faixa, falsos, curva, totTipo, dispTipo, classificacao, mediaPrimeiroClique, mediaIntervalo) {
     var p = [];
     // Acuracia (Treisman)
     if (classificacao === 'Dentro do esperado' || classificacao === 'Acima do esperado') {
@@ -859,6 +948,21 @@ function _gerarInterpretacao(media, faixa, falsos, curva, totTipo, dispTipo, cla
         p.push('Observou-se maior facilidade na deteccao de alinhamentos horizontais e verticais e maior dificuldade com disposicoes diagonais, o que pode refletir uma varredura visual menos flexivel.');
     } else if (dispTipo.diagonal > 0 && totTipo.diagonal === dispTipo.diagonal) {
         p.push('As disposicoes diagonais foram detectadas com a mesma eficiencia das demais, sugerindo varredura visual flexivel.');
+    }
+    // Velocidade / varredura visuomotora (tempo ate o 1o clique e cadencia entre cliques)
+    if (mediaPrimeiroClique !== null && mediaPrimeiroClique !== undefined) {
+        if (mediaPrimeiroClique >= 4000) {
+            p.push('O tempo medio ate a primeira marcacao foi longo (cerca de ' + (mediaPrimeiroClique / 1000).toFixed(1) + 's), sugerindo varredura visual inicial lenta ou dificuldade em localizar o primeiro conjunto.');
+        } else if (mediaPrimeiroClique <= 1500) {
+            p.push('O tempo medio ate a primeira marcacao foi curto (cerca de ' + (mediaPrimeiroClique / 1000).toFixed(1) + 's), indicando engajamento rapido na busca visual.');
+        }
+    }
+    if (mediaIntervalo !== null && mediaIntervalo !== undefined) {
+        if (mediaIntervalo <= 800) {
+            p.push('A cadencia entre cliques foi rapida (intervalo medio de cerca de ' + (mediaIntervalo / 1000).toFixed(1) + 's), compativel com boa coordenacao visuomotora sob pressao de tempo.');
+        } else if (mediaIntervalo >= 2500) {
+            p.push('A cadencia entre cliques foi lenta (intervalo medio de cerca de ' + (mediaIntervalo / 1000).toFixed(1) + 's), o que pode refletir dificuldade de execucao motora ou busca visual pouco eficiente.');
+        }
     }
     // Disclaimer
     p.push('Estes achados sao exploratorios, baseados em parametros provisorios sem validacao formal, e devem ser interpretados por profissional qualificado dentro de uma avaliacao neuropsicologica abrangente.');
@@ -939,6 +1043,9 @@ if (params.get('s')) {
             if (nascEl && data.birthDate) nascEl.value = data.birthDate;
             if (sexoEl && data.sex) sexoEl.value = data.sex;
             if (escEl && data.education) escEl.value = data.education;
+            // Hipotese diagnostica vem do campo "Observacoes" preenchido no painel.
+            var hipEl = document.getElementById('hipotese');
+            if (hipEl && data.obs) hipEl.value = data.obs;
             if (typeof calcularIdade === 'function') calcularIdade();
             if (nomeEl) nomeEl.dispatchEvent(new Event('input'));
             if (nascEl) nascEl.dispatchEvent(new Event('change'));
