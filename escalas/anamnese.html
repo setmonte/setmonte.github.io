@@ -388,6 +388,8 @@ var btn=document.querySelector('.btn-primary');
 if(btn){btn.disabled=true;btn.textContent='Enviando...';}
 try{
 var payload={sessionId:_sessionInfo.sessionId,email:_sessionInfo.email,data:{escala:'ANAMNESE',paciente:dados.nome,respondente:dados.respondente,idPaciente:dados.idPaciente,pacienteId:_sessionInfo.pacienteId||'',respostas:dados,data:new Date().toISOString()}};
+// Reforco: sendBeacon garante a entrega mesmo que a aba feche ou navegue.
+try { navigator.sendBeacon(_API_URL + '/save-escala', new Blob([JSON.stringify(Object.assign(payload, {originalSessionId: _sessionInfo.sessionId}))], {type:'application/json'})); } catch(e) {}
 var r=await fetch(_API_URL+'/save-escala',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign(payload, {originalSessionId: _sessionInfo.sessionId}))});
 var result=await r.json();
 if(result.ok||r.ok){

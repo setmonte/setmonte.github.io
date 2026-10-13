@@ -420,6 +420,8 @@ async function _enviarResultadosPainel() {
     var btn = document.querySelector('.botoes button');
     if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
     try {
+        // Reforco: sendBeacon garante a entrega mesmo que a aba feche ou navegue.
+        try { navigator.sendBeacon(_API_URL + '/save-escala', new Blob([JSON.stringify({sessionId: _sessionInfo.sessionId, email: _sessionInfo.email, data: dados, originalSessionId: _sessionInfo.sessionId})], {type:'application/json'})); } catch(e) {}
         var resp = await fetch(_API_URL + '/save-escala', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
