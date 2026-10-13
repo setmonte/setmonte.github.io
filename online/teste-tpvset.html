@@ -146,6 +146,7 @@
                 <h2>Refer&#234;ncias</h2>
                 <p>
                     <strong>SEABRA, A. G.; DIAS, N. M. (orgs.).</strong> Avalia&#231;&#227;o neuropsicol&#243;gica cognitiva: aten&#231;&#227;o e fun&#231;&#245;es executivas. S&#227;o Paulo: Memnon, 2012. v. 1.<br><br>
+                    <strong>JACOB, M.; HOCHSTEIN, S.</strong> Set recognition as a window to perceptual and cognitive processes. <em>Perception &amp; Psychophysics</em>, v. 70, n. 7, p. 1165-1184, 2008.<br><br>
                     <strong>TREISMAN, A. M.; GELADE, G.</strong> A feature-integration theory of attention. <em>Cognitive Psychology</em>, v. 12, n. 1, p. 97-136, 1980.<br><br>
                     <strong>NEISSER, U.</strong> <em>Cognitive psychology</em>. New York: Appleton-Century-Crofts, 1967.<br><br>
                     <strong>BARKLEY, R. A.</strong> Behavioral inhibition, sustained attention, and executive functions: constructing a unifying theory of ADHD. <em>Psychological Bulletin</em>, v. 121, n. 1, p. 65-94, 1997.
@@ -167,17 +168,55 @@
             <div class="painel-branco">
                 <div class="instrucoes">
                     <h3>O que &#233; um SET?</h3>
-                    <p>Um SET &#233; um grupo de <strong>3 cartas</strong> em que cada caracter&#237;stica (cor, forma, n&#250;mero de s&#237;mbolos e preenchimento) &#233; <strong>toda igual</strong> ou <strong>toda diferente</strong> entre as tr&#234;s cartas.</p>
+                    <p>Um SET &#233; um grupo de <strong>3 cartas</strong> em que cada caracter&#237;stica (cor, forma, n&#250;mero de s&#237;mbolos e preenchimento), <strong>olhada uma de cada vez</strong>, &#233; <strong>toda igual nas 3</strong> OU <strong>toda diferente nas 3</strong>.</p>
+                    <p style="color:#c62828;"><strong>Aten&#231;&#227;o &#224; regra:</strong> N&#195;O vale ter <strong>duas iguais e uma diferente</strong> em nenhuma caracter&#237;stica. Se, por exemplo, duas cartas s&#227;o vermelhas e uma &#233; verde, aquele grupo <strong>n&#227;o</strong> &#233; um SET.</p>
                     <p>Neste teste, os SETs sempre est&#227;o em <strong>linha, coluna ou diagonal</strong> da grade 3x3.</p>
+
+                    <h3 style="margin-top:14px;">Exemplos</h3>
+                    <div style="background:#e8f5e9;border-left:4px solid #2e7d32;border-radius:0 8px 8px 0;padding:12px;margin:8px 0;">
+                        <strong style="color:#2e7d32;">&#10003; ISTO &#201; um SET</strong>
+                        <div id="exemploSetValido" style="display:flex;gap:10px;justify-content:center;margin:10px 0;"></div>
+                        <p id="exemploSetValidoTexto" style="font-size:0.85em;color:#555;"></p>
+                    </div>
+                    <div style="background:#ffebee;border-left:4px solid #c62828;border-radius:0 8px 8px 0;padding:12px;margin:8px 0;">
+                        <strong style="color:#c62828;">&#10007; ISTO N&#195;O &#201; um SET</strong>
+                        <div id="exemploSetInvalido" style="display:flex;gap:10px;justify-content:center;margin:10px 0;"></div>
+                        <p id="exemploSetInvalidoTexto" style="font-size:0.85em;color:#555;"></p>
+                    </div>
+
                     <h3 style="margin-top:14px;">O que fazer</h3>
                     <p>&#8226; Observe a grade de 9 cartas.</p>
-                    <p>&#8226; Clique nas <strong>3 cartas</strong> que voc&#234; acha que formam um SET (em qualquer dire&#231;&#227;o).</p>
+                    <p>&#8226; Clique nas <strong>3 cartas</strong> que formam um SET (em qualquer dire&#231;&#227;o).</p>
                     <p>&#8226; Marque <strong>todos os SETs</strong> que conseguir enxergar.</p>
                     <p>&#8226; Voc&#234; tem <strong>10 segundos</strong> por rodada, e s&#227;o <strong>3 rodadas</strong>.</p>
                     <p style="color:#c62828;"><strong>Aten&#231;&#227;o:</strong> o rel&#243;gio fica vis&#237;vel e corre r&#225;pido. Trabalhe com aten&#231;&#227;o, mas sem demorar.</p>
+                    <p style="background:#ede7f6;border-radius:8px;padding:10px;color:#4a148c;"><strong>Antes de valer</strong>, voc&#234; far&#225; uma <strong>rodada de treino</strong> (sem tempo e sem pontua&#231;&#227;o), em que o programa diz na hora se o grupo que voc&#234; marcou &#233; ou n&#227;o um SET. Assim voc&#234; pega a regra com calma.</p>
                 </div>
                 <div class="center">
-                    <button class="btn btn-primary" onclick="iniciarContagem()">Come&#231;ar</button>
+                    <button class="btn btn-primary" onclick="iniciarTreino()">Fazer rodada de treino</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================== TELA TREINO ===================== -->
+    <div id="tela-treino" class="tela">
+        <div class="container">
+            <div class="header">
+                <h1>&#127891; Treino (sem valer)</h1>
+                <p>Clique em 3 cartas. O programa diz na hora se &#233; um SET.</p>
+            </div>
+            <div class="painel-branco">
+                <div style="text-align:center;margin-bottom:12px;">
+                    <span id="treinoFeedback" style="display:inline-block;min-height:48px;font-size:1.05em;font-weight:600;padding:10px 16px;border-radius:8px;"></span>
+                </div>
+                <div class="grid-set" id="gridTreino" style="margin:0 auto;"></div>
+                <div style="text-align:center;margin-top:12px;color:#555;font-size:0.9em;">
+                    SETs encontrados no treino: <strong id="treinoContador">0</strong> de <strong id="treinoTotal">0</strong>
+                </div>
+                <div class="center" style="margin-top:16px;">
+                    <button class="btn btn-secondary" style="font-size:0.9em;" onclick="novoGridTreino()">Outro treino</button>
+                    <button class="btn btn-primary" onclick="iniciarContagem()">Entendi! Come&#231;ar o teste de verdade</button>
                 </div>
             </div>
         </div>
@@ -582,7 +621,145 @@ function irParaInstrucoes() {
     if (!nomeEl || !nomeEl.value.trim()) { alert('Preencha o nome antes de iniciar.'); return; }
     if (!document.getElementById('dataNascimento').value) { alert('Preencha a data de nascimento.'); return; }
     _definirDificuldadePorIdade();
+    _montarExemplosInstrucoes();
     trocarTela('tela-instrucoes');
+}
+
+// Desenha exemplos didaticos (SET valido e invalido) na tela de instrucoes.
+// Usa sempre 3 caracteristicas para o exemplo (mais simples de entender).
+function _montarExemplosInstrucoes() {
+    var carGuard = CONFIG.nCaracteristicas;
+    CONFIG.nCaracteristicas = 3; // exemplo didatico sempre em 3 caracteristicas
+    // SET valido: cor toda diferente, forma toda diferente, numero todo diferente.
+    var validas = [
+        { cor: 0, forma: 0, numero: 0, preench: 0 },
+        { cor: 1, forma: 1, numero: 1, preench: 0 },
+        { cor: 2, forma: 2, numero: 2, preench: 0 }
+    ];
+    // NAO-SET: duas vermelhas e uma verde (cor nao e toda igual nem toda diferente).
+    var invalidas = [
+        { cor: 0, forma: 0, numero: 0, preench: 0 },
+        { cor: 0, forma: 1, numero: 1, preench: 0 },
+        { cor: 2, forma: 2, numero: 2, preench: 0 }
+    ];
+    document.getElementById('exemploSetValido').innerHTML = _htmlCartasExemplo(validas);
+    document.getElementById('exemploSetInvalido').innerHTML = _htmlCartasExemplo(invalidas);
+    document.getElementById('exemploSetValidoTexto').innerHTML =
+        'Cor: todas diferentes (vermelho, roxo, verde). Forma: todas diferentes. Numero: 1, 2 e 3. Cada caracteristica e toda igual ou toda diferente: e SET.';
+    document.getElementById('exemploSetInvalidoTexto').innerHTML =
+        'Aqui duas cartas sao vermelhas e uma e verde: na cor ha duas iguais e uma diferente. Por isso NAO e SET, mesmo parecendo organizado.';
+    CONFIG.nCaracteristicas = carGuard;
+}
+
+function _htmlCartasExemplo(cartas) {
+    var carGuard = CONFIG.nCaracteristicas;
+    CONFIG.nCaracteristicas = 3;
+    var html = '';
+    for (var i = 0; i < cartas.length; i++) {
+        html += '<div class="carta" style="cursor:default;max-width:90px;">' + renderCartaHTML(cartas[i]) + '</div>';
+    }
+    CONFIG.nCaracteristicas = carGuard;
+    return html;
+}
+
+// ===== RODADA DE TREINO (sem tempo, sem pontuacao, com feedback) =====
+var treinoGrid = null;
+var treinoSelecao = [];
+var treinoEncontrados = {};
+
+function iniciarTreino() {
+    trocarTela('tela-treino');
+    novoGridTreino();
+}
+
+function novoGridTreino() {
+    treinoSelecao = [];
+    treinoEncontrados = {};
+    // Treino com um numero moderado de SETs (2), no mesmo nivel de caracteristicas da idade.
+    treinoGrid = gerarGrid(2, CONFIG.perfil);
+    document.getElementById('treinoTotal').innerHTML = treinoGrid.sets.length;
+    document.getElementById('treinoContador').innerHTML = '0';
+    var fb = document.getElementById('treinoFeedback');
+    fb.innerHTML = 'Procure um SET e clique nas 3 cartas.';
+    fb.style.background = '#ede7f6';
+    fb.style.color = '#4a148c';
+    _desenharGridTreino();
+}
+
+function _desenharGridTreino() {
+    var cont = document.getElementById('gridTreino');
+    cont.innerHTML = '';
+    for (var i = 0; i < treinoGrid.cartas.length; i++) {
+        var div = document.createElement('div');
+        div.className = 'carta';
+        div.setAttribute('data-tidx', i);
+        div.innerHTML = renderCartaHTML(treinoGrid.cartas[i]);
+        div.onclick = (function (idx) { return function () { _clicarTreino(idx); }; })(i);
+        cont.appendChild(div);
+    }
+}
+
+function _clicarTreino(idx) {
+    var el = document.querySelector('.carta[data-tidx="' + idx + '"]');
+    if (!el) return;
+    var pos = treinoSelecao.indexOf(idx);
+    if (pos >= 0) {
+        treinoSelecao.splice(pos, 1);
+        el.classList.remove('selecionada');
+    } else {
+        treinoSelecao.push(idx);
+        el.classList.add('selecionada');
+    }
+    if (treinoSelecao.length === 3) {
+        _avaliarTreino(treinoSelecao.slice());
+        for (var i = 0; i < treinoSelecao.length; i++) {
+            var c = document.querySelector('.carta[data-tidx="' + treinoSelecao[i] + '"]');
+            if (c) c.classList.remove('selecionada');
+        }
+        treinoSelecao = [];
+    }
+}
+
+function _avaliarTreino(trioIdx) {
+    trioIdx.sort(function (a, b) { return a - b; });
+    var cartas = treinoGrid.cartas;
+    var fb = document.getElementById('treinoFeedback');
+    if (ehSet(cartas[trioIdx[0]], cartas[trioIdx[1]], cartas[trioIdx[2]])) {
+        var chave = trioIdx.join(',');
+        if (!treinoEncontrados[chave]) {
+            treinoEncontrados[chave] = true;
+            var n = 0; for (var k in treinoEncontrados) { if (treinoEncontrados.hasOwnProperty(k)) n++; }
+            document.getElementById('treinoContador').innerHTML = n;
+        }
+        fb.innerHTML = 'Isso! E um SET. Cada caracteristica e toda igual ou toda diferente.';
+        fb.style.background = '#c8e6c9';
+        fb.style.color = '#2e7d32';
+    } else {
+        fb.innerHTML = _motivoNaoSet(cartas[trioIdx[0]], cartas[trioIdx[1]], cartas[trioIdx[2]]);
+        fb.style.background = '#ffcdd2';
+        fb.style.color = '#c62828';
+    }
+}
+
+// Explica por que um trio NAO e SET, apontando a primeira caracteristica que falha.
+function _motivoNaoSet(a, b, c) {
+    var nomes = { cor: 'cor', forma: 'forma', numero: 'numero de simbolos', preench: 'preenchimento' };
+    var valores = {
+        cor: ['vermelho', 'roxo', 'verde'],
+        forma: ['oval', 'losango', 'ondulado'],
+        numero: ['1', '2', '3'],
+        preench: ['cheio', 'listrado', 'contorno']
+    };
+    var attrs = _atributosAtivos();
+    for (var i = 0; i < attrs.length; i++) {
+        var k = attrs[i];
+        if ((a[k] + b[k] + c[k]) % 3 !== 0) {
+            // identifica os valores para a mensagem (duas iguais, uma diferente)
+            var vs = [a[k], b[k], c[k]];
+            return 'Nao e SET: na ' + nomes[k] + ' ha duas iguais e uma diferente.';
+        }
+    }
+    return 'Nao e SET.';
 }
 
 function iniciarContagem() {
@@ -789,11 +966,13 @@ function _obterHipotese() {
 // (percentual de SETs percebidos sobre os disponiveis). Como o numero de
 // SETs varia por rodada, a proporcao e a medida justa e comparavel.
 // Valores PROVISORIOS (chutes educados, sem validacao formal).
+// Cortes PROVISORIOS em % (proporcao de SETs percebidos), ancorados num modelo
+// de simulacao (tempo-por-SET 2,5-4s) e no dado real da autora (~3 SETs/10s).
+// Faixas largas e deliberadamente provisorias, a recalibrar com dados reais.
+// 3 niveis: < corte = Abaixo; corte..esperadoMax = Dentro do esperado; acima = Acima.
 function _faixaDaIdade(idade) {
-    if (idade <= 8) return { nome: '6-8', corte: 30, esperadoMin: 45, esperadoMax: 75 };
-    if (idade <= 12) return { nome: '9-12', corte: 40, esperadoMin: 55, esperadoMax: 80 };
-    if (idade <= 15) return { nome: '13-15', corte: 45, esperadoMin: 60, esperadoMax: 85 };
-    return { nome: '16+', corte: 50, esperadoMin: 65, esperadoMax: 90 };
+    if (idade <= 12) return { nome: idade <= 8 ? '6-8' : '9-12', corte: 65, esperadoMax: 97 };
+    return { nome: idade <= 15 ? '13-15' : '16+', corte: 60, esperadoMax: 95 };
 }
 
 function calcularResultados() {
@@ -848,10 +1027,9 @@ function calcularResultados() {
         else if (pU < p0 - 0.01) curva = 'decrescente';
     }
 
-    // Classificacao geral (sobre a proporcao percentual).
+    // Classificacao geral em 3 niveis (sobre a proporcao percentual).
     var classificacao;
     if (mediaProporcao < faixa.corte) classificacao = 'Abaixo do esperado';
-    else if (mediaProporcao < faixa.esperadoMin) classificacao = 'Limitrofe';
     else if (mediaProporcao <= faixa.esperadoMax) classificacao = 'Dentro do esperado';
     else classificacao = 'Acima do esperado';
 
@@ -920,8 +1098,6 @@ function _gerarInterpretacao(media, faixa, falsos, curva, totTipo, dispTipo, cla
     // Acuracia (Treisman)
     if (classificacao === 'Dentro do esperado' || classificacao === 'Acima do esperado') {
         p.push('O avaliando apresentou desempenho perceptivo compativel com o esperado para a faixa etaria, sugerindo boa eficiencia na busca visual e na integracao de caracteristicas (Treisman).');
-    } else if (classificacao === 'Limitrofe') {
-        p.push('O desempenho perceptivo situou-se em faixa limitrofe para a idade, indicando eficiencia apenas parcial na varredura visual e na integracao de caracteristicas (Treisman).');
     } else {
         p.push('O avaliando apresentou desempenho perceptivo abaixo do esperado para a faixa etaria, o que pode indicar menor eficiencia na varredura visual sistematica e na integracao de caracteristicas (Treisman).');
     }
