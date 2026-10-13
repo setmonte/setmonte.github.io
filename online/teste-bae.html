@@ -32,20 +32,12 @@
     <p id="pacienteNome" style="text-align:center; font-size:16px; color:#2e7d32; font-weight:bold; margin:15px 0;"></p>
     <div style="background:#f8f9fa; padding:20px; border-radius:10px; margin:20px 0; text-align:left; max-width:600px; margin:20px auto;">
       <p id="infoTestes" style="font-size:14px; line-height:1.6; color:#555;"></p>
+      <!-- Marcacao fixa de dispositivo: o teste so chega aqui em computador (celular/tablet sao bloqueados antes da capa). O radio e mantido marcado e oculto para compatibilidade com os scripts que leem o seletor :checked em input[name=dispositivo]. -->
+      <input type="radio" name="dispositivo" value="computador" checked style="display:none;">
       <div id="quadroDispositivo" style="margin-top:15px; padding-top:15px; border-top:1px solid #ddd;">
-        <p style="font-size:14px; color:#555; margin-bottom:8px;"><strong>Qual dispositivo você está usando?</strong></p>
-        <div style="display:flex; gap:10px; flex-wrap:wrap;">
-          <label style="display:flex;align-items:center;gap:5px;cursor:pointer;padding:8px 12px;border:2px solid #ddd;border-radius:8px;">
-            <input type="radio" name="dispositivo" value="computador" checked> Computador
-          </label>
-          <label style="display:flex;align-items:center;gap:5px;cursor:pointer;padding:8px 12px;border:2px solid #ddd;border-radius:8px;">
-            <input type="radio" name="dispositivo" value="celular"> Celular
-          </label>
-          <label style="display:flex;align-items:center;gap:5px;cursor:pointer;padding:8px 12px;border:2px solid #ddd;border-radius:8px;">
-            <input type="radio" name="dispositivo" value="tablet"> Tablet
-          </label>
-        </div>
-        <button type="button" onclick="document.getElementById('quadroDispositivo').style.display='none';" style="margin-top:12px;padding:8px 24px;background:#2e7d32;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:bold;cursor:pointer;">OK, entendi</button>
+        <p style="font-size:14px; color:#2e7d32; margin-bottom:8px;"><strong>&#128187; Confirme que você está em um computador</strong></p>
+        <p style="font-size:13px; color:#555; margin:0 0 8px;">Este teste exige teclado e mouse. Se você estiver em celular ou tablet, abra este link em um computador.</p>
+        <button type="button" onclick="document.getElementById('quadroDispositivo').style.display='none';" style="margin-top:4px;padding:8px 24px;background:#2e7d32;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:bold;cursor:pointer;">OK, estou no computador</button>
       </div>
     </div>
     <button id="startButton" class="botao-iniciar" style="font-size:18px; padding:15px 40px;" onclick="iniciarBateria()">
@@ -195,6 +187,28 @@
         }
       } catch(e) {}
 
+      // ===== BLOQUEIO DE CELULAR / TABLET =====
+      // O BAE mede tempo de reacao e precisao de atencao. Esse tipo de medida
+      // depende de teclado/mouse e de uma tela estavel. Celulares e tablets variam
+      // muito (tamanho de tela, atraso de toque, navegador) e nao garantem resultado
+      // clinicamente confiavel. Por isso o teste e bloqueado nesses aparelhos.
+      // IMPORTANTE: este bloqueio acontece ANTES da capa e ANTES de qualquer subteste,
+      // entao NENHUM credito e consumido quando o paciente abre pelo celular
+      // (o credito so e cobrado ao iniciar cada subteste, que nunca chega a rodar aqui).
+      // O desktop NAO e afetado: so bloqueia quando o tipo detectado e 'Mobile' ou 'Tablet'.
+      var _tipoDisp = (window.dispositivoBAE && window.dispositivoBAE.tipo) ? window.dispositivoBAE.tipo : '';
+      if (_tipoDisp === 'Mobile' || _tipoDisp === 'Tablet') {
+        document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#e8f5e9,#c8e6c9);text-align:center;padding:30px;box-sizing:border-box;">' +
+          '<div style="font-size:48px;margin-bottom:10px;">\uD83D\uDCBB</div>' +
+          '<h1 style="color:#2e7d32;font-size:24px;margin:10px 0;">Este teste precisa ser feito no computador</h1>' +
+          '<p style="font-size:16px;color:#444;max-width:480px;line-height:1.6;margin:10px 0;">A <strong>Bateria de Aten\u00e7\u00e3o Eletr\u00f4nica (BAE)</strong> mede tempo de rea\u00e7\u00e3o e precis\u00e3o, e por isso precisa de um <strong>computador (notebook ou desktop) com teclado e mouse</strong>.</p>' +
+          '<p style="font-size:16px;color:#444;max-width:480px;line-height:1.6;margin:10px 0;">Celulares e tablets n\u00e3o garantem a precis\u00e3o necess\u00e1ria, ent\u00e3o o teste n\u00e3o pode ser realizado neste aparelho.</p>' +
+          '<p style="font-size:16px;color:#2e7d32;font-weight:bold;max-width:480px;line-height:1.6;margin:18px 0 0;">Por favor, abra este mesmo link em um computador.</p>' +
+          '<p style="font-size:13px;color:#888;margin-top:20px;">Nenhum cr\u00e9dito foi utilizado nesta tentativa.</p>' +
+          '</div>';
+        return;
+      }
+
       // Mostra tela de capa
       document.getElementById('pacienteNome').textContent = sessionData.patientName || '';
       document.getElementById('coverPage').style.display = 'block';
@@ -207,9 +221,11 @@
       var tempo = qtd === 1 ? '5-8 minutos' : qtd <= 3 ? '15-20 minutos' : '30-40 minutos';
       var infoEl = document.getElementById('infoTestes');
       if (infoEl) {
-        infoEl.innerHTML = (qtd === 1 ? 'Você realizará <strong>1 teste</strong>:' : 'Você realizará <strong>' + qtd + ' testes</strong>:') +
+        infoEl.innerHTML = '<div style="background:#fff3cd;border:1px solid #ffe08a;border-radius:8px;padding:10px 12px;margin-bottom:12px;color:#8a6d00;font-weight:bold;">\uD83D\uDCBB Este teste deve ser feito em um computador (com teclado e mouse). N\u00e3o use celular ou tablet.</div>' +
+          (qtd === 1 ? 'Você realizará <strong>1 teste</strong>:' : 'Você realizará <strong>' + qtd + ' testes</strong>:') +
           '<br>' + listaHtml + '<br><br>' +
           '<strong>Importante:</strong><br>' +
+          '• Use um <strong>computador</strong> (celular e tablet não são aceitos)<br>' +
           '• Fique em um ambiente silencioso<br>' +
           '• Não feche esta janela durante o teste<br>' +
           '• Duração aproximada: ' + tempo;
