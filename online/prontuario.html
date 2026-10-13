@@ -34,6 +34,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 <h1 id="page-title">&#128203; Prontuario IA</h1>
 <p>S&#233;rgio Teixeira Monte &#183; Neuropsic&#243;logo &#183; CRP 14/05739-9</p>
 </div>
+<div id="rascunhos-section"></div>
 <div id="paciente-info"></div>
 <div id="topicos-section"></div>
 <div id="consulta-area"></div>
@@ -57,6 +58,11 @@ var recognition = null;
 var transcricaoAcumulada = '';
 var restartCount = 0;
 var restartWindowStart = 0;
+// === RASCUNHO NA NUVEM (recuperar transcricao se fechar a aba) ===
+var _rascunhoId = null;          // id do rascunho desta sessao (mantido fixo para ir sobrescrevendo)
+var _rascunhoInterval = null;    // ciclo de salvamento automatico durante a gravacao
+var _rascunhoSalvando = false;   // trava para nao enviar dois salvamentos ao mesmo tempo
+var RASCUNHO_INTERVALO_MS = 20000; // salva a cada 20 segundos
 var MAX_RESTARTS = 5;
 var RESTART_WINDOW = 10000;
 var RESTART_DELAY = 300;
@@ -111,7 +117,7 @@ function init() {
 function renderModoLivreInfo() {
   var el = document.getElementById('paciente-info');
   el.innerHTML = '<div class="card" style="background:var(--accent-light);border-color:#a8cce0;">' +
-    '<div style="font-size:13px;color:var(--accent);">&#128161; <strong>Modo Livre</strong> — grave uma consulta, anamnese ou observacoes. Pare quando quiser.</div>' +
+    '<div style="font-size:13px;color:var(--accent);">&#128161; <strong>Modo Livre</strong> &mdash; grave uma consulta, anamnese ou observacoes. Pare quando quiser.</div>' +
     '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">' +
     '<label style="font-size:12px;color:var(--text2);">Paciente (opcional): <input type="text" id="livre-nome" placeholder="Nome" style="height:30px;border:1px solid var(--border);border-radius:6px;padding:0 8px;font-size:13px;width:180px;margin-left:4px;"></label>' +
     '<label style="font-size:12px;color:var(--text2);">Tipo: <select id="livre-tipo" style="height:30px;border:1px solid var(--border);border-radius:6px;padding:0 8px;font-size:13px;margin-left:4px;"><option>Anamnese</option><option>Consulta</option><option>Observacoes</option><option>Devolutiva</option><option>Outro</option></select></label>' +
@@ -345,6 +351,8 @@ async function iniciarGravacao() {
   restartWindowStart = Date.now();
   // Monitor de volume do microfone em paralelo (confirma captacao + alerta de silencio)
   _iniciarMonitorMic();
+  // Comeca a salvar a transcricao como rascunho na nuvem (recuperavel se fechar a aba).
+  iniciarAutoSalvarRascunho();
   document.getElementById('btn-gravar').style.background = '#e24b4a';
   document.getElementById('btn-gravar').style.borderColor = '#e24b4a';
   document.getElementById('btn-gravar').innerHTML = '&#9632;';
@@ -517,6 +525,8 @@ function pararGravacao() {
   gravando = false;
   pausado = false;
   _pararMonitorMic();
+  // Para o ciclo de rascunho e faz um ultimo salvamento com o texto final.
+  pararAutoSalvarRascunho();
   if (recognition) { try { recognition.stop(); } catch(e){} }
   if (window._fallbackMediaRecorder) {
     try { window._fallbackMediaRecorder.stop(); } catch(e) {}
@@ -855,6 +865,164 @@ function gerarPDF() {
   doc.save(nomeArquivo);
 }
 
+// === FUNCOES DE RASCUNHO NA NUVEM ===
+
+// Email do avaliador (do painel ou do sessionStorage como fallback).
+function _rascunhoEmail() {
+  var e = sessionInfo.email || '';
+  if (!e) { try { e = sessionStorage.getItem('tecfe_user_email') || ''; } catch(x) {} }
+  return e;
+}
+
+// Nome do paciente atual (painel ou campo do modo livre).
+function _rascunhoNome() {
+  var nome = sessionInfo.patientName || '';
+  if (!nome) {
+    var nomeEl = document.getElementById('livre-nome');
+    if (nomeEl && nomeEl.value.trim()) nome = nomeEl.value.trim();
+  }
+  return nome || 'Sessao sem nome';
+}
+
+// Salva a transcricao atual como rascunho na nuvem. Silencioso: nunca atrapalha a gravacao.
+function salvarRascunho() {
+  var email = _rascunhoEmail();
+  if (!email) return; // sem email nao da para vincular ao avaliador
+  var texto = (document.getElementById('transcricao') || {}).value || '';
+  texto = texto.trim();
+  if (!texto) return; // nada para salvar ainda
+  if (_rascunhoSalvando) return; // ja tem um envio em andamento
+  _rascunhoSalvando = true;
+  var corpo = {
+    email: email,
+    rascunhoId: _rascunhoId || undefined,
+    pacienteNome: _rascunhoNome(),
+    pacienteId: sessionInfo.pacienteId || '',
+    tipoConsulta: sessionInfo.tipoConsulta || '',
+    transcricao: texto
+  };
+  fetch(API_URL + '/save-rascunho', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(corpo)
+  }).then(function(r) { return r.json(); }).then(function(data) {
+    if (data && data.rascunhoId) _rascunhoId = data.rascunhoId; // guarda o id para ir sobrescrevendo
+    _rascunhoSalvando = false;
+  }).catch(function() {
+    // Se a rede oscilar, nao faz nada: tenta de novo no proximo ciclo.
+    _rascunhoSalvando = false;
+  });
+}
+
+// Liga o salvamento automatico (chamado ao iniciar a gravacao).
+function iniciarAutoSalvarRascunho() {
+  if (_rascunhoInterval) clearInterval(_rascunhoInterval);
+  _rascunhoInterval = setInterval(salvarRascunho, RASCUNHO_INTERVALO_MS);
+}
+
+// Desliga o ciclo e faz um ultimo salvamento (chamado ao parar a gravacao).
+function pararAutoSalvarRascunho() {
+  if (_rascunhoInterval) { clearInterval(_rascunhoInterval); _rascunhoInterval = null; }
+  salvarRascunho();
+}
+
+// Busca a lista de rascunhos da semana e monta o card "Pacientes da Semana".
+function carregarRascunhos() {
+  var email = _rascunhoEmail();
+  var el = document.getElementById('rascunhos-section');
+  if (!email || !el) return;
+  fetch(API_URL + '/list-rascunhos?email=' + encodeURIComponent(email))
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var lista = (data && data.rascunhos) ? data.rascunhos : [];
+      // Nao mostra o rascunho da sessao atual (ja estou nela).
+      lista = lista.filter(function(x) { return x.id !== _rascunhoId; });
+      renderRascunhos(lista);
+    })
+    .catch(function() { /* silencioso: se falhar, so nao mostra o card */ });
+}
+
+// Desenha o card. Se nao houver rascunhos, o card nem aparece.
+function renderRascunhos(lista) {
+  var el = document.getElementById('rascunhos-section');
+  if (!el) return;
+  if (!lista || lista.length === 0) { el.innerHTML = ''; return; }
+  var html = '<div class="card" style="background:#fffdf5;border-color:#ecd9a0;">' +
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">' +
+    '<span style="font-size:13px;font-weight:600;color:#9c7a16;">&#128197; Pacientes da Semana</span>' +
+    '<span style="font-size:11px;color:var(--text3);">transcri&#231;&#245;es guardadas por 7 dias</span></div>';
+  html += '<div style="display:flex;flex-direction:column;gap:6px;">';
+  lista.forEach(function(r) {
+    var quando = _fmtDataRascunho(r.atualizadoEm || r.date);
+    var nomeSeguro = (r.pacienteNome || 'Sessao sem nome').replace(/</g, '&lt;');
+    var tipoTxt = r.tipoConsulta ? (' &middot; ' + r.tipoConsulta.replace(/</g, '&lt;')) : '';
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;border:1px solid var(--border);border-radius:8px;padding:8px 10px;background:#fff;">' +
+      '<div style="min-width:0;"><div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + nomeSeguro + '</div>' +
+      '<div style="font-size:11px;color:var(--text3);">' + quando + tipoTxt + '</div></div>' +
+      '<div style="display:flex;gap:6px;flex-shrink:0;">' +
+      '<button onclick="recuperarRascunho(\'' + r.id + '\')" class="btn btn-outline" style="padding:6px 12px;font-size:12px;">Recuperar</button>' +
+      '<button onclick="apagarRascunho(\'' + r.id + '\')" title="Apagar" style="width:30px;height:30px;border:1px solid var(--border);border-radius:7px;background:transparent;cursor:pointer;color:var(--text3);font-size:14px;">&#10005;</button>' +
+      '</div></div>';
+  });
+  html += '</div></div>';
+  el.innerHTML = html;
+}
+
+// Formata a data do rascunho de forma amigavel.
+function _fmtDataRascunho(iso) {
+  if (!iso) return '';
+  try {
+    var d = new Date(iso);
+    return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  } catch(e) { return ''; }
+}
+
+// Recupera a transcricao completa e joga na caixa (substitui, com aviso se ja houver texto).
+function recuperarRascunho(id) {
+  var caixa = document.getElementById('transcricao');
+  if (caixa && caixa.value.trim()) {
+    if (!confirm('Isso vai substituir o texto que esta na caixa de transcricao agora. Continuar?')) return;
+  }
+  var email = _rascunhoEmail();
+  fetch(API_URL + '/get-rascunho?id=' + encodeURIComponent(id) + '&email=' + encodeURIComponent(email))
+    .then(function(r) {
+      if (r.status === 410) { alert('Este rascunho expirou (passou de 7 dias).'); throw new Error('expirado'); }
+      if (!r.ok) { throw new Error('nao encontrado'); }
+      return r.json();
+    })
+    .then(function(data) {
+      if (!caixa) return;
+      caixa.value = data.transcricao || '';
+      transcricaoAcumulada = data.transcricao || '';
+      // Adota este rascunho como o da sessao atual (continua sobrescrevendo o mesmo).
+      _rascunhoId = id;
+      // Se o rascunho tinha nome e estamos no modo livre, preenche o campo.
+      var nomeEl = document.getElementById('livre-nome');
+      if (nomeEl && data.pacienteNome && !nomeEl.value.trim()) nomeEl.value = data.pacienteNome;
+      // Tira este item da lista do card (ja esta recuperado na tela).
+      carregarRascunhos();
+      // Rola ate a caixa de transcricao para o profissional ver o texto.
+      caixa.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      var st = document.getElementById('status-gravacao');
+      if (st) st.textContent = 'Transcricao recuperada. Clique em Gerar Prontuario por Topicos.';
+    })
+    .catch(function() { /* mensagens ja tratadas acima */ });
+}
+
+// Apaga um rascunho manualmente (botao x no card).
+function apagarRascunho(id) {
+  if (!confirm('Apagar esta transcricao guardada? Esta acao nao pode ser desfeita.')) return;
+  var email = _rascunhoEmail();
+  fetch(API_URL + '/delete-rascunho', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: email, rascunhoId: id })
+  }).then(function(r) { return r.json(); }).then(function() {
+    carregarRascunhos();
+  }).catch(function() { alert('Nao foi possivel apagar agora. Tente novamente.'); });
+}
+
 // Inicializar
 init();
+carregarRascunhos();
 </script>
