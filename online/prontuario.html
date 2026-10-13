@@ -347,8 +347,14 @@ async function iniciarGravacao() {
   document.getElementById('btn-pausar').style.borderColor = '#ffcc80';
   document.getElementById('status-gravacao').textContent = 'Gravando... clique para parar';
   // Iniciar Speech Recognition
+  // Em Android (celular/tablet, ex: Samsung) o SpeechRecognition do navegador fica
+  // reiniciando em loop e emite um bip do sistema a cada reinicio, alem de nao captar
+  // bem uma sessao longa. Por isso, no Android pulamos o SpeechRecognition e usamos
+  // direto o fallback MediaRecorder + Whisper (grava o audio do ambiente e transcreve
+  // via IA, sem bips). No computador nada muda: continua usando o SpeechRecognition.
+  var _ehAndroid = /Android/i.test(navigator.userAgent);
   var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (SR) {
+  if (SR && !_ehAndroid) {
     recognition = new SR();
     recognition.lang = 'pt-BR';
     recognition.continuous = true;
