@@ -240,12 +240,25 @@
             _jaEnviou = true;
             window._jaEnviou = true;
 
-            fetch(_COLETA_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'text/plain' },
-                body: JSON.stringify(pacote)
-            }).catch(function() {});
+            // Envio robusto: tenta sendBeacon primeiro. Diferente do fetch,
+            // o sendBeacon NAO e cancelado quando a aba fecha ou troca de pagina,
+            // garantindo que o dado chegue mesmo se o paciente fechar logo apos enviar.
+            var _enviado = false;
+            try {
+                if (navigator.sendBeacon) {
+                    var _blob = new Blob([JSON.stringify(pacote)], { type: 'text/plain' });
+                    _enviado = navigator.sendBeacon(_COLETA_URL, _blob);
+                }
+            } catch(e) { _enviado = false; }
+            // Fallback: se sendBeacon nao existir ou falhar, usa fetch comum.
+            if (!_enviado) {
+                fetch(_COLETA_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify(pacote)
+                }).catch(function() {});
+            }
         } catch(e) {}
     }
 
