@@ -365,6 +365,7 @@ function _decodificarURL() {
     }
     var els = document.querySelectorAll('.info-tecnica');
     els.forEach(function(el) { el.style.display = 'none'; });
+    var _dp=document.querySelector('.dados-pessoais');if(_dp)_dp.style.display='none';
     return true;
 }
 
@@ -381,6 +382,7 @@ async function _enviarResultadosPainel() {
     var calcFn = window.calcularResultados;
     if (calcFn && !window._escalaDados) { try { calcFn(); } catch(e) {} }
     var dados = window._escalaDados || {};
+    var _escEl=document.getElementById('escolaridade');dados.escolaridade=(_escEl&&_escEl.value)?_escEl.value:((_sessionInfo&&_sessionInfo.education)?_sessionInfo.education:'');
     if (!dados.escala) dados.escala = 'PHQ-9';
     dados.idPaciente = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
     dados.pacienteId = _sessionInfo ? (_sessionInfo.pacienteId || '') : '';
@@ -397,10 +399,7 @@ async function _enviarResultadosPainel() {
         });
         var result = await resp.json();
         if (result.ok || resp.ok) {
-            var container = document.querySelector('.botoes');
-            if (container) container.innerHTML = '<div style="background:#c8e6c9;border:2px solid #2e7d32;border-radius:10px;padding:20px;text-align:center;"><p style="font-size:1.3em;color:#2e7d32;font-weight:bold;">Resultados enviados com sucesso!</p><p style="color:#555;margin-top:8px;">O profissional ja pode visualizar seus resultados no painel.</p><p style="color:#777;margin-top:5px;font-size:0.85em;">Voce pode fechar esta pagina.</p></div>';
-            var res = document.getElementById('resultados');
-            if (res) res.style.display = 'none';
+            document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#e8f5e9,#c8e6c9);text-align:center;padding:20px;"><div style="font-size:60px;margin-bottom:10px;">\u2705</div><h1 style="color:#2e7d32;font-size:24px;margin-bottom:12px;">Respostas enviadas com sucesso!</h1><p style="font-size:16px;color:#555;margin-bottom:6px;">O profissional j\u00e1 pode visualizar os resultados no painel.</p><p style="font-size:14px;color:#777;">Voc\u00ea pode fechar esta aba.</p></div>';
         } else {
             if (btn) { btn.disabled = false; btn.textContent = 'Enviar Resultados ao Profissional'; }
             alert('Erro ao enviar. Tente novamente.');
@@ -417,7 +416,7 @@ document.getElementById('questionario').addEventListener('change',function(e){if
 document.getElementById('data').value = new Date().toISOString().split('T')[0];
 var params = new URLSearchParams(window.location.search);
 if (params.get('s')) {
-    fetch(_API_URL + '/get-session?id=' + params.get('s')).then(function(r){if(r.status===410){document.body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#e8f5e9,#c8e6c9);text-align:center;padding:20px;"><h1 style="color:#c62828;font-size:24px;margin-bottom:10px;">Este link j\u00e1 foi utilizado.</h1><p style="font-size:16px;color:#555;">Solicite um novo link ao seu avaliador.</p></div>';throw new Error("link_usado");}return r.json();}).then(function(data){if(data.sessionId){_sessionInfo=data;var nomeEl=document.getElementById('nome');var nascEl=document.getElementById('dataNascimento');var sexoEl=document.getElementById('sexo');if(nomeEl&&data.patientName)nomeEl.value=data.patientName;if(nascEl&&data.birthDate)nascEl.value=data.birthDate;if(sexoEl&&data.sex)sexoEl.value=data.sex;var escEl=document.getElementById('escolaridade');if(escEl&&data.education)escEl.value=data.education;var latEl=document.getElementById('lateralidade');if(latEl&&data.laterality)latEl.value=data.laterality;if(typeof calcularIdade==='function')calcularIdade();if(nomeEl)nomeEl.dispatchEvent(new Event('input'));if(nascEl)nascEl.dispatchEvent(new Event('change'));var botoes=document.querySelector('.botoes');if(botoes){botoes.innerHTML='<button class="btn btn-primary" style="padding:15px 30px;border:none;border-radius:25px;font-size:16px;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#2e7d32,#43a047);color:white;" onclick="_enviarResultadosPainel()">Enviar Resultados ao Profissional</button>';}var els=document.querySelectorAll('.info-tecnica');els.forEach(function(el){el.style.display='none';});}}).catch(function(){});
+    fetch(_API_URL + '/get-session?id=' + params.get('s')).then(function(r){if(r.status===410){document.body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#e8f5e9,#c8e6c9);text-align:center;padding:20px;"><h1 style="color:#c62828;font-size:24px;margin-bottom:10px;">Este link j\u00e1 foi utilizado.</h1><p style="font-size:16px;color:#555;">Solicite um novo link ao seu avaliador.</p></div>';throw new Error("link_usado");}return r.json();}).then(function(data){if(data.sessionId){_sessionInfo=data;var nomeEl=document.getElementById('nome');var nascEl=document.getElementById('dataNascimento');var sexoEl=document.getElementById('sexo');if(nomeEl&&data.patientName)nomeEl.value=data.patientName;if(nascEl&&data.birthDate)nascEl.value=data.birthDate;if(sexoEl&&data.sex)sexoEl.value=data.sex;var escEl=document.getElementById('escolaridade');if(escEl&&data.education)escEl.value=data.education;var latEl=document.getElementById('lateralidade');if(latEl&&data.laterality)latEl.value=data.laterality;if(typeof calcularIdade==='function')calcularIdade();if(nomeEl)nomeEl.dispatchEvent(new Event('input'));if(nascEl)nascEl.dispatchEvent(new Event('change'));var botoes=document.querySelector('.botoes');if(botoes){botoes.innerHTML='<button class="btn btn-primary" style="padding:15px 30px;border:none;border-radius:25px;font-size:16px;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#2e7d32,#43a047);color:white;" onclick="_enviarResultadosPainel()">Enviar Resultados ao Profissional</button>';}var els=document.querySelectorAll('.info-tecnica');els.forEach(function(el){el.style.display='none';});var _dp=document.querySelector('.dados-pessoais');if(_dp)_dp.style.display='none';}}).catch(function(){});
 } else if (params.get('d')) {
     _decodificarURL();
 } else if (params.get('print')) {
