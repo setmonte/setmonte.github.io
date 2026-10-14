@@ -6093,9 +6093,14 @@
         if (tipo === 'prontuario' || tipo === 'anamnese') {
           return tipo.toUpperCase() + '(' + dateStr + ')';
         }
-        // tecfe
-        var cat = d.categoriasCompletas !== undefined ? d.categoriasCompletas + 'cat' : '-';
-        return 'TECFE(' + dateStr + ':' + cat + ')';
+        if (tipo === 'tecfe') {
+          var cat = d.categoriasCompletas !== undefined ? d.categoriasCompletas + 'cat' : '-';
+          return 'TECFE(' + dateStr + ':' + cat + ')';
+        }
+        // Fallback universal: qualquer teste/programa novo ainda sem bloco proprio
+        // aparece com o PROPRIO tipo em maiusculas (nunca mais cai em "TECFE" por engano).
+        var _resumoVal = (d.escore != null) ? d.escore : (d.acertos != null ? d.acertos + 'ac' : (d.classificacao || '-'));
+        return (tipo ? String(tipo).toUpperCase() : 'TESTE') + '(' + dateStr + ':' + _resumoVal + ')';
       }
       // Match resultados por paciente (mesma logica do historico)
       function matchResultadosPaciente(pac, resultados) {
@@ -8916,7 +8921,8 @@
               var fd2 = d.formData || {};
               detalhe = '&#128197; ' + (fd2.tipoConsulta||'Consulta') + ' | ' + (fd2.duracao||'-') + ' min | ' + (d.status||'agendado');
             }
-            else {
+            else if (tipo === 'tecfe' || (d.stats && d.stats.completedCategories !== undefined)) {
+              // TECFE (ou registro antigo sem tipo mas com stats do TECFE)
               var s = d.stats || {};
               var tecP = [];
               tecP.push('Cat:' + (s.completedCategories||0) + '/6');
@@ -8927,6 +8933,16 @@
               if (!tTempo && s.totalTime) tTempo = Math.floor(Number(s.totalTime)/60) + 'min';
               if (tTempo) tecP.push('T:' + tTempo);
               detalhe = tecP.join(' | ');
+            }
+            else {
+              // Fallback universal: teste/programa novo ainda sem bloco proprio de detalhe.
+              // Mostra o que houver de util, sem assumir metricas de TECFE.
+              var _gp = [];
+              if (d.escore != null) _gp.push('Escore:' + d.escore);
+              if (d.acertos != null) _gp.push('Ac:' + d.acertos);
+              if (d.classificacao) _gp.push(d.classificacao);
+              if (d.status) _gp.push('Status:' + d.status);
+              detalhe = _gp.length > 0 ? _gp.join(' | ') : '-';
             }
             var _pdfBtn = '';
             if (tipo === 'escala') { _pdfBtn = '<button class="btn btn-green" style="padding:3px 8px;font-size:11px;" onclick="_gerarPDFHistorico(' + todos.indexOf(r) + ')">PDF</button>'; }
