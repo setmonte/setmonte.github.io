@@ -351,6 +351,7 @@ _perguntasExtras=_sessionInfo.extras;
 // Disparar eventos para id-paciente.js
 var nomeEl=document.getElementById('nome');if(nomeEl)nomeEl.dispatchEvent(new Event('input'));
 var dnEl=document.getElementById('dataNascimento');if(dnEl)dnEl.dispatchEvent(new Event('change'));
+var _df=document.querySelector('.dados-fixos');if(_df)_df.style.display='none';
 return true;
 }
 
@@ -388,18 +389,13 @@ var btn=document.querySelector('.btn-primary');
 if(btn){btn.disabled=true;btn.textContent='Enviando...';}
 try{
 var payload={sessionId:_sessionInfo.sessionId,email:_sessionInfo.email,data:{escala:'ANAMNESE',paciente:dados.nome,respondente:dados.respondente,idPaciente:dados.idPaciente,pacienteId:_sessionInfo.pacienteId||'',respostas:dados,data:new Date().toISOString()}};
+payload.data.escolaridade=(document.getElementById('escolaridade')&&document.getElementById('escolaridade').value)?document.getElementById('escolaridade').value:((_sessionInfo&&_sessionInfo.education)?_sessionInfo.education:'');
 // Reforco: sendBeacon garante a entrega mesmo que a aba feche ou navegue.
 try { navigator.sendBeacon(_API_URL + '/save-escala', new Blob([JSON.stringify(Object.assign(payload, {originalSessionId: _sessionInfo.sessionId}))], {type:'application/json'})); } catch(e) {}
 var r=await fetch(_API_URL+'/save-escala',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign(payload, {originalSessionId: _sessionInfo.sessionId}))});
 var result=await r.json();
 if(result.ok||r.ok){
-localStorage.removeItem(_chaveRascunho);
-document.getElementById('botoesArea').style.display='none';
-document.getElementById('formulario').style.display='none';
-document.querySelector('.dados-fixos').style.display='none';
-document.querySelector('.progresso').style.display='none';
-document.querySelector('.aviso').style.display='none';
-document.getElementById('msgSucesso').style.display='block';
+localStorage.removeItem(_chaveRascunho);document.body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#e8f5e9,#c8e6c9);text-align:center;padding:20px;"><div style="font-size:60px;margin-bottom:10px;">\u2705</div><h1 style="color:#2e7d32;font-size:24px;margin-bottom:12px;">Respostas enviadas com sucesso!</h1><p style="font-size:16px;color:#555;margin-bottom:6px;">O profissional j\u00e1 pode visualizar os resultados no painel.</p><p style="font-size:14px;color:#777;">Voc\u00ea pode fechar esta aba.</p></div>';
 }else{if(btn){btn.disabled=false;btn.textContent='Enviar Respostas ao Profissional';}alert('Erro ao enviar.');}
 }catch(e){if(btn){btn.disabled=false;btn.textContent='Enviar Respostas ao Profissional';}alert('Erro de conex\u00e3o.');}
 }
@@ -428,7 +424,7 @@ document.getElementById('formulario').addEventListener('change',function(e){atua
 document.querySelector('.dados-fixos').addEventListener('input',atualizarProgresso);
 document.querySelector('.dados-fixos').addEventListener('change',atualizarProgresso);
 atualizarProgresso();
-var botoes=document.querySelector('.botoes');if(botoes){botoes.innerHTML='<button class="btn btn-primary" style="padding:15px 30px;border:none;border-radius:25px;font-size:16px;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#2e7d32,#43a047);color:white;" onclick="_enviarResultadosPainel()">Enviar Resultados ao Profissional</button>';}var els=document.querySelectorAll('.info-tecnica');els.forEach(function(el){el.style.display='none';});}}).catch(function(){});
+var botoes=document.querySelector('.botoes');if(botoes){botoes.innerHTML='<button class="btn btn-primary" style="padding:15px 30px;border:none;border-radius:25px;font-size:16px;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#2e7d32,#43a047);color:white;" onclick="_enviarResultadosPainel()">Enviar Resultados ao Profissional</button>';}var els=document.querySelectorAll('.info-tecnica');els.forEach(function(el){el.style.display='none';});var _df=document.querySelector('.dados-fixos');if(_df)_df.style.display='none';}}).catch(function(){});
 } else if(params.get('d')){
 _decodificarURL();
 gerarFormulario();
