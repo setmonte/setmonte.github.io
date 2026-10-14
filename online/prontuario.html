@@ -63,6 +63,10 @@ var _rascunhoId = null;          // id do rascunho desta sessao (mantido fixo pa
 var _rascunhoInterval = null;    // ciclo de salvamento automatico durante a gravacao
 var _rascunhoSalvando = false;   // trava para nao enviar dois salvamentos ao mesmo tempo
 var RASCUNHO_INTERVALO_MS = 20000; // salva a cada 20 segundos
+// === COBRANCA DE CREDITO (Opcao A: so cobra quando a transcricao aparece) ===
+var _creditoCobrado = false;     // true depois que a 1a transcricao foi cobrada (cobra 1x por sessao)
+var _creditoCobrando = false;    // trava para nao disparar duas cobrancas ao mesmo tempo
+var _audioMimeType = '';         // formato real que o navegador usou para gravar (enviado ao Whisper)
 var MAX_RESTARTS = 5;
 var RESTART_WINDOW = 10000;
 var RESTART_DELAY = 300;
@@ -322,13 +326,15 @@ window.addEventListener('beforeunload', function() {
 });
 
 async function iniciarGravacao() {
-  // Verificar credito antes de iniciar
+  // Verificar credito antes de iniciar (SO VERIFICA, nao cobra).
+  // O debito real acontece depois, quando a 1a transcricao aparece (ver cobrarCreditoProntuario).
+  // Assim, se a transcricao nunca funcionar (ex: Firefox com problema), o profissional nao e cobrado.
   if (sessionInfo && sessionInfo.email && sessionInfo.email !== 'setmonte@gmail.com') {
     try {
       var _cr = await fetch(API_URL + '/use-credit', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({email: sessionInfo.email, tipo: 'prontuario'})
+        body: JSON.stringify({email: sessionInfo.email, tipo: 'prontuario', apenasVerificar: true})
       });
       // Fail-closed: so libera se a verificacao respondeu OK. 403 ou qualquer erro bloqueia.
       if (!_cr.ok) {
@@ -341,6 +347,9 @@ async function iniciarGravacao() {
       return;
     }
   }
+  // Nova sessao: ainda nao cobrou nada.
+  _creditoCobrado = false;
+  _creditoCobrando = false;
   gravando = true;
   pausado = false;
   segundosDecorridos = 0;
@@ -383,6 +392,8 @@ async function iniciarGravacao() {
         else interim = e.results[i][0].transcript;
       }
       document.getElementById('transcricao').value = transcricaoAcumulada + interim;
+      // Chegou texto de verdade -> cobra o credito (uma vez por sessao).
+      if ((transcricaoAcumulada + interim).trim()) cobrarCreditoProntuario();
     };
     recognition.onerror = function(e) { document.getElementById('status-gravacao').textContent = 'Erro: ' + e.error + '. Verifique permissao do microfone.'; };
     recognition.onend = function() {
@@ -430,6 +441,8 @@ async function iniciarGravacao() {
         return;
       }
       var mediaRec = new MediaRecorder(stream, { mimeType: mimeType });
+      // Guarda o formato REAL que ficou (o navegador pode ter ajustado). Vai junto no envio ao Whisper.
+      _audioMimeType = (mediaRec.mimeType || mimeType || '');
       window._fallbackMediaRecorder = mediaRec;
       window._fallbackStream = stream;
       var chunkQueue = [];
@@ -463,13 +476,17 @@ async function iniciarGravacao() {
             fetch(API_URL + '/transcribe-audio', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ audioBase64: base64, sessionId: chunkId })
+              // Envia o formato real gravado (_audioMimeType). Sem isso, a Lambda assumia webm e
+              // o audio do Firefox (ogg) chegava ao Whisper etiquetado errado -> transcricao vazia.
+              body: JSON.stringify({ audioBase64: base64, sessionId: chunkId, mimeType: _audioMimeType || mimeType || '' })
             }).then(function(resp) {
               return resp.json();
             }).then(function(data) {
               if (data.text && data.text.trim()) {
                 transcricaoAcumulada += data.text.trim() + ' ';
                 document.getElementById('transcricao').value = transcricaoAcumulada;
+                // Transcricao de verdade chegou -> cobra o credito (uma vez por sessao).
+                cobrarCreditoProntuario();
               }
               enviando = false;
               processarFilaChunks();
@@ -568,6 +585,13 @@ function emitirBip(vezes) {
 async function gerarProntuario() {
   var transcricao = document.getElementById('transcricao').value.trim();
   if (!transcricao) { alert('A transcricao esta vazia. Grave ou cole o texto.'); return; }
+  // Protecao contra travamento: se so sobraram marcadores de trecho nao transcrito (sem fala real),
+  // nao da para gerar o resumo. Avisa de forma clara em vez de deixar o icone girando.
+  var _semMarcadores = transcricao.replace(/\[\.\.\.trecho nao transcrito\.\.\.\]/g, '').trim();
+  if (!_semMarcadores) {
+    alert('Nao foi possivel transcrever o audio desta sessao (o texto ficou vazio). Verifique o microfone e as permissoes do navegador e grave novamente, ou cole o texto manualmente.');
+    return;
+  }
   // Atualizar nome do paciente se modo livre
   if (!modoAgenda) {
     var nomeEl = document.getElementById('livre-nome');
@@ -863,6 +887,30 @@ function gerarPDF() {
   // Salvar
   var nomeArquivo = 'Prontuario_' + nomePac.replace(/\s+/g, '_') + '_' + new Date().toISOString().split('T')[0] + '.pdf';
   doc.save(nomeArquivo);
+}
+
+// === COBRANCA DE CREDITO (Opcao A) ===
+// Cobra 1 credito de prontuario, UMA VEZ por sessao, no momento em que a primeira
+// transcricao de verdade aparece. Admin (setmonte) nunca e cobrado. Silenciosa: se a
+// cobranca falhar por rede, nao trava a sessao (o profissional ja esta transcrevendo).
+function cobrarCreditoProntuario() {
+  if (_creditoCobrado || _creditoCobrando) return;
+  var email = sessionInfo.email || '';
+  if (!email) { try { email = sessionStorage.getItem('tecfe_user_email') || ''; } catch(e) {} }
+  if (!email) return;
+  if (email === 'setmonte@gmail.com') { _creditoCobrado = true; return; } // admin nao paga
+  _creditoCobrando = true;
+  fetch(API_URL + '/use-credit', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: email, tipo: 'prontuario' })
+  }).then(function(r) {
+    if (r.ok) { _creditoCobrado = true; } // cobrou com sucesso: nao cobra de novo
+    _creditoCobrando = false;
+  }).catch(function() {
+    // Falha de rede: libera a trava para tentar na proxima transcricao que chegar.
+    _creditoCobrando = false;
+  });
 }
 
 // === FUNCOES DE RASCUNHO NA NUVEM ===
