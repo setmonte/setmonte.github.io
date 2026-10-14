@@ -67,6 +67,29 @@ var RASCUNHO_INTERVALO_MS = 20000; // salva a cada 20 segundos
 var _creditoCobrado = false;     // true depois que a 1a transcricao foi cobrada (cobra 1x por sessao)
 var _creditoCobrando = false;    // trava para nao disparar duas cobrancas ao mesmo tempo
 var _audioMimeType = '';         // formato real que o navegador usou para gravar (enviado ao Whisper)
+// === FALLBACK POR MINI-GRAVACOES (Android/Firefox): cada trecho e uma gravacao COMPLETA ===
+// Em vez de picar um fluxo continuo (pedacos sem cabecalho que o Whisper nao le), gravamos
+// trechos curtos e inteiros, um apos o outro. Cada trecho vira um arquivo valido por si so.
+var _miniStream = null;          // microfone compartilhado pelas mini-gravacoes
+var _miniRec = null;             // MediaRecorder do trecho atual
+var _miniChunks = [];            // pedacos do trecho atual (juntados num arquivo completo ao parar)
+var _miniAtivo = false;          // true enquanto o ciclo de mini-gravacoes esta rodando
+var _miniContador = 0;           // numero sequencial do trecho (para id unico)
+var MINI_DURACAO_MS = 15000;     // duracao de cada mini-gravacao (~15s)
+
+// Escolhe o melhor formato de audio suportado pelo navegador (igual ao TFLOD/IDEIA).
+// Retorna '' se nenhum for suportado explicitamente (deixa o navegador decidir).
+function _escolherMimeAudioPront() {
+  var candidatos = ['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus','audio/mp4','audio/mp4;codecs=mp4a.40.2','audio/aac'];
+  try {
+    if (typeof MediaRecorder !== 'undefined' && typeof MediaRecorder.isTypeSupported === 'function') {
+      for (var i = 0; i < candidatos.length; i++) {
+        if (MediaRecorder.isTypeSupported(candidatos[i])) return candidatos[i];
+      }
+    }
+  } catch (e) {}
+  return '';
+}
 var MAX_RESTARTS = 5;
 var RESTART_WINDOW = 10000;
 var RESTART_DELAY = 300;
@@ -217,8 +240,10 @@ function togglePausa() {
     restartCount = 0;
     restartWindowStart = Date.now();
     if (recognition) { try { recognition.start(); } catch(e){} }
-    if (window._fallbackMediaRecorder && window._fallbackMediaRecorder.state === 'paused') {
-      try { window._fallbackMediaRecorder.resume(); } catch(e) {}
+    // Fallback por mini-gravacoes: retomar = voltar a flag e reiniciar o ciclo (a mini-gravacao
+    // atual ja parou ao pausar). So reinicia se o ciclo estiver ativo e nada estiver gravando agora.
+    if (_miniAtivo && _miniStream && (!_miniRec || _miniRec.state !== 'recording')) {
+      setTimeout(iniciarMiniGravacao, 150);
     }
     // Retomar timer
     timerInterval = setInterval(function() {
@@ -246,8 +271,10 @@ function togglePausa() {
     document.getElementById('status-gravacao').textContent = 'Pausado. Clique &#9654; para retomar.';
     // Pausar reconhecimento de voz
     if (recognition) { try { recognition.stop(); } catch(e){} }
-    if (window._fallbackMediaRecorder && window._fallbackMediaRecorder.state === 'recording') {
-      try { window._fallbackMediaRecorder.pause(); } catch(e) {}
+    // Fallback por mini-gravacoes: para a mini-gravacao atual (o onstop vai montar/enviar o trecho
+    // ja gravado). A flag "pausado" impede o proximo trecho de comecar ate retomar.
+    if (_miniRec && _miniRec.state === 'recording') {
+      try { _miniRec.stop(); } catch(e) {}
     }
     // Pausar timer
     clearInterval(timerInterval);
@@ -422,95 +449,18 @@ async function iniciarGravacao() {
     };
     recognition.start();
   } else if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-    // FALLBACK: usar MediaRecorder + Whisper API para navegadores sem SpeechRecognition
+    // FALLBACK (Android/Firefox): mini-gravacoes COMPLETAS em sequencia.
+    // Cada trecho de ~15s e uma gravacao inteira (com cabecalho proprio), entao o Whisper
+    // consegue ler qualquer formato (webm/ogg/mp4). Isso corrige o audio "picado" do Android,
+    // onde pedacos sem cabecalho voltavam vazios.
     document.getElementById('status-gravacao').textContent = 'Transcrevendo via IA (pode haver delay de alguns segundos)...';
+    _audioMimeType = _escolherMimeAudioPront();
     navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
-      var mimeType = 'audio/webm;codecs=opus';
-      if (!MediaRecorder.isTypeSupported(mimeType)) {
-        mimeType = 'audio/webm';
-        if (!MediaRecorder.isTypeSupported(mimeType)) {
-          mimeType = 'audio/ogg;codecs=opus';
-          if (!MediaRecorder.isTypeSupported(mimeType)) {
-            mimeType = '';
-          }
-        }
-      }
-      if (!mimeType) {
-        document.getElementById('status-gravacao').textContent = 'Navegador nao suporta gravacao de audio. Cole o texto manualmente.';
-        gravando = false;
-        return;
-      }
-      var mediaRec = new MediaRecorder(stream, { mimeType: mimeType });
-      // Guarda o formato REAL que ficou (o navegador pode ter ajustado). Vai junto no envio ao Whisper.
-      _audioMimeType = (mediaRec.mimeType || mimeType || '');
-      window._fallbackMediaRecorder = mediaRec;
-      window._fallbackStream = stream;
-      var chunkQueue = [];
-      var enviando = false;
-      var chunkCounter = 0;
-      
-      mediaRec.ondataavailable = function(e) {
-        if (e.data.size > 0 && gravando && !pausado) {
-          chunkQueue.push(e.data);
-          processarFilaChunks();
-        }
-      };
-      
-      function processarFilaChunks() {
-        if (enviando || chunkQueue.length === 0) return;
-        enviando = true;
-        var chunk = chunkQueue.shift();
-        chunkCounter++;
-        var chunkId = (sessionInfo.sessionId || 'prontuario') + '-chunk' + chunkCounter;
-        var reader = new FileReader();
-        reader.onloadend = function() {
-          var base64 = reader.result.split(',')[1] || '';
-          if (base64.length < 100) {
-            enviando = false;
-            processarFilaChunks();
-            return;
-          }
-          var tentativas = 0;
-          function tentarTranscrever() {
-            tentativas++;
-            fetch(API_URL + '/transcribe-audio', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              // Envia o formato real gravado (_audioMimeType). Sem isso, a Lambda assumia webm e
-              // o audio do Firefox (ogg) chegava ao Whisper etiquetado errado -> transcricao vazia.
-              body: JSON.stringify({ audioBase64: base64, sessionId: chunkId, mimeType: _audioMimeType || mimeType || '' })
-            }).then(function(resp) {
-              return resp.json();
-            }).then(function(data) {
-              if (data.text && data.text.trim()) {
-                transcricaoAcumulada += data.text.trim() + ' ';
-                document.getElementById('transcricao').value = transcricaoAcumulada;
-                // Transcricao de verdade chegou -> cobra o credito (uma vez por sessao).
-                cobrarCreditoProntuario();
-              }
-              enviando = false;
-              processarFilaChunks();
-            }).catch(function() {
-              if (tentativas < 3) {
-                setTimeout(tentarTranscrever, 2000);
-              } else {
-                // Trecho perdido apos 3 tentativas: sinaliza na transcricao em vez de sumir silenciosamente,
-                // para o profissional saber que aquele segmento (~5s) nao foi transcrito.
-                transcricaoAcumulada += '[...trecho nao transcrito...] ';
-                document.getElementById('transcricao').value = transcricaoAcumulada;
-                var stErr = document.getElementById('status-gravacao');
-                if (stErr && !pausado) stErr.innerHTML = '<span style="color:#e65100;">Um trecho do audio nao foi transcrito (marcado no texto). A gravacao continua normalmente.</span>';
-                enviando = false;
-                processarFilaChunks();
-              }
-            });
-          }
-          tentarTranscrever();
-        };
-        reader.readAsDataURL(chunk);
-      }
-      
-      mediaRec.start(5000); // Gravar em chunks de 5 segundos
+      _miniStream = stream;
+      window._fallbackStream = stream; // compatibilidade com pararGravacao() existente
+      _miniAtivo = true;
+      _miniContador = 0;
+      iniciarMiniGravacao();
     }).catch(function(err) {
       document.getElementById('status-gravacao').textContent = 'Erro ao acessar microfone: ' + err.message;
       gravando = false;
@@ -538,10 +488,105 @@ async function iniciarGravacao() {
   }, 1000);
 }
 
+// Grava UM trecho completo de ~15s. Ao parar (onstop), monta o arquivo inteiro, envia para
+// transcrever e inicia o proximo trecho. Repete enquanto a gravacao estiver ativa e nao pausada.
+function iniciarMiniGravacao() {
+  if (!_miniAtivo || !_miniStream) return;
+  if (pausado) {
+    // Pausado: espera um pouco e tenta de novo (nao grava enquanto pausado).
+    setTimeout(iniciarMiniGravacao, 500);
+    return;
+  }
+  _miniChunks = [];
+  var _opcoes = {};
+  if (_audioMimeType) _opcoes.mimeType = _audioMimeType;
+  try {
+    _miniRec = new MediaRecorder(_miniStream, _opcoes);
+  } catch (eRec) {
+    // Navegador recusou o formato escolhido: deixa ele usar o padrao dele.
+    try { _miniRec = new MediaRecorder(_miniStream); } catch (eRec2) {
+      document.getElementById('status-gravacao').textContent = 'Navegador nao suporta gravacao de audio. Cole o texto manualmente.';
+      _miniAtivo = false; gravando = false; return;
+    }
+    _audioMimeType = _miniRec.mimeType || '';
+  }
+  window._fallbackMediaRecorder = _miniRec; // compatibilidade com pausar/parar existentes
+
+  _miniRec.ondataavailable = function(e) {
+    if (e.data && e.data.size > 0) _miniChunks.push(e.data);
+  };
+
+  _miniRec.onstop = function() {
+    // Trecho completo em maos: monta um arquivo valido com o formato real usado.
+    var tipoBlob = _audioMimeType || 'audio/webm';
+    var blob = new Blob(_miniChunks, { type: tipoBlob });
+    _miniChunks = [];
+    // So envia se o trecho tem tamanho util (evita mandar silencio/vazio ao Whisper).
+    if (blob.size >= 2048) {
+      _miniContador++;
+      enviarTrechoParaTranscrever(blob, tipoBlob, _miniContador);
+    }
+    // Encadeia o proximo trecho enquanto a gravacao continuar e nao estiver pausada.
+    // (Se estiver pausado, quem reinicia o ciclo e o togglePausa ao retomar.)
+    if (_miniAtivo && gravando && !pausado) { iniciarMiniGravacao(); }
+  };
+
+  try {
+    _miniRec.start(); // grava o trecho inteiro (sem timeslice -> um arquivo completo)
+    // Para automaticamente apos MINI_DURACAO_MS, disparando o onstop acima.
+    setTimeout(function() {
+      try { if (_miniRec && _miniRec.state === 'recording') _miniRec.stop(); } catch (e) {}
+    }, MINI_DURACAO_MS);
+  } catch (eStart) {
+    document.getElementById('status-gravacao').textContent = 'Erro ao gravar audio. Tente novamente.';
+    _miniAtivo = false; gravando = false;
+  }
+}
+
+// Converte o trecho em base64 e envia para a Lambda transcrever, com ate 3 tentativas.
+function enviarTrechoParaTranscrever(blob, tipoBlob, numeroTrecho) {
+  var chunkId = (sessionInfo.sessionId || 'prontuario') + '-chunk' + numeroTrecho;
+  var reader = new FileReader();
+  reader.onloadend = function() {
+    var base64 = (reader.result.split(',')[1]) || '';
+    if (base64.length < 100) return; // trecho vazio: ignora
+    var tentativas = 0;
+    function tentar() {
+      tentativas++;
+      fetch(API_URL + '/transcribe-audio', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        // Envia o formato real do trecho para a Lambda etiquetar certo ao Whisper.
+        body: JSON.stringify({ audioBase64: base64, sessionId: chunkId, mimeType: tipoBlob })
+      }).then(function(resp) { return resp.json(); }).then(function(data) {
+        if (data && data.text && data.text.trim()) {
+          transcricaoAcumulada += data.text.trim() + ' ';
+          document.getElementById('transcricao').value = transcricaoAcumulada;
+          // Transcricao de verdade chegou -> cobra o credito (uma vez por sessao).
+          cobrarCreditoProntuario();
+        }
+      }).catch(function() {
+        if (tentativas < 3) { setTimeout(tentar, 2000); }
+        else {
+          // Trecho perdido apos 3 tentativas: sinaliza no texto para o profissional saber.
+          transcricaoAcumulada += '[...trecho nao transcrito...] ';
+          document.getElementById('transcricao').value = transcricaoAcumulada;
+          var stErr = document.getElementById('status-gravacao');
+          if (stErr && !pausado) stErr.innerHTML = '<span style="color:#e65100;">Um trecho do audio nao foi transcrito (marcado no texto). A gravacao continua normalmente.</span>';
+        }
+      });
+    }
+    tentar();
+  };
+  reader.readAsDataURL(blob);
+}
+
 function pararGravacao() {
   gravando = false;
   pausado = false;
   _pararMonitorMic();
+  // Encerra o ciclo de mini-gravacoes (fallback Android/Firefox), se estiver ativo.
+  _miniAtivo = false;
   // Para o ciclo de rascunho e faz um ultimo salvamento com o texto final.
   pararAutoSalvarRascunho();
   if (recognition) { try { recognition.stop(); } catch(e){} }
