@@ -3492,9 +3492,23 @@
         var data = await resp.json();
         if (data.access_token) {
           accessToken = data.access_token;
-          // Decodificar ID token para pegar email
+          // Lemos APENAS o campo "email" do ID token e ignoramos o resto.
+          // A AWS vai adicionar campos novos (amr, acr) aos tokens ao longo do tempo;
+          // isso NAO afeta este codigo, porque so pegamos o email. Nenhuma alteracao necessaria.
+          // O try/catch abaixo e um cinto de seguranca: se o token vier vazio ou quebrado,
+          // a pagina nao trava, apenas avisa o usuario para tentar de novo.
           var idToken = data.id_token;
-          var payload = JSON.parse(atob(idToken.split('.')[1]));
+          var payload = null;
+          try {
+            payload = JSON.parse(atob(idToken.split('.')[1]));
+          } catch (e) {
+            payload = null;
+          }
+          if (!payload || !payload.email) {
+            alert('Nao foi possivel ler seus dados de login. Tente entrar novamente.');
+            window.location.href = REDIRECT_URI.replace('https://setmonte.github.io', '');
+            return;
+          }
           currentUser = payload.email;
           sessionStorage.setItem('tecfe_access_token', accessToken);
           sessionStorage.setItem('tecfe_user_email', currentUser);
@@ -3528,10 +3542,19 @@
           accessToken = data.access_token;
           sessionStorage.setItem('tecfe_access_token', accessToken);
           if (data.id_token) {
-            var payload = JSON.parse(atob(data.id_token.split('.')[1]));
-            currentUser = payload.email;
-            sessionStorage.setItem('tecfe_user_email', currentUser);
-            sessionStorage.setItem('tecfe_id_token', data.id_token);
+            // Mesma protecao da funcao de login: so lemos o email e nao travamos
+            // caso o token venha quebrado (ver nota em exchangeCodeForTokens).
+            var payload = null;
+            try {
+              payload = JSON.parse(atob(data.id_token.split('.')[1]));
+            } catch (e) {
+              payload = null;
+            }
+            if (payload && payload.email) {
+              currentUser = payload.email;
+              sessionStorage.setItem('tecfe_user_email', currentUser);
+              sessionStorage.setItem('tecfe_id_token', data.id_token);
+            }
           }
           return true;
         }
