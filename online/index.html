@@ -1130,6 +1130,9 @@
           </div>
           <div style="max-width:640px;margin:0 auto;background:#fff;border:1px solid #c8e6c9;border-radius:10px;padding:20px;">
 
+            <!-- Aviso de sessao expirada (os dados exibidos sao a copia local). Oculto por padrao. -->
+            <div id="duAvisoSessao" style="display:none;background:#fff3e0;border:1px solid #ffb74d;border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:0.85em;color:#e65100;font-weight:600;text-align:center;">Apenas sua sess&#227;o expirou. Reconecte-se.</div>
+
             <!-- Logo no topo, centralizado -->
             <div style="text-align:center;margin-bottom:18px;">
               <label style="font-size:0.85em;color:#555;display:block;margin-bottom:8px;">Logo (opcional):</label>
@@ -11260,8 +11263,12 @@
           body: JSON.stringify({ email: currentUser, config: cfg })
         });
         if (resp.ok) {
-          // Guarda tambem no navegador para leitura rapida ao pre-preencher os testes.
-          try { localStorage.setItem('dadosUsuario', JSON.stringify(dados)); } catch (e) {}
+          // Guarda tambem no navegador para leitura rapida ao pre-preencher os testes
+          // e para exibir a aba mesmo se a sessao cair (inclui o logo para exibicao offline).
+          var _dadosLocal = {};
+          for (var _k in dados) { if (Object.prototype.hasOwnProperty.call(dados, _k)) _dadosLocal[_k] = dados[_k]; }
+          _dadosLocal.logo = cfg.dadosUsuarioLogo || '';
+          try { localStorage.setItem('dadosUsuario', JSON.stringify(_dadosLocal)); } catch (e) {}
           window._dadosUsuario = dados;
           if (status) { status.style.color = '#2e7d32'; status.textContent = '\u2713 Dados salvos com sucesso.'; }
         } else {
@@ -11275,13 +11282,13 @@
 
     // Carrega os Dados do Usuario da AWS e preenche a aba.
     async function carregarDadosUsuario() {
-      if (!currentUser) return;
-      try {
-        var r = await fetch(API_URL + '/get-config-profissional?email=' + encodeURIComponent(currentUser));
-        var j = await r.json();
-        var cfg = (j && j.config) ? j.config : {};
-        var d = cfg.dadosUsuario || {};
-        var set = function(id, v) { var el = document.getElementById(id); if (el) el.value = v || ''; };
+      var set = function(id, v) { var el = document.getElementById(id); if (el) el.value = v || ''; };
+      var _avisoEl = document.getElementById('duAvisoSessao');
+      var _mostrarAviso = function(mostrar) { if (_avisoEl) _avisoEl.style.display = mostrar ? 'block' : 'none'; };
+
+      // Preenche os campos da aba com um objeto de dados (usado tanto para a copia local
+      // quanto para os dados do servidor).
+      var _preencherCampos = function(d, logo) {
         set('duNome', d.nome);
         set('duDataNasc', d.dataNasc);
         set('duCPF', d.cpf);
@@ -11292,13 +11299,39 @@
         set('duEmail', d.email || currentUser || '');
         set('duEndereco', d.endereco);
         _recalcularIdUsuario();
-        _duLogoBase64 = cfg.dadosUsuarioLogo || '';
+        _duLogoBase64 = logo || '';
         _mostrarLogoUsuario(_duLogoBase64);
-        // Deixa disponivel para o pre-preenchimento automatico dos testes.
         window._dadosUsuario = d;
-        try { localStorage.setItem('dadosUsuario', JSON.stringify(d)); } catch (e) {}
         _preencherProfissionalNosFormularios();
-      } catch (e) {}
+      };
+
+      // 1) PRIMEIRO exibe a copia local (se houver), para o usuario NUNCA ver a aba vazia
+      //    quando a sessao caiu ou a internet esta lenta.
+      var _dLocal = {};
+      try { _dLocal = JSON.parse(localStorage.getItem('dadosUsuario') || '{}'); } catch (e) { _dLocal = {}; }
+      var _temLocal = _dLocal && (_dLocal.nome || _dLocal.cpf || _dLocal.crp || _dLocal.email);
+      if (_temLocal) { _preencherCampos(_dLocal, _dLocal.logo || _duLogoBase64); }
+
+      // 2) Sem login = sessao expirou. Mantem a copia local na tela e mostra o aviso curto.
+      if (!currentUser) { _mostrarAviso(!!_temLocal); return; }
+
+      // 3) Com login, busca do servidor (fonte da verdade) e atualiza a tela.
+      try {
+        var r = await fetch(API_URL + '/get-config-profissional?email=' + encodeURIComponent(currentUser));
+        var j = await r.json();
+        var cfg = (j && j.config) ? j.config : {};
+        var d = cfg.dadosUsuario || {};
+        _preencherCampos(d, cfg.dadosUsuarioLogo || '');
+        // Atualiza a copia local (guarda tambem o logo para exibir offline na proxima vez).
+        var _dSalvar = {};
+        for (var k in d) { if (Object.prototype.hasOwnProperty.call(d, k)) _dSalvar[k] = d[k]; }
+        _dSalvar.logo = cfg.dadosUsuarioLogo || '';
+        try { localStorage.setItem('dadosUsuario', JSON.stringify(_dSalvar)); } catch (e) {}
+        _mostrarAviso(false); // servidor respondeu: esconde qualquer aviso
+      } catch (e) {
+        // Falha de rede com login ativo: mantem o que ja esta na tela (copia local) e avisa.
+        _mostrarAviso(!!_temLocal);
+      }
     }
 
     // Pre-preenche o campo do PROFISSIONAL (nome + CRP) nos formularios dos testes, usando os
