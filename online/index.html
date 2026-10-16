@@ -1505,6 +1505,8 @@
             </div>
             <!-- RESULTADOS SRS-2 AA -->
             <div id="srs2aaResultsSection" class="card hidden" style="margin-top:15px;"></div>
+            <!-- COMPARATIVO SRS-2 ADULTO (Auto/Hetero) -->
+            <div id="srs2AdultoCmpSection" class="card hidden" style="margin-top:15px;"></div>
           </div>
 
           <!-- CONTEUDO SRS-2 ADULTO HETERORRELATO -->
@@ -1557,6 +1559,8 @@
             </div>
             <!-- RESULTADOS SRS-2 AH -->
             <div id="srs2ahResultsSection" class="card hidden" style="margin-top:15px;"></div>
+            <!-- COMPARATIVO SRS-2 ADULTO (Auto/Hetero) -->
+            <div id="srs2AdultoCmpSectionAh" class="card hidden" style="margin-top:15px;"></div>
           </div>
 
           <!-- CONTEUDO VINELAND-3 -->
@@ -10633,6 +10637,9 @@
       if (res) res.classList.toggle('hidden');
       document.getElementById('newSrs2aaSection').classList.add('hidden');
       loadSrs2aaResults();
+      var cmp = document.getElementById('srs2AdultoCmpSection');
+      if (cmp) cmp.classList.remove('hidden');
+      if (typeof loadSrs2AdultoComparativo === 'function') loadSrs2AdultoComparativo();
     }
 
     var generatedSrs2aaLink = '';
@@ -10736,6 +10743,9 @@
       if (res) res.classList.toggle('hidden');
       document.getElementById('newSrs2ahSection').classList.add('hidden');
       loadSrs2ahResults();
+      var cmp = document.getElementById('srs2AdultoCmpSectionAh');
+      if (cmp) cmp.classList.remove('hidden');
+      if (typeof loadSrs2AdultoComparativo === 'function') loadSrs2AdultoComparativo();
     }
 
     var generatedSrs2ahLink = '';
@@ -10827,6 +10837,411 @@
       if (!r) return;
       _escalasResultCache[9200 + idx] = r;
       gerarPDFEscala(9200 + idx);
+    }
+
+    // ===== COMPARATIVO SRS-2 (Adulto Auto/Hetero) - 2 respondentes =====
+    // Reaproveita helpers do Escolar (SRS2_MEDIDAS, SRS2_DESC, _normNomeSrs2, mesmaPessoaSrs2,
+    // _brutoSrs2, _losangoSrs2, _faixaSrs2, _linhaTracejadaSrs2). A unica diferenca funcional e o
+    // intervalo de confianca do Adulto = Escore T +/- 3 (95%), contra +/- 4 do Escolar.
+    var SRS2_IC_DELTA_ADULTO = 3;
+
+    // Cache combinado dos resultados Adulto (Auto + Hetero). Nunca mistura com o Escolar (tipo=srs2),
+    // pois so busca tipo=srs2-aa e tipo=srs2-ah.
+    var _srs2AdultoCmpCache = [];
+
+    // Formata o IC do Adulto (T +/- 3). Texto sempre mostra o valor real (sem clamp).
+    function formatarICsrs2Adulto(t) {
+      var n = Number(t);
+      if (!isFinite(n)) return '-';
+      return (n - SRS2_IC_DELTA_ADULTO) + ' - ' + (n + SRS2_IC_DELTA_ADULTO);
+    }
+
+    // Rotulo do respondente para o Adulto. Preferir nomeRespondente/respondente (quando o Hetero
+    // os persiste); senao o formulario (Adulto Autorrelato / Heterorrelato); senao posicao.
+    function _rotuloRespSrs2Adulto(d, pos) {
+      if (!d) return 'Respondente ' + pos;
+      if (d.nomeRespondente) return String(d.nomeRespondente);
+      if (d.formulario) return String(d.formulario);
+      if (d.respondente) return String(d.respondente);
+      return 'Respondente ' + pos;
+    }
+
+    // Carrega e combina os resultados Adulto (Auto + Hetero) numa unica tabela de selecao.
+    async function loadSrs2AdultoComparativo() {
+      var el = document.getElementById('srs2AdultoCmpSection');
+      var elAh = document.getElementById('srs2AdultoCmpSectionAh');
+      if (!el && !elAh) return;
+      try {
+        var respAA = await fetch(API_URL + '/get-results?email=' + encodeURIComponent(currentUser) + '&tipo=srs2-aa');
+        var dataAA = await respAA.json();
+        var respAH = await fetch(API_URL + '/get-results?email=' + encodeURIComponent(currentUser) + '&tipo=srs2-ah');
+        var dataAH = await respAH.json();
+        var listaAA = dataAA.results || [];
+        var listaAH = dataAH.results || [];
+        var combinado = [];
+        var i;
+        for (i = 0; i < listaAA.length; i++) { combinado.push(listaAA[i]); }
+        for (i = 0; i < listaAH.length; i++) { combinado.push(listaAH[i]); }
+        _srs2AdultoCmpCache = combinado;
+        var html;
+        if (combinado.length < 2) {
+          html = '<h3 style="color:#1565c0;">Relat&#243;rio Comparativo SRS-2 Adulto</h3><p style="font-size:0.85em;color:#555;">S&#227;o necess&#225;rios pelo menos 2 resultados SRS-2 Adulto (Auto e/ou Hetero) da mesma pessoa para gerar o comparativo.</p>';
+        } else {
+          html = '<h3 style="color:#1565c0;">Relat&#243;rio Comparativo SRS-2 Adulto</h3><p style="font-size:0.8em;color:#555;margin:0 0 8px;">Marque DOIS resultados da mesma pessoa (Autorrelato e/ou Heterorrelato) para gerar um relat&#243;rio comparativo.</p><table style="width:100%;border-collapse:collapse;font-size:0.85em;"><tr><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Sel</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Data</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Paciente</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Formul&#225;rio</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Escore T</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Classificacao</th></tr>';
+          for (i = 0; i < combinado.length; i++) {
+            var r = combinado[i];
+            var d = r.data || {};
+            html += '<tr>';
+            html += '<td style="padding:5px;border-bottom:1px solid #eee;"><input type="checkbox" class="srs2a-cmp-check" data-idx="' + i + '" onchange="atualizarBotaoComparativoSrs2Adulto()"></td>';
+            html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (d.data ? new Date(d.data).toLocaleDateString('pt-BR') : '') + '</td>';
+            html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (d.paciente || '') + '</td>';
+            html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (d.formulario || '-') + '</td>';
+            html += '<td style="padding:5px;border-bottom:1px solid #eee;font-weight:bold;">' + (d.escore != null ? d.escore : '-') + '</td>';
+            html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (d.classificacao || '-') + '</td>';
+            html += '</tr>';
+          }
+          html += '</table>';
+          html += '<div style="margin-top:12px;"><button id="btnCompSrs2Adulto" class="btn btn-blue" style="padding:8px 18px;font-size:14px;" disabled onclick="gerarComparativoSrs2Adulto()">Selecione exatamente 2</button></div>';
+        }
+        if (el) el.innerHTML = html;
+        if (elAh) elAh.innerHTML = html;
+      } catch (e) {
+        if (el) el.innerHTML = '<p>Erro ao carregar resultados para comparativo.</p>';
+        if (elAh) elAh.innerHTML = '<p>Erro ao carregar resultados para comparativo.</p>';
+      }
+    }
+
+    // Gatekeeper do botao Adulto: habilita so com 2 resultados validos da mesma pessoa.
+    function atualizarBotaoComparativoSrs2Adulto() {
+      var btns = document.querySelectorAll('#btnCompSrs2Adulto');
+      if (!btns || btns.length === 0) return;
+      var checks = document.querySelectorAll('.srs2a-cmp-check:checked');
+      var rotulo, habilitar = false;
+      if (checks.length !== 2) {
+        rotulo = 'Selecione exatamente 2';
+      } else {
+        var i1 = parseInt(checks[0].getAttribute('data-idx'), 10);
+        var i2 = parseInt(checks[1].getAttribute('data-idx'), 10);
+        var r1 = _srs2AdultoCmpCache[i1];
+        var r2 = _srs2AdultoCmpCache[i2];
+        var d1 = (r1 && r1.data) ? r1.data : null;
+        var d2 = (r2 && r2.data) ? r2.data : null;
+        if (!d1 || !d2 || !d1.escoresT || !d2.escoresT) {
+          rotulo = 'Resultado sem escores calculados';
+        } else if (!mesmaPessoaSrs2(d1, d2)) {
+          rotulo = 'Resultados devem ser da mesma pessoa';
+        } else {
+          rotulo = 'Gerar comparativo (2 selecionados)';
+          habilitar = true;
+        }
+      }
+      for (var bi = 0; bi < btns.length; bi++) {
+        btns[bi].disabled = !habilitar;
+        btns[bi].textContent = rotulo;
+      }
+    }
+
+    function gerarComparativoSrs2Adulto() {
+      var checks = document.querySelectorAll('.srs2a-cmp-check:checked');
+      if (checks.length !== 2) { alert('Selecione exatamente 2 resultados.'); return; }
+      var i1 = parseInt(checks[0].getAttribute('data-idx'), 10);
+      var i2 = parseInt(checks[1].getAttribute('data-idx'), 10);
+      var r1 = _srs2AdultoCmpCache[i1];
+      var r2 = _srs2AdultoCmpCache[i2];
+      var d1 = (r1 && r1.data) ? r1.data : null;
+      var d2 = (r2 && r2.data) ? r2.data : null;
+      if (!d1 || !d2 || !d1.escoresT || !d2.escoresT) {
+        alert('Um dos resultados nao possui escores calculados e nao pode entrar no comparativo.');
+        return;
+      }
+      if (!mesmaPessoaSrs2(d1, d2)) {
+        alert('Os dois resultados devem ser da mesma pessoa.');
+        return;
+      }
+      try {
+        // Ordenar por data ascendente: respondente 1 (azul) = mais antigo; respondente 2 (vermelho) = mais recente.
+        var dataDe = function (r) {
+          var dd = (r && r.data) ? r.data : {};
+          var v = dd.data || r.date || '';
+          var t = v ? new Date(v).getTime() : 0;
+          return isFinite(t) ? t : 0;
+        };
+        if (dataDe(r2) < dataDe(r1)) {
+          var tmp = r1; r1 = r2; r2 = tmp;
+          var tmpd = d1; d1 = d2; d2 = tmpd;
+        }
+
+        var COR1 = [21, 101, 192];   // azul (respondente 1, losango, linha tracejada)
+        var COR2 = [211, 47, 47];    // vermelho (respondente 2, quadrado, linha traco-ponto)
+        var COR1L = [187, 222, 251]; // azul claro (barra de IC r1)
+        var COR2L = [255, 205, 210]; // vermelho claro (barra de IC r2)
+
+        var dataStr1 = (d1.data || r1.date) ? new Date(d1.data || r1.date).toLocaleString('pt-BR') : '-';
+        var dataStr2 = (d2.data || r2.date) ? new Date(d2.data || r2.date).toLocaleString('pt-BR') : '-';
+        var nomeResp1 = _rotuloRespSrs2Adulto(d1, 1);
+        var nomeResp2 = _rotuloRespSrs2Adulto(d2, 2);
+        var sexoDivergente = (String(d1.sexo || '') !== String(d2.sexo || ''));
+
+        var jsPDF = window.jspdf.jsPDF;
+        var doc = new jsPDF();
+        var ml = 15, lu = 180, pw = 210;
+        var maxY = 272;
+
+        // Regua de Escore T 20..80.
+        var gL = 70, gR = 195, gW = gR - gL, escMn = 20, escMx = 80;
+        function xT(t) { return gL + ((t - escMn) / (escMx - escMn)) * gW; }
+        function clampT(v) { return Math.max(escMn, Math.min(escMx, v)); }
+
+        // ---------- PAGINA 1: PERFIL ----------
+        doc.setFillColor(26, 35, 126); doc.rect(0, 0, pw, 8, 'F');
+        doc.setTextColor(26, 35, 126); doc.setFontSize(16); doc.setFont(undefined, 'bold');
+        var y = 22; doc.text('Perfil - Comparativo SRS-2 Adulto', ml, y); y += 8;
+        doc.setFontSize(9); doc.setFont(undefined, 'normal'); doc.setTextColor(60, 60, 60);
+        doc.text((d1.paciente || '') + (d1.idade ? ('  |  ' + d1.idade) : '') + (d1.sexo ? ('  |  ' + d1.sexo) : ''), ml, y); y += 6;
+        if (d1.idPaciente) { doc.text('ID: ' + d1.idPaciente, ml, y); y += 6; }
+
+        // Cabecalho das colunas de dados brutos / normas.
+        doc.setFontSize(6.5); doc.setTextColor(0, 0, 0); doc.setFont(undefined, 'bold');
+        var cDadosX = 30, cNormasX = 52;
+        doc.text('Dados brutos', cDadosX, y, { align: 'center' });
+        doc.text('Normas (T)', cNormasX, y, { align: 'center' });
+        doc.setFont(undefined, 'normal'); doc.setTextColor(100, 100, 100);
+        // Regua T (ticks).
+        var tk = [20, 30, 40, 50, 60, 70, 80];
+        for (var ti = 0; ti < tk.length; ti++) { doc.text(String(tk[ti]), xT(tk[ti]), y, { align: 'center' }); }
+        y += 3;
+
+        var bH = 18, gp = 6;
+        var yS = y;
+        var yE = yS + SRS2_MEDIDAS.length * (bH + gp);
+        // Faixas de fundo por nivel.
+        doc.setFillColor(232, 245, 233); doc.rect(xT(20), yS, xT(59) - xT(20), yE - yS, 'F');
+        doc.setFillColor(255, 248, 225); doc.rect(xT(59), yS, xT(65) - xT(59), yE - yS, 'F');
+        doc.setFillColor(255, 224, 178); doc.rect(xT(65), yS, xT(75) - xT(65), yE - yS, 'F');
+        doc.setFillColor(255, 205, 210); doc.rect(xT(75), yS, xT(80) - xT(75), yE - yS, 'F');
+        doc.setDrawColor(200, 200, 200); doc.setLineWidth(0.2);
+        for (var ti2 = 0; ti2 < tk.length; ti2++) { doc.line(xT(tk[ti2]), yS, xT(tk[ti2]), yE); }
+
+        // Posicoes dos marcadores por respondente para a polilinha.
+        var pts1 = [], pts2 = [];
+        for (var si = 0; si < SRS2_MEDIDAS.length; si++) {
+          var sc = SRS2_MEDIDAS[si];
+          var t1 = Number(d1.escoresT[sc.k]);
+          var t2 = Number(d2.escoresT[sc.k]);
+          var yRow = yS + si * (bH + gp);
+          var yc = yRow + bH / 2;
+          var yc1 = yc - 3.5, yc2 = yc + 3.5; // linhas separadas por respondente dentro da faixa
+
+          // Rotulo da medida.
+          doc.setFontSize(6.5); doc.setTextColor(0, 0, 0); doc.setFont(undefined, (sc.k === 'CIS' || sc.k === 'TOTAL') ? 'bold' : 'normal');
+          doc.text(sc.nome, ml, yc - 1);
+
+          // Colunas Dados brutos / Normas (bruto e T por respondente).
+          var br1 = _brutoSrs2(d1, sc.k), br2 = _brutoSrs2(d2, sc.k);
+          doc.setFont(undefined, 'normal'); doc.setFontSize(6);
+          doc.setTextColor(COR1[0], COR1[1], COR1[2]);
+          doc.text(String(br1 != null ? br1 : '-'), cDadosX, yc1 + 1, { align: 'center' });
+          doc.text(String(isFinite(t1) ? t1 : '-'), cNormasX, yc1 + 1, { align: 'center' });
+          doc.setTextColor(COR2[0], COR2[1], COR2[2]);
+          doc.text(String(br2 != null ? br2 : '-'), cDadosX, yc2 + 1, { align: 'center' });
+          doc.text(String(isFinite(t2) ? t2 : '-'), cNormasX, yc2 + 1, { align: 'center' });
+
+          // Barra de IC (desenho clampado a 20..80). Adulto usa +/- 3.
+          if (isFinite(t1)) {
+            var x1a = xT(clampT(t1 - SRS2_IC_DELTA_ADULTO)), x1b = xT(clampT(t1 + SRS2_IC_DELTA_ADULTO));
+            doc.setFillColor(COR1L[0], COR1L[1], COR1L[2]);
+            doc.rect(x1a, yc1 - 1.3, x1b - x1a, 2.6, 'F');
+          }
+          if (isFinite(t2)) {
+            var x2a = xT(clampT(t2 - SRS2_IC_DELTA_ADULTO)), x2b = xT(clampT(t2 + SRS2_IC_DELTA_ADULTO));
+            doc.setFillColor(COR2L[0], COR2L[1], COR2L[2]);
+            doc.rect(x2a, yc2 - 1.3, x2b - x2a, 2.6, 'F');
+          }
+
+          // Marcadores: r1 losango azul; r2 quadrado vermelho.
+          if (isFinite(t1)) {
+            var px1 = xT(clampT(t1));
+            doc.setFillColor(COR1[0], COR1[1], COR1[2]);
+            _losangoSrs2(doc, px1, yc1, 1.8);
+            pts1.push({ x: px1, y: yc1 });
+            doc.setFontSize(5.5); doc.setTextColor(COR1[0], COR1[1], COR1[2]); doc.setFont(undefined, 'bold');
+            doc.text(String(t1), px1, yc1 - 2.6, { align: 'center' });
+          }
+          if (isFinite(t2)) {
+            var px2 = xT(clampT(t2));
+            doc.setFillColor(COR2[0], COR2[1], COR2[2]);
+            doc.rect(px2 - 1.6, yc2 - 1.6, 3.2, 3.2, 'F');
+            pts2.push({ x: px2, y: yc2 });
+            doc.setFontSize(5.5); doc.setTextColor(COR2[0], COR2[1], COR2[2]); doc.setFont(undefined, 'bold');
+            doc.text(String(t2), px2, yc2 + 5, { align: 'center' });
+          }
+        }
+
+        // Polilinhas conectando os pontos (r1 tracejada; r2 traco-ponto). Segmentos manuais.
+        doc.setLineWidth(0.4);
+        doc.setDrawColor(COR1[0], COR1[1], COR1[2]);
+        _linhaTracejadaSrs2(doc, pts1, [1.6, 1.2]);
+        doc.setDrawColor(COR2[0], COR2[1], COR2[2]);
+        _linhaTracejadaSrs2(doc, pts2, [2.4, 1, 0.6, 1]);
+
+        // Legenda.
+        var yl = yE + 8;
+        doc.setFontSize(7); doc.setFont(undefined, 'normal');
+        doc.setFillColor(COR1[0], COR1[1], COR1[2]); _losangoSrs2(doc, ml + 2, yl - 1, 1.8);
+        doc.setTextColor(0, 0, 0);
+        doc.text(nomeResp1 + ' - ' + dataStr1, ml + 7, yl + 1); yl += 6;
+        doc.setFillColor(COR2[0], COR2[1], COR2[2]); doc.rect(ml, yl - 2.4, 3.2, 3.2, 'F');
+        doc.text(nomeResp2 + ' - ' + dataStr2, ml + 7, yl + 1); yl += 7;
+        doc.setFontSize(6.5); doc.setTextColor(90, 90, 90);
+        doc.text('Intervalo de confian\u00e7a (B\u00e1sico: Consist\u00eancia, N\u00edvel de confian\u00e7a: 95%)', ml, yl); yl += 5;
+        doc.text('Verde = Normal   Amarelo = Leve   Laranja = Moderado   Vermelho = Severo', ml, yl); yl += 5;
+        if (sexoDivergente) {
+          doc.setTextColor(198, 40, 40);
+          doc.text('Aten\u00e7\u00e3o: sexo divergente entre os registros (' + (d1.sexo || '-') + ' x ' + (d2.sexo || '-') + ').', ml, yl);
+        }
+
+        // ---------- PAGINAS 2+: DETALHES DA ESCALA (uma secao por medida) ----------
+        for (var mi = 0; mi < SRS2_MEDIDAS.length; mi++) {
+          var md = SRS2_MEDIDAS[mi];
+          doc.addPage();
+          doc.setFillColor(26, 35, 126); doc.rect(0, 0, pw, 8, 'F');
+          doc.setTextColor(26, 35, 126); doc.setFontSize(14); doc.setFont(undefined, 'bold');
+          var yd = 22; doc.text('Detalhes - ' + md.nome, ml, yd); yd += 10;
+
+          var mt1 = Number(d1.escoresT[md.k]);
+          var mt2 = Number(d2.escoresT[md.k]);
+
+          // Curva normal (sino) amostrada; eixo X reaproveita xT().
+          var curvaTopo = yd;
+          var curvaBase = yd + 42;
+          var curvaAlt = curvaBase - curvaTopo;
+          // Ticks do eixo da curva.
+          doc.setFontSize(7); doc.setTextColor(100, 100, 100); doc.setFont(undefined, 'normal');
+          for (var ci = 0; ci < tk.length; ci++) { doc.text(String(tk[ci]), xT(tk[ci]), curvaBase + 5, { align: 'center' }); }
+          doc.setDrawColor(120, 120, 120); doc.setLineWidth(0.3);
+          doc.line(xT(20), curvaBase, xT(80), curvaBase);
+          // Desenhar a gaussiana (~60 segmentos).
+          doc.setDrawColor(90, 90, 90); doc.setLineWidth(0.4);
+          var prevX = null, prevY = null;
+          for (var gi = 0; gi <= 60; gi++) {
+            var tt = 20 + (60 * gi / 60);
+            var hh = Math.exp(-((tt - 50) * (tt - 50)) / (2 * 10 * 10));
+            var cx = xT(tt);
+            var cy = curvaBase - hh * curvaAlt;
+            if (prevX !== null) { doc.line(prevX, prevY, cx, cy); }
+            prevX = cx; prevY = cy;
+          }
+          // Marcadores sobre a curva.
+          var _altCurva = function (t) {
+            var hh2 = Math.exp(-((t - 50) * (t - 50)) / (2 * 10 * 10));
+            return curvaBase - hh2 * curvaAlt;
+          };
+          if (isFinite(mt1)) {
+            var mx1 = xT(clampT(mt1));
+            doc.setDrawColor(COR1[0], COR1[1], COR1[2]); doc.setLineWidth(0.3);
+            doc.line(mx1, curvaBase, mx1, _altCurva(clampT(mt1)));
+            doc.setFillColor(COR1[0], COR1[1], COR1[2]); _losangoSrs2(doc, mx1, _altCurva(clampT(mt1)), 1.8);
+          }
+          if (isFinite(mt2)) {
+            var mx2 = xT(clampT(mt2));
+            doc.setDrawColor(COR2[0], COR2[1], COR2[2]); doc.setLineWidth(0.3);
+            doc.line(mx2, curvaBase, mx2, _altCurva(clampT(mt2)));
+            doc.setFillColor(COR2[0], COR2[1], COR2[2]); doc.rect(mx2 - 1.6, _altCurva(clampT(mt2)) - 1.6, 3.2, 3.2, 'F');
+          }
+          yd = curvaBase + 12;
+
+          // Tabela: Nome | Pontuacao bruta | Valor da norma (T) | Respostas faltantes | Intervalo de confianca.
+          doc.setFontSize(8); doc.setFont(undefined, 'bold'); doc.setTextColor(0, 0, 0);
+          var colNome = ml, colBruto = ml + 70, colT = ml + 100, colMiss = ml + 130, colIC = ml + 162;
+          doc.text('Nome', colNome, yd);
+          doc.text('Bruta', colBruto, yd);
+          doc.text('Norma (T)', colT, yd);
+          doc.text('Faltantes', colMiss, yd);
+          doc.text('IC', colIC, yd);
+          yd += 2; doc.setDrawColor(26, 35, 126); doc.setLineWidth(0.4); doc.line(ml, yd, ml + lu, yd); yd += 6;
+          doc.setFont(undefined, 'normal');
+          var linhasTab = [
+            { d: d1, nome: nomeResp1, cor: COR1 },
+            { d: d2, nome: nomeResp2, cor: COR2 }
+          ];
+          for (var li = 0; li < linhasTab.length; li++) {
+            var row = linhasTab[li];
+            var tv = Number(row.d.escoresT[md.k]);
+            var bv = _brutoSrs2(row.d, md.k);
+            doc.setTextColor(row.cor[0], row.cor[1], row.cor[2]); doc.setFont(undefined, 'bold');
+            var nomeLin = doc.splitTextToSize(row.nome, 65);
+            doc.text(nomeLin[0], colNome, yd);
+            doc.setTextColor(0, 0, 0); doc.setFont(undefined, 'normal');
+            doc.text(String(bv != null ? bv : '-'), colBruto, yd);
+            doc.text(String(isFinite(tv) ? tv : '-'), colT, yd);
+            doc.text('0', colMiss, yd);
+            doc.text(formatarICsrs2Adulto(tv), colIC, yd);
+            yd += 7;
+          }
+          yd += 4;
+
+          // Texto descritivo da subescala (reutilizado do Escolar; os textos sao os mesmos).
+          doc.setFontSize(9); doc.setFont(undefined, 'bold'); doc.setTextColor(26, 35, 126);
+          doc.text('Descri\u00e7\u00e3o', ml, yd); yd += 6;
+          doc.setFont(undefined, 'normal'); doc.setTextColor(0, 0, 0); doc.setFontSize(9);
+          var descLines = doc.splitTextToSize(SRS2_DESC[md.k] || '', lu);
+          for (var dli = 0; dli < descLines.length; dli++) {
+            if (yd > maxY) { doc.addPage(); yd = 20; }
+            doc.text(descLines[dli], ml, yd); yd += 5;
+          }
+        }
+
+        // ---------- PAGINA FINAL: INTERPRETACAO ----------
+        doc.addPage();
+        doc.setFillColor(26, 35, 126); doc.rect(0, 0, pw, 8, 'F');
+        doc.setTextColor(26, 35, 126); doc.setFontSize(16); doc.setFont(undefined, 'bold');
+        var yi = 22; doc.text('Interpreta\u00e7\u00e3o', ml, yi); yi += 12;
+        doc.setTextColor(0, 0, 0); doc.setFontSize(9); doc.setFont(undefined, 'normal');
+        doc.text('Faixas de Escore T (Formul\u00e1rio Adulto):', ml, yi); yi += 8;
+        var faixas = [
+          { fill: [200, 230, 201], txt: 'Escore T <= 59: Dentro dos limites normais.' },
+          { fill: [255, 248, 225], txt: 'Escore T 60 a 65: N\u00edvel leve.' },
+          { fill: [255, 224, 178], txt: 'Escore T 66 a 75: N\u00edvel moderado.' },
+          { fill: [255, 205, 210], txt: 'Escore T >= 76: N\u00edvel severo.' }
+        ];
+        for (var fi = 0; fi < faixas.length; fi++) {
+          doc.setFillColor(faixas[fi].fill[0], faixas[fi].fill[1], faixas[fi].fill[2]);
+          doc.rect(ml, yi - 4, lu, 10, 'F');
+          doc.setTextColor(0, 0, 0); doc.setFontSize(9);
+          doc.text(faixas[fi].txt, ml + 3, yi + 2); yi += 13;
+        }
+        // Destacar a faixa do TOTAL de cada respondente.
+        yi += 4; doc.setFontSize(9); doc.setFont(undefined, 'bold'); doc.setTextColor(26, 35, 126);
+        doc.text('Escore Total por respondente:', ml, yi); yi += 7;
+        doc.setFont(undefined, 'normal'); doc.setTextColor(0, 0, 0);
+        doc.text(nomeResp1 + ': T = ' + (isFinite(Number(d1.escoresT.TOTAL)) ? d1.escoresT.TOTAL : '-') + ' (' + _faixaSrs2(d1.escoresT.TOTAL) + '), IC ' + formatarICsrs2Adulto(d1.escoresT.TOTAL), ml, yi); yi += 6;
+        doc.text(nomeResp2 + ': T = ' + (isFinite(Number(d2.escoresT.TOTAL)) ? d2.escoresT.TOTAL : '-') + ' (' + _faixaSrs2(d2.escoresT.TOTAL) + '), IC ' + formatarICsrs2Adulto(d2.escoresT.TOTAL), ml, yi); yi += 10;
+        doc.setFillColor(255, 248, 235); doc.rect(ml, yi, lu, 14, 'F');
+        doc.setTextColor(150, 80, 0); doc.setFontSize(7); doc.setFont(undefined, 'bold');
+        doc.text('IMPORTANTE:', ml + 3, yi + 5); doc.setFont(undefined, 'normal');
+        doc.text('Instrumento de rastreio. Resultados devem ser interpretados por profissional qualificado em avalia\u00e7\u00e3o abrangente.', ml + 3, yi + 10);
+
+        // ---------- RODAPE PAGINADO ----------
+        var totalPages = doc.internal.getNumberOfPages();
+        for (var pg = 1; pg <= totalPages; pg++) {
+          doc.setPage(pg);
+          doc.setFillColor(50, 50, 50); doc.rect(0, 287, 210, 10, 'F');
+          doc.setTextColor(200, 200, 200); doc.setFontSize(7); doc.setFont(undefined, 'normal');
+          doc.text('S\u03A8M Online | SRS-2 Comparativo | Gerado em ' + new Date().toLocaleString('pt-BR') + ' | Pag. ' + pg + '/' + totalPages, 105, 293, { align: 'center' });
+        }
+
+        var tsNow = new Date();
+        var tsStr = tsNow.getFullYear() + String(tsNow.getMonth() + 1).padStart(2, '0') + String(tsNow.getDate()).padStart(2, '0') + String(tsNow.getHours()).padStart(2, '0') + String(tsNow.getMinutes()).padStart(2, '0');
+        doc.save('SRS2_Comparativo_Adulto_' + (d1.paciente || '').replace(/\s+/g, '_') + '_' + tsStr + '.pdf');
+      } catch (err) {
+        console.error('Erro ao gerar comparativo SRS-2 Adulto:', err);
+        try {
+          if (typeof window._registrarFalhaPDF === 'function') {
+            window._registrarFalhaPDF('gerarComparativoSrs2Adulto', (err && err.message ? err.message : String(err)), (d1 && d1.paciente) || '');
+          }
+        } catch (e2) {}
+        alert('Nao foi possivel gerar o PDF comparativo.\n\nDetalhe tecnico: ' + (err && err.message ? err.message : err) + '\n\nOs dados continuam salvos. Por favor, avise o suporte.');
+      }
     }
 
     // ===== FUNCOES PROGRAMAS OCULTOS - VINELAND-3 =====
