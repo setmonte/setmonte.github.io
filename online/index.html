@@ -10165,7 +10165,7 @@
         var results = data.results || [];
         _srs2ResultCache = results;
         if (results.length === 0) { el.innerHTML = '<p>Nenhum resultado SRS-2 encontrado.</p>'; return; }
-        var html = '<h3 style="color:#1565c0;">Resultados SRS-2</h3><p style="font-size:0.8em;color:#555;margin:0 0 8px;">Marque DOIS resultados da mesma pessoa (dois respondentes) para gerar um relat&#243;rio comparativo.</p><table style="width:100%;border-collapse:collapse;font-size:0.85em;"><tr><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Sel</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Data</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Paciente</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Escore T</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Classificacao</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Respondente</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">PDF</th></tr>';
+        var html = '<h3 style="color:#1565c0;">Resultados SRS-2</h3><p style="font-size:0.8em;color:#555;margin:0 0 8px;">Marque de 2 a 5 resultados da mesma pessoa (respondentes) para gerar um relat&#243;rio comparativo.</p><table style="width:100%;border-collapse:collapse;font-size:0.85em;"><tr><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Sel</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Data</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Paciente</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Escore T</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Classificacao</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Respondente</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">PDF</th></tr>';
         for (var i = 0; i < results.length; i++) {
           var r = results[i];
           var d = r.data || {};
@@ -10180,7 +10180,7 @@
           html += '</tr>';
         }
         html += '</table>';
-        html += '<div style="margin-top:12px;"><button id="btnCompSrs2" class="btn btn-blue" style="padding:8px 18px;font-size:14px;" disabled onclick="gerarComparativoSrs2()">Selecione exatamente 2</button></div>';
+        html += '<div style="margin-top:12px;"><button id="btnCompSrs2" class="btn btn-blue" style="padding:8px 18px;font-size:14px;" disabled onclick="gerarComparativoSrs2()">Selecione de 2 a 5 resultados da mesma pessoa</button></div>';
         el.innerHTML = html;
       } catch(e) { el.innerHTML = '<p>Erro ao carregar resultados.</p>'; }
     }
@@ -10207,6 +10207,18 @@
       { k: 'PRR', nome: 'Padr\u00f5es Restritos e Repetitivos' },
       { k: 'CIS', nome: 'Comunica\u00e7\u00e3o e Intera\u00e7\u00e3o Social' },
       { k: 'TOTAL', nome: 'Escore Total' }
+    ];
+
+    // Paleta compartilhada de 5 estilos (cor + marcador + padrao de tracos) para os comparativos
+    // de 2 a 5 respondentes (Escolar e Adulto). Os estilos 0 e 1 reproduzem EXATAMENTE o visual
+    // atual do caso de 2 (azul losango/tracejada e vermelho quadrado/traco-ponto), garantindo que
+    // 2 respondentes continuem identicos ao comportamento anterior. 'tracos' vazio = linha cheia.
+    var SRS2_ESTILOS = [
+      { cor: [21, 101, 192], corClara: [187, 222, 251], marcador: 'losango', tracos: [1.6, 1.2], rotulo: 'Azul losango' },
+      { cor: [211, 47, 47], corClara: [255, 205, 210], marcador: 'quadrado', tracos: [2.4, 1, 0.6, 1], rotulo: 'Vermelho quadrado' },
+      { cor: [46, 125, 50], corClara: [200, 230, 201], marcador: 'triangulo', tracos: [], rotulo: 'Verde triangulo' },
+      { cor: [230, 126, 0], corClara: [255, 224, 178], marcador: 'circulo', tracos: [0.6, 1], rotulo: 'Laranja circulo' },
+      { cor: [106, 27, 154], corClara: [225, 190, 231], marcador: 'losangoVazado', tracos: [3, 1.2], rotulo: 'Roxo losango vazado' }
     ];
 
     // Textos descritivos oficiais das subescalas (Manual SRS-2, Apendice B, p.117).
@@ -10251,34 +10263,38 @@
       return (d.brutos && d.brutos[k] != null) ? d.brutos[k] : null;
     }
 
-    // Gatekeeper do botao: habilita so com 2 resultados validos da mesma pessoa.
+    // Gatekeeper do botao: habilita so com 2 a 5 resultados validos da mesma pessoa.
     function atualizarBotaoComparativoSrs2() {
       var btn = document.getElementById('btnCompSrs2');
       if (!btn) return;
       var checks = document.querySelectorAll('.srs2-cmp-check:checked');
-      if (checks.length !== 2) {
+      var n = checks.length;
+      if (n < 2 || n > 5) {
         btn.disabled = true;
-        btn.textContent = 'Selecione exatamente 2';
+        btn.textContent = 'Selecione de 2 a 5 resultados da mesma pessoa';
         return;
       }
-      var i1 = parseInt(checks[0].getAttribute('data-idx'), 10);
-      var i2 = parseInt(checks[1].getAttribute('data-idx'), 10);
-      var r1 = _srs2ResultCache[i1];
-      var r2 = _srs2ResultCache[i2];
-      var d1 = (r1 && r1.data) ? r1.data : null;
-      var d2 = (r2 && r2.data) ? r2.data : null;
-      if (!d1 || !d2 || !d1.escoresT || !d2.escoresT) {
-        btn.disabled = true;
-        btn.textContent = 'Resultado sem escores calculados';
-        return;
+      var dados = [];
+      for (var ci = 0; ci < n; ci++) {
+        var idx = parseInt(checks[ci].getAttribute('data-idx'), 10);
+        var r = _srs2ResultCache[idx];
+        var d = (r && r.data) ? r.data : null;
+        if (!d || !d.escoresT) {
+          btn.disabled = true;
+          btn.textContent = 'Resultado sem escores calculados';
+          return;
+        }
+        dados.push(d);
       }
-      if (!mesmaPessoaSrs2(d1, d2)) {
-        btn.disabled = true;
-        btn.textContent = 'Resultados devem ser da mesma pessoa';
-        return;
+      for (var pi = 1; pi < dados.length; pi++) {
+        if (!mesmaPessoaSrs2(dados[0], dados[pi])) {
+          btn.disabled = true;
+          btn.textContent = 'Resultados devem ser da mesma pessoa';
+          return;
+        }
       }
       btn.disabled = false;
-      btn.textContent = 'Gerar comparativo (2 selecionados)';
+      btn.textContent = 'Gerar comparativo (' + n + ' selecionados)';
     }
 
     // Desenha um losango (diamante) preenchido centrado em (cx,cy) com meia-largura rr.
@@ -10287,46 +10303,82 @@
       doc.triangle(cx, cy + rr, cx - rr, cy, cx + rr, cy, 'F');
     }
 
+    // Desenha o marcador do estilo da paleta centrado em (cx,cy) com meia-largura rr. A cor de
+    // preenchimento/traco deve ser definida pelo chamador (setFillColor/setDrawColor) antes.
+    function _marcadorSrs2(doc, tipo, cx, cy, rr) {
+      if (tipo === 'quadrado') {
+        doc.rect(cx - rr, cy - rr, 2 * rr, 2 * rr, 'F');
+      } else if (tipo === 'triangulo') {
+        doc.triangle(cx, cy - rr, cx - rr, cy + rr, cx + rr, cy + rr, 'F');
+      } else if (tipo === 'circulo') {
+        doc.circle(cx, cy, rr, 'F');
+      } else if (tipo === 'losangoVazado') {
+        doc.line(cx, cy - rr, cx - rr, cy);
+        doc.line(cx - rr, cy, cx, cy + rr);
+        doc.line(cx, cy + rr, cx + rr, cy);
+        doc.line(cx + rr, cy, cx, cy - rr);
+      } else {
+        _losangoSrs2(doc, cx, cy, rr);
+      }
+    }
+
     function gerarComparativoSrs2() {
       var checks = document.querySelectorAll('.srs2-cmp-check:checked');
-      if (checks.length !== 2) { alert('Selecione exatamente 2 resultados.'); return; }
-      var i1 = parseInt(checks[0].getAttribute('data-idx'), 10);
-      var i2 = parseInt(checks[1].getAttribute('data-idx'), 10);
-      var r1 = _srs2ResultCache[i1];
-      var r2 = _srs2ResultCache[i2];
-      var d1 = (r1 && r1.data) ? r1.data : null;
-      var d2 = (r2 && r2.data) ? r2.data : null;
-      if (!d1 || !d2 || !d1.escoresT || !d2.escoresT) {
-        alert('Um dos resultados nao possui escores calculados e nao pode entrar no comparativo.');
-        return;
+      var nSel = checks.length;
+      if (nSel < 2 || nSel > 5) { alert('Selecione de 2 a 5 resultados da mesma pessoa.'); return; }
+      // Resolver todos os selecionados.
+      var selecionados = [];
+      for (var si0 = 0; si0 < nSel; si0++) {
+        var idxSel = parseInt(checks[ si0 ].getAttribute('data-idx'), 10);
+        var rSel = _srs2ResultCache[idxSel];
+        var dSel = (rSel && rSel.data) ? rSel.data : null;
+        if (!dSel || !dSel.escoresT) {
+          alert('Um dos resultados nao possui escores calculados e nao pode entrar no comparativo.');
+          return;
+        }
+        selecionados.push(rSel);
       }
-      if (!mesmaPessoaSrs2(d1, d2)) {
-        alert('Os dois resultados devem ser da mesma pessoa.');
-        return;
+      // Validar mesma pessoa (todos contra o primeiro).
+      for (var mp = 1; mp < selecionados.length; mp++) {
+        if (!mesmaPessoaSrs2(selecionados[0].data, selecionados[mp].data)) {
+          alert('Todos os resultados devem ser da mesma pessoa.');
+          return;
+        }
       }
+      var regs = null;
       try {
-        // Ordenar por data ascendente: respondente 1 (azul) = mais antigo; respondente 2 (vermelho) = mais recente.
+        // Ordenar por data ascendente: o mais antigo recebe o estilo 1 (azul), e assim por diante.
         var dataDe = function (r) {
           var d = (r && r.data) ? r.data : {};
           var v = d.data || r.date || '';
           var t = v ? new Date(v).getTime() : 0;
           return isFinite(t) ? t : 0;
         };
-        if (dataDe(r2) < dataDe(r1)) {
-          var tmp = r1; r1 = r2; r2 = tmp;
-          var tmpd = d1; d1 = d2; d2 = tmpd;
+        selecionados.sort(function (a, b) { return dataDe(a) - dataDe(b); });
+
+        // Montar a lista de respondentes (2 a 5). O estilo e atribuido pela POSICAO apos ordenar,
+        // de modo que com 2 selecionados regs[0]/regs[1] usam azul-losango e vermelho-quadrado,
+        // identico ao comportamento anterior.
+        regs = [];
+        for (var ri = 0; ri < selecionados.length; ri++) {
+          var rr = selecionados[ri];
+          var dd = rr.data;
+          var dataStr = (dd.data || rr.date) ? new Date(dd.data || rr.date).toLocaleString('pt-BR') : '-';
+          regs.push({
+            d: dd,
+            r: rr,
+            estilo: SRS2_ESTILOS[ri],
+            nome: dd.nomeRespondente || dd.respondente || ('Respondente ' + (ri + 1)),
+            dataStr: dataStr,
+            pts: []
+          });
         }
-
-        var COR1 = [21, 101, 192];   // azul (respondente 1, losango, linha tracejada)
-        var COR2 = [211, 47, 47];    // vermelho (respondente 2, quadrado, linha traco-ponto)
-        var COR1L = [187, 222, 251]; // azul claro (barra de IC r1)
-        var COR2L = [255, 205, 210]; // vermelho claro (barra de IC r2)
-
-        var dataStr1 = (d1.data || r1.date) ? new Date(d1.data || r1.date).toLocaleString('pt-BR') : '-';
-        var dataStr2 = (d2.data || r2.date) ? new Date(d2.data || r2.date).toLocaleString('pt-BR') : '-';
-        var nomeResp1 = d1.nomeRespondente || d1.respondente || 'Respondente 1';
-        var nomeResp2 = d2.nomeRespondente || d2.respondente || 'Respondente 2';
-        var sexoDivergente = (String(d1.sexo || '') !== String(d2.sexo || ''));
+        var d1 = regs[0].d; // usado em rotulos gerais (paciente/idade/sexo) e no nome do arquivo
+        // Aviso de sexo divergente: verdadeiro se houver mais de um sexo distinto entre os registros.
+        var sexoDivergente = false;
+        for (var sv = 1; sv < regs.length; sv++) {
+          if (String(regs[sv].d.sexo || '') !== String(regs[0].d.sexo || '')) { sexoDivergente = true; break; }
+        }
 
         var jsPDF = window.jspdf.jsPDF;
         var doc = new jsPDF();
@@ -10368,82 +10420,81 @@
         doc.setDrawColor(200, 200, 200); doc.setLineWidth(0.2);
         for (var ti2 = 0; ti2 < tk.length; ti2++) { doc.line(xT(tk[ti2]), yS, xT(tk[ti2]), yE); }
 
-        // Posicoes dos marcadores por respondente para a polilinha.
-        var pts1 = [], pts2 = [];
+        // Offset vertical simetrico das linhas de cada respondente dentro da faixa do dominio.
+        // O span total e fixado em 7 (extremos em +/-3.5). Passo = distancia entre linhas vizinhas.
+        // Para N=2 -> passo 7, offsets em +/-3.5 (IDENTICO ao anterior yc-3.5/yc+3.5). Para N=5 ->
+        // passo 1.75, offsets -3.5..+3.5, reduzindo a sobreposicao das barras de IC.
+        var nR = regs.length;
+        var passo = (nR > 1) ? (7 / (nR - 1)) : 0;
+
         for (var si = 0; si < SRS2_MEDIDAS.length; si++) {
           var sc = SRS2_MEDIDAS[si];
-          var t1 = Number(d1.escoresT[sc.k]);
-          var t2 = Number(d2.escoresT[sc.k]);
           var yRow = yS + si * (bH + gp);
           var yc = yRow + bH / 2;
-          var yc1 = yc - 3.5, yc2 = yc + 3.5; // linhas separadas por respondente dentro da faixa
 
           // Rotulo da medida.
           doc.setFontSize(6.5); doc.setTextColor(0, 0, 0); doc.setFont(undefined, (sc.k === 'CIS' || sc.k === 'TOTAL') ? 'bold' : 'normal');
           doc.text(sc.nome, ml, yc - 1);
 
-          // Colunas Dados brutos / Normas (bruto e T por respondente).
-          var br1 = _brutoSrs2(d1, sc.k), br2 = _brutoSrs2(d2, sc.k);
-          doc.setFont(undefined, 'normal'); doc.setFontSize(6);
-          doc.setTextColor(COR1[0], COR1[1], COR1[2]);
-          doc.text(String(br1 != null ? br1 : '-'), cDadosX, yc1 + 1, { align: 'center' });
-          doc.text(String(isFinite(t1) ? t1 : '-'), cNormasX, yc1 + 1, { align: 'center' });
-          doc.setTextColor(COR2[0], COR2[1], COR2[2]);
-          doc.text(String(br2 != null ? br2 : '-'), cDadosX, yc2 + 1, { align: 'center' });
-          doc.text(String(isFinite(t2) ? t2 : '-'), cNormasX, yc2 + 1, { align: 'center' });
+          for (var rp = 0; rp < nR; rp++) {
+            var reg = regs[rp];
+            var est = reg.estilo;
+            var tv = Number(reg.d.escoresT[sc.k]);
+            var brv = _brutoSrs2(reg.d, sc.k);
+            var yci = yc + (rp - (nR - 1) / 2) * passo;
 
-          // Barra de IC (desenho clampado a 20..80).
-          if (isFinite(t1)) {
-            var x1a = xT(clampT(t1 - SRS2_IC_DELTA)), x1b = xT(clampT(t1 + SRS2_IC_DELTA));
-            doc.setFillColor(COR1L[0], COR1L[1], COR1L[2]);
-            doc.rect(x1a, yc1 - 1.3, x1b - x1a, 2.6, 'F');
-          }
-          if (isFinite(t2)) {
-            var x2a = xT(clampT(t2 - SRS2_IC_DELTA)), x2b = xT(clampT(t2 + SRS2_IC_DELTA));
-            doc.setFillColor(COR2L[0], COR2L[1], COR2L[2]);
-            doc.rect(x2a, yc2 - 1.3, x2b - x2a, 2.6, 'F');
-          }
+            // Colunas Dados brutos / Normas (bruto e T por respondente).
+            doc.setFont(undefined, 'normal'); doc.setFontSize(6);
+            doc.setTextColor(est.cor[0], est.cor[1], est.cor[2]);
+            doc.text(String(brv != null ? brv : '-'), cDadosX, yci + 1, { align: 'center' });
+            doc.text(String(isFinite(tv) ? tv : '-'), cNormasX, yci + 1, { align: 'center' });
 
-          // Marcadores: r1 losango azul; r2 quadrado vermelho.
-          if (isFinite(t1)) {
-            var px1 = xT(clampT(t1));
-            doc.setFillColor(COR1[0], COR1[1], COR1[2]);
-            _losangoSrs2(doc, px1, yc1, 1.8);
-            pts1.push({ x: px1, y: yc1 });
-            doc.setFontSize(5.5); doc.setTextColor(COR1[0], COR1[1], COR1[2]); doc.setFont(undefined, 'bold');
-            doc.text(String(t1), px1, yc1 - 2.6, { align: 'center' });
-          }
-          if (isFinite(t2)) {
-            var px2 = xT(clampT(t2));
-            doc.setFillColor(COR2[0], COR2[1], COR2[2]);
-            doc.rect(px2 - 1.6, yc2 - 1.6, 3.2, 3.2, 'F');
-            pts2.push({ x: px2, y: yc2 });
-            doc.setFontSize(5.5); doc.setTextColor(COR2[0], COR2[1], COR2[2]); doc.setFont(undefined, 'bold');
-            doc.text(String(t2), px2, yc2 + 5, { align: 'center' });
+            if (isFinite(tv)) {
+              // Barra de IC (clampada a 20..80). Escolar usa +/- 4.
+              var xa = xT(clampT(tv - SRS2_IC_DELTA)), xb = xT(clampT(tv + SRS2_IC_DELTA));
+              doc.setFillColor(est.corClara[0], est.corClara[1], est.corClara[2]);
+              doc.rect(xa, yci - 1.3, xb - xa, 2.6, 'F');
+              // Marcador do estilo.
+              var pxv = xT(clampT(tv));
+              doc.setFillColor(est.cor[0], est.cor[1], est.cor[2]);
+              doc.setDrawColor(est.cor[0], est.cor[1], est.cor[2]); doc.setLineWidth(0.4);
+              _marcadorSrs2(doc, est.marcador, pxv, yci, 1.8);
+              reg.pts.push({ x: pxv, y: yci });
+              // Rotulo do T: acima para a metade superior, abaixo para a inferior.
+              doc.setFontSize(5.5); doc.setTextColor(est.cor[0], est.cor[1], est.cor[2]); doc.setFont(undefined, 'bold');
+              var dyRot = (rp < nR / 2) ? -2.6 : 5;
+              doc.text(String(tv), pxv, yci + dyRot, { align: 'center' });
+            }
           }
         }
 
-        // Polilinhas conectando os pontos (r1 tracejada; r2 traco-ponto). Segmentos manuais.
+        // Polilinhas conectando os pontos de cada respondente, no padrao de tracos do estilo.
         doc.setLineWidth(0.4);
-        doc.setDrawColor(COR1[0], COR1[1], COR1[2]);
-        _linhaTracejadaSrs2(doc, pts1, [1.6, 1.2]);
-        doc.setDrawColor(COR2[0], COR2[1], COR2[2]);
-        _linhaTracejadaSrs2(doc, pts2, [2.4, 1, 0.6, 1]);
+        for (var pl = 0; pl < nR; pl++) {
+          doc.setDrawColor(regs[pl].estilo.cor[0], regs[pl].estilo.cor[1], regs[pl].estilo.cor[2]);
+          var padrao = (regs[pl].estilo.tracos && regs[pl].estilo.tracos.length) ? regs[pl].estilo.tracos : [999, 0];
+          _linhaTracejadaSrs2(doc, regs[pl].pts, padrao);
+        }
 
-        // Legenda.
+        // Legenda: um item por respondente (2 a 5).
         var yl = yE + 8;
         doc.setFontSize(7); doc.setFont(undefined, 'normal');
-        doc.setFillColor(COR1[0], COR1[1], COR1[2]); _losangoSrs2(doc, ml + 2, yl - 1, 1.8);
-        doc.setTextColor(0, 0, 0);
-        doc.text(nomeResp1 + ' (' + (d1.respondente || '-') + ') - ' + dataStr1, ml + 7, yl + 1); yl += 6;
-        doc.setFillColor(COR2[0], COR2[1], COR2[2]); doc.rect(ml, yl - 2.4, 3.2, 3.2, 'F');
-        doc.text(nomeResp2 + ' (' + (d2.respondente || '-') + ') - ' + dataStr2, ml + 7, yl + 1); yl += 7;
+        for (var lg = 0; lg < nR; lg++) {
+          var le = regs[lg].estilo;
+          if (yl > maxY) { doc.addPage(); yl = 20; }
+          doc.setFillColor(le.cor[0], le.cor[1], le.cor[2]);
+          doc.setDrawColor(le.cor[0], le.cor[1], le.cor[2]); doc.setLineWidth(0.4);
+          _marcadorSrs2(doc, le.marcador, ml + 2, yl - 1, 1.8);
+          doc.setTextColor(0, 0, 0);
+          doc.text(regs[lg].nome + ' (' + (regs[lg].d.respondente || '-') + ') - ' + regs[lg].dataStr, ml + 7, yl + 1); yl += 6;
+        }
+        yl += 1;
         doc.setFontSize(6.5); doc.setTextColor(90, 90, 90);
         doc.text('Intervalo de confian\u00e7a (B\u00e1sico: Consist\u00eancia, N\u00edvel de confian\u00e7a: 95%)', ml, yl); yl += 5;
         doc.text('Verde = Normal   Amarelo = Leve   Laranja = Moderado   Vermelho = Severo', ml, yl); yl += 5;
         if (sexoDivergente) {
           doc.setTextColor(198, 40, 40);
-          doc.text('Aten\u00e7\u00e3o: sexo divergente entre os registros (' + (d1.sexo || '-') + ' x ' + (d2.sexo || '-') + ').', ml, yl);
+          doc.text('Aten\u00e7\u00e3o: h\u00e1 sexos divergentes entre os registros.', ml, yl);
         }
 
         // ---------- PAGINAS 2+: DETALHES DA ESCALA (uma secao por medida) ----------
@@ -10453,9 +10504,6 @@
           doc.setFillColor(26, 35, 126); doc.rect(0, 0, pw, 8, 'F');
           doc.setTextColor(26, 35, 126); doc.setFontSize(14); doc.setFont(undefined, 'bold');
           var yd = 22; doc.text('Detalhes - ' + md.nome, ml, yd); yd += 10;
-
-          var mt1 = Number(d1.escoresT[md.k]);
-          var mt2 = Number(d2.escoresT[md.k]);
 
           // Curva normal (sino) amostrada; eixo X reaproveita xT().
           var curvaTopo = yd;
@@ -10477,22 +10525,22 @@
             if (prevX !== null) { doc.line(prevX, prevY, cx, cy); }
             prevX = cx; prevY = cy;
           }
-          // Marcadores sobre a curva.
+          // Marcadores sobre a curva (um por respondente).
           function _altCurva(t) {
             var hh = Math.exp(-((t - 50) * (t - 50)) / (2 * 10 * 10));
             return curvaBase - hh * curvaAlt;
           }
-          if (isFinite(mt1)) {
-            var mx1 = xT(clampT(mt1));
-            doc.setDrawColor(COR1[0], COR1[1], COR1[2]); doc.setLineWidth(0.3);
-            doc.line(mx1, curvaBase, mx1, _altCurva(clampT(mt1)));
-            doc.setFillColor(COR1[0], COR1[1], COR1[2]); _losangoSrs2(doc, mx1, _altCurva(clampT(mt1)), 1.8);
-          }
-          if (isFinite(mt2)) {
-            var mx2 = xT(clampT(mt2));
-            doc.setDrawColor(COR2[0], COR2[1], COR2[2]); doc.setLineWidth(0.3);
-            doc.line(mx2, curvaBase, mx2, _altCurva(clampT(mt2)));
-            doc.setFillColor(COR2[0], COR2[1], COR2[2]); doc.rect(mx2 - 1.6, _altCurva(clampT(mt2)) - 1.6, 3.2, 3.2, 'F');
+          for (var cm = 0; cm < regs.length; cm++) {
+            var estC = regs[cm].estilo;
+            var mtv = Number(regs[cm].d.escoresT[md.k]);
+            if (isFinite(mtv)) {
+              var mxv = xT(clampT(mtv));
+              doc.setDrawColor(estC.cor[0], estC.cor[1], estC.cor[2]); doc.setLineWidth(0.3);
+              doc.line(mxv, curvaBase, mxv, _altCurva(clampT(mtv)));
+              doc.setFillColor(estC.cor[0], estC.cor[1], estC.cor[2]);
+              doc.setDrawColor(estC.cor[0], estC.cor[1], estC.cor[2]); doc.setLineWidth(0.4);
+              _marcadorSrs2(doc, estC.marcador, mxv, _altCurva(clampT(mtv)), 1.8);
+            }
           }
           yd = curvaBase + 12;
 
@@ -10506,15 +10554,12 @@
           doc.text('IC', colIC, yd);
           yd += 2; doc.setDrawColor(26, 35, 126); doc.setLineWidth(0.4); doc.line(ml, yd, ml + lu, yd); yd += 6;
           doc.setFont(undefined, 'normal');
-          var linhasTab = [
-            { d: d1, nome: nomeResp1, cor: COR1 },
-            { d: d2, nome: nomeResp2, cor: COR2 }
-          ];
-          for (var li = 0; li < linhasTab.length; li++) {
-            var row = linhasTab[li];
+          for (var li = 0; li < regs.length; li++) {
+            var row = regs[li];
+            if (yd > maxY) { doc.addPage(); yd = 20; }
             var tv = Number(row.d.escoresT[md.k]);
             var bv = _brutoSrs2(row.d, md.k);
-            doc.setTextColor(row.cor[0], row.cor[1], row.cor[2]); doc.setFont(undefined, 'bold');
+            doc.setTextColor(row.estilo.cor[0], row.estilo.cor[1], row.estilo.cor[2]); doc.setFont(undefined, 'bold');
             var nomeLin = doc.splitTextToSize(row.nome, 65);
             doc.text(nomeLin[0], colNome, yd);
             doc.setTextColor(0, 0, 0); doc.setFont(undefined, 'normal');
@@ -10560,8 +10605,13 @@
         yi += 4; doc.setFontSize(9); doc.setFont(undefined, 'bold'); doc.setTextColor(26, 35, 126);
         doc.text('Escore Total por respondente:', ml, yi); yi += 7;
         doc.setFont(undefined, 'normal'); doc.setTextColor(0, 0, 0);
-        doc.text(nomeResp1 + ': T = ' + (isFinite(Number(d1.escoresT.TOTAL)) ? d1.escoresT.TOTAL : '-') + ' (' + _faixaSrs2(d1.escoresT.TOTAL) + '), IC ' + formatarICsrs2(d1.escoresT.TOTAL), ml, yi); yi += 6;
-        doc.text(nomeResp2 + ': T = ' + (isFinite(Number(d2.escoresT.TOTAL)) ? d2.escoresT.TOTAL : '-') + ' (' + _faixaSrs2(d2.escoresT.TOTAL) + '), IC ' + formatarICsrs2(d2.escoresT.TOTAL), ml, yi); yi += 10;
+        for (var it = 0; it < regs.length; it++) {
+          if (yi > maxY) { doc.addPage(); yi = 20; }
+          var dIt = regs[it].d;
+          doc.text(regs[it].nome + ': T = ' + (isFinite(Number(dIt.escoresT.TOTAL)) ? dIt.escoresT.TOTAL : '-') + ' (' + _faixaSrs2(dIt.escoresT.TOTAL) + '), IC ' + formatarICsrs2(dIt.escoresT.TOTAL), ml, yi); yi += 6;
+        }
+        yi += 4;
+        if (yi > maxY - 14) { doc.addPage(); yi = 20; }
         doc.setFillColor(255, 248, 235); doc.rect(ml, yi, lu, 14, 'F');
         doc.setTextColor(150, 80, 0); doc.setFontSize(7); doc.setFont(undefined, 'bold');
         doc.text('IMPORTANTE:', ml + 3, yi + 5); doc.setFont(undefined, 'normal');
@@ -10583,7 +10633,7 @@
         console.error('Erro ao gerar comparativo SRS-2:', err);
         try {
           if (typeof window._registrarFalhaPDF === 'function') {
-            window._registrarFalhaPDF('gerarComparativoSrs2', (err && err.message ? err.message : String(err)), (d1 && d1.paciente) || '');
+            window._registrarFalhaPDF('gerarComparativoSrs2', (err && err.message ? err.message : String(err)), (regs && regs[0] && regs[0].d && regs[0].d.paciente) || '');
           }
         } catch (e2) {}
         alert('Nao foi possivel gerar o PDF comparativo.\n\nDetalhe tecnico: ' + (err && err.message ? err.message : err) + '\n\nOs dados continuam salvos. Por favor, avise o suporte.');
@@ -10887,7 +10937,7 @@
         if (combinado.length < 2) {
           html = '<h3 style="color:#1565c0;">Relat&#243;rio Comparativo SRS-2 Adulto</h3><p style="font-size:0.85em;color:#555;">S&#227;o necess&#225;rios pelo menos 2 resultados SRS-2 Adulto (Auto e/ou Hetero) da mesma pessoa para gerar o comparativo.</p>';
         } else {
-          html = '<h3 style="color:#1565c0;">Relat&#243;rio Comparativo SRS-2 Adulto</h3><p style="font-size:0.8em;color:#555;margin:0 0 8px;">Marque DOIS resultados da mesma pessoa (Autorrelato e/ou Heterorrelato) para gerar um relat&#243;rio comparativo.</p><table style="width:100%;border-collapse:collapse;font-size:0.85em;"><tr><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Sel</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Data</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Paciente</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Formul&#225;rio</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Escore T</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Classificacao</th></tr>';
+          html = '<h3 style="color:#1565c0;">Relat&#243;rio Comparativo SRS-2 Adulto</h3><p style="font-size:0.8em;color:#555;margin:0 0 8px;">Marque de 2 a 5 resultados da mesma pessoa (Autorrelato e/ou Heterorrelato) para gerar um relat&#243;rio comparativo.</p><table style="width:100%;border-collapse:collapse;font-size:0.85em;"><tr><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Sel</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Data</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Paciente</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Formul&#225;rio</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Escore T</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Classificacao</th></tr>';
           for (i = 0; i < combinado.length; i++) {
             var r = combinado[i];
             var d = r.data || {};
@@ -10901,7 +10951,7 @@
             html += '</tr>';
           }
           html += '</table>';
-          html += '<div style="margin-top:12px;"><button id="btnCompSrs2Adulto" class="btn btn-blue" style="padding:8px 18px;font-size:14px;" disabled onclick="gerarComparativoSrs2Adulto()">Selecione exatamente 2</button></div>';
+          html += '<div style="margin-top:12px;"><button id="btnCompSrs2Adulto" class="btn btn-blue" style="padding:8px 18px;font-size:14px;" disabled onclick="gerarComparativoSrs2Adulto()">Selecione de 2 a 5 resultados da mesma pessoa</button></div>';
         }
         if (el) el.innerHTML = html;
         if (elAh) elAh.innerHTML = html;
@@ -10917,21 +10967,28 @@
       if (!btns || btns.length === 0) return;
       var checks = document.querySelectorAll('.srs2a-cmp-check:checked');
       var rotulo, habilitar = false;
-      if (checks.length !== 2) {
-        rotulo = 'Selecione exatamente 2';
+      var n = checks.length;
+      if (n < 2 || n > 5) {
+        rotulo = 'Selecione de 2 a 5 resultados da mesma pessoa';
       } else {
-        var i1 = parseInt(checks[0].getAttribute('data-idx'), 10);
-        var i2 = parseInt(checks[1].getAttribute('data-idx'), 10);
-        var r1 = _srs2AdultoCmpCache[i1];
-        var r2 = _srs2AdultoCmpCache[i2];
-        var d1 = (r1 && r1.data) ? r1.data : null;
-        var d2 = (r2 && r2.data) ? r2.data : null;
-        if (!d1 || !d2 || !d1.escoresT || !d2.escoresT) {
-          rotulo = 'Resultado sem escores calculados';
-        } else if (!mesmaPessoaSrs2(d1, d2)) {
-          rotulo = 'Resultados devem ser da mesma pessoa';
+        var dados = [];
+        var erro = null;
+        for (var ci = 0; ci < n; ci++) {
+          var idx = parseInt(checks[ci].getAttribute('data-idx'), 10);
+          var r = _srs2AdultoCmpCache[idx];
+          var d = (r && r.data) ? r.data : null;
+          if (!d || !d.escoresT) { erro = 'Resultado sem escores calculados'; break; }
+          dados.push(d);
+        }
+        if (!erro) {
+          for (var pi = 1; pi < dados.length; pi++) {
+            if (!mesmaPessoaSrs2(dados[0], dados[pi])) { erro = 'Resultados devem ser da mesma pessoa'; break; }
+          }
+        }
+        if (erro) {
+          rotulo = erro;
         } else {
-          rotulo = 'Gerar comparativo (2 selecionados)';
+          rotulo = 'Gerar comparativo (' + n + ' selecionados)';
           habilitar = true;
         }
       }
@@ -10943,44 +11000,61 @@
 
     function gerarComparativoSrs2Adulto() {
       var checks = document.querySelectorAll('.srs2a-cmp-check:checked');
-      if (checks.length !== 2) { alert('Selecione exatamente 2 resultados.'); return; }
-      var i1 = parseInt(checks[0].getAttribute('data-idx'), 10);
-      var i2 = parseInt(checks[1].getAttribute('data-idx'), 10);
-      var r1 = _srs2AdultoCmpCache[i1];
-      var r2 = _srs2AdultoCmpCache[i2];
-      var d1 = (r1 && r1.data) ? r1.data : null;
-      var d2 = (r2 && r2.data) ? r2.data : null;
-      if (!d1 || !d2 || !d1.escoresT || !d2.escoresT) {
-        alert('Um dos resultados nao possui escores calculados e nao pode entrar no comparativo.');
-        return;
+      var nSel = checks.length;
+      if (nSel < 2 || nSel > 5) { alert('Selecione de 2 a 5 resultados da mesma pessoa.'); return; }
+      // Resolver todos os selecionados.
+      var selecionados = [];
+      for (var si0 = 0; si0 < nSel; si0++) {
+        var idxSel = parseInt(checks[ si0 ].getAttribute('data-idx'), 10);
+        var rSel = _srs2AdultoCmpCache[idxSel];
+        var dSel = (rSel && rSel.data) ? rSel.data : null;
+        if (!dSel || !dSel.escoresT) {
+          alert('Um dos resultados nao possui escores calculados e nao pode entrar no comparativo.');
+          return;
+        }
+        selecionados.push(rSel);
       }
-      if (!mesmaPessoaSrs2(d1, d2)) {
-        alert('Os dois resultados devem ser da mesma pessoa.');
-        return;
+      // Validar mesma pessoa (todos contra o primeiro).
+      for (var mp = 1; mp < selecionados.length; mp++) {
+        if (!mesmaPessoaSrs2(selecionados[0].data, selecionados[mp].data)) {
+          alert('Todos os resultados devem ser da mesma pessoa.');
+          return;
+        }
       }
+      var regs = null;
       try {
-        // Ordenar por data ascendente: respondente 1 (azul) = mais antigo; respondente 2 (vermelho) = mais recente.
+        // Ordenar por data ascendente: o mais antigo recebe o estilo 1 (azul), e assim por diante.
         var dataDe = function (r) {
           var dd = (r && r.data) ? r.data : {};
           var v = dd.data || r.date || '';
           var t = v ? new Date(v).getTime() : 0;
           return isFinite(t) ? t : 0;
         };
-        if (dataDe(r2) < dataDe(r1)) {
-          var tmp = r1; r1 = r2; r2 = tmp;
-          var tmpd = d1; d1 = d2; d2 = tmpd;
+        selecionados.sort(function (a, b) { return dataDe(a) - dataDe(b); });
+
+        // Montar a lista de respondentes (2 a 5). O estilo e atribuido pela POSICAO apos ordenar,
+        // de modo que com 2 selecionados regs[0]/regs[1] usam azul-losango e vermelho-quadrado,
+        // identico ao comportamento anterior.
+        regs = [];
+        for (var ri = 0; ri < selecionados.length; ri++) {
+          var rr = selecionados[ri];
+          var dd = rr.data;
+          var dataStr = (dd.data || rr.date) ? new Date(dd.data || rr.date).toLocaleString('pt-BR') : '-';
+          regs.push({
+            d: dd,
+            r: rr,
+            estilo: SRS2_ESTILOS[ri],
+            nome: _rotuloRespSrs2Adulto(dd, ri + 1),
+            dataStr: dataStr,
+            pts: []
+          });
         }
-
-        var COR1 = [21, 101, 192];   // azul (respondente 1, losango, linha tracejada)
-        var COR2 = [211, 47, 47];    // vermelho (respondente 2, quadrado, linha traco-ponto)
-        var COR1L = [187, 222, 251]; // azul claro (barra de IC r1)
-        var COR2L = [255, 205, 210]; // vermelho claro (barra de IC r2)
-
-        var dataStr1 = (d1.data || r1.date) ? new Date(d1.data || r1.date).toLocaleString('pt-BR') : '-';
-        var dataStr2 = (d2.data || r2.date) ? new Date(d2.data || r2.date).toLocaleString('pt-BR') : '-';
-        var nomeResp1 = _rotuloRespSrs2Adulto(d1, 1);
-        var nomeResp2 = _rotuloRespSrs2Adulto(d2, 2);
-        var sexoDivergente = (String(d1.sexo || '') !== String(d2.sexo || ''));
+        var d1 = regs[0].d; // usado em rotulos gerais (paciente/idade/sexo) e no nome do arquivo
+        // Aviso de sexo divergente: verdadeiro se houver mais de um sexo distinto entre os registros.
+        var sexoDivergente = false;
+        for (var sv = 1; sv < regs.length; sv++) {
+          if (String(regs[sv].d.sexo || '') !== String(regs[0].d.sexo || '')) { sexoDivergente = true; break; }
+        }
 
         var jsPDF = window.jspdf.jsPDF;
         var doc = new jsPDF();
@@ -11022,82 +11096,81 @@
         doc.setDrawColor(200, 200, 200); doc.setLineWidth(0.2);
         for (var ti2 = 0; ti2 < tk.length; ti2++) { doc.line(xT(tk[ti2]), yS, xT(tk[ti2]), yE); }
 
-        // Posicoes dos marcadores por respondente para a polilinha.
-        var pts1 = [], pts2 = [];
+        // Offset vertical simetrico das linhas de cada respondente dentro da faixa do dominio.
+        // O span total e fixado em 7 (extremos em +/-3.5). Passo = distancia entre linhas vizinhas.
+        // Para N=2 -> passo 7, offsets em +/-3.5 (IDENTICO ao anterior yc-3.5/yc+3.5). Para N=5 ->
+        // passo 1.75, offsets -3.5..+3.5, reduzindo a sobreposicao das barras de IC.
+        var nR = regs.length;
+        var passo = (nR > 1) ? (7 / (nR - 1)) : 0;
+
         for (var si = 0; si < SRS2_MEDIDAS.length; si++) {
           var sc = SRS2_MEDIDAS[si];
-          var t1 = Number(d1.escoresT[sc.k]);
-          var t2 = Number(d2.escoresT[sc.k]);
           var yRow = yS + si * (bH + gp);
           var yc = yRow + bH / 2;
-          var yc1 = yc - 3.5, yc2 = yc + 3.5; // linhas separadas por respondente dentro da faixa
 
           // Rotulo da medida.
           doc.setFontSize(6.5); doc.setTextColor(0, 0, 0); doc.setFont(undefined, (sc.k === 'CIS' || sc.k === 'TOTAL') ? 'bold' : 'normal');
           doc.text(sc.nome, ml, yc - 1);
 
-          // Colunas Dados brutos / Normas (bruto e T por respondente).
-          var br1 = _brutoSrs2(d1, sc.k), br2 = _brutoSrs2(d2, sc.k);
-          doc.setFont(undefined, 'normal'); doc.setFontSize(6);
-          doc.setTextColor(COR1[0], COR1[1], COR1[2]);
-          doc.text(String(br1 != null ? br1 : '-'), cDadosX, yc1 + 1, { align: 'center' });
-          doc.text(String(isFinite(t1) ? t1 : '-'), cNormasX, yc1 + 1, { align: 'center' });
-          doc.setTextColor(COR2[0], COR2[1], COR2[2]);
-          doc.text(String(br2 != null ? br2 : '-'), cDadosX, yc2 + 1, { align: 'center' });
-          doc.text(String(isFinite(t2) ? t2 : '-'), cNormasX, yc2 + 1, { align: 'center' });
+          for (var rp = 0; rp < nR; rp++) {
+            var reg = regs[rp];
+            var est = reg.estilo;
+            var tv = Number(reg.d.escoresT[sc.k]);
+            var brv = _brutoSrs2(reg.d, sc.k);
+            var yci = yc + (rp - (nR - 1) / 2) * passo;
 
-          // Barra de IC (desenho clampado a 20..80). Adulto usa +/- 3.
-          if (isFinite(t1)) {
-            var x1a = xT(clampT(t1 - SRS2_IC_DELTA_ADULTO)), x1b = xT(clampT(t1 + SRS2_IC_DELTA_ADULTO));
-            doc.setFillColor(COR1L[0], COR1L[1], COR1L[2]);
-            doc.rect(x1a, yc1 - 1.3, x1b - x1a, 2.6, 'F');
-          }
-          if (isFinite(t2)) {
-            var x2a = xT(clampT(t2 - SRS2_IC_DELTA_ADULTO)), x2b = xT(clampT(t2 + SRS2_IC_DELTA_ADULTO));
-            doc.setFillColor(COR2L[0], COR2L[1], COR2L[2]);
-            doc.rect(x2a, yc2 - 1.3, x2b - x2a, 2.6, 'F');
-          }
+            // Colunas Dados brutos / Normas (bruto e T por respondente).
+            doc.setFont(undefined, 'normal'); doc.setFontSize(6);
+            doc.setTextColor(est.cor[0], est.cor[1], est.cor[2]);
+            doc.text(String(brv != null ? brv : '-'), cDadosX, yci + 1, { align: 'center' });
+            doc.text(String(isFinite(tv) ? tv : '-'), cNormasX, yci + 1, { align: 'center' });
 
-          // Marcadores: r1 losango azul; r2 quadrado vermelho.
-          if (isFinite(t1)) {
-            var px1 = xT(clampT(t1));
-            doc.setFillColor(COR1[0], COR1[1], COR1[2]);
-            _losangoSrs2(doc, px1, yc1, 1.8);
-            pts1.push({ x: px1, y: yc1 });
-            doc.setFontSize(5.5); doc.setTextColor(COR1[0], COR1[1], COR1[2]); doc.setFont(undefined, 'bold');
-            doc.text(String(t1), px1, yc1 - 2.6, { align: 'center' });
-          }
-          if (isFinite(t2)) {
-            var px2 = xT(clampT(t2));
-            doc.setFillColor(COR2[0], COR2[1], COR2[2]);
-            doc.rect(px2 - 1.6, yc2 - 1.6, 3.2, 3.2, 'F');
-            pts2.push({ x: px2, y: yc2 });
-            doc.setFontSize(5.5); doc.setTextColor(COR2[0], COR2[1], COR2[2]); doc.setFont(undefined, 'bold');
-            doc.text(String(t2), px2, yc2 + 5, { align: 'center' });
+            if (isFinite(tv)) {
+              // Barra de IC (clampada a 20..80). Adulto usa +/- 3.
+              var xa = xT(clampT(tv - SRS2_IC_DELTA_ADULTO)), xb = xT(clampT(tv + SRS2_IC_DELTA_ADULTO));
+              doc.setFillColor(est.corClara[0], est.corClara[1], est.corClara[2]);
+              doc.rect(xa, yci - 1.3, xb - xa, 2.6, 'F');
+              // Marcador do estilo.
+              var pxv = xT(clampT(tv));
+              doc.setFillColor(est.cor[0], est.cor[1], est.cor[2]);
+              doc.setDrawColor(est.cor[0], est.cor[1], est.cor[2]); doc.setLineWidth(0.4);
+              _marcadorSrs2(doc, est.marcador, pxv, yci, 1.8);
+              reg.pts.push({ x: pxv, y: yci });
+              // Rotulo do T: acima para a metade superior, abaixo para a inferior.
+              doc.setFontSize(5.5); doc.setTextColor(est.cor[0], est.cor[1], est.cor[2]); doc.setFont(undefined, 'bold');
+              var dyRot = (rp < nR / 2) ? -2.6 : 5;
+              doc.text(String(tv), pxv, yci + dyRot, { align: 'center' });
+            }
           }
         }
 
-        // Polilinhas conectando os pontos (r1 tracejada; r2 traco-ponto). Segmentos manuais.
+        // Polilinhas conectando os pontos de cada respondente, no padrao de tracos do estilo.
         doc.setLineWidth(0.4);
-        doc.setDrawColor(COR1[0], COR1[1], COR1[2]);
-        _linhaTracejadaSrs2(doc, pts1, [1.6, 1.2]);
-        doc.setDrawColor(COR2[0], COR2[1], COR2[2]);
-        _linhaTracejadaSrs2(doc, pts2, [2.4, 1, 0.6, 1]);
+        for (var pl = 0; pl < nR; pl++) {
+          doc.setDrawColor(regs[pl].estilo.cor[0], regs[pl].estilo.cor[1], regs[pl].estilo.cor[2]);
+          var padrao = (regs[pl].estilo.tracos && regs[pl].estilo.tracos.length) ? regs[pl].estilo.tracos : [999, 0];
+          _linhaTracejadaSrs2(doc, regs[pl].pts, padrao);
+        }
 
-        // Legenda.
+        // Legenda: um item por respondente (2 a 5).
         var yl = yE + 8;
         doc.setFontSize(7); doc.setFont(undefined, 'normal');
-        doc.setFillColor(COR1[0], COR1[1], COR1[2]); _losangoSrs2(doc, ml + 2, yl - 1, 1.8);
-        doc.setTextColor(0, 0, 0);
-        doc.text(nomeResp1 + ' - ' + dataStr1, ml + 7, yl + 1); yl += 6;
-        doc.setFillColor(COR2[0], COR2[1], COR2[2]); doc.rect(ml, yl - 2.4, 3.2, 3.2, 'F');
-        doc.text(nomeResp2 + ' - ' + dataStr2, ml + 7, yl + 1); yl += 7;
+        for (var lg = 0; lg < nR; lg++) {
+          var le = regs[lg].estilo;
+          if (yl > maxY) { doc.addPage(); yl = 20; }
+          doc.setFillColor(le.cor[0], le.cor[1], le.cor[2]);
+          doc.setDrawColor(le.cor[0], le.cor[1], le.cor[2]); doc.setLineWidth(0.4);
+          _marcadorSrs2(doc, le.marcador, ml + 2, yl - 1, 1.8);
+          doc.setTextColor(0, 0, 0);
+          doc.text(regs[lg].nome + ' - ' + regs[lg].dataStr, ml + 7, yl + 1); yl += 6;
+        }
+        yl += 1;
         doc.setFontSize(6.5); doc.setTextColor(90, 90, 90);
         doc.text('Intervalo de confian\u00e7a (B\u00e1sico: Consist\u00eancia, N\u00edvel de confian\u00e7a: 95%)', ml, yl); yl += 5;
         doc.text('Verde = Normal   Amarelo = Leve   Laranja = Moderado   Vermelho = Severo', ml, yl); yl += 5;
         if (sexoDivergente) {
           doc.setTextColor(198, 40, 40);
-          doc.text('Aten\u00e7\u00e3o: sexo divergente entre os registros (' + (d1.sexo || '-') + ' x ' + (d2.sexo || '-') + ').', ml, yl);
+          doc.text('Aten\u00e7\u00e3o: h\u00e1 sexos divergentes entre os registros.', ml, yl);
         }
 
         // ---------- PAGINAS 2+: DETALHES DA ESCALA (uma secao por medida) ----------
@@ -11107,9 +11180,6 @@
           doc.setFillColor(26, 35, 126); doc.rect(0, 0, pw, 8, 'F');
           doc.setTextColor(26, 35, 126); doc.setFontSize(14); doc.setFont(undefined, 'bold');
           var yd = 22; doc.text('Detalhes - ' + md.nome, ml, yd); yd += 10;
-
-          var mt1 = Number(d1.escoresT[md.k]);
-          var mt2 = Number(d2.escoresT[md.k]);
 
           // Curva normal (sino) amostrada; eixo X reaproveita xT().
           var curvaTopo = yd;
@@ -11131,22 +11201,22 @@
             if (prevX !== null) { doc.line(prevX, prevY, cx, cy); }
             prevX = cx; prevY = cy;
           }
-          // Marcadores sobre a curva.
+          // Marcadores sobre a curva (um por respondente).
           var _altCurva = function (t) {
             var hh2 = Math.exp(-((t - 50) * (t - 50)) / (2 * 10 * 10));
             return curvaBase - hh2 * curvaAlt;
           };
-          if (isFinite(mt1)) {
-            var mx1 = xT(clampT(mt1));
-            doc.setDrawColor(COR1[0], COR1[1], COR1[2]); doc.setLineWidth(0.3);
-            doc.line(mx1, curvaBase, mx1, _altCurva(clampT(mt1)));
-            doc.setFillColor(COR1[0], COR1[1], COR1[2]); _losangoSrs2(doc, mx1, _altCurva(clampT(mt1)), 1.8);
-          }
-          if (isFinite(mt2)) {
-            var mx2 = xT(clampT(mt2));
-            doc.setDrawColor(COR2[0], COR2[1], COR2[2]); doc.setLineWidth(0.3);
-            doc.line(mx2, curvaBase, mx2, _altCurva(clampT(mt2)));
-            doc.setFillColor(COR2[0], COR2[1], COR2[2]); doc.rect(mx2 - 1.6, _altCurva(clampT(mt2)) - 1.6, 3.2, 3.2, 'F');
+          for (var cm = 0; cm < regs.length; cm++) {
+            var estC = regs[cm].estilo;
+            var mtv = Number(regs[cm].d.escoresT[md.k]);
+            if (isFinite(mtv)) {
+              var mxv = xT(clampT(mtv));
+              doc.setDrawColor(estC.cor[0], estC.cor[1], estC.cor[2]); doc.setLineWidth(0.3);
+              doc.line(mxv, curvaBase, mxv, _altCurva(clampT(mtv)));
+              doc.setFillColor(estC.cor[0], estC.cor[1], estC.cor[2]);
+              doc.setDrawColor(estC.cor[0], estC.cor[1], estC.cor[2]); doc.setLineWidth(0.4);
+              _marcadorSrs2(doc, estC.marcador, mxv, _altCurva(clampT(mtv)), 1.8);
+            }
           }
           yd = curvaBase + 12;
 
@@ -11160,15 +11230,12 @@
           doc.text('IC', colIC, yd);
           yd += 2; doc.setDrawColor(26, 35, 126); doc.setLineWidth(0.4); doc.line(ml, yd, ml + lu, yd); yd += 6;
           doc.setFont(undefined, 'normal');
-          var linhasTab = [
-            { d: d1, nome: nomeResp1, cor: COR1 },
-            { d: d2, nome: nomeResp2, cor: COR2 }
-          ];
-          for (var li = 0; li < linhasTab.length; li++) {
-            var row = linhasTab[li];
+          for (var li = 0; li < regs.length; li++) {
+            var row = regs[li];
+            if (yd > maxY) { doc.addPage(); yd = 20; }
             var tv = Number(row.d.escoresT[md.k]);
             var bv = _brutoSrs2(row.d, md.k);
-            doc.setTextColor(row.cor[0], row.cor[1], row.cor[2]); doc.setFont(undefined, 'bold');
+            doc.setTextColor(row.estilo.cor[0], row.estilo.cor[1], row.estilo.cor[2]); doc.setFont(undefined, 'bold');
             var nomeLin = doc.splitTextToSize(row.nome, 65);
             doc.text(nomeLin[0], colNome, yd);
             doc.setTextColor(0, 0, 0); doc.setFont(undefined, 'normal');
@@ -11214,8 +11281,13 @@
         yi += 4; doc.setFontSize(9); doc.setFont(undefined, 'bold'); doc.setTextColor(26, 35, 126);
         doc.text('Escore Total por respondente:', ml, yi); yi += 7;
         doc.setFont(undefined, 'normal'); doc.setTextColor(0, 0, 0);
-        doc.text(nomeResp1 + ': T = ' + (isFinite(Number(d1.escoresT.TOTAL)) ? d1.escoresT.TOTAL : '-') + ' (' + _faixaSrs2(d1.escoresT.TOTAL) + '), IC ' + formatarICsrs2Adulto(d1.escoresT.TOTAL), ml, yi); yi += 6;
-        doc.text(nomeResp2 + ': T = ' + (isFinite(Number(d2.escoresT.TOTAL)) ? d2.escoresT.TOTAL : '-') + ' (' + _faixaSrs2(d2.escoresT.TOTAL) + '), IC ' + formatarICsrs2Adulto(d2.escoresT.TOTAL), ml, yi); yi += 10;
+        for (var it = 0; it < regs.length; it++) {
+          if (yi > maxY) { doc.addPage(); yi = 20; }
+          var dIt = regs[it].d;
+          doc.text(regs[it].nome + ': T = ' + (isFinite(Number(dIt.escoresT.TOTAL)) ? dIt.escoresT.TOTAL : '-') + ' (' + _faixaSrs2(dIt.escoresT.TOTAL) + '), IC ' + formatarICsrs2Adulto(dIt.escoresT.TOTAL), ml, yi); yi += 6;
+        }
+        yi += 4;
+        if (yi > maxY - 14) { doc.addPage(); yi = 20; }
         doc.setFillColor(255, 248, 235); doc.rect(ml, yi, lu, 14, 'F');
         doc.setTextColor(150, 80, 0); doc.setFontSize(7); doc.setFont(undefined, 'bold');
         doc.text('IMPORTANTE:', ml + 3, yi + 5); doc.setFont(undefined, 'normal');
@@ -11237,7 +11309,7 @@
         console.error('Erro ao gerar comparativo SRS-2 Adulto:', err);
         try {
           if (typeof window._registrarFalhaPDF === 'function') {
-            window._registrarFalhaPDF('gerarComparativoSrs2Adulto', (err && err.message ? err.message : String(err)), (d1 && d1.paciente) || '');
+            window._registrarFalhaPDF('gerarComparativoSrs2Adulto', (err && err.message ? err.message : String(err)), (regs && regs[0] && regs[0].d && regs[0].d.paciente) || '');
           }
         } catch (e2) {}
         alert('Nao foi possivel gerar o PDF comparativo.\n\nDetalhe tecnico: ' + (err && err.message ? err.message : err) + '\n\nOs dados continuam salvos. Por favor, avise o suporte.');
