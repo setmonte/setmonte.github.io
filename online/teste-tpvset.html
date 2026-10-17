@@ -858,11 +858,16 @@ function _fecharRodada() {
     var acertosDetalhe = marcacoesRodada.filter(function (mk) { return mk.correto; })
         .map(function (mk) { return mk.coords.join('-') + ' (' + mk.direcao + ')'; });
 
+    // Omissoes: SETs que existiam na grade e NAO foram marcados (deixou passar).
+    var omissoes = totalSets - acertos;
+    if (omissoes < 0) omissoes = 0;
+
     resultadosRodadas.push({
         rodada: rodadaAtual + 1,
         totalSets: totalSets,
         acertos: acertos,
         falsos: falsos,
+        omissoes: omissoes,
         acertosPorTipo: acertosPorTipo,
         setsDoGrid: gridAtual.sets.map(function (s) { return s.tipo; }),
         marcacoes: marcacoesRodada.slice(),
@@ -980,7 +985,7 @@ function calcularResultados() {
     if (idade === null) idade = 10;
     var faixa = _faixaDaIdade(idade);
 
-    var somaAcertos = 0, somaFalsos = 0, somaDisponivel = 0;
+    var somaAcertos = 0, somaFalsos = 0, somaDisponivel = 0, somaOmissoes = 0;
     var somaProporcoes = 0;
     var totPorTipo = { horizontal: 0, vertical: 0, diagonal: 0 };
     var dispPorTipo = { horizontal: 0, vertical: 0, diagonal: 0 };
@@ -988,6 +993,7 @@ function calcularResultados() {
         var rr = resultadosRodadas[r];
         somaAcertos += rr.acertos;
         somaFalsos += rr.falsos;
+        somaOmissoes += (rr.omissoes != null ? rr.omissoes : (rr.totalSets - rr.acertos));
         somaDisponivel += rr.totalSets;
         // Proporcao da rodada: quanto a pessoa capturou do que existia (0 a 1).
         var propRodada = (rr.totalSets > 0) ? (rr.acertos / rr.totalSets) : 0;
@@ -1044,8 +1050,9 @@ function calcularResultados() {
         hipotese: _obterHipotese(),
         dominios: {
             'Percepcao (% medio)': { pontuacao: parseFloat(mediaProporcao.toFixed(1)), max: 100, classificacao: classificacao },
-            'SETs percebidos': { pontuacao: somaAcertos, max: somaDisponivel, classificacao: somaAcertos + ' de ' + somaDisponivel },
-            'Falsos SETs': { pontuacao: somaFalsos, max: somaDisponivel, classificacao: _classificarFalsos(somaFalsos) },
+            'SETs percebidos (acertos)': { pontuacao: somaAcertos, max: somaDisponivel, classificacao: somaAcertos + ' de ' + somaDisponivel },
+            'Erros (falsos SETs)': { pontuacao: somaFalsos, max: somaDisponivel, classificacao: _classificarFalsos(somaFalsos) },
+            'Omissoes (deixou passar)': { pontuacao: somaOmissoes, max: somaDisponivel, classificacao: somaOmissoes + ' de ' + somaDisponivel },
             'Curva entre rodadas': { pontuacao: 0, max: 0, classificacao: _rotuloCurva(curva) },
             'Horizontais': { pontuacao: totPorTipo.horizontal, max: dispPorTipo.horizontal, classificacao: totPorTipo.horizontal + '/' + dispPorTipo.horizontal },
             'Verticais': { pontuacao: totPorTipo.vertical, max: dispPorTipo.vertical, classificacao: totPorTipo.vertical + '/' + dispPorTipo.vertical },
@@ -1057,11 +1064,16 @@ function calcularResultados() {
             mediaIntervalo: mediaIntervalo
         },
         rodadas: resultadosRodadas.map(function (rr) {
+            var om = (rr.omissoes != null) ? rr.omissoes : (rr.totalSets - rr.acertos);
+            var prop = (rr.totalSets > 0) ? Math.round((rr.acertos / rr.totalSets) * 100) : 0;
+            if (prop > 100) prop = 100;
             return {
                 rodada: rr.rodada,
                 acertos: rr.acertos,
                 falsos: rr.falsos,
+                omissoes: om,
                 totalSets: rr.totalSets,
+                proporcao: prop,
                 totalCliques: rr.totalCliques,
                 tempoPrimeiroClique: rr.tempoPrimeiroClique,
                 intervaloMedio: rr.intervaloMedio,
