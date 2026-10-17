@@ -10368,7 +10368,7 @@
             d: dd,
             r: rr,
             estilo: SRS2_ESTILOS[ri],
-            nome: dd.nomeRespondente || dd.respondente || ('Respondente ' + (ri + 1)),
+            nome: (nomeRespondenteSrs2(dd) || ('Respondente ' + (ri + 1))),
             dataStr: dataStr,
             pts: []
           });
@@ -10386,7 +10386,7 @@
         var maxY = 272;
 
         // Regua de Escore T 20..80.
-        var gL = 70, gR = 195, gW = gR - gL, escMn = 20, escMx = 80;
+        var gL = 70, gR = 168, gW = gR - gL, escMn = 20, escMx = 80;
         function xT(t) { return gL + ((t - escMn) / (escMx - escMn)) * gW; }
         function clampT(v) { return Math.max(escMn, Math.min(escMx, v)); }
 
@@ -10432,9 +10432,15 @@
           var yRow = yS + si * (bH + gp);
           var yc = yRow + bH / 2;
 
-          // Rotulo da medida.
+          // Rotulo da medida (nome do dominio) a DIREITA do grafico, arranjo Hogrefe, para nao
+          // sobrepor as colunas Dados brutos / Normas (T) a esquerda. Quebra em ate 2 linhas,
+          // centradas verticalmente na faixa do dominio.
           doc.setFontSize(6.5); doc.setTextColor(0, 0, 0); doc.setFont(undefined, (sc.k === 'CIS' || sc.k === 'TOTAL') ? 'bold' : 'normal');
-          doc.text(sc.nome, ml, yc - 1);
+          var _lblX = gR + 3;
+          var _lblW = pw - _lblX - 3;
+          var _lbl = doc.splitTextToSize(sc.nome, _lblW);
+          var _lblY = yc - ((_lbl.length - 1) * 2.1) - 1;
+          for (var _li = 0; _li < _lbl.length; _li++) { doc.text(_lbl[_li], _lblX, _lblY + _li * 4.2); }
 
           for (var rp = 0; rp < nR; rp++) {
             var reg = regs[rp];
@@ -10486,7 +10492,7 @@
           doc.setDrawColor(le.cor[0], le.cor[1], le.cor[2]); doc.setLineWidth(0.4);
           _marcadorSrs2(doc, le.marcador, ml + 2, yl - 1, 1.8);
           doc.setTextColor(0, 0, 0);
-          doc.text(regs[lg].nome + ' (' + (regs[lg].d.respondente || '-') + ') - ' + regs[lg].dataStr, ml + 7, yl + 1); yl += 6;
+          doc.text(regs[lg].nome + ' - ' + regs[lg].dataStr, ml + 7, yl + 1); yl += 6;
         }
         yl += 1;
         doc.setFontSize(6.5); doc.setTextColor(90, 90, 90);
@@ -10916,6 +10922,34 @@
       return 'Respondente ' + pos;
     }
 
+    // Helper unico compartilhado pelos DOIS comparativos (Escolar e Adulto).
+    // Resolve o NOME de quem respondeu (nao o rotulo do formulario):
+    //  - AUTORRELATO (escala termina em -AA, ou formulario contem "Autorrelato"): nome do paciente.
+    //  - HETERORRELATO (termina em -AH, ou formulario contem "Heterorrelato"): nomeRespondente;
+    //    senao o vinculo (respondente); quando ha nome E vinculo, "Nome (vinculo)".
+    //  - Fallback final: rotulo do formulario (comportamento atual); se nada, "" (quem chama aplica
+    //    "Respondente N"). Nunca inventa dado.
+    // Escolar (escala 'SRS-2', sem formulario nem sufixo) cai no ramo hetero, usando
+    // nomeRespondente/respondente, que e o comportamento desejado.
+    function nomeRespondenteSrs2(d) {
+      if (!d) return '';
+      var esc = String(d.escala || '').toUpperCase();
+      var form = String(d.formulario || '');
+      var auto = /-AA$/.test(esc) || form.indexOf('Autorrelato') >= 0;
+      var hetero = /-AH$/.test(esc) || form.indexOf('Heterorrelato') >= 0;
+      if (auto) {
+        if (d.paciente) return String(d.paciente);
+      } else if (hetero || !auto) {
+        var nome = d.nomeRespondente ? String(d.nomeRespondente) : '';
+        var vinc = d.respondente ? String(d.respondente) : '';
+        if (nome && vinc) return nome + ' (' + vinc + ')';
+        if (nome) return nome;
+        if (vinc) return vinc;
+      }
+      if (d.formulario) return String(d.formulario);
+      return '';
+    }
+
     // Carrega e combina os resultados Adulto (Auto + Hetero) numa unica tabela de selecao.
     async function loadSrs2AdultoComparativo() {
       var el = document.getElementById('srs2AdultoCmpSection');
@@ -11044,7 +11078,7 @@
             d: dd,
             r: rr,
             estilo: SRS2_ESTILOS[ri],
-            nome: _rotuloRespSrs2Adulto(dd, ri + 1),
+            nome: (nomeRespondenteSrs2(dd) || ('Respondente ' + (ri + 1))),
             dataStr: dataStr,
             pts: []
           });
@@ -11062,7 +11096,7 @@
         var maxY = 272;
 
         // Regua de Escore T 20..80.
-        var gL = 70, gR = 195, gW = gR - gL, escMn = 20, escMx = 80;
+        var gL = 70, gR = 168, gW = gR - gL, escMn = 20, escMx = 80;
         function xT(t) { return gL + ((t - escMn) / (escMx - escMn)) * gW; }
         function clampT(v) { return Math.max(escMn, Math.min(escMx, v)); }
 
@@ -11108,9 +11142,15 @@
           var yRow = yS + si * (bH + gp);
           var yc = yRow + bH / 2;
 
-          // Rotulo da medida.
+          // Rotulo da medida (nome do dominio) a DIREITA do grafico, arranjo Hogrefe, para nao
+          // sobrepor as colunas Dados brutos / Normas (T) a esquerda. Quebra em ate 2 linhas,
+          // centradas verticalmente na faixa do dominio.
           doc.setFontSize(6.5); doc.setTextColor(0, 0, 0); doc.setFont(undefined, (sc.k === 'CIS' || sc.k === 'TOTAL') ? 'bold' : 'normal');
-          doc.text(sc.nome, ml, yc - 1);
+          var _lblX = gR + 3;
+          var _lblW = pw - _lblX - 3;
+          var _lbl = doc.splitTextToSize(sc.nome, _lblW);
+          var _lblY = yc - ((_lbl.length - 1) * 2.1) - 1;
+          for (var _li = 0; _li < _lbl.length; _li++) { doc.text(_lbl[_li], _lblX, _lblY + _li * 4.2); }
 
           for (var rp = 0; rp < nR; rp++) {
             var reg = regs[rp];
