@@ -15,17 +15,41 @@ var _ultimoPdfBase64 = null;
   // Desativa após capturar
   window._desativarCapturaPDF = function() { _hookAtivo = false; };
 
-  // Intercepta jsPDF.save para capturar base64
+  // Intercepta a criacao de instancias do jsPDF para capturar o base64.
+  // ATENCAO jsPDF 2.5.1: "save" NAO esta no prototype; cada instancia recebe
+  // a propria "save" como own-property no construtor. Por isso patch no
+  // prototype.save NAO atinge as instancias (o hook nunca disparava e o
+  // _ultimoPdfBase64 ficava null, fazendo gerarPDFCompleto cair no fallback).
+  // Solucao retrocompativel: embrulhar o CONSTRUTOR para envolver a save de
+  // cada instancia nova. Qualquer escala que faca "new jsPDF()" e "doc.save()"
+  // continua funcionando (o download normal e preservado); apenas, quando a
+  // captura esta ativa, guardamos o base64 antes de baixar.
   var checkInterval = setInterval(function() {
-    if (window.jspdf && window.jspdf.jsPDF) {
+    if (window.jspdf && window.jspdf.jsPDF && !window.jspdf.jsPDF.__symCapturaWrap) {
       clearInterval(checkInterval);
-      var originalSave = window.jspdf.jsPDF.prototype.save;
-      window.jspdf.jsPDF.prototype.save = function(filename) {
-        if (_hookAtivo) {
-          try { _ultimoPdfBase64 = this.output('datauristring'); } catch(e) {}
+      var OrigCtor = window.jspdf.jsPDF;
+      function WrappedPDF() {
+        var inst = new OrigCtor(arguments[0], arguments[1], arguments[2], arguments[3]);
+        var origSave = inst.save;
+        inst.save = function(filename) {
+          if (_hookAtivo) {
+            try { _ultimoPdfBase64 = this.output('datauristring'); } catch(e) {}
+          }
+          return origSave.call(this, filename);
+        };
+        return inst;
+      }
+      // Preserva API/prototype/estaticos do construtor original para que as
+      // escalas continuem usando metodos do prototype/API normalmente.
+      WrappedPDF.API = OrigCtor.API;
+      WrappedPDF.prototype = OrigCtor.prototype;
+      for (var _k in OrigCtor) {
+        if (Object.prototype.hasOwnProperty.call(OrigCtor, _k) && _k !== 'API' && _k !== 'prototype') {
+          try { WrappedPDF[_k] = OrigCtor[_k]; } catch(e) {}
         }
-        return originalSave.call(this, filename);
-      };
+      }
+      WrappedPDF.__symCapturaWrap = true;
+      window.jspdf.jsPDF = WrappedPDF;
     }
   }, 100);
 })();
