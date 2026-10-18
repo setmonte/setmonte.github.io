@@ -14514,7 +14514,7 @@
         var data = await resp.json();
         _tpvsetResultCache = data.results || [];
         if (_tpvsetResultCache.length === 0) { el.innerHTML = '<p>Nenhum resultado TPV-SET encontrado.</p>'; return; }
-        var html = '<h3>Resultados TPV-SET</h3><table style="width:100%;border-collapse:collapse;font-size:0.85em;"><tr><th style="padding:6px;border-bottom:2px solid #4a148c;">Data</th><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">Paciente</th><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">ID</th><th style="padding:6px;border-bottom:2px solid #4a148c;">Media SETs/rodada</th><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">Classificacao</th></tr>';
+        var html = '<h3>Resultados TPV-SET</h3><table style="width:100%;border-collapse:collapse;font-size:0.85em;"><tr><th style="padding:6px;border-bottom:2px solid #4a148c;">Data</th><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">Paciente</th><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">ID</th><th style="padding:6px;border-bottom:2px solid #4a148c;">Media SETs/rodada</th><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">Classificacao</th><th style="padding:6px;border-bottom:2px solid #4a148c;">PDF</th></tr>';
         for (var i = 0; i < _tpvsetResultCache.length; i++) {
           var r = _tpvsetResultCache[i];
           var d = r.data || {};
@@ -14524,6 +14524,7 @@
           html += '<td style="padding:5px;border-bottom:1px solid #eee;font-size:10px;font-family:monospace;color:#2e7d32;">' + (d.idPaciente || (d.paciente && d.dataNascimento ? gerarIdPacienteHash(d.paciente, d.dataNascimento) : '-')) + '</td>';
           html += '<td style="padding:5px;border-bottom:1px solid #eee;text-align:center;font-weight:bold;">' + (d.escore != null ? d.escore : '-') + '</td>';
           html += '<td style="padding:5px;border-bottom:1px solid #eee;font-size:0.8em;">' + (d.classificacao || '-') + '</td>';
+          html += '<td style="padding:5px;border-bottom:1px solid #eee;text-align:center;"><button class="btn btn-green" style="padding:3px 8px;font-size:11px;" onclick="gerarPDFTpvset(' + i + ')">PDF</button></td>';
           html += '</tr>';
         }
         html += '</table>';
@@ -14698,6 +14699,403 @@
       var ts = new Date();
       var tsStr = ts.getFullYear() + String(ts.getMonth()+1).padStart(2,'0') + String(ts.getDate()).padStart(2,'0');
       doc.save('CORSI_' + nomeArq + '_' + tsStr + '.pdf');
+    }
+
+    // ===== PDF TPV-SET =====
+    // Helpers puros (sem efeitos colaterais) usados pela gerarPDFTpvset.
+    // Convencao: strings com acento usam escapes \uXXXX; comentarios sem acento.
+    function _tpvsetPdfNum(v, def) {
+      if (def === undefined) def = 0;
+      var n = Number(v);
+      return isFinite(n) ? n : def;
+    }
+    function _tpvsetPdfMsParaSeg(ms) {
+      // Converte milissegundos para segundos com 1 casa e virgula decimal (pt-BR).
+      var n = Number(ms);
+      if (!isFinite(n)) return '-';
+      var s = Math.round(n / 100) / 10;
+      return String(s).replace('.', ',');
+    }
+    function _tpvsetPdfCorClassif(classif) {
+      // Retorna [r,g,b] conforme o nivel detectado no texto da classificacao.
+      var c = classif || '';
+      if (c.indexOf('Abaixo') !== -1) return [198, 40, 40];   // #c62828
+      if (c.indexOf('Dentro') !== -1) return [46, 125, 50];   // #2e7d32
+      if (c.indexOf('Acima') !== -1) return [74, 20, 140];    // #4a148c
+      return [74, 20, 140];                                    // default roxo escuro
+    }
+    function _tpvsetPdfSafeStr(v, def) {
+      if (def === undefined) def = '-';
+      if (v === 0) return '0';
+      return v ? String(v) : def;
+    }
+
+    function gerarPDFTpvset(idx) {
+      var r = _tpvsetResultCache[idx];
+      if (!r || !r.data) { alert('Dados insuficientes para gerar PDF.'); return; }
+      var d = r.data;
+      var jsPDF = window.jspdf.jsPDF;
+      var doc = new jsPDF();
+
+      // Layout
+      var MARGEM = 10;
+      var LARGURA_PAGINA = 210;
+      var LARGURA_UTIL = 190;
+      var X_DIR = 200;
+      var ROXO_ESC = [74, 20, 140];
+      var ROXO_CLARO = [124, 77, 255];
+      var y;
+
+      // Paginacao: quebra quando o conteudo passa de ~272mm.
+      function _checarPagina(alt) {
+        if (y + alt > 272) { doc.addPage(); y = 20; }
+      }
+
+      // ===== 1. CABECALHO (faixa roxa) =====
+      doc.setFillColor(ROXO_ESC[0], ROXO_ESC[1], ROXO_ESC[2]);
+      doc.rect(0, 0, LARGURA_PAGINA, 26, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(17); doc.setFont(undefined, 'bold');
+      doc.text('TPV-SET - Teste de Percep\u00e7\u00e3o Visual', MARGEM, 13);
+      doc.setFontSize(10); doc.setFont(undefined, 'normal');
+      doc.text('Adapta\u00e7\u00e3o do jogo SET para rastreio perceptivo', MARGEM, 20);
+      y = 36;
+
+      // ===== 2. DADOS DO AVALIANDO =====
+      var dataAval = d.data ? new Date(d.data).toLocaleDateString('pt-BR') : '-';
+      var cfg = d.config || {};
+      var seqSets = (cfg.sequenciaSets && cfg.sequenciaSets.length) ? cfg.sequenciaSets.join(', ') : '-';
+      var alturaCaixa = 40;
+      doc.setFillColor(245, 246, 250);
+      doc.setDrawColor(220, 222, 230);
+      doc.roundedRect(MARGEM, y, LARGURA_UTIL, alturaCaixa, 2, 2, 'FD');
+      var yTexto = y + 7;
+      var col2 = MARGEM + (LARGURA_UTIL / 2);
+      doc.setTextColor(40, 40, 40); doc.setFontSize(10);
+      doc.setFont(undefined, 'bold'); doc.text('Nome: ', MARGEM + 4, yTexto);
+      doc.setFont(undefined, 'normal'); doc.text(_tpvsetPdfSafeStr(d.paciente), MARGEM + 20, yTexto);
+      doc.setFont(undefined, 'bold'); doc.text('ID: ', col2, yTexto);
+      doc.setFont(undefined, 'normal'); doc.text(_tpvsetPdfSafeStr(d.idPaciente), col2 + 8, yTexto);
+      yTexto += 6;
+      doc.setFont(undefined, 'bold'); doc.text('Idade: ', MARGEM + 4, yTexto);
+      doc.setFont(undefined, 'normal'); doc.text(_tpvsetPdfSafeStr(d.idade), MARGEM + 20, yTexto);
+      doc.setFont(undefined, 'bold'); doc.text('Sexo: ', col2, yTexto);
+      doc.setFont(undefined, 'normal'); doc.text(_tpvsetPdfSafeStr(d.sexo), col2 + 14, yTexto);
+      yTexto += 6;
+      doc.setFont(undefined, 'bold'); doc.text('Escolaridade: ', MARGEM + 4, yTexto);
+      doc.setFont(undefined, 'normal'); doc.text(_tpvsetPdfSafeStr(d.escolaridade), MARGEM + 35, yTexto);
+      doc.setFont(undefined, 'bold'); doc.text('Data: ', col2, yTexto);
+      doc.setFont(undefined, 'normal'); doc.text(dataAval, col2 + 14, yTexto);
+      yTexto += 6;
+      doc.setFont(undefined, 'bold'); doc.text('Hip\u00f3tese diagn\u00f3stica: ', MARGEM + 4, yTexto);
+      doc.setFont(undefined, 'normal'); doc.text(_tpvsetPdfSafeStr(d.hipotese, 'n\u00e3o informada'), MARGEM + 52, yTexto);
+      yTexto += 6;
+      doc.setFont(undefined, 'bold'); doc.text('Configura\u00e7\u00e3o: ', MARGEM + 4, yTexto);
+      doc.setFont(undefined, 'normal');
+      doc.text(_tpvsetPdfNum(cfg.nCaracteristicas, 0) + ' caracter\u00edsticas | perfil: ' + _tpvsetPdfSafeStr(cfg.perfil) + ' | SETs/rodada: ' + seqSets, MARGEM + 34, yTexto);
+      y += alturaCaixa + 10;
+
+      // ===== 3. RESULTADO GERAL (destaque) =====
+      _checarPagina(24);
+      var escore = _tpvsetPdfNum(d.escore, 0);
+      var corClass = _tpvsetPdfCorClassif(d.classificacao);
+      doc.setFillColor(243, 238, 252);
+      doc.setDrawColor(ROXO_CLARO[0], ROXO_CLARO[1], ROXO_CLARO[2]);
+      doc.roundedRect(MARGEM, y, LARGURA_UTIL, 20, 2, 2, 'FD');
+      doc.setTextColor(ROXO_ESC[0], ROXO_ESC[1], ROXO_ESC[2]);
+      doc.setFontSize(11); doc.setFont(undefined, 'bold');
+      doc.text('RESULTADO GERAL', MARGEM + 4, y + 7);
+      doc.setFontSize(18);
+      doc.text(escore + ' %', MARGEM + 4, y + 16);
+      doc.setFontSize(9); doc.setFont(undefined, 'normal');
+      doc.setTextColor(corClass[0], corClass[1], corClass[2]);
+      var classLinhas = doc.splitTextToSize(_tpvsetPdfSafeStr(d.classificacao), LARGURA_UTIL - 45);
+      doc.text(classLinhas, MARGEM + 40, y + 9);
+      doc.setTextColor(0, 0, 0);
+      y += 28;
+
+      // ===== 4. GRAFICO POR RODADA (barras verticais) =====
+      var rodadas = (d.rodadas && d.rodadas.length) ? d.rodadas : [];
+      doc.setTextColor(ROXO_ESC[0], ROXO_ESC[1], ROXO_ESC[2]);
+      doc.setFontSize(12); doc.setFont(undefined, 'bold');
+      _checarPagina(10);
+      doc.text('Desempenho por rodada', MARGEM, y); y += 6;
+      doc.setTextColor(0, 0, 0); doc.setFont(undefined, 'normal'); doc.setFontSize(9);
+      if (rodadas.length === 0) {
+        _checarPagina(8);
+        doc.text('Detalhamento por rodada n\u00e3o dispon\u00edvel para este registro.', MARGEM, y);
+        y += 10;
+      } else {
+        _checarPagina(70);
+        var areaX = MARGEM + 8;
+        var areaLarg = 160;
+        var areaAlt = 50;
+        var topoY = y;
+        var baseY = topoY + areaAlt;
+        // Eixo base
+        doc.setDrawColor(200, 200, 205); doc.setLineWidth(0.3);
+        doc.line(areaX, baseY, areaX + areaLarg, baseY);
+        // Rotulo do eixo (0 e 100%)
+        doc.setFontSize(6.5); doc.setTextColor(120, 120, 120);
+        doc.text('100%', MARGEM, topoY + 2);
+        doc.text('0%', MARGEM + 2, baseY);
+        var n = rodadas.length;
+        var espaco = areaLarg / n;
+        var larguraBarra = Math.min(espaco * 0.5, 22);
+        for (var ri = 0; ri < n; ri++) {
+          var rod = rodadas[ri];
+          var prop = _tpvsetPdfNum(rod.proporcao, 0);
+          if (prop < 0) prop = 0; if (prop > 100) prop = 100;
+          var hBarra = (prop / 100) * areaAlt;
+          var bx = areaX + ri * espaco + (espaco - larguraBarra) / 2;
+          var by = baseY - hBarra;
+          doc.setFillColor(ROXO_CLARO[0], ROXO_CLARO[1], ROXO_CLARO[2]);
+          doc.rect(bx, by, larguraBarra, hBarra, 'F');
+          // Valor em cima
+          doc.setFontSize(7.5); doc.setFont(undefined, 'bold'); doc.setTextColor(70, 70, 70);
+          doc.text(prop + '%', bx + larguraBarra / 2, by - 1.5, { align: 'center' });
+          // Rotulo embaixo: R# + velocidade
+          doc.setFontSize(7); doc.setFont(undefined, 'bold'); doc.setTextColor(74, 20, 140);
+          doc.text('R' + _tpvsetPdfNum(rod.rodada, ri + 1), bx + larguraBarra / 2, baseY + 4, { align: 'center' });
+          doc.setFontSize(6); doc.setFont(undefined, 'normal'); doc.setTextColor(110, 110, 110);
+          doc.text(_tpvsetPdfMsParaSeg(rod.intervaloMedio) + 's/clique', bx + larguraBarra / 2, baseY + 8, { align: 'center' });
+        }
+        // Linha tracejada da media geral
+        var media = escore;
+        if (media < 0) media = 0; if (media > 100) media = 100;
+        var yMedia = baseY - (media / 100) * areaAlt;
+        doc.setDrawColor(198, 40, 40); doc.setLineWidth(0.4);
+        if (typeof doc.setLineDashPattern === 'function') {
+          doc.setLineDashPattern([1.5, 1.5], 0);
+          doc.line(areaX, yMedia, areaX + areaLarg, yMedia);
+          doc.setLineDashPattern([], 0);
+        } else {
+          doc.setLineWidth(0.2);
+          doc.line(areaX, yMedia, areaX + areaLarg, yMedia);
+        }
+        doc.setFontSize(6.5); doc.setFont(undefined, 'bold'); doc.setTextColor(198, 40, 40);
+        doc.text('m\u00e9dia: ' + media + '%', areaX + areaLarg - 2, yMedia - 1, { align: 'right' });
+        doc.setTextColor(0, 0, 0); doc.setFont(undefined, 'normal'); doc.setLineWidth(0.2);
+        y = baseY + 14;
+      }
+
+      // ===== 5. INDICADORES (tabela) =====
+      var dom = d.dominios || {};
+      function _domObj(nome) { return dom[nome] || {}; }
+      function _domPont(nome) {
+        var o = dom[nome];
+        return (o && o.pontuacao != null) ? o.pontuacao : '-';
+      }
+      function _domMax(nome) {
+        var o = dom[nome];
+        return (o && o.max != null) ? o.max : '-';
+      }
+      function _domPorMax(nome) {
+        var o = dom[nome];
+        if (!o) return '-';
+        var p = (o.pontuacao != null) ? o.pontuacao : '-';
+        var m = (o.max != null) ? o.max : '-';
+        return p + '/' + m;
+      }
+      // Omissoes: a chave real do JSON tem acento; tentar com e sem acento.
+      var omissKey = (dom['Omiss\u00f5es (deixou passar)'] != null) ? 'Omiss\u00f5es (deixou passar)' : 'Omissoes (deixou passar)';
+      var vel = d.velocidade || {};
+      var indic = [
+        ['Acertos (SETs percebidos)', _domPorMax('SETs percebidos (acertos)')],
+        ['Erros (falsos SETs)', _domPorMax('Erros (falsos SETs)')],
+        ['Omiss\u00f5es (deixou passar)', _domPorMax(omissKey)],
+        ['Velocidade m\u00e9dia', _tpvsetPdfMsParaSeg(vel.mediaIntervalo) + ' s'],
+        ['Tempo m\u00e9dio at\u00e9 1o clique', _tpvsetPdfMsParaSeg(vel.mediaPrimeiroClique) + ' s'],
+        ['Total de cliques', String(_tpvsetPdfNum(vel.totalCliques, 0))],
+        ['Horizontais (acertos)', _domPorMax('Horizontais')],
+        ['Verticais (acertos)', _domPorMax('Verticais')],
+        ['Diagonais (acertos)', _domPorMax('Diagonais')],
+        ['Curva entre rodadas', _tpvsetPdfSafeStr(_domObj('Curva entre rodadas').classificacao)]
+      ];
+      _checarPagina(14);
+      doc.setTextColor(ROXO_ESC[0], ROXO_ESC[1], ROXO_ESC[2]);
+      doc.setFontSize(12); doc.setFont(undefined, 'bold');
+      doc.text('Indicadores', MARGEM, y); y += 6;
+      // Cabecalho roxo
+      doc.setFillColor(ROXO_ESC[0], ROXO_ESC[1], ROXO_ESC[2]);
+      doc.rect(MARGEM, y - 4, LARGURA_UTIL, 6, 'F');
+      doc.setTextColor(255, 255, 255); doc.setFontSize(8.5); doc.setFont(undefined, 'bold');
+      doc.text('Indicador', MARGEM + 3, y);
+      doc.text('Valor', MARGEM + 130, y);
+      y += 4;
+      doc.setTextColor(0, 0, 0); doc.setFont(undefined, 'normal'); doc.setFontSize(8.5);
+      for (var ii = 0; ii < indic.length; ii++) {
+        _checarPagina(8);
+        if (ii % 2 === 0) {
+          doc.setFillColor(243, 238, 252);
+          doc.rect(MARGEM, y - 3.5, LARGURA_UTIL, 6, 'F');
+        }
+        doc.text(String(indic[ii][0]), MARGEM + 3, y);
+        doc.text(String(indic[ii][1]), MARGEM + 130, y);
+        y += 6;
+      }
+      y += 6;
+
+      // ===== 6. DETALHAMENTO POR RODADA =====
+      _checarPagina(14);
+      doc.setTextColor(ROXO_ESC[0], ROXO_ESC[1], ROXO_ESC[2]);
+      doc.setFontSize(12); doc.setFont(undefined, 'bold');
+      doc.text('Detalhamento por rodada', MARGEM, y); y += 6;
+      doc.setTextColor(0, 0, 0); doc.setFont(undefined, 'normal'); doc.setFontSize(9);
+      if (rodadas.length === 0) {
+        _checarPagina(8);
+        doc.text('Detalhamento por rodada n\u00e3o dispon\u00edvel para este registro.', MARGEM, y);
+        y += 10;
+      } else {
+        // Cabecalho da tabela
+        var colsX = [MARGEM + 2, MARGEM + 16, MARGEM + 48, MARGEM + 72, MARGEM + 96, MARGEM + 122, MARGEM + 150, MARGEM + 172];
+        var cabs = ['Rodada', 'SETs disp.', 'Acertos', 'Erros', 'Omiss\u00f5es', 'Propor\u00e7\u00e3o', 'T. 1o clq', 'Vel.'];
+        _checarPagina(10);
+        doc.setFillColor(ROXO_ESC[0], ROXO_ESC[1], ROXO_ESC[2]);
+        doc.rect(MARGEM, y - 4, LARGURA_UTIL, 6, 'F');
+        doc.setTextColor(255, 255, 255); doc.setFontSize(7.5); doc.setFont(undefined, 'bold');
+        for (var ci = 0; ci < cabs.length; ci++) { doc.text(cabs[ci], colsX[ci], y); }
+        y += 4;
+        doc.setTextColor(0, 0, 0); doc.setFont(undefined, 'normal'); doc.setFontSize(7.5);
+        for (var rj = 0; rj < rodadas.length; rj++) {
+          var rr = rodadas[rj];
+          _checarPagina(8);
+          if (rj % 2 === 0) {
+            doc.setFillColor(243, 238, 252);
+            doc.rect(MARGEM, y - 3.5, LARGURA_UTIL, 6, 'F');
+          }
+          var linha = [
+            'R' + _tpvsetPdfNum(rr.rodada, rj + 1),
+            String(_tpvsetPdfNum(rr.totalSets, 0)),
+            String(_tpvsetPdfNum(rr.acertos, 0)),
+            String(_tpvsetPdfNum(rr.falsos, 0)),
+            String(_tpvsetPdfNum(rr.omissoes, 0)),
+            _tpvsetPdfNum(rr.proporcao, 0) + '%',
+            _tpvsetPdfMsParaSeg(rr.tempoPrimeiroClique) + 's',
+            _tpvsetPdfMsParaSeg(rr.intervaloMedio) + 's'
+          ];
+          for (var li = 0; li < linha.length; li++) { doc.text(linha[li], colsX[li], y); }
+          y += 6;
+        }
+        y += 4;
+        // Ordem de percepcao por rodada
+        _checarPagina(10);
+        doc.setFontSize(10); doc.setFont(undefined, 'bold'); doc.setTextColor(ROXO_ESC[0], ROXO_ESC[1], ROXO_ESC[2]);
+        doc.text('Ordem de percep\u00e7\u00e3o', MARGEM, y); y += 6;
+        doc.setTextColor(0, 0, 0); doc.setFont(undefined, 'normal'); doc.setFontSize(8);
+        for (var pk = 0; pk < rodadas.length; pk++) {
+          var rp = rodadas[pk];
+          var seq = (rp.sequenciaCoords && rp.sequenciaCoords.length) ? rp.sequenciaCoords.join(' -> ') : '-';
+          var txtSeq = 'R' + _tpvsetPdfNum(rp.rodada, pk + 1) + ': ' + seq;
+          var seqLinhas = doc.splitTextToSize(txtSeq, LARGURA_UTIL - 4);
+          _checarPagina(seqLinhas.length * 4 + 2);
+          doc.text(seqLinhas, MARGEM + 2, y);
+          y += seqLinhas.length * 4 + 1;
+          if (rp.acertosDetalhe && rp.acertosDetalhe.length) {
+            var ac = 'Acertos: ' + rp.acertosDetalhe.join('; ');
+            var acLinhas = doc.splitTextToSize(ac, LARGURA_UTIL - 8);
+            _checarPagina(acLinhas.length * 4 + 2);
+            doc.setTextColor(46, 125, 50); doc.text(acLinhas, MARGEM + 6, y); doc.setTextColor(0, 0, 0);
+            y += acLinhas.length * 4 + 1;
+          }
+          if (rp.errosDetalhe && rp.errosDetalhe.length) {
+            var er = 'Erros: ' + rp.errosDetalhe.join('; ');
+            var erLinhas = doc.splitTextToSize(er, LARGURA_UTIL - 8);
+            _checarPagina(erLinhas.length * 4 + 2);
+            doc.setTextColor(198, 40, 40); doc.text(erLinhas, MARGEM + 6, y); doc.setTextColor(0, 0, 0);
+            y += erLinhas.length * 4 + 1;
+          }
+          y += 1;
+        }
+        // Explicacao das coordenadas
+        _checarPagina(16);
+        var expl = 'Como ler as coordenadas: cada posi\u00e7\u00e3o combina linha (1-3) e coluna (a-c). Ex: 1a = linha 1, coluna a (canto superior esquerdo); 3c = linha 3, coluna c (canto inferior direito).';
+        var explLinhas = doc.splitTextToSize(expl, LARGURA_UTIL);
+        doc.setFontSize(7.5); doc.setTextColor(90, 90, 90);
+        doc.text(explLinhas, MARGEM, y);
+        y += explLinhas.length * 4 + 4;
+        doc.setTextColor(0, 0, 0);
+      }
+
+      // ===== 7. ANALISE (texto) =====
+      var interp = _tpvsetPdfSafeStr(d.interpretacao, '');
+      if (interp && interp !== '-') {
+        _checarPagina(14);
+        doc.setTextColor(ROXO_ESC[0], ROXO_ESC[1], ROXO_ESC[2]);
+        doc.setFontSize(12); doc.setFont(undefined, 'bold');
+        doc.text('An\u00e1lise', MARGEM, y); y += 6;
+        doc.setTextColor(30, 30, 30); doc.setFont(undefined, 'normal'); doc.setFontSize(9);
+        var interpLinhas = doc.splitTextToSize(interp, LARGURA_UTIL);
+        _checarPagina(interpLinhas.length * 4.5 + 6);
+        doc.text(interpLinhas, MARGEM, y, { align: 'justify', maxWidth: LARGURA_UTIL });
+        y += interpLinhas.length * 4.5 + 4;
+      }
+      // Parecer automatico curto
+      _checarPagina(14);
+      var parecer = 'S\u00edntese: desempenho perceptivo classificado como "' + _tpvsetPdfSafeStr(d.classificacao, 'n\u00e3o classificado') + '".';
+      if (d.hipotese) { parecer += ' Hip\u00f3tese diagn\u00f3stica em avalia\u00e7\u00e3o: ' + _tpvsetPdfSafeStr(d.hipotese) + '.'; }
+      parecer += ' Os dados devem ser interpretados em conjunto com a hist\u00f3ria cl\u00ednica e demais instrumentos.';
+      doc.setTextColor(30, 30, 30); doc.setFont(undefined, 'normal'); doc.setFontSize(9);
+      var parecerLinhas = doc.splitTextToSize(parecer, LARGURA_UTIL);
+      _checarPagina(parecerLinhas.length * 4.5 + 4);
+      doc.text(parecerLinhas, MARGEM, y);
+      y += parecerLinhas.length * 4.5 + 6;
+
+      // ===== 8. RODAPE/AVISO =====
+      _checarPagina(30);
+      var aviso = 'AVISO: Este e um instrumento EXPLORATORIO e PROVISORIO, sem validacao formal nem normatizacao. A regra do SET e apresentada com treino previo ao avaliando. O uso e restrito a profissional qualificado e os resultados devem ser interpretados dentro de uma avaliacao ampla, nunca isoladamente.';
+      doc.setFillColor(255, 248, 235);
+      var avisoLinhas = doc.splitTextToSize(aviso, LARGURA_UTIL - 8);
+      var alturaAviso = avisoLinhas.length * 4 + 6;
+      doc.rect(MARGEM, y - 2, LARGURA_UTIL, alturaAviso, 'F');
+      doc.setTextColor(150, 90, 0); doc.setFont(undefined, 'italic'); doc.setFontSize(7.5);
+      doc.text(avisoLinhas, MARGEM + 4, y + 3);
+      doc.setFont(undefined, 'normal'); doc.setTextColor(0, 0, 0);
+      y += alturaAviso + 6;
+
+      // ===== 9. REFERENCIAS (ABNT) + credito do jogo SET =====
+      var REFERENCIAS_TPVSET = [
+        'SEABRA, A. G.; DIAS, N. M. (orgs.). Avalia\u00e7\u00e3o neuropsicol\u00f3gica cognitiva: aten\u00e7\u00e3o e fun\u00e7\u00f5es executivas. S\u00e3o Paulo: Memnon, 2012. v. 1.',
+        'JACOB, M.; HOCHSTEIN, S. Set recognition as a window to perceptual and cognitive processes. Perception & Psychophysics, v. 70, n. 7, p. 1165-1184, 2008.',
+        'TREISMAN, A. M.; GELADE, G. A feature-integration theory of attention. Cognitive Psychology, v. 12, n. 1, p. 97-136, 1980.',
+        'NEISSER, U. Cognitive psychology. New York: Appleton-Century-Crofts, 1967.',
+        'BARKLEY, R. A. Behavioral inhibition, sustained attention, and executive functions: constructing a unifying theory of ADHD. Psychological Bulletin, v. 121, n. 1, p. 65-94, 1997.'
+      ];
+      _checarPagina(16);
+      doc.setTextColor(ROXO_ESC[0], ROXO_ESC[1], ROXO_ESC[2]);
+      doc.setFontSize(11); doc.setFont(undefined, 'bold');
+      doc.text('Refer\u00eancias', MARGEM, y); y += 6;
+      doc.setTextColor(50, 50, 50); doc.setFont(undefined, 'normal'); doc.setFontSize(7.5);
+      for (var refi = 0; refi < REFERENCIAS_TPVSET.length; refi++) {
+        var refLinhas = doc.splitTextToSize(REFERENCIAS_TPVSET[refi], LARGURA_UTIL);
+        _checarPagina(refLinhas.length * 4 + 3);
+        doc.text(refLinhas, MARGEM, y);
+        y += refLinhas.length * 4 + 2;
+      }
+      y += 2;
+      _checarPagina(14);
+      var credito = 'O jogo SET foi criado por Marsha Jean Falco (SET Enterprises). Este teste e uma adaptacao do conceito para rastreio perceptivo, sem vinculo comercial com o jogo original.';
+      var credLinhas = doc.splitTextToSize(credito, LARGURA_UTIL);
+      doc.setTextColor(110, 110, 110); doc.setFont(undefined, 'italic'); doc.setFontSize(7.5);
+      doc.text(credLinhas, MARGEM, y);
+      doc.setFont(undefined, 'normal'); doc.setTextColor(0, 0, 0);
+      y += credLinhas.length * 4 + 4;
+
+      // ===== 10. RODAPE final (data/hora de geracao) =====
+      var totalPaginas = doc.internal.getNumberOfPages();
+      for (var pg = 1; pg <= totalPaginas; pg++) {
+        doc.setPage(pg);
+        doc.setFillColor(80, 80, 80);
+        doc.rect(0, 285, LARGURA_PAGINA, 12, 'F');
+        doc.setTextColor(200, 200, 200); doc.setFontSize(7);
+        doc.text('Relat\u00f3rio gerado em: ' + new Date().toLocaleString('pt-BR'), 105, 291, { align: 'center' });
+      }
+
+      // Nome do arquivo: TPVSET_Nome_YYYYMMDDHHMM.pdf
+      var ts = new Date();
+      var tsStr = ts.getFullYear() + String(ts.getMonth() + 1).padStart(2, '0') + String(ts.getDate()).padStart(2, '0') + String(ts.getHours()).padStart(2, '0') + String(ts.getMinutes()).padStart(2, '0');
+      var nomeArq = 'TPVSET_' + ((d.paciente || 'paciente').replace(/\s+/g, '_')) + '_' + tsStr + '.pdf';
+      doc.save(nomeArq);
     }
 
     // ===== FUNCOES ESCALAS =====
@@ -15504,6 +15902,282 @@
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
     }
 
+    // Itens invertidos (inv:true) compartilhados pelos 3 formularios SRS-2 (Escolar, Adulto
+    // Autorrelato e Adulto Heterorrelato). Lidos de var ITENS em srs2.html / srs2-adulto-auto.html
+    // / srs2-adulto-hetero.html: as 3 listas coincidem. Mapa 1-based para checagem O(1).
+    var SRS2_INVERTIDOS = { 3:1,7:1,11:1,15:1,17:1,21:1,22:1,26:1,32:1,38:1,40:1,43:1,45:1,48:1,52:1,55:1 };
+
+    // PDF SRS-2 individual (1 respondente) no VISUAL NOVO (igual ao Comparativo SRS-2). Chamado
+    // SO para SRS-2 pelo branch dentro de gerarPDFEscala. Reutiliza helpers do bloco comparativo
+    // (SRS2_MEDIDAS, SRS2_DESC, _faixaSrs2, _marcadorSrs2, _brutoSrs2, nomeRespondenteSrs2) e as
+    // duas variantes de IC (Adulto +/-3, Escolar +/-4). d = r.data; r.date = data do registro.
+    function _gerarPDFSrs2Individual(d, r) {
+      var _esc = String((d && d.escala) || '').toUpperCase();
+      var _ehEscolar = (_esc === 'SRS-2');
+      // IC por tipo: escolar +/-4, adulto (AA/AH) +/-3. Usa as funcoes ja existentes.
+      var _icFn = _ehEscolar ? formatarICsrs2 : formatarICsrs2Adulto;
+      var _icDelta = _ehEscolar ? SRS2_IC_DELTA : SRS2_IC_DELTA_ADULTO;
+      // Nome do respondente (paciente no AA/escolar; nomeRespondente(vinculo) no AH).
+      var _nomeResp = nomeRespondenteSrs2(d) || (d && d.paciente) || '';
+      var _escoresT = (d && d.escoresT) ? d.escoresT : {};
+      var _dataStr = (function () {
+        var v = (d && d.data) || (r && r.date) || '';
+        if (!v) return '-';
+        var dt = new Date(v);
+        return isNaN(dt.getTime()) ? '-' : dt.toLocaleString('pt-BR');
+      })();
+
+      var jsPDF = window.jspdf.jsPDF;
+      var doc = new jsPDF();
+      var ml = 15, lu = 180, pw = 210;
+      var maxY = 272;
+
+      // Regua de Escore T 20..80 (identica ao comparativo).
+      var gL = 70, gR = 168, gW = gR - gL, escMn = 20, escMx = 80;
+      function xT(t) { return gL + ((t - escMn) / (escMx - escMn)) * gW; }
+      function clampT(v) { return Math.max(escMn, Math.min(escMx, v)); }
+      var tk = [20, 30, 40, 50, 60, 70, 80];
+
+      // Rotulo do titulo conforme o formulario.
+      var _tituloForm = _ehEscolar ? 'Idade Escolar' : (d && d.formulario ? String(d.formulario) : 'Adulto');
+
+      // ---------- PAGINA 1: PERFIL ----------
+      doc.setFillColor(26, 35, 126); doc.rect(0, 0, pw, 8, 'F');
+      doc.setTextColor(26, 35, 126); doc.setFontSize(16); doc.setFont(undefined, 'bold');
+      var y = 22; doc.text('Perfil - SRS-2 (' + _tituloForm + ')', ml, y); y += 8;
+      doc.setFontSize(9); doc.setFont(undefined, 'normal'); doc.setTextColor(60, 60, 60);
+      doc.text(((d && d.paciente) || '') + ((d && d.idade) ? ('  |  ' + d.idade) : '') + ((d && d.sexo) ? ('  |  ' + d.sexo) : ''), ml, y); y += 6;
+      if (d && d.idPaciente) { doc.text('ID: ' + d.idPaciente, ml, y); y += 6; }
+
+      // Cabecalho das colunas de dados brutos / normas.
+      doc.setFontSize(6.5); doc.setTextColor(0, 0, 0); doc.setFont(undefined, 'bold');
+      var cDadosX = 30, cNormasX = 52;
+      doc.text('Dados brutos', cDadosX, y, { align: 'center' });
+      doc.text('Normas (T)', cNormasX, y, { align: 'center' });
+      doc.setFont(undefined, 'normal'); doc.setTextColor(100, 100, 100);
+      for (var ti = 0; ti < tk.length; ti++) { doc.text(String(tk[ti]), xT(tk[ti]), y, { align: 'center' }); }
+      y += 3;
+
+      var bH = 18, gp = 6;
+      var yS = y;
+      var yE = yS + SRS2_MEDIDAS.length * (bH + gp);
+      // Faixas de fundo por nivel (identicas ao comparativo).
+      doc.setFillColor(232, 245, 233); doc.rect(xT(20), yS, xT(59) - xT(20), yE - yS, 'F');
+      doc.setFillColor(255, 248, 225); doc.rect(xT(59), yS, xT(65) - xT(59), yE - yS, 'F');
+      doc.setFillColor(255, 224, 178); doc.rect(xT(65), yS, xT(75) - xT(65), yE - yS, 'F');
+      doc.setFillColor(255, 205, 210); doc.rect(xT(75), yS, xT(80) - xT(75), yE - yS, 'F');
+      doc.setDrawColor(200, 200, 200); doc.setLineWidth(0.2);
+      for (var ti2 = 0; ti2 < tk.length; ti2++) { doc.line(xT(tk[ti2]), yS, xT(tk[ti2]), yE); }
+
+      // 1 respondente: estilo fixo azul-losango (igual ao primeiro do comparativo).
+      var _corP = [21, 101, 192], _corClaraP = [187, 222, 251];
+
+      for (var si = 0; si < SRS2_MEDIDAS.length; si++) {
+        var sc = SRS2_MEDIDAS[si];
+        var yRow = yS + si * (bH + gp);
+        var yc = yRow + bH / 2;
+
+        // Rotulo da medida (nome do dominio) a DIREITA do grafico.
+        doc.setFontSize(6.5); doc.setTextColor(0, 0, 0); doc.setFont(undefined, (sc.k === 'CIS' || sc.k === 'TOTAL') ? 'bold' : 'normal');
+        var _lblX = gR + 3;
+        var _lblW = pw - _lblX - 3;
+        var _lbl = doc.splitTextToSize(sc.nome, _lblW);
+        var _lblY = yc - ((_lbl.length - 1) * 2.1) - 1;
+        for (var _li = 0; _li < _lbl.length; _li++) { doc.text(_lbl[_li], _lblX, _lblY + _li * 4.2); }
+
+        var tv = Number(_escoresT[sc.k]);
+        var brv = _brutoSrs2(d, sc.k);
+
+        // Colunas Dados brutos / Normas (T).
+        doc.setFont(undefined, 'normal'); doc.setFontSize(6);
+        doc.setTextColor(_corP[0], _corP[1], _corP[2]);
+        doc.text(String(brv != null ? brv : '-'), cDadosX, yc + 1, { align: 'center' });
+        doc.text(String(isFinite(tv) ? tv : '-'), cNormasX, yc + 1, { align: 'center' });
+
+        if (isFinite(tv)) {
+          // Barra de IC (clampada 20..80).
+          var xa = xT(clampT(tv - _icDelta)), xb = xT(clampT(tv + _icDelta));
+          doc.setFillColor(_corClaraP[0], _corClaraP[1], _corClaraP[2]);
+          doc.rect(xa, yc - 1.3, xb - xa, 2.6, 'F');
+          // Marcador (losango) centralizado na faixa (passo=0 com 1 respondente).
+          var pxv = xT(clampT(tv));
+          doc.setFillColor(_corP[0], _corP[1], _corP[2]);
+          doc.setDrawColor(_corP[0], _corP[1], _corP[2]); doc.setLineWidth(0.4);
+          _marcadorSrs2(doc, 'losango', pxv, yc, 1.8);
+          doc.setFontSize(5.5); doc.setTextColor(_corP[0], _corP[1], _corP[2]); doc.setFont(undefined, 'bold');
+          doc.text(String(tv), pxv, yc - 2.6, { align: 'center' });
+        }
+      }
+
+      // Legenda: nome do respondente + data/hora + IC.
+      var yl = yE + 8;
+      doc.setFontSize(7); doc.setFont(undefined, 'normal');
+      doc.setFillColor(_corP[0], _corP[1], _corP[2]);
+      doc.setDrawColor(_corP[0], _corP[1], _corP[2]); doc.setLineWidth(0.4);
+      _marcadorSrs2(doc, 'losango', ml + 2, yl - 1, 1.8);
+      doc.setTextColor(0, 0, 0);
+      doc.text((_nomeResp || 'Respondente') + ' - ' + _dataStr, ml + 7, yl + 1); yl += 7;
+      doc.setFontSize(6.5); doc.setTextColor(90, 90, 90);
+      doc.text('Intervalo de confian\u00e7a (B\u00e1sico: Consist\u00eancia, N\u00edvel de confian\u00e7a: 95%)', ml, yl); yl += 5;
+      doc.text('Verde = Normal   Amarelo = Leve   Laranja = Moderado   Vermelho = Severo', ml, yl); yl += 5;
+
+      // ---------- PAGINAS 2+: DETALHES DA ESCALA (uma secao por medida) ----------
+      for (var mi = 0; mi < SRS2_MEDIDAS.length; mi++) {
+        var md = SRS2_MEDIDAS[mi];
+        doc.addPage();
+        doc.setFillColor(26, 35, 126); doc.rect(0, 0, pw, 8, 'F');
+        doc.setTextColor(26, 35, 126); doc.setFontSize(14); doc.setFont(undefined, 'bold');
+        var yd = 22; doc.text('Detalhes - ' + md.nome, ml, yd); yd += 10;
+
+        // Curva normal (sino): media 50, sigma 10 (variancia 100), identica ao comparativo.
+        var curvaTopo = yd;
+        var curvaBase = yd + 42;
+        var curvaAlt = curvaBase - curvaTopo;
+        doc.setFontSize(7); doc.setTextColor(100, 100, 100); doc.setFont(undefined, 'normal');
+        for (var ci = 0; ci < tk.length; ci++) { doc.text(String(tk[ci]), xT(tk[ci]), curvaBase + 5, { align: 'center' }); }
+        doc.setDrawColor(120, 120, 120); doc.setLineWidth(0.3);
+        doc.line(xT(20), curvaBase, xT(80), curvaBase);
+        doc.setDrawColor(90, 90, 90); doc.setLineWidth(0.4);
+        var prevX = null, prevY = null;
+        for (var gi = 0; gi <= 60; gi++) {
+          var tt = 20 + (60 * gi / 60);
+          var hh = Math.exp(-((tt - 50) * (tt - 50)) / (2 * 10 * 10));
+          var cxc = xT(tt);
+          var cyc = curvaBase - hh * curvaAlt;
+          if (prevX !== null) { doc.line(prevX, prevY, cxc, cyc); }
+          prevX = cxc; prevY = cyc;
+        }
+        function _altCurva(t) {
+          var h2 = Math.exp(-((t - 50) * (t - 50)) / (2 * 10 * 10));
+          return curvaBase - h2 * curvaAlt;
+        }
+        var mtv = Number(_escoresT[md.k]);
+        if (isFinite(mtv)) {
+          var mxv = xT(clampT(mtv));
+          doc.setDrawColor(_corP[0], _corP[1], _corP[2]); doc.setLineWidth(0.3);
+          doc.line(mxv, curvaBase, mxv, _altCurva(clampT(mtv)));
+          doc.setFillColor(_corP[0], _corP[1], _corP[2]);
+          doc.setDrawColor(_corP[0], _corP[1], _corP[2]); doc.setLineWidth(0.4);
+          _marcadorSrs2(doc, 'losango', mxv, _altCurva(clampT(mtv)), 1.8);
+        }
+        yd = curvaBase + 12;
+
+        // Tabela: Nome | Bruta | Norma (T) | Faltantes | IC. 1 linha (o respondente).
+        doc.setFontSize(8); doc.setFont(undefined, 'bold'); doc.setTextColor(0, 0, 0);
+        var colNome = ml, colBruto = ml + 70, colT = ml + 100, colMiss = ml + 130, colIC = ml + 162;
+        doc.text('Nome', colNome, yd);
+        doc.text('Bruta', colBruto, yd);
+        doc.text('Norma (T)', colT, yd);
+        doc.text('Faltantes', colMiss, yd);
+        doc.text('IC', colIC, yd);
+        yd += 2; doc.setDrawColor(26, 35, 126); doc.setLineWidth(0.4); doc.line(ml, yd, ml + lu, yd); yd += 6;
+        doc.setFont(undefined, 'normal');
+        var bvD = _brutoSrs2(d, md.k);
+        doc.setTextColor(_corP[0], _corP[1], _corP[2]); doc.setFont(undefined, 'bold');
+        var nomeLin = doc.splitTextToSize(_nomeResp || 'Respondente', 65);
+        doc.text(nomeLin[0], colNome, yd);
+        doc.setTextColor(0, 0, 0); doc.setFont(undefined, 'normal');
+        doc.text(String(bvD != null ? bvD : '-'), colBruto, yd);
+        doc.text(String(isFinite(mtv) ? mtv : '-'), colT, yd);
+        doc.text('0', colMiss, yd);
+        doc.text(_icFn(mtv), colIC, yd);
+        yd += 11;
+
+        // Texto descritivo da subescala (texto oficial; nao inventado).
+        doc.setFontSize(9); doc.setFont(undefined, 'bold'); doc.setTextColor(26, 35, 126);
+        doc.text('Descri\u00e7\u00e3o', ml, yd); yd += 6;
+        doc.setFont(undefined, 'normal'); doc.setTextColor(0, 0, 0); doc.setFontSize(9);
+        var descLines = doc.splitTextToSize(SRS2_DESC[md.k] || '', lu);
+        for (var dli = 0; dli < descLines.length; dli++) {
+          if (yd > maxY) { doc.addPage(); yd = 20; }
+          doc.text(descLines[dli], ml, yd); yd += 5;
+        }
+      }
+
+      // ---------- PAGINA: INTERPRETACAO ----------
+      doc.addPage();
+      doc.setFillColor(26, 35, 126); doc.rect(0, 0, pw, 8, 'F');
+      doc.setTextColor(26, 35, 126); doc.setFontSize(16); doc.setFont(undefined, 'bold');
+      var yiI = 22; doc.text('Interpreta\u00e7\u00e3o', ml, yiI); yiI += 12;
+      doc.setTextColor(0, 0, 0); doc.setFontSize(9); doc.setFont(undefined, 'normal');
+      var _rotFaixa = _ehEscolar ? 'Idade Escolar' : 'Adulto';
+      doc.text('Faixas de Escore T (Formul\u00e1rio ' + _rotFaixa + '):', ml, yiI); yiI += 8;
+      var faixasI = [
+        { fill: [200, 230, 201], txt: 'Escore T <= 59: Dentro dos limites normais.' },
+        { fill: [255, 248, 225], txt: 'Escore T 60 a 65: N\u00edvel leve.' },
+        { fill: [255, 224, 178], txt: 'Escore T 66 a 75: N\u00edvel moderado.' },
+        { fill: [255, 205, 210], txt: 'Escore T >= 76: N\u00edvel severo.' }
+      ];
+      for (var fiI = 0; fiI < faixasI.length; fiI++) {
+        doc.setFillColor(faixasI[fiI].fill[0], faixasI[fiI].fill[1], faixasI[fiI].fill[2]);
+        doc.rect(ml, yiI - 4, lu, 10, 'F');
+        doc.setTextColor(0, 0, 0); doc.setFontSize(9);
+        doc.text(faixasI[fiI].txt, ml + 3, yiI + 2); yiI += 13;
+      }
+      yiI += 4; doc.setFontSize(9); doc.setFont(undefined, 'bold'); doc.setTextColor(26, 35, 126);
+      doc.text('Escore T Total:', ml, yiI); yiI += 7;
+      doc.setFont(undefined, 'normal'); doc.setTextColor(0, 0, 0);
+      var _tvTotal = Number(_escoresT.TOTAL);
+      doc.text('T = ' + (isFinite(_tvTotal) ? _escoresT.TOTAL : '-') + ' (' + _faixaSrs2(_escoresT.TOTAL) + '), IC ' + _icFn(_escoresT.TOTAL), ml, yiI); yiI += 10;
+      if (yiI > maxY - 14) { doc.addPage(); yiI = 20; }
+      doc.setFillColor(255, 248, 235); doc.rect(ml, yiI, lu, 14, 'F');
+      doc.setTextColor(150, 80, 0); doc.setFontSize(7); doc.setFont(undefined, 'bold');
+      doc.text('IMPORTANTE:', ml + 3, yiI + 5); doc.setFont(undefined, 'normal');
+      doc.text('Instrumento de rastreio. Resultados devem ser interpretados por profissional qualificado em avalia\u00e7\u00e3o abrangente.', ml + 3, yiI + 10);
+
+      // ---------- PAGINA FINAL: RESPOSTAS ----------
+      doc.addPage();
+      doc.setFillColor(26, 35, 126); doc.rect(0, 0, pw, 8, 'F');
+      doc.setTextColor(26, 35, 126); doc.setFontSize(16); doc.setFont(undefined, 'bold');
+      var yrI = 22;
+      var _cabResp = _ehEscolar ? 'Resposta Idade Escolar' : (_esc === 'SRS-2-AH' ? 'Resposta Heterorrelato' : 'Resposta Autorrelato');
+      doc.text(_cabResp, ml, yrI); yrI += 8;
+      doc.setFontSize(8); doc.setFont(undefined, 'normal'); doc.setTextColor(90, 90, 90);
+      doc.text('Respondente: ' + (_nomeResp || '-'), ml, yrI); yrI += 5;
+      var _escalaTela = _ehEscolar ? '(0 a 3)' : '(1 a 4)';
+      doc.text('Numeros conforme marcados na tela ' + _escalaTela + '. Itens invertidos sinalizados com (inv).', ml, yrI); yrI += 7;
+      doc.setTextColor(0, 0, 0); doc.setFontSize(8.5);
+
+      // Reverter os PONTOS (0-3) salvos para o NUMERO ORIGINAL marcado na tela.
+      // Escolar (tela 0-3): normal -> p; invertido -> 3 - p.
+      // Adulto  (tela 1-4): normal -> p + 1; invertido -> 4 - p.
+      var _respObj = (d && d.respostas) ? d.respostas : {};
+      var _partes = [];
+      for (var qn = 1; qn <= 65; qn++) {
+        var _inv = !!SRS2_INVERTIDOS[qn];
+        var _p = Number(_respObj[String(qn)]);
+        var _orig;
+        if (!isFinite(_p)) {
+          _orig = '-';
+        } else if (_ehEscolar) {
+          _orig = _inv ? (3 - _p) : _p;
+        } else {
+          _orig = _inv ? (4 - _p) : (_p + 1);
+        }
+        _partes.push(qn + '-[' + _orig + ']' + (_inv ? ' (inv)' : ''));
+      }
+      var _linhaResp = _partes.join('; ');
+      var _respLines = doc.splitTextToSize(_linhaResp, lu);
+      for (var rli = 0; rli < _respLines.length; rli++) {
+        if (yrI > maxY) { doc.addPage(); yrI = 20; }
+        doc.text(_respLines[rli], ml, yrI); yrI += 5;
+      }
+
+      // ---------- RODAPE PAGINADO ----------
+      var totalPages = doc.internal.getNumberOfPages();
+      for (var pg = 1; pg <= totalPages; pg++) {
+        doc.setPage(pg);
+        doc.setFillColor(50, 50, 50); doc.rect(0, 287, 210, 10, 'F');
+        doc.setTextColor(200, 200, 200); doc.setFontSize(7); doc.setFont(undefined, 'normal');
+        doc.text('S\u03A8M Online | SRS-2 | Gerado em ' + new Date().toLocaleString('pt-BR') + ' | Pag. ' + pg + '/' + totalPages, 105, 293, { align: 'center' });
+      }
+
+      var tsNow = new Date();
+      var tsStr = tsNow.getFullYear() + String(tsNow.getMonth() + 1).padStart(2, '0') + String(tsNow.getDate()).padStart(2, '0') + String(tsNow.getHours()).padStart(2, '0') + String(tsNow.getMinutes()).padStart(2, '0');
+      var _nomeArq = (_esc || 'SRS-2').replace(/[^A-Za-z0-9\-]/g, '');
+      doc.save('SRS2_' + _nomeArq + '_' + (((d && d.paciente) || '').replace(/\s+/g, '_')) + '_' + tsStr + '.pdf');
+    }
+
     function gerarPDFEscala(idx) {
       function sanitize(s){if(!s)return '';s=String(s);return s.replace(/[\u2600-\u27BF\uD800-\uDFFF\uFE00-\uFE0F\u200D]/g,'').replace(/[^\x20-\x7E\xA0-\xFF\u0100-\u024F]/g,'').trim();}
       try {
@@ -15511,6 +16185,16 @@
       if (!r) return;
       var dd=(r.data||{}); if(dd.pdfBase64 && dd.pdfBase64.length > 100){var ts=new Date();var tsStr=ts.getFullYear()+String(ts.getMonth()+1).padStart(2,'0')+String(ts.getDate()).padStart(2,'0')+String(ts.getHours()).padStart(2,'0')+String(ts.getMinutes()).padStart(2,'0');var a=document.createElement('a');a.href=dd.pdfBase64;a.download=(dd.escala||'Escala').replace(/[\s\/]+/g,'_')+'_'+(dd.paciente||'').replace(/\s+/g,'_')+'_'+tsStr+'.pdf';document.body.appendChild(a);a.click();document.body.removeChild(a);return;}
       var d = r.data || {}; if(d.classificacao)d.classificacao=sanitize(d.classificacao); if(d.resultadoHTML)d.resultadoHTML=sanitize(d.resultadoHTML); if(d.paciente)d.paciente=sanitize(d.paciente);
+      // SRS-2: gerar o PDF no visual novo (igual ao Comparativo), com 1 respondente. So desvia
+      // para SRS-2 (AA=adulto auto, AH=adulto hetero, SRS-2=escolar); qualquer outra escala segue
+      // o caminho antigo de barras, byte-equivalente. try/catch degrada para o antigo se falhar.
+      var _escSrs2 = String(d.escala || '').toUpperCase();
+      if (_escSrs2 === 'SRS-2-AA' || _escSrs2 === 'SRS-2-AH' || _escSrs2 === 'SRS-2') {
+        try { _gerarPDFSrs2Individual(d, r); return; } catch (eSrs2) {
+          if (typeof window._registrarFalhaPDF === 'function') { try { window._registrarFalhaPDF('gerarPDFEscala(SRS-2)', (eSrs2 && eSrs2.message) || String(eSrs2), d.paciente || ''); } catch (e2) {} }
+          // fallback: segue para o desenho antigo abaixo (nao deixa o usuario sem PDF).
+        }
+      }
       var jsPDF = window.jspdf.jsPDF;
       var doc = new jsPDF();
       var maxY = 280;
@@ -18899,7 +19583,7 @@ function _registrarFalhaPDF(tipo, mensagemErro, paciente) {
 var _FUNCOES_PDF = ['generatePDF','_gerarPDFHistorico','gerarRelatorioPacientePDF','gerarPDFSrs2',
   'gerarPDFVineland3','gerarSmartPDF','gerarPDFAnamnese','gerarPdfIdeia','_gerarPdfIdeiaReal',
   'generateCorsiPDF','generateTtePDF','gerarPDFEscala','generateTrmvPDF','generateTaavPDF',
-  'generateTrefPDF','gerarPdfTflod'];
+  'generateTrefPDF','gerarPdfTflod','gerarPDFTpvset'];
 
 function _erroVeioDePDF(stack) {
   if (!stack) return null;
