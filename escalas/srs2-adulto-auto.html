@@ -314,6 +314,44 @@ window._escalaDados={escala:'SRS-2-AA',escalaNome:'SRS-2 \u2014 Escala de Respon
 if(window.injetarBotaoSalvar)injetarBotaoSalvar('resultados');
 }
 
+// ============================================================
+// HELPERS LOCAIS DO PDF INDIVIDUAL (portados do COMPARATIVO de online/index.html).
+// Nomes com prefixo _aa* para nao colidir com nada do projeto.
+// Mesmo visual do comparativo, porem com UM UNICO respondente (estilo azul losango).
+// ============================================================
+// Ordem fixa das 7 medidas (igual ao comparativo: PS,CS,COS,MS,PRR,CIS,TOTAL).
+var _AA_MEDIDAS=[
+{k:'PS',nome:'Percep\u00e7\u00e3o Social'},
+{k:'CS',nome:'Cogni\u00e7\u00e3o Social'},
+{k:'COS',nome:'Comunica\u00e7\u00e3o Social'},
+{k:'MS',nome:'Motiva\u00e7\u00e3o Social'},
+{k:'PRR',nome:'Padr\u00f5es Restritos e Repetitivos'},
+{k:'CIS',nome:'Comunica\u00e7\u00e3o e Intera\u00e7\u00e3o Social'},
+{k:'TOTAL',nome:'Escore Total'}
+];
+// Textos descritivos oficiais das subescalas (Manual SRS-2, Apendice B) - copiados do comparativo.
+var _AA_DESC={
+PS:'Capacidade de captar pistas sociais; esta categoria representa os aspectos sensoriais do comportamento social rec\u00edproco.',
+CS:'Capacidade de interpretar pistas sociais uma vez que s\u00e3o captadas; esta categoria representa os aspectos cognitivo-interpretativos do comportamento social rec\u00edproco.',
+COS:'Inclui comunica\u00e7\u00e3o social expressiva; esta categoria representa os aspectos "motorizados" do comportamento social rec\u00edproco.',
+MS:'A medida em que uma pessoa avaliada \u00e9 geralmente motivada a se engajar em comportamento s\u00f3cio-interpessoal; elementos de ansiedade social, inibi\u00e7\u00e3o e orienta\u00e7\u00e3o emp\u00e1tica est\u00e3o inclu\u00eddos entre esses itens.',
+PRR:'Inclui comportamentos estereotipados ou interesses altamente restritos caracter\u00edsticos do autismo.',
+CIS:'Dom\u00ednio composto pela soma das quatro primeiras subescalas de interven\u00e7\u00e3o (Percep\u00e7\u00e3o, Cogni\u00e7\u00e3o, Comunica\u00e7\u00e3o e Motiva\u00e7\u00e3o Social). Representa o dom\u00ednio de Comunica\u00e7\u00e3o e Intera\u00e7\u00e3o Social compat\u00edvel com os crit\u00e9rios do DSM-5.',
+TOTAL:'Medida global da responsividade social, somando todos os 65 itens. Reflete a gravidade geral dos preju\u00edzos no comportamento social rec\u00edproco.'
+};
+// Estilo unico do respondente (azul losango), identico ao estilo 0 da paleta do comparativo.
+var _AA_ESTILO={cor:[21,101,192],corClara:[187,222,251],marcador:'losango'};
+// IC do Adulto = Escore T +/- 3 (95%).
+var _AA_IC_DELTA=3;
+// Faixa de interpretacao do Escore T (mesmos cortes do comparativo: <=59 normal / <=65 leve / <=75 moderado / else severo).
+function _aaFaixa(t){var n=Number(t);if(!isFinite(n))return'-';if(n<=59)return'Normal';if(n<=65)return'Leve';if(n<=75)return'Moderado';return'Severo';}
+// Formata o intervalo de confianca (texto sempre mostra o valor real, sem clamp).
+function _aaIC(t){var n=Number(t);if(!isFinite(n))return'-';return(n-_AA_IC_DELTA)+' - '+(n+_AA_IC_DELTA);}
+// Losango (diamante) preenchido centrado em (cx,cy) com meia-largura rr.
+function _aaLosango(doc,cx,cy,rr){doc.triangle(cx,cy-rr,cx-rr,cy,cx+rr,cy,'F');doc.triangle(cx,cy+rr,cx-rr,cy,cx+rr,cy,'F');}
+// Marcador do estilo (aqui sempre losango); cor definida pelo chamador antes.
+function _aaMarcador(doc,tipo,cx,cy,rr){_aaLosango(doc,cx,cy,rr);}
+
 function gerarRelatorioPDF(){
 var nome=document.getElementById('nome').value;
 if(!nome){alert('Preencha o nome.');return;}
@@ -331,18 +369,219 @@ var brutoCIS=brutos.PS+brutos.CS+brutos.COS+brutos.MS;
 var brutoTotal=0;for(var i=0;i<r.length;i++)brutoTotal+=r[i];
 var escoresT={};for(var k=0;k<keys.length;k++){var key=keys[k];escoresT[key]=buscarEscoreT(NORMAS_T[key],brutos[key]);}
 escoresT.CIS=buscarEscoreT(NORMAS_T.CIS,brutoCIS);escoresT.TOTAL=buscarEscoreT(NORMAS_T.TOTAL,brutoTotal);
-var classTot=classificarEscoreT(escoresT.TOTAL);
-var allBrutos={'PS':brutos.PS,'CS':brutos.CS,'COS':brutos.COS,'MS':brutos.MS,'PRR':brutos.PRR,'CIS':brutoCIS,'TOTAL':brutoTotal};
-var allScales=[{key:'PS',nome:'Percepcao Social'},{key:'CS',nome:'Cognicao Social'},{key:'COS',nome:'Comunicacao Social'},{key:'MS',nome:'Motivacao Social'},{key:'PRR',nome:'Padroes Restritos e Repetitivos'},{key:'CIS',nome:'Comunicacao e Interacao Social'},{key:'TOTAL',nome:'Escore Total'}];
-var jsPDF=window.jspdf.jsPDF;var doc=new jsPDF();var ml=15;var lu=180;var pw=210;var y=0;
-doc.setFillColor(26,35,126);doc.rect(0,0,pw,45,'F');doc.setTextColor(255,255,255);doc.setFontSize(22);doc.setFont(undefined,'bold');doc.text('SRS-2',105,20,{align:'center'});doc.setFontSize(11);doc.setFont(undefined,'normal');doc.text('Escala de Responsividade Social - 2a Edicao',105,30,{align:'center'});doc.text('Formulario Adulto Autorrelato | Normas Brasileiras',105,38,{align:'center'});
-y=60;doc.setTextColor(0,0,0);doc.setFontSize(12);doc.setFont(undefined,'bold');doc.text(nome,ml,y);y+=10;doc.setFontSize(10);doc.setFont(undefined,'normal');
-if(idPac){doc.text('ID: '+idPac,ml,y);y+=7;}doc.text('Data da avaliacao: '+dataAval,ml,y);y+=7;doc.text('Idade: '+idade+'   |   Sexo: '+sexo,ml,y);y+=7;doc.text('Formulario: Adulto Autorrelato',ml,y);y+=10;
-doc.setFontSize(11);doc.setFont(undefined,'bold');doc.text('Resultados',ml,y);y+=3;doc.setDrawColor(26,35,126);doc.setLineWidth(0.5);doc.line(ml,y,ml+lu,y);y+=8;
-doc.setFontSize(9);doc.setFont(undefined,'bold');doc.text('Escala',ml,y);doc.text('Bruto',ml+85,y);doc.text('Escore T',ml+112,y);doc.text('Classificacao',ml+135,y);y+=7;doc.setFont(undefined,'normal');
-for(var si=0;si<allScales.length;si++){var sc=allScales[si];var t=escoresT[sc.key];var cl=classificarEscoreT(t);if(si>=5)doc.setFont(undefined,'bold');else doc.setFont(undefined,'normal');doc.setTextColor(0,0,0);doc.text(sc.nome,ml,y);doc.text(String(allBrutos[sc.key]),ml+87,y);doc.text(t!==null?String(t):'-',ml+114,y);if(cl.cor==='#4caf50')doc.setTextColor(46,125,50);else if(cl.cor==='#ffc107')doc.setTextColor(180,140,0);else if(cl.cor==='#ff9800')doc.setTextColor(230,120,0);else if(cl.cor==='#f44336')doc.setTextColor(198,40,40);else doc.setTextColor(120,120,120);doc.text(cl.texto,ml+135,y);doc.setTextColor(0,0,0);y+=8;if(si===4){y+=2;doc.setDrawColor(200,200,200);doc.setLineWidth(0.3);doc.line(ml,y-5,ml+lu,y-5);}}
-y+=8;doc.setFillColor(255,248,235);doc.rect(ml,y,lu,14,'F');doc.setDrawColor(200,150,50);doc.setLineWidth(0.5);doc.line(ml,y,ml,y+14);doc.setTextColor(150,80,0);doc.setFontSize(7);doc.setFont(undefined,'bold');doc.text('IMPORTANTE:',ml+3,y+5);doc.setFont(undefined,'normal');doc.text('Instrumento de rastreio. Resultados devem ser interpretados por profissional qualificado em avaliacao abrangente.',ml+3,y+10);
-doc.setFontSize(6);doc.setTextColor(150,150,150);doc.text('Gerado em '+new Date().toLocaleString('pt-BR')+' | SYM Online',ml,285);
+// Bruto por medida (CIS e TOTAL calculados a parte).
+var _aaBruto=function(kk){if(kk==='CIS')return brutoCIS;if(kk==='TOTAL')return brutoTotal;return(brutos[kk]!=null)?brutos[kk]:null;};
+
+var jsPDF=window.jspdf.jsPDF;var doc=new jsPDF();
+var ml=15,lu=180,pw=210;var maxY=272;
+var est=_AA_ESTILO;
+// Regua de Escore T 20..80 (identica ao comparativo).
+var gL=70,gR=168,gW=gR-gL,escMn=20,escMx=80;
+function xT(t){return gL+((t-escMn)/(escMx-escMn))*gW;}
+function clampT(v){return Math.max(escMn,Math.min(escMx,v));}
+
+// ---------- PAGINA 1: PERFIL ----------
+doc.setFillColor(26,35,126);doc.rect(0,0,pw,8,'F');
+doc.setTextColor(26,35,126);doc.setFontSize(16);doc.setFont(undefined,'bold');
+var y=22;doc.text('Perfil - SRS-2 Adulto Autorrelato',ml,y);y+=8;
+doc.setFontSize(9);doc.setFont(undefined,'normal');doc.setTextColor(60,60,60);
+doc.text((nome||'')+(idade?('  |  '+idade):'')+(sexo?('  |  '+sexo):''),ml,y);y+=6;
+if(idPac){doc.text('ID: '+idPac,ml,y);y+=6;}
+doc.text('Data da avalia\u00e7\u00e3o: '+dataAval,ml,y);y+=6;
+
+// Cabecalho das colunas de dados brutos / normas.
+doc.setFontSize(6.5);doc.setTextColor(0,0,0);doc.setFont(undefined,'bold');
+var cDadosX=30,cNormasX=52;
+doc.text('Dados brutos',cDadosX,y,{align:'center'});
+doc.text('Normas (T)',cNormasX,y,{align:'center'});
+doc.setFont(undefined,'normal');doc.setTextColor(100,100,100);
+var tk=[20,30,40,50,60,70,80];
+for(var ti=0;ti<tk.length;ti++){doc.text(String(tk[ti]),xT(tk[ti]),y,{align:'center'});}
+y+=3;
+
+var bH=18,gp=6;var yS=y;var yE=yS+_AA_MEDIDAS.length*(bH+gp);
+// Faixas de fundo por nivel (verde/amarelo/laranja/vermelho).
+doc.setFillColor(232,245,233);doc.rect(xT(20),yS,xT(59)-xT(20),yE-yS,'F');
+doc.setFillColor(255,248,225);doc.rect(xT(59),yS,xT(65)-xT(59),yE-yS,'F');
+doc.setFillColor(255,224,178);doc.rect(xT(65),yS,xT(75)-xT(65),yE-yS,'F');
+doc.setFillColor(255,205,210);doc.rect(xT(75),yS,xT(80)-xT(75),yE-yS,'F');
+doc.setDrawColor(200,200,200);doc.setLineWidth(0.2);
+for(var ti2=0;ti2<tk.length;ti2++){doc.line(xT(tk[ti2]),yS,xT(tk[ti2]),yE);}
+
+var _pts=[];
+for(var si=0;si<_AA_MEDIDAS.length;si++){
+var sc=_AA_MEDIDAS[si];
+var yRow=yS+si*(bH+gp);
+var yc=yRow+bH/2;
+// Rotulo da medida a DIREITA do grafico (arranjo Hogrefe).
+doc.setFontSize(6.5);doc.setTextColor(0,0,0);doc.setFont(undefined,(sc.k==='CIS'||sc.k==='TOTAL')?'bold':'normal');
+var _lblX=gR+3;var _lblW=pw-_lblX-3;var _lbl=doc.splitTextToSize(sc.nome,_lblW);
+var _lblY=yc-((_lbl.length-1)*2.1)-1;
+for(var _li=0;_li<_lbl.length;_li++){doc.text(_lbl[_li],_lblX,_lblY+_li*4.2);}
+var tv=Number(escoresT[sc.k]);
+var brv=_aaBruto(sc.k);
+var yci=yc;
+// Colunas Dados brutos / Normas.
+doc.setFont(undefined,'normal');doc.setFontSize(6);
+doc.setTextColor(est.cor[0],est.cor[1],est.cor[2]);
+doc.text(String(brv!=null?brv:'-'),cDadosX,yci+1,{align:'center'});
+doc.text(String(isFinite(tv)?tv:'-'),cNormasX,yci+1,{align:'center'});
+if(isFinite(tv)){
+// Barra de IC (clampada a 20..80). Adulto usa +/- 3.
+var xa=xT(clampT(tv-_AA_IC_DELTA)),xb=xT(clampT(tv+_AA_IC_DELTA));
+doc.setFillColor(est.corClara[0],est.corClara[1],est.corClara[2]);
+doc.rect(xa,yci-1.3,xb-xa,2.6,'F');
+// Marcador do estilo.
+var pxv=xT(clampT(tv));
+doc.setFillColor(est.cor[0],est.cor[1],est.cor[2]);
+doc.setDrawColor(est.cor[0],est.cor[1],est.cor[2]);doc.setLineWidth(0.4);
+_aaMarcador(doc,est.marcador,pxv,yci,1.8);
+_pts.push({x:pxv,y:yci});
+// Rotulo do T acima do marcador.
+doc.setFontSize(5.5);doc.setTextColor(est.cor[0],est.cor[1],est.cor[2]);doc.setFont(undefined,'bold');
+doc.text(String(tv),pxv,yci-2.6,{align:'center'});
+}
+}
+// Polilinha conectando os pontos do respondente (linha cheia).
+if(_pts.length>1){doc.setDrawColor(est.cor[0],est.cor[1],est.cor[2]);doc.setLineWidth(0.4);for(var _pi=1;_pi<_pts.length;_pi++){doc.line(_pts[_pi-1].x,_pts[_pi-1].y,_pts[_pi].x,_pts[_pi].y);}}
+
+// Legenda: nome do paciente + data/hora + IC 95% + faixas de cor.
+var yl=yE+8;
+doc.setFontSize(7);doc.setFont(undefined,'normal');
+doc.setFillColor(est.cor[0],est.cor[1],est.cor[2]);
+doc.setDrawColor(est.cor[0],est.cor[1],est.cor[2]);doc.setLineWidth(0.4);
+_aaMarcador(doc,est.marcador,ml+2,yl-1,1.8);
+doc.setTextColor(0,0,0);
+doc.text((nome||'')+' - '+new Date().toLocaleString('pt-BR'),ml+7,yl+1);yl+=6;
+yl+=1;
+doc.setFontSize(6.5);doc.setTextColor(90,90,90);
+doc.text('Intervalo de confian\u00e7a (B\u00e1sico: Consist\u00eancia, N\u00edvel de confian\u00e7a: 95%)',ml,yl);yl+=5;
+doc.text('Verde = Normal   Amarelo = Leve   Laranja = Moderado   Vermelho = Severo',ml,yl);yl+=5;
+
+// ---------- PAGINAS 2+: DETALHES DA ESCALA (uma secao por medida) ----------
+for(var mi=0;mi<_AA_MEDIDAS.length;mi++){
+var md=_AA_MEDIDAS[mi];
+doc.addPage();
+doc.setFillColor(26,35,126);doc.rect(0,0,pw,8,'F');
+doc.setTextColor(26,35,126);doc.setFontSize(14);doc.setFont(undefined,'bold');
+var yd=22;doc.text('Detalhes - '+md.nome,ml,yd);yd+=10;
+// Curva normal (sino) amostrada; eixo X reaproveita xT().
+var curvaTopo=yd;var curvaBase=yd+42;var curvaAlt=curvaBase-curvaTopo;
+doc.setFontSize(7);doc.setTextColor(100,100,100);doc.setFont(undefined,'normal');
+for(var ci=0;ci<tk.length;ci++){doc.text(String(tk[ci]),xT(tk[ci]),curvaBase+5,{align:'center'});}
+doc.setDrawColor(120,120,120);doc.setLineWidth(0.3);
+doc.line(xT(20),curvaBase,xT(80),curvaBase);
+doc.setDrawColor(90,90,90);doc.setLineWidth(0.4);
+var prevX=null,prevY=null;
+for(var gi=0;gi<=60;gi++){
+var tt=20+(60*gi/60);
+var hh=Math.exp(-((tt-50)*(tt-50))/(2*10*10));
+var cx=xT(tt);var cy=curvaBase-hh*curvaAlt;
+if(prevX!==null){doc.line(prevX,prevY,cx,cy);}
+prevX=cx;prevY=cy;
+}
+// Marcador sobre a curva na posicao do T do respondente.
+var _altCurva=function(t){var hh2=Math.exp(-((t-50)*(t-50))/(2*10*10));return curvaBase-hh2*curvaAlt;};
+var mtv=Number(escoresT[md.k]);
+if(isFinite(mtv)){
+var mxv=xT(clampT(mtv));
+doc.setDrawColor(est.cor[0],est.cor[1],est.cor[2]);doc.setLineWidth(0.3);
+doc.line(mxv,curvaBase,mxv,_altCurva(clampT(mtv)));
+doc.setFillColor(est.cor[0],est.cor[1],est.cor[2]);
+doc.setDrawColor(est.cor[0],est.cor[1],est.cor[2]);doc.setLineWidth(0.4);
+_aaMarcador(doc,est.marcador,mxv,_altCurva(clampT(mtv)),1.8);
+}
+yd=curvaBase+12;
+// Tabela: Nome | Bruta | Norma (T) | Faltantes | IC.
+doc.setFontSize(8);doc.setFont(undefined,'bold');doc.setTextColor(0,0,0);
+var colNome=ml,colBruto=ml+70,colT=ml+100,colMiss=ml+130,colIC=ml+162;
+doc.text('Nome',colNome,yd);
+doc.text('Bruta',colBruto,yd);
+doc.text('Norma (T)',colT,yd);
+doc.text('Faltantes',colMiss,yd);
+doc.text('IC',colIC,yd);
+yd+=2;doc.setDrawColor(26,35,126);doc.setLineWidth(0.4);doc.line(ml,yd,ml+lu,yd);yd+=6;
+doc.setFont(undefined,'normal');
+var tvD=Number(escoresT[md.k]);
+var bvD=_aaBruto(md.k);
+doc.setTextColor(est.cor[0],est.cor[1],est.cor[2]);doc.setFont(undefined,'bold');
+var nomeLin=doc.splitTextToSize(nome||'',65);
+doc.text(nomeLin[0],colNome,yd);
+doc.setTextColor(0,0,0);doc.setFont(undefined,'normal');
+doc.text(String(bvD!=null?bvD:'-'),colBruto,yd);
+doc.text(String(isFinite(tvD)?tvD:'-'),colT,yd);
+doc.text('0',colMiss,yd);
+doc.text(_aaIC(tvD),colIC,yd);
+yd+=7;yd+=4;
+// Texto descritivo da subescala.
+doc.setFontSize(9);doc.setFont(undefined,'bold');doc.setTextColor(26,35,126);
+doc.text('Descri\u00e7\u00e3o',ml,yd);yd+=6;
+doc.setFont(undefined,'normal');doc.setTextColor(0,0,0);doc.setFontSize(9);
+var descLines=doc.splitTextToSize(_AA_DESC[md.k]||'',lu);
+for(var dli=0;dli<descLines.length;dli++){if(yd>maxY){doc.addPage();yd=20;}doc.text(descLines[dli],ml,yd);yd+=5;}
+}
+
+// ---------- PAGINA INTERPRETACAO ----------
+doc.addPage();
+doc.setFillColor(26,35,126);doc.rect(0,0,pw,8,'F');
+doc.setTextColor(26,35,126);doc.setFontSize(16);doc.setFont(undefined,'bold');
+var yi=22;doc.text('Interpreta\u00e7\u00e3o',ml,yi);yi+=12;
+doc.setTextColor(0,0,0);doc.setFontSize(9);doc.setFont(undefined,'normal');
+doc.text('Faixas de Escore T (Formul\u00e1rio Adulto):',ml,yi);yi+=8;
+var faixas=[
+{fill:[200,230,201],txt:'Escore T <= 59: Dentro dos limites normais.'},
+{fill:[255,248,225],txt:'Escore T 60 a 65: N\u00edvel leve.'},
+{fill:[255,224,178],txt:'Escore T 66 a 75: N\u00edvel moderado.'},
+{fill:[255,205,210],txt:'Escore T >= 76: N\u00edvel severo.'}
+];
+for(var fi=0;fi<faixas.length;fi++){doc.setFillColor(faixas[fi].fill[0],faixas[fi].fill[1],faixas[fi].fill[2]);doc.rect(ml,yi-4,lu,10,'F');doc.setTextColor(0,0,0);doc.setFontSize(9);doc.text(faixas[fi].txt,ml+3,yi+2);yi+=13;}
+yi+=4;doc.setFontSize(9);doc.setFont(undefined,'bold');doc.setTextColor(26,35,126);
+doc.text('Escore Total:',ml,yi);yi+=7;
+doc.setFont(undefined,'normal');doc.setTextColor(0,0,0);
+doc.text((nome||'')+': T = '+(isFinite(Number(escoresT.TOTAL))?escoresT.TOTAL:'-')+' ('+_aaFaixa(escoresT.TOTAL)+'), IC '+_aaIC(escoresT.TOTAL),ml,yi);yi+=6;
+yi+=4;
+if(yi>maxY-14){doc.addPage();yi=20;}
+doc.setFillColor(255,248,235);doc.rect(ml,yi,lu,14,'F');
+doc.setTextColor(150,80,0);doc.setFontSize(7);doc.setFont(undefined,'bold');
+doc.text('IMPORTANTE:',ml+3,yi+5);doc.setFont(undefined,'normal');
+doc.text('Instrumento de rastreio. Resultados devem ser interpretados por profissional qualificado em avalia\u00e7\u00e3o abrangente.',ml+3,yi+10);
+
+// ---------- ULTIMA PAGINA: RESPOSTAS (numero ORIGINAL 1-4 que a pessoa marcou) ----------
+// Reverter pontos 0-3 para o numero marcado na tela (1-4):
+// item normal -> original = pontos+1 ; item invertido -> original = 4-pontos.
+var _respOrig=[];
+for(var ro=0;ro<r.length;ro++){
+var _inv=(ITENS[ro]&&ITENS[ro].inv)?true:false;
+var _p=Number(r[ro]);
+var _orig=_inv?(4-_p):(_p+1);
+_respOrig.push(_orig);
+}
+doc.addPage();
+doc.setFillColor(26,35,126);doc.rect(0,0,pw,8,'F');
+doc.setTextColor(26,35,126);doc.setFontSize(16);doc.setFont(undefined,'bold');
+var yr=22;doc.text('Respostas',ml,yr);yr+=10;
+doc.setFontSize(8);doc.setFont(undefined,'normal');doc.setTextColor(60,60,60);
+doc.text('N\u00fameros conforme marcados na tela (1 a 4). Itens invertidos no c\u00e1lculo est\u00e3o sinalizados com (inv).',ml,yr);yr+=8;
+doc.setFontSize(9);doc.setFont(undefined,'bold');doc.setTextColor(0,0,0);
+doc.text('Resposta Autorrelato ['+(nome||'')+']:',ml,yr);yr+=7;
+doc.setFont(undefined,'normal');doc.setFontSize(8.5);
+var _respStr='';
+for(var rs=0;rs<_respOrig.length;rs++){
+var _invS=(ITENS[rs]&&ITENS[rs].inv)?' (inv)':'';
+_respStr+=(rs+1)+'-['+_respOrig[rs]+']'+_invS+';   ';
+}
+var _respLines=doc.splitTextToSize(_respStr.trim(),lu);
+for(var rl=0;rl<_respLines.length;rl++){if(yr>maxY){doc.addPage();yr=20;}doc.text(_respLines[rl],ml,yr);yr+=6;}
+
+// ---------- RODAPE PAGINADO ----------
+var totalPages=doc.internal.getNumberOfPages();
+for(var pg=1;pg<=totalPages;pg++){
+doc.setPage(pg);
+doc.setFillColor(50,50,50);doc.rect(0,287,210,10,'F');
+doc.setTextColor(200,200,200);doc.setFontSize(7);doc.setFont(undefined,'normal');
+doc.text('S\u03A8M Online | SRS-2 Adulto Autorrelato | Gerado em '+new Date().toLocaleString('pt-BR')+' | Pag. '+pg+'/'+totalPages,105,293,{align:'center'});
+}
+
 var ts=new Date();var tsStr=ts.getFullYear()+String(ts.getMonth()+1).padStart(2,'0')+String(ts.getDate()).padStart(2,'0')+String(ts.getHours()).padStart(2,'0')+String(ts.getMinutes()).padStart(2,'0');
 doc.save('SRS2-AA_'+nome.replace(/\s+/g,'_')+'_'+tsStr+'.pdf');
 }
