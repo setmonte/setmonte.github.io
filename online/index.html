@@ -11225,13 +11225,34 @@
           doc.text('Aten\u00e7\u00e3o: h\u00e1 sexos divergentes entre os registros.', ml, yl);
         }
 
-        // ---------- PAGINAS 2+: DETALHES DA ESCALA (uma secao por medida) ----------
-        for (var mi = 0; mi < SRS2_MEDIDAS.length; mi++) {
-          var md = SRS2_MEDIDAS[mi];
-          doc.addPage();
+        // ---------- PAGINAS 2+: DETALHES DA ESCALA (layout compacto: 2-3 blocos/pagina) ----------
+        // Reusa a mesma estrategia de _gerarPDFSrs2Individual (medir a altura do bloco e so
+        // quebrar quando o proximo nao couber ate maxY). Diferenca: a tabela tem N linhas
+        // (uma por respondente) e a curva recebe N marcadores, entao a altura cresce com N.
+        var colNome = ml, colBruto = ml + 70, colT = ml + 100, colMiss = ml + 130, colIC = ml + 162;
+        var _respiroBlocoC = 8; // folga vertical entre blocos empilhados.
+
+        // Faixa azul do topo + reset do cursor de conteudo (inicio de cada pagina de detalhes).
+        function _topoPagDetCmp() {
           doc.setFillColor(26, 35, 126); doc.rect(0, 0, pw, 8, 'F');
+          return 20;
+        }
+
+        // Altura (mm) de UM bloco de Detalhes do comparativo com nR respondentes:
+        // titulo(10) + curva(42) + folga(12) + cabecalho tabela(+8) + nR linhas(nR*7) +
+        // folga(+4) + titulo Descricao(+6) + linhas da descricao(n*5) + respiro.
+        // Partes fixas: 10+42+12+8+4+6 = 82.
+        function _alturaBlocoDetCmp(md, nR) {
+          var nLin = doc.splitTextToSize(SRS2_DESC[md.k] || '', lu).length;
+          return 82 + (nR * 7) + (nLin * 5) + _respiroBlocoC;
+        }
+
+        // Desenha UM bloco de Detalhes do comparativo comecando em yd0 e retorna o y apos o
+        // bloco (ja com o respiro). Visual IDENTICO ao antigo; muda so o y inicial.
+        function _desenharBlocoDetCmp(yd0, md) {
+          var yd = yd0;
           doc.setTextColor(26, 35, 126); doc.setFontSize(14); doc.setFont(undefined, 'bold');
-          var yd = 22; doc.text('Detalhes - ' + md.nome, ml, yd); yd += 10;
+          doc.text('Detalhes - ' + md.nome, ml, yd); yd += 10;
 
           // Curva normal (sino) amostrada; eixo X reaproveita xT().
           var curvaTopo = yd;
@@ -11274,7 +11295,6 @@
 
           // Tabela: Nome | Pontuacao bruta | Valor da norma (T) | Respostas faltantes | Intervalo de confianca.
           doc.setFontSize(8); doc.setFont(undefined, 'bold'); doc.setTextColor(0, 0, 0);
-          var colNome = ml, colBruto = ml + 70, colT = ml + 100, colMiss = ml + 130, colIC = ml + 162;
           doc.text('Nome', colNome, yd);
           doc.text('Bruta', colBruto, yd);
           doc.text('Norma (T)', colT, yd);
@@ -11284,7 +11304,6 @@
           doc.setFont(undefined, 'normal');
           for (var li = 0; li < regs.length; li++) {
             var row = regs[li];
-            if (yd > maxY) { doc.addPage(); yd = 20; }
             var tv = Number(row.d.escoresT[md.k]);
             var bv = _brutoSrs2(row.d, md.k);
             doc.setTextColor(row.estilo.cor[0], row.estilo.cor[1], row.estilo.cor[2]); doc.setFont(undefined, 'bold');
@@ -11305,16 +11324,30 @@
           doc.setFont(undefined, 'normal'); doc.setTextColor(0, 0, 0); doc.setFontSize(9);
           var descLines = doc.splitTextToSize(SRS2_DESC[md.k] || '', lu);
           for (var dli = 0; dli < descLines.length; dli++) {
-            if (yd > maxY) { doc.addPage(); yd = 20; }
             doc.text(descLines[dli], ml, yd); yd += 5;
           }
+          return yd + _respiroBlocoC;
         }
 
-        // ---------- PAGINA FINAL: INTERPRETACAO ----------
+        // Paginacao por medicao de altura: Pagina 1 (Perfil) fica dedicada; a partir daqui
+        // empilha 2-3 blocos por pagina conforme couber.
         doc.addPage();
-        doc.setFillColor(26, 35, 126); doc.rect(0, 0, pw, 8, 'F');
+        var ydC = _topoPagDetCmp();
+        for (var miC = 0; miC < SRS2_MEDIDAS.length; miC++) {
+          var mdC = SRS2_MEDIDAS[miC];
+          var hC = _alturaBlocoDetCmp(mdC, regs.length);
+          if (ydC > 20 && (ydC + hC) > maxY) { doc.addPage(); ydC = _topoPagDetCmp(); }
+          ydC = _desenharBlocoDetCmp(ydC, mdC);
+        }
+
+        // ---------- INTERPRETACAO (continua na pagina corrente se couber) ----------
+        // Altura estimada: titulo(12) + rotulo(8) + 4 faixas(52) + titulo lista(7) +
+        // N linhas(N*6) + folga(4) + caixa IMPORTANTE(~18) = ~101 + N*6.
+        var _altInterpCmp = 101 + regs.length * 6;
+        if ((ydC + _altInterpCmp) > maxY) { doc.addPage(); ydC = _topoPagDetCmp(); }
+        var yi = ydC;
         doc.setTextColor(26, 35, 126); doc.setFontSize(16); doc.setFont(undefined, 'bold');
-        var yi = 22; doc.text('Interpreta\u00e7\u00e3o', ml, yi); yi += 12;
+        doc.text('Interpreta\u00e7\u00e3o', ml, yi); yi += 12;
         doc.setTextColor(0, 0, 0); doc.setFontSize(9); doc.setFont(undefined, 'normal');
         doc.text('Faixas de Escore T (Formul\u00e1rio Adulto):', ml, yi); yi += 8;
         var faixas = [
@@ -11334,16 +11367,67 @@
         doc.text('Escore Total por respondente:', ml, yi); yi += 7;
         doc.setFont(undefined, 'normal'); doc.setTextColor(0, 0, 0);
         for (var it = 0; it < regs.length; it++) {
-          if (yi > maxY) { doc.addPage(); yi = 20; }
+          if (yi > maxY) { doc.addPage(); yi = _topoPagDetCmp(); }
           var dIt = regs[it].d;
           doc.text(regs[it].nome + ': T = ' + (isFinite(Number(dIt.escoresT.TOTAL)) ? dIt.escoresT.TOTAL : '-') + ' (' + _faixaSrs2(dIt.escoresT.TOTAL) + '), IC ' + formatarICsrs2Adulto(dIt.escoresT.TOTAL), ml, yi); yi += 6;
         }
         yi += 4;
-        if (yi > maxY - 14) { doc.addPage(); yi = 20; }
+        if (yi > maxY - 14) { doc.addPage(); yi = _topoPagDetCmp(); }
         doc.setFillColor(255, 248, 235); doc.rect(ml, yi, lu, 14, 'F');
         doc.setTextColor(150, 80, 0); doc.setFontSize(7); doc.setFont(undefined, 'bold');
         doc.text('IMPORTANTE:', ml + 3, yi + 5); doc.setFont(undefined, 'normal');
         doc.text('Instrumento de rastreio. Resultados devem ser interpretados por profissional qualificado em avalia\u00e7\u00e3o abrangente.', ml + 3, yi + 10);
+        ydC = yi + 14 + _respiroBlocoC; // cursor apos a caixa IMPORTANTE (com respiro).
+
+        // ---------- RESPOSTAS (continua na pagina corrente se o cabecalho couber) ----------
+        // Lista, para CADA respondente (mesma ordem do PDF), as 65 respostas no NUMERO
+        // ORIGINAL marcado na tela. Ambos os formularios adultos (AA/AH) usam escala 1 a 4.
+        var _altRespCabC = 20; // cabecalho(8) + orientacao(7) + folga.
+        if ((ydC + _altRespCabC) > maxY) { doc.addPage(); ydC = _topoPagDetCmp(); }
+        doc.setTextColor(26, 35, 126); doc.setFontSize(16); doc.setFont(undefined, 'bold');
+        doc.text('Respostas', ml, ydC); ydC += 8;
+        doc.setFontSize(8); doc.setFont(undefined, 'normal'); doc.setTextColor(90, 90, 90);
+        doc.text('N\u00fameros conforme marcados na tela (1 a 4). Itens invertidos sinalizados com (inv).', ml, ydC); ydC += 7;
+
+        for (var rq = 0; rq < regs.length; rq++) {
+          var dResp = regs[rq].d;
+          var escResp = String((dResp && dResp.escala) || '').toUpperCase();
+          var _formRot = (escResp === 'SRS-2-AH') ? 'Heterorrelato' : 'Autorrelato';
+          var _cabResp = 'Resposta ' + _formRot + ' [' + (regs[rq].nome || ('Respondente ' + (rq + 1))) + ']';
+          // Cabecalho da entrada (negrito), quebra se nao couber.
+          if (ydC > maxY) { doc.addPage(); ydC = _topoPagDetCmp(); }
+          doc.setFontSize(9); doc.setFont(undefined, 'bold'); doc.setTextColor(0, 0, 0);
+          var _cabLines = doc.splitTextToSize(_cabResp, lu);
+          for (var cbl = 0; cbl < _cabLines.length; cbl++) {
+            if (ydC > maxY) { doc.addPage(); ydC = _topoPagDetCmp(); }
+            doc.text(_cabLines[cbl], ml, ydC); ydC += 5;
+          }
+          // Linha das 65 respostas (ou aviso se ausente).
+          var _respObjC = (dResp && dResp.respostas) ? dResp.respostas : null;
+          if (!_respObjC) {
+            doc.setFont(undefined, 'normal'); doc.setFontSize(8.5); doc.setTextColor(90, 90, 90);
+            if (ydC > maxY) { doc.addPage(); ydC = _topoPagDetCmp(); }
+            doc.text('(respostas n\u00e3o dispon\u00edveis)', ml, ydC); ydC += 10;
+            continue;
+          }
+          // Reversao para o numero ORIGINAL da tela (ADULTO, tela 1-4):
+          // item normal -> ponto + 1 ; item invertido -> 4 - ponto.
+          var _partesC = [];
+          for (var qn = 1; qn <= 65; qn++) {
+            var _invC = !!SRS2_INVERTIDOS[qn];
+            var _pC = Number(_respObjC[String(qn)]);
+            var _origC = !isFinite(_pC) ? '-' : (_invC ? (4 - _pC) : (_pC + 1));
+            _partesC.push(qn + '-[' + _origC + ']' + (_invC ? ' (inv)' : ''));
+          }
+          var _linhaC = _partesC.join('; ');
+          doc.setFont(undefined, 'normal'); doc.setFontSize(8.5); doc.setTextColor(0, 0, 0);
+          var _linesC = doc.splitTextToSize(_linhaC, lu);
+          for (var li2 = 0; li2 < _linesC.length; li2++) {
+            if (ydC > maxY) { doc.addPage(); ydC = _topoPagDetCmp(); }
+            doc.text(_linesC[li2], ml, ydC); ydC += 5;
+          }
+          ydC += 4; // folga entre respondentes.
+        }
 
         // ---------- RODAPE PAGINADO ----------
         var totalPages = doc.internal.getNumberOfPages();
