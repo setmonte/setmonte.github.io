@@ -429,18 +429,30 @@ function classifPorPercentual(pct) {
     return 'Cl\u00ednico';
 }
 
+// Rola ate o campo que falta preencher e aplica um destaque visual temporario
+function _destacarCampo(el){
+    if(!el)return;
+    try{el.scrollIntoView({behavior:'smooth',block:'center'});}catch(e){try{el.scrollIntoView();}catch(e2){}}
+    var _bg=el.style.backgroundColor,_bd=el.style.border,_tr=el.style.transition;
+    el.style.transition='background-color .3s, border .3s';
+    el.style.backgroundColor='#fff8e1';
+    el.style.border='2px solid #ffb300';
+    el.style.borderRadius='8px';
+    setTimeout(function(){el.style.backgroundColor=_bg;el.style.border=_bd;el.style.transition=_tr;},2200);
+}
+
 // === FUNCAO PRINCIPAL DE CALCULO ===
 function calcularResultados() {
     var nome = document.getElementById('nome').value;
     var idade = document.getElementById('idadeCalculada').value;
     var sexo = document.getElementById('sexo').value;
-    if (!nome) { alert('Preencha o nome da crian\u00e7a/adolescente.'); return; }
-    if (!idade) { alert('Preencha a data de nascimento.'); return; }
-    if (!sexo) { alert('Selecione o sexo.'); return; }
+    if (!nome) { alert('Preencha o nome da crian\u00e7a/adolescente.'); _destacarCampo(document.getElementById('nome')); return; }
+    if (!idade) { alert('Preencha a data de nascimento.'); _destacarCampo(document.getElementById('dataNascimento')); return; }
+    if (!sexo) { alert('Selecione o sexo.'); _destacarCampo(document.getElementById('sexo')); return; }
     var respondenteSel = document.getElementById('respondente').value;
-    if (!respondenteSel) { alert('Selecione a rela\u00e7\u00e3o com a crian\u00e7a/adolescente (campo Respondente). Essa informa\u00e7\u00e3o \u00e9 obrigat\u00f3ria para identificar quem preencheu.'); return; }
+    if (!respondenteSel) { alert('Selecione a rela\u00e7\u00e3o com a crian\u00e7a/adolescente (campo Respondente). Essa informa\u00e7\u00e3o \u00e9 obrigat\u00f3ria para identificar quem preencheu.'); _destacarCampo(document.getElementById('respondente')); return; }
     var nomeResp = document.getElementById('nomeRespondente');
-    if (!nomeResp || !nomeResp.value.trim()) { alert('Preencha o nome de quem est\u00e1 respondendo (campo "Formul\u00e1rio preenchido por"). Essa informa\u00e7\u00e3o \u00e9 obrigat\u00f3ria.'); return; }
+    if (!nomeResp || !nomeResp.value.trim()) { alert('Preencha o nome de quem est\u00e1 respondendo (campo "Formul\u00e1rio preenchido por"). Essa informa\u00e7\u00e3o \u00e9 obrigat\u00f3ria.'); _destacarCampo(document.getElementById('nomeRespondente')); return; }
 
     var r = obterRespostas();
     if (!r) {

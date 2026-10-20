@@ -238,16 +238,28 @@ function buscarEscoreT(tabela,bruto){if(tabela[bruto]!==undefined)return tabela[
 
 function classificarEscoreT(t){if(t<=59)return{texto:"Dentro dos limites normais",cor:"#4caf50"};if(t<=65)return{texto:"Dificuldades leves",cor:"#ffc107"};if(t<=75)return{texto:"Dificuldades moderadas",cor:"#ff9800"};return{texto:"Dificuldades graves",cor:"#f44336"};}
 
+// Rola ate o campo que falta preencher e aplica um destaque visual temporario
+function _destacarCampo(el){
+if(!el)return;
+try{el.scrollIntoView({behavior:'smooth',block:'center'});}catch(e){try{el.scrollIntoView();}catch(e2){}}
+var _bg=el.style.backgroundColor,_bd=el.style.border,_tr=el.style.transition;
+el.style.transition='background-color .3s, border .3s';
+el.style.backgroundColor='#fff8e1';
+el.style.border='2px solid #ffb300';
+el.style.borderRadius='8px';
+setTimeout(function(){el.style.backgroundColor=_bg;el.style.border=_bd;el.style.transition=_tr;},2200);
+}
+
 function calcularResultados(){
 var nome=document.getElementById('nome').value;
 var idade=document.getElementById('idadeCalculada').value;
 var sexo=document.getElementById('sexo').value;
 var resp=document.getElementById('respondente').value;
-if(!nome){alert('Preencha o nome.');return;}
-if(!sexo){alert('Selecione o sexo.');return;}
-if(!resp){alert('Selecione o respondente.');return;}
+if(!nome){alert('Preencha o nome.');_destacarCampo(document.getElementById('nome'));return;}
+if(!sexo){alert('Selecione o sexo.');_destacarCampo(document.getElementById('sexo'));return;}
+if(!resp){alert('Selecione o respondente.');_destacarCampo(document.getElementById('respondente'));return;}
 var nomeResp=document.getElementById('nomeRespondente');
-if(!nomeResp||!nomeResp.value.trim()){alert('Preencha o nome de quem est\u00e1 respondendo.');return;}
+if(!nomeResp||!nomeResp.value.trim()){alert('Preencha o nome de quem est\u00e1 respondendo.');_destacarCampo(document.getElementById('nomeRespondente'));return;}
 var r=obterRespostas();
 if(!r){alert('Responda todos os 65 itens.');return;}
 

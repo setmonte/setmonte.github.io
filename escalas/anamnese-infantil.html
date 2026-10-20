@@ -82,7 +82,7 @@
                 <div class="campo"><label for="sexo">Sexo:</label><select id="sexo"><option value="">Selecione</option><option value="Masculino">Masculino</option><option value="Feminino">Feminino</option></select></div>
                 <div class="campo"><label for="escolaridade">Escolaridade:</label><select id="escolaridade"><option value="">Selecione</option><option value="Fundamental incompleto">Fundamental incompleto</option><option value="Fundamental completo">Fundamental completo</option><option value="Medio incompleto">M&#233;dio incompleto</option><option value="Medio completo">M&#233;dio completo</option><option value="Superior incompleto">Superior incompleto</option><option value="Superior completo">Superior completo</option><option value="Pos-graduacao">P&#243;s-gradua&#231;&#227;o</option></select></div>
             </div>
-            <div class="campo" style="margin-top:15px;">
+            <div class="campo" id="campoRespondente" style="margin-top:15px;">
                 <label>Quem est&#225; respondendo?</label>
                 <div class="radio-group">
                     <label><input type="radio" name="respondente" value="M\u00e3e"><span>M&#227;e</span></label>
@@ -356,11 +356,23 @@ var _df=document.querySelector('.dados-fixos');if(_df)_df.style.display='none';
 return true;
 }
 
+// Rola ate o campo que falta preencher e aplica um destaque visual temporario
+function _destacarCampo(el){
+if(!el)return;
+try{el.scrollIntoView({behavior:'smooth',block:'center'});}catch(e){try{el.scrollIntoView();}catch(e2){}}
+var _bg=el.style.backgroundColor,_bd=el.style.border,_tr=el.style.transition;
+el.style.transition='background-color .3s, border .3s';
+el.style.backgroundColor='#fff8e1';
+el.style.border='2px solid #ffb300';
+el.style.borderRadius='8px';
+setTimeout(function(){el.style.backgroundColor=_bg;el.style.border=_bd;el.style.transition=_tr;},2200);
+}
+
 async function enviarAnamnese(){
 var nome=document.getElementById('nome').value.trim();
-if(!nome){alert('Preencha o nome do avaliando.');return;}
+if(!nome){alert('Preencha o nome do avaliando.');_destacarCampo(document.getElementById('nome'));return;}
 var resp=document.querySelector('input[name="respondente"]:checked');
-if(!resp){alert('Selecione quem est\u00e1 respondendo.');return;}
+if(!resp){alert('Selecione quem est\u00e1 respondendo.');_destacarCampo(document.getElementById('campoRespondente'));return;}
 // Validacao completa - verificar campos vazios
 var vazios=[];
 SECOES.forEach(function(secao){
