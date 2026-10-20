@@ -95,8 +95,8 @@
 <div class="form-group"><label for="sexo">Sexo:</label><select id="sexo"><option value="">Selecione</option><option value="Masculino">Masculino</option><option value="Feminino">Feminino</option></select></div>
 </div>
 <div class="form-row">
-<div class="form-group"><label for="respondente">Respondente:</label><select id="respondente"><option value="">Selecione</option><option value="Pais">Pais/Respons&#225;veis</option><option value="Professores">Professores</option></select></div>
-<div class="form-group"><label for="nomeRespondente">Nome de quem responde:</label><input type="text" id="nomeRespondente" placeholder="Nome completo do respondente"></div>
+<div class="form-group" id="grpRespondente"><label for="respondente">Respondente:</label><select id="respondente"><option value="">Selecione</option><option value="Pais">Pais/Respons&#225;veis</option><option value="Professores">Professores</option></select></div>
+<div class="form-group" id="grpNomeRespondente"><label for="nomeRespondente">Nome de quem responde:</label><input type="text" id="nomeRespondente" placeholder="Nome completo do respondente"></div>
 <div class="form-group"><label for="data">Data da Avalia&#231;&#227;o:</label><input type="date" id="data"></div>
 </div>
 <div class="form-row">
@@ -619,7 +619,26 @@ function limparDados(){if(!confirm('Limpar todos os dados?'))return;document.get
 var _sessionInfo=null;
 var _API_URL='https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
 
-function _decodificarURL(){var params=new URLSearchParams(window.location.search);var d=params.get('d');if(!d)return false;try{_sessionInfo=JSON.parse(atob(decodeURIComponent(d)));}catch(e){return false;}var nomeEl=document.getElementById('nome');var nascEl=document.getElementById('dataNascimento');var sexoEl=document.getElementById('sexo');if(nomeEl&&_sessionInfo.patientName)nomeEl.value=_sessionInfo.patientName;if(nascEl&&_sessionInfo.birthDate)nascEl.value=_sessionInfo.birthDate;if(sexoEl&&_sessionInfo.sex)sexoEl.value=_sessionInfo.sex;if(typeof calcularIdade==='function')calcularIdade();if(nomeEl)nomeEl.dispatchEvent(new Event('input'));if(nascEl)nascEl.dispatchEvent(new Event('change'));var botoes=document.querySelector('.botoes');if(botoes){botoes.innerHTML='<button class="btn btn-primary" style="padding:15px 30px;border:none;border-radius:25px;font-size:16px;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#2e7d32,#43a047);color:white;" onclick="_enviarResultadosPainel()">Enviar Resultados ao Profissional</button>';}var els=document.querySelectorAll('.info-tecnica');els.forEach(function(el){el.style.display='none';});var _dp=document.querySelector('.dados-pessoais');if(_dp)_dp.style.display='none';return true;}
+// No modo painel os dados pessoais ficam ocultos, mas quem responde (respondente e nome)
+// so a pessoa que preenche sabe. Esta funcao reexibe esses campos acima dos botoes.
+function _mostrarRespondentePainel(){
+var botoes=document.querySelector('.botoes');
+if(!botoes||!botoes.parentNode)return;
+if(document.getElementById('blocoRespondentePainel'))return;
+var ids=['grpRespondente','grpNomeRespondente'];
+var wrap=document.createElement('div');
+wrap.id='blocoRespondentePainel';
+wrap.className='dados-pessoais';
+wrap.style.marginBottom='25px';
+var tit=document.createElement('h2');
+tit.innerHTML='\uD83D\uDC64 Quem est\u00e1 respondendo?';
+wrap.appendChild(tit);
+var algum=false;
+ids.forEach(function(id){var el=document.getElementById(id);if(el){el.style.display='';wrap.appendChild(el);algum=true;}});
+if(algum)botoes.parentNode.insertBefore(wrap,botoes);
+}
+
+function _decodificarURL(){var params=new URLSearchParams(window.location.search);var d=params.get('d');if(!d)return false;try{_sessionInfo=JSON.parse(atob(decodeURIComponent(d)));}catch(e){return false;}var nomeEl=document.getElementById('nome');var nascEl=document.getElementById('dataNascimento');var sexoEl=document.getElementById('sexo');if(nomeEl&&_sessionInfo.patientName)nomeEl.value=_sessionInfo.patientName;if(nascEl&&_sessionInfo.birthDate)nascEl.value=_sessionInfo.birthDate;if(sexoEl&&_sessionInfo.sex)sexoEl.value=_sessionInfo.sex;if(typeof calcularIdade==='function')calcularIdade();if(nomeEl)nomeEl.dispatchEvent(new Event('input'));if(nascEl)nascEl.dispatchEvent(new Event('change'));var botoes=document.querySelector('.botoes');if(botoes){botoes.innerHTML='<button class="btn btn-primary" style="padding:15px 30px;border:none;border-radius:25px;font-size:16px;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#2e7d32,#43a047);color:white;" onclick="_enviarResultadosPainel()">Enviar Resultados ao Profissional</button>';}var els=document.querySelectorAll('.info-tecnica');els.forEach(function(el){el.style.display='none';});var _dp=document.querySelector('.dados-pessoais');if(_dp)_dp.style.display='none';_mostrarRespondentePainel();return true;}
 
 async function _enviarResultadosPainel(){
 var nomeEl=document.getElementById('nome');
@@ -664,7 +683,7 @@ document.getElementById('questionario').addEventListener('change',function(e){if
 document.getElementById('data').value=new Date().toISOString().split('T')[0];
 var params=new URLSearchParams(window.location.search);
 if(params.get('s')){
-fetch(_API_URL+'/get-session?id='+params.get('s')).then(function(r){if(r.status===410){document.body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#e8f5e9,#c8e6c9);text-align:center;padding:20px;"><h1 style="color:#c62828;font-size:24px;margin-bottom:10px;">Este link j\u00e1 foi utilizado.</h1><p style="font-size:16px;color:#555;">Solicite um novo link ao seu avaliador.</p></div>';throw new Error("link_usado");}return r.json();}).then(function(data){if(data.sessionId){_sessionInfo=data;var nomeEl=document.getElementById('nome');var nascEl=document.getElementById('dataNascimento');var sexoEl=document.getElementById('sexo');if(nomeEl&&data.patientName)nomeEl.value=data.patientName;if(nascEl&&data.birthDate)nascEl.value=data.birthDate;if(sexoEl&&data.sex)sexoEl.value=data.sex;if(typeof calcularIdade==='function')calcularIdade();if(nomeEl)nomeEl.dispatchEvent(new Event('input'));if(nascEl)nascEl.dispatchEvent(new Event('change'));var botoes=document.querySelector('.botoes');if(botoes){botoes.innerHTML='<button class="btn btn-primary" style="padding:15px 30px;border:none;border-radius:25px;font-size:16px;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#2e7d32,#43a047);color:white;" onclick="_enviarResultadosPainel()">Enviar Resultados ao Profissional</button>';}var els=document.querySelectorAll('.info-tecnica');els.forEach(function(el){el.style.display='none';});var _dp=document.querySelector('.dados-pessoais');if(_dp)_dp.style.display='none';}}).catch(function(){});
+fetch(_API_URL+'/get-session?id='+params.get('s')).then(function(r){if(r.status===410){document.body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#e8f5e9,#c8e6c9);text-align:center;padding:20px;"><h1 style="color:#c62828;font-size:24px;margin-bottom:10px;">Este link j\u00e1 foi utilizado.</h1><p style="font-size:16px;color:#555;">Solicite um novo link ao seu avaliador.</p></div>';throw new Error("link_usado");}return r.json();}).then(function(data){if(data.sessionId){_sessionInfo=data;var nomeEl=document.getElementById('nome');var nascEl=document.getElementById('dataNascimento');var sexoEl=document.getElementById('sexo');if(nomeEl&&data.patientName)nomeEl.value=data.patientName;if(nascEl&&data.birthDate)nascEl.value=data.birthDate;if(sexoEl&&data.sex)sexoEl.value=data.sex;if(typeof calcularIdade==='function')calcularIdade();if(nomeEl)nomeEl.dispatchEvent(new Event('input'));if(nascEl)nascEl.dispatchEvent(new Event('change'));var botoes=document.querySelector('.botoes');if(botoes){botoes.innerHTML='<button class="btn btn-primary" style="padding:15px 30px;border:none;border-radius:25px;font-size:16px;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#2e7d32,#43a047);color:white;" onclick="_enviarResultadosPainel()">Enviar Resultados ao Profissional</button>';}var els=document.querySelectorAll('.info-tecnica');els.forEach(function(el){el.style.display='none';});var _dp=document.querySelector('.dados-pessoais');if(_dp)_dp.style.display='none';_mostrarRespondentePainel();}}).catch(function(){});
 }else if(params.get('d')){
 _decodificarURL();
 }else if(params.get('print')){
