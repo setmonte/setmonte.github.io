@@ -18175,7 +18175,8 @@
         doc.setFillColor(240, 235, 250);
         doc.rect(ml - 2, y - 3, lu + 4, 7, 'F');
         doc.setTextColor(74, 20, 140); doc.setFontSize(8); doc.setFont(undefined, 'bold');
-        doc.text('#', ml, y); doc.text('Regiao', ml+8, y); doc.text('Categoria', ml+55, y); doc.text('Tempo', ml+90, y); doc.text('Intervalo', ml+120, y);
+        // Colunas reposicionadas para caber a nova coluna "Esperado (tipico)" apos "Categoria".
+        doc.text('#', ml, y); doc.text('Regiao', ml+6, y); doc.text('Categoria', ml+48, y); doc.text('Esperado (tipico)', ml+78, y); doc.text('Tempo', ml+126, y); doc.text('Interv.', ml+152, y);
         y += 7;
         doc.setTextColor(0, 0, 0); doc.setFont(undefined, 'normal');
         var cliques = res.cliques || [];
@@ -18183,14 +18184,29 @@
         for (var c = 0; c < maxShow; c++) {
           var cl = cliques[c];
           if (c % 2 === 0) { doc.setFillColor(250, 248, 255); doc.rect(ml - 2, y - 3, lu + 4, 5, 'F'); }
+          // Sequencia esperada numa pessoa tipica (Klin et al. 2002; Pelphrey et al. 2002):
+          // comeca pelos olhos (posicoes 1-2), passa pela boca (posicao 3) e so depois
+          // explora rosto/periferia (posicao 4 em diante). "cl.ordem" e a posicao do clique.
+          var esperado = (cl.ordem <= 2) ? 'Olhos' : (cl.ordem === 3 ? 'Boca' : 'Rosto/Perif.');
+          // Marca se o clique bate (ok) ou nao com o esperado para aquela posicao.
+          var bate = (esperado === 'Olhos' && cl.cat === 'olhos') ||
+                     (esperado === 'Boca' && cl.cat === 'boca') ||
+                     (esperado === 'Rosto/Perif.' && cl.cat === 'periferia');
           doc.text(String(cl.ordem), ml, y);
-          doc.text(cl.nome || '-', ml+8, y);
-          doc.text(cl.cat || '-', ml+55, y);
-          doc.text((cl.tempo/1000).toFixed(2) + 's', ml+90, y);
-          doc.text((cl.intervalo/1000).toFixed(2) + 's', ml+120, y);
+          doc.text(cl.nome || '-', ml+6, y);
+          doc.text(cl.cat || '-', ml+48, y);
+          doc.text(esperado + (bate ? '' : ' *'), ml+78, y);
+          doc.text((cl.tempo/1000).toFixed(2) + 's', ml+126, y);
+          doc.text((cl.intervalo/1000).toFixed(2) + 's', ml+152, y);
           y += 5;
         }
-        y += 8;
+        y += 2;
+        // Legenda da coluna "Esperado": explica a sequencia tipica e o marcador "*".
+        doc.setFontSize(7); doc.setTextColor(120, 120, 120);
+        doc.text('Esperado (tipico): sequencia de uma pessoa com processamento facial tipico - olhos (1o-2o), boca (3o), rosto/periferia (4o em diante).', ml, y); y += 4;
+        doc.text('O asterisco (*) indica que o clique daquela posicao nao coincidiu com o esperado. Base: Klin et al. (2002); Pelphrey et al. (2002).', ml, y); y += 4;
+        doc.setFontSize(9); doc.setTextColor(0, 0, 0);
+        y += 6;
       }
 
       // Analise IA
