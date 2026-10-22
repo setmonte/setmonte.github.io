@@ -6361,17 +6361,66 @@
           pacientesParaImportar.push({ nome: nome, dataNascimento: dn, cpf: cpf, sexo: sexo, escolaridade: escolaridade, lateralidade: lateralidade, pacienteEmail: pacEmail, whatsapp: whats });
         }
         if (pacientesParaImportar.length === 0) { alert('Nenhum paciente valido encontrado no arquivo.'); event.target.value = ''; return; }
+        // ===== FILTRAR DUPLICATAS (contra pacientes ja cadastrados) =====
+        // Usa a mesma logica de deteccao ja existente (_detectarDuplicatas).
+        // Considera "ja cadastrado" quando ha forte indicio: CPF identico,
+        // nome muito similar (>=90%) ou nome similar + mesma data de nascimento.
+        var novosParaImportar = [];
+        var duplicadosIgnorados = [];
+        // Lista de chaves dos que vao entrar, para tambem evitar duplicatas DENTRO do proprio CSV
+        var chavesNovos = [];
+        function _chavePaciente(p) {
+          var cpf = _normalizarCPF(p.cpf);
+          if (cpf && cpf.length >= 11) return 'cpf:' + cpf;
+          return 'nd:' + _normalizarTexto(p.nome) + '|' + (p.dataNascimento || '');
+        }
+        pacientesParaImportar.forEach(function(p) {
+          var ehDuplicado = false;
+          var motivoDup = '';
+          // 1) Checar contra os pacientes ja cadastrados no painel
+          var dups = (typeof _detectarDuplicatas === 'function') ? _detectarDuplicatas(p.nome, p.dataNascimento, p.cpf, null) : [];
+          // So considerar duplicata "certa" quando o score for alto o suficiente
+          if (dups.length > 0 && dups[0].score >= 90) {
+            ehDuplicado = true;
+            motivoDup = (dups[0].paciente.nome || '') + ' (' + dups[0].motivos.join(', ') + ')';
+          }
+          // 2) Checar contra os que ja selecionamos para importar (duplicata dentro do CSV)
+          if (!ehDuplicado) {
+            var chave = _chavePaciente(p);
+            if (chavesNovos.indexOf(chave) !== -1) {
+              ehDuplicado = true;
+              motivoDup = 'repetido no proprio arquivo';
+            } else {
+              chavesNovos.push(chave);
+            }
+          }
+          if (ehDuplicado) duplicadosIgnorados.push({ nome: p.nome, motivo: motivoDup });
+          else novosParaImportar.push(p);
+        });
         // Resumo antes de importar
-        var comDN = pacientesParaImportar.filter(function(p) { return p.dataNascimento; }).length;
-        var semDN = pacientesParaImportar.length - comDN;
-        var msg = 'Encontrados ' + pacientesParaImportar.length + ' pacientes no CSV.\n';
-        msg += comDN + ' com data de nascimento, ' + semDN + ' sem.\n\n';
-        msg += 'Deseja importar todos?';
+        var comDN = novosParaImportar.filter(function(p) { return p.dataNascimento; }).length;
+        var semDN = novosParaImportar.length - comDN;
+        var msg = 'Arquivo analisado: ' + pacientesParaImportar.length + ' pacientes no CSV.\n\n';
+        msg += 'NOVOS a importar: ' + novosParaImportar.length + '\n';
+        msg += '   (' + comDN + ' com data de nascimento, ' + semDN + ' sem)\n';
+        msg += 'JA EXISTENTES (serao ignorados): ' + duplicadosIgnorados.length + '\n';
+        if (duplicadosIgnorados.length > 0) {
+          var amostra = duplicadosIgnorados.slice(0, 8).map(function(d) { return '  - ' + d.nome; }).join('\n');
+          msg += '\n' + amostra;
+          if (duplicadosIgnorados.length > 8) msg += '\n  ... e mais ' + (duplicadosIgnorados.length - 8);
+          msg += '\n';
+        }
+        if (novosParaImportar.length === 0) {
+          alert(msg + '\nNenhum paciente novo para importar. Todos ja estao cadastrados.');
+          event.target.value = '';
+          return;
+        }
+        msg += '\nDeseja importar os ' + novosParaImportar.length + ' pacientes novos?';
         if (!confirm(msg)) { event.target.value = ''; return; }
-        // Enviar ao servidor
-        var importados = 0, erros = 0, pulados = 0;
-        for (var j = 0; j < pacientesParaImportar.length; j++) {
-          var p = pacientesParaImportar[j];
+        // Enviar ao servidor (apenas os novos)
+        var importados = 0, erros = 0, pulados = duplicadosIgnorados.length;
+        for (var j = 0; j < novosParaImportar.length; j++) {
+          var p = novosParaImportar[j];
           var payload = { email: currentUser, nome: p.nome, dataNascimento: p.dataNascimento || '' };
           if (p.cpf) payload.cpf = p.cpf;
           if (p.sexo) payload.sexo = p.sexo;
@@ -6385,7 +6434,8 @@
             if (r.ok) importados++; else erros++;
           } catch(ex) { erros++; }
         }
-        alert('Importacao concluida!\n\nImportados: ' + importados + '\nErros: ' + erros);
+        var msgFinal = 'Importacao concluida!\n\nImportados: ' + importados + '\nJa existentes (ignorados): ' + pulados + '\nErros: ' + erros;
+        alert(msgFinal);
         event.target.value = '';
         await loadPacientes();
       };
