@@ -18098,17 +18098,34 @@
         var cliques = res.cliques || [];
         var olhosPos = []; var primeiros5 = {olhos:0,boca:0,periferia:0};
         var tempoAteOlhos = null; var saltos = 0;
+        // IFS linear (proporcao) e IFS-O (ponderado pela ordem).
+        // IFS linear  = (cliques olhos + boca) / total x 100  -> QUANTO olhou o social.
+        // IFS-O       = soma dos pesos dos cliques sociais / soma de TODOS os pesos x 100.
+        //   Peso decrescente pela ordem: numa sessao de N cliques, o 1o clique vale N,
+        //   o 2o vale N-1, ..., o ultimo vale 1. Da mais peso ao que a pessoa buscou
+        //   PRIMEIRO (hipotese: reconstroi primeiro o que mais chamou a atencao -
+        //   proxy comportamental do escaneamento de fixacao de Klin). Limitrofe e
+        //   periferia NAO entram como social em nenhum dos dois.
+        var n = cliques.length;
+        var socialCount = 0;       // num. de cliques sociais (olhos+boca)
+        var pesoSocial = 0;        // soma dos pesos dos cliques sociais
+        var pesoTotal = 0;         // soma de todos os pesos
         for (var c = 0; c < cliques.length; c++) {
           var cl = cliques[c];
           if (cl.cat === 'olhos') { olhosPos.push(cl.ordem); if (tempoAteOlhos === null) tempoAteOlhos = cl.tempo; }
           if (cl.ordem <= 5) primeiros5[cl.cat]++;
           if (c > 0 && cliques[c].cat !== cliques[c-1].cat) saltos++;
+          var peso = n - c;        // posicao c (0-based): 1o = N, 2o = N-1, ... ultimo = 1
+          pesoTotal += peso;
+          if (cl.cat === 'olhos' || cl.cat === 'boca') { socialCount++; pesoSocial += peso; }
         }
         var mediaOlhos = olhosPos.length > 0 ? (olhosPos.reduce(function(a,b){return a+b;},0) / olhosPos.length) : null;
         var pctOlhos5 = Math.min(5, cliques.length) > 0 ? (primeiros5.olhos / Math.min(5, cliques.length) * 100) : 0;
         var indiceSalto = cliques.length > 1 ? (saltos / (cliques.length - 1) * 100) : 0;
         var cobertura = res.totalRegioes > 0 ? (cliques.length / res.totalRegioes * 100) : 0;
-        return { olhosPos: olhosPos, mediaOlhos: mediaOlhos, primeiros5: primeiros5, pctOlhos5: pctOlhos5, tempoAteOlhos: tempoAteOlhos, indiceSalto: indiceSalto, cobertura: cobertura, saltos: saltos };
+        var ifsLinear = n > 0 ? (socialCount / n * 100) : 0;
+        var ifsO = pesoTotal > 0 ? (pesoSocial / pesoTotal * 100) : 0;
+        return { olhosPos: olhosPos, mediaOlhos: mediaOlhos, primeiros5: primeiros5, pctOlhos5: pctOlhos5, tempoAteOlhos: tempoAteOlhos, indiceSalto: indiceSalto, cobertura: cobertura, saltos: saltos, ifsLinear: ifsLinear, ifsO: ifsO };
       }
 
       // Chamar IA
@@ -18129,6 +18146,7 @@
           var m = calcMetricas(res);
           aiPrompt += '\n--- Rosto ' + (res.rosto || (ri+1)) + ' ---\n';
           aiPrompt += 'Tempo total: ' + ((res.tempoTotal||0)/1000).toFixed(1) + 's | Cobertura: ' + m.cobertura.toFixed(0) + '%\n';
+          aiPrompt += 'IFS linear (proporcao olhos+boca): ' + m.ifsLinear.toFixed(0) + '% | IFS-O (ponderado pela ORDEM, da peso ao que veio primeiro): ' + m.ifsO.toFixed(0) + '%\n';
           aiPrompt += 'Posicao media olhos: ' + (m.mediaOlhos ? m.mediaOlhos.toFixed(1) : 'N/A') + '\n';
           aiPrompt += 'Primeiros 5: Olhos=' + m.primeiros5.olhos + ' Boca=' + m.primeiros5.boca + ' Periferia=' + m.primeiros5.periferia + ' (' + m.pctOlhos5.toFixed(0) + '% olhos)\n';
           aiPrompt += 'Tempo ate olhos: ' + (m.tempoAteOlhos ? (m.tempoAteOlhos/1000).toFixed(1) + 's' : 'N/A') + '\n';
@@ -18141,12 +18159,18 @@
           aiPrompt += '\n';
         }
 
-        aiPrompt += '\nINSTRUCOES:\n' +
-          '- Classifique: TIPICO, ANSIEDADE SOCIAL, COMPATIVEL COM TEA ou MISTO\n' +
+        aiPrompt += '\nSOBRE OS DOIS ESCORES:\n' +
+          '- IFS linear = QUANTO a pessoa olhou o social (olhos+boca) no total.\n' +
+          '- IFS-O = ponderado pela ORDEM; alto quando o social foi buscado PRIMEIRO. A diferenca entre os dois\n' +
+          '  revela a ESTRATEGIA: IFS-O >> IFS linear = foi ao social cedo; IFS-O << IFS linear = social so no fim.\n\n' +
+          'INSTRUCOES:\n' +
+          '- Comece com INTERPRETACAO GERAL (2-4 linhas): uma sintese consolidada dos DOIS rostos, lendo IFS linear x IFS-O\n' +
+          '  e a consistencia (ou discrepancia) entre os rostos. Esta e a leitura global do caso.\n' +
+          '- Depois, classifique: TIPICO, ANSIEDADE SOCIAL, COMPATIVEL COM TEA ou MISTO\n' +
           '- Justifique com base nas metricas (3-5 linhas)\n' +
-          '- Mencione indicadores-chave: priorizacao, hesitacao, organizacao, consistencia entre rostos\n' +
+          '- Mencione indicadores-chave: priorizacao, hesitacao, organizacao, consistencia entre rostos, e a estrategia revelada pelo IFS-O\n' +
           '- Hipotese diferencial: por que NAO e cada outra classificacao\n' +
-          '- Portugues brasileiro. Seja objetivo. NAO repita numeros, interprete-os.\n' +
+          '- Portugues brasileiro. Seja objetivo. NAO repita numeros crus, interprete-os.\n' +
           '- Na ULTIMA LINHA escreva: CLASSIFICACAO: [tipo]';
 
         var aiTimeout = new Promise(function(_, reject) { setTimeout(function() { reject('timeout'); }, 30000); });
@@ -18198,9 +18222,11 @@
       doc.setTextColor(21, 101, 192); doc.setFontSize(10); doc.setFont(undefined, 'bold');
       doc.text('COMO INTERPRETAR', ml, y); y += 6;
       doc.setTextColor(0); doc.setFont(undefined, 'normal'); doc.setFontSize(8);
-      doc.text('IFS (Indice de Fixacao Social) = (cliques olhos + boca) / total cliques x 100', ml, y); y += 5;
+      doc.text('IFS linear (Indice de Fixacao Social) = (cliques olhos + boca) / total cliques x 100', ml, y); y += 4;
+      doc.text('IFS-O (ponderado pela ordem) = da mais peso ao que foi reconstruido PRIMEIRO. 1o clique vale N,', ml, y); y += 4;
+      doc.text('2o vale N-1, ..., ultimo vale 1. Escore alto = o social (olhos/boca) foi buscado no inicio.', ml, y); y += 5;
       doc.setFont(undefined, 'bold');
-      doc.text('Faixas de classificacao:', ml, y); y += 5;
+      doc.text('Faixas de classificacao (IFS):', ml, y); y += 5;
       doc.setFont(undefined, 'normal');
       doc.text('>= 50%: Atencao social adequada (processamento tipico)', ml + 3, y); y += 4;
       doc.text('35-49%: Atencao social moderada (acompanhar e reteste)', ml + 3, y); y += 4;
@@ -18218,43 +18244,47 @@
         doc.text('ROSTO ' + (res.rosto || (ri+1)).toString().toUpperCase(), ml, y); y += 7;
         doc.setTextColor(0, 0, 0); doc.setFont(undefined, 'normal'); doc.setFontSize(9);
         doc.text('Tempo total: ' + ((res.tempoTotal||0)/1000).toFixed(1) + 's | Regioes pintadas: ' + (res.cliques||[]).length + '/' + (res.totalRegioes||0) + ' (' + m.cobertura.toFixed(0) + '%)', ml, y); y += 6;
+        // Os DOIS escores lado a lado (como no WISC: bruto/linear e ponderado).
+        doc.setFont(undefined, 'bold');
+        doc.text('IFS linear: ' + m.ifsLinear.toFixed(0) + '% (quanto olhou o social)  |  IFS-O ponderado pela ordem: ' + m.ifsO.toFixed(0) + '% (o que buscou primeiro)', ml, y); y += 6;
+        doc.setFont(undefined, 'normal');
         doc.text('Posicao media olhos: ' + (m.mediaOlhos ? m.mediaOlhos.toFixed(1) : 'N/A') + ' | % olhos nos 5 primeiros: ' + m.pctOlhos5.toFixed(0) + '%', ml, y); y += 6;
         doc.text('Tempo ate primeiro olho: ' + (m.tempoAteOlhos ? (m.tempoAteOlhos/1000).toFixed(1) + 's' : 'N/A') + ' | Indice de salto: ' + m.indiceSalto.toFixed(0) + '%', ml, y); y += 6;
 
-        // Tabela primeiros 10 cliques
+        // MAPA DE ESCANEAMENTO: a sequencia COMPLETA de cliques do avaliando, na ordem.
+        doc.setFontSize(9); doc.setFont(undefined, 'bold'); doc.setTextColor(74, 20, 140);
+        doc.text('Mapa de escaneamento (sequencia do avaliando):', ml, y); y += 6;
         doc.setFillColor(240, 235, 250);
         doc.rect(ml - 2, y - 3, lu + 4, 7, 'F');
         doc.setTextColor(74, 20, 140); doc.setFontSize(8); doc.setFont(undefined, 'bold');
-        // Colunas reposicionadas para caber a nova coluna "Esperado (tipico)" apos "Categoria".
-        doc.text('#', ml, y); doc.text('Regiao', ml+6, y); doc.text('Categoria', ml+48, y); doc.text('Esperado (tipico)', ml+78, y); doc.text('Tempo', ml+126, y); doc.text('Interv.', ml+152, y);
+        doc.text('#', ml, y); doc.text('Regiao', ml+8, y); doc.text('Categoria', ml+70, y); doc.text('Tempo', ml+118, y); doc.text('Intervalo', ml+150, y);
         y += 7;
         doc.setTextColor(0, 0, 0); doc.setFont(undefined, 'normal');
         var cliques = res.cliques || [];
-        var maxShow = Math.min(cliques.length, 10);
-        for (var c = 0; c < maxShow; c++) {
+        // Mostra a sequencia INTEIRA (o mapa de escaneamento), quebrando a pagina se precisar.
+        for (var c = 0; c < cliques.length; c++) {
+          if (y > 283) { doc.addPage(); y = 15; }
           var cl = cliques[c];
           if (c % 2 === 0) { doc.setFillColor(250, 248, 255); doc.rect(ml - 2, y - 3, lu + 4, 5, 'F'); }
-          // Sequencia esperada numa pessoa tipica (Klin et al. 2002; Pelphrey et al. 2002):
-          // comeca pelos olhos (posicoes 1-2), passa pela boca (posicao 3) e so depois
-          // explora rosto/periferia (posicao 4 em diante). "cl.ordem" e a posicao do clique.
-          var esperado = (cl.ordem <= 2) ? 'Olhos' : (cl.ordem === 3 ? 'Boca' : 'Rosto/Perif.');
-          // Marca se o clique bate (ok) ou nao com o esperado para aquela posicao.
-          var bate = (esperado === 'Olhos' && cl.cat === 'olhos') ||
-                     (esperado === 'Boca' && cl.cat === 'boca') ||
-                     (esperado === 'Rosto/Perif.' && cl.cat === 'periferia');
           doc.text(String(cl.ordem), ml, y);
-          doc.text(cl.nome || '-', ml+6, y);
-          doc.text(cl.cat || '-', ml+48, y);
-          doc.text(esperado + (bate ? '' : ' *'), ml+78, y);
-          doc.text((cl.tempo/1000).toFixed(2) + 's', ml+126, y);
-          doc.text((cl.intervalo/1000).toFixed(2) + 's', ml+152, y);
+          doc.text(cl.nome || '-', ml+8, y);
+          doc.text(cl.cat || '-', ml+70, y);
+          doc.text((cl.tempo/1000).toFixed(2) + 's', ml+118, y);
+          doc.text((cl.intervalo/1000).toFixed(2) + 's', ml+150, y);
           y += 5;
         }
-        y += 2;
-        // Legenda da coluna "Esperado": explica a sequencia tipica e o marcador "*".
-        doc.setFontSize(7); doc.setTextColor(120, 120, 120);
-        doc.text('Esperado (tipico): sequencia de uma pessoa com processamento facial tipico - olhos (1o-2o), boca (3o), rosto/periferia (4o em diante).', ml, y); y += 4;
-        doc.text('O asterisco (*) indica que o clique daquela posicao nao coincidiu com o esperado. Base: Klin et al. (2002); Pelphrey et al. (2002).', ml, y); y += 4;
+        y += 3;
+        // Observacao de REFERENCIA ao lado da tabela (sem forcar sequencia posicao-a-posicao).
+        // Texto qualitativo baseado em achados reais e verificaveis dos estudos citados.
+        if (y > 287 - 26) { doc.addPage(); y = 15; }
+        doc.setFillColor(237, 231, 246);
+        doc.rect(ml - 2, y - 3, lu + 4, 24, 'F');
+        doc.setFontSize(7.5); doc.setTextColor(74, 20, 140); doc.setFont(undefined, 'bold');
+        doc.text('Referencia (Klin et al., 2002; Pelphrey et al., 2002):', ml, y); y += 4;
+        doc.setFont(undefined, 'normal'); doc.setTextColor(60, 60, 60);
+        var obsKlin = 'No escaneamento facial tipico, a atencao prioriza a regiao dos olhos (e o triangulo olhos-boca, os tracos centrais da face). Maior exploracao da periferia / fora dos tracos, com atencao reduzida aos olhos, associa-se a processamento social atipico. Nota metodologica: a literatura de referencia mede tempo de fixacao ocular (eye-tracking); o TREF adapta esse principio para a ORDEM de reconstrucao, como marcador comportamental - nao e equivalencia direta.';
+        var obsL = doc.splitTextToSize(obsKlin, lu);
+        obsL.forEach(function(l) { if (y > 287) { doc.addPage(); y = 15; } doc.text(l, ml, y); y += 3.6; });
         doc.setFontSize(9); doc.setTextColor(0, 0, 0);
         y += 6;
       }
@@ -18304,7 +18334,7 @@
       // Rodape
       doc.setTextColor(130, 130, 130); doc.setFontSize(7);
       doc.text('Relatorio gerado em: ' + new Date().toLocaleString('pt-BR'), ml, 285);
-      doc.text('S\u03A8M Online - TREF v1.0', ml, 289);
+      doc.text('S\u03A8M Online - TREF v2.0', ml, 289);
 
       // Salvar
       var nome = (fd.nome || 'paciente').replace(/\s+/g, '_');
