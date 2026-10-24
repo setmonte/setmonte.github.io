@@ -89,8 +89,8 @@ body.tema-neutro{background:linear-gradient(135deg,#e8f5e9 0%,#c8e6c9 50%,#e8f5e
     <div class="content">
         <!-- AVISO COMPATIBILIDADE -->
         <div class="aviso-compatibilidade" id="avisoCompat">
-            <p>&#9888;&#65039; Seu navegador n&#227;o suporta reconhecimento de voz.</p>
-            <p style="font-weight:normal;margin-top:8px;color:#555;">Use o Google Chrome ou Microsoft Edge para utilizar este programa.</p>
+            <p id="avisoCompatTitulo">&#9888;&#65039; Seu navegador n&#227;o suporta reconhecimento de voz.</p>
+            <p id="avisoCompatDetalhe" style="font-weight:normal;margin-top:8px;color:#555;">Use o Google Chrome ou Microsoft Edge para utilizar este programa.</p>
         </div>
 
         <!-- DADOS PESSOAIS -->
@@ -602,7 +602,8 @@ function atualizarGrafico() {
 // ===== RECONHECIMENTO DE VOZ (THEDUGA ADAPTADO) =====
 function initSpeechRecognition() {
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-        document.getElementById('avisoCompat').style.display = 'block';
+        if (typeof _exibirAvisoCompatibilidade === 'function') { _exibirAvisoCompatibilidade(); }
+        else { document.getElementById('avisoCompat').style.display = 'block'; }
         return false;
     }
     var SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -1379,9 +1380,61 @@ async function _enviarResultadosPainel() {
 }
 // ===== INICIALIZACAO =====
 // Verificar compatibilidade
-if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-    document.getElementById('avisoCompat').style.display = 'block';
+// Detecta o ambiente para dar o aviso certo. No Linux a API webkitSpeechRecognition
+// costuma EXISTIR no objeto window, mas NAO funciona: o Chromium de codigo aberto (o que
+// vem na loja do Mint/Ubuntu via apt/snap/flatpak) vem sem as chaves do servico de voz do
+// Google, e o Firefox nao suporta a API. So o Google Chrome OFICIAL (.deb de google.com/chrome)
+// tem o reconhecimento funcionando no Linux. Como nao da para saber com 100% de certeza, pelo
+// JavaScript, se o reconhecimento vai responder, no Linux mostramos um aviso orientando o
+// navegador correto ANTES de a pessoa tentar ler e nao conseguir (evita a frustracao de
+// "li o texto e nada aconteceu").
+function _detectarAmbienteVoz() {
+    var temAPI = ('webkitSpeechRecognition' in window) || ('SpeechRecognition' in window);
+    var ua = '';
+    try { ua = (navigator.userAgent || '').toLowerCase(); } catch (e) { ua = ''; }
+    // Marcadores de plataforma a partir do userAgent (minusculo).
+    var ehLinux = ua.indexOf('linux') !== -1 && ua.indexOf('android') === -1;
+    var ehChrome = ua.indexOf('chrome') !== -1 || ua.indexOf('chromium') !== -1;
+    // Chrome oficial no userAgent traz "chrome"; Chromium costuma trazer "chromium".
+    // Edge (edg), Opera (opr) e Brave sao baseados em Chromium mas nem sempre tem o servico de voz.
+    var ehProvavelChromeOficial = ua.indexOf('chrome') !== -1 && ua.indexOf('chromium') === -1
+        && ua.indexOf('edg') === -1 && ua.indexOf('opr') === -1;
+    return { temAPI: temAPI, ehLinux: ehLinux, ehChrome: ehChrome, ehProvavelChromeOficial: ehProvavelChromeOficial };
 }
+
+function _exibirAvisoCompatibilidade() {
+    var amb = _detectarAmbienteVoz();
+    var box = document.getElementById('avisoCompat');
+    var titulo = document.getElementById('avisoCompatTitulo');
+    var detalhe = document.getElementById('avisoCompatDetalhe');
+    if (!box) return;
+
+    // Caso 1: o navegador nem tem a API (ex.: Firefox). Incompatibilidade total.
+    if (!amb.temAPI) {
+        if (titulo) titulo.innerHTML = '\u26A0\uFE0F Seu navegador n\u00E3o suporta reconhecimento de voz.';
+        if (detalhe) {
+            if (amb.ehLinux) {
+                detalhe.innerHTML = 'No <strong>Linux</strong>, use o <strong>Google Chrome oficial</strong> (baixe em <strong>google.com/chrome</strong>). O Firefox e o Chromium da loja do sistema n\u00E3o possuem reconhecimento de voz.';
+            } else {
+                detalhe.innerHTML = 'Use o <strong>Google Chrome</strong> ou o <strong>Microsoft Edge</strong> para utilizar este programa.';
+            }
+        }
+        box.style.display = 'block';
+        return;
+    }
+
+    // Caso 2: a API existe, MAS estamos no Linux. Aqui mora a confusao da Neide: no Chromium
+    // do Linux o objeto existe mas nao responde. So o Chrome oficial funciona. Avisamos de forma
+    // preventiva (sem travar a pagina) para orientar o navegador correto.
+    if (amb.ehLinux && !amb.ehProvavelChromeOficial) {
+        if (titulo) titulo.innerHTML = '\u26A0\uFE0F Aten\u00E7\u00E3o: no Linux o reconhecimento de voz s\u00F3 funciona no Google Chrome oficial.';
+        if (detalhe) detalhe.innerHTML = 'Se a leitura n\u00E3o for reconhecida (PPM e Precis\u00E3o ficarem em 0), instale o <strong>Google Chrome oficial</strong> em <strong>google.com/chrome</strong>. O <strong>Chromium</strong> da loja do sistema e o <strong>Firefox</strong> n\u00E3o possuem o servi\u00E7o de voz do Google.';
+        box.style.display = 'block';
+        return;
+    }
+}
+
+_exibirAvisoCompatibilidade();
 
 // Modo painel
 var params = new URLSearchParams(window.location.search);
