@@ -700,11 +700,14 @@ function _registrarMarcacao(trioIdx) {
     }
     var cartas = gridAtual.cartas;
     var direcao = _descobrirDirecao(trioIdx);
-    // "correto" exige: formar SET (pelos atributos do nivel) E estar ALINHADO
-    // (linha/coluna/diagonal). Trio nao-alinhado conta como erro, mesmo que
-    // por acaso forme SET pela regra.
+    // REGRA: o programa so REAGE a um trio ALINHADO (linha/coluna/diagonal).
+    // Se o trio for "livre" (as 3 cartas nao estao numa direcao valida, ex:
+    // 1a-2b-1c), ele e simplesmente IGNORADO: nao conta acerto nem erro. A
+    // pessoa pode seguir selecionando sem penalidade por trios desalinhados.
+    if (direcao === 'livre') { return; }
+    // Trio alinhado: forma SET pelos atributos do nivel = acerto; nao forma = erro.
     var formaSet = ehSet(cartas[trioIdx[0]], cartas[trioIdx[1]], cartas[trioIdx[2]]);
-    var correto = formaSet && (direcao !== 'livre');
+    var correto = formaSet;
     var coords = [_coord(trioIdx[0]), _coord(trioIdx[1]), _coord(trioIdx[2])];
     var tMs = (inicioRodadaMs > 0) ? (Date.now() - inicioRodadaMs) : 0;
     marcacoesRodada.push({ idx: trioIdx, coords: coords, correto: correto, direcao: direcao, t: tMs });
