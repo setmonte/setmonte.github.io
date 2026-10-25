@@ -1844,7 +1844,9 @@
             <p style="font-size:13px;font-weight:bold;color:#2e7d32;margin-bottom:8px;">📋 Dados Normativos</p>
             <a href="https://docs.google.com/spreadsheets/d/11pDQe5VupNqrCU5mTFckQFFfjM8Egsi44fLnyq05GyM/edit" target="_blank" class="btn btn-green" style="padding:10px 20px;font-size:13px;text-decoration:none;display:inline-block;">📋 Abrir Planilha</a>
             <button onclick="verificarNormatizacao()" class="btn btn-blue" style="padding:10px 20px;font-size:13px;margin-left:8px;">📊 Verificar N</button>
+            <button onclick="abrirSimuladorTpvset()" class="btn" style="background:#6a1b9a;padding:10px 20px;font-size:13px;margin-left:8px;color:#fff;">📈 Gr&#225;fico TPV-SET</button>
             <div id="normatizacaoResult" style="margin-top:12px;display:none;"></div>
+            <div id="simuladorTpvsetResult" style="margin-top:12px;display:none;"></div>
           </div>
             </div><!-- /sub ferramentas -->
           </div><!-- /container sub-abas -->
@@ -9427,6 +9429,336 @@
         }
       });
       return { media: media, dp: dp, p25: p25, p50: p50, p75: p75, n: n, faixas: faixas, porSexo: porSexo };
+    }
+
+    // ===== SIMULADOR / GRAFICO NORMATIVO TPV-SET (efeito fadiga) =====
+    // Le a MESMA planilha publica (CSV) usada por verificarNormatizacao, filtra
+    // escala == 'TPVSET' e classifica cada registro em 5 condicoes do efeito
+    // fadiga (N1, N2 puro, N2 com fadiga, N3 puro, N3 com fadiga). A combinacao de
+    // niveis e INFERIDA dos rotulos presentes no campo 'dominios' (a sequencia de
+    // aplicacao e sempre crescente: nivel baixo primeiro). A coleta NAO foi
+    // alterada; a inferencia pelos dominios ja e suficiente.
+    var _TPVSET_CSV_URL = 'https://docs.google.com/spreadsheets/d/11pDQe5VupNqrCU5mTFckQFFfjM8Egsi44fLnyq05GyM/gviz/tq?tqx=out:csv';
+    var _TPVSET_COR_PONTO = '#ffb300';
+    var _TPVSET_COR_PONTO_BORDA = '#f57f17';
+    var _TPVSET_COR_TEND = '#f57f17';
+    var _TPVSET_COR_TEORICA = '#c62828';
+    var _TPVSET_COND_LABELS = {
+      'N1': 'N1 (primeiro, sem fadiga)',
+      'N2_PURO': 'N2 puro (isolado)',
+      'N2_FADIGA': 'N2 com fadiga (apos N1)',
+      'N3_PURO': 'N3 puro (isolado)',
+      'N3_FADIGA': 'N3 com fadiga (apos outros)'
+    };
+    var _TPVSET_COND_ORDEM = ['N1', 'N2_PURO', 'N2_FADIGA', 'N3_PURO', 'N3_FADIGA'];
+
+    // Detecta quais niveis (1,2,3) estao presentes na string 'dominios' e extrai
+    // o % de cada um. Retorna { niveis:[ordenado], pct:{1:..,2:..,3:..} }.
+    function _tpvsetParseNiveis(dominiosStr) {
+      var res = { niveis: [], pct: {} };
+      if (!dominiosStr) return res;
+      var s = String(dominiosStr);
+      for (var n = 1; n <= 3; n++) {
+        var re1 = new RegExp('Nivel\\s*' + n + '\\b[^:]*:\\s*(-?\\d+(?:[.,]\\d+)?)', 'i');
+        var m = re1.exec(s);
+        if (!m) {
+          var re2 = new RegExp('\\bN\\s*' + n + '\\s*:\\s*(-?\\d+(?:[.,]\\d+)?)', 'i');
+          m = re2.exec(s);
+        }
+        if (m) {
+          var val = parseFloat(m[1].replace(',', '.'));
+          if (!isNaN(val)) { res.niveis.push(n); res.pct[n] = val; }
+        }
+      }
+      res.niveis.sort(function(a, b) { return a - b; });
+      return res;
+    }
+
+    // Classifica um registro ({idade, dominios}) e retorna a lista de pares
+    // { condicao, idade, y } que ele alimenta. Um registro N1+N2+N3 alimenta
+    // N1, N2_FADIGA e N3_FADIGA. A ordem e crescente (nivel menor vem antes),
+    // entao a posicao de um nivel = quantos niveis menores estao presentes.
+    function _tpvsetClassificarCondicao(reg) {
+      var out = [];
+      var p = _tpvsetParseNiveis(reg.dominios);
+      var presentes = p.niveis;
+      if (presentes.length === 0) return out;
+      var temN1 = presentes.indexOf(1) >= 0;
+      var temN2 = presentes.indexOf(2) >= 0;
+      var temN3 = presentes.indexOf(3) >= 0;
+      var idade = reg.idade;
+      // N1: sempre primeiro, sem fadiga.
+      if (temN1) out.push({ condicao: 'N1', idade: idade, y: p.pct[1] });
+      // N2: puro se so ha N2; com fadiga se existe algum nivel menor (N1).
+      if (temN2) {
+        if (presentes.length === 1) out.push({ condicao: 'N2_PURO', idade: idade, y: p.pct[2] });
+        else if (temN1) out.push({ condicao: 'N2_FADIGA', idade: idade, y: p.pct[2] });
+      }
+      // N3: puro se so ha N3; com fadiga se existe algum nivel menor (N1 ou N2).
+      if (temN3) {
+        if (presentes.length === 1) out.push({ condicao: 'N3_PURO', idade: idade, y: p.pct[3] });
+        else if (temN1 || temN2) out.push({ condicao: 'N3_FADIGA', idade: idade, y: p.pct[3] });
+      }
+      return out;
+    }
+
+    // Aplica a classificacao a todos os registros e agrupa por condicao.
+    function _tpvsetAgrupar(registros) {
+      var g = { N1: [], N2_PURO: [], N2_FADIGA: [], N3_PURO: [], N3_FADIGA: [] };
+      for (var i = 0; i < registros.length; i++) {
+        var pares = _tpvsetClassificarCondicao(registros[i]);
+        for (var k = 0; k < pares.length; k++) {
+          var par = pares[k];
+          if (par.y == null || isNaN(par.y)) continue;
+          if (par.idade == null || isNaN(par.idade)) continue;
+          g[par.condicao].push({ idade: par.idade, y: par.y });
+        }
+      }
+      return g;
+    }
+
+    function _tpvsetMedia(pontos) {
+      if (!pontos || pontos.length === 0) return null;
+      var soma = 0;
+      for (var i = 0; i < pontos.length; i++) soma += pontos[i].y;
+      return soma / pontos.length;
+    }
+
+    // Regressao linear minimos quadrados idade -> y. Retorna {a,b} (y=a+b*idade)
+    // ou null se houver menos de 2 pontos ou variacao nula em idade.
+    function _tpvsetRegressao(pontos) {
+      if (!pontos || pontos.length < 2) return null;
+      var n = pontos.length, sx = 0, sy = 0, sxy = 0, sxx = 0;
+      for (var i = 0; i < n; i++) {
+        var x = pontos[i].idade, y = pontos[i].y;
+        sx += x; sy += y; sxy += x * y; sxx += x * x;
+      }
+      var den = (n * sxx - sx * sx);
+      if (den === 0) return null;
+      var b = (n * sxy - sx * sy) / den;
+      var a = (sy - b * sx) / n;
+      return { a: a, b: b };
+    }
+
+    // Curva TEORICA do vigor cognitivo por idade (NAO e norma brasileira; e uma
+    // aproximacao parametrica baseada na literatura internacional, so para
+    // comparacao visual). Sobe rapido na infancia, pico ~27 anos, declina suave
+    // ate 80. Retorna % em 0..100.
+    function _tpvsetCurvaTeorica(idade) {
+      var pico = 27;      // idade do pico aproximado
+      var topo = 88;      // % no pico
+      var base = 40;      // piso aproximado
+      var y;
+      if (idade <= pico) {
+        // subida: de ~55% aos 6 anos ate o topo no pico
+        var frac = (idade - 6) / (pico - 6);
+        if (frac < 0) frac = 0;
+        y = 55 + (topo - 55) * Math.sqrt(frac);
+      } else {
+        // declinio suave ate 80 anos
+        var fracD = (idade - pico) / (80 - pico);
+        if (fracD > 1) fracD = 1;
+        y = topo - (topo - base) * fracD * fracD;
+      }
+      if (y < 0) y = 0;
+      if (y > 100) y = 100;
+      return y;
+    }
+
+    // --- Helpers de escala (dados -> coordenadas SVG) ---
+    var _TPVSET_SVG = { w: 640, h: 360, ml: 48, mr: 16, mt: 20, mb: 40, xMin: 6, xMax: 80, yMin: 0, yMax: 100 };
+    function _tpvsetX(idade) {
+      var s = _TPVSET_SVG;
+      var frac = (idade - s.xMin) / (s.xMax - s.xMin);
+      if (frac < 0) frac = 0; if (frac > 1) frac = 1;
+      return s.ml + frac * (s.w - s.ml - s.mr);
+    }
+    function _tpvsetY(pct) {
+      var s = _TPVSET_SVG;
+      var frac = (pct - s.yMin) / (s.yMax - s.yMin);
+      if (frac < 0) frac = 0; if (frac > 1) frac = 1;
+      return s.mt + (1 - frac) * (s.h - s.mt - s.mb);
+    }
+
+    // Monta o SVG (string) da condicao: eixos, curva teorica pontilhada vermelha,
+    // pontos reais amarelos e, se N>=15, linha de tendencia (regressao) laranja.
+    function _tpvsetSVG(pontos, cond) {
+      var s = _TPVSET_SVG;
+      var svg = '<svg viewBox="0 0 ' + s.w + ' ' + s.h + '" width="100%" style="max-width:' + s.w + 'px;background:#fafafa;border:1px solid #ddd;border-radius:6px;">';
+      // Fundo da area plotavel
+      svg += '<rect x="' + s.ml + '" y="' + s.mt + '" width="' + (s.w - s.ml - s.mr) + '" height="' + (s.h - s.mt - s.mb) + '" fill="#ffffff" stroke="#eeeeee"></rect>';
+      // Grade horizontal + rotulos Y (0..100 de 20 em 20)
+      var yv;
+      for (yv = 0; yv <= 100; yv += 20) {
+        var yy = _tpvsetY(yv);
+        svg += '<line x1="' + s.ml + '" y1="' + yy + '" x2="' + (s.w - s.mr) + '" y2="' + yy + '" stroke="#f0f0f0"></line>';
+        svg += '<text x="' + (s.ml - 6) + '" y="' + (yy + 3) + '" font-size="9" fill="#888" text-anchor="end">' + yv + '</text>';
+      }
+      // Rotulos X (idade de 6 a 80, passo 10)
+      var xv;
+      for (xv = 10; xv <= 80; xv += 10) {
+        var xx = _tpvsetX(xv);
+        svg += '<line x1="' + xx + '" y1="' + s.mt + '" x2="' + xx + '" y2="' + (s.h - s.mb) + '" stroke="#f6f6f6"></line>';
+        svg += '<text x="' + xx + '" y="' + (s.h - s.mb + 14) + '" font-size="9" fill="#888" text-anchor="middle">' + xv + '</text>';
+      }
+      // Eixos
+      svg += '<line x1="' + s.ml + '" y1="' + (s.h - s.mb) + '" x2="' + (s.w - s.mr) + '" y2="' + (s.h - s.mb) + '" stroke="#999"></line>';
+      svg += '<line x1="' + s.ml + '" y1="' + s.mt + '" x2="' + s.ml + '" y2="' + (s.h - s.mb) + '" stroke="#999"></line>';
+      // Titulos dos eixos
+      svg += '<text x="' + ((s.ml + s.w - s.mr) / 2) + '" y="' + (s.h - 4) + '" font-size="10" fill="#555" text-anchor="middle">Idade (anos)</text>';
+      svg += '<text x="12" y="' + ((s.mt + s.h - s.mb) / 2) + '" font-size="10" fill="#555" text-anchor="middle" transform="rotate(-90 12 ' + ((s.mt + s.h - s.mb) / 2) + ')">% de acerto</text>';
+      // Curva teorica (vermelha pontilhada) amostrada de 2 em 2 anos
+      var pts = '';
+      var a;
+      for (a = s.xMin; a <= s.xMax; a += 2) {
+        pts += _tpvsetX(a).toFixed(1) + ',' + _tpvsetY(_tpvsetCurvaTeorica(a)).toFixed(1) + ' ';
+      }
+      svg += '<polyline points="' + pts + '" fill="none" stroke="' + _TPVSET_COR_TEORICA + '" stroke-width="1.3" stroke-dasharray="4,4"></polyline>';
+      // Pontos reais (amarelos)
+      var i;
+      for (i = 0; i < pontos.length; i++) {
+        var cx = _tpvsetX(pontos[i].idade);
+        var cy = _tpvsetY(pontos[i].y);
+        svg += '<circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="4" fill="' + _TPVSET_COR_PONTO + '" fill-opacity="0.75" stroke="' + _TPVSET_COR_PONTO_BORDA + '" stroke-width="0.8"></circle>';
+      }
+      // Linha de tendencia da amostra (so com N >= 15)
+      if (pontos.length >= 15) {
+        var reg = _tpvsetRegressao(pontos);
+        if (reg) {
+          var x1 = s.xMin, x2 = s.xMax;
+          var y1 = reg.a + reg.b * x1;
+          var y2 = reg.a + reg.b * x2;
+          if (y1 < 0) y1 = 0; if (y1 > 100) y1 = 100;
+          if (y2 < 0) y2 = 0; if (y2 > 100) y2 = 100;
+          svg += '<line x1="' + _tpvsetX(x1).toFixed(1) + '" y1="' + _tpvsetY(y1).toFixed(1) + '" x2="' + _tpvsetX(x2).toFixed(1) + '" y2="' + _tpvsetY(y2).toFixed(1) + '" stroke="' + _TPVSET_COR_TEND + '" stroke-width="3" stroke-linecap="round"></line>';
+        }
+      }
+      svg += '</svg>';
+      return svg;
+    }
+
+    // Monta o bloco de legenda + referencias (ABNT). Acentos via \uXXXX.
+    function _tpvsetLegendaRefs() {
+      var html = '';
+      html += '<div style="font-size:11px;color:#555;margin-top:8px;line-height:1.6;">';
+      html += '<span style="display:inline-block;width:22px;border-top:3px solid ' + _TPVSET_COR_TEND + ';vertical-align:middle;"></span> Tend\u00eancia da amostra (BR, emergindo) &nbsp;&nbsp;';
+      html += '<span style="display:inline-block;width:22px;border-top:2px dashed ' + _TPVSET_COR_TEORICA + ';vertical-align:middle;"></span> Refer\u00eancia te\u00f3rica (literatura internacional) &nbsp;&nbsp;';
+      html += '<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:' + _TPVSET_COR_PONTO + ';vertical-align:middle;"></span> Casos reais';
+      html += '</div>';
+      html += '<p style="font-size:10px;color:#999;margin-top:6px;">A curva vermelha pontilhada e uma refer\u00eancia TE\u00d3RICA baseada na literatura internacional (desenvolvimento e decl\u00ednio do vigor cognitivo), apenas para compara\u00e7\u00e3o visual. N\u00c3O \u00e9 norma brasileira nem ajuste emp\u00edrico dos dados coletados.</p>';
+      html += '<div style="background:#f5f5f5;border:1px solid #e0e0e0;border-radius:6px;padding:10px;margin-top:10px;">';
+      html += '<p style="font-weight:bold;font-size:11px;color:#444;margin-bottom:6px;">Refer\u00eancias</p>';
+      html += '<p style="font-size:10px;color:#666;margin-bottom:5px;">HOMMEL, B.; LI, Z.-H.; LI, S.-C. Visual search across the life span. Developmental Psychology, v. 40, n. 4, p. 545-558, 2004.</p>';
+      html += '<p style="font-size:10px;color:#666;margin-bottom:5px;">PLUDE, D. J.; ENNS, J. T.; BRODEUR, D. The development of selective attention: a life-span overview. Acta Psychologica, v. 86, n. 2-3, p. 227-272, 1994.</p>';
+      html += '<p style="font-size:10px;color:#666;margin-bottom:5px;">SALTHOUSE, T. A. Trajectories of normal cognitive aging. Psychology and Aging, v. 34, n. 1, p. 17-24, 2019.</p>';
+      html += '<p style="font-size:10px;color:#666;">AUL, C. et al. The functional relevance of visuospatial processing speed across the lifespan. Cognitive Research: Principles and Implications, v. 8, art. 51, 2023.</p>';
+      html += '</div>';
+      return html;
+    }
+
+    // Renderiza a condicao selecionada (grafico + resumo). Global (chamada no onclick).
+    function _tpvsetRenderCondicao(cond) {
+      var dados = window._tpvsetDados;
+      if (!dados) return;
+      var pontos = dados[cond] || [];
+      var n = pontos.length;
+      var media = _tpvsetMedia(pontos);
+      // Atualiza highlight dos botoes do seletor
+      var bi;
+      for (bi = 0; bi < _TPVSET_COND_ORDEM.length; bi++) {
+        var c = _TPVSET_COND_ORDEM[bi];
+        var btn = document.getElementById('tpvsetCondBtn_' + c);
+        if (btn) {
+          if (c === cond) { btn.style.background = '#6a1b9a'; btn.style.color = '#fff'; }
+          else { btn.style.background = '#ede7f6'; btn.style.color = '#4a148c'; }
+        }
+      }
+      var html = '';
+      html += '<p style="font-size:13px;font-weight:bold;color:#4a148c;margin-bottom:4px;">' + _TPVSET_COND_LABELS[cond] + '</p>';
+      html += '<p style="font-size:11px;color:#555;margin-bottom:6px;">N = ' + n;
+      if (media != null) html += ' &nbsp;|&nbsp; M\u00e9dia de acerto = ' + media.toFixed(1) + '%';
+      html += '</p>';
+      if (n === 0) {
+        html += '<p style="font-size:11px;color:#999;background:#fff3e0;border:1px solid #ffcc80;border-radius:6px;padding:8px;">Sem casos nesta condi\u00e7\u00e3o ainda. A amostra ainda est\u00e1 se formando.</p>';
+      } else if (n < 5) {
+        html += '<p style="font-size:11px;color:#e65100;background:#fff3e0;border:1px solid #ffcc80;border-radius:6px;padding:8px;">Amostra ainda se formando (N &lt; 5). Interprete com cautela.</p>';
+      } else if (n < 15) {
+        html += '<p style="font-size:10px;color:#888;">Com N &gt;= 15 ser\u00e1 desenhada a linha de tend\u00eancia da amostra.</p>';
+      }
+      html += _tpvsetSVG(pontos, cond);
+      html += _tpvsetLegendaRefs();
+      // Efeito fadiga (quando houver pares)
+      var mN2p = _tpvsetMedia(dados.N2_PURO), mN2f = _tpvsetMedia(dados.N2_FADIGA);
+      var mN3p = _tpvsetMedia(dados.N3_PURO), mN3f = _tpvsetMedia(dados.N3_FADIGA);
+      var temFadigaInfo = (mN2p != null && mN2f != null) || (mN3p != null && mN3f != null);
+      if (temFadigaInfo) {
+        html += '<div style="background:#f3e5f5;border:1px solid #ce93d8;border-radius:6px;padding:10px;margin-top:10px;">';
+        html += '<p style="font-size:11px;font-weight:bold;color:#6a1b9a;margin-bottom:4px;">Efeito fadiga estimado (pp)</p>';
+        if (mN2p != null && mN2f != null) {
+          html += '<p style="font-size:10px;color:#555;">N2 puro (' + mN2p.toFixed(1) + '%) vs N2 com fadiga (' + mN2f.toFixed(1) + '%): ' + (mN2p - mN2f).toFixed(1) + ' pp</p>';
+        }
+        if (mN3p != null && mN3f != null) {
+          html += '<p style="font-size:10px;color:#555;">N3 puro (' + mN3p.toFixed(1) + '%) vs N3 com fadiga (' + mN3f.toFixed(1) + '%): ' + (mN3p - mN3f).toFixed(1) + ' pp</p>';
+        }
+        html += '<p style="font-size:9px;color:#999;margin-top:4px;">pp = pontos percentuais (m\u00e9dia do puro menos m\u00e9dia do com fadiga).</p>';
+        html += '</div>';
+      }
+      var alvo = document.getElementById('tpvsetGrafico');
+      if (alvo) alvo.innerHTML = html;
+    }
+
+    // Abre o simulador: le o CSV, filtra TPVSET, agrupa e renderiza a UI. Global.
+    async function abrirSimuladorTpvset() {
+      var el = document.getElementById('simuladorTpvsetResult');
+      if (!el) return;
+      el.style.display = 'block';
+      el.innerHTML = '<p style="color:#555;font-size:12px;">Carregando dados da planilha...</p>';
+      try {
+        var resp = await fetch(_TPVSET_CSV_URL);
+        var csv = await resp.text();
+        var linhas = csv.split('\n').filter(function(l) { return l.trim().length > 0; });
+        if (linhas.length < 2) { el.innerHTML = '<p style="color:#999;font-size:12px;">Nenhum dado encontrado na planilha.</p>'; return; }
+        var header = parseCsvLine(linhas[0]);
+        var colEscala = header.indexOf('escala');
+        var colIdade = header.indexOf('idade');
+        var colDominios = header.indexOf('dominios');
+        if (colEscala === -1 || colDominios === -1) {
+          el.innerHTML = '<p style="color:#c62828;font-size:12px;">Erro: colunas "escala"/"dominios" nao encontradas na planilha.</p>';
+          return;
+        }
+        var registros = [];
+        for (var i = 1; i < linhas.length; i++) {
+          var cols = parseCsvLine(linhas[i]);
+          var esc = (cols[colEscala] || '').replace(/"/g, '').trim();
+          if (esc !== 'TPVSET') continue;
+          var idade = colIdade >= 0 ? parseInt((cols[colIdade] || '').replace(/"/g, ''), 10) : NaN;
+          if (isNaN(idade) || idade < 6 || idade > 80) continue;
+          var doms = (cols[colDominios] || '').replace(/"/g, '').trim();
+          if (!doms) continue;
+          registros.push({ idade: idade, dominios: doms });
+        }
+        window._tpvsetDados = _tpvsetAgrupar(registros);
+        var total = registros.length;
+        var htmlUI = '';
+        htmlUI += '<div style="background:#fff;border:1px solid #ce93d8;border-radius:8px;padding:12px;">';
+        htmlUI += '<p style="font-size:13px;font-weight:bold;color:#6a1b9a;">\uD83D\uDCC8 Simulador normativo TPV-SET &mdash; efeito fadiga</p>';
+        htmlUI += '<p style="font-size:11px;color:#777;margin:4px 0 10px;">Registros TPV-SET na planilha: ' + total + '. Cada ponto e um caso real (idade x % de acerto do n\u00edvel). A ordem de aplica\u00e7\u00e3o e sempre crescente, ent\u00e3o o mesmo caso pode aparecer em mais de uma condi\u00e7\u00e3o (ex.: N1+N2+N3 alimenta N1, N2 com fadiga e N3 com fadiga).</p>';
+        // Seletor de 5 condicoes
+        htmlUI += '<div style="margin-bottom:10px;">';
+        var bi;
+        for (bi = 0; bi < _TPVSET_COND_ORDEM.length; bi++) {
+          var c = _TPVSET_COND_ORDEM[bi];
+          var nC = (window._tpvsetDados[c] || []).length;
+          htmlUI += '<button id="tpvsetCondBtn_' + c + '" onclick="_tpvsetRenderCondicao(\'' + c + '\')" style="background:#ede7f6;color:#4a148c;border:1px solid #ce93d8;border-radius:16px;padding:6px 12px;font-size:11px;margin:3px 4px 3px 0;cursor:pointer;">' + _TPVSET_COND_LABELS[c] + ' (N=' + nC + ')</button>';
+        }
+        htmlUI += '</div>';
+        htmlUI += '<div id="tpvsetGrafico"></div>';
+        htmlUI += '</div>';
+        el.innerHTML = htmlUI;
+        _tpvsetRenderCondicao('N1');
+      } catch (e) {
+        el.innerHTML = '<p style="color:#c62828;font-size:12px;">Erro ao acessar planilha: ' + e.message + '. Verifique se a planilha esta compartilhada como publica.</p>';
+      }
     }
 
     // ===== FUNCOES PROGRAMAS OCULTOS - PFISTER =====
