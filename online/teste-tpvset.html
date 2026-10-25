@@ -240,9 +240,11 @@
 
     <!-- ===================== TELA AVISO DE EXCLUSAO (nivel 2) ===================== -->
     <div id="tela-aviso-exclusao" class="tela">
-        <div class="contagem-num" style="font-size:60px;">&#9888;</div>
-        <div class="contagem-texto" id="avisoExclusaoTexto" style="font-size:1.4em;max-width:600px;text-align:center;line-height:1.6;"></div>
-        <div class="contagem-texto" style="margin-top:14px;color:#888;">Memorize! Este aviso vai sumir.</div>
+        <div id="avisoIcone" style="font-size:70px;line-height:1;">&#9888;</div>
+        <div id="avisoLabel" style="color:#b39ddb;font-size:1.15em;margin-top:18px;letter-spacing:1px;"></div>
+        <div id="avisoPilula" style="margin-top:16px;display:inline-block;color:#fff;font-size:2.6em;font-weight:800;padding:14px 46px;border-radius:16px;letter-spacing:3px;"></div>
+        <div id="avisoDescricao" style="color:#e0d4ff;font-size:1.1em;margin-top:24px;max-width:560px;text-align:center;line-height:1.6;"></div>
+        <div id="avisoRodape" class="contagem-texto" style="margin-top:20px;color:#8a7fb3;"></div>
     </div>
 
     <!-- ===================== TELA CONTAGEM ===================== -->
@@ -897,7 +899,7 @@ function iniciarNivel() {
     titulo.innerHTML = _NOME_NIVEL[nivel] || ('Nivel ' + nivel);
     var html = '';
     if (nivel === 1) {
-        html = '<p>Neste nivel, <strong>apenas UMA caracteristica</strong> (cor, forma OU n\u00famero) forma o SET \u2014 e voc\u00ea precisa <strong>descobrir sozinho(a) qual &#233;</strong>.</p>'
+        html = '<p>Neste nivel, <strong>apenas UMA caracteristica</strong> (cor, forma OU n\u00famero) forma o SET. <strong>No in\u00edcio de cada rodada o programa avisa qual \u00e9</strong> \u2014 fique atento(a) ao aviso.</p>'
              + '<p>Procure os grupos de 3 cartas em que essa caracteristica seja toda igual ou toda diferente, em linha, coluna ou diagonal.</p>';
     } else if (nivel === 2) {
         html = '<p>Neste nivel, o programa vai <strong>excluir uma caracteristica</strong> e avisar qual, <strong>s&#243; no come&#231;o de cada rodada</strong>.</p>'
@@ -922,15 +924,55 @@ function _prepararRodada() {
     var nivel = NIVEIS_APLICAR[nivelIdx];
     var nSetsAlvo = (nivel === 1) ? null : FAIXA_NSETS[Math.floor(Math.random() * FAIXA_NSETS.length)];
     configurarNivel(nivel, nSetsAlvo, 'dificil');
-    if (nivel === 2) {
-        // Aviso de exclusao SO no comeco (sai depois) -> exige memoria de trabalho.
-        var av = document.getElementById('avisoExclusaoTexto');
-        av.innerHTML = 'IGNORE a caracteristica: <strong>' + (_NOMES_CARAC[CONFIG.atributoExcluido] || CONFIG.atributoExcluido).toUpperCase() + '</strong>.<br>Considere apenas as outras duas.';
-        trocarTela('tela-aviso-exclusao');
+    if (nivel === 1) {
+        // N1: avisa (sem esconder) QUAL caracteristica procurar nesta rodada.
+        // A pessoa nao precisa adivinhar: o N1 mede percepcao, nao inducao de regra.
+        _mostrarAvisoCaracteristica(1);
+        setTimeout(function () { _contagemRodada(); }, 3500);
+    } else if (nivel === 2) {
+        // N2: avisa qual caracteristica IGNORAR, so no comeco (depois some) ->
+        // exige memoria de trabalho para segurar a instrucao durante a rodada.
+        _mostrarAvisoCaracteristica(2);
         setTimeout(function () { _contagemRodada(); }, 3500);
     } else {
         _contagemRodada();
     }
+}
+
+// Monta a tela de aviso (mesma para N1 e N2). No N1 destaca o que PROCURAR
+// (pilula roxa); no N2 destaca o que IGNORAR (pilula vermelha). Bem chamativo.
+function _mostrarAvisoCaracteristica(nivel) {
+    var icone = document.getElementById('avisoIcone');
+    var label = document.getElementById('avisoLabel');
+    var pilula = document.getElementById('avisoPilula');
+    var descricao = document.getElementById('avisoDescricao');
+    var rodape = document.getElementById('avisoRodape');
+    if (nivel === 1) {
+        var carac = CONFIG.atributosConsiderados[0];
+        var nomeC = (_NOMES_CARAC[carac] || carac).toUpperCase();
+        icone.innerHTML = '\uD83D\uDD0D'; // lupa
+        label.style.color = '#b39ddb';
+        label.innerHTML = 'NESTA RODADA, PROCURE POR';
+        pilula.style.background = 'linear-gradient(135deg,#7c4dff,#4a148c)';
+        pilula.style.boxShadow = '0 0 40px rgba(124,77,255,0.7)';
+        pilula.innerHTML = nomeC;
+        descricao.style.color = '#e0d4ff';
+        descricao.innerHTML = 'Ache grupos de 3 cartas em que a caracteristica <strong>' + nomeC + '</strong> seja toda igual ou toda diferente, em linha, coluna ou diagonal.';
+        rodape.innerHTML = 'Este aviso vai sumir. Prepare-se!';
+    } else {
+        var excl = CONFIG.atributoExcluido;
+        var nomeE = (_NOMES_CARAC[excl] || excl).toUpperCase();
+        icone.innerHTML = '\u26A0\uFE0F'; // alerta
+        label.style.color = '#ffcc80';
+        label.innerHTML = 'NESTA RODADA, IGNORE';
+        pilula.style.background = 'linear-gradient(135deg,#ef5350,#b71c1c)';
+        pilula.style.boxShadow = '0 0 40px rgba(239,83,80,0.7)';
+        pilula.innerHTML = nomeE;
+        descricao.style.color = '#ffe0b2';
+        descricao.innerHTML = 'Considere apenas as <strong>outras duas</strong> caracteristicas para formar os SETs.';
+        rodape.innerHTML = 'Memorize! Este aviso vai sumir.';
+    }
+    trocarTela('tela-aviso-exclusao');
 }
 
 function _contagemRodada() {
