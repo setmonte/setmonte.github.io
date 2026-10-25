@@ -296,7 +296,7 @@ var _sessionInfo = null;
 //            qual, so no inicio de cada rodada (exige memoria de trabalho).
 //            Considera as outras 2. Grade com nSets controlado.
 //   Nivel 3 (tudao): considera as 3 caracteristicas. Grade com nSets controlado.
-// Pesos por nivel: 1, 2, 3. Esperados provisorios: 100% / 80% / 60%.
+// Pesos por nivel: 1, 2, 3. Sem valor esperado fixo: escore livre (proporcao de acerto).
 // ============================================================
 var TODAS_CARACTERISTICAS = ['cor', 'forma', 'numero'];
 
@@ -1171,22 +1171,33 @@ function _obterHipotese() {
 // Valores PROVISORIOS (chutes educados, sem validacao formal).
 // Cortes PROVISORIOS em % (proporcao de SETs percebidos), ancorados num modelo
 // de simulacao (tempo-por-SET 2,5-4s) e no dado real da autora (~3 SETs/10s).
-// Faixas largas e deliberadamente provisorias, a recalibrar com dados reais.
-// 3 niveis: < corte = Abaixo; corte..esperadoMax = Dentro do esperado; acima = Acima.
-// Metadados de cada nivel: peso, esperado provisorio (%), construto e nome.
-// Esperados PROVISORIOS (sem validacao): N1=100%, N2=80%, N3=60%.
+// PROVISORIO: nao ha valor esperado fixo. O escore e livre (proporcao de acerto).
+// Classificacao por faixas descritivas provisorias (sem norma): Baixo < 33 <= Intermediario < 66 <= Alto.
+// Metadados de cada nivel: peso, construto e nome (sem esperado).
 var META_NIVEL = {
-    1: { peso: 1, esperado: 100, nome: 'Nivel 1 - Percepcao', construto: 'percepcao visual e inducao do criterio' },
-    2: { peso: 2, esperado: 80, nome: 'Nivel 2 - Memoria de trabalho', construto: 'memoria de trabalho (reter a caracteristica excluida)' },
-    3: { peso: 3, esperado: 60, nome: 'Nivel 3 - Carga total', construto: 'carga cognitiva maxima (3 caracteristicas)' }
+    1: { peso: 1, nome: 'Nivel 1 - Percepcao', construto: 'percepcao visual e inducao do criterio' },
+    2: { peso: 2, nome: 'Nivel 2 - Memoria de trabalho', construto: 'memoria de trabalho (reter a caracteristica excluida)' },
+    3: { peso: 3, nome: 'Nivel 3 - Carga total', construto: 'carga cognitiva maxima (3 caracteristicas)' }
 };
 
-// Classifica a proporcao de um nivel contra seu esperado.
-// Dentro do esperado se >= esperado; senao Abaixo (com margem de 10pp para "Proximo").
-function _classificarNivel(prop, esperado) {
-    if (prop >= esperado) return 'Dentro do esperado';
-    if (prop >= esperado - 10) return 'Proximo do esperado';
-    return 'Abaixo do esperado';
+// Classifica a proporcao (%) por FAIXAS DESCRITIVAS PROVISORIAS, sem norma e
+// sem valor esperado fixo. Apenas descreve a posicao do escore livre.
+function _classificarNivel(prop) {
+    if (prop < 33) return 'Baixo';
+    if (prop < 66) return 'Intermediario';
+    return 'Alto';
+}
+
+// Estabilidade entre as rodadas de um nivel: amplitude (max-min) das proporcoes (%).
+// Amplitude <= 25 pontos percentuais => estavel; senao variavel. PROVISORIO.
+function _classificarEstabilidade(propsRodadas) {
+    if (!propsRodadas || propsRodadas.length < 2) return 'estavel';
+    var mn = propsRodadas[0], mx = propsRodadas[0];
+    for (var i = 1; i < propsRodadas.length; i++) {
+        if (propsRodadas[i] < mn) mn = propsRodadas[i];
+        if (propsRodadas[i] > mx) mx = propsRodadas[i];
+    }
+    return (mx - mn) <= 25 ? 'estavel' : 'variavel';
 }
 
 function calcularResultados() {
@@ -1198,7 +1209,7 @@ function calcularResultados() {
     for (var r = 0; r < resultadosRodadas.length; r++) {
         var rr = resultadosRodadas[r];
         var nv = rr.nivel || 3;
-        if (!porNivel[nv]) porNivel[nv] = { acertos: 0, falsos: 0, omissoes: 0, disp: 0, somaProp: 0, nRodadas: 0, somaTc: 0, nTc: 0 };
+        if (!porNivel[nv]) porNivel[nv] = { acertos: 0, falsos: 0, omissoes: 0, disp: 0, somaProp: 0, nRodadas: 0, somaTc: 0, nTc: 0, props: [] };
         var pn = porNivel[nv];
         var om = (rr.omissoes != null) ? rr.omissoes : (rr.totalSets - rr.acertos);
         pn.acertos += rr.acertos;
@@ -1208,6 +1219,7 @@ function calcularResultados() {
         var propRod = (rr.totalSets > 0) ? (rr.acertos / rr.totalSets) : 0;
         if (propRod > 1) propRod = 1;
         pn.somaProp += propRod;
+        pn.props.push(Math.round(propRod * 100));
         pn.nRodadas++;
         // TC (tempo para completar) desta rodada, em segundos.
         if (rr.tcMs != null) { pn.somaTc += rr.tcMs; pn.nTc++; }
@@ -1220,23 +1232,25 @@ function calcularResultados() {
     var mediaPrimeiroClique = nPrimeiro > 0 ? Math.round(somaPrimeiro / nPrimeiro) : null;
     var mediaIntervalo = nIntervalo > 0 ? Math.round(somaIntervalo / nIntervalo) : null;
 
-    // Monta o perfil por nivel (proporcao media %, esperado, classificacao) e o
+    // Monta o perfil por nivel (proporcao media %, classificacao, estabilidade) e o
     // escore ponderado: soma(prop_nivel * peso) / soma(pesos dos niveis feitos).
     var niveisFeitos = Object.keys(porNivel).map(function (k) { return parseInt(k, 10); }).sort(function (a, b) { return a - b; });
-    var perfil = {};        // nivel -> { prop, esperado, classificacao, acertos, disp, falsos, omissoes }
+    var perfil = {};        // nivel -> { prop, classificacao, estabilidade, propsRodadas, acertos, disp, falsos, omissoes }
     var somaPesoProp = 0, somaPesos = 0;
     for (var i = 0; i < niveisFeitos.length; i++) {
         var nvl = niveisFeitos[i];
         var pnv = porNivel[nvl];
-        var meta = META_NIVEL[nvl] || { peso: nvl, esperado: 60 };
+        var meta = META_NIVEL[nvl] || { peso: nvl };
         var propPct = (pnv.nRodadas > 0) ? (pnv.somaProp / pnv.nRodadas) * 100 : 0;
         propPct = Math.round(propPct * 10) / 10;
         // Tempo medio para completar (TC) do nivel, em segundos (1 casa).
         var tcMedioNivel = (pnv.nTc > 0) ? Math.round((pnv.somaTc / pnv.nTc) / 100) / 10 : null;
+        var propsNivel = pnv.props || [];
         perfil[nvl] = {
             prop: propPct,
-            esperado: meta.esperado,
-            classificacao: _classificarNivel(propPct, meta.esperado),
+            classificacao: _classificarNivel(propPct),
+            estabilidade: _classificarEstabilidade(propsNivel),
+            propsRodadas: propsNivel,
             acertos: pnv.acertos, disp: pnv.disp, falsos: pnv.falsos, omissoes: pnv.omissoes,
             tcMedio: tcMedioNivel
         };
@@ -1252,11 +1266,11 @@ function calcularResultados() {
     }
     var tcMedioGeral = (_nTcGeral > 0) ? Math.round((_somaTcGeral / _nTcGeral) / 100) / 10 : null;
 
-    // Classificacao geral do escore ponderado (provisoria, faixa larga).
+    // Classificacao geral do escore ponderado por FAIXA DESCRITIVA PROVISORIA (sem norma).
     var classGeral;
-    if (escoreGeral >= 80) classGeral = 'Dentro do esperado';
-    else if (escoreGeral >= 60) classGeral = 'Proximo do esperado';
-    else classGeral = 'Abaixo do esperado';
+    if (escoreGeral < 33) classGeral = 'Baixo';
+    else if (escoreGeral < 66) classGeral = 'Intermediario';
+    else classGeral = 'Alto';
 
     var interpretacao = _gerarInterpretacaoV2(perfil, niveisFeitos, totFalsos, mediaPrimeiroClique, mediaIntervalo, tcMedioGeral);
 
@@ -1266,7 +1280,7 @@ function calcularResultados() {
         var nj = niveisFeitos[j];
         var pf = perfil[nj];
         dominios[(META_NIVEL[nj] ? META_NIVEL[nj].nome : ('Nivel ' + nj))] = {
-            pontuacao: pf.prop, max: 100, classificacao: pf.classificacao + ' (esperado >= ' + pf.esperado + '%)'
+            pontuacao: pf.prop, max: 100, classificacao: pf.classificacao
         };
     }
     dominios['Acertos (total)'] = { pontuacao: totAcertos, max: totDisp, classificacao: totAcertos + ' de ' + totDisp };
@@ -1343,16 +1357,21 @@ function _gerarInterpretacaoV2(perfil, niveisFeitos, totFalsos, mediaPrimeiroCli
     for (var i = 0; i < niveisFeitos.length; i++) {
         var nv = niveisFeitos[i];
         var pf = perfil[nv];
-        var dentro = (pf.classificacao === 'Dentro do esperado');
+        var faixa = pf.classificacao;                 // Baixo | Intermediario | Alto
+        var estab = pf.estabilidade || 'estavel';     // estavel | variavel
+        var baixoEstavel = (faixa === 'Baixo' && estab === 'estavel');
         if (nv === 1) {
-            if (dentro) p.push('No Nivel 1 (percepcao), o avaliando atingiu ' + pf.prop.toFixed(0) + '% (esperado ' + pf.esperado + '%), compativel com percepcao visual integra e boa capacidade de induzir o criterio relevante por conta propria (Treisman; Neisser).');
-            else p.push('No Nivel 1 (percepcao), o avaliando atingiu ' + pf.prop.toFixed(0) + '% (esperado ' + pf.esperado + '%). Desempenho abaixo do esperado neste nivel, por ser o mais simples, pode indicar fragilidade na percepcao visual basica ou dificuldade em induzir o criterio relevante (Treisman).');
+            var t1 = 'No Nivel 1 (percepcao), o avaliando atingiu ' + pf.prop.toFixed(0) + '% (faixa: ' + faixa + '), com desempenho ' + estab + ' entre as rodadas.';
+            if (baixoEstavel) t1 += ' Um valor baixo e consistente nas tres rodadas pode sinalizar fragilidade na percepcao visual basica ou na velocidade de busca (Treisman; Neisser), mas isso e apenas uma hipotese exploratoria, sem comparacao com norma.';
+            p.push(t1);
         } else if (nv === 2) {
-            if (dentro) p.push('No Nivel 2 (memoria de trabalho), atingiu ' + pf.prop.toFixed(0) + '% (esperado ' + pf.esperado + '%), sugerindo boa capacidade de reter a caracteristica a ser ignorada enquanto realiza a busca.');
-            else p.push('No Nivel 2 (memoria de trabalho), atingiu ' + pf.prop.toFixed(0) + '% (esperado ' + pf.esperado + '%). A queda em relacao ao Nivel 1 pode refletir sobrecarga de memoria de trabalho, isto e, dificuldade em manter ativa a regra de exclusao durante a varredura.');
+            var t2 = 'No Nivel 2 (memoria de trabalho), atingiu ' + pf.prop.toFixed(0) + '% (faixa: ' + faixa + '), com desempenho ' + estab + ' entre as rodadas.';
+            if (baixoEstavel) t2 += ' Um valor baixo e consistente pode sugerir dificuldade em manter ativa a regra de exclusao durante a varredura (memoria de trabalho), como hipotese a investigar.';
+            p.push(t2);
         } else {
-            if (dentro) p.push('No Nivel 3 (carga total), atingiu ' + pf.prop.toFixed(0) + '% (esperado ' + pf.esperado + '%), demonstrando boa eficiencia na integracao simultanea das tres caracteristicas sob pressao temporal.');
-            else p.push('No Nivel 3 (carga total), atingiu ' + pf.prop.toFixed(0) + '% (esperado ' + pf.esperado + '%). Desempenho abaixo do esperado e comum neste nivel, o mais exigente, e reflete o limite da capacidade de processar tres dimensoes ao mesmo tempo.');
+            var t3 = 'No Nivel 3 (carga total), atingiu ' + pf.prop.toFixed(0) + '% (faixa: ' + faixa + '), com desempenho ' + estab + ' entre as rodadas.';
+            if (baixoEstavel) t3 += ' Por exigir a integracao simultanea das tres caracteristicas sob pressao temporal, um valor baixo e consistente aqui pode refletir o limite da capacidade de processamento, como hipotese exploratoria.';
+            p.push(t3);
         }
     }
     // Erros / impulsividade (Barkley)
