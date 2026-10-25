@@ -2913,6 +2913,15 @@
         </select>
         <label style="font-size:0.85em;color:#555;">Observacoes:</label>
         <input type="text" id="tpvsetObs" placeholder="Opcional" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:12px;">
+        <div style="background:#f3e5f5;border:1px solid #ce93d8;border-radius:8px;padding:12px;margin-bottom:12px;">
+          <p style="font-size:13px;font-weight:bold;color:#6a1b9a;margin-bottom:8px;">Selecione o(s) n&#237;vel(is) a aplicar:</p>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;"><input type="checkbox" value="1" class="tpvsetChkNivel" checked> N&#237;vel 1 &mdash; Percep&#231;&#227;o (1 caracter&#237;stica)</label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;"><input type="checkbox" value="2" class="tpvsetChkNivel" checked> N&#237;vel 2 &mdash; Mem&#243;ria de trabalho (exclui 1 caracter&#237;stica)</label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;"><input type="checkbox" value="3" class="tpvsetChkNivel" checked> N&#237;vel 3 &mdash; Carga total (3 caracter&#237;sticas)</label>
+          </div>
+          <p style="font-size:11px;color:#777;margin-top:6px;">Marque os n&#237;veis que deseja aplicar. Cada n&#237;vel tem 3 rodadas de 10 segundos.</p>
+        </div>
         <button onclick="startTpvsetTest()" class="btn btn-green" style="width:48%;">Gerar Link do Paciente</button>
         <button onclick="startTpvsetTest(true)" class="btn btn-blue" style="width:48%;">Aplicar Localmente</button>
         <div id="tpvsetLinkResult" class="hidden" style="margin-top:15px;padding:12px;background:#e8f5e9;border-radius:8px;">
@@ -14608,6 +14617,9 @@
       if (!nome || !dn) { alert('Preencha nome e data de nascimento.'); return; }
       var _dnErr = _validarDataNascimento(dn);
       if (_dnErr) { alert(_dnErr); return; }
+      var niveis = [];
+      document.querySelectorAll('.tpvsetChkNivel:checked').forEach(function(c) { niveis.push(parseInt(c.value, 10)); });
+      if (!niveis.length) { alert('Selecione pelo menos um n\u00edvel.'); return; }
       var sessionId = 'tpvset-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
       var sessionData = {
         email: currentUser,
@@ -14618,7 +14630,8 @@
         sex: sexo,
         education: document.getElementById('tpvsetEscolaridade').value || '',
         obs: document.getElementById('tpvsetObs').value || '',
-        pacienteId: document.getElementById('tpvsetSelPac').value || ''
+        pacienteId: document.getElementById('tpvsetSelPac').value || '',
+        niveis: niveis
       };
       // Link CURTO (?s=): salva a sessao no servidor; se falhar, cai no link antigo (?d=).
       var link = '';
@@ -14660,14 +14673,16 @@
         var data = await resp.json();
         _tpvsetResultCache = data.results || [];
         if (_tpvsetResultCache.length === 0) { el.innerHTML = '<p>Nenhum resultado TPV-SET encontrado.</p>'; return; }
-        var html = '<h3>Resultados TPV-SET</h3><table style="width:100%;border-collapse:collapse;font-size:0.85em;"><tr><th style="padding:6px;border-bottom:2px solid #4a148c;">Data</th><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">Paciente</th><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">ID</th><th style="padding:6px;border-bottom:2px solid #4a148c;">Media SETs/rodada</th><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">Classificacao</th><th style="padding:6px;border-bottom:2px solid #4a148c;">PDF</th></tr>';
+        var html = '<h3>Resultados TPV-SET</h3><table style="width:100%;border-collapse:collapse;font-size:0.85em;"><tr><th style="padding:6px;border-bottom:2px solid #4a148c;">Data</th><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">Paciente</th><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">ID</th><th style="padding:6px;border-bottom:2px solid #4a148c;">Niveis</th><th style="padding:6px;border-bottom:2px solid #4a148c;">Escore (%)</th><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">Classificacao</th><th style="padding:6px;border-bottom:2px solid #4a148c;">PDF</th></tr>';
         for (var i = 0; i < _tpvsetResultCache.length; i++) {
           var r = _tpvsetResultCache[i];
           var d = r.data || {};
+          var niveisStr = (d.niveisAplicados && d.niveisAplicados.length) ? d.niveisAplicados.map(function(n) { return 'N' + n; }).join(' ') : '-';
           html += '<tr>';
           html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (d.data ? new Date(d.data).toLocaleString('pt-BR') : '') + '</td>';
           html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (d.paciente || '') + '</td>';
           html += '<td style="padding:5px;border-bottom:1px solid #eee;font-size:10px;font-family:monospace;color:#2e7d32;">' + (d.idPaciente || (d.paciente && d.dataNascimento ? gerarIdPacienteHash(d.paciente, d.dataNascimento) : '-')) + '</td>';
+          html += '<td style="padding:5px;border-bottom:1px solid #eee;text-align:center;font-size:0.8em;">' + niveisStr + '</td>';
           html += '<td style="padding:5px;border-bottom:1px solid #eee;text-align:center;font-weight:bold;">' + (d.escore != null ? d.escore : '-') + '</td>';
           html += '<td style="padding:5px;border-bottom:1px solid #eee;font-size:0.8em;">' + (d.classificacao || '-') + '</td>';
           html += '<td style="padding:5px;border-bottom:1px solid #eee;text-align:center;"><button class="btn btn-green" style="padding:3px 8px;font-size:11px;" onclick="gerarPDFTpvset(' + i + ')">PDF</button></td>';
@@ -14876,6 +14891,15 @@
       return v ? String(v) : def;
     }
 
+    // Nome curto do construto por nivel (fallback local no painel).
+    function _tpvsetPdfNomeNivel(n) {
+      if (n == 1 || n === '1') return 'N1 - Percep\u00e7\u00e3o';
+      if (n == 2 || n === '2') return 'N2 - Mem\u00f3ria de trabalho';
+      if (n == 3 || n === '3') return 'N3 - Carga total';
+      return 'N\u00edvel ' + n;
+    }
+
+    // Dispatcher: valida, inicializa doc, escolhe o ramo (v2 por niveis ou v1 legado) e salva.
     function gerarPDFTpvset(idx) {
       var r = _tpvsetResultCache[idx];
       if (!r || !r.data) { alert('Dados insuficientes para gerar PDF.'); return; }
@@ -14883,6 +14907,31 @@
       var jsPDF = window.jspdf.jsPDF;
       var doc = new jsPDF();
 
+      if (d.perfilNiveis && typeof d.perfilNiveis === 'object') {
+        _tpvsetPdfV2(doc, d);
+      } else {
+        _tpvsetPdfV1(doc, d);
+      }
+
+      // Rodape final (data/hora de geracao) em todas as paginas.
+      var totalPaginasFim = doc.internal.getNumberOfPages();
+      for (var pgf = 1; pgf <= totalPaginasFim; pgf++) {
+        doc.setPage(pgf);
+        doc.setFillColor(80, 80, 80);
+        doc.rect(0, 285, 210, 12, 'F');
+        doc.setTextColor(200, 200, 200); doc.setFontSize(7);
+        doc.text('Relat\u00f3rio gerado em: ' + new Date().toLocaleString('pt-BR'), 105, 291, { align: 'center' });
+      }
+
+      // Nome do arquivo: TPVSET_Nome_YYYYMMDDHHMM.pdf
+      var tsFim = new Date();
+      var tsStrFim = tsFim.getFullYear() + String(tsFim.getMonth() + 1).padStart(2, '0') + String(tsFim.getDate()).padStart(2, '0') + String(tsFim.getHours()).padStart(2, '0') + String(tsFim.getMinutes()).padStart(2, '0');
+      var nomeArqFim = 'TPVSET_' + ((d.paciente || 'paciente').replace(/\s+/g, '_')) + '_' + tsStrFim + '.pdf';
+      doc.save(nomeArqFim);
+    }
+
+    // ===== PDF TPV-SET v1 (formato legado, registros sem perfilNiveis) =====
+    function _tpvsetPdfV1(doc, d) {
       // Layout
       var MARGEM = 10;
       var LARGURA_PAGINA = 210;
@@ -15226,23 +15275,389 @@
       doc.text(credLinhas, MARGEM, y);
       doc.setFont(undefined, 'normal'); doc.setTextColor(0, 0, 0);
       y += credLinhas.length * 4 + 4;
+    }
+    // ===== FIM PDF TPV-SET v1 =====
 
-      // ===== 10. RODAPE final (data/hora de geracao) =====
-      var totalPaginas = doc.internal.getNumberOfPages();
-      for (var pg = 1; pg <= totalPaginas; pg++) {
-        doc.setPage(pg);
-        doc.setFillColor(80, 80, 80);
-        doc.rect(0, 285, LARGURA_PAGINA, 12, 'F');
-        doc.setTextColor(200, 200, 200); doc.setFontSize(7);
-        doc.text('Relat\u00f3rio gerado em: ' + new Date().toLocaleString('pt-BR'), 105, 291, { align: 'center' });
+    // ===== PDF TPV-SET v2 (perfil por niveis) =====
+    function _tpvsetPdfV2(doc, d) {
+      var MARGEM = 10;
+      var LARGURA_PAGINA = 210;
+      var LARGURA_UTIL = 190;
+      var ROXO_ESC = [74, 20, 140];
+      var ROXO_CLARO = [124, 77, 255];
+      var y;
+      function _checarPagina(alt) {
+        if (y + alt > 272) { doc.addPage(); y = 20; }
       }
 
-      // Nome do arquivo: TPVSET_Nome_YYYYMMDDHHMM.pdf
-      var ts = new Date();
-      var tsStr = ts.getFullYear() + String(ts.getMonth() + 1).padStart(2, '0') + String(ts.getDate()).padStart(2, '0') + String(ts.getHours()).padStart(2, '0') + String(ts.getMinutes()).padStart(2, '0');
-      var nomeArq = 'TPVSET_' + ((d.paciente || 'paciente').replace(/\s+/g, '_')) + '_' + tsStr + '.pdf';
-      doc.save(nomeArq);
+      // ===== 1. CABECALHO (faixa roxa) =====
+      doc.setFillColor(ROXO_ESC[0], ROXO_ESC[1], ROXO_ESC[2]);
+      doc.rect(0, 0, LARGURA_PAGINA, 26, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(17); doc.setFont(undefined, 'bold');
+      doc.text('TPV-SET - Teste de Percep\u00e7\u00e3o Visual', MARGEM, 13);
+      doc.setFontSize(10); doc.setFont(undefined, 'normal');
+      doc.text('Adapta\u00e7\u00e3o do jogo SET - perfil por n\u00edveis', MARGEM, 20);
+      y = 36;
+
+      // ===== 2. DADOS DO AVALIANDO =====
+      var dataAval = d.data ? new Date(d.data).toLocaleDateString('pt-BR') : '-';
+      var niveisAplicados = (d.niveisAplicados && d.niveisAplicados.length) ? d.niveisAplicados.slice() : [];
+      if (!niveisAplicados.length) {
+        var pnk = Object.keys(d.perfilNiveis || {});
+        for (var pki = 0; pki < pnk.length; pki++) { niveisAplicados.push(parseInt(pnk[pki], 10)); }
+      }
+      niveisAplicados.sort(function(a, b) { return a - b; });
+      var niveisTxt = niveisAplicados.length ? niveisAplicados.map(function(n) { return 'N' + n; }).join(', ') : '-';
+      var alturaCaixa = 40;
+      doc.setFillColor(245, 246, 250);
+      doc.setDrawColor(220, 222, 230);
+      doc.roundedRect(MARGEM, y, LARGURA_UTIL, alturaCaixa, 2, 2, 'FD');
+      var yTexto = y + 7;
+      var col2 = MARGEM + (LARGURA_UTIL / 2);
+      doc.setTextColor(40, 40, 40); doc.setFontSize(10);
+      doc.setFont(undefined, 'bold'); doc.text('Nome: ', MARGEM + 4, yTexto);
+      doc.setFont(undefined, 'normal'); doc.text(_tpvsetPdfSafeStr(d.paciente), MARGEM + 20, yTexto);
+      doc.setFont(undefined, 'bold'); doc.text('ID: ', col2, yTexto);
+      doc.setFont(undefined, 'normal'); doc.text(_tpvsetPdfSafeStr(d.idPaciente), col2 + 8, yTexto);
+      yTexto += 6;
+      doc.setFont(undefined, 'bold'); doc.text('Idade: ', MARGEM + 4, yTexto);
+      doc.setFont(undefined, 'normal'); doc.text(_tpvsetPdfSafeStr(d.idade), MARGEM + 20, yTexto);
+      doc.setFont(undefined, 'bold'); doc.text('Sexo: ', col2, yTexto);
+      doc.setFont(undefined, 'normal'); doc.text(_tpvsetPdfSafeStr(d.sexo), col2 + 14, yTexto);
+      yTexto += 6;
+      doc.setFont(undefined, 'bold'); doc.text('Escolaridade: ', MARGEM + 4, yTexto);
+      doc.setFont(undefined, 'normal'); doc.text(_tpvsetPdfSafeStr(d.escolaridade), MARGEM + 35, yTexto);
+      doc.setFont(undefined, 'bold'); doc.text('Data: ', col2, yTexto);
+      doc.setFont(undefined, 'normal'); doc.text(dataAval, col2 + 14, yTexto);
+      yTexto += 6;
+      doc.setFont(undefined, 'bold'); doc.text('Hip\u00f3tese diagn\u00f3stica: ', MARGEM + 4, yTexto);
+      doc.setFont(undefined, 'normal'); doc.text(_tpvsetPdfSafeStr(d.hipotese, 'n\u00e3o informada'), MARGEM + 52, yTexto);
+      yTexto += 6;
+      doc.setFont(undefined, 'bold'); doc.text('N\u00edveis aplicados: ', MARGEM + 4, yTexto);
+      doc.setFont(undefined, 'normal'); doc.text(niveisTxt, MARGEM + 44, yTexto);
+      y += alturaCaixa + 10;
+
+      // ===== 3. RESULTADO GERAL PONDERADO (destaque) =====
+      _checarPagina(32);
+      var escore = _tpvsetPdfNum(d.escore, 0);
+      var corClass = _tpvsetPdfCorClassif(d.classificacao);
+      doc.setFillColor(243, 238, 252);
+      doc.setDrawColor(ROXO_CLARO[0], ROXO_CLARO[1], ROXO_CLARO[2]);
+      doc.roundedRect(MARGEM, y, LARGURA_UTIL, 20, 2, 2, 'FD');
+      doc.setTextColor(ROXO_ESC[0], ROXO_ESC[1], ROXO_ESC[2]);
+      doc.setFontSize(11); doc.setFont(undefined, 'bold');
+      doc.text('RESULTADO GERAL (ponderado)', MARGEM + 4, y + 7);
+      doc.setFontSize(18);
+      doc.text(escore + ' %', MARGEM + 4, y + 16);
+      doc.setFontSize(9); doc.setFont(undefined, 'normal');
+      doc.setTextColor(corClass[0], corClass[1], corClass[2]);
+      var classLinhas = doc.splitTextToSize(_tpvsetPdfSafeStr(d.classificacao), LARGURA_UTIL - 48);
+      doc.text(classLinhas, MARGEM + 44, y + 9);
+      doc.setTextColor(0, 0, 0);
+      y += 24;
+      doc.setFontSize(7.5); doc.setTextColor(90, 90, 90);
+      var explPond = 'Escore ponderado pelos pesos dos n\u00edveis (N1 peso 1, N2 peso 2, N3 peso 3). Esperados provis\u00f3rios: N1 100%, N2 80%, N3 60%.';
+      var explPondLinhas = doc.splitTextToSize(explPond, LARGURA_UTIL);
+      _checarPagina(explPondLinhas.length * 4 + 4);
+      doc.text(explPondLinhas, MARGEM, y);
+      y += explPondLinhas.length * 4 + 6;
+      doc.setTextColor(0, 0, 0);
+
+      // ===== 4. GRAFICO DE PERFIL POR NIVEL =====
+      var perfil = d.perfilNiveis || {};
+      doc.setTextColor(ROXO_ESC[0], ROXO_ESC[1], ROXO_ESC[2]);
+      doc.setFontSize(12); doc.setFont(undefined, 'bold');
+      _checarPagina(10);
+      doc.text('Perfil por n\u00edvel (obtido x esperado)', MARGEM, y); y += 6;
+      doc.setTextColor(0, 0, 0); doc.setFont(undefined, 'normal'); doc.setFontSize(9);
+      if (!niveisAplicados.length) {
+        _checarPagina(8);
+        doc.text('Perfil por n\u00edvel n\u00e3o dispon\u00edvel para este registro.', MARGEM, y);
+        y += 10;
+      } else {
+        _checarPagina(72);
+        var areaX = MARGEM + 10;
+        var areaLarg = 150;
+        var areaAlt = 50;
+        var topoY = y;
+        var baseY = topoY + areaAlt;
+        doc.setDrawColor(200, 200, 205); doc.setLineWidth(0.3);
+        doc.line(areaX, baseY, areaX + areaLarg, baseY);
+        doc.setFontSize(6.5); doc.setTextColor(120, 120, 120);
+        doc.text('100%', MARGEM, topoY + 2);
+        doc.text('0%', MARGEM + 2, baseY);
+        var nN = niveisAplicados.length;
+        var espaco = areaLarg / nN;
+        var larguraBarra = Math.min(espaco * 0.45, 26);
+        for (var gi = 0; gi < nN; gi++) {
+          var nv = niveisAplicados[gi];
+          var pn = perfil[nv] || perfil[String(nv)] || {};
+          var prop = _tpvsetPdfNum(pn.prop, 0);
+          if (prop < 0) prop = 0; if (prop > 100) prop = 100;
+          var esperado = _tpvsetPdfNum(pn.esperado, 0);
+          if (esperado < 0) esperado = 0; if (esperado > 100) esperado = 100;
+          var hBarra = (prop / 100) * areaAlt;
+          var bx = areaX + gi * espaco + (espaco - larguraBarra) / 2;
+          var by = baseY - hBarra;
+          doc.setFillColor(ROXO_CLARO[0], ROXO_CLARO[1], ROXO_CLARO[2]);
+          doc.rect(bx, by, larguraBarra, hBarra, 'F');
+          doc.setFontSize(7.5); doc.setFont(undefined, 'bold'); doc.setTextColor(70, 70, 70);
+          doc.text(prop + '%', bx + larguraBarra / 2, by - 1.5, { align: 'center' });
+          var yEsp = baseY - (esperado / 100) * areaAlt;
+          doc.setDrawColor(198, 40, 40); doc.setLineWidth(0.5);
+          if (typeof doc.setLineDashPattern === 'function') {
+            doc.setLineDashPattern([1.2, 1.2], 0);
+            doc.line(bx - 2, yEsp, bx + larguraBarra + 2, yEsp);
+            doc.setLineDashPattern([], 0);
+          } else {
+            doc.setLineWidth(0.25);
+            doc.line(bx - 2, yEsp, bx + larguraBarra + 2, yEsp);
+          }
+          doc.setFontSize(6); doc.setFont(undefined, 'normal'); doc.setTextColor(198, 40, 40);
+          doc.text('esp. ' + esperado + '%', bx + larguraBarra / 2, yEsp - 1, { align: 'center' });
+          doc.setLineWidth(0.2);
+          doc.setFontSize(7.5); doc.setFont(undefined, 'bold'); doc.setTextColor(74, 20, 140);
+          doc.text('N' + nv, bx + larguraBarra / 2, baseY + 4, { align: 'center' });
+          doc.setFontSize(5.8); doc.setFont(undefined, 'normal'); doc.setTextColor(110, 110, 110);
+          var construto = (nv == 1) ? 'Percep\u00e7\u00e3o' : (nv == 2 ? 'Mem. trabalho' : (nv == 3 ? 'Carga total' : ''));
+          doc.text(construto, bx + larguraBarra / 2, baseY + 8, { align: 'center' });
+        }
+        doc.setTextColor(0, 0, 0); doc.setFont(undefined, 'normal');
+        y = baseY + 13;
+        doc.setFontSize(6.5); doc.setTextColor(120, 120, 120);
+        doc.text('Barra roxa = obtido | marca vermelha = esperado (N1 100% / N2 80% / N3 60%).', MARGEM, y);
+        y += 8;
+        doc.setTextColor(0, 0, 0);
+      }
+
+      // ===== 5. TABELA DE PERFIL POR NIVEL =====
+      _checarPagina(16);
+      doc.setTextColor(ROXO_ESC[0], ROXO_ESC[1], ROXO_ESC[2]);
+      doc.setFontSize(12); doc.setFont(undefined, 'bold');
+      doc.text('Tabela de perfil por n\u00edvel', MARGEM, y); y += 6;
+      var colsPX = [MARGEM + 2, MARGEM + 54, MARGEM + 78, MARGEM + 102, MARGEM + 150, MARGEM + 164, MARGEM + 178];
+      var cabsP = ['N\u00edvel', 'Obtido', 'Esperado', 'Classifica\u00e7\u00e3o', 'Acert.', 'Falsos', 'Omiss.'];
+      doc.setFillColor(ROXO_ESC[0], ROXO_ESC[1], ROXO_ESC[2]);
+      doc.rect(MARGEM, y - 4, LARGURA_UTIL, 6, 'F');
+      doc.setTextColor(255, 255, 255); doc.setFontSize(7.5); doc.setFont(undefined, 'bold');
+      for (var cpi = 0; cpi < cabsP.length; cpi++) { doc.text(cabsP[cpi], colsPX[cpi], y); }
+      y += 4;
+      doc.setTextColor(0, 0, 0); doc.setFont(undefined, 'normal'); doc.setFontSize(7.5);
+      for (var ti = 0; ti < niveisAplicados.length; ti++) {
+        var nvt = niveisAplicados[ti];
+        var pnt = perfil[nvt] || perfil[String(nvt)] || {};
+        _checarPagina(8);
+        if (ti % 2 === 0) {
+          doc.setFillColor(243, 238, 252);
+          doc.rect(MARGEM, y - 3.5, LARGURA_UTIL, 6, 'F');
+        }
+        var classifTxt = doc.splitTextToSize(_tpvsetPdfSafeStr(pnt.classificacao), 46);
+        var linhaP = [
+          _tpvsetPdfNomeNivel(nvt),
+          _tpvsetPdfNum(pnt.prop, 0) + '%',
+          _tpvsetPdfNum(pnt.esperado, 0) + '%',
+          classifTxt[0] || '-',
+          String(_tpvsetPdfNum(pnt.acertos, 0)) + '/' + String(_tpvsetPdfNum(pnt.disp, 0)),
+          String(_tpvsetPdfNum(pnt.falsos, 0)),
+          String(_tpvsetPdfNum(pnt.omissoes, 0))
+        ];
+        for (var lpi = 0; lpi < linhaP.length; lpi++) { doc.text(String(linhaP[lpi]), colsPX[lpi], y); }
+        y += 6;
+      }
+      y += 6;
+
+      // ===== 6. INDICADORES GLOBAIS =====
+      var dom = d.dominios || {};
+      function _domPorMaxG(nome) {
+        var o = dom[nome];
+        if (!o) return '-';
+        var p = (o.pontuacao != null) ? o.pontuacao : '-';
+        var m = (o.max != null) ? o.max : '-';
+        return p + '/' + m;
+      }
+      function _somaPerfil(campo) {
+        var s = 0, achou = false;
+        for (var si = 0; si < niveisAplicados.length; si++) {
+          var pp = perfil[niveisAplicados[si]] || perfil[String(niveisAplicados[si])] || {};
+          if (pp[campo] != null) { s += _tpvsetPdfNum(pp[campo], 0); achou = true; }
+        }
+        return achou ? String(s) : '-';
+      }
+      var omissKeyG = (dom['Omiss\u00f5es (deixou passar)'] != null) ? 'Omiss\u00f5es (deixou passar)' : 'Omissoes (deixou passar)';
+      var acertosTot = (dom['Acertos (total)'] != null) ? _domPorMaxG('Acertos (total)') : _somaPerfil('acertos');
+      var errosTot = (dom['Erros (falsos SETs)'] != null) ? _domPorMaxG('Erros (falsos SETs)') : _somaPerfil('falsos');
+      var omissTot = (dom[omissKeyG] != null) ? _domPorMaxG(omissKeyG) : _somaPerfil('omissoes');
+      var velG = d.velocidade || {};
+      var indicG = [
+        ['Acertos (total)', acertosTot],
+        ['Erros (falsos SETs)', errosTot],
+        ['Omiss\u00f5es (deixou passar)', omissTot],
+        ['Velocidade m\u00e9dia entre cliques', _tpvsetPdfMsParaSeg(velG.mediaIntervalo) + ' s'],
+        ['Tempo m\u00e9dio at\u00e9 1o clique', _tpvsetPdfMsParaSeg(velG.mediaPrimeiroClique) + ' s'],
+        ['Total de cliques', String(_tpvsetPdfNum(velG.totalCliques, 0))]
+      ];
+      _checarPagina(14);
+      doc.setTextColor(ROXO_ESC[0], ROXO_ESC[1], ROXO_ESC[2]);
+      doc.setFontSize(12); doc.setFont(undefined, 'bold');
+      doc.text('Indicadores globais', MARGEM, y); y += 6;
+      doc.setFillColor(ROXO_ESC[0], ROXO_ESC[1], ROXO_ESC[2]);
+      doc.rect(MARGEM, y - 4, LARGURA_UTIL, 6, 'F');
+      doc.setTextColor(255, 255, 255); doc.setFontSize(8.5); doc.setFont(undefined, 'bold');
+      doc.text('Indicador', MARGEM + 3, y);
+      doc.text('Valor', MARGEM + 130, y);
+      y += 4;
+      doc.setTextColor(0, 0, 0); doc.setFont(undefined, 'normal'); doc.setFontSize(8.5);
+      for (var igi = 0; igi < indicG.length; igi++) {
+        _checarPagina(8);
+        if (igi % 2 === 0) {
+          doc.setFillColor(243, 238, 252);
+          doc.rect(MARGEM, y - 3.5, LARGURA_UTIL, 6, 'F');
+        }
+        doc.text(String(indicG[igi][0]), MARGEM + 3, y);
+        doc.text(String(indicG[igi][1]), MARGEM + 130, y);
+        y += 6;
+      }
+      y += 6;
+
+      // ===== 7. DETALHAMENTO POR RODADA =====
+      var rodadas = (d.rodadas && d.rodadas.length) ? d.rodadas : [];
+      _checarPagina(14);
+      doc.setTextColor(ROXO_ESC[0], ROXO_ESC[1], ROXO_ESC[2]);
+      doc.setFontSize(12); doc.setFont(undefined, 'bold');
+      doc.text('Detalhamento por rodada', MARGEM, y); y += 6;
+      doc.setTextColor(0, 0, 0); doc.setFont(undefined, 'normal'); doc.setFontSize(9);
+      if (rodadas.length === 0) {
+        _checarPagina(8);
+        doc.text('Detalhamento por rodada n\u00e3o dispon\u00edvel para este registro.', MARGEM, y);
+        y += 10;
+      } else {
+        var colsRX = [MARGEM + 1, MARGEM + 14, MARGEM + 24, MARGEM + 52, MARGEM + 68, MARGEM + 82, MARGEM + 98, MARGEM + 118, MARGEM + 142, MARGEM + 166];
+        var cabsR = ['Niv', 'Rod', 'Atrib. excl.', 'SETs', 'Acert.', 'Falsos', 'Omiss.', 'Propor\u00e7\u00e3o', 'T. 1o clq', 'Vel.'];
+        _checarPagina(10);
+        doc.setFillColor(ROXO_ESC[0], ROXO_ESC[1], ROXO_ESC[2]);
+        doc.rect(MARGEM, y - 4, LARGURA_UTIL, 6, 'F');
+        doc.setTextColor(255, 255, 255); doc.setFontSize(7); doc.setFont(undefined, 'bold');
+        for (var cri = 0; cri < cabsR.length; cri++) { doc.text(cabsR[cri], colsRX[cri], y); }
+        y += 4;
+        doc.setTextColor(0, 0, 0); doc.setFont(undefined, 'normal'); doc.setFontSize(7);
+        for (var drj = 0; drj < rodadas.length; drj++) {
+          var dr = rodadas[drj];
+          _checarPagina(8);
+          if (drj % 2 === 0) {
+            doc.setFillColor(243, 238, 252);
+            doc.rect(MARGEM, y - 3.5, LARGURA_UTIL, 6, 'F');
+          }
+          var atribExcl = _tpvsetPdfSafeStr(dr.atributoExcluido, '-');
+          var atribLinhas = doc.splitTextToSize(atribExcl, 26);
+          var linhaR = [
+            'N' + _tpvsetPdfNum(dr.nivel, 0),
+            'R' + _tpvsetPdfNum(dr.rodada, drj + 1),
+            atribLinhas[0] || '-',
+            String(_tpvsetPdfNum(dr.totalSets, 0)),
+            String(_tpvsetPdfNum(dr.acertos, 0)),
+            String(_tpvsetPdfNum(dr.falsos, 0)),
+            String(_tpvsetPdfNum(dr.omissoes, 0)),
+            _tpvsetPdfNum(dr.proporcao, 0) + '%',
+            _tpvsetPdfMsParaSeg(dr.tempoPrimeiroClique) + 's',
+            _tpvsetPdfMsParaSeg(dr.intervaloMedio) + 's'
+          ];
+          for (var lri = 0; lri < linhaR.length; lri++) { doc.text(String(linhaR[lri]), colsRX[lri], y); }
+          y += 6;
+        }
+        y += 4;
+        _checarPagina(10);
+        doc.setFontSize(10); doc.setFont(undefined, 'bold'); doc.setTextColor(ROXO_ESC[0], ROXO_ESC[1], ROXO_ESC[2]);
+        doc.text('Ordem de percep\u00e7\u00e3o', MARGEM, y); y += 6;
+        doc.setTextColor(0, 0, 0); doc.setFont(undefined, 'normal'); doc.setFontSize(8);
+        for (var dpk = 0; dpk < rodadas.length; dpk++) {
+          var drp = rodadas[dpk];
+          var seqD = (drp.sequenciaCoords && drp.sequenciaCoords.length) ? drp.sequenciaCoords.join(' -> ') : '-';
+          var txtSeqD = 'N' + _tpvsetPdfNum(drp.nivel, 0) + ' R' + _tpvsetPdfNum(drp.rodada, dpk + 1) + ': ' + seqD;
+          var seqLinhasD = doc.splitTextToSize(txtSeqD, LARGURA_UTIL - 4);
+          _checarPagina(seqLinhasD.length * 4 + 2);
+          doc.text(seqLinhasD, MARGEM + 2, y);
+          y += seqLinhasD.length * 4 + 1;
+          if (drp.acertosDetalhe && drp.acertosDetalhe.length) {
+            var acD = 'Acertos: ' + drp.acertosDetalhe.join('; ');
+            var acLinhasD = doc.splitTextToSize(acD, LARGURA_UTIL - 8);
+            _checarPagina(acLinhasD.length * 4 + 2);
+            doc.setTextColor(46, 125, 50); doc.text(acLinhasD, MARGEM + 6, y); doc.setTextColor(0, 0, 0);
+            y += acLinhasD.length * 4 + 1;
+          }
+          if (drp.errosDetalhe && drp.errosDetalhe.length) {
+            var erD = 'Erros: ' + drp.errosDetalhe.join('; ');
+            var erLinhasD = doc.splitTextToSize(erD, LARGURA_UTIL - 8);
+            _checarPagina(erLinhasD.length * 4 + 2);
+            doc.setTextColor(198, 40, 40); doc.text(erLinhasD, MARGEM + 6, y); doc.setTextColor(0, 0, 0);
+            y += erLinhasD.length * 4 + 1;
+          }
+          y += 1;
+        }
+        _checarPagina(16);
+        var explD = 'Como ler as coordenadas: cada posi\u00e7\u00e3o combina linha (1-3) e coluna (a-c). Ex: 1a = linha 1, coluna a (canto superior esquerdo); 3c = linha 3, coluna c (canto inferior direito).';
+        var explLinhasD = doc.splitTextToSize(explD, LARGURA_UTIL);
+        doc.setFontSize(7.5); doc.setTextColor(90, 90, 90);
+        doc.text(explLinhasD, MARGEM, y);
+        y += explLinhasD.length * 4 + 4;
+        doc.setTextColor(0, 0, 0);
+      }
+
+      // ===== 8. ANALISE (texto) =====
+      var interp = _tpvsetPdfSafeStr(d.interpretacao, '');
+      if (interp && interp !== '-') {
+        _checarPagina(14);
+        doc.setTextColor(ROXO_ESC[0], ROXO_ESC[1], ROXO_ESC[2]);
+        doc.setFontSize(12); doc.setFont(undefined, 'bold');
+        doc.text('An\u00e1lise', MARGEM, y); y += 6;
+        doc.setTextColor(30, 30, 30); doc.setFont(undefined, 'normal'); doc.setFontSize(9);
+        var interpLinhas = doc.splitTextToSize(interp, LARGURA_UTIL);
+        _checarPagina(interpLinhas.length * 4.5 + 6);
+        doc.text(interpLinhas, MARGEM, y, { align: 'justify', maxWidth: LARGURA_UTIL });
+        y += interpLinhas.length * 4.5 + 4;
+      }
+
+      // ===== 9. AVISO =====
+      _checarPagina(30);
+      var aviso = 'AVISO: Este e um instrumento EXPLORATORIO e PROVISORIO, sem validacao formal nem normatizacao. A regra do SET e apresentada com treino previo ao avaliando. O uso e restrito a profissional qualificado e os resultados devem ser interpretados dentro de uma avaliacao ampla, nunca isoladamente.';
+      doc.setFillColor(255, 248, 235);
+      var avisoLinhas = doc.splitTextToSize(aviso, LARGURA_UTIL - 8);
+      var alturaAviso = avisoLinhas.length * 4 + 6;
+      doc.rect(MARGEM, y - 2, LARGURA_UTIL, alturaAviso, 'F');
+      doc.setTextColor(150, 90, 0); doc.setFont(undefined, 'italic'); doc.setFontSize(7.5);
+      doc.text(avisoLinhas, MARGEM + 4, y + 3);
+      doc.setFont(undefined, 'normal'); doc.setTextColor(0, 0, 0);
+      y += alturaAviso + 6;
+
+      // ===== 10. REFERENCIAS (ABNT) + credito do jogo SET =====
+      var REFERENCIAS_TPVSET2 = [
+        'SEABRA, A. G.; DIAS, N. M. (orgs.). Avalia\u00e7\u00e3o neuropsicol\u00f3gica cognitiva: aten\u00e7\u00e3o e fun\u00e7\u00f5es executivas. S\u00e3o Paulo: Memnon, 2012. v. 1.',
+        'JACOB, M.; HOCHSTEIN, S. Set recognition as a window to perceptual and cognitive processes. Perception & Psychophysics, v. 70, n. 7, p. 1165-1184, 2008.',
+        'TREISMAN, A. M.; GELADE, G. A feature-integration theory of attention. Cognitive Psychology, v. 12, n. 1, p. 97-136, 1980.',
+        'NEISSER, U. Cognitive psychology. New York: Appleton-Century-Crofts, 1967.',
+        'BARKLEY, R. A. Behavioral inhibition, sustained attention, and executive functions: constructing a unifying theory of ADHD. Psychological Bulletin, v. 121, n. 1, p. 65-94, 1997.'
+      ];
+      _checarPagina(16);
+      doc.setTextColor(ROXO_ESC[0], ROXO_ESC[1], ROXO_ESC[2]);
+      doc.setFontSize(11); doc.setFont(undefined, 'bold');
+      doc.text('Refer\u00eancias', MARGEM, y); y += 6;
+      doc.setTextColor(50, 50, 50); doc.setFont(undefined, 'normal'); doc.setFontSize(7.5);
+      for (var refi2 = 0; refi2 < REFERENCIAS_TPVSET2.length; refi2++) {
+        var refLinhas2 = doc.splitTextToSize(REFERENCIAS_TPVSET2[refi2], LARGURA_UTIL);
+        _checarPagina(refLinhas2.length * 4 + 3);
+        doc.text(refLinhas2, MARGEM, y);
+        y += refLinhas2.length * 4 + 2;
+      }
+      y += 2;
+      _checarPagina(14);
+      var credito2 = 'O jogo SET foi criado por Marsha Jean Falco (SET Enterprises). Este teste e uma adaptacao do conceito para rastreio perceptivo, sem vinculo comercial com o jogo original.';
+      var credLinhas2 = doc.splitTextToSize(credito2, LARGURA_UTIL);
+      doc.setTextColor(110, 110, 110); doc.setFont(undefined, 'italic'); doc.setFontSize(7.5);
+      doc.text(credLinhas2, MARGEM, y);
+      doc.setFont(undefined, 'normal'); doc.setTextColor(0, 0, 0);
+      y += credLinhas2.length * 4 + 4;
     }
+    // ===== FIM PDF TPV-SET v2 =====
 
     // ===== FUNCOES ESCALAS =====
     var _escalasResultCache = [];

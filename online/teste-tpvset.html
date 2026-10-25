@@ -45,9 +45,9 @@
         .btn-danger { background: #c62828; color: #fff; }
         .center { text-align: center; }
 
-        /* Tela de contagem regressiva */
-        #tela-contagem { background: #0d0d1a; min-height: 100vh; display: none; flex-direction: column; align-items: center; justify-content: center; }
-        #tela-contagem.ativa { display: flex; }
+        /* Tela de contagem regressiva e aviso de exclusao (fundo escuro, centralizado) */
+        #tela-contagem, #tela-aviso-exclusao { background: #0d0d1a; min-height: 100vh; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+        #tela-contagem.ativa, #tela-aviso-exclusao.ativa { display: flex; }
         .contagem-num { font-size: 180px; color: #7c4dff; font-weight: bold; font-family: monospace; text-shadow: 0 0 40px rgba(124,77,255,0.6); }
         .contagem-texto { color: #b39ddb; font-size: 1.2em; margin-top: 10px; }
 
@@ -222,6 +222,29 @@
         </div>
     </div>
 
+    <!-- ===================== TELA INTRO DO NIVEL ===================== -->
+    <div id="tela-intro-nivel" class="tela">
+        <div class="container">
+            <div class="header">
+                <h1 id="introNivelTitulo">Nivel</h1>
+                <p id="introNivelProgresso">Nivel 1 de 3</p>
+            </div>
+            <div class="painel-branco">
+                <div class="instrucoes" id="introNivelTexto"></div>
+                <div class="center">
+                    <button class="btn btn-primary" onclick="comecarNivel()">Come&#231;ar este n&#237;vel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================== TELA AVISO DE EXCLUSAO (nivel 2) ===================== -->
+    <div id="tela-aviso-exclusao" class="tela">
+        <div class="contagem-num" style="font-size:60px;">&#9888;</div>
+        <div class="contagem-texto" id="avisoExclusaoTexto" style="font-size:1.4em;max-width:600px;text-align:center;line-height:1.6;"></div>
+        <div class="contagem-texto" style="margin-top:14px;color:#888;">Memorize! Este aviso vai sumir.</div>
+    </div>
+
     <!-- ===================== TELA CONTAGEM ===================== -->
     <div id="tela-contagem" class="tela">
         <div class="contagem-num" id="contagemNum">3</div>
@@ -261,21 +284,41 @@
 var _API_URL = 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
 var _sessionInfo = null;
 
-// Configuracao definida pela idade
+// ============================================================
+// TPV-SET v2: teste por NIVEIS de dificuldade.
+// As cartas sempre tem 3 caracteristicas fisicas (cor, forma, numero).
+// O que muda por NIVEL e QUANTAS caracteristicas contam para formar um SET:
+//   Nivel 1 (sorteio +): considera APENAS 1 caracteristica (sorteada). A pessoa
+//            descobre sozinha qual e. Grade ALEATORIA (nao satura; ~2-3 SETs).
+//   Nivel 2 (sorteio - com aviso): sorteia 1 caracteristica para EXCLUIR e avisa
+//            qual, so no inicio de cada rodada (exige memoria de trabalho).
+//            Considera as outras 2. Grade com nSets controlado.
+//   Nivel 3 (tudao): considera as 3 caracteristicas. Grade com nSets controlado.
+// Pesos por nivel: 1, 2, 3. Esperados provisorios: 100% / 80% / 60%.
+// ============================================================
+var TODAS_CARACTERISTICAS = ['cor', 'forma', 'numero'];
+
+// Configuracao da rodada/nivel atual.
 var CONFIG = {
-    nCaracteristicas: 3,   // 3 (ate 12) ou 4 (13+)
-    nSets: 3,              // nSets da rodada atual (definido por rodada)
-    perfil: 'facil'        // 'facil' (horiz/vert) | 'dificil' (diagonais/mistas)
+    nivel: 1,                              // 1, 2 ou 3
+    atributosConsiderados: ['cor'],        // quais caracteristicas contam para o SET nesta rodada
+    atributoExcluido: null,                // no nivel 2: qual foi excluida (para o aviso)
+    nSets: 3,                              // nSets-alvo da rodada (niveis 2 e 3; nivel 1 e aleatorio)
+    perfil: 'dificil'                      // disposicao: 'facil' (sem diagonal) | 'dificil' (com diagonal)
 };
 
-var TEMPO_RODADA = 10;     // segundos
-var TOTAL_RODADAS = 3;
-// Sequencia de nSets por rodada, sorteada da faixa da idade e embaralhada
-// (criancas 1-4, adultos 2-4). Elimina a expectativa de um padrao fixo.
-var sequenciaSets = [3, 3, 3];
+// Niveis que o avaliador escolheu aplicar (vem do painel). Default: os tres.
+var NIVEIS_APLICAR = [1, 2, 3];
 
-// Estado do teste
-var rodadaAtual = 0;       // 0,1,2
+var TEMPO_RODADA = 10;     // segundos
+var RODADAS_POR_NIVEL = 3; // 3 rodadas em cada nivel aplicado
+// nSets-alvo por rodada nos niveis controlados (2 e 3). O nivel 1 e aleatorio.
+// Faixa sorteada por rodada para nao criar padrao previsivel.
+var FAIXA_NSETS = [2, 3, 4];
+
+// Estado do fluxo por niveis
+var nivelIdx = 0;          // indice em NIVEIS_APLICAR (qual nivel estamos)
+var rodadaNoNivel = 0;     // 0..RODADAS_POR_NIVEL-1 dentro do nivel atual
 var gridAtual = null;      // { cartas:[9], sets:[...] }
 var selecao = [];          // indices das cartas clicadas na marcacao atual
 var marcacoesRodada = [];  // tentativas da rodada atual
@@ -288,13 +331,47 @@ var inicioRodadaMs = 0;    // timestamp do inicio da rodada (para medir tempos)
 // ============================================================
 // === TAREFA 1: MOTOR DO SET (logica pura) ===================
 // ============================================================
-// Uma carta e um objeto com 3 ou 4 atributos, cada um com valor 0,1,2.
-// atributos: cor, forma, numero, preenchimento (este so quando 4 caract.)
+// Uma carta e um objeto com 3 atributos fisicos (cor, forma, numero), cada um 0,1,2.
+// As cartas SEMPRE tem as 3 caracteristicas visiveis; o que muda por nivel e quais
+// delas CONTAM para formar o SET (CONFIG.atributosConsiderados).
 
+// Atributos que CONTAM para formar SET na rodada atual (definido pelo nivel).
 function _atributosAtivos() {
-    return CONFIG.nCaracteristicas === 4
-        ? ['cor', 'forma', 'numero', 'preench']
-        : ['cor', 'forma', 'numero'];
+    return CONFIG.atributosConsiderados && CONFIG.atributosConsiderados.length
+        ? CONFIG.atributosConsiderados
+        : TODAS_CARACTERISTICAS;
+}
+
+// Atributos FISICOS das cartas (sempre os 3, para desenhar e montar o baralho).
+function _atributosFisicos() {
+    return TODAS_CARACTERISTICAS;
+}
+
+var _NOMES_CARAC = { cor: 'cor', forma: 'forma', numero: 'numero de simbolos' };
+
+// Configura CONFIG para um nivel (1, 2 ou 3), sorteando a caracteristica relevante.
+// nSetsAlvo so e usado nos niveis 2 e 3 (no nivel 1 a grade e aleatoria).
+function configurarNivel(nivel, nSetsAlvo, perfil) {
+    CONFIG.nivel = nivel;
+    CONFIG.perfil = perfil || 'dificil';
+    CONFIG.atributoExcluido = null;
+    var todas = TODAS_CARACTERISTICAS.slice();
+    if (nivel === 1) {
+        // Sorteia 1 caracteristica que CONTA (a pessoa descobre sozinha qual e).
+        var escolhida = todas[Math.floor(Math.random() * todas.length)];
+        CONFIG.atributosConsiderados = [escolhida];
+        CONFIG.nSets = nSetsAlvo || null; // nivel 1 roda em grade aleatoria
+    } else if (nivel === 2) {
+        // Sorteia 1 caracteristica para EXCLUIR; as outras 2 contam.
+        var excl = todas[Math.floor(Math.random() * todas.length)];
+        CONFIG.atributoExcluido = excl;
+        CONFIG.atributosConsiderados = todas.filter(function (a) { return a !== excl; });
+        CONFIG.nSets = nSetsAlvo || 3;
+    } else {
+        // Nivel 3: as 3 caracteristicas contam.
+        CONFIG.atributosConsiderados = todas;
+        CONFIG.nSets = nSetsAlvo || 3;
+    }
 }
 
 // Verifica se 3 cartas formam SET: em cada atributo, todos iguais OU todos diferentes.
@@ -323,9 +400,9 @@ function terceiraCarta(a, b, atributos) {
     return c;
 }
 
-// Gera o baralho completo (27 ou 81 cartas) conforme nCaracteristicas.
+// Gera o baralho completo de 27 cartas (3 caracteristicas fisicas x 3 valores).
 function gerarBaralho() {
-    var attrs = _atributosAtivos();
+    var attrs = _atributosFisicos();
     var baralho = [];
     function expandir(idx, carta) {
         if (idx >= attrs.length) { baralho.push(_clonarCarta(carta)); return; }
@@ -339,11 +416,12 @@ function gerarBaralho() {
 }
 
 function _clonarCarta(c) {
-    return { cor: c.cor, forma: c.forma, numero: c.numero, preench: (c.preench === undefined ? 0 : c.preench) };
+    return { cor: c.cor, forma: c.forma, numero: c.numero };
 }
 
+// Duas cartas sao iguais se coincidem nas 3 caracteristicas fisicas (nao-repeticao no grid).
 function _cartasIguais(a, b) {
-    var attrs = _atributosAtivos();
+    var attrs = _atributosFisicos();
     for (var i = 0; i < attrs.length; i++) { if (a[attrs[i]] !== b[attrs[i]]) return false; }
     return true;
 }
@@ -495,6 +573,34 @@ function gerarGrid(nSets, perfil) {
     return { cartas: fb, sets: contarSetsAlinhados(fb) };
 }
 
+// Grade ALEATORIA (nivel 1): sorteia 9 cartas distintas e conta os SETs que
+// surgirem naturalmente (segundo os atributos considerados do nivel). A
+// investigacao mostrou que no nivel 1 isso da ~2-3 SETs (nao satura) e evita
+// efeito de aprendizagem no reteste. Garante ao menos 1 SET e ao menos 1
+// distrator (direcao nao-SET) para a grade ter material e nao ser trivial.
+function gerarGridAleatorio() {
+    var melhor = null;
+    for (var t = 0; t < 400; t++) {
+        var cartas = _embaralhar(gerarBaralho()).slice(0, 9);
+        var sets = contarSetsAlinhados(cartas);
+        // aceita se tem entre 1 e 6 SETs (ha algo para achar e ha distratores)
+        if (sets.length >= 1 && sets.length <= 6) {
+            return { cartas: cartas, sets: sets };
+        }
+        if (!melhor) melhor = { cartas: cartas, sets: sets };
+    }
+    return melhor;
+}
+
+// Gera a grade da rodada conforme o nivel atual (CONFIG.nivel):
+//   nivel 1 -> grade aleatoria;  niveis 2 e 3 -> grade com nSets controlado.
+function gerarGridDoNivel() {
+    if (CONFIG.nivel === 1) {
+        return gerarGridAleatorio();
+    }
+    return gerarGrid(CONFIG.nSets, CONFIG.perfil);
+}
+
 // ============================================================
 // === TAREFA 3: RENDERIZACAO VISUAL (SVG) ====================
 // ============================================================
@@ -589,8 +695,12 @@ function _registrarMarcacao(trioIdx) {
         if (marcacoesRodada[m].idx.join(',') === trioIdx.join(',')) return;
     }
     var cartas = gridAtual.cartas;
-    var correto = ehSet(cartas[trioIdx[0]], cartas[trioIdx[1]], cartas[trioIdx[2]]);
     var direcao = _descobrirDirecao(trioIdx);
+    // "correto" exige: formar SET (pelos atributos do nivel) E estar ALINHADO
+    // (linha/coluna/diagonal). Trio nao-alinhado conta como erro, mesmo que
+    // por acaso forme SET pela regra.
+    var formaSet = ehSet(cartas[trioIdx[0]], cartas[trioIdx[1]], cartas[trioIdx[2]]);
+    var correto = formaSet && (direcao !== 'livre');
     var coords = [_coord(trioIdx[0]), _coord(trioIdx[1]), _coord(trioIdx[2])];
     var tMs = (inicioRodadaMs > 0) ? (Date.now() - inicioRodadaMs) : 0;
     marcacoesRodada.push({ idx: trioIdx, coords: coords, correto: correto, direcao: direcao, t: tMs });
@@ -620,7 +730,6 @@ function irParaInstrucoes() {
     var nomeEl = document.getElementById('nome');
     if (!nomeEl || !nomeEl.value.trim()) { alert('Preencha o nome antes de iniciar.'); return; }
     if (!document.getElementById('dataNascimento').value) { alert('Preencha a data de nascimento.'); return; }
-    _definirDificuldadePorIdade();
     _montarExemplosInstrucoes();
     trocarTela('tela-instrucoes');
 }
@@ -628,19 +737,17 @@ function irParaInstrucoes() {
 // Desenha exemplos didaticos (SET valido e invalido) na tela de instrucoes.
 // Usa sempre 3 caracteristicas para o exemplo (mais simples de entender).
 function _montarExemplosInstrucoes() {
-    var carGuard = CONFIG.nCaracteristicas;
-    CONFIG.nCaracteristicas = 3; // exemplo didatico sempre em 3 caracteristicas
     // SET valido: cor toda diferente, forma toda diferente, numero todo diferente.
     var validas = [
-        { cor: 0, forma: 0, numero: 0, preench: 0 },
-        { cor: 1, forma: 1, numero: 1, preench: 0 },
-        { cor: 2, forma: 2, numero: 2, preench: 0 }
+        { cor: 0, forma: 0, numero: 0 },
+        { cor: 1, forma: 1, numero: 1 },
+        { cor: 2, forma: 2, numero: 2 }
     ];
     // NAO-SET: duas vermelhas e uma verde (cor nao e toda igual nem toda diferente).
     var invalidas = [
-        { cor: 0, forma: 0, numero: 0, preench: 0 },
-        { cor: 0, forma: 1, numero: 1, preench: 0 },
-        { cor: 2, forma: 2, numero: 2, preench: 0 }
+        { cor: 0, forma: 0, numero: 0 },
+        { cor: 0, forma: 1, numero: 1 },
+        { cor: 2, forma: 2, numero: 2 }
     ];
     document.getElementById('exemploSetValido').innerHTML = _htmlCartasExemplo(validas);
     document.getElementById('exemploSetInvalido').innerHTML = _htmlCartasExemplo(invalidas);
@@ -648,17 +755,13 @@ function _montarExemplosInstrucoes() {
         'Cor: todas diferentes (vermelho, roxo, verde). Forma: todas diferentes. Numero: 1, 2 e 3. Cada caracteristica e toda igual ou toda diferente: e SET.';
     document.getElementById('exemploSetInvalidoTexto').innerHTML =
         'Aqui duas cartas sao vermelhas e uma e verde: na cor ha duas iguais e uma diferente. Por isso NAO e SET, mesmo parecendo organizado.';
-    CONFIG.nCaracteristicas = carGuard;
 }
 
 function _htmlCartasExemplo(cartas) {
-    var carGuard = CONFIG.nCaracteristicas;
-    CONFIG.nCaracteristicas = 3;
     var html = '';
     for (var i = 0; i < cartas.length; i++) {
         html += '<div class="carta" style="cursor:default;max-width:90px;">' + renderCartaHTML(cartas[i]) + '</div>';
     }
-    CONFIG.nCaracteristicas = carGuard;
     return html;
 }
 
@@ -675,7 +778,9 @@ function iniciarTreino() {
 function novoGridTreino() {
     treinoSelecao = [];
     treinoEncontrados = {};
-    // Treino com um numero moderado de SETs (2), no mesmo nivel de caracteristicas da idade.
+    // Treino usa a regra COMPLETA (3 caracteristicas) para a pessoa entender o SET
+    // antes de valer. Grid controlado com 2 SETs.
+    configurarNivel(3, 2, 'dificil');
     treinoGrid = gerarGrid(2, CONFIG.perfil);
     document.getElementById('treinoTotal').innerHTML = treinoGrid.sets.length;
     document.getElementById('treinoContador').innerHTML = '0';
@@ -762,22 +867,74 @@ function _motivoNaoSet(a, b, c) {
     return 'Nao e SET.';
 }
 
+// Inicia a sequencia completa: comeca no primeiro nivel aplicado.
 function iniciarContagem() {
-    trocarTela('tela-contagem');
-    rodadaAtual = 0;
+    nivelIdx = 0;
+    rodadaNoNivel = 0;
     resultadosRodadas = [];
+    iniciarNivel();
+}
+
+var _NOME_NIVEL = {
+    1: 'Nivel 1 - Percepcao',
+    2: 'Nivel 2 - Memoria de trabalho',
+    3: 'Nivel 3 - Carga total'
+};
+
+// Mostra a tela de introducao do nivel atual (explica o que fazer neste nivel).
+function iniciarNivel() {
+    var nivel = NIVEIS_APLICAR[nivelIdx];
+    rodadaNoNivel = 0;
+    var titulo = document.getElementById('introNivelTitulo');
+    var texto = document.getElementById('introNivelTexto');
+    titulo.innerHTML = _NOME_NIVEL[nivel] || ('Nivel ' + nivel);
+    var html = '';
+    if (nivel === 1) {
+        html = '<p>Neste nivel, <strong>apenas UMA caracteristica</strong> (cor, forma OU n\u00famero) forma o SET \u2014 e voc\u00ea precisa <strong>descobrir sozinho(a) qual &#233;</strong>.</p>'
+             + '<p>Procure os grupos de 3 cartas em que essa caracteristica seja toda igual ou toda diferente, em linha, coluna ou diagonal.</p>';
+    } else if (nivel === 2) {
+        html = '<p>Neste nivel, o programa vai <strong>excluir uma caracteristica</strong> e avisar qual, <strong>s&#243; no come&#231;o de cada rodada</strong>.</p>'
+             + '<p>Guarde na mem&#243;ria qual foi exclu&#237;da: voc&#234; deve considerar <strong>apenas as outras duas</strong> para formar os SETs.</p>';
+    } else {
+        html = '<p>Neste nivel, <strong>as tr&#234;s caracteristicas</strong> (cor, forma e n&#250;mero) contam ao mesmo tempo. &#201; a carga m&#225;xima.</p>'
+             + '<p>Ache quantos SETs conseguir, em linha, coluna ou diagonal.</p>';
+    }
+    texto.innerHTML = html;
+    document.getElementById('introNivelProgresso').innerHTML = 'Nivel ' + (nivelIdx + 1) + ' de ' + NIVEIS_APLICAR.length;
+    trocarTela('tela-intro-nivel');
+}
+
+// Chamada pelo botao "Comecar" da tela de intro do nivel.
+function comecarNivel() {
+    _prepararRodada();
+}
+
+// Prepara a rodada: configura o nivel (re-sorteia caracteristica/exclusao),
+// mostra o aviso do nivel 2 (se for o caso) e entao a contagem.
+function _prepararRodada() {
+    var nivel = NIVEIS_APLICAR[nivelIdx];
+    var nSetsAlvo = (nivel === 1) ? null : FAIXA_NSETS[Math.floor(Math.random() * FAIXA_NSETS.length)];
+    configurarNivel(nivel, nSetsAlvo, 'dificil');
+    if (nivel === 2) {
+        // Aviso de exclusao SO no comeco (sai depois) -> exige memoria de trabalho.
+        var av = document.getElementById('avisoExclusaoTexto');
+        av.innerHTML = 'IGNORE a caracteristica: <strong>' + (_NOMES_CARAC[CONFIG.atributoExcluido] || CONFIG.atributoExcluido).toUpperCase() + '</strong>.<br>Considere apenas as outras duas.';
+        trocarTela('tela-aviso-exclusao');
+        setTimeout(function () { _contagemRodada(); }, 3500);
+    } else {
+        _contagemRodada();
+    }
+}
+
+function _contagemRodada() {
+    trocarTela('tela-contagem');
     var n = 3;
     var el = document.getElementById('contagemNum');
     el.innerHTML = n;
-    document.getElementById('contagemTexto').innerHTML = 'Prepare-se...';
+    document.getElementById('contagemTexto').innerHTML = (rodadaNoNivel === 0) ? 'Prepare-se...' : 'Pr\u00f3xima rodada...';
     var ct = setInterval(function () {
         n--;
-        if (n <= 0) {
-            clearInterval(ct);
-            iniciarRodada();
-        } else {
-            el.innerHTML = n;
-        }
+        if (n <= 0) { clearInterval(ct); iniciarRodada(); } else { el.innerHTML = n; }
     }, 1000);
 }
 
@@ -786,10 +943,9 @@ function iniciarRodada() {
     selecao = [];
     cliquesRodada = [];
     inicioRodadaMs = Date.now();
-    // Define o numero de SETs desta rodada a partir da sequencia sorteada.
-    CONFIG.nSets = sequenciaSets[rodadaAtual] || sequenciaSets[0];
-    gridAtual = gerarGrid(CONFIG.nSets, CONFIG.perfil);
-    document.getElementById('rotuloRodada').innerHTML = 'Rodada ' + (rodadaAtual + 1) + ' de ' + TOTAL_RODADAS;
+    gridAtual = gerarGridDoNivel();
+    var nivel = NIVEIS_APLICAR[nivelIdx];
+    document.getElementById('rotuloRodada').innerHTML = (_NOME_NIVEL[nivel] || ('Nivel ' + nivel)) + ' \u2014 rodada ' + (rodadaNoNivel + 1) + '/' + RODADAS_POR_NIVEL;
     document.getElementById('contadorMarcados').innerHTML = 'SETs marcados: 0';
     desenharGrid(gridAtual);
     trocarTela('tela-rodada');
@@ -862,8 +1018,12 @@ function _fecharRodada() {
     var omissoes = totalSets - acertos;
     if (omissoes < 0) omissoes = 0;
 
+    var nivelRod = NIVEIS_APLICAR[nivelIdx];
     resultadosRodadas.push({
-        rodada: rodadaAtual + 1,
+        nivel: nivelRod,
+        rodada: rodadaNoNivel + 1,
+        atributosConsiderados: CONFIG.atributosConsiderados.slice(),
+        atributoExcluido: CONFIG.atributoExcluido,
         totalSets: totalSets,
         acertos: acertos,
         falsos: falsos,
@@ -878,20 +1038,18 @@ function _fecharRodada() {
         acertosDetalhe: acertosDetalhe,
         errosDetalhe: errosDetalhe
     });
-    rodadaAtual++;
-    if (rodadaAtual < TOTAL_RODADAS) {
-        // intervalo curto entre rodadas via contagem
-        trocarTela('tela-contagem');
-        var n = 3;
-        var el = document.getElementById('contagemNum');
-        document.getElementById('contagemTexto').innerHTML = 'Pr\u00f3xima rodada...';
-        el.innerHTML = n;
-        var ct = setInterval(function () {
-            n--;
-            if (n <= 0) { clearInterval(ct); iniciarRodada(); } else { el.innerHTML = n; }
-        }, 1000);
+    rodadaNoNivel++;
+    if (rodadaNoNivel < RODADAS_POR_NIVEL) {
+        // Proxima rodada do MESMO nivel: re-sorteia config (anti-aprendizado) e segue.
+        _prepararRodada();
     } else {
-        finalizarTeste();
+        // Acabaram as rodadas deste nivel: proximo nivel ou finaliza.
+        nivelIdx++;
+        if (nivelIdx < NIVEIS_APLICAR.length) {
+            iniciarNivel();
+        } else {
+            finalizarTeste();
+        }
     }
 }
 
@@ -922,41 +1080,18 @@ function getIdadeAnos() {
     return anos;
 }
 
-function _definirDificuldadePorIdade() {
-    var idade = getIdadeAnos();
-    if (idade === null) idade = 10;
-    var faixaSets;
-    if (idade <= 12) {
-        CONFIG.nCaracteristicas = 3;
-        CONFIG.perfil = (idade <= 8) ? 'facil' : 'dificil';
-        faixaSets = [1, 2, 3, 4]; // criancas: 1 a 4 SETs por rodada
-    } else {
-        CONFIG.nCaracteristicas = 4;
-        CONFIG.perfil = 'dificil';
-        faixaSets = [2, 3, 4];    // adultos: 2 a 4 SETs por rodada
-    }
-    sequenciaSets = _sortearSequencia(faixaSets, TOTAL_RODADAS);
-    CONFIG.nSets = sequenciaSets[0];
-}
-
-// Sorteia 'quantidade' valores da faixa (aleatorio com repeticao permitida),
-// garantindo variacao quando possivel, e embaralha para eliminar expectativa.
-function _sortearSequencia(faixa, quantidade) {
-    var seq = [];
-    for (var i = 0; i < quantidade; i++) {
-        seq.push(faixa[Math.floor(Math.random() * faixa.length)]);
-    }
-    // Se por acaso sairam todos iguais e a faixa tem variedade, re-sorteia um
-    // deles para evitar as 3 rodadas identicas (quebra de expectativa).
-    if (faixa.length > 1) {
-        var todosIguais = seq.every(function (v) { return v === seq[0]; });
-        if (todosIguais) {
-            var novo = seq[0];
-            while (novo === seq[0]) { novo = faixa[Math.floor(Math.random() * faixa.length)]; }
-            seq[Math.floor(Math.random() * seq.length)] = novo;
+// Define quais niveis aplicar. No v2, isso vem do painel (parametro da sessao).
+// Enquanto o painel nao envia, usa o default (os tres niveis). Garante lista valida.
+function _definirNiveisAplicar(lista) {
+    var validos = [];
+    if (lista && lista.length) {
+        for (var i = 0; i < lista.length; i++) {
+            var n = parseInt(lista[i], 10);
+            if ((n === 1 || n === 2 || n === 3) && validos.indexOf(n) < 0) validos.push(n);
         }
     }
-    return _embaralhar(seq);
+    validos.sort(function (a, b) { return a - b; });
+    NIVEIS_APLICAR = validos.length ? validos : [1, 2, 3];
 }
 
 function _obterHipotese() {
@@ -975,100 +1110,116 @@ function _obterHipotese() {
 // de simulacao (tempo-por-SET 2,5-4s) e no dado real da autora (~3 SETs/10s).
 // Faixas largas e deliberadamente provisorias, a recalibrar com dados reais.
 // 3 niveis: < corte = Abaixo; corte..esperadoMax = Dentro do esperado; acima = Acima.
-function _faixaDaIdade(idade) {
-    if (idade <= 12) return { nome: idade <= 8 ? '6-8' : '9-12', corte: 65, esperadoMax: 97 };
-    return { nome: idade <= 15 ? '13-15' : '16+', corte: 60, esperadoMax: 95 };
+// Metadados de cada nivel: peso, esperado provisorio (%), construto e nome.
+// Esperados PROVISORIOS (sem validacao): N1=100%, N2=80%, N3=60%.
+var META_NIVEL = {
+    1: { peso: 1, esperado: 100, nome: 'Nivel 1 - Percepcao', construto: 'percepcao visual e inducao do criterio' },
+    2: { peso: 2, esperado: 80, nome: 'Nivel 2 - Memoria de trabalho', construto: 'memoria de trabalho (reter a caracteristica excluida)' },
+    3: { peso: 3, esperado: 60, nome: 'Nivel 3 - Carga total', construto: 'carga cognitiva maxima (3 caracteristicas)' }
+};
+
+// Classifica a proporcao de um nivel contra seu esperado.
+// Dentro do esperado se >= esperado; senao Abaixo (com margem de 10pp para "Proximo").
+function _classificarNivel(prop, esperado) {
+    if (prop >= esperado) return 'Dentro do esperado';
+    if (prop >= esperado - 10) return 'Proximo do esperado';
+    return 'Abaixo do esperado';
 }
 
 function calcularResultados() {
-    var idade = getIdadeAnos();
-    if (idade === null) idade = 10;
-    var faixa = _faixaDaIdade(idade);
+    // Agrupa as rodadas por nivel.
+    var porNivel = {};  // nivel -> { acertos, falsos, omissoes, disp, somaProp, nRodadas, ...velocidade }
+    var somaCliques = 0, somaPrimeiro = 0, nPrimeiro = 0, somaIntervalo = 0, nIntervalo = 0;
+    var totAcertos = 0, totFalsos = 0, totOmissoes = 0, totDisp = 0;
 
-    var somaAcertos = 0, somaFalsos = 0, somaDisponivel = 0, somaOmissoes = 0;
-    var somaProporcoes = 0;
-    var totPorTipo = { horizontal: 0, vertical: 0, diagonal: 0 };
-    var dispPorTipo = { horizontal: 0, vertical: 0, diagonal: 0 };
     for (var r = 0; r < resultadosRodadas.length; r++) {
         var rr = resultadosRodadas[r];
-        somaAcertos += rr.acertos;
-        somaFalsos += rr.falsos;
-        somaOmissoes += (rr.omissoes != null ? rr.omissoes : (rr.totalSets - rr.acertos));
-        somaDisponivel += rr.totalSets;
-        // Proporcao da rodada: quanto a pessoa capturou do que existia (0 a 1).
-        var propRodada = (rr.totalSets > 0) ? (rr.acertos / rr.totalSets) : 0;
-        if (propRodada > 1) propRodada = 1;
-        somaProporcoes += propRodada;
-        totPorTipo.horizontal += rr.acertosPorTipo.horizontal;
-        totPorTipo.vertical += rr.acertosPorTipo.vertical;
-        totPorTipo.diagonal += rr.acertosPorTipo.diagonal;
-        for (var t = 0; t < rr.setsDoGrid.length; t++) {
-            var tp = rr.setsDoGrid[t];
-            if (dispPorTipo[tp] !== undefined) dispPorTipo[tp]++;
-        }
-    }
-    var nR = resultadosRodadas.length || 1;
-    // Media das proporcoes das rodadas, em percentual (0 a 100).
-    var mediaProporcao = (somaProporcoes / nR) * 100;
-
-    // Agrega metricas de velocidade/varredura das rodadas.
-    var somaCliques = 0, somaPrimeiro = 0, nPrimeiro = 0, somaIntervalo = 0, nIntervalo = 0;
-    for (var rv = 0; rv < resultadosRodadas.length; rv++) {
-        var rc = resultadosRodadas[rv];
-        somaCliques += (rc.totalCliques || 0);
-        if (rc.tempoPrimeiroClique !== null && rc.tempoPrimeiroClique !== undefined) { somaPrimeiro += rc.tempoPrimeiroClique; nPrimeiro++; }
-        if (rc.intervaloMedio !== null && rc.intervaloMedio !== undefined) { somaIntervalo += rc.intervaloMedio; nIntervalo++; }
-    }
-    var mediaPrimeiroClique = nPrimeiro > 0 ? Math.round(somaPrimeiro / nPrimeiro) : null; // ms
-    var mediaIntervalo = nIntervalo > 0 ? Math.round(somaIntervalo / nIntervalo) : null;   // ms
-
-    // Curva: compara a proporcao da rodada 1 vs a ultima.
-    var curva = 'estavel';
-    if (resultadosRodadas.length >= 2) {
-        var pr0 = resultadosRodadas[0];
-        var prU = resultadosRodadas[resultadosRodadas.length - 1];
-        var p0 = (pr0.totalSets > 0) ? (pr0.acertos / pr0.totalSets) : 0;
-        var pU = (prU.totalSets > 0) ? (prU.acertos / prU.totalSets) : 0;
-        if (pU > p0 + 0.01) curva = 'crescente';
-        else if (pU < p0 - 0.01) curva = 'decrescente';
+        var nv = rr.nivel || 3;
+        if (!porNivel[nv]) porNivel[nv] = { acertos: 0, falsos: 0, omissoes: 0, disp: 0, somaProp: 0, nRodadas: 0 };
+        var pn = porNivel[nv];
+        var om = (rr.omissoes != null) ? rr.omissoes : (rr.totalSets - rr.acertos);
+        pn.acertos += rr.acertos;
+        pn.falsos += rr.falsos;
+        pn.omissoes += om;
+        pn.disp += rr.totalSets;
+        var propRod = (rr.totalSets > 0) ? (rr.acertos / rr.totalSets) : 0;
+        if (propRod > 1) propRod = 1;
+        pn.somaProp += propRod;
+        pn.nRodadas++;
+        totAcertos += rr.acertos; totFalsos += rr.falsos; totOmissoes += om; totDisp += rr.totalSets;
+        somaCliques += (rr.totalCliques || 0);
+        if (rr.tempoPrimeiroClique != null) { somaPrimeiro += rr.tempoPrimeiroClique; nPrimeiro++; }
+        if (rr.intervaloMedio != null) { somaIntervalo += rr.intervaloMedio; nIntervalo++; }
     }
 
-    // Classificacao geral em 3 niveis (sobre a proporcao percentual).
-    var classificacao;
-    if (mediaProporcao < faixa.corte) classificacao = 'Abaixo do esperado';
-    else if (mediaProporcao <= faixa.esperadoMax) classificacao = 'Dentro do esperado';
-    else classificacao = 'Acima do esperado';
+    var mediaPrimeiroClique = nPrimeiro > 0 ? Math.round(somaPrimeiro / nPrimeiro) : null;
+    var mediaIntervalo = nIntervalo > 0 ? Math.round(somaIntervalo / nIntervalo) : null;
 
-    var interpretacao = _gerarInterpretacao(mediaProporcao, faixa, somaFalsos, curva, totPorTipo, dispPorTipo, classificacao, mediaPrimeiroClique, mediaIntervalo);
+    // Monta o perfil por nivel (proporcao media %, esperado, classificacao) e o
+    // escore ponderado: soma(prop_nivel * peso) / soma(pesos dos niveis feitos).
+    var niveisFeitos = Object.keys(porNivel).map(function (k) { return parseInt(k, 10); }).sort(function (a, b) { return a - b; });
+    var perfil = {};        // nivel -> { prop, esperado, classificacao, acertos, disp, falsos, omissoes }
+    var somaPesoProp = 0, somaPesos = 0;
+    for (var i = 0; i < niveisFeitos.length; i++) {
+        var nvl = niveisFeitos[i];
+        var pnv = porNivel[nvl];
+        var meta = META_NIVEL[nvl] || { peso: nvl, esperado: 60 };
+        var propPct = (pnv.nRodadas > 0) ? (pnv.somaProp / pnv.nRodadas) * 100 : 0;
+        propPct = Math.round(propPct * 10) / 10;
+        perfil[nvl] = {
+            prop: propPct,
+            esperado: meta.esperado,
+            classificacao: _classificarNivel(propPct, meta.esperado),
+            acertos: pnv.acertos, disp: pnv.disp, falsos: pnv.falsos, omissoes: pnv.omissoes
+        };
+        somaPesoProp += (propPct / 100) * meta.peso;
+        somaPesos += meta.peso;
+    }
+    var escoreGeral = somaPesos > 0 ? Math.round((somaPesoProp / somaPesos) * 1000) / 10 : 0; // % ponderado
+
+    // Classificacao geral do escore ponderado (provisoria, faixa larga).
+    var classGeral;
+    if (escoreGeral >= 80) classGeral = 'Dentro do esperado';
+    else if (escoreGeral >= 60) classGeral = 'Proximo do esperado';
+    else classGeral = 'Abaixo do esperado';
+
+    var interpretacao = _gerarInterpretacaoV2(perfil, niveisFeitos, totFalsos, mediaPrimeiroClique, mediaIntervalo);
+
+    // Monta os dominios (um por nivel feito) + indicadores globais, no formato do painel.
+    var dominios = {};
+    for (var j = 0; j < niveisFeitos.length; j++) {
+        var nj = niveisFeitos[j];
+        var pf = perfil[nj];
+        dominios[(META_NIVEL[nj] ? META_NIVEL[nj].nome : ('Nivel ' + nj))] = {
+            pontuacao: pf.prop, max: 100, classificacao: pf.classificacao + ' (esperado >= ' + pf.esperado + '%)'
+        };
+    }
+    dominios['Acertos (total)'] = { pontuacao: totAcertos, max: totDisp, classificacao: totAcertos + ' de ' + totDisp };
+    dominios['Erros (falsos SETs)'] = { pontuacao: totFalsos, max: totDisp, classificacao: _classificarFalsos(totFalsos) };
+    dominios['Omissoes (deixou passar)'] = { pontuacao: totOmissoes, max: totDisp, classificacao: totOmissoes + ' de ' + totDisp };
+
+    var descNiveis = niveisFeitos.map(function (n) { return 'N' + n + ':' + perfil[n].prop.toFixed(0) + '%'; }).join(' | ');
 
     window._escalaDados = {
         escala: 'TPVSET',
         paciente: document.getElementById('nome').value,
-        escore: parseFloat(mediaProporcao.toFixed(1)),
-        classificacao: classificacao + ' (' + mediaProporcao.toFixed(0) + '% dos SETs percebidos; ' + somaAcertos + ' de ' + somaDisponivel + ' em 3 rodadas; faixa ' + faixa.nome + ')',
+        escore: escoreGeral,
+        classificacao: classGeral + ' (escore ponderado ' + escoreGeral.toFixed(0) + '%; ' + descNiveis + ')',
         interpretacao: interpretacao,
         hipotese: _obterHipotese(),
-        dominios: {
-            'Percepcao (% medio)': { pontuacao: parseFloat(mediaProporcao.toFixed(1)), max: 100, classificacao: classificacao },
-            'SETs percebidos (acertos)': { pontuacao: somaAcertos, max: somaDisponivel, classificacao: somaAcertos + ' de ' + somaDisponivel },
-            'Erros (falsos SETs)': { pontuacao: somaFalsos, max: somaDisponivel, classificacao: _classificarFalsos(somaFalsos) },
-            'Omissoes (deixou passar)': { pontuacao: somaOmissoes, max: somaDisponivel, classificacao: somaOmissoes + ' de ' + somaDisponivel },
-            'Curva entre rodadas': { pontuacao: 0, max: 0, classificacao: _rotuloCurva(curva) },
-            'Horizontais': { pontuacao: totPorTipo.horizontal, max: dispPorTipo.horizontal, classificacao: totPorTipo.horizontal + '/' + dispPorTipo.horizontal },
-            'Verticais': { pontuacao: totPorTipo.vertical, max: dispPorTipo.vertical, classificacao: totPorTipo.vertical + '/' + dispPorTipo.vertical },
-            'Diagonais': { pontuacao: totPorTipo.diagonal, max: dispPorTipo.diagonal, classificacao: totPorTipo.diagonal + '/' + dispPorTipo.diagonal }
-        },
-        velocidade: {
-            totalCliques: somaCliques,
-            mediaPrimeiroClique: mediaPrimeiroClique,
-            mediaIntervalo: mediaIntervalo
-        },
+        perfilNiveis: perfil,
+        niveisAplicados: niveisFeitos,
+        dominios: dominios,
+        velocidade: { totalCliques: somaCliques, mediaPrimeiroClique: mediaPrimeiroClique, mediaIntervalo: mediaIntervalo },
         rodadas: resultadosRodadas.map(function (rr) {
             var om = (rr.omissoes != null) ? rr.omissoes : (rr.totalSets - rr.acertos);
             var prop = (rr.totalSets > 0) ? Math.round((rr.acertos / rr.totalSets) * 100) : 0;
             if (prop > 100) prop = 100;
             return {
+                nivel: rr.nivel,
                 rodada: rr.rodada,
+                atributosConsiderados: rr.atributosConsiderados,
+                atributoExcluido: rr.atributoExcluido,
                 acertos: rr.acertos,
                 falsos: rr.falsos,
                 omissoes: om,
@@ -1082,7 +1233,7 @@ function calcularResultados() {
                 errosDetalhe: rr.errosDetalhe
             };
         }),
-        config: { nCaracteristicas: CONFIG.nCaracteristicas, sequenciaSets: sequenciaSets.slice(), perfil: CONFIG.perfil },
+        config: { niveisAplicados: niveisFeitos },
         idPaciente: document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '',
         idade: document.getElementById('idadeCalculada').value,
         sexo: document.getElementById('sexo').value,
@@ -1105,54 +1256,42 @@ function _rotuloCurva(c) {
     return 'Estavel';
 }
 
-function _gerarInterpretacao(media, faixa, falsos, curva, totTipo, dispTipo, classificacao, mediaPrimeiroClique, mediaIntervalo) {
+// Interpretacao automatica do perfil por niveis (v2). Monta um paragrafo por
+// nivel feito, mais os indicadores de erro (Barkley) e velocidade visuomotora,
+// mais o disclaimer. Cada nivel mede um construto diferente.
+function _gerarInterpretacaoV2(perfil, niveisFeitos, totFalsos, mediaPrimeiroClique, mediaIntervalo) {
     var p = [];
-    // Acuracia (Treisman)
-    if (classificacao === 'Dentro do esperado' || classificacao === 'Acima do esperado') {
-        p.push('O avaliando apresentou desempenho perceptivo compativel com o esperado para a faixa etaria, sugerindo boa eficiencia na busca visual e na integracao de caracteristicas (Treisman).');
-    } else {
-        p.push('O avaliando apresentou desempenho perceptivo abaixo do esperado para a faixa etaria, o que pode indicar menor eficiencia na varredura visual sistematica e na integracao de caracteristicas (Treisman).');
-    }
-    // Falsos SETs (Barkley)
-    if (falsos === 0) {
-        p.push('Nao houve marcacoes incorretas, indicando estilo de resposta controlado e reflexivo, com boa inibicao de respostas precipitadas sob pressao temporal.');
-    } else if (falsos <= 2) {
-        p.push('Houve poucas marcacoes incorretas, compativeis com erros ocasionais sob pressao temporal, sem indicativo claro de impulsividade.');
-    } else {
-        p.push('O numero elevado de marcacoes incorretas sob pressao temporal sugere padrao de resposta impulsivo, com possivel fragilidade no controle inibitorio (Barkley) e tendencia a responder antes de verificar completamente as caracteristicas.');
-    }
-    // Curva (Neisser)
-    if (curva === 'crescente') {
-        p.push('O aumento do desempenho ao longo das rodadas sugere refinamento do ciclo perceptivo e boa capacidade de ajustar estrategias de busca com a pratica (Neisser).');
-    } else if (curva === 'decrescente') {
-        p.push('A queda de desempenho nas rodadas finais pode sugerir fadiga atencional ou dificuldade de sustentar o foco sob pressao temporal (Neisser).');
-    } else {
-        p.push('O desempenho manteve-se estavel entre as rodadas, sem ganho perceptivo evidente com a repeticao.');
-    }
-    // Perfil por direcao
-    var difDiag = (dispTipo.diagonal > 0 && totTipo.diagonal < dispTipo.diagonal);
-    var bomReto = ((totTipo.horizontal + totTipo.vertical) >= 1);
-    if (difDiag && bomReto) {
-        p.push('Observou-se maior facilidade na deteccao de alinhamentos horizontais e verticais e maior dificuldade com disposicoes diagonais, o que pode refletir uma varredura visual menos flexivel.');
-    } else if (dispTipo.diagonal > 0 && totTipo.diagonal === dispTipo.diagonal) {
-        p.push('As disposicoes diagonais foram detectadas com a mesma eficiencia das demais, sugerindo varredura visual flexivel.');
-    }
-    // Velocidade / varredura visuomotora (tempo ate o 1o clique e cadencia entre cliques)
-    if (mediaPrimeiroClique !== null && mediaPrimeiroClique !== undefined) {
-        if (mediaPrimeiroClique >= 4000) {
-            p.push('O tempo medio ate a primeira marcacao foi longo (cerca de ' + (mediaPrimeiroClique / 1000).toFixed(1) + 's), sugerindo varredura visual inicial lenta ou dificuldade em localizar o primeiro conjunto.');
-        } else if (mediaPrimeiroClique <= 1500) {
-            p.push('O tempo medio ate a primeira marcacao foi curto (cerca de ' + (mediaPrimeiroClique / 1000).toFixed(1) + 's), indicando engajamento rapido na busca visual.');
+    for (var i = 0; i < niveisFeitos.length; i++) {
+        var nv = niveisFeitos[i];
+        var pf = perfil[nv];
+        var dentro = (pf.classificacao === 'Dentro do esperado');
+        if (nv === 1) {
+            if (dentro) p.push('No Nivel 1 (percepcao), o avaliando atingiu ' + pf.prop.toFixed(0) + '% (esperado ' + pf.esperado + '%), compativel com percepcao visual integra e boa capacidade de induzir o criterio relevante por conta propria (Treisman; Neisser).');
+            else p.push('No Nivel 1 (percepcao), o avaliando atingiu ' + pf.prop.toFixed(0) + '% (esperado ' + pf.esperado + '%). Desempenho abaixo do esperado neste nivel, por ser o mais simples, pode indicar fragilidade na percepcao visual basica ou dificuldade em induzir o criterio relevante (Treisman).');
+        } else if (nv === 2) {
+            if (dentro) p.push('No Nivel 2 (memoria de trabalho), atingiu ' + pf.prop.toFixed(0) + '% (esperado ' + pf.esperado + '%), sugerindo boa capacidade de reter a caracteristica a ser ignorada enquanto realiza a busca.');
+            else p.push('No Nivel 2 (memoria de trabalho), atingiu ' + pf.prop.toFixed(0) + '% (esperado ' + pf.esperado + '%). A queda em relacao ao Nivel 1 pode refletir sobrecarga de memoria de trabalho, isto e, dificuldade em manter ativa a regra de exclusao durante a varredura.');
+        } else {
+            if (dentro) p.push('No Nivel 3 (carga total), atingiu ' + pf.prop.toFixed(0) + '% (esperado ' + pf.esperado + '%), demonstrando boa eficiencia na integracao simultanea das tres caracteristicas sob pressao temporal.');
+            else p.push('No Nivel 3 (carga total), atingiu ' + pf.prop.toFixed(0) + '% (esperado ' + pf.esperado + '%). Desempenho abaixo do esperado e comum neste nivel, o mais exigente, e reflete o limite da capacidade de processar tres dimensoes ao mesmo tempo.');
         }
     }
-    if (mediaIntervalo !== null && mediaIntervalo !== undefined) {
+    // Erros / impulsividade (Barkley)
+    if (totFalsos === 0) {
+        p.push('Nao houve marcacoes incorretas, indicando estilo de resposta controlado e boa inibicao de respostas precipitadas sob pressao temporal.');
+    } else if (totFalsos <= 2) {
+        p.push('Houve poucas marcacoes incorretas, compativeis com erros ocasionais, sem indicativo claro de impulsividade.');
+    } else {
+        p.push('O numero elevado de marcacoes incorretas sugere padrao de resposta impulsivo, com possivel fragilidade no controle inibitorio (Barkley) e tendencia a responder antes de verificar as caracteristicas.');
+    }
+    // Velocidade visuomotora
+    if (mediaIntervalo != null) {
         if (mediaIntervalo <= 800) {
-            p.push('A cadencia entre cliques foi rapida (intervalo medio de cerca de ' + (mediaIntervalo / 1000).toFixed(1) + 's), compativel com boa coordenacao visuomotora sob pressao de tempo.');
+            p.push('A cadencia entre cliques foi rapida (cerca de ' + (mediaIntervalo / 1000).toFixed(1) + 's por clique), compativel com boa coordenacao visuomotora; cruzar velocidade com precisao distingue um perfil rapido-e-preciso de um rapido-e-impreciso.');
         } else if (mediaIntervalo >= 2500) {
-            p.push('A cadencia entre cliques foi lenta (intervalo medio de cerca de ' + (mediaIntervalo / 1000).toFixed(1) + 's), o que pode refletir dificuldade de execucao motora ou busca visual pouco eficiente.');
+            p.push('A cadencia entre cliques foi lenta (cerca de ' + (mediaIntervalo / 1000).toFixed(1) + 's por clique), o que pode refletir cautela, dificuldade de execucao motora ou busca visual menos eficiente.');
         }
     }
-    // Disclaimer
     p.push('Estes achados sao exploratorios, baseados em parametros provisorios sem validacao formal, e devem ser interpretados por profissional qualificado dentro de uma avaliacao neuropsicologica abrangente.');
     return p.join(' ');
 }
@@ -1234,6 +1373,11 @@ if (params.get('s')) {
             // Hipotese diagnostica vem do campo "Observacoes" preenchido no painel.
             var hipEl = document.getElementById('hipotese');
             if (hipEl && data.obs) hipEl.value = data.obs;
+            // Niveis a aplicar: escolhidos pelo avaliador no painel. Aceita array
+            // [1,2,3] ou string "1,2,3". Se ausente/vazio, usa o default (os tres).
+            var _niveis = data.niveis;
+            if (typeof _niveis === 'string') { _niveis = _niveis.split(',').map(function (x) { return parseInt(x, 10); }); }
+            _definirNiveisAplicar(_niveis);
             if (typeof calcularIdade === 'function') calcularIdade();
             if (nomeEl) nomeEl.dispatchEvent(new Event('input'));
             if (nascEl) nascEl.dispatchEvent(new Event('change'));
