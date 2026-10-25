@@ -60,13 +60,13 @@
         @keyframes piscar { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
         .instrucao-topo { color: #b39ddb; font-size: 0.9em; text-align: center; margin-bottom: 12px; }
 
-        .grid-set { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: 100%; max-width: 540px; }
-        .carta { background: #fff; border-radius: 10px; aspect-ratio: 3 / 2; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; border: 4px solid transparent; transition: transform 0.1s, border-color 0.15s; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+        .grid-set { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; width: 100%; max-width: 680px; }
+        .carta { background: #fff; border-radius: 12px; aspect-ratio: 3 / 2; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; border: 5px solid transparent; transition: transform 0.1s, border-color 0.15s; box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
         .carta:hover { transform: translateY(-2px); }
         .carta.selecionada { border-color: #ffd54f; box-shadow: 0 0 18px rgba(255,213,79,0.7); }
-        .carta svg { width: 26px; height: 52px; }
+        .carta svg { width: 40px; height: 72px; }
 
-        .painel-botao-set { width: 100%; max-width: 540px; margin-top: 14px; display: flex; justify-content: space-between; align-items: center; }
+        .painel-botao-set { width: 100%; max-width: 680px; margin-top: 14px; display: flex; justify-content: space-between; align-items: center; }
         .contador-marcados { color: #b39ddb; font-size: 0.9em; }
 
         /* Tela concluido */
@@ -85,8 +85,8 @@
 
         @media (max-width: 768px) {
             .header h1 { font-size: 1.6em; }
-            .carta svg { width: 20px; height: 42px; }
-            .grid-set { gap: 8px; }
+            .carta svg { width: 30px; height: 56px; }
+            .grid-set { gap: 10px; }
             .contagem-num { font-size: 120px; }
         }
     </style>
@@ -310,7 +310,11 @@ var CONFIG = {
 // Niveis que o avaliador escolheu aplicar (vem do painel). Default: os tres.
 var NIVEIS_APLICAR = [1, 2, 3];
 
-var TEMPO_RODADA = 10;     // segundos
+// Tempo (segundos) por rodada, escalonado por nivel (ancorado em literatura de
+// busca visual: feature search rapida no N1; conjunction search lenta no N2/N3,
+// penalizada pela idade). Provisorio, a recalibrar com dados reais.
+var TEMPO_POR_NIVEL = { 1: 25, 2: 40, 3: 60 };
+function _tempoDoNivel(nivel) { return TEMPO_POR_NIVEL[nivel] || 25; }
 var RODADAS_POR_NIVEL = 3; // 3 rodadas em cada nivel aplicado
 // nSets-alvo por rodada nos niveis controlados (2 e 3). O nivel 1 e aleatorio.
 // Faixa sorteada por rodada para nao criar padrao previsivel.
@@ -953,7 +957,8 @@ function iniciarRodada() {
 }
 
 function _iniciarCronometro() {
-    tempoRestante = TEMPO_RODADA;
+    var nivel = NIVEIS_APLICAR[nivelIdx];
+    tempoRestante = _tempoDoNivel(nivel);  // 25 / 40 / 60 por nivel
     var cEl = document.getElementById('cronometro');
     cEl.innerHTML = tempoRestante;
     cEl.classList.remove('alerta');
@@ -1019,6 +1024,17 @@ function _fecharRodada() {
     if (omissoes < 0) omissoes = 0;
 
     var nivelRod = NIVEIS_APLICAR[nivelIdx];
+    // TC (tempo para completar a tarefa, em ms): se a pessoa marcou TODOS os SETs
+    // da grade, e o tempo ate o ultimo clique (ela terminou). Se NAO completou,
+    // usou todo o tempo do nivel (TC = tempo fixo do nivel) -> velocidade pior.
+    // Quanto MAIOR o TC, pior a velocidade/percepcao.
+    var tempoNivelMs = _tempoDoNivel(nivelRod) * 1000;
+    var tcMs;
+    if (acertos >= totalSets && totalCliques > 0) {
+        tcMs = cliquesRodada[totalCliques - 1].t; // terminou: tempo do ultimo clique
+    } else {
+        tcMs = tempoNivelMs; // nao completou: usou todo o tempo disponivel
+    }
     resultadosRodadas.push({
         nivel: nivelRod,
         rodada: rodadaNoNivel + 1,
@@ -1026,6 +1042,8 @@ function _fecharRodada() {
         atributoExcluido: CONFIG.atributoExcluido,
         totalSets: totalSets,
         acertos: acertos,
+        tcMs: tcMs,
+        tempoNivelMs: tempoNivelMs,
         falsos: falsos,
         omissoes: omissoes,
         acertosPorTipo: acertosPorTipo,
@@ -1135,7 +1153,7 @@ function calcularResultados() {
     for (var r = 0; r < resultadosRodadas.length; r++) {
         var rr = resultadosRodadas[r];
         var nv = rr.nivel || 3;
-        if (!porNivel[nv]) porNivel[nv] = { acertos: 0, falsos: 0, omissoes: 0, disp: 0, somaProp: 0, nRodadas: 0 };
+        if (!porNivel[nv]) porNivel[nv] = { acertos: 0, falsos: 0, omissoes: 0, disp: 0, somaProp: 0, nRodadas: 0, somaTc: 0, nTc: 0 };
         var pn = porNivel[nv];
         var om = (rr.omissoes != null) ? rr.omissoes : (rr.totalSets - rr.acertos);
         pn.acertos += rr.acertos;
@@ -1146,6 +1164,8 @@ function calcularResultados() {
         if (propRod > 1) propRod = 1;
         pn.somaProp += propRod;
         pn.nRodadas++;
+        // TC (tempo para completar) desta rodada, em segundos.
+        if (rr.tcMs != null) { pn.somaTc += rr.tcMs; pn.nTc++; }
         totAcertos += rr.acertos; totFalsos += rr.falsos; totOmissoes += om; totDisp += rr.totalSets;
         somaCliques += (rr.totalCliques || 0);
         if (rr.tempoPrimeiroClique != null) { somaPrimeiro += rr.tempoPrimeiroClique; nPrimeiro++; }
@@ -1166,16 +1186,26 @@ function calcularResultados() {
         var meta = META_NIVEL[nvl] || { peso: nvl, esperado: 60 };
         var propPct = (pnv.nRodadas > 0) ? (pnv.somaProp / pnv.nRodadas) * 100 : 0;
         propPct = Math.round(propPct * 10) / 10;
+        // Tempo medio para completar (TC) do nivel, em segundos (1 casa).
+        var tcMedioNivel = (pnv.nTc > 0) ? Math.round((pnv.somaTc / pnv.nTc) / 100) / 10 : null;
         perfil[nvl] = {
             prop: propPct,
             esperado: meta.esperado,
             classificacao: _classificarNivel(propPct, meta.esperado),
-            acertos: pnv.acertos, disp: pnv.disp, falsos: pnv.falsos, omissoes: pnv.omissoes
+            acertos: pnv.acertos, disp: pnv.disp, falsos: pnv.falsos, omissoes: pnv.omissoes,
+            tcMedio: tcMedioNivel
         };
         somaPesoProp += (propPct / 100) * meta.peso;
         somaPesos += meta.peso;
     }
     var escoreGeral = somaPesos > 0 ? Math.round((somaPesoProp / somaPesos) * 1000) / 10 : 0; // % ponderado
+
+    // Tempo medio geral para completar (media das rodadas de todos os niveis), em s.
+    var _somaTcGeral = 0, _nTcGeral = 0;
+    for (var tg = 0; tg < resultadosRodadas.length; tg++) {
+        if (resultadosRodadas[tg].tcMs != null) { _somaTcGeral += resultadosRodadas[tg].tcMs; _nTcGeral++; }
+    }
+    var tcMedioGeral = (_nTcGeral > 0) ? Math.round((_somaTcGeral / _nTcGeral) / 100) / 10 : null;
 
     // Classificacao geral do escore ponderado (provisoria, faixa larga).
     var classGeral;
@@ -1183,7 +1213,7 @@ function calcularResultados() {
     else if (escoreGeral >= 60) classGeral = 'Proximo do esperado';
     else classGeral = 'Abaixo do esperado';
 
-    var interpretacao = _gerarInterpretacaoV2(perfil, niveisFeitos, totFalsos, mediaPrimeiroClique, mediaIntervalo);
+    var interpretacao = _gerarInterpretacaoV2(perfil, niveisFeitos, totFalsos, mediaPrimeiroClique, mediaIntervalo, tcMedioGeral);
 
     // Monta os dominios (um por nivel feito) + indicadores globais, no formato do painel.
     var dominios = {};
@@ -1197,6 +1227,9 @@ function calcularResultados() {
     dominios['Acertos (total)'] = { pontuacao: totAcertos, max: totDisp, classificacao: totAcertos + ' de ' + totDisp };
     dominios['Erros (falsos SETs)'] = { pontuacao: totFalsos, max: totDisp, classificacao: _classificarFalsos(totFalsos) };
     dominios['Omissoes (deixou passar)'] = { pontuacao: totOmissoes, max: totDisp, classificacao: totOmissoes + ' de ' + totDisp };
+    if (tcMedioGeral != null) {
+        dominios['Tempo medio p/ completar'] = { pontuacao: tcMedioGeral, max: 0, classificacao: tcMedioGeral.toFixed(1).replace('.', ',') + ' s (quanto menor, melhor)' };
+    }
 
     var descNiveis = niveisFeitos.map(function (n) { return 'N' + n + ':' + perfil[n].prop.toFixed(0) + '%'; }).join(' | ');
 
@@ -1210,7 +1243,7 @@ function calcularResultados() {
         perfilNiveis: perfil,
         niveisAplicados: niveisFeitos,
         dominios: dominios,
-        velocidade: { totalCliques: somaCliques, mediaPrimeiroClique: mediaPrimeiroClique, mediaIntervalo: mediaIntervalo },
+        velocidade: { totalCliques: somaCliques, mediaPrimeiroClique: mediaPrimeiroClique, mediaIntervalo: mediaIntervalo, tcMedioGeral: tcMedioGeral },
         rodadas: resultadosRodadas.map(function (rr) {
             var om = (rr.omissoes != null) ? rr.omissoes : (rr.totalSets - rr.acertos);
             var prop = (rr.totalSets > 0) ? Math.round((rr.acertos / rr.totalSets) * 100) : 0;
@@ -1228,6 +1261,7 @@ function calcularResultados() {
                 totalCliques: rr.totalCliques,
                 tempoPrimeiroClique: rr.tempoPrimeiroClique,
                 intervaloMedio: rr.intervaloMedio,
+                tcMs: rr.tcMs,
                 sequenciaCoords: rr.sequenciaCoords,
                 acertosDetalhe: rr.acertosDetalhe,
                 errosDetalhe: rr.errosDetalhe
@@ -1259,7 +1293,7 @@ function _rotuloCurva(c) {
 // Interpretacao automatica do perfil por niveis (v2). Monta um paragrafo por
 // nivel feito, mais os indicadores de erro (Barkley) e velocidade visuomotora,
 // mais o disclaimer. Cada nivel mede um construto diferente.
-function _gerarInterpretacaoV2(perfil, niveisFeitos, totFalsos, mediaPrimeiroClique, mediaIntervalo) {
+function _gerarInterpretacaoV2(perfil, niveisFeitos, totFalsos, mediaPrimeiroClique, mediaIntervalo, tcMedioGeral) {
     var p = [];
     for (var i = 0; i < niveisFeitos.length; i++) {
         var nv = niveisFeitos[i];
@@ -1291,6 +1325,9 @@ function _gerarInterpretacaoV2(perfil, niveisFeitos, totFalsos, mediaPrimeiroCli
         } else if (mediaIntervalo >= 2500) {
             p.push('A cadencia entre cliques foi lenta (cerca de ' + (mediaIntervalo / 1000).toFixed(1) + 's por clique), o que pode refletir cautela, dificuldade de execucao motora ou busca visual menos eficiente.');
         }
+    }
+    if (tcMedioGeral != null) {
+        p.push('O tempo medio para completar a tarefa foi de cerca de ' + tcMedioGeral.toFixed(1).replace('.', ',') + ' segundos por rodada (quanto maior o tempo, menor a velocidade de busca e integracao). Quando a pessoa nao conclui dentro do limite, considera-se que usou todo o tempo disponivel.');
     }
     p.push('Estes achados sao exploratorios, baseados em parametros provisorios sem validacao formal, e devem ser interpretados por profissional qualificado dentro de uma avaliacao neuropsicologica abrangente.');
     return p.join(' ');
