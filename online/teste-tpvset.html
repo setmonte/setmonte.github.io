@@ -1387,9 +1387,37 @@ window.calcularResultados = calcularResultados;
 // ============================================================
 document.getElementById('data').value = new Date().toISOString().split('T')[0];
 
+// Preenche os dados do formulario e os niveis a partir de um objeto de sessao
+// (vindo do servidor via ?s= ou inline via ?d=). Centraliza para os dois caminhos
+// lerem os niveis da mesma forma.
+function _aplicarDadosSessao(data) {
+    _sessionInfo = data;
+    var nomeEl = document.getElementById('nome');
+    var nascEl = document.getElementById('dataNascimento');
+    var sexoEl = document.getElementById('sexo');
+    var escEl = document.getElementById('escolaridade');
+    if (nomeEl && data.patientName) nomeEl.value = data.patientName;
+    if (nascEl && data.birthDate) nascEl.value = data.birthDate;
+    if (sexoEl && data.sex) sexoEl.value = data.sex;
+    if (escEl && data.education) escEl.value = data.education;
+    // Hipotese diagnostica vem do campo "Observacoes" preenchido no painel.
+    var hipEl = document.getElementById('hipotese');
+    if (hipEl && data.obs) hipEl.value = data.obs;
+    // Niveis a aplicar: escolhidos pelo avaliador no painel. Aceita array
+    // [1,2,3] ou string "1,2,3". Se ausente/vazio, usa o default (os tres).
+    var _niveis = data.niveis;
+    if (typeof _niveis === 'string') { _niveis = _niveis.split(',').map(function (x) { return parseInt(x, 10); }); }
+    _definirNiveisAplicar(_niveis);
+    if (typeof calcularIdade === 'function') calcularIdade();
+    if (nomeEl) nomeEl.dispatchEvent(new Event('input'));
+    if (nascEl) nascEl.dispatchEvent(new Event('change'));
+}
+
 var params = new URLSearchParams(window.location.search);
 
 if (params.get('s')) {
+    // Modo sessao no servidor. Le os niveis de data.niveis (requer a Lambda
+    // devolver esse campo no /get-session).
     fetch(_API_URL + '/get-session?id=' + params.get('s')).then(function (r) {
         if (r.status === 410) {
             document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#e8eaf6,#c5cae9);text-align:center;padding:20px;"><h1 style="color:#c62828;font-size:24px;margin-bottom:10px;">Este link j\u00e1 foi utilizado.</h1><p style="font-size:16px;color:#555;">Solicite um novo link ao seu avaliador.</p></div>';
@@ -1397,29 +1425,18 @@ if (params.get('s')) {
         }
         return r.json();
     }).then(function (data) {
-        if (data.sessionId) {
-            _sessionInfo = data;
-            var nomeEl = document.getElementById('nome');
-            var nascEl = document.getElementById('dataNascimento');
-            var sexoEl = document.getElementById('sexo');
-            var escEl = document.getElementById('escolaridade');
-            if (nomeEl && data.patientName) nomeEl.value = data.patientName;
-            if (nascEl && data.birthDate) nascEl.value = data.birthDate;
-            if (sexoEl && data.sex) sexoEl.value = data.sex;
-            if (escEl && data.education) escEl.value = data.education;
-            // Hipotese diagnostica vem do campo "Observacoes" preenchido no painel.
-            var hipEl = document.getElementById('hipotese');
-            if (hipEl && data.obs) hipEl.value = data.obs;
-            // Niveis a aplicar: escolhidos pelo avaliador no painel. Aceita array
-            // [1,2,3] ou string "1,2,3". Se ausente/vazio, usa o default (os tres).
-            var _niveis = data.niveis;
-            if (typeof _niveis === 'string') { _niveis = _niveis.split(',').map(function (x) { return parseInt(x, 10); }); }
-            _definirNiveisAplicar(_niveis);
-            if (typeof calcularIdade === 'function') calcularIdade();
-            if (nomeEl) nomeEl.dispatchEvent(new Event('input'));
-            if (nascEl) nascEl.dispatchEvent(new Event('change'));
-        }
+        if (data.sessionId) { _aplicarDadosSessao(data); }
     }).catch(function () { });
+} else if (params.get('d')) {
+    // Modo dados inline (base64 JSON). Carrega TODOS os campos, incluindo niveis,
+    // sem depender do backend. Fallback robusto para a selecao de niveis.
+    try {
+        var _json = decodeURIComponent(escape(atob(decodeURIComponent(params.get('d')))));
+        var _dd = JSON.parse(_json);
+        _aplicarDadosSessao(_dd);
+    } catch (e) {
+        window.location.href = 'https://setmonte.github.io/online/';
+    }
 } else {
     window.location.href = 'https://setmonte.github.io/online/';
 }
