@@ -1768,6 +1768,20 @@
             <div id="adminPacList" style="margin-top:10px;max-height:300px;overflow-y:auto;"></div>
           </div>
 
+          <!-- Emails Suspeitos (anti-abuso): fica logo ACIMA de Deletar Usuario, para o admin
+               consultar a lista de suspeitos ANTES de decidir excluir uma conta. -->
+          <div style="background:#fff8e1;border:2px solid #f57f17;border-radius:10px;padding:15px;margin:10px 0;">
+            <p style="font-size:13px;font-weight:bold;color:#e65100;margin-bottom:8px;">&#128064; Emails Suspeitos (anti-abuso)</p>
+            <p style="font-size:11px;color:#666;margin-bottom:8px;">Lista de emails marcados como poss&#237;vel abuso de b&#244;nus (mesma pessoa criando v&#225;rias contas). A detec&#231;&#227;o usa esta lista para ficar mais esperta a cada caso. Consulte aqui <b>antes</b> de deletar um usu&#225;rio.</p>
+            <div class="form-row" style="align-items:flex-end;">
+              <label style="font-size:12px;">Adicionar email suspeito: <input type="text" id="adminSuspeitoEmail" placeholder="email@exemplo.com" style="width:230px;"></label>
+              <button class="btn" style="padding:8px 16px;font-size:12px;margin-top:18px;background:#f57f17;color:#fff;" onclick="adminAddSuspeito()">Adicionar</button>
+              <button class="btn btn-blue" style="padding:8px 16px;font-size:12px;margin-top:18px;" onclick="adminCarregarSuspeitos()">Atualizar lista</button>
+            </div>
+            <p id="adminSuspeitoMsg" style="font-size:11px;color:#555;margin-top:5px;"></p>
+            <div id="adminSuspeitosList" style="margin-top:10px;max-height:320px;overflow-y:auto;"></div>
+          </div>
+
           <!-- Deletar usuario (por ultimo: acao perigosa, o mais longe possivel do fluxo do dia a dia) -->
           <div style="background:#ffebee;border:2px solid #c62828;border-radius:10px;padding:15px;margin:10px 0;">
             <p style="font-size:13px;font-weight:bold;color:#c62828;margin-bottom:8px;">🗑️ Deletar Usuário</p>
@@ -7515,6 +7529,86 @@
         html += '</div>';
         el.innerHTML = html;
       } catch(e) { el.innerHTML = '<p style="color:red;">Erro: ' + e.message + '</p>'; }
+    }
+
+    // ===== EMAILS SUSPEITOS (anti-abuso) =====
+    // Lista/adiciona/remove emails do banco de suspeitos que alimenta a Camada 3 do filtro.
+    async function adminCarregarSuspeitos() {
+      var el = document.getElementById('adminSuspeitosList');
+      if (!el) return;
+      el.innerHTML = '<p style="color:#555;font-size:12px;">Carregando...</p>';
+      try {
+        var resp = await fetch(API_URL + '/admin-suspeitos?email=' + encodeURIComponent(currentUser));
+        var data = await resp.json();
+        var lista = (data && data.suspeitos) || [];
+        if (!Array.isArray(lista) || lista.length === 0) {
+          el.innerHTML = '<p style="color:#2e7d32;font-size:12px;">Nenhum email suspeito no banco. Tudo certo!</p>';
+          return;
+        }
+        var html = '<p style="font-size:12px;font-weight:bold;color:#e65100;">' + lista.length + ' email(s) suspeito(s):</p>';
+        html += '<table class="results-table" style="font-size:11px;"><tr><th>Email</th><th>Origem</th><th>Motivo</th><th>Parecido com</th><th>Data</th><th></th></tr>';
+        lista.forEach(function(s) {
+          var dataStr = s.date ? new Date(s.date).toLocaleString('pt-BR') : '-';
+          var origemBadge = s.origem === 'manual'
+            ? '<span style="background:#1565c0;color:#fff;padding:1px 6px;border-radius:8px;font-size:10px;">manual</span>'
+            : '<span style="background:#e65100;color:#fff;padding:1px 6px;border-radius:8px;font-size:10px;">auto ' + (s.score !== '' ? (s.score + '%') : '') + '</span>';
+          var sidEsc = (s.sessionId || '').replace(/'/g, '');
+          html += '<tr>'
+            + '<td style="font-weight:bold;">' + (s.email || '-') + '</td>'
+            + '<td>' + origemBadge + '</td>'
+            + '<td style="font-size:10px;color:#666;">' + (s.motivo || '-') + '</td>'
+            + '<td style="font-size:10px;color:#666;">' + (s.similarA || '-') + '</td>'
+            + '<td style="font-size:10px;">' + dataStr + '</td>'
+            + '<td><button class="btn btn-red" style="padding:3px 8px;font-size:10px;" onclick="adminRemoverSuspeito(\'' + sidEsc + '\')">Remover</button></td>'
+            + '</tr>';
+        });
+        html += '</table>';
+        el.innerHTML = html;
+      } catch(e) { el.innerHTML = '<p style="color:red;font-size:12px;">Erro: ' + e.message + '</p>'; }
+    }
+
+    async function adminAddSuspeito() {
+      var campo = document.getElementById('adminSuspeitoEmail');
+      var msg = document.getElementById('adminSuspeitoMsg');
+      var alvo = (campo.value || '').trim().toLowerCase();
+      if (!alvo || alvo.indexOf('@') < 0) { if (msg) msg.innerHTML = '<span style="color:#c62828;">Informe um email valido.</span>'; return; }
+      if (msg) msg.innerHTML = '<span style="color:#555;">Adicionando...</span>';
+      try {
+        var resp = await fetch(API_URL + '/admin-add-suspeito', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ email: currentUser, targetEmail: alvo })
+        });
+        var data = await resp.json();
+        if (data.ok) {
+          if (msg) msg.innerHTML = '<span style="color:#2e7d32;">Adicionado: ' + data.email + ' (nucleo: ' + data.nucleo + ')</span>';
+          campo.value = '';
+          adminCarregarSuspeitos();
+        } else {
+          if (msg) msg.innerHTML = '<span style="color:#c62828;">Erro: ' + (data.error || 'desconhecido') + '</span>';
+        }
+      } catch(e) { if (msg) msg.innerHTML = '<span style="color:#c62828;">Erro: ' + e.message + '</span>'; }
+    }
+
+    async function adminRemoverSuspeito(sessionId) {
+      if (!sessionId) return;
+      if (!confirm('Remover este email do banco de suspeitos?\n\nEle deixara de ser usado na deteccao.')) return;
+      var msg = document.getElementById('adminSuspeitoMsg');
+      if (msg) msg.innerHTML = '<span style="color:#555;">Removendo...</span>';
+      try {
+        var resp = await fetch(API_URL + '/admin-remove-suspeito', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ email: currentUser, sessionId: sessionId })
+        });
+        var data = await resp.json();
+        if (data.ok) {
+          if (msg) msg.innerHTML = '<span style="color:#2e7d32;">Removido.</span>';
+          adminCarregarSuspeitos();
+        } else {
+          if (msg) msg.innerHTML = '<span style="color:#c62828;">Erro: ' + (data.error || 'desconhecido') + '</span>';
+        }
+      } catch(e) { if (msg) msg.innerHTML = '<span style="color:#c62828;">Erro: ' + e.message + '</span>'; }
     }
 
     async function adminDeletarUsuario() {
