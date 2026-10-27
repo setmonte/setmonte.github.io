@@ -5866,76 +5866,124 @@
       if (!c) return '';
       return c.replace(/\D/g,'');
     }
-    function _similaridadeNome(a, b) {
-      // Retorna um score de 0 a 100 indicando o quanto dois nomes sao parecidos
-      var na = _normalizarTexto(a);
-      var nb = _normalizarTexto(b);
-      if (!na || !nb) return 0;
-      if (na === nb) return 100;
-      // Primeiro nome igual
-      var pa = na.split(/\s+/);
-      var pb = nb.split(/\s+/);
-      if (pa[0] === pb[0] && pa[0].length >= 3) {
-        // Primeiro e ultimo nome iguais
-        if (pa.length > 1 && pb.length > 1 && pa[pa.length-1] === pb[pb.length-1]) return 90;
-        // So primeiro nome igual
-        if (pa[0].length >= 4) return 50;
-      }
-      // Contem um dentro do outro
-      if (na.indexOf(nb) !== -1 || nb.indexOf(na) !== -1) return 70;
-      // Comparacao por palavras em comum
-      var comuns = 0;
-      pa.forEach(function(p) { if (p.length >= 3 && pb.indexOf(p) !== -1) comuns++; });
-      if (pa.length > 0 && comuns > 0) {
-        var score = Math.round((comuns / Math.max(pa.length, pb.length)) * 80);
-        return score;
-      }
-      return 0;
+    // ===== NOVO MOTOR DE DUPLICATAS: IGUALDADE EXATA (nao "parecenca") =====
+    // Regra: compara TODOS os campos que AMBOS os registros tem preenchidos.
+    // - Se algum campo em comum DIVERGE -> NAO e duplicata.
+    // - Se TODOS os campos em comum batem E ha pelo menos 1 identificador forte -> e duplicata.
+    // - Nome respeita a ORDEM das palavras ("Mario Sergio" != "Sergio Mario"), ignora acento/maiuscula/espaco extra.
+    // - Nome de 1 palavra so ("Jose", "Ze") NAO e identificador forte (dado incompleto/orfao): sinalizado a parte.
+    // A "confianca" cresce com a quantidade de campos que bateram (mantra: seguranca = quantidade de dados).
+
+    // Normaliza nome preservando a ORDEM: minusculo, sem acento, pontuacao -> espaco, espacos colapsados.
+    function _normalizarNomeOrdenado(t) {
+      if (!t) return '';
+      var s = t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+      s = s.replace(/[.,;]/g, ' ');       // pontos/virgulas viram espaco (ex: "jose c. silva" -> "jose c silva")
+      s = s.replace(/\s+/g, ' ').trim();  // colapsa espacos
+      return s;
     }
-    function _detectarDuplicatas(nome, dn, cpf, ignorarId) {
-      // Compara os dados informados com todos os pacientes do cache
-      // Retorna array de { paciente, motivos[], score }
+    // Conta quantas palavras "de verdade" o nome tem (ignora iniciais soltas de 1 letra).
+    function _palavrasNome(t) {
+      var n = _normalizarNomeOrdenado(t);
+      if (!n) return [];
+      return n.split(' ').filter(function(w) { return w.length > 0; });
+    }
+    function _nomeCompleto(t) {
+      // "Completo" = tem ao menos 2 palavras com 2+ letras cada (nome + sobrenome de verdade).
+      var reais = _palavrasNome(t).filter(function(w) { return w.length >= 2; });
+      return reais.length >= 2;
+    }
+
+    // Campos comparados e como exibi-los. Ordem define a prioridade de exibicao.
+    // 'forte' = identificador que, batendo, autoriza o alerta de duplicata.
+    var _CAMPOS_DUP = [
+      { chave: 'nome',           rotulo: 'Nome',          forte: true,  tipo: 'nome' },
+      { chave: 'dataNascimento', rotulo: 'Nascimento',    forte: true,  tipo: 'texto' },
+      { chave: 'cpf',            rotulo: 'CPF',           forte: true,  tipo: 'numero' },
+      { chave: 'whatsapp',       rotulo: 'Telefone',      forte: true,  tipo: 'numero' },
+      { chave: 'pacienteEmail',  rotulo: 'E-mail',        forte: false, tipo: 'texto' },
+      { chave: 'sexo',           rotulo: 'Sexo',          forte: false, tipo: 'texto' },
+      { chave: 'escolaridade',   rotulo: 'Escolaridade',  forte: false, tipo: 'texto' },
+      { chave: 'lateralidade',   rotulo: 'Lateralidade',  forte: false, tipo: 'texto' }
+    ];
+
+    // Valor normalizado de um campo para comparacao. Retorna '' quando vazio (campo ausente).
+    function _valorCampo(obj, campo) {
+      var v = obj ? obj[campo.chave] : '';
+      v = (v == null ? '' : String(v)).trim();
+      if (!v) return '';
+      if (campo.tipo === 'numero') return _normalizarCPF(v); // so digitos (CPF/telefone)
+      if (campo.tipo === 'nome')   return _normalizarNomeOrdenado(v);
+      return _normalizarTexto(v);
+    }
+
+    // Compara dois pacientes pela regra de igualdade exata dos campos em comum.
+    // Retorna { ehDuplicata, camposIguais:[rotulo], camposDivergentes:[rotulo], confianca, nomeIncompletoAmbos }.
+    function _compararPacientes(a, b) {
+      var iguais = [], divergentes = [], temCampoEmComum = false, bateuForte = false;
+      for (var i = 0; i < _CAMPOS_DUP.length; i++) {
+        var campo = _CAMPOS_DUP[i];
+        var va = _valorCampo(a, campo);
+        var vb = _valorCampo(b, campo);
+        if (va === '' || vb === '') continue; // so compara o que AMBOS tem preenchido
+        temCampoEmComum = true;
+        if (va === vb) {
+          iguais.push(campo.rotulo);
+          // Nome so conta como "forte" se for completo (2+ palavras) nos DOIS.
+          if (campo.chave === 'nome') { if (_nomeCompleto(a.nome) && _nomeCompleto(b.nome)) bateuForte = true; }
+          else if (campo.forte) { bateuForte = true; }
+        } else {
+          divergentes.push(campo.rotulo);
+        }
+      }
+      // Duplicata = tem campo em comum, NENHUM divergiu, e bateu pelo menos 1 identificador forte.
+      var ehDuplicata = temCampoEmComum && divergentes.length === 0 && bateuForte;
+      var nomeIncompletoAmbos = (_valorCampo(a, _CAMPOS_DUP[0]) !== '' &&
+                                 _valorCampo(a, _CAMPOS_DUP[0]) === _valorCampo(b, _CAMPOS_DUP[0]) &&
+                                 !_nomeCompleto(a.nome));
+      return {
+        ehDuplicata: ehDuplicata,
+        camposIguais: iguais,
+        camposDivergentes: divergentes,
+        confianca: iguais.length,        // quantos campos bateram (nivel de seguranca)
+        nomeIncompletoAmbos: nomeIncompletoAmbos
+      };
+    }
+
+    // Mantem a assinatura antiga (nome, dn, cpf, ignorarId) usada por cadastro e importacao,
+    // mas agora aplica a regra de igualdade exata. Aceita tambem um 5o arg 'extra' com os
+    // demais campos (whatsapp, email, sexo...) para comparacao completa quando disponiveis.
+    function _detectarDuplicatas(nome, dn, cpf, ignorarId, extra) {
+      extra = extra || {};
+      var alvo = {
+        nome: nome || '', dataNascimento: dn || '', cpf: cpf || '',
+        whatsapp: extra.whatsapp || '', pacienteEmail: extra.pacienteEmail || '',
+        sexo: extra.sexo || '', escolaridade: extra.escolaridade || '', lateralidade: extra.lateralidade || ''
+      };
       var resultados = [];
-      var nomeNorm = _normalizarTexto(nome);
-      var cpfNorm = _normalizarCPF(cpf);
       _pacientesCache.forEach(function(p) {
         if (ignorarId && p.id === ignorarId) return;
-        var motivos = [];
-        var score = 0;
-        // Comparar CPF (fortissimo indicador)
-        if (cpfNorm && cpfNorm.length >= 11) {
-          var pCpf = _normalizarCPF(p.cpf);
-          if (pCpf && pCpf === cpfNorm) {
-            motivos.push('CPF identico');
-            score += 95;
-          }
-        }
-        // Comparar nome
-        if (nomeNorm && nomeNorm.length >= 3) {
-          var simNome = _similaridadeNome(nome, p.nome);
-          if (simNome >= 90) { motivos.push('Nome muito similar (' + simNome + '%)'); score += simNome; }
-          else if (simNome >= 50) { motivos.push('Nome parcialmente similar (' + simNome + '%)'); score += simNome * 0.6; }
-        }
-        // Comparar data de nascimento
-        if (dn && p.dataNascimento && dn === p.dataNascimento) {
-          motivos.push('Data de nascimento identica');
-          score += 40;
-        }
-        // Combinacoes que elevam a suspeita
-        if (dn && p.dataNascimento && dn === p.dataNascimento && nomeNorm) {
-          var simComDn = _similaridadeNome(nome, p.nome);
-          if (simComDn >= 50) {
-            score += 30; // bonus por combinar DN + nome parecido
-          }
-        }
-        // So reportar se score minimo atingido
-        if (score >= 40 && motivos.length > 0) {
-          resultados.push({ paciente: p, motivos: motivos, score: score });
+        var cmp = _compararPacientes(alvo, p);
+        if (cmp.ehDuplicata) {
+          var motivos = cmp.camposIguais.map(function(r) { return r + ' igual'; });
+          resultados.push({ paciente: p, motivos: motivos, confianca: cmp.confianca, camposIguais: cmp.camposIguais });
         }
       });
-      // Ordenar por score decrescente
-      resultados.sort(function(a, b) { return b.score - a.score; });
+      // Ordenar por confianca (mais campos iguais primeiro)
+      resultados.sort(function(a, b) { return b.confianca - a.confianca; });
       return resultados;
+    }
+
+    // Cor do nivel de confianca pela QUANTIDADE de campos iguais (mantra: seguranca = qtd de dados).
+    function _corConfianca(n) {
+      if (n >= 3) return '#c62828';   // vermelho: 3+ campos batem -> altissima chance
+      if (n === 2) return '#ef6c00';  // laranja: 2 campos
+      return '#f9a825';               // amarelo: 1 campo (poucos dados, confira)
+    }
+    function _rotuloConfianca(n) {
+      if (n >= 3) return n + ' dados iguais - altissima chance de ser a mesma pessoa';
+      if (n === 2) return '2 dados iguais - provavel a mesma pessoa';
+      return '1 dado igual - poucos dados, confira voce mesmo';
     }
 
     var _dupTimer = null;
@@ -5946,30 +5994,47 @@
         var nome = (document.getElementById('pacNome').value || '').trim();
         var dn = document.getElementById('pacDN').value || '';
         var cpf = (document.getElementById('pacCPF').value || '').trim();
+        var extra = {
+          whatsapp: (document.getElementById('pacWhats') || {}).value || '',
+          pacienteEmail: (document.getElementById('pacEmail') || {}).value || '',
+          sexo: (document.getElementById('pacSexo') || {}).value || '',
+          escolaridade: (document.getElementById('pacEscolaridade') || {}).value || '',
+          lateralidade: (document.getElementById('pacLateralidade') || {}).value || ''
+        };
         var avisoEl = document.getElementById('pacDuplicataAviso');
-        // So verificar se tem pelo menos algo preenchido
-        if (nome.length < 3 && !dn && _normalizarCPF(cpf).length < 11) {
-          avisoEl.style.display = 'none';
+        var html = '';
+        // Aviso de NOME INCOMPLETO (1 palavra so): dado orfao/intrusivo, avisar no ato.
+        var palavrasReais = _palavrasNome(nome).filter(function(w) { return w.length >= 2; });
+        if (nome.length >= 2 && palavrasReais.length < 2) {
+          html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">';
+          html += '<span style="font-size:18px;">&#9888;&#65039;</span>';
+          html += '<strong style="color:#e65100;font-size:13px;">Nome incompleto: digite nome E sobrenome.</strong>';
+          html += '</div>';
+          html += '<p style="font-size:11px;color:#777;margin-bottom:6px;">Um nome com uma palavra s\u00f3 (ex: "Jos\u00e9", "Z\u00e9") fica dif\u00edcil de identificar e vira dado \u00f3rf\u00e3o.</p>';
+        }
+        // So procurar duplicata se tiver algo util preenchido
+        if (nome.length < 2 && !dn && _normalizarCPF(cpf).length < 11 && !_normalizarCPF(extra.whatsapp)) {
+          if (html) { avisoEl.innerHTML = html; avisoEl.style.display = 'block'; } else { avisoEl.style.display = 'none'; }
           return;
         }
-        var dups = _detectarDuplicatas(nome, dn, cpf, null);
+        var dups = _detectarDuplicatas(nome, dn, cpf, null, extra);
         if (dups.length === 0) {
-          avisoEl.style.display = 'none';
+          if (html) { avisoEl.innerHTML = html; avisoEl.style.display = 'block'; } else { avisoEl.style.display = 'none'; }
           return;
         }
-        var html = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">';
+        html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">';
         html += '<span style="font-size:18px;">&#9888;&#65039;</span>';
-        html += '<strong style="color:#e65100;font-size:13px;">Poss\u00edvel duplicata detectada!</strong>';
+        html += '<strong style="color:#e65100;font-size:13px;">Poss\u00edvel duplicata (dados id\u00eanticos)!</strong>';
         html += '</div>';
         dups.forEach(function(d, i) {
           if (i >= 3) return; // Mostrar no maximo 3
           var p = d.paciente;
-          var corBorda = d.score >= 80 ? '#c62828' : '#ff9800';
-          html += '<div style="background:white;border-left:4px solid ' + corBorda + ';padding:8px 12px;margin:6px 0;border-radius:4px;font-size:12px;">';
+          var cor = _corConfianca(d.confianca);
+          html += '<div style="background:white;border-left:4px solid ' + cor + ';padding:8px 12px;margin:6px 0;border-radius:4px;font-size:12px;">';
           html += '<strong>' + (p.nome || '(sem nome)') + '</strong>';
           if (p.dataNascimento) html += ' &mdash; Nasc: ' + p.dataNascimento;
           if (p.cpf) html += ' &mdash; CPF: ' + p.cpf;
-          html += '<br><span style="color:#e65100;font-size:11px;">' + d.motivos.join(' | ') + ' (confian\u00e7a: ' + Math.min(d.score, 100) + '%)</span>';
+          html += '<br><span style="color:' + cor + ';font-size:11px;">Igual em: ' + d.camposIguais.join(', ') + ' &mdash; ' + _rotuloConfianca(d.confianca) + '</span>';
           html += '</div>';
         });
         html += '<p style="font-size:11px;color:#777;margin-top:6px;">Voc\u00ea ainda pode cadastrar normalmente se souber que n\u00e3o \u00e9 a mesma pessoa.</p>';
@@ -5979,13 +6044,14 @@
     }
 
     function _varrerDuplicatas() {
-      // Analisa TODOS os pacientes cadastrados buscando possiveis duplicatas entre si
-      if (!_pacientesCache || _pacientesCache.length < 2) {
-        alert('Voce precisa ter pelo menos 2 pacientes cadastrados para verificar duplicatas.');
+      // Analisa TODOS os pacientes entre si pela regra de IGUALDADE EXATA dos campos em comum.
+      // Alem disso, lista os NOMES INCOMPLETOS (1 palavra so) como dados orfaos a conferir.
+      if (!_pacientesCache || _pacientesCache.length < 1) {
+        alert('Voce nao tem pacientes cadastrados para verificar.');
         return;
       }
-      var grupos = []; // Array de { pacientes: [p1, p2], motivos, score }
-      var jaVerificados = {}; // Evitar reportar A-B e B-A
+      var grupos = [];       // pares duplicados { pA, pB, camposIguais, confianca }
+      var jaVerificados = {};
       for (var i = 0; i < _pacientesCache.length; i++) {
         for (var j = i + 1; j < _pacientesCache.length; j++) {
           var pA = _pacientesCache[i];
@@ -5993,93 +6059,108 @@
           var chave = pA.id + '_' + pB.id;
           if (jaVerificados[chave]) continue;
           jaVerificados[chave] = true;
-          var motivos = [];
-          var score = 0;
-          // CPF
-          var cpfA = _normalizarCPF(pA.cpf);
-          var cpfB = _normalizarCPF(pB.cpf);
-          if (cpfA && cpfA.length >= 11 && cpfA === cpfB) {
-            motivos.push('CPF identico');
-            score += 95;
-          }
-          // Nome
-          var simNome = _similaridadeNome(pA.nome, pB.nome);
-          if (simNome >= 90) { motivos.push('Nome muito similar (' + simNome + '%)'); score += simNome; }
-          else if (simNome >= 50) { motivos.push('Nome parcialmente similar (' + simNome + '%)'); score += simNome * 0.6; }
-          // Data nascimento
-          if (pA.dataNascimento && pB.dataNascimento && pA.dataNascimento === pB.dataNascimento) {
-            motivos.push('Mesma data de nascimento');
-            score += 40;
-          }
-          // Bonus combinacao DN + nome
-          if (pA.dataNascimento && pB.dataNascimento && pA.dataNascimento === pB.dataNascimento && simNome >= 50) {
-            score += 30;
-          }
-          if (score >= 40 && motivos.length > 0) {
-            grupos.push({ pA: pA, pB: pB, motivos: motivos, score: score });
+          var cmp = _compararPacientes(pA, pB);
+          if (cmp.ehDuplicata) {
+            grupos.push({ pA: pA, pB: pB, camposIguais: cmp.camposIguais, confianca: cmp.confianca });
           }
         }
       }
-      // Ordenar por score decrescente
-      grupos.sort(function(a, b) { return b.score - a.score; });
+      // Nomes incompletos (1 palavra so): dados orfaos/intrusivos para o admin conferir e limpar.
+      var incompletos = _pacientesCache.filter(function(p) {
+        var reais = _palavrasNome(p.nome).filter(function(w) { return w.length >= 2; });
+        return (p.nome || '').trim().length > 0 && reais.length < 2;
+      });
+      // Ordenar duplicatas por confianca (mais campos iguais primeiro)
+      grupos.sort(function(a, b) { return b.confianca - a.confianca; });
+
       var el = document.getElementById('pacDuplicataVarredura');
-      if (grupos.length === 0) {
+      var html = '';
+
+      if (grupos.length === 0 && incompletos.length === 0) {
         el.innerHTML = '<div style="background:#e8f5e9;border:2px solid #43a047;border-radius:10px;padding:15px;text-align:center;">' +
           '<span style="font-size:20px;">&#9989;</span>' +
-          '<p style="color:#2e7d32;font-weight:bold;margin-top:5px;">Nenhuma duplicata encontrada!</p>' +
-          '<p style="font-size:12px;color:#555;">Todos os ' + _pacientesCache.length + ' pacientes parecem ser registros unicos.</p>' +
+          '<p style="color:#2e7d32;font-weight:bold;margin-top:5px;">Nenhuma duplicata nem nome incompleto!</p>' +
+          '<p style="font-size:12px;color:#555;">Todos os ' + _pacientesCache.length + ' pacientes parecem registros unicos e completos.</p>' +
           '<button onclick="document.getElementById(\'pacDuplicataVarredura\').style.display=\'none\'" style="margin-top:10px;padding:6px 16px;border:none;border-radius:6px;background:#ccc;cursor:pointer;font-size:12px;">Fechar</button>' +
           '</div>';
         el.style.display = 'block';
         el.scrollIntoView({behavior:'smooth', block:'center'});
         return;
       }
-      var html = '<div style="background:#fff3e0;border:2px solid #ff9800;border-radius:10px;padding:15px;">';
-      html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">';
-      html += '<div><span style="font-size:18px;">&#9888;&#65039;</span> <strong style="color:#e65100;font-size:14px;">' + grupos.length + ' poss\u00edve' + (grupos.length === 1 ? 'l' : 'is') + ' duplicata' + (grupos.length === 1 ? '' : 's') + ' encontrada' + (grupos.length === 1 ? '' : 's') + '</strong></div>';
-      html += '<button onclick="document.getElementById(\'pacDuplicataVarredura\').style.display=\'none\'" style="padding:4px 12px;border:none;border-radius:6px;background:#ccc;cursor:pointer;font-size:11px;">Fechar</button>';
-      html += '</div>';
-      grupos.forEach(function(g, idx) {
-        var corBorda = g.score >= 80 ? '#c62828' : '#ff9800';
-        var labelConf = g.score >= 80 ? 'Alta' : (g.score >= 60 ? 'M\u00e9dia' : 'Baixa');
-        html += '<div style="background:white;border-left:4px solid ' + corBorda + ';padding:12px;margin:8px 0;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,0.1);">';
-        html += '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">';
-        html += '<span style="font-size:11px;background:' + corBorda + ';color:white;padding:2px 8px;border-radius:10px;">Confian\u00e7a: ' + labelConf + ' (' + Math.min(g.score, 100) + '%)</span>';
-        html += '<span style="font-size:11px;color:#777;">' + g.motivos.join(' | ') + '</span>';
+
+      // ---- Bloco de duplicatas ----
+      if (grupos.length > 0) {
+        html += '<div style="background:#fff3e0;border:2px solid #ff9800;border-radius:10px;padding:15px;margin-bottom:10px;">';
+        html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">';
+        html += '<div><span style="font-size:18px;">&#9888;&#65039;</span> <strong style="color:#e65100;font-size:14px;">' + grupos.length + ' poss\u00edve' + (grupos.length === 1 ? 'l' : 'is') + ' duplicata' + (grupos.length === 1 ? '' : 's') + ' (dados id\u00eanticos)</strong></div>';
+        html += '<button onclick="document.getElementById(\'pacDuplicataVarredura\').style.display=\'none\'" style="padding:4px 12px;border:none;border-radius:6px;background:#ccc;cursor:pointer;font-size:11px;">Fechar</button>';
         html += '</div>';
-        // Paciente A
-        html += '<div style="margin-top:8px;padding:6px 10px;background:#f5f5f5;border-radius:4px;font-size:12px;">';
-        html += '<strong>A:</strong> ' + (g.pA.nome || '(sem nome)');
-        if (g.pA.dataNascimento) html += ' | Nasc: ' + g.pA.dataNascimento;
-        if (g.pA.cpf) html += ' | CPF: ' + g.pA.cpf;
-        if (g.pA.pacienteEmail) html += ' | ' + g.pA.pacienteEmail;
+        grupos.forEach(function(g) {
+          var cor = _corConfianca(g.confianca);
+          html += '<div style="background:white;border-left:4px solid ' + cor + ';padding:12px;margin:8px 0;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,0.1);">';
+          html += '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">';
+          html += '<span style="font-size:11px;background:' + cor + ';color:white;padding:2px 8px;border-radius:10px;">' + _rotuloConfianca(g.confianca) + '</span>';
+          html += '<span style="font-size:11px;color:#777;">Igual em: ' + g.camposIguais.join(', ') + '</span>';
+          html += '</div>';
+          html += '<div style="margin-top:8px;padding:6px 10px;background:#f5f5f5;border-radius:4px;font-size:12px;">';
+          html += '<strong>A:</strong> ' + (g.pA.nome || '(sem nome)');
+          if (g.pA.dataNascimento) html += ' | Nasc: ' + g.pA.dataNascimento;
+          if (g.pA.cpf) html += ' | CPF: ' + g.pA.cpf;
+          if (g.pA.whatsapp) html += ' | Tel: ' + g.pA.whatsapp;
+          if (g.pA.pacienteEmail) html += ' | ' + g.pA.pacienteEmail;
+          html += '</div>';
+          html += '<div style="margin-top:4px;padding:6px 10px;background:#f5f5f5;border-radius:4px;font-size:12px;">';
+          html += '<strong>B:</strong> ' + (g.pB.nome || '(sem nome)');
+          if (g.pB.dataNascimento) html += ' | Nasc: ' + g.pB.dataNascimento;
+          if (g.pB.cpf) html += ' | CPF: ' + g.pB.cpf;
+          if (g.pB.whatsapp) html += ' | Tel: ' + g.pB.whatsapp;
+          if (g.pB.pacienteEmail) html += ' | ' + g.pB.pacienteEmail;
+          html += '</div>';
+          html += '<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">';
+          html += '<button onclick="editarPaciente(\'' + g.pA.id + '\')" style="padding:4px 10px;font-size:11px;background:#1565c0;color:white;border:none;border-radius:4px;cursor:pointer;">Editar A</button>';
+          html += '<button onclick="editarPaciente(\'' + g.pB.id + '\')" style="padding:4px 10px;font-size:11px;background:#1565c0;color:white;border:none;border-radius:4px;cursor:pointer;">Editar B</button>';
+          html += '<button onclick="deletePaciente(\'' + g.pB.id + '\')" style="padding:4px 10px;font-size:11px;background:#c62828;color:white;border:none;border-radius:4px;cursor:pointer;">Deletar B</button>';
+          html += '<button onclick="deletePaciente(\'' + g.pA.id + '\')" style="padding:4px 10px;font-size:11px;background:#c62828;color:white;border:none;border-radius:4px;cursor:pointer;">Deletar A</button>';
+          html += '</div>';
+          html += '</div>';
+        });
+        html += '<p style="font-size:11px;color:#777;margin-top:10px;">Quanto mais dados iguais, maior a chance de ser a mesma pessoa. Edite ou delete e clique de novo em "Verificar Duplicatas".</p>';
         html += '</div>';
-        // Paciente B
-        html += '<div style="margin-top:4px;padding:6px 10px;background:#f5f5f5;border-radius:4px;font-size:12px;">';
-        html += '<strong>B:</strong> ' + (g.pB.nome || '(sem nome)');
-        if (g.pB.dataNascimento) html += ' | Nasc: ' + g.pB.dataNascimento;
-        if (g.pB.cpf) html += ' | CPF: ' + g.pB.cpf;
-        if (g.pB.pacienteEmail) html += ' | ' + g.pB.pacienteEmail;
+      }
+
+      // ---- Bloco de nomes incompletos (orfaos) ----
+      if (incompletos.length > 0) {
+        html += '<div style="background:#fffde7;border:2px solid #f9a825;border-radius:10px;padding:15px;">';
+        html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">';
+        html += '<div><span style="font-size:18px;">&#128269;</span> <strong style="color:#f57f17;font-size:14px;">' + incompletos.length + ' nome' + (incompletos.length === 1 ? '' : 's') + ' incompleto' + (incompletos.length === 1 ? '' : 's') + ' (1 palavra s\u00f3)</strong></div>';
+        if (grupos.length === 0) html += '<button onclick="document.getElementById(\'pacDuplicataVarredura\').style.display=\'none\'" style="padding:4px 12px;border:none;border-radius:6px;background:#ccc;cursor:pointer;font-size:11px;">Fechar</button>';
         html += '</div>';
-        // Botoes de acao
-        html += '<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">';
-        html += '<button onclick="editarPaciente(\'' + g.pA.id + '\')" style="padding:4px 10px;font-size:11px;background:#1565c0;color:white;border:none;border-radius:4px;cursor:pointer;">Editar A</button>';
-        html += '<button onclick="editarPaciente(\'' + g.pB.id + '\')" style="padding:4px 10px;font-size:11px;background:#1565c0;color:white;border:none;border-radius:4px;cursor:pointer;">Editar B</button>';
-        html += '<button onclick="deletePaciente(\'' + g.pB.id + '\')" style="padding:4px 10px;font-size:11px;background:#c62828;color:white;border:none;border-radius:4px;cursor:pointer;">Deletar B</button>';
-        html += '<button onclick="deletePaciente(\'' + g.pA.id + '\')" style="padding:4px 10px;font-size:11px;background:#c62828;color:white;border:none;border-radius:4px;cursor:pointer;">Deletar A</button>';
+        html += '<p style="font-size:11px;color:#777;margin-bottom:8px;">Dados \u00f3rf\u00e3os: nome com uma palavra s\u00f3 (ex: "Jos\u00e9", "Z\u00e9"). Confira se \u00e9 o mesmo de algu\u00e9m com nome completo, ou complete/apague.</p>';
+        incompletos.forEach(function(p) {
+          html += '<div style="background:white;border-left:4px solid #f9a825;padding:8px 12px;margin:6px 0;border-radius:4px;font-size:12px;display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;">';
+          var linha = '<span><strong>' + (p.nome || '(sem nome)') + '</strong>';
+          if (p.dataNascimento) linha += ' | Nasc: ' + p.dataNascimento;
+          if (p.cpf) linha += ' | CPF: ' + p.cpf;
+          if (p.whatsapp) linha += ' | Tel: ' + p.whatsapp;
+          linha += '</span>';
+          html += linha;
+          html += '<span style="display:flex;gap:6px;">';
+          html += '<button onclick="editarPaciente(\'' + p.id + '\')" style="padding:4px 10px;font-size:11px;background:#1565c0;color:white;border:none;border-radius:4px;cursor:pointer;">Completar</button>';
+          html += '<button onclick="deletePaciente(\'' + p.id + '\')" style="padding:4px 10px;font-size:11px;background:#c62828;color:white;border:none;border-radius:4px;cursor:pointer;">Deletar</button>';
+          html += '</span>';
+          html += '</div>';
+        });
         html += '</div>';
-        html += '</div>';
-      });
-      html += '<p style="font-size:11px;color:#777;margin-top:10px;">Dica: Edite para corrigir dados ou delete o registro duplicado. Apos deletar, clique novamente em "Verificar Duplicatas" para atualizar.</p>';
-      html += '</div>';
+      }
+
       el.innerHTML = html;
       el.style.display = 'block';
       el.scrollIntoView({behavior:'smooth', block:'start'});
     }
 
-    // Listeners para deteccao em tempo real
+    // Listeners para deteccao em tempo real (inclui todos os campos identificadores)
     (function() {
-      var camposMonitorar = ['pacNome', 'pacDN', 'pacCPF'];
+      var camposMonitorar = ['pacNome', 'pacDN', 'pacCPF', 'pacWhats', 'pacEmail', 'pacSexo', 'pacEscolaridade', 'pacLateralidade'];
       camposMonitorar.forEach(function(id) {
         var el = document.getElementById(id);
         if (el) {
@@ -6387,40 +6468,41 @@
         }
         if (pacientesParaImportar.length === 0) { alert('Nenhum paciente valido encontrado no arquivo.'); event.target.value = ''; return; }
         // ===== FILTRAR DUPLICATAS (contra pacientes ja cadastrados) =====
-        // Usa a mesma logica de deteccao ja existente (_detectarDuplicatas).
-        // Considera "ja cadastrado" quando ha forte indicio: CPF identico,
-        // nome muito similar (>=90%) ou nome similar + mesma data de nascimento.
+        // Usa o novo motor de IGUALDADE EXATA (_detectarDuplicatas / _compararPacientes):
+        // so ignora quando TODOS os campos em comum batem E ha identificador forte.
+        // Assim a importacao "concatena": traz o que nao existe e ignora o que e realmente igual.
         var novosParaImportar = [];
         var duplicadosIgnorados = [];
-        // Lista de chaves dos que vao entrar, para tambem evitar duplicatas DENTRO do proprio CSV
-        var chavesNovos = [];
-        function _chavePaciente(p) {
-          var cpf = _normalizarCPF(p.cpf);
-          if (cpf && cpf.length >= 11) return 'cpf:' + cpf;
-          return 'nd:' + _normalizarTexto(p.nome) + '|' + (p.dataNascimento || '');
-        }
+        // Lista dos que ja selecionamos para importar, para evitar duplicata DENTRO do proprio CSV
+        var selecionadosNovos = [];
         pacientesParaImportar.forEach(function(p) {
           var ehDuplicado = false;
           var motivoDup = '';
-          // 1) Checar contra os pacientes ja cadastrados no painel
-          var dups = (typeof _detectarDuplicatas === 'function') ? _detectarDuplicatas(p.nome, p.dataNascimento, p.cpf, null) : [];
-          // So considerar duplicata "certa" quando o score for alto o suficiente
-          if (dups.length > 0 && dups[0].score >= 90) {
+          // 1) Checar contra os pacientes JA cadastrados no painel (todos os campos disponiveis)
+          var dups = (typeof _detectarDuplicatas === 'function')
+            ? _detectarDuplicatas(p.nome, p.dataNascimento, p.cpf, null, { whatsapp: p.whatsapp, pacienteEmail: p.pacienteEmail, sexo: p.sexo, escolaridade: p.escolaridade, lateralidade: p.lateralidade })
+            : [];
+          if (dups.length > 0) {
             ehDuplicado = true;
-            motivoDup = (dups[0].paciente.nome || '') + ' (' + dups[0].motivos.join(', ') + ')';
+            motivoDup = (dups[0].paciente.nome || '') + ' (igual em: ' + dups[0].camposIguais.join(', ') + ')';
           }
-          // 2) Checar contra os que ja selecionamos para importar (duplicata dentro do CSV)
+          // 2) Checar contra os que ja selecionamos deste mesmo CSV (duplicata interna)
           if (!ehDuplicado) {
-            var chave = _chavePaciente(p);
-            if (chavesNovos.indexOf(chave) !== -1) {
-              ehDuplicado = true;
-              motivoDup = 'repetido no proprio arquivo';
-            } else {
-              chavesNovos.push(chave);
+            for (var k = 0; k < selecionadosNovos.length; k++) {
+              var cmpInterno = _compararPacientes(p, selecionadosNovos[k]);
+              if (cmpInterno.ehDuplicata) {
+                ehDuplicado = true;
+                motivoDup = 'repetido no proprio arquivo (igual em: ' + cmpInterno.camposIguais.join(', ') + ')';
+                break;
+              }
             }
           }
-          if (ehDuplicado) duplicadosIgnorados.push({ nome: p.nome, motivo: motivoDup });
-          else novosParaImportar.push(p);
+          if (ehDuplicado) {
+            duplicadosIgnorados.push({ nome: p.nome, motivo: motivoDup });
+          } else {
+            selecionadosNovos.push(p);
+            novosParaImportar.push(p);
+          }
         });
         // Resumo antes de importar
         var comDN = novosParaImportar.filter(function(p) { return p.dataNascimento; }).length;
