@@ -1640,6 +1640,7 @@
           <div style="margin-top:10px;">
             <div id="adminSubTabs" style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px;padding:8px;background:#f5f5f5;border-radius:8px;">
               <button class="admin-sub-btn active" onclick="adminSubTab('mensagens')">Mensagens</button>
+              <button class="admin-sub-btn" onclick="adminSubTab('enviados');renderEnviados();">Enviados</button>
               <button class="admin-sub-btn" onclick="adminSubTab('monitor')">Monitor</button>
               <button class="admin-sub-btn" onclick="adminSubTab('usuarios')">Usuarios</button>
               <button class="admin-sub-btn" onclick="adminSubTab('creditos')">Creditos</button>
@@ -1673,6 +1674,18 @@
             </div>
           </div>
             </div><!-- /sub mensagens -->
+
+            <!-- SUB-ABA: Enviados -->
+            <div id="adminSub_enviados" class="admin-sub-content" style="display:none;">
+          <div style="background:#e8f5e9;border:2px solid #2e7d32;border-radius:10px;padding:15px;margin:10px 0;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+              <p style="font-size:13px;font-weight:bold;color:#2e7d32;">&#128228; Mensagens Enviadas</p>
+              <button onclick="limparEnviados()" style="background:#c62828;color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:11px;font-weight:bold;cursor:pointer;">Limpar Hist&#243;rico</button>
+            </div>
+            <p style="font-size:11px;color:#777;margin-bottom:10px;">Hist&#243;rico das mensagens que voc&#234; enviou (guardado neste navegador).</p>
+            <div id="adminEnviadosList" style="font-size:12px;color:#555;max-height:500px;overflow-y:auto;"></div>
+          </div>
+            </div><!-- /sub enviados -->
 
             <!-- SUB-ABA: Monitor -->
             <div id="adminSub_monitor" class="admin-sub-content" style="display:none;">
@@ -6571,6 +6584,7 @@
           if (respAll.ok && rAll.ok) {
             status.textContent = 'Enviado para ' + rAll.enviados + ' usuario(s)!' + (rAll.falhas ? ' (' + rAll.falhas + ' falha(s))' : '');
             status.style.color = '#2e7d32';
+            registrarEnviado('Todos os usuarios (' + rAll.enviados + ')', texto);
             document.getElementById('adminMsgTexto').value = '';
             document.getElementById('adminMsgEmail').value = '';
           } else {
@@ -6601,6 +6615,7 @@
           })
         });
         status.textContent = 'Enviado!'; status.style.color = '#2e7d32';
+        registrarEnviado(email, texto);
         document.getElementById('adminMsgTexto').value = '';
         setTimeout(function() { status.textContent = ''; }, 3000);
       } catch (e) {
@@ -6686,6 +6701,7 @@
             }
           })
         });
+        registrarEnviado(emailUsuario, resposta);
         if (input) { input.value = ''; input.placeholder = 'Resposta enviada!'; input.disabled = true; }
       } catch (e) {
         alert('Erro ao enviar resposta.');
@@ -7350,6 +7366,72 @@
       if (target) target.style.display = 'block';
       var evtBtn = (typeof event !== 'undefined' && event && event.target) ? event.target : null;
       if (evtBtn) evtBtn.classList.add('active');
+    }
+
+    // ===== ENVIADOS (historico local das mensagens que o admin enviou) =====
+    // Guarda uma copia local de cada mensagem enviada, no proprio navegador (localStorage),
+    // para o admin poder consultar depois. Funciona como a pasta "Enviados" de um e-mail.
+    // Remove do historico local tudo que passou de 90 dias (3 meses). Mantem a gaveta
+    // do navegador enxuta: nao fica acumulando para sempre. Nao afeta GitHub nem AWS.
+    function _limparEnviadosAntigos(lista) {
+      try {
+        var limite = Date.now() - (90 * 24 * 60 * 60 * 1000); // 90 dias em milissegundos
+        return (lista || []).filter(function (it) {
+          var t = it && it.timestamp ? new Date(it.timestamp).getTime() : 0;
+          return t >= limite;
+        });
+      } catch (e) { return lista || []; }
+    }
+
+    function registrarEnviado(para, texto) {
+      try {
+        if (!texto) return;
+        var lista = JSON.parse(localStorage.getItem('admin_enviados') || '[]');
+        lista.unshift({ para: para || '?', texto: texto, timestamp: new Date().toISOString() });
+        // Descarta o que passou de 3 meses antes de salvar.
+        lista = _limparEnviadosAntigos(lista);
+        // Limita a 500 registros para nao estourar o localStorage.
+        if (lista.length > 500) lista = lista.slice(0, 500);
+        localStorage.setItem('admin_enviados', JSON.stringify(lista));
+      } catch (e) {}
+    }
+
+    function renderEnviados() {
+      var el = document.getElementById('adminEnviadosList');
+      if (!el) return;
+      var lista = [];
+      try { lista = JSON.parse(localStorage.getItem('admin_enviados') || '[]'); } catch (e) { lista = []; }
+      // Limpa o que passou de 3 meses e regrava a lista enxuta de volta.
+      var antes = lista.length;
+      lista = _limparEnviadosAntigos(lista);
+      if (lista.length !== antes) {
+        try { localStorage.setItem('admin_enviados', JSON.stringify(lista)); } catch (e) {}
+      }
+      if (!lista.length) {
+        el.innerHTML = '<p style="color:#777;font-size:12px;">Nenhuma mensagem enviada ainda.</p>';
+        return;
+      }
+      var html = '';
+      for (var i = 0; i < lista.length; i++) {
+        var it = lista[i];
+        var dt = it.timestamp ? new Date(it.timestamp).toLocaleString('pt-BR') : '?';
+        var para = (it.para || '?').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        var txt = (it.texto || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        html += '<div style="background:#fff;border:1px solid #c8e6c9;border-radius:6px;padding:10px;margin:6px 0;">';
+        html += '<div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;">';
+        html += '<p style="font-size:11px;color:#2e7d32;font-weight:bold;">Para: ' + para + '</p>';
+        html += '<p style="font-size:11px;color:#777;">' + dt + '</p>';
+        html += '</div>';
+        html += '<p style="font-size:12px;color:#333;margin-top:4px;white-space:pre-wrap;">' + txt + '</p>';
+        html += '</div>';
+      }
+      el.innerHTML = html;
+    }
+
+    function limparEnviados() {
+      if (!confirm('Apagar todo o historico de mensagens enviadas deste navegador? Esta acao nao pode ser desfeita.')) return;
+      try { localStorage.removeItem('admin_enviados'); } catch (e) {}
+      renderEnviados();
     }
 
     async function carregarSaldoApi() {
