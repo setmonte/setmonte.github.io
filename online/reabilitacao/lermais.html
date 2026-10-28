@@ -299,6 +299,161 @@ var canvasCtx = null;
 var graficoData = [];
 var graficoHistorico = [];
 
+// ===== CAIXA-PRETA DE DIAGNOSTICO (rastreabilidade tecnica) =====
+// Objetivo: num sistema de avaliacao de saude mental, precisamos saber o que aconteceu
+// quando uma leitura falha, independente de o usuario avisar. Guarda SO dados tecnicos
+// (aparelho, permissao, erros de voz, rede, linha do tempo). NUNCA guarda a voz nem o
+// texto literal lido - isso seria dado clinico/espionagem, fora do escopo.
+var _diag = {
+    permissaoMic: 'nao_solicitada',   // nao_solicitada | concedida | negada | erro
+    permissaoMicErro: '',             // nome do erro do getUserMedia (ex: NotAllowedError)
+    reconheceuIniciou: false,         // o SpeechRecognition disparou onstart?
+    reconheceuErros: [],              // lista de erros do onerror (not-allowed, audio-capture...)
+    reconheceuReinicios: 0,           // quantas vezes o onend religou sozinho
+    primeiraPalavraMs: null,          // ms entre iniciar e a 1a palavra captada
+    falhaJaReportada: false,          // evita enviar o mesmo diagnostico duas vezes
+    eventos: []                       // linha do tempo: [{t: ms, e: 'texto'}]
+};
+var _diagInicioMs = 0; // marco zero da sessao, para medir tempos relativos
+
+// Registra um evento na linha do tempo (horario relativo ao inicio da leitura).
+function _diagEvento(texto) {
+    try {
+        var base = _diagInicioMs || Date.now();
+        _diag.eventos.push({ t: Date.now() - base, e: String(texto) });
+        // Mantem a linha do tempo enxuta (ultimos 40 eventos bastam para diagnostico).
+        if (_diag.eventos.length > 40) _diag.eventos = _diag.eventos.slice(-40);
+    } catch (e) {}
+}
+
+// Monta um retrato tecnico do ambiente (aparelho, navegador, tela, rede).
+// Campos que o navegador nao libera (por privacidade) viram 'nao_informado'.
+function _diagAmbiente() {
+    var amb = {};
+    try { amb.userAgent = navigator.userAgent || 'nao_informado'; } catch (e) { amb.userAgent = 'nao_informado'; }
+    try { amb.plataforma = navigator.platform || 'nao_informado'; } catch (e) { amb.plataforma = 'nao_informado'; }
+    try { amb.idioma = navigator.language || 'nao_informado'; } catch (e) { amb.idioma = 'nao_informado'; }
+    try { amb.toque = (('ontouchstart' in window) || (navigator.maxTouchPoints > 0)) ? 'sim' : 'nao'; } catch (e) { amb.toque = 'nao_informado'; }
+    try { amb.tela = window.screen ? (window.screen.width + 'x' + window.screen.height) : 'nao_informado'; } catch (e) { amb.tela = 'nao_informado'; }
+    try { amb.orientacao = (window.screen && window.screen.orientation && window.screen.orientation.type) ? window.screen.orientation.type : 'nao_informado'; } catch (e) { amb.orientacao = 'nao_informado'; }
+    try { amb.online = (typeof navigator.onLine === 'boolean') ? (navigator.onLine ? 'sim' : 'nao') : 'nao_informado'; } catch (e) { amb.online = 'nao_informado'; }
+    try {
+        var con = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+        amb.conexao = (con && con.effectiveType) ? con.effectiveType : 'nao_informado';
+    } catch (e) { amb.conexao = 'nao_informado'; }
+    try { amb.https = (location.protocol === 'https:') ? 'sim' : 'nao'; } catch (e) { amb.https = 'nao_informado'; }
+    try { amb.temAPIVoz = (('webkitSpeechRecognition' in window) || ('SpeechRecognition' in window)) ? 'sim' : 'nao'; } catch (e) { amb.temAPIVoz = 'nao_informado'; }
+    return amb;
+}
+
+// Detecta o sistema operacional de forma simples a partir do userAgent (para o resumo humano).
+function _diagSistema() {
+    var ua = '';
+    try { ua = (navigator.userAgent || '').toLowerCase(); } catch (e) { ua = ''; }
+    if (/android/.test(ua)) return 'Android';
+    if (/iphone|ipad|ipod/.test(ua)) return 'iOS';
+    if (/windows/.test(ua)) return 'Windows';
+    if (/linux/.test(ua)) return 'Linux';
+    if (/mac os|macintosh/.test(ua)) return 'Mac';
+    return 'Desconhecido';
+}
+
+// Monta um resumo em linguagem humana - a "resposta de interpelacao" pronta.
+// Ex: "Tablet Android/Chrome. Microfone permitido. Reconhecimento iniciou mas nao captou..."
+function _diagResumoHumano(motivo) {
+    var s = _diagSistema();
+    var toque = '';
+    try { toque = (('ontouchstart' in window) || (navigator.maxTouchPoints > 0)) ? ' (aparelho com toque, provavel tablet/celular)' : ''; } catch (e) {}
+    var partes = [];
+    partes.push('Sistema: ' + s + toque + '.');
+    // Microfone
+    if (_diag.permissaoMic === 'negada') partes.push('Microfone NEGADO pelo usuario/navegador.');
+    else if (_diag.permissaoMic === 'erro') partes.push('Falha ao acessar o microfone (' + (_diag.permissaoMicErro || 'erro') + ').');
+    else if (_diag.permissaoMic === 'concedida') partes.push('Microfone permitido.');
+    else partes.push('Permissao do microfone nao solicitada (saiu antes).');
+    // Reconhecimento
+    if (!_diag.reconheceuIniciou) partes.push('Reconhecimento de voz NAO chegou a iniciar.');
+    else partes.push('Reconhecimento iniciou' + (_diag.reconheceuReinicios > 0 ? (' e religou ' + _diag.reconheceuReinicios + ' vez(es)') : '') + '.');
+    if (_diag.reconheceuErros.length > 0) partes.push('Erros do reconhecimento: ' + _diag.reconheceuErros.join(', ') + '.');
+    partes.push('Palavras captadas: ' + palavraAtualIdx + '.');
+    // Causa provavel
+    var causa = '';
+    if (_diag.permissaoMic === 'negada') causa = 'Causa provavel: usuario nao autorizou o microfone.';
+    else if (_diag.reconheceuErros.indexOf('audio-capture') >= 0) causa = 'Causa provavel: o navegador nao conseguiu capturar o audio do microfone (mic ocupado/indisponivel).';
+    else if (_diag.reconheceuErros.indexOf('network') >= 0) causa = 'Causa provavel: o servico de voz do navegador perdeu a internet (ele depende de rede).';
+    else if (s === 'Android' && _diag.reconheceuIniciou && palavraAtualIdx === 0) causa = 'Causa provavel: engasgo do reconhecimento de voz do Android (limitacao conhecida da plataforma).';
+    else if (palavraAtualIdx === 0) causa = 'Causa provavel: o microfone nao captou a leitura.';
+    if (causa) partes.push(causa);
+    partes.push('Motivo do registro: ' + motivo + '. Nenhum resultado foi enviado por isso.');
+    return partes.join(' ');
+}
+
+// Envia o diagnostico para a AWS (mesma tabela, status proprio, separado do fluxo clinico).
+// So funciona em sessao do painel (precisa de email/sessionId). Nunca quebra o fluxo do paciente.
+function _reportarFalhaLermais(motivo) {
+    try {
+        if (_diag.falhaJaReportada) return;      // nao duplica
+        if (!_sessionInfo) return;               // so em sessao real do painel
+        var email = _sessionInfo.email || '';
+        var sessionId = _sessionInfo.sessionId || '';
+        if (!email && !sessionId) return;        // sem destino, nao ha como registrar
+        _diag.falhaJaReportada = true;
+        _diagEvento('reporte: ' + motivo);
+        var nomeEl = document.getElementById('nome');
+        var idEl = document.getElementById('idPaciente');
+        var dataTecnica = {
+            _tipoRegistro: 'diagnostico',        // marca: NAO e resultado clinico
+            status: 'erro_captacao_voz',
+            motivo: motivo,                      // negado_mic | sem_captacao | abandonado
+            escala: 'LERMAIS',
+            tipo: 'lermais',
+            paciente: nomeEl ? nomeEl.value : '',
+            idPaciente: idEl ? idEl.value : '',
+            pacienteId: _sessionInfo.pacienteId || '',
+            data: new Date().toISOString(),
+            resumo: _diagResumoHumano(motivo),   // explicacao em portugues claro
+            ambiente: _diagAmbiente(),           // retrato tecnico do aparelho
+            microfone: { permissao: _diag.permissaoMic, erro: _diag.permissaoMicErro },
+            reconhecimento: {
+                iniciou: _diag.reconheceuIniciou,
+                erros: _diag.reconheceuErros,
+                reinicios: _diag.reconheceuReinicios,
+                primeiraPalavraMs: _diag.primeiraPalavraMs
+            },
+            leitura: {
+                palavrasCaptadas: palavraAtualIdx,
+                totalPalavrasTexto: palavrasTexto.length,
+                texto: textoAtual ? textoAtual.titulo : '',
+                tema: textoAtual ? textoAtual.tema : '',
+                nivelDificuldade: nivelDificuldadeAtual,
+                modo: (new URLSearchParams(window.location.search).get('s')) ? 's' : ((new URLSearchParams(window.location.search).get('d')) ? 'd' : 'direto')
+            },
+            linhaDoTempo: _diag.eventos
+        };
+        var body = { email: email, tipo: 'lermais', sessionId: sessionId || ('diag-' + Date.now().toString(36)), data: dataTecnica };
+        var payload = JSON.stringify(body);
+        // Preferimos sendBeacon (funciona ate quando a pagina esta fechando). Se nao houver,
+        // caimos para fetch com keepalive. Qualquer falha e silenciosa: nunca atrapalha o paciente.
+        var enviado = false;
+        try {
+            if (navigator.sendBeacon) {
+                var blob = new Blob([payload], { type: 'application/json' });
+                enviado = navigator.sendBeacon(_API_URL + '/save-result', blob);
+            }
+        } catch (e) { enviado = false; }
+        if (!enviado) {
+            try {
+                fetch(_API_URL + '/save-result', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: payload,
+                    keepalive: true
+                }).catch(function () {});
+            } catch (e) {}
+        }
+    } catch (e) { /* diagnostico nunca pode quebrar o programa */ }
+}
+
 // Dicionario fonetico - variantes aceitas para amenizar erros do reconhecimento
 // Mapeia palavras comuns com suas variantes foneticas que o Speech API pode captar
 var DICIONARIO_FONETICO = {
@@ -615,6 +770,8 @@ function initSpeechRecognition() {
 
     recognition.onstart = function() {
         isListening = true;
+        _diag.reconheceuIniciou = true;   // caixa-preta: o reconhecimento ligou de fato
+        _diagEvento('reconhecimento iniciou');
         document.getElementById('micIndicator').className = 'mic-indicator ativo';
         document.getElementById('micTexto').textContent = 'Escutando...';
     };
@@ -630,12 +787,23 @@ function initSpeechRecognition() {
                 if (confidence < 0.3) continue;
                 // Filtro respiracao
                 if (detectarRespiracao(transcript)) continue;
+                // Caixa-preta: marca o tempo da 1a palavra realmente captada.
+                if (_diag.primeiraPalavraMs === null) {
+                    _diag.primeiraPalavraMs = Date.now() - (_diagInicioMs || Date.now());
+                    _diagEvento('primeira palavra captada');
+                }
                 processarFala(transcript);
             }
         }
     };
 
     recognition.onerror = function(event) {
+        // Caixa-preta: registra o erro (sem duplicar o mesmo erro varias vezes).
+        try {
+            var err = event && event.error ? event.error : 'desconhecido';
+            if (_diag.reconheceuErros.indexOf(err) < 0) _diag.reconheceuErros.push(err);
+            _diagEvento('erro reconhecimento: ' + err);
+        } catch (e) {}
         if (event.error === 'no-speech') return;
         if (event.error === 'not-allowed') {
             document.getElementById('micTexto').textContent = 'Permissao do microfone negada';
@@ -646,6 +814,8 @@ function initSpeechRecognition() {
 
     recognition.onend = function() {
         if (isListening && !leituraFinalizada) {
+            _diag.reconheceuReinicios++;   // caixa-preta: reinicio automatico (engasgo tipico no Android)
+            _diagEvento('reconhecimento religou (auto)');
             try { recognition.start(); } catch(e) {}
         } else {
             document.getElementById('micIndicator').className = 'mic-indicator parado';
@@ -793,18 +963,34 @@ function testarMicrofone() {
     var _btnIni = document.getElementById('btnIniciar');
     if (_btnIni) { _btnIni.disabled = true; _btnIni.style.opacity = '0.6'; }
 
+    // Caixa-preta: marca o inicio da sessao de leitura (marco zero para a linha do tempo).
+    _diagInicioMs = Date.now();
+    _diagEvento('solicitando permissao do microfone');
     navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
         // Permissao concedida. Liberamos imediatamente este stream de teste: quem vai usar o
         // microfone de verdade e o SpeechRecognition, logo em seguida. Nao segurar o microfone
         // aqui evita conflito de "quem esta usando o mic".
+        _diag.permissaoMic = 'concedida';
+        _diagEvento('microfone concedido');
         try { stream.getTracks().forEach(function(t) { t.stop(); }); } catch (e) {}
         if (_btnIni) { _btnIni.disabled = false; _btnIni.style.opacity = '1'; }
         // Pequeno respiro antes de iniciar o reconhecimento (o Chrome falha se for no mesmo instante).
         setTimeout(function() { iniciarLeitura(); }, 300);
     }).catch(function(err) {
         // Permissao negada ou microfone indisponivel: avisa com clareza, sem travar.
+        // Caixa-preta: classifica negacao vs. outro erro, registra e reporta a falha.
+        var nomeErr = (err && err.name) ? err.name : 'erro';
+        _diag.permissaoMicErro = nomeErr;
+        if (nomeErr === 'NotAllowedError' || nomeErr === 'SecurityError' || nomeErr === 'PermissionDeniedError') {
+            _diag.permissaoMic = 'negada';
+        } else {
+            _diag.permissaoMic = 'erro';
+        }
+        _diagEvento('falha no microfone: ' + nomeErr);
         if (_btnIni) { _btnIni.disabled = false; _btnIni.style.opacity = '1'; }
         if (_mt) _mt.innerHTML = '<span style="color:#c62828;font-weight:bold;">Nao foi possivel acessar o microfone. Clique no cadeado na barra de endereco, permita o microfone para este site e tente novamente.</span>';
+        // Reporta a falha de permissao (so em sessao do painel). Momento de falha (a): nem comecou.
+        _reportarFalhaLermais('negado_mic');
     });
 }
 
@@ -943,6 +1129,9 @@ function finalizarLeitura() {
         else { alert('Nenhuma palavra foi captada. Verifique o microfone e repita a leitura.'); }
         var btnNovoEl = document.getElementById('btnNovo');
         if (btnNovoEl) btnNovoEl.style.display = 'inline-block';
+        // Caixa-preta: momento de falha (b) - finalizou e nada foi captado.
+        _diagEvento('finalizou sem palavras captadas');
+        _reportarFalhaLermais('sem_captacao');
         return; // nao exibe nem salva resultado falso
     }
 
@@ -1480,6 +1669,18 @@ if (params.get('s')) {
 } else {
     // Acesso direto - funciona normalmente (modo standalone ou "Abrir Direto" do painel)
 }
+
+// Caixa-preta: momento de falha (c) - paciente FECHOU/SAIU no meio sem finalizar.
+// So reporta se: estava lendo, nao finalizou, e nada foi captado (abandono com falha).
+// Usa sendBeacon por dentro de _reportarFalhaLermais, que funciona ate na saida da pagina.
+window.addEventListener('beforeunload', function() {
+    try {
+        if (_sessionInfo && isListening && !leituraFinalizada && palavraAtualIdx === 0) {
+            _diagEvento('pagina fechada durante leitura sem captacao');
+            _reportarFalhaLermais('abandonado');
+        }
+    } catch (e) {}
+});
 
 // NOVO (modo painel): sortear o texto automaticamente e ja preparar a leitura, sem exigir
 // que o paciente clique em "Sortear Texto". Os dados (nome, nascimento, sexo) vieram do painel.
