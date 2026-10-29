@@ -316,6 +316,336 @@ var _diag = {
 };
 var _diagInicioMs = 0; // marco zero da sessao, para medir tempos relativos
 
+// ===== MODO DE CAPTURA (Frente 2: gravacao+Whisper so no Android) =====
+// No computador (Windows/Linux/Mac/iOS) o reconhecimento AO VIVO funciona bem, entao
+// mantemos tudo como esta. No Android o ao vivo engasga (limitacao da plataforma): gravamos
+// o audio e transcrevemos no fim via Whisper (endpoint /transcribe-audio, o mesmo do TFLOD).
+// O progresso na tela vem da ATIVIDADE REAL do audio (Web Audio API) - nunca simulado.
+var MODO_CAPTURA = 'aovivo';      // 'aovivo' (padrao) | 'gravacao' (Android)
+var _recGrav = null;              // MediaRecorder do modo gravacao
+var _recChunks = [];              // pedacos do audio gravado
+var _recMime = 'audio/webm';      // formato realmente usado (definido por isTypeSupported)
+var _recStream = null;            // stream do microfone (para parar as tracks no fim)
+var _recAudioCtx = null;          // AudioContext do medidor de atividade (progresso visual)
+var _recAnalyser = null;          // AnalyserNode: mede energia da fala em tempo real
+var _recAnimFrame = null;         // loop de animacao da barra de progresso
+var _recDuracaoPrevistaMs = 90000;// duracao estimada da leitura (ajusta a velocidade da barra)
+var _recProgresso = 0;            // 0..100, progresso visual acumulado
+var _recTeveFala = false;         // detectou fala pelo menos uma vez?
+
+// Decide o modo de captura pelo sistema. So Android cai para gravacao.
+function _definirModoCaptura() {
+    try {
+        var ua = (navigator.userAgent || '').toLowerCase();
+        if (/android/.test(ua)) { MODO_CAPTURA = 'gravacao'; }
+        else { MODO_CAPTURA = 'aovivo'; }
+    } catch (e) { MODO_CAPTURA = 'aovivo'; }
+    _diagEvento('modo de captura: ' + MODO_CAPTURA);
+    return MODO_CAPTURA;
+}
+
+// Escolhe o formato de gravacao que o navegador realmente suporta (padrao da Arquitetura B).
+// Evita quebra no Android/Chrome e garante que o Blob final use o MESMO tipo da gravacao.
+function _escolherMimeGravacao() {
+    var candidatos = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4', 'audio/mp4;codecs=mp4a.40.2', 'audio/aac'];
+    try {
+        if (typeof MediaRecorder !== 'undefined' && typeof MediaRecorder.isTypeSupported === 'function') {
+            for (var i = 0; i < candidatos.length; i++) {
+                if (MediaRecorder.isTypeSupported(candidatos[i])) return candidatos[i];
+            }
+        }
+    } catch (e) {}
+    return '';
+}
+
+// Inicia a GRAVACAO do audio (Android). Em paralelo, liga um AnalyserNode no MESMO stream
+// para mover a barra de progresso conforme a ATIVIDADE de fala (progresso real, nao simulado).
+// Esses dois (MediaRecorder + AnalyserNode) convivem bem no mesmo stream - diferente do
+// SpeechRecognition, que briga pelo microfone. Recebe o stream ja concedido em testarMicrofone.
+function _iniciarGravacao(stream) {
+    try {
+        _recStream = stream;
+        _recChunks = [];
+        _recTeveFala = false;
+        _recProgresso = 0;
+        _recMime = _escolherMimeGravacao();
+        var opcoes = { audioBitsPerSecond: 96000 };
+        if (_recMime) opcoes.mimeType = _recMime;
+        try {
+            _recGrav = new MediaRecorder(stream, opcoes);
+        } catch (eRec) {
+            _recGrav = new MediaRecorder(stream);
+            _recMime = _recGrav.mimeType || '';
+        }
+        _recGrav.ondataavailable = function (e) { if (e.data && e.data.size > 0) _recChunks.push(e.data); };
+        _recGrav.start(1000); // emite pedacos a cada 1s
+        _diag.reconheceuIniciou = true; // reaproveita a caixa-preta: "captura iniciou"
+        _diagEvento('gravacao iniciou (' + (_recMime || 'padrao') + ')');
+        // Estima a duracao da leitura pela quantidade de palavras (ritmo medio ~130 ppm),
+        // so para calibrar a velocidade visual da barra. Minimo 30s, maximo 5min.
+        var nPalavras = palavrasTexto.length || 100;
+        _recDuracaoPrevistaMs = Math.min(300000, Math.max(30000, Math.round((nPalavras / 130) * 60000)));
+        // Medidor de atividade de fala (Web Audio API) para a barra de progresso.
+        try {
+            var AC = window.AudioContext || window.webkitAudioContext;
+            _recAudioCtx = new AC();
+            var fonte = _recAudioCtx.createMediaStreamSource(stream);
+            _recAnalyser = _recAudioCtx.createAnalyser();
+            _recAnalyser.fftSize = 512;
+            fonte.connect(_recAnalyser);
+            _recAtualizarBarra();
+        } catch (eAud) {
+            // Se a Web Audio API falhar, a barra avanca so pelo tempo (fallback honesto).
+            _recAnalyser = null;
+            _recAtualizarBarra();
+        }
+        // Indicador visual igual ao ao vivo.
+        var ind = document.getElementById('micIndicator');
+        if (ind) ind.className = 'mic-indicator ativo';
+        var mt = document.getElementById('micTexto');
+        if (mt) mt.textContent = 'Escutando...';
+    } catch (e) {
+        _diagEvento('falha ao iniciar gravacao: ' + (e && e.message ? e.message : e));
+    }
+}
+
+// Move a barra de progresso. Quando ha fala (energia acima de um limiar), a barra avanca mais
+// rapido; em silencio, quase nao avanca. O ritmo e calibrado pela duracao prevista, para a
+// aparencia ficar parecida com o modo ao vivo (barra enchendo conforme a leitura).
+function _recAtualizarBarra() {
+    if (leituraFinalizada) return;
+    var energia = 0;
+    if (_recAnalyser) {
+        try {
+            var buf = new Uint8Array(_recAnalyser.frequencyBinCount);
+            _recAnalyser.getByteFrequencyData(buf);
+            var soma = 0;
+            for (var i = 0; i < buf.length; i++) soma += buf[i];
+            energia = soma / buf.length; // 0..255 (media do espectro)
+        } catch (e) { energia = 0; }
+    }
+    // Passo base por quadro (~60fps): enche a barra na duracao prevista mesmo so com o tempo.
+    var passoBase = 100 / (_recDuracaoPrevistaMs / 16.7);
+    var fator = 0.3; // em silencio, avanca devagar (nao trava: o paciente ve que segue)
+    if (energia > 18) { fator = 1.4; _recTeveFala = true; } // falando: avanca mais rapido
+    else if (energia > 8) { fator = 0.8; }                  // fala baixa / transicao
+    _recProgresso += passoBase * fator;
+    if (_recProgresso > 99) _recProgresso = 99; // so chega a 100% ao finalizar de fato
+    var barra = document.getElementById('barraProgresso');
+    if (barra) barra.style.width = _recProgresso + '%';
+    var mp = document.getElementById('mProgresso');
+    if (mp) mp.textContent = Math.round(_recProgresso) + '%';
+    _recAnimFrame = requestAnimationFrame(_recAtualizarBarra);
+}
+
+// Para a gravacao com seguranca (espera o onstop, padrao da Arquitetura B) e devolve o Blob.
+// Retorna uma Promise com o audioBlob pronto (todos os chunks entregues).
+function _pararGravacao() {
+    return new Promise(function (resolve) {
+        if (_recAnimFrame) { cancelAnimationFrame(_recAnimFrame); _recAnimFrame = null; }
+        try { if (_recAudioCtx) { _recAudioCtx.close(); _recAudioCtx = null; } } catch (e) {}
+        if (!_recGrav || _recGrav.state === 'inactive') {
+            var tipo0 = _recMime || 'audio/webm';
+            resolve(new Blob(_recChunks, { type: tipo0 }));
+            return;
+        }
+        var mr = _recGrav;
+        var concluido = false;
+        var finalizar = function () {
+            if (concluido) return;
+            concluido = true;
+            try { if (_recStream) _recStream.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {}
+            var tipo = _recMime || 'audio/webm';
+            resolve(new Blob(_recChunks, { type: tipo }));
+        };
+        mr.onstop = finalizar;
+        setTimeout(finalizar, 3000); // rede de seguranca
+        try { mr.stop(); } catch (e) { finalizar(); }
+    });
+}
+
+// Converte um Blob de audio em base64 (sem o prefixo data:...;base64,).
+function _blobParaBase64(blob) {
+    return new Promise(function (resolve, reject) {
+        var fr = new FileReader();
+        fr.onloadend = function () {
+            try {
+                var s = fr.result || '';
+                var v = s.indexOf(',') >= 0 ? s.split(',')[1] : s;
+                resolve(v);
+            } catch (e) { reject(e); }
+        };
+        fr.onerror = function () { reject(new Error('leitura do audio falhou')); };
+        fr.readAsDataURL(blob);
+    });
+}
+
+// Compara o TEXTO transcrito pelo Whisper com o texto esperado e calcula palavras corretas.
+// Reaproveita normalizarTexto() e compararPalavras() (mesma logica do modo ao vivo), varrendo
+// na ordem e permitindo pequenos "saltos" (palavra nao reconhecida conta como lida/incorreta).
+function _avaliarTranscricao(transcrito, esperadoArr) {
+    var ditas = String(transcrito || '').toLowerCase().split(/\s+/).filter(function (x) { return x.trim(); });
+    var corretas = 0;
+    var lidas = 0;         // quantas palavras do texto foram "percorridas"
+    var idxEsp = 0;        // ponteiro no texto esperado
+    for (var i = 0; i < ditas.length && idxEsp < esperadoArr.length; i++) {
+        var d = ditas[i];
+        // Procura a palavra dita nas proximas ate 3 posicoes do texto esperado (tolera saltos).
+        var achou = -1;
+        var limite = Math.min(esperadoArr.length, idxEsp + 3);
+        for (var j = idxEsp; j < limite; j++) {
+            if (compararPalavras(d, esperadoArr[j])) { achou = j; break; }
+        }
+        if (achou >= 0) {
+            // Palavras puladas entre idxEsp e achou contam como lidas porem incorretas.
+            lidas += (achou - idxEsp) + 1;
+            corretas += 1;
+            idxEsp = achou + 1;
+        }
+        // Se nao achou, e ruido de transcricao: ignora (nao penaliza a toa).
+    }
+    if (lidas < corretas) lidas = corretas;
+    return { corretas: corretas, lidas: lidas };
+}
+
+// Finaliza a leitura no modo GRAVACAO (Android): para a gravacao, valida, envia ao Whisper
+// com retry, calcula o resultado a partir do texto e segue para exibir/salvar. Segue as 5
+// protecoes da Arquitetura B. Em qualquer falha, usa a caixa-preta e pede para refazer.
+async function _finalizarGravacao() {
+    var mt = document.getElementById('micTexto');
+    if (mt) mt.textContent = 'Processando leitura...';
+    var ind = document.getElementById('micIndicator');
+    if (ind) ind.className = 'mic-indicator parado';
+
+    // Protecao 1: espera o onstop (audio completo) antes de montar o Blob.
+    var audioBlob = await _pararGravacao();
+    _diagEvento('gravacao finalizada, bytes=' + (audioBlob ? audioBlob.size : 0));
+
+    // Protecao 2: valida audio vazio/curto antes de enviar (nao gasta transcricao a toa).
+    if (!audioBlob || _recChunks.length === 0 || audioBlob.size < 2048) {
+        _diagEvento('audio vazio/curto (' + (audioBlob ? audioBlob.size : 0) + ' bytes)');
+        _mostrarFalhaGravacao('O microfone nao registrou a leitura (audio vazio). Toque em Nova Leitura e leia novamente, mais perto do aparelho.');
+        _reportarFalhaLermais('sem_captacao');
+        return;
+    }
+
+    var audioBase64;
+    try { audioBase64 = await _blobParaBase64(audioBlob); }
+    catch (e) {
+        _mostrarFalhaGravacao('Falha ao preparar o audio. Toque em Nova Leitura e tente novamente.');
+        _reportarFalhaLermais('sem_captacao');
+        return;
+    }
+
+    // Protecao 3: envia ao /transcribe-audio com retry (ate 3x, backoff crescente).
+    var texto = '';
+    var tentativas = 0;
+    var dados = null;
+    while (tentativas < 3 && !texto) {
+        tentativas++;
+        try {
+            var resp = await fetch(_API_URL + '/transcribe-audio', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    audioBase64: audioBase64,
+                    sessionId: (_sessionInfo && _sessionInfo.sessionId) ? _sessionInfo.sessionId : '',
+                    mimeType: _recMime || 'audio/webm'
+                })
+            });
+            dados = await resp.json();
+            texto = (dados && typeof dados.text === 'string') ? dados.text : '';
+        } catch (eRede) {
+            dados = null; texto = '';
+            if (tentativas < 3) { await new Promise(function (r) { setTimeout(r, 800 * tentativas); }); }
+        }
+    }
+
+    if (!texto || !texto.trim()) {
+        _diagEvento('transcricao vazia apos ' + tentativas + ' tentativa(s)');
+        _mostrarFalhaGravacao('Nao foi possivel transcrever a leitura agora. Verifique a internet e toque em Nova Leitura para tentar de novo.');
+        _reportarFalhaLermais('sem_captacao');
+        return;
+    }
+    _diagEvento('transcricao recebida (' + texto.trim().split(/\s+/).length + ' palavras)');
+
+    // ===== CALCULO DO RESULTADO A PARTIR DO TEXTO (modo Android) =====
+    var tempoTotal = (Date.now() - inicioLeitura) / 1000; // segundos
+    var aval = _avaliarTranscricao(texto, palavrasTexto);
+    palavraAtualIdx = aval.lidas;          // palavras percorridas no texto
+    palavrasCorretas = aval.corretas;
+    palavrasIncorretas = Math.max(0, aval.lidas - aval.corretas);
+
+    var tempoMin = tempoTotal / 60;
+    var ppmFinal = tempoMin > 0 ? Math.round(palavraAtualIdx / tempoMin) : 0;
+    var precisaoFinal = palavraAtualIdx > 0 ? Math.round((palavrasCorretas / palavraAtualIdx) * 100) : 0;
+    var completude = palavrasTexto.length > 0 ? Math.round((palavraAtualIdx / palavrasTexto.length) * 100) : 0;
+    // Indice LERMAIS SEM fluencia (decisao clinica): repondera velocidade e precisao.
+    // Fora do Android a formula usa 30% vel + 40% prec + 30% fluencia; aqui redistribuimos
+    // o peso da fluencia proporcionalmente -> ~43% velocidade + ~57% precisao.
+    var velNorm = Math.min(100, (ppmFinal / 150) * 100);
+    var indiceLermais = Math.round((velNorm * 0.43) + (precisaoFinal * 0.57));
+
+    // Protecao anti-resultado-falso: se, mesmo com texto, nada casou com a leitura esperada.
+    if (palavraAtualIdx === 0) {
+        _diagEvento('transcricao nao casou com o texto esperado');
+        _mostrarFalhaGravacao('A leitura nao pode ser avaliada (o que foi dito nao corresponde ao texto). Toque em Nova Leitura e leia o texto apresentado.');
+        _reportarFalhaLermais('sem_captacao');
+        return;
+    }
+
+    var resultado = {
+        data: new Date().toISOString(),
+        nome: document.getElementById('nome').value,
+        idade: idadeAnos,
+        sexo: document.getElementById('sexo').value,
+        escolaridade: document.getElementById('escolaridade') ? document.getElementById('escolaridade').value : '',
+        lateralidade: document.getElementById('lateralidade') ? document.getElementById('lateralidade').value : '',
+        correcaoVisual: document.getElementById('correcaoVisual') ? document.getElementById('correcaoVisual').value : '',
+        texto: textoAtual.titulo,
+        tema: textoAtual.tema,
+        faixa: idadeAnos <= 12 ? 'crianca' : 'adolescente_adulto',
+        nivelDificuldade: nivelDificuldadeAtual,
+        totalPalavras: palavrasTexto.length,
+        palavrasLidas: palavraAtualIdx,
+        corretas: palavrasCorretas,
+        incorretas: palavrasIncorretas,
+        ppm: ppmFinal,
+        precisao: precisaoFinal,
+        fluencia: null,                 // NAO medida no Android (decisao clinica)
+        fluenciaObservada: false,
+        completude: completude,
+        pausasLongas: null,
+        tempoSegundos: Math.round(tempoTotal),
+        indiceLermais: indiceLermais,
+        capturaModo: 'gravacao_whisper',
+        transcricao: '',                // NAO guardamos o texto lido (privacidade/decisao sua)
+        graficoData: [{ ppm: ppmFinal, precisao: precisaoFinal, bloco: 1 }]
+    };
+
+    var barra = document.getElementById('barraProgresso');
+    if (barra) barra.style.width = '100%';
+    if (mt) mt.textContent = 'Leitura finalizada';
+
+    exibirResultados(resultado);
+    salvarHistorico(resultado);
+}
+
+// Mostra uma mensagem de falha no modo gravacao (mesmo visual da falha do ao vivo).
+function _mostrarFalhaGravacao(msg) {
+    var html = '<div style="background:#fff3e0;border:2px solid #ff9800;border-radius:10px;padding:16px;text-align:center;">' +
+        '<p style="font-size:1.1em;color:#e65100;font-weight:bold;margin-bottom:6px;">&#9888; Leitura nao registrada</p>' +
+        '<p style="font-size:0.9em;color:#555;line-height:1.5;">' + msg + '</p></div>';
+    var contEl = document.getElementById('resultadosConteudo');
+    var areaEl = document.getElementById('resultadosArea');
+    if (contEl && areaEl) { contEl.innerHTML = html; areaEl.style.display = 'block'; areaEl.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+    else { alert(msg); }
+    var btnNovoEl = document.getElementById('btnNovo');
+    if (btnNovoEl) btnNovoEl.style.display = 'inline-block';
+    var btnParar = document.getElementById('btnParar');
+    if (btnParar) btnParar.style.display = 'none';
+}
+
 // Registra um evento na linha do tempo (horario relativo ao inicio da leitura).
 function _diagEvento(texto) {
     try {
@@ -966,16 +1296,28 @@ function testarMicrofone() {
     // Caixa-preta: marca o inicio da sessao de leitura (marco zero para a linha do tempo).
     _diagInicioMs = Date.now();
     _diagEvento('solicitando permissao do microfone');
+    // Decide o modo de captura (so Android grava; resto continua ao vivo).
+    _definirModoCaptura();
     navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
-        // Permissao concedida. Liberamos imediatamente este stream de teste: quem vai usar o
-        // microfone de verdade e o SpeechRecognition, logo em seguida. Nao segurar o microfone
-        // aqui evita conflito de "quem esta usando o mic".
         _diag.permissaoMic = 'concedida';
         _diagEvento('microfone concedido');
-        try { stream.getTracks().forEach(function(t) { t.stop(); }); } catch (e) {}
         if (_btnIni) { _btnIni.disabled = false; _btnIni.style.opacity = '1'; }
-        // Pequeno respiro antes de iniciar o reconhecimento (o Chrome falha se for no mesmo instante).
-        setTimeout(function() { iniciarLeitura(); }, 300);
+        if (MODO_CAPTURA === 'gravacao') {
+            // Android: NAO paramos o stream - ele vai alimentar a gravacao (MediaRecorder).
+            inicioLeitura = Date.now();
+            leituraFinalizada = false;
+            isListening = true;
+            // Prepara a tela de leitura (mesmo visual do ao vivo).
+            document.getElementById('btnIniciar').style.display = 'none';
+            document.getElementById('btnParar').style.display = 'inline-block';
+            _iniciarGravacao(stream);
+        } else {
+            // Computador: liberamos este stream de teste; quem usa o mic de verdade e o
+            // SpeechRecognition, logo em seguida. Nao segurar o mic aqui evita conflito.
+            try { stream.getTracks().forEach(function(t) { t.stop(); }); } catch (e) {}
+            // Pequeno respiro antes de iniciar o reconhecimento (o Chrome falha se for no mesmo instante).
+            setTimeout(function() { iniciarLeitura(); }, 300);
+        }
     }).catch(function(err) {
         // Permissao negada ou microfone indisponivel: avisa com clareza, sem travar.
         // Caixa-preta: classifica negacao vs. outro erro, registra e reporta a falha.
@@ -1060,6 +1402,18 @@ function finalizarLeitura() {
     if (_timerSilencio) { clearTimeout(_timerSilencio); _timerSilencio = null; }
     if (recognition) { try { recognition.stop(); } catch(e) {} }
 
+    // MODO GRAVACAO (Android): delega para o fluxo de gravacao+Whisper e encerra aqui.
+    // O _finalizarGravacao cuida de parar o audio, transcrever e exibir/salvar o resultado.
+    if (MODO_CAPTURA === 'gravacao') {
+        document.getElementById('btnParar').style.display = 'none';
+        document.getElementById('btnNovo').style.display = 'inline-block';
+        if (!_sessionInfo) { document.getElementById('btnHistorico').style.display = 'inline-block'; }
+        var _btnEnvP = document.getElementById('btnEnviarPainel');
+        if (_btnEnvP) { _btnEnvP.style.display = 'inline-block'; }
+        _finalizarGravacao();
+        return;
+    }
+
     document.getElementById('micIndicator').className = 'mic-indicator parado';
     document.getElementById('micTexto').textContent = 'Leitura finalizada';
     document.getElementById('btnParar').style.display = 'none';
@@ -1138,6 +1492,21 @@ function finalizarLeitura() {
     exibirResultados(resultado);
     salvarHistorico(resultado);
 }
+// Monta os dominios para o painel. Quando a fluencia nao foi medida (modo gravacao/Android),
+// o dominio Fluencia vai com classificacao "Nao medida" (observacao clinica) em vez de um 0 falso.
+function _montarDominiosLermais(r) {
+    var dom = {
+        'Velocidade (PPM)': { pontuacao: r.ppm, max: 200, classificacao: r.ppm >= 120 ? 'Rapida' : r.ppm >= 80 ? 'Adequada' : r.ppm >= 50 ? 'Lenta' : 'Muito lenta' },
+        'Precisao': { pontuacao: r.precisao, max: 100, classificacao: r.precisao >= 90 ? 'Alta' : r.precisao >= 70 ? 'Adequada' : r.precisao >= 50 ? 'Baixa' : 'Muito baixa' },
+        'Completude': { pontuacao: r.completude, max: 100, classificacao: r.completude >= 90 ? 'Completa' : r.completude >= 70 ? 'Parcial' : 'Incompleta' }
+    };
+    if (r.fluencia === null || r.fluencia === undefined) {
+        dom['Fluencia'] = { pontuacao: 0, max: 10, classificacao: 'Nao medida (avaliar por observacao clinica)' };
+    } else {
+        dom['Fluencia'] = { pontuacao: r.fluencia, max: 10, classificacao: r.fluencia >= 8 ? 'Fluente' : r.fluencia >= 5 ? 'Moderada' : 'Disfluente' };
+    }
+    return dom;
+}
 function exibirResultados(r) {
     var classificacao = '';
     if (r.indiceLermais >= 80) classificacao = 'Excelente';
@@ -1161,10 +1530,17 @@ function exibirResultados(r) {
     html += '<div style="background:#fff;padding:12px;border-radius:8px;text-align:center;border:1px solid #e0e0e0;">';
     html += '<div style="font-size:1.3em;font-weight:bold;color:#2e7d32;">' + r.precisao + '%</div><div style="font-size:0.8em;color:#777;">Precisao</div></div>';
     html += '<div style="background:#fff;padding:12px;border-radius:8px;text-align:center;border:1px solid #e0e0e0;">';
-    html += '<div style="font-size:1.3em;font-weight:bold;color:#6a1b9a;">' + r.fluencia + '/10</div><div style="font-size:0.8em;color:#777;">Fluencia</div></div>';
+    var _fluTxt = (r.fluencia === null || r.fluencia === undefined) ? 'N/D' : (r.fluencia + '/10');
+    html += '<div style="font-size:1.3em;font-weight:bold;color:#6a1b9a;">' + _fluTxt + '</div><div style="font-size:0.8em;color:#777;">Fluencia</div></div>';
     html += '<div style="background:#fff;padding:12px;border-radius:8px;text-align:center;border:1px solid #e0e0e0;">';
     html += '<div style="font-size:1.3em;font-weight:bold;color:#e65100;">' + r.completude + '%</div><div style="font-size:0.8em;color:#777;">Completude</div></div>';
     html += '</div>';
+    // Aviso quando a fluencia nao foi medida automaticamente (modo gravacao/Android).
+    if (r.fluencia === null || r.fluencia === undefined) {
+        html += '<div style="background:#fff8e1;padding:10px 12px;border-radius:8px;margin-top:4px;font-size:0.82em;border-left:3px solid #ffb300;color:#6d4c00;">';
+        html += '<strong>Fluencia (N/D):</strong> neste dispositivo a fluencia nao e medida automaticamente. Avalie por observacao clinica durante a leitura. Velocidade, precisao e completude foram calculadas normalmente.';
+        html += '</div>';
+    }
 
     var descNivel = (r.nivelDificuldade && r.nivelDificuldade !== 0)
         ? ('Nivel de dificuldade ' + r.nivelDificuldade)
@@ -1174,7 +1550,8 @@ function exibirResultados(r) {
     html += '<p><strong>Nivel:</strong> ' + descNivel + ' &#183; ' + r.totalPalavras + ' palavras no texto</p>';
     html += '<p><strong>Tempo total:</strong> ' + r.tempoSegundos + ' segundos</p>';
     html += '<p><strong>Palavras corretas:</strong> ' + r.corretas + '/' + r.palavrasLidas + '</p>';
-    html += '<p><strong>Pausas longas (>3s):</strong> ' + r.pausasLongas + '</p>';
+    var _pausasTxt = (r.pausasLongas === null || r.pausasLongas === undefined) ? 'nao medido neste dispositivo' : r.pausasLongas;
+    html += '<p><strong>Pausas longas (>3s):</strong> ' + _pausasTxt + '</p>';
     html += '</div>';
     html += '<div style="background:#e3f2fd;padding:12px;border-radius:8px;margin-top:12px;font-size:0.82em;border-left:3px solid #1565c0;">';
     html += '<strong>Como interpretar:</strong> O Indice LERMAIS (0-100) combina Velocidade (30%) + Precisao (40%) + Fluencia (30%). ';
@@ -1194,17 +1571,13 @@ function exibirResultados(r) {
         escore: r.indiceLermais,
         classificacao: classificacao,
         nivelDificuldade: r.nivelDificuldade || 0,
-        dominios: {
-            'Velocidade (PPM)': { pontuacao: r.ppm, max: 200, classificacao: r.ppm >= 120 ? 'Rapida' : r.ppm >= 80 ? 'Adequada' : r.ppm >= 50 ? 'Lenta' : 'Muito lenta' },
-            'Precisao': { pontuacao: r.precisao, max: 100, classificacao: r.precisao >= 90 ? 'Alta' : r.precisao >= 70 ? 'Adequada' : r.precisao >= 50 ? 'Baixa' : 'Muito baixa' },
-            'Fluencia': { pontuacao: r.fluencia, max: 10, classificacao: r.fluencia >= 8 ? 'Fluente' : r.fluencia >= 5 ? 'Moderada' : 'Disfluente' },
-            'Completude': { pontuacao: r.completude, max: 100, classificacao: r.completude >= 90 ? 'Completa' : r.completude >= 70 ? 'Parcial' : 'Incompleta' }
-        },
+        dominios: _montarDominiosLermais(r),
         idPaciente: document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '',
         idade: document.getElementById('idadeCalculada').value,
         sexo: r.sexo,
+        capturaModo: r.capturaModo || 'aovivo',
         data: new Date().toISOString(),
-        detalhes: { texto: r.texto, tema: r.tema, faixa: r.faixa, tempoSegundos: r.tempoSegundos, pausasLongas: r.pausasLongas, graficoData: r.graficoData }
+        detalhes: { texto: r.texto, tema: r.tema, faixa: r.faixa, tempoSegundos: r.tempoSegundos, pausasLongas: r.pausasLongas, graficoData: r.graficoData, capturaModo: r.capturaModo || 'aovivo' }
     };
     // Salvar na API automaticamente (dupla seguranca, como REOCUPA)
     salvarNaAPI(r);
@@ -1337,8 +1710,9 @@ function salvarNaAPI(resultado) {
     else classificacao = 'Necessita intervencao';
     var ppmVal = resultado.ppm || 0;
     var precVal = resultado.precisao || 0;
-    var fluVal = resultado.fluencia || 0;
     var compVal = resultado.completude || 0;
+    var fluNaoMedida = (resultado.fluencia === null || resultado.fluencia === undefined);
+    var fluVal = fluNaoMedida ? null : resultado.fluencia;
     var payload = {
         tipo: 'lermais',
         escala: 'LERMAIS',
@@ -1346,23 +1720,19 @@ function salvarNaAPI(resultado) {
         paciente: resultado.nome || '',
         escore: indice,
         classificacao: classificacao,
-        dominios: {
-            'Velocidade (PPM)': { pontuacao: ppmVal, max: 200, classificacao: ppmVal >= 120 ? 'Rapida' : ppmVal >= 80 ? 'Adequada' : ppmVal >= 50 ? 'Lenta' : 'Muito lenta' },
-            'Precisao': { pontuacao: precVal, max: 100, classificacao: precVal >= 90 ? 'Alta' : precVal >= 70 ? 'Adequada' : precVal >= 50 ? 'Baixa' : 'Muito baixa' },
-            'Fluencia': { pontuacao: fluVal, max: 10, classificacao: fluVal >= 8 ? 'Fluente' : fluVal >= 5 ? 'Moderada' : 'Disfluente' },
-            'Completude': { pontuacao: compVal, max: 100, classificacao: compVal >= 90 ? 'Completa' : compVal >= 70 ? 'Parcial' : 'Incompleta' }
-        },
+        dominios: _montarDominiosLermais(resultado),
         ppm: ppmVal,
         precisao: precVal,
         fluencia: fluVal,
         completude: compVal,
         indiceLermais: indice,
+        capturaModo: resultado.capturaModo || 'aovivo',
         texto: resultado.texto || '',
         tema: resultado.tema || '',
         faixa: resultado.faixa || '',
         nivelDificuldade: resultado.nivelDificuldade || 0,
         tempoSegundos: resultado.tempoSegundos || 0,
-        pausasLongas: resultado.pausasLongas || 0,
+        pausasLongas: (resultado.pausasLongas === null || resultado.pausasLongas === undefined) ? null : resultado.pausasLongas,
         data: new Date().toISOString()
     };
     var body = {};
