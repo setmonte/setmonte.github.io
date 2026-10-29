@@ -11650,10 +11650,47 @@
         }
         if (el) el.innerHTML = html;
         if (elAh) elAh.innerHTML = html;
+        // Pre-selecao automatica: se houver exatamente UM grupo de mesma pessoa com 2 a 5
+        // resultados validos (mesmo idPaciente, ou mesmo nome+DN embutidos no id), ja marca
+        // esses itens e habilita o botao, sem o profissional precisar marcar manualmente.
+        _preselecionarComparativoSrs2Adulto();
       } catch (e) {
         if (el) el.innerHTML = '<p>Erro ao carregar resultados para comparativo.</p>';
         if (elAh) elAh.innerHTML = '<p>Erro ao carregar resultados para comparativo.</p>';
       }
+    }
+
+    // Marca automaticamente o grupo de mesma pessoa quando houver um unico grupo elegivel
+    // (2 a 5 resultados validos com escoresT). Assim, Auto + Hetero da mesma pessoa (ex.: mesmo
+    // idPaciente, que ja embute nome + data de nascimento) saem no comparativo sem marcacao manual.
+    function _preselecionarComparativoSrs2Adulto() {
+      var cache = _srs2AdultoCmpCache || [];
+      if (cache.length < 2) return;
+      // Agrupa indices por pessoa, considerando so registros com escoresT.
+      var grupos = [];
+      for (var i = 0; i < cache.length; i++) {
+        var d = (cache[i] && cache[i].data) ? cache[i].data : null;
+        if (!d || !d.escoresT) continue;
+        var achou = false;
+        for (var g = 0; g < grupos.length; g++) {
+          var d0 = cache[grupos[g][0]].data;
+          if (mesmaPessoaSrs2(d0, d)) { grupos[g].push(i); achou = true; break; }
+        }
+        if (!achou) grupos.push([i]);
+      }
+      // So pre-seleciona se houver EXATAMENTE um grupo com 2 a 5 itens (sem ambiguidade).
+      var elegiveis = [];
+      for (var g2 = 0; g2 < grupos.length; g2++) {
+        if (grupos[g2].length >= 2 && grupos[g2].length <= 5) elegiveis.push(grupos[g2]);
+      }
+      if (elegiveis.length !== 1) return;
+      var alvo = elegiveis[0];
+      var checks = document.querySelectorAll('.srs2a-cmp-check');
+      for (var c = 0; c < checks.length; c++) {
+        var idx = parseInt(checks[c].getAttribute('data-idx'), 10);
+        checks[c].checked = (alvo.indexOf(idx) >= 0);
+      }
+      atualizarBotaoComparativoSrs2Adulto();
     }
 
     // Gatekeeper do botao Adulto: habilita so com 2 resultados validos da mesma pessoa.
