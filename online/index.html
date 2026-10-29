@@ -11658,12 +11658,8 @@
         // Renderiza a tabela em UM SO container (o da aba visivel) e limpa o outro. Isso evita
         // as copias duplicadas (mesmos ids/classes nas duas abas), que faziam a contagem global
         // de checkboxes somar o dobro de marcacoes e quebrar a geracao do PDF comparativo.
-        var elVis = null, elOutro = null;
-        if (el && el.offsetParent !== null) { elVis = el; elOutro = elAh; }
-        else if (elAh && elAh.offsetParent !== null) { elVis = elAh; elOutro = el; }
-        else { elVis = el || elAh; elOutro = (elVis === el) ? elAh : el; }
-        if (elVis) elVis.innerHTML = html;
-        if (elOutro) elOutro.innerHTML = '';
+        if (el) el.innerHTML = html;
+        if (elAh) elAh.innerHTML = html;
         // Pre-selecao automatica: se houver exatamente UM grupo de mesma pessoa com 2 a 5
         // resultados validos (mesmo idPaciente, ou mesmo nome+DN embutidos no id), ja marca
         // esses itens e habilita o botao, sem o profissional precisar marcar manualmente.
@@ -11708,20 +11704,35 @@
     }
 
     // Gatekeeper do botao Adulto: habilita so com 2 resultados validos da mesma pessoa.
+    // Retorna os data-idx UNICOS marcados. Como a tabela e injetada nas duas abas (Auto e Hetero)
+    // com os mesmos ids/classes, o mesmo registro pode ter 2 checkboxes marcados; deduplicar por
+    // data-idx garante que cada resultado conte UMA vez so.
+    function _idxMarcadosSrs2Adulto() {
+      var checks = document.querySelectorAll('.srs2a-cmp-check:checked');
+      var vistos = {};
+      var idxs = [];
+      for (var k = 0; k < checks.length; k++) {
+        var ix = parseInt(checks[k].getAttribute('data-idx'), 10);
+        if (isNaN(ix) || vistos[ix]) continue;
+        vistos[ix] = true;
+        idxs.push(ix);
+      }
+      return idxs;
+    }
+
     function atualizarBotaoComparativoSrs2Adulto() {
       var btns = document.querySelectorAll('#btnCompSrs2Adulto');
       if (!btns || btns.length === 0) return;
-      var checks = document.querySelectorAll('.srs2a-cmp-check:checked');
+      var idxs = _idxMarcadosSrs2Adulto();
       var rotulo, habilitar = false;
-      var n = checks.length;
+      var n = idxs.length;
       if (n < 2 || n > 5) {
         rotulo = 'Selecione de 2 a 5 resultados da mesma pessoa';
       } else {
         var dados = [];
         var erro = null;
         for (var ci = 0; ci < n; ci++) {
-          var idx = parseInt(checks[ci].getAttribute('data-idx'), 10);
-          var r = _srs2AdultoCmpCache[idx];
+          var r = _srs2AdultoCmpCache[idxs[ci]];
           var d = (r && r.data) ? r.data : null;
           if (!d || !d.escoresT) { erro = 'Resultado sem escores calculados'; break; }
           dados.push(d);
@@ -11745,13 +11756,13 @@
     }
 
     function gerarComparativoSrs2Adulto() {
-      var checks = document.querySelectorAll('.srs2a-cmp-check:checked');
-      var nSel = checks.length;
+      var idxs = _idxMarcadosSrs2Adulto();
+      var nSel = idxs.length;
       if (nSel < 2 || nSel > 5) { alert('Selecione de 2 a 5 resultados da mesma pessoa.'); return; }
       // Resolver todos os selecionados.
       var selecionados = [];
       for (var si0 = 0; si0 < nSel; si0++) {
-        var idxSel = parseInt(checks[ si0 ].getAttribute('data-idx'), 10);
+        var idxSel = idxs[si0];
         var rSel = _srs2AdultoCmpCache[idxSel];
         var dSel = (rSel && rSel.data) ? rSel.data : null;
         if (!dSel || !dSel.escoresT) {
