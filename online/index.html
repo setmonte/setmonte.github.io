@@ -10040,6 +10040,10 @@
       if (srs2aaContent) srs2aaContent.style.display = 'none';
       if (srs2ahContent) srs2ahContent.style.display = 'none';
       if (vineland3Content) vineland3Content.style.display = 'none';
+      // Ao trocar de aba, limpa marcacoes do comparativo Adulto para nao deixar checkbox
+      // ":checked" fantasma na copia que vai ficar escondida (evita somar as duas copias).
+      var _cmpChecks = document.querySelectorAll('.srs2a-cmp-check');
+      for (var _cc = 0; _cc < _cmpChecks.length; _cc++) { _cmpChecks[_cc].checked = false; }
       btnPfister.style.background = '#f5f5f5';
       btnPfister.style.color = '#777';
       btnPfister.style.borderBottom = '3px solid transparent';
@@ -11657,10 +11661,25 @@
     }
 
     // Gatekeeper do botao Adulto: habilita so com 2 resultados validos da mesma pessoa.
+    // Descobre qual container de comparativo Adulto esta visivel agora (aba Auto ou Hetero).
+    // Correcao do bug de duplicacao: a tabela e injetada nos dois containers (Auto e Hetero) com
+    // os mesmos ids/classes. Buscar no documento inteiro somava as marcacoes das DUAS copias
+    // (":checked" ignora display:none). Escopando a busca ao container visivel, a contagem fica
+    // correta e o cruzamento (ex.: Auto x Hetero do mesmo paciente) funciona.
+    function _containerCmpSrs2AdultoVisivel() {
+      var aa = document.getElementById('srs2AdultoCmpSection');
+      var ah = document.getElementById('srs2AdultoCmpSectionAh');
+      if (aa && aa.offsetParent !== null) return aa;
+      if (ah && ah.offsetParent !== null) return ah;
+      return aa || ah;
+    }
+
     function atualizarBotaoComparativoSrs2Adulto() {
-      var btns = document.querySelectorAll('#btnCompSrs2Adulto');
+      var _contCmp = _containerCmpSrs2AdultoVisivel();
+      if (!_contCmp) return;
+      var btns = _contCmp.querySelectorAll('#btnCompSrs2Adulto');
       if (!btns || btns.length === 0) return;
-      var checks = document.querySelectorAll('.srs2a-cmp-check:checked');
+      var checks = _contCmp.querySelectorAll('.srs2a-cmp-check:checked');
       var rotulo, habilitar = false;
       var n = checks.length;
       if (n < 2 || n > 5) {
@@ -11694,7 +11713,9 @@
     }
 
     function gerarComparativoSrs2Adulto() {
-      var checks = document.querySelectorAll('.srs2a-cmp-check:checked');
+      var _contCmpG = _containerCmpSrs2AdultoVisivel();
+      if (!_contCmpG) return;
+      var checks = _contCmpG.querySelectorAll('.srs2a-cmp-check:checked');
       var nSel = checks.length;
       if (nSel < 2 || nSel > 5) { alert('Selecione de 2 a 5 resultados da mesma pessoa.'); return; }
       // Resolver todos os selecionados.
