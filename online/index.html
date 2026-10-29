@@ -10903,15 +10903,19 @@
 
     // Normaliza nome para comparacao (trim + minusculas + remove acentos).
     function _normNomeSrs2(s) {
-      return String(s || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      return String(s || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ');
     }
 
-    // Regra "mesma pessoa": idPaciente igual e nao vazio; fallback por nome normalizado.
+    // Regra "mesma pessoa" (3 niveis, pedido do usuario):
+    //  1) idPaciente igual e nao vazio => mesma pessoa (certeiro; o id ja embute nome + data de
+    //     nascimento). 2) se os ids divergem ou faltam, cai no fallback por NOME normalizado
+    //     (sem acento, sem espacos duplicados). Assim, Auto e Hetero que geraram ids diferentes
+    //     (ex.: data de nascimento digitada diferente) ainda cruzam pelo nome.
     function mesmaPessoaSrs2(d1, d2) {
       if (!d1 || !d2) return false;
       var id1 = String(d1.idPaciente || '').trim();
       var id2 = String(d2.idPaciente || '').trim();
-      if (id1 && id2) return id1 === id2;
+      if (id1 && id2 && id1 === id2) return true;
       var n1 = _normNomeSrs2(d1.paciente);
       var n2 = _normNomeSrs2(d2.paciente);
       return n1 !== '' && n1 === n2;
@@ -11688,13 +11692,20 @@
         }
         if (!achou) grupos.push([i]);
       }
-      // So pre-seleciona se houver EXATAMENTE um grupo com 2 a 5 itens (sem ambiguidade).
+      // Grupos elegiveis = 2 a 5 resultados da mesma pessoa.
       var elegiveis = [];
       for (var g2 = 0; g2 < grupos.length; g2++) {
         if (grupos[g2].length >= 2 && grupos[g2].length <= 5) elegiveis.push(grupos[g2]);
       }
-      if (elegiveis.length !== 1) return;
+      if (elegiveis.length === 0) return;
+      // Quando ha mais de uma pessoa com varios resultados (ex.: Lucas E Aparecida), nao aborta:
+      // pre-seleciona o grupo que contem o registro do TOPO da lista (indice 0 = mais recente,
+      // coerente com a leitura de cima para baixo). Assim o paciente que o profissional esta
+      // olhando ja vem marcado, sem ambiguidade.
       var alvo = elegiveis[0];
+      for (var ge = 0; ge < elegiveis.length; ge++) {
+        if (elegiveis[ge].indexOf(0) >= 0) { alvo = elegiveis[ge]; break; }
+      }
       var checks = document.querySelectorAll('.srs2a-cmp-check');
       for (var c = 0; c < checks.length; c++) {
         var idx = parseInt(checks[c].getAttribute('data-idx'), 10);
