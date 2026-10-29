@@ -11655,8 +11655,15 @@
           html += '</table>';
           html += '<div style="margin-top:12px;"><button id="btnCompSrs2Adulto" class="btn btn-blue" style="padding:8px 18px;font-size:14px;" disabled onclick="gerarComparativoSrs2Adulto()">Selecione de 2 a 5 resultados da mesma pessoa</button></div>';
         }
-        if (el) el.innerHTML = html;
-        if (elAh) elAh.innerHTML = html;
+        // Renderiza a tabela em UM SO container (o da aba visivel) e limpa o outro. Isso evita
+        // as copias duplicadas (mesmos ids/classes nas duas abas), que faziam a contagem global
+        // de checkboxes somar o dobro de marcacoes e quebrar a geracao do PDF comparativo.
+        var elVis = null, elOutro = null;
+        if (el && el.offsetParent !== null) { elVis = el; elOutro = elAh; }
+        else if (elAh && elAh.offsetParent !== null) { elVis = elAh; elOutro = el; }
+        else { elVis = el || elAh; elOutro = (elVis === el) ? elAh : el; }
+        if (elVis) elVis.innerHTML = html;
+        if (elOutro) elOutro.innerHTML = '';
         // Pre-selecao automatica: se houver exatamente UM grupo de mesma pessoa com 2 a 5
         // resultados validos (mesmo idPaciente, ou mesmo nome+DN embutidos no id), ja marca
         // esses itens e habilita o botao, sem o profissional precisar marcar manualmente.
