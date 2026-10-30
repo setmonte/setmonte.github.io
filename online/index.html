@@ -3939,6 +3939,8 @@
         fd.idade = fd.idade || fd.age || '';
         if (!fd.idade && fd.nascimento) fd.idade = WCSTUI.calculateAge(fd.nascimento);
         fd.idadeAnos = fd.idadeAnos || WCSTUI.getAgeYears(fd.nascimento) || 0;
+        // ID do paciente: mesma logica usada na lista do painel (d.idPaciente, fd.id ou hash por nome+nascimento)
+        fd.idPaciente = fd.idPaciente || d.idPaciente || fd.id || (fd.nome && fd.nascimento ? gerarIdPacienteHash(fd.nome, fd.nascimento) : '');
         var fields = ['pctErrors','pctPersevResp','pctPersevErr','pctConceptual','pctNonPersevErr','totalErrors','persevResponses','persevErrors','nonPersevErrors','conceptualLevel','completedCategories','trialsPerformed','trialsToFirst','failMaintain','escoreT','escorePadrao','impulsivityIndex','avgRT','totalTime','totalCorrect'];
         fields.forEach(function(f) { if (stats[f] !== undefined && stats[f] !== null) stats[f] = Number(stats[f]); else stats[f] = 0; });
         if (stats.learningToLearn !== null && stats.learningToLearn !== undefined) stats.learningToLearn = Number(stats.learningToLearn);
@@ -4006,7 +4008,7 @@
         var doc = WCSTPDF.generate(fd, stats, false, [], laudoTexto, estrategia);
         var ts = new Date().toISOString().replace(/[-:T]/g,'').slice(0,12);
         var nome = (fd.nome || 'paciente').replace(/\s+/g, '_');
-        var fname = 'TECFEON_' + nome + '_' + ts + '.pdf';
+        var fname = 'TECFE_' + nome + '_' + ts + '.pdf';
         doc.save(fname);
         // Resetar todos os botoes
         document.querySelectorAll('.results-table button').forEach(function(b) { b.textContent = 'PDF'; b.disabled = false; });
@@ -4113,7 +4115,7 @@
       var wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'Resultados');
       var ts = new Date().toISOString().replace(/[-:T]/g,'').slice(0,12);
-      XLSX.writeFile(wb, 'TECFEON_resultados_' + ts + '.xlsx');
+      XLSX.writeFile(wb, 'TECFE_resultados_' + ts + '.xlsx');
     }
 
 

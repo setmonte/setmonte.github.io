@@ -91,8 +91,7 @@ var WCSTPDF = (function () {
     doc.setTextColor(0, 0, 0);
     var appVer = '6';
     try { var el = document.getElementById('appVersion'); if (el) appVer = el.textContent.replace('v',''); } catch(e) {}
-    var isOnline = window._isOnlineTest || false;
-    var title = isOnline ? 'RESULTADOS DO TECFEON v' + appVer : 'RESULTADOS DO TECFE v' + appVer;
+    var title = 'RESULTADOS DO TECFE v' + appVer;
     if (abandoned === 'interrompido') title += ' - TESTE INTERROMPIDO';
     else if (abandoned) title += ' - TESTE ABANDONADO';
     else if (stats.trialsPerformed < 128 && stats.completedCategories < 6) title += ' - TESTE PARCIAL';
@@ -107,7 +106,7 @@ var WCSTPDF = (function () {
     yPos += 4;
     doc.text('CPF: ' + (formData.cpf || 'N/I') + '  |  ID Paciente: ' + (formData.idPaciente || 'N/I'), 10, yPos);
     yPos += 4;
-    doc.text('Escolaridade: ' + formData.escolaridade + '  |  Profissao: ' + (formData.profissao || 'N/I') + '  |  Avaliador: ' + (formData.avaliador || 'N/I') + '  |  CRP: ' + (formData.crp || 'N/I'), 10, yPos);
+    doc.text('Escolaridade: ' + formData.escolaridade + '  |  Avaliador: ' + (formData.avaliador || 'N/I') + '  |  CRP: ' + (formData.crp || 'N/I'), 10, yPos);
     yPos += 4;
     var min = Math.floor(stats.totalTime / 60);
     var sec = Math.round(stats.totalTime % 60);
