@@ -18158,6 +18158,32 @@
           y += 2;
         }
       }
+      // NOTA EXPLICATIVA (so se a escala enviou d.notaRodape) - aditivo, nao afeta outras escalas.
+      if (d.notaRodape && String(d.notaRodape).trim()) {
+        if (y + 20 > maxY) { doc.addPage(); y = 15; }
+        y += 4;
+        doc.setFillColor(46,125,50); doc.rect(15, y-3, 180, 8, 'F');
+        doc.setTextColor(255,255,255); doc.setFontSize(9); doc.setFont(undefined,'bold');
+        doc.text('NOTA', 20, y+2); y += 11;
+        doc.setTextColor(60,60,60); doc.setFontSize(8); doc.setFont(undefined,'normal');
+        var _notaLines = doc.splitTextToSize(sanitize(String(d.notaRodape)), 175);
+        for (var _ni = 0; _ni < _notaLines.length; _ni++) { if (y > maxY) { doc.addPage(); y = 15; } doc.text(_notaLines[_ni], 18, y); y += 4.5; }
+        y += 4;
+      }
+      // REFERENCIAS (array) (so se a escala enviou d.referenciasPdf) - aditivo, nao afeta outras escalas.
+      if (d.referenciasPdf && Array.isArray(d.referenciasPdf) && d.referenciasPdf.length > 0) {
+        if (y + 24 > maxY) { doc.addPage(); y = 15; }
+        y += 4;
+        doc.setFillColor(46,125,50); doc.rect(15, y-3, 180, 8, 'F');
+        doc.setTextColor(255,255,255); doc.setFontSize(9); doc.setFont(undefined,'bold');
+        doc.text('REFERENCIAS', 20, y+2); y += 11;
+        doc.setTextColor(60,60,60); doc.setFontSize(7.5); doc.setFont(undefined,'normal');
+        for (var _pfi = 0; _pfi < d.referenciasPdf.length; _pfi++) {
+          var _pfLines = doc.splitTextToSize(sanitize(String(d.referenciasPdf[_pfi])), 175);
+          for (var _pfj = 0; _pfj < _pfLines.length; _pfj++) { if (y > maxY) { doc.addPage(); y = 15; } doc.text(_pfLines[_pfj], 18, y); y += 4; }
+          y += 2;
+        }
+      }
       // Rodape profissional
       var totalPages = doc.internal.getNumberOfPages();
       for (var pg = 1; pg <= totalPages; pg++) {
