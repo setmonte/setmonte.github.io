@@ -9208,10 +9208,28 @@
 
     async function verHistoricoPaciente(pacId, nome) {
       var el = document.getElementById('pacientesList');
-      el.innerHTML = '<p>Carregando historico de <strong>' + nome + '</strong>...</p>';
+      // 3.3 - valor seguro de nome para uso em texto/UI (titulo, carregando, caso vazio).
+      // Nao altera a logica de match (que usa pacInfo.nome/_pacientesCache), apenas evita
+      // exibir "undefined" quando nome chega indefinido.
+      var nomeSeguro = nome || 'Paciente';
+      el.innerHTML = '<p>Carregando historico de <strong>' + nomeSeguro + '</strong>...</p>';
+      // 3.2 - variavel de fase: diferencia a etapa de BUSCA (rede) da etapa de RENDER.
+      // O catch usa essa variavel para escolher a mensagem certa (mais confiavel que
+      // inspecionar e.name/mensagem). Comeca em 'rede' e so vira 'render' quando os
+      // dados ja foram obtidos/validados e a tabela comeca a ser montada.
+      var fase = 'rede';
       try {
         var resp = await fetch(API_URL + '/get-results?email=' + encodeURIComponent(currentUser));
-        var data = await resp.json();
+        // Verificar resp.ok antes de tentar ler o corpo: um 4xx/5xx vira erro de rede.
+        if (!resp.ok) { throw new Error('HTTP ' + resp.status); }
+        // Proteger o resp.json(): corpo vazio/truncado lanca SyntaxError. Tratamos como
+        // falha de rede/resposta (continuamos na fase 'rede') relancando um erro proprio.
+        var data;
+        try {
+          data = await resp.json();
+        } catch (eJson) {
+          throw new Error('Resposta invalida do servidor (JSON): ' + ((eJson && eJson.message) ? eJson.message : ''));
+        }
         // Gerar ID hash do paciente para comparar com idPaciente das escalas
         var pacInfo = _pacientesCache.filter(function(p) { return p.id === pacId; })[0];
         var pacIdHash = '';
@@ -9223,7 +9241,12 @@
           for (var hi = 0; hi < raw.length; hi++) hash = ((hash << 5) + hash) + raw.charCodeAt(hi);
           pacIdHash = 'P' + Math.abs(hash).toString(36).toUpperCase();
         }
-        var todos = (data.results || []).filter(function(r) {
+        // Validar que data.results e um array antes do .filter. Se for null/undefined/ausente,
+        // tratamos como "sem resultados" (lista vazia, que leva ao ramo "Nenhum resultado
+        // encontrado"). Se vier um objeto inesperado ({}), tambem usamos lista vazia em vez
+        // de deixar o .filter lancar TypeError (resiliencia, sem excecao nao tratada).
+        var _results = (data && Array.isArray(data.results)) ? data.results : [];
+        var todos = _results.filter(function(r) {
           var d = r.data || {};
           var fd = d.formData || {};
           // Match por pacienteId (campo direto)
@@ -9255,22 +9278,35 @@
         window._historicoNome = nome;
         window._historicoPacId = pacId;
 
+        // 3.2 - a partir daqui a etapa de rede terminou com sucesso: entramos na fase de
+        // RENDER (montagem da tabela). Se algo falhar daqui pra frente, o catch usa a
+        // mensagem de "falha ao montar o historico" em vez de "falha de conexao/servidor".
+        fase = 'render';
         if (todos.length > 0) {
           var idHashHist = gerarIdPacienteHash(nome, (function(){ var pi = _pacientesCache.filter(function(p){return p.id===pacId;})[0]; return pi ? pi.dataNascimento : ''; })());
-          var html = '<h3 style="color:#2e7d32;margin-bottom:5px;">Historico de ' + nome + '</h3>';
+          var html = '<h3 style="color:#2e7d32;margin-bottom:5px;">Historico de ' + nomeSeguro + '</h3>';
           html += '<p style="font-size:11px;color:#555;margin-bottom:10px;">ID: <strong style="font-family:monospace;color:#2e7d32;">' + idHashHist + '</strong></p>';
           html += '<button class="btn btn-green" style="padding:6px 14px;font-size:12px;margin-bottom:10px;" onclick="gerarRelatorioPacientePDF()">Relatorio PDF</button>';
           html += ' <button class="btn btn-blue" style="padding:6px 14px;font-size:12px;margin-bottom:10px;" onclick="loadPacientes()">Voltar</button>';
           html += '<table class="results-table"><tr><th>Data</th><th>Tipo</th><th>Detalhes</th><th>PDF</th></tr>';
           todos.forEach(function(r) {
-            var d = r.data || {};
+            // 3.3 - a montagem do detalhe de CADA registro fica protegida por um try/catch
+            // interno. Se UMA linha falhar (campo nulo, dominio em formato inesperado, etc.),
+            // registramos no console e renderizamos uma linha de fallback no lugar, em vez de
+            // abortar a tabela inteira. Assim os registros validos continuam aparecendo.
+            r = r || {};
+            try {
+            var d = (r.data && typeof r.data === 'object') ? r.data : {};
             var date = r.date ? new Date(r.date).toLocaleString('pt-BR') : '-';
             var tipo = r.tipo || 'tecfe';
             var detalhe = '';
             if (tipo === 'escala') {
               var escNome = d.escala || 'Escala';
               var escClass = d.classificacao || '';
-              var domObj = d.dominios || {};
+              // 3.3 - d.dominios pode vir em formato inesperado (ex: string). So iteramos
+              // quando for um objeto real; caso contrario tratamos como vazio (o ramo
+              // de fallback de escala assume, mantendo a saida valida inalterada).
+              var domObj = (d.dominios && typeof d.dominios === 'object') ? d.dominios : {};
               var domParts = [];
               for (var dk in domObj) {
                 if (domObj.hasOwnProperty(dk)) {
@@ -9327,7 +9363,7 @@
               detalhe = tp2.length > 0 ? tp2.join(' | ') : 'Status: ' + (d.status||'-');
             }
             else if (tipo === 'tflod') {
-              var res = d.resultados || {};
+              var res = (d.resultados && typeof d.resultados === 'object') ? d.resultados : {};
               var tflP = [];
               if (res.ppm) tflP.push('PPM:' + res.ppm);
               if (res.totalPalavras) tflP.push('Palavras:' + res.totalPalavras);
@@ -9336,12 +9372,12 @@
               detalhe = tflP.length > 0 ? tflP.join(' | ') : 'Status: ' + (d.status||'-');
             }
             else if (tipo === 'agenda') {
-              var fd2 = d.formData || {};
+              var fd2 = (d.formData && typeof d.formData === 'object') ? d.formData : {};
               detalhe = '&#128197; ' + (fd2.tipoConsulta||'Consulta') + ' | ' + (fd2.duracao||'-') + ' min | ' + (d.status||'agendado');
             }
             else if (tipo === 'tecfe' || (d.stats && d.stats.completedCategories !== undefined)) {
               // TECFE (ou registro antigo sem tipo mas com stats do TECFE)
-              var s = d.stats || {};
+              var s = (d.stats && typeof d.stats === 'object') ? d.stats : {};
               var tecP = [];
               tecP.push('Cat:' + (s.completedCategories||0) + '/6');
               if (s.pctErrors !== undefined) tecP.push('Err:' + Number(s.pctErrors).toFixed(1) + '%');
@@ -9365,13 +9401,36 @@
             var _pdfBtn = '';
             if (tipo === 'escala') { _pdfBtn = '<button class="btn btn-green" style="padding:3px 8px;font-size:11px;" onclick="_gerarPDFHistorico(' + todos.indexOf(r) + ')">PDF</button>'; }
             html += '<tr><td>'+date+'</td><td style="text-transform:uppercase;font-weight:bold;">'+tipo+'</td><td>'+detalhe+'</td><td>'+_pdfBtn+'</td></tr>';
+            } catch (eLinha) {
+              // 3.3 - falha ao montar ESTA linha: nao derruba a tabela. Registra no console
+              // e renderiza uma linha de fallback com a Data (se houver), o Tipo em
+              // maiusculas e o texto "detalhe indisponivel" no lugar do detalhe.
+              console.error('Falha ao montar linha do historico:', eLinha);
+              var _dateFb = (r && r.date) ? new Date(r.date).toLocaleString('pt-BR') : '-';
+              var _tipoFb = (r && r.tipo) ? r.tipo : 'tecfe';
+              html += '<tr><td>'+_dateFb+'</td><td style="text-transform:uppercase;font-weight:bold;">'+_tipoFb+'</td><td>detalhe indisponivel</td><td></td></tr>';
+            }
           });
           html += '</table>';
           el.innerHTML = html;
         } else {
-          el.innerHTML = '<p style="color:#777;">Nenhum resultado encontrado para ' + nome + '.</p><button class="btn btn-blue" style="padding:5px 12px;font-size:12px;margin-top:10px;" onclick="loadPacientes()">Voltar</button>';
+          el.innerHTML = '<p style="color:#777;">Nenhum resultado encontrado para ' + nomeSeguro + '.</p><button class="btn btn-blue" style="padding:5px 12px;font-size:12px;margin-top:10px;" onclick="loadPacientes()">Voltar</button>';
         }
-      } catch(e) { el.innerHTML = '<p style="color:#c62828;">Erro ao carregar.</p><button class="btn btn-blue" style="padding:5px 12px;font-size:12px;margin-top:10px;" onclick="loadPacientes()">Voltar</button>'; }
+      } catch(e) {
+        // 3.1 - catch deixa de ser cego: registra a causa real no console (nunca mostrar
+        // a mensagem generica sem antes logar) e usa e && e.message na mensagem ao avaliador.
+        console.error('verHistoricoPaciente falhou:', e);
+        var _msgErro = (e && e.message) ? String(e.message) : '';
+        // 3.2 - a escolha da mensagem passa a ser baseada na variavel de fase (mais confiavel
+        // que inspecionar e.name/mensagem): se a falha ocorreu enquanto ainda buscavamos os
+        // dados (fase 'rede'), e falha de conexao/servidor; se ocorreu ao montar a tabela
+        // (fase 'render'), e falha ao montar o historico.
+        var _titulo = (fase === 'rede')
+          ? 'Nao foi possivel carregar o historico (falha de conexao ou servidor).'
+          : 'Nao foi possivel montar o historico.';
+        var _detalhe = _msgErro ? ('<br><span style="font-size:11px;color:#999;">Detalhe tecnico: ' + _msgErro + '</span>') : '';
+        el.innerHTML = '<p style="color:#c62828;">' + _titulo + _detalhe + '</p><button class="btn btn-blue" style="padding:5px 12px;font-size:12px;margin-top:10px;" onclick="loadPacientes()">Voltar</button>';
+      }
     }
 
     function _gerarPDFHistorico(idx) {
