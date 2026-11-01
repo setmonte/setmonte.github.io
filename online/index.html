@@ -9283,17 +9283,70 @@
         window._historicoNome = nome;
         window._historicoPacId = pacId;
 
+        // ===== LINKS PENDENTES (aguardando resposta, dentro do prazo de 30 dias) =====
+        // Busca os links que o paciente ainda nao respondeu, para exibir no topo do historico
+        // com um botao Cancelar. O backend ja esconde os expirados (>30 dias) e os ja usados,
+        // entao aqui chega so o que realmente pode ser cancelado. Esta busca e um EXTRA: se
+        // falhar (rede/servidor), o historico de resultados continua aparecendo normalmente.
+        var _pendentes = [];
+        try {
+          var _pacNomePend = (pacInfo && pacInfo.nome) ? pacInfo.nome : (nome || '');
+          var _respPend = await fetch(API_URL + '/list-paciente-sessions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: currentUser, pacienteId: pacId, patientName: _pacNomePend })
+          });
+          if (_respPend.ok) {
+            var _dataPend = await _respPend.json();
+            if (_dataPend && Array.isArray(_dataPend.sessions)) { _pendentes = _dataPend.sessions; }
+          }
+        } catch (ePend) {
+          // Falha na busca de pendentes nao derruba o historico: segue com lista vazia.
+          console.warn('Falha ao buscar links pendentes (historico segue normal):', ePend);
+        }
+        window._pendentesCache = _pendentes;
+
         // 3.2 - a partir daqui a etapa de rede terminou com sucesso: entramos na fase de
         // RENDER (montagem da tabela). Se algo falhar daqui pra frente, o catch usa a
         // mensagem de "falha ao montar o historico" em vez de "falha de conexao/servidor".
         fase = 'render';
-        if (todos.length > 0) {
+        if (todos.length > 0 || _pendentes.length > 0) {
           var idHashHist = gerarIdPacienteHash(nome, (function(){ var pi = _pacientesCache.filter(function(p){return p.id===pacId;})[0]; return pi ? pi.dataNascimento : ''; })());
           var html = '<h3 style="color:#2e7d32;margin-bottom:5px;">Historico de ' + nomeSeguro + '</h3>';
           html += '<p style="font-size:11px;color:#555;margin-bottom:10px;">ID: <strong style="font-family:monospace;color:#2e7d32;">' + idHashHist + '</strong></p>';
-          html += '<button class="btn btn-green" style="padding:6px 14px;font-size:12px;margin-bottom:10px;" onclick="gerarRelatorioPacientePDF()">Relatorio PDF</button>';
+          // Relatorio PDF agrega os RESULTADOS concluidos; so faz sentido quando ha resultados.
+          if (todos.length > 0) {
+            html += '<button class="btn btn-green" style="padding:6px 14px;font-size:12px;margin-bottom:10px;" onclick="gerarRelatorioPacientePDF()">Relatorio PDF</button>';
+          }
           html += ' <button class="btn btn-blue" style="padding:6px 14px;font-size:12px;margin-bottom:10px;" onclick="loadPacientes()">Voltar</button>';
-          html += '<table class="results-table"><tr><th>Data</th><th>Tipo</th><th>Detalhes</th><th>PDF</th></tr>';
+          html += '<table class="results-table"><tr><th>Data</th><th>Tipo</th><th>Detalhes</th><th>PDF</th><th>Acao</th></tr>';
+          // ===== LINHAS PENDENTES (topo da tabela, destacadas, com botao Cancelar) =====
+          // So aparecem aqui os links aguardando resposta e dentro do prazo (o backend ja
+          // filtrou expirados e usados). O botao Cancelar e exclusivo destas linhas.
+          _pendentes.forEach(function(ps) {
+            try {
+              var _dataPs = ps.date ? new Date(ps.date).toLocaleString('pt-BR') : '-';
+              // Nome do teste/escala: usa escala, senao a lista testes, senao tipoTeste.
+              var _nomeTeste = ps.escala || '';
+              if (!_nomeTeste && Array.isArray(ps.testes) && ps.testes.length > 0) { _nomeTeste = ps.testes.join(', '); }
+              if (!_nomeTeste && ps.tipoTeste) { _nomeTeste = ps.tipoTeste; }
+              if (!_nomeTeste) { _nomeTeste = 'Teste'; }
+              // Selo de prazo: quando o backend informa diasRestantes (inteiro), mostra a contagem.
+              var _seloPrazo = (typeof ps.diasRestantes === 'number')
+                ? ('Aguardando (faltam ' + ps.diasRestantes + ' dia' + (ps.diasRestantes === 1 ? '' : 's') + ')')
+                : 'Aguardando';
+              var _sidSeguro = String(ps.sessionId || '').replace(/'/g, '');
+              html += '<tr style="background:#fff8e1;">';
+              html += '<td>' + _dataPs + '</td>';
+              html += '<td style="text-transform:uppercase;font-weight:bold;color:#e65100;">' + String(_nomeTeste).toUpperCase() + '</td>';
+              html += '<td><span style="display:inline-block;background:#ffe082;color:#5d4037;border-radius:10px;padding:2px 8px;font-size:11px;font-weight:bold;">' + _seloPrazo + '</span></td>';
+              html += '<td>-</td>';
+              html += '<td><button class="btn btn-red" style="padding:4px 10px;font-size:11px;" onclick="_cancelarLinkPendente(\'' + _sidSeguro + '\')">Cancelar</button></td>';
+              html += '</tr>';
+            } catch (ePsLinha) {
+              console.error('Falha ao montar linha de pendente:', ePsLinha);
+            }
+          });
           todos.forEach(function(r) {
             // 3.3 - a montagem do detalhe de CADA registro fica protegida por um try/catch
             // interno. Se UMA linha falhar (campo nulo, dominio em formato inesperado, etc.),
@@ -9405,7 +9458,7 @@
             }
             var _pdfBtn = '';
             if (tipo === 'escala') { _pdfBtn = '<button class="btn btn-green" style="padding:3px 8px;font-size:11px;" onclick="_gerarPDFHistorico(' + todos.indexOf(r) + ')">PDF</button>'; }
-            html += '<tr><td>'+date+'</td><td style="text-transform:uppercase;font-weight:bold;">'+tipo+'</td><td>'+detalhe+'</td><td>'+_pdfBtn+'</td></tr>';
+            html += '<tr><td>'+date+'</td><td style="text-transform:uppercase;font-weight:bold;">'+tipo+'</td><td>'+detalhe+'</td><td>'+_pdfBtn+'</td><td></td></tr>';
             } catch (eLinha) {
               // 3.3 - falha ao montar ESTA linha: nao derruba a tabela. Registra no console
               // e renderiza uma linha de fallback com a Data (se houver), o Tipo em
@@ -9413,7 +9466,7 @@
               console.error('Falha ao montar linha do historico:', eLinha);
               var _dateFb = (r && r.date) ? new Date(r.date).toLocaleString('pt-BR') : '-';
               var _tipoFb = (r && r.tipo) ? r.tipo : 'tecfe';
-              html += '<tr><td>'+_dateFb+'</td><td style="text-transform:uppercase;font-weight:bold;">'+_tipoFb+'</td><td>detalhe indisponivel</td><td></td></tr>';
+              html += '<tr><td>'+_dateFb+'</td><td style="text-transform:uppercase;font-weight:bold;">'+_tipoFb+'</td><td>detalhe indisponivel</td><td></td><td></td></tr>';
             }
           });
           html += '</table>';
@@ -9443,6 +9496,49 @@
       if (!r) { alert('Resultado nao encontrado.'); return; }
       _escalasResultCache[8000 + idx] = r;
       gerarPDFEscala(8000 + idx);
+    }
+
+    // Cancela um link PENDENTE (aguardando resposta) a pedido do avaliador. Chama o
+    // backend /cancel-session, que marca o link como cancelado e, se aquele link ja
+    // tinha consumido credito, devolve o credito ao saldo (uma unica vez). Depois
+    // recarrega o historico do paciente para a linha cancelada sumir da lista.
+    async function _cancelarLinkPendente(sessionId) {
+      if (!sessionId) { alert('Link invalido.'); return; }
+      if (!confirm('Cancelar este teste pendente?\n\nO link enviado ao paciente deixara de funcionar. Se ele ja havia consumido credito, o credito volta para o seu saldo. Esta acao nao pode ser desfeita.')) { return; }
+      try {
+        var resp = await fetch(API_URL + '/cancel-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: currentUser, sessionId: sessionId })
+        });
+        var result = {};
+        try { result = await resp.json(); } catch (eJson) { result = {}; }
+        if (resp.ok && result.ok) {
+          var _devolvidos = (typeof result.creditosDevolvidos === 'number') ? result.creditosDevolvidos : 0;
+          if (_devolvidos > 0) {
+            alert('Teste cancelado. ' + _devolvidos + ' credito' + (_devolvidos === 1 ? '' : 's') + ' devolvido' + (_devolvidos === 1 ? '' : 's') + ' ao seu saldo.');
+            // Atualiza os contadores de credito na tela, se a funcao existir.
+            if (typeof atualizarCreditos === 'function') { try { atualizarCreditos(); } catch (eC) {} }
+          } else {
+            alert('Teste cancelado. (Este link ainda nao havia consumido credito, nada a devolver.)');
+          }
+          // Recarrega o historico para a linha pendente sumir.
+          var _pid = window._historicoPacId || '';
+          var _pnome = window._historicoNome || '';
+          if (_pid) { verHistoricoPaciente(_pid, _pnome); }
+        } else if (resp.status === 400 && result.error === 'tipo_nao_suportado') {
+          alert('Este tipo de teste (BAE/BRPI) sera tratado separadamente e ainda nao pode ser cancelado por aqui.');
+        } else if (resp.status === 409) {
+          alert('Este teste ja foi concluido e nao pode mais ser cancelado.');
+        } else if (resp.status === 403) {
+          alert('Este link nao pertence a voce.');
+        } else {
+          alert('Nao foi possivel cancelar. Tente novamente.');
+        }
+      } catch (e) {
+        console.error('Falha ao cancelar link pendente:', e);
+        alert('Erro de conexao ao cancelar. Verifique sua internet e tente novamente.');
+      }
     }
 
     function gerarRelatorioPacientePDF() {
