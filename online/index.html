@@ -14747,8 +14747,8 @@
         var resp = await fetch(API_URL + '/get-results?email=' + encodeURIComponent(currentUser) + '&tipo=ideia');
         var data = await resp.json();
         _ideiaResultCache = data.results || [];
-        if (_ideiaResultCache.length === 0) { el.innerHTML = '<p>Nenhum resultado IDEIA encontrado.</p>'; return; }
-        var html = '<h3>Resultados IDEIA</h3><table style="width:100%;border-collapse:collapse;font-size:0.85em;"><tr><th style="padding:6px;border-bottom:2px solid #e65100;width:30px;"><input type="checkbox" onclick="toggleAllIdeia(this)"></th><th style="text-align:left;padding:6px;border-bottom:2px solid #e65100;">Data</th><th style="text-align:left;padding:6px;border-bottom:2px solid #e65100;">Paciente</th><th style="text-align:left;padding:6px;border-bottom:2px solid #e65100;">ID</th><th style="text-align:left;padding:6px;border-bottom:2px solid #e65100;">Total Ideias</th><th style="text-align:left;padding:6px;border-bottom:2px solid #e65100;">Media/Item</th><th style="text-align:left;padding:6px;border-bottom:2px solid #e65100;">Classificacao</th><th style="padding:6px;border-bottom:2px solid #e65100;">Acoes</th></tr>';
+        if (_ideiaResultCache.length === 0) { el.innerHTML = '<h3>Resultados IDEIA</h3><div id="ideiaPendentesList"></div><p>Nenhum resultado IDEIA encontrado.</p>'; _carregarPendentesTeste('ideia', 'ideiaPendentesList'); return; }
+        var html = '<h3>Resultados IDEIA</h3><div id="ideiaPendentesList"></div><table style="width:100%;border-collapse:collapse;font-size:0.85em;"><tr><th style="padding:6px;border-bottom:2px solid #e65100;width:30px;"><input type="checkbox" onclick="toggleAllIdeia(this)"></th><th style="text-align:left;padding:6px;border-bottom:2px solid #e65100;">Data</th><th style="text-align:left;padding:6px;border-bottom:2px solid #e65100;">Paciente</th><th style="text-align:left;padding:6px;border-bottom:2px solid #e65100;">ID</th><th style="text-align:left;padding:6px;border-bottom:2px solid #e65100;">Total Ideias</th><th style="text-align:left;padding:6px;border-bottom:2px solid #e65100;">Media/Item</th><th style="text-align:left;padding:6px;border-bottom:2px solid #e65100;">Classificacao</th><th style="padding:6px;border-bottom:2px solid #e65100;">Acoes</th></tr>';
         for (var i = 0; i < _ideiaResultCache.length; i++) {
           var r = _ideiaResultCache[i];
           var d = r.data || {};
@@ -14803,6 +14803,7 @@
         html += '</div>';
         html += '<div id="ideiaAudioPlayer" style="display:none;margin-top:10px;padding:10px;background:#fff3e0;border-radius:8px;text-align:center;"><audio id="ideiaAudio" controls style="width:100%;max-width:400px;"></audio><br><button onclick="document.getElementById(\'ideiaAudioPlayer\').style.display=\'none\'" style="margin-top:5px;font-size:0.8em;cursor:pointer;border:none;background:none;color:#e65100;">Fechar player</button></div>';
         el.innerHTML = html;
+        _carregarPendentesTeste('ideia', 'ideiaPendentesList');
       } catch(e) { el.innerHTML = '<p>Erro ao carregar resultados.</p>'; }
     }
 
@@ -15464,8 +15465,8 @@
         var resp = await fetch(API_URL + '/get-results?email=' + encodeURIComponent(currentUser) + '&tipo=corsi');
         var data = await resp.json();
         _corsiResultCache = data.results || [];
-        if (_corsiResultCache.length === 0) { el.innerHTML = '<p>Nenhum resultado CORSI encontrado.</p>'; return; }
-        var html = '<h3>Resultados CORSI</h3><table style="width:100%;border-collapse:collapse;font-size:0.85em;"><tr><th style="padding:6px;border-bottom:2px solid #4a148c;">Data</th><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">Paciente</th><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">ID</th><th style="padding:6px;border-bottom:2px solid #4a148c;">Span D</th><th style="padding:6px;border-bottom:2px solid #4a148c;">Span I</th><th style="padding:6px;border-bottom:2px solid #4a148c;">Total</th><th style="padding:6px;border-bottom:2px solid #4a148c;">Class.</th><th style="padding:6px;border-bottom:2px solid #4a148c;">PDF</th></tr>';
+        if (_corsiResultCache.length === 0) { el.innerHTML = '<h3>Resultados CORSI</h3><div id="corsiPendentesList"></div><p>Nenhum resultado CORSI encontrado.</p>'; _carregarPendentesTeste('corsi', 'corsiPendentesList'); return; }
+        var html = '<h3>Resultados CORSI</h3><div id="corsiPendentesList"></div><table style="width:100%;border-collapse:collapse;font-size:0.85em;"><tr><th style="padding:6px;border-bottom:2px solid #4a148c;">Data</th><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">Paciente</th><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">ID</th><th style="padding:6px;border-bottom:2px solid #4a148c;">Span D</th><th style="padding:6px;border-bottom:2px solid #4a148c;">Span I</th><th style="padding:6px;border-bottom:2px solid #4a148c;">Total</th><th style="padding:6px;border-bottom:2px solid #4a148c;">Class.</th><th style="padding:6px;border-bottom:2px solid #4a148c;">PDF</th></tr>';
         for (var i = 0; i < _corsiResultCache.length; i++) {
           var r = _corsiResultCache[i];
           var d = r.data || {};
@@ -15482,6 +15483,7 @@
         }
         html += '</table>';
         el.innerHTML = html;
+        _carregarPendentesTeste('corsi', 'corsiPendentesList');
       } catch(e) { el.innerHTML = '<p>Erro ao carregar resultados.</p>'; }
     }
 
@@ -15569,8 +15571,8 @@
         var resp = await fetch(API_URL + '/get-results?email=' + encodeURIComponent(currentUser) + '&tipo=tpvset');
         var data = await resp.json();
         _tpvsetResultCache = data.results || [];
-        if (_tpvsetResultCache.length === 0) { el.innerHTML = '<p>Nenhum resultado TPV-SET encontrado.</p>'; return; }
-        var html = '<h3>Resultados TPV-SET</h3><table style="width:100%;border-collapse:collapse;font-size:0.85em;"><tr><th style="padding:6px;border-bottom:2px solid #4a148c;">Data</th><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">Paciente</th><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">ID</th><th style="padding:6px;border-bottom:2px solid #4a148c;">Niveis</th><th style="padding:6px;border-bottom:2px solid #4a148c;">Escore (%)</th><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">Classificacao</th><th style="padding:6px;border-bottom:2px solid #4a148c;">PDF</th></tr>';
+        if (_tpvsetResultCache.length === 0) { el.innerHTML = '<h3>Resultados TPV-SET</h3><div id="tpvsetPendentesList"></div><p>Nenhum resultado TPV-SET encontrado.</p>'; _carregarPendentesTeste('tpvset', 'tpvsetPendentesList'); return; }
+        var html = '<h3>Resultados TPV-SET</h3><div id="tpvsetPendentesList"></div><table style="width:100%;border-collapse:collapse;font-size:0.85em;"><tr><th style="padding:6px;border-bottom:2px solid #4a148c;">Data</th><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">Paciente</th><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">ID</th><th style="padding:6px;border-bottom:2px solid #4a148c;">Niveis</th><th style="padding:6px;border-bottom:2px solid #4a148c;">Escore (%)</th><th style="text-align:left;padding:6px;border-bottom:2px solid #4a148c;">Classificacao</th><th style="padding:6px;border-bottom:2px solid #4a148c;">PDF</th></tr>';
         for (var i = 0; i < _tpvsetResultCache.length; i++) {
           var r = _tpvsetResultCache[i];
           var d = r.data || {};
@@ -15587,6 +15589,7 @@
         }
         html += '</table>';
         el.innerHTML = html;
+        _carregarPendentesTeste('tpvset', 'tpvsetPendentesList');
       } catch(e) { el.innerHTML = '<p>Erro ao carregar resultados.</p>'; }
     }
 
@@ -16631,6 +16634,7 @@
         _tteResultCache = [];
         if (data.results && data.results.length > 0) {
           var html = '<h3>Resultados TTE</h3><div style="margin-bottom:10px;"><button class="btn btn-red" style="padding:5px 12px;font-size:12px;" onclick="deleteTteSelected()">Apagar Selecionados</button></div>';
+          html += '<div id="ttePendentesList"></div>';
           html += '<table class="results-table"><tr><th><input type="checkbox" id="tteSelectAll" onclick="toggleTteSelectAll(this)"></th><th>Data</th><th>Paciente</th><th>ID</th><th>Tempo A</th><th>Tempo B</th><th>B/A</th><th>Erros</th><th>PDF</th></tr>';
           data.results.forEach(function(r) {
             var d = r.data || {};
@@ -16661,8 +16665,9 @@
           html += '</table>';
           el.innerHTML = html;
         } else {
-          el.innerHTML = '<p>Nenhum resultado TTE encontrado.</p>';
+          el.innerHTML = '<h3>Resultados TTE</h3><div id="ttePendentesList"></div><p>Nenhum resultado TTE encontrado.</p>';
         }
+        _carregarPendentesTeste('tte', 'ttePendentesList');
       } catch(e) { el.innerHTML = '<p>Erro ao carregar resultados.</p>'; }
     }
 
@@ -16963,8 +16968,8 @@
           var all = data2.results || [];
           _tetaylorResultCache = all.filter(function(r) { return r.data && r.data.escala === 'TETaylor'; });
         }
-        if (_tetaylorResultCache.length === 0) { el.innerHTML = '<p>Nenhum resultado TETaylor encontrado.</p>'; return; }
-        var html = '<h3>Resultados TETaylor</h3><table style="width:100%;border-collapse:collapse;font-size:0.85em;"><tr><th style="padding:6px;border-bottom:2px solid #6A1B9A;">Data</th><th style="text-align:left;padding:6px;border-bottom:2px solid #6A1B9A;">Paciente</th><th style="padding:6px;border-bottom:2px solid #6A1B9A;">Copia</th><th style="padding:6px;border-bottom:2px solid #6A1B9A;">Mem.</th><th style="padding:6px;border-bottom:2px solid #6A1B9A;">Class.</th></tr>';
+        if (_tetaylorResultCache.length === 0) { el.innerHTML = '<h3>Resultados TETaylor</h3><div id="tetaylorPendentesList"></div><p>Nenhum resultado TETaylor encontrado.</p>'; _carregarPendentesTeste('tetaylor', 'tetaylorPendentesList'); return; }
+        var html = '<h3>Resultados TETaylor</h3><div id="tetaylorPendentesList"></div><table style="width:100%;border-collapse:collapse;font-size:0.85em;"><tr><th style="padding:6px;border-bottom:2px solid #6A1B9A;">Data</th><th style="text-align:left;padding:6px;border-bottom:2px solid #6A1B9A;">Paciente</th><th style="padding:6px;border-bottom:2px solid #6A1B9A;">Copia</th><th style="padding:6px;border-bottom:2px solid #6A1B9A;">Mem.</th><th style="padding:6px;border-bottom:2px solid #6A1B9A;">Class.</th></tr>';
         for (var i = 0; i < _tetaylorResultCache.length; i++) {
           var r = _tetaylorResultCache[i];
           var d = r.data || {};
@@ -16978,6 +16983,7 @@
         }
         html += '</table>';
         el.innerHTML = html;
+        _carregarPendentesTeste('tetaylor', 'tetaylorPendentesList');
       } catch(e) { el.innerHTML = '<p>Erro ao carregar resultados.</p>'; }
     }
 
@@ -17067,8 +17073,8 @@
           var all = data2.results || [];
           _tetaylorsimpResultCache = all.filter(function(r) { return r.data && r.data.escala === 'TETaylorSimp'; });
         }
-        if (_tetaylorsimpResultCache.length === 0) { el.innerHTML = '<p>Nenhum resultado TETaylorSimp encontrado.</p>'; return; }
-        var html = '<h3>Resultados TETaylorSimp</h3><table style="width:100%;border-collapse:collapse;font-size:0.85em;"><tr><th style="padding:6px;border-bottom:2px solid #00695C;">Data</th><th style="text-align:left;padding:6px;border-bottom:2px solid #00695C;">Paciente</th><th style="padding:6px;border-bottom:2px solid #00695C;">Copia</th><th style="padding:6px;border-bottom:2px solid #00695C;">Mem.</th><th style="padding:6px;border-bottom:2px solid #00695C;">Class.</th></tr>';
+        if (_tetaylorsimpResultCache.length === 0) { el.innerHTML = '<h3>Resultados TETaylorSimp</h3><div id="tetaylorsimpPendentesList"></div><p>Nenhum resultado TETaylorSimp encontrado.</p>'; _carregarPendentesTeste('tetaylorsimp', 'tetaylorsimpPendentesList'); return; }
+        var html = '<h3>Resultados TETaylorSimp</h3><div id="tetaylorsimpPendentesList"></div><table style="width:100%;border-collapse:collapse;font-size:0.85em;"><tr><th style="padding:6px;border-bottom:2px solid #00695C;">Data</th><th style="text-align:left;padding:6px;border-bottom:2px solid #00695C;">Paciente</th><th style="padding:6px;border-bottom:2px solid #00695C;">Copia</th><th style="padding:6px;border-bottom:2px solid #00695C;">Mem.</th><th style="padding:6px;border-bottom:2px solid #00695C;">Class.</th></tr>';
         for (var i = 0; i < _tetaylorsimpResultCache.length; i++) {
           var r = _tetaylorsimpResultCache[i];
           var d = r.data || {};
@@ -17082,6 +17088,7 @@
         }
         html += '</table>';
         el.innerHTML = html;
+        _carregarPendentesTeste('tetaylorsimp', 'tetaylorsimpPendentesList');
       } catch(e) { el.innerHTML = '<p>Erro ao carregar resultados.</p>'; }
     }
     // ===== FIM FUNCOES TETaylorSimp =====
@@ -19779,7 +19786,7 @@
         var resp = await fetch(API_URL + '/get-results?email=' + encodeURIComponent(currentUser) + '&tipo=tflod');
         var data = await resp.json();
         _tflodResultCache = data.results || [];
-        if (_tflodResultCache.length === 0) { el.innerHTML = '<p>Nenhum resultado TFLOD encontrado.</p>'; return; }
+        if (_tflodResultCache.length === 0) { el.innerHTML = '<h3>Resultados TFLOD</h3><div id="tflodPendentesList"></div><p>Nenhum resultado TFLOD encontrado.</p>'; _carregarPendentesTeste('tflod', 'tflodPendentesList'); return; }
         // === LIMPEZA AUTOMATICA DE AUDIO (90 dias) + AVISO (80 dias) ===
         var agora = Date.now();
         var DIAS_EXPIRA = 90;
@@ -19817,7 +19824,7 @@
           });
           htmlAviso += '</div>';
         }
-        var html = htmlAviso + '<h3>Resultados TFLOD</h3><table style="width:100%;border-collapse:collapse;font-size:0.85em;"><tr><th style="padding:6px;border-bottom:2px solid #1565c0;width:30px;"><input type="checkbox" onclick="toggleAllTflod(this)"></th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Data</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Paciente</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">ID</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">PCPM</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Classificacao</th><th style="padding:6px;border-bottom:2px solid #1565c0;">Acoes</th></tr>';
+        var html = htmlAviso + '<h3>Resultados TFLOD</h3><div id="tflodPendentesList"></div><table style="width:100%;border-collapse:collapse;font-size:0.85em;"><tr><th style="padding:6px;border-bottom:2px solid #1565c0;width:30px;"><input type="checkbox" onclick="toggleAllTflod(this)"></th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Data</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Paciente</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">ID</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">PCPM</th><th style="text-align:left;padding:6px;border-bottom:2px solid #1565c0;">Classificacao</th><th style="padding:6px;border-bottom:2px solid #1565c0;">Acoes</th></tr>';
         for (var i = 0; i < _tflodResultCache.length; i++) {
           var r = _tflodResultCache[i];
           var d = r.data || {};
@@ -19897,6 +19904,7 @@
         // Player de audio oculto (aparece ao clicar Ouvir)
         html += '<div id="tflodAudioPlayer" style="display:none;margin-top:10px;padding:10px;background:#e3f2fd;border-radius:8px;text-align:center;"><audio id="tflodAudio" controls style="width:100%;max-width:400px;"></audio><br><button onclick="document.getElementById(\'tflodAudioPlayer\').style.display=\'none\'" style="margin-top:5px;font-size:0.8em;cursor:pointer;border:none;background:none;color:#1565c0;">Fechar player</button></div>';
         el.innerHTML = html;
+        _carregarPendentesTeste('tflod', 'tflodPendentesList');
       } catch(e) { el.innerHTML = '<p>Erro ao carregar resultados.</p>'; }
     }
 
