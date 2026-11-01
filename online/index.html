@@ -9234,7 +9234,8 @@
         var pacInfo = _pacientesCache.filter(function(p) { return p.id === pacId; })[0];
         var pacIdHash = '';
         if (pacInfo && pacInfo.nome && pacInfo.dataNascimento) {
-          var n = pacInfo.nome.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z]/g,'').toLowerCase();
+          // 3.3 - pacInfo.nome pode nao ser string; protegemos com String(...) antes de .normalize
+          var n = String(pacInfo.nome || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z]/g,'').toLowerCase();
           var prefixo = n.substring(0, 3);
           var raw = pacInfo.dataNascimento + '+' + prefixo;
           var hash = 5381;
@@ -9255,8 +9256,12 @@
           if (pacIdHash && (d.idPaciente === pacIdHash || (fd.id === pacIdHash))) return true;
           // Fallback para escalas antigas sem pacienteId: match por nome normalizado
           if (r.tipo === 'escala' && pacInfo && pacInfo.nome) {
-            var nomePac = pacInfo.nome.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
-            var nomeEscala = (d.paciente || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+            // 3.3 - pacInfo.nome e d.paciente podem nao ser string em alguns registros
+            // (objeto/numero). .normalize so existe em String, por isso envolvemos com
+            // String(...) antes de normalizar, mantendo a semantica inalterada para
+            // valores que ja eram string.
+            var nomePac = String(pacInfo.nome || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+            var nomeEscala = String(d.paciente || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
             if (nomePac && nomeEscala && nomePac === nomeEscala) return true;
           }
           return false;
