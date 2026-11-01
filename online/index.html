@@ -3203,6 +3203,7 @@
           <button class="btn btn-green" style="padding:8px 16px;font-size:13px;" onclick="exportTrmvExcel()">Exportar Excel</button>
           <button class="btn btn-red" style="padding:8px 16px;font-size:13px;" onclick="deleteTrmvSelected()">Apagar Selecionados</button>
         </div>
+        <div id="trmvPendentesList"></div>
         <div id="trmvResultsList"><p style="color:#777;">Carregando resultados...</p></div>
       </div>
 
@@ -3248,6 +3249,7 @@
           <button class="btn btn-green" style="padding:8px 16px;font-size:13px;" onclick="exportTaavExcel()">Exportar Excel</button>
           <button class="btn btn-red" style="padding:8px 16px;font-size:13px;" onclick="deleteTaavSelected()">Apagar Selecionados</button>
         </div>
+        <div id="taavPendentesList"></div>
         <div id="taavResultsList"><p style="color:#777;">Carregando resultados...</p></div>
       </div>
 
@@ -9502,7 +9504,11 @@
     // backend /cancel-session, que marca o link como cancelado e, se aquele link ja
     // tinha consumido credito, devolve o credito ao saldo (uma unica vez). Depois
     // recarrega o historico do paciente para a linha cancelada sumir da lista.
-    async function _cancelarLinkPendente(sessionId) {
+    // onSucesso (opcional): callback chamado apos o cancelamento dar certo, para recarregar
+    // a lista de onde o botao foi clicado. Se nao for passado, recarrega o historico do
+    // paciente (comportamento padrao, usado pela aba Pacientes). As abas de teste passam um
+    // callback proprio que recarrega a lista de pendentes daquele teste.
+    async function _cancelarLinkPendente(sessionId, onSucesso) {
       if (!sessionId) { alert('Link invalido.'); return; }
       if (!confirm('Cancelar este teste pendente?\n\nO link enviado ao paciente deixara de funcionar. Se ele ja havia consumido credito, o credito volta para o seu saldo. Esta acao nao pode ser desfeita.')) { return; }
       try {
@@ -9522,10 +9528,15 @@
           } else {
             alert('Teste cancelado. (Este link ainda nao havia consumido credito, nada a devolver.)');
           }
-          // Recarrega o historico para a linha pendente sumir.
-          var _pid = window._historicoPacId || '';
-          var _pnome = window._historicoNome || '';
-          if (_pid) { verHistoricoPaciente(_pid, _pnome); }
+          // Recarrega a lista de onde veio o cancelamento.
+          if (typeof onSucesso === 'function') {
+            try { onSucesso(); } catch (eCb) {}
+          } else {
+            // Padrao: recarrega o historico do paciente para a linha pendente sumir.
+            var _pid = window._historicoPacId || '';
+            var _pnome = window._historicoNome || '';
+            if (_pid) { verHistoricoPaciente(_pid, _pnome); }
+          }
         } else if (resp.status === 400 && result.error === 'tipo_nao_suportado') {
           alert('Este tipo de teste (BAE/BRPI) sera tratado separadamente e ainda nao pode ser cancelado por aqui.');
         } else if (resp.status === 409) {
@@ -9538,6 +9549,62 @@
       } catch (e) {
         console.error('Falha ao cancelar link pendente:', e);
         alert('Erro de conexao ao cancelar. Verifique sua internet e tente novamente.');
+      }
+    }
+
+    // ===== LINKS PENDENTES NA ABA DE CADA TESTE =====
+    // Carrega e exibe, num container proprio, os links enviados e ainda NAO respondidos
+    // (pendentes, dentro do prazo de 30 dias) de um TIPO de teste especifico. Cada linha
+    // traz o botao Cancelar (laranja). E um EXTRA: se a busca falhar, o container apenas
+    // fica vazio, sem atrapalhar a tabela de resultados. BAE/BRPI nao usam isto (o backend
+    // ja devolve lista vazia para eles). 'tipo' e o tipo de teste (ex.: 'tref','corsi').
+    // 'containerId' e o id do <div> onde a lista sera injetada.
+    async function _carregarPendentesTeste(tipo, containerId) {
+      var cont = document.getElementById(containerId);
+      if (!cont) return;
+      cont.innerHTML = '<p style="color:#777;font-size:12px;">Verificando links pendentes...</p>';
+      try {
+        var resp = await fetch(API_URL + '/list-pendentes-por-tipo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: currentUser, tipo: tipo })
+        });
+        var data = {};
+        try { data = await resp.json(); } catch (eJson) { data = {}; }
+        var sessions = (data && Array.isArray(data.sessions)) ? data.sessions : [];
+        if (sessions.length === 0) {
+          // Nenhum pendente: nao ocupa espaco na tela.
+          cont.innerHTML = '';
+          return;
+        }
+        // Ordena por data (mais recentes primeiro).
+        sessions.sort(function(a, b) { return String(b.date || '').localeCompare(String(a.date || '')); });
+        var html = '<div style="background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:10px 12px;margin-bottom:12px;">';
+        html += '<p style="font-size:13px;font-weight:bold;color:#e65100;margin-bottom:8px;">&#128231; Links enviados aguardando resposta (' + sessions.length + ')</p>';
+        html += '<table class="results-table"><tr><th>Data</th><th>Paciente</th><th>Prazo</th><th>Cancelar Link</th></tr>';
+        sessions.forEach(function(ps) {
+          try {
+            var _dataPs = ps.date ? new Date(ps.date).toLocaleString('pt-BR') : '-';
+            var _pac = ps.patientName || '-';
+            var _prazo = (typeof ps.diasRestantes === 'number')
+              ? ('faltam ' + ps.diasRestantes + ' dia' + (ps.diasRestantes === 1 ? '' : 's'))
+              : 'Aguardando';
+            var _sid = String(ps.sessionId || '').replace(/'/g, '');
+            var _cb = "_carregarPendentesTeste('" + tipo + "','" + containerId + "')";
+            html += '<tr>';
+            html += '<td>' + _dataPs + '</td>';
+            html += '<td>' + _pac + '</td>';
+            html += '<td><span style="display:inline-block;background:#ffe082;color:#5d4037;border-radius:10px;padding:2px 8px;font-size:11px;font-weight:bold;">' + _prazo + '</span></td>';
+            html += '<td><button class="btn btn-orange" style="padding:4px 10px;font-size:11px;" onclick="_cancelarLinkPendente(\'' + _sid + '\', function(){ ' + _cb + '; })">Cancelar</button></td>';
+            html += '</tr>';
+          } catch (eL) { console.error('Falha ao montar pendente (aba teste):', eL); }
+        });
+        html += '</table></div>';
+        cont.innerHTML = html;
+      } catch (e) {
+        // Falha na busca nao atrapalha a aba: container fica vazio.
+        console.warn('Falha ao carregar pendentes do teste ' + tipo + ':', e);
+        cont.innerHTML = '';
       }
     }
 
@@ -18468,6 +18535,7 @@
       document.getElementById('trmvResultsSection').classList.toggle('hidden');
       document.getElementById('newTrmvSection').classList.add('hidden');
       loadTrmvResults();
+      _carregarPendentesTeste('trmv', 'trmvPendentesList');
     }
 
     var generatedTrmvLink = '';
@@ -18800,6 +18868,7 @@
       document.getElementById('taavResultsSection').classList.toggle('hidden');
       document.getElementById('newTaavSection').classList.add('hidden');
       loadTaavResults();
+      _carregarPendentesTeste('taav', 'taavPendentesList');
     }
 
     var generatedTaavLink = '';
