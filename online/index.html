@@ -17273,18 +17273,22 @@
             });
 
             var corpoId = 'grupoEscala_' + gi;
+            var pendId = 'pendEscala_' + gi;
+            // Nome da escala seguro para passar como argumento em string (sem aspas/barras).
+            var _nomeEscalaArg = String(nomeEscala).replace(/\\/g, '').replace(/'/g, '');
 
             // Cabecalho clicavel: mostra o nome da escala e a quantidade de resultados.
             html += '<div class="grupo-escala" style="margin-bottom:8px;border:1px solid #e0e0e0;border-radius:8px;overflow:hidden;">';
-            html += '<div onclick="toggleGrupoEscala(\'' + corpoId + '\', this)" ';
+            html += '<div onclick="toggleGrupoEscala(\'' + corpoId + '\', this, \'' + _nomeEscalaArg + '\', \'' + pendId + '\')" ';
             html += 'style="cursor:pointer;background:#f1f8e9;padding:10px 14px;font-weight:bold;color:#2e7d32;display:flex;align-items:center;gap:8px;">';
             html += '<span class="grupo-seta" style="transition:transform .15s;">&#9654;</span>'; // triangulo ▶
             html += '<span>' + nomeEscala + '</span>';
             html += '<span style="background:#2e7d32;color:#fff;border-radius:12px;padding:1px 9px;font-size:12px;font-weight:normal;">' + resultados.length + '</span>';
             html += '</div>';
 
-            // Corpo do grupo: a mesma tabela de antes, mas so com os resultados desta escala. Comeca escondido.
+            // Corpo do grupo: quadro de links pendentes (carregado ao abrir) + tabela de resultados. Comeca escondido.
             html += '<div id="' + corpoId + '" style="display:none;padding:8px;">';
+            html += '<div id="' + pendId + '"></div>';
             html += '<table class="results-table"><tr><th></th><th>Data</th><th>Paciente</th><th>ID</th><th>Escore</th><th>Classificacao</th><th>PDF</th></tr>';
             resultados.forEach(function(r) {
               var d = r.data || {};
@@ -17314,14 +17318,25 @@
       }
     }
 
-    // Abre/fecha um grupo de escala (accordion) e gira a setinha.
-    function toggleGrupoEscala(corpoId, cabecalho) {
+    // Abre/fecha um grupo de escala (accordion) e gira a setinha. Ao ABRIR pela primeira
+    // vez, carrega os links pendentes daquela escala (enviados e nao respondidos) no quadro
+    // amarelo acima da tabela de resultados. nomeEscala e pendId sao opcionais (so vem da
+    // aba Escalas); sem eles, a funcao so abre/fecha como antes.
+    function toggleGrupoEscala(corpoId, cabecalho, nomeEscala, pendId) {
       var corpo = document.getElementById(corpoId);
       if (!corpo) return;
       var aberto = corpo.style.display !== 'none';
       corpo.style.display = aberto ? 'none' : 'block';
       var seta = cabecalho.querySelector('.grupo-seta');
       if (seta) seta.style.transform = aberto ? 'rotate(0deg)' : 'rotate(90deg)';
+      // Ao abrir (nao ao fechar), carrega os pendentes uma unica vez.
+      if (!aberto && nomeEscala && pendId && typeof _carregarPendentesTeste === 'function') {
+        var cont = document.getElementById(pendId);
+        if (cont && !cont.getAttribute('data-carregado')) {
+          cont.setAttribute('data-carregado', '1');
+          _carregarPendentesTeste(nomeEscala, pendId);
+        }
+      }
     }
 
     function exportarExcelEscalas() {
