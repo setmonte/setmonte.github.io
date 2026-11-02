@@ -3158,6 +3158,7 @@
           <button class="btn btn-green" style="padding:8px 16px;font-size:13px;" onclick="exportBaeExcel()">Exportar Excel</button>
           <button class="btn btn-red" style="padding:8px 16px;font-size:13px;" onclick="deleteBaeSelected()">Apagar Selecionados</button>
         </div>
+        <div id="baePendentesList"></div>
         <div id="baeResultsList"><p style="color:#777;">Carregando resultados...</p></div>
       </div>
 
@@ -4275,6 +4276,7 @@
       document.getElementById('baeResultsSection').classList.toggle('hidden');
       document.getElementById('newBaeSection').classList.add('hidden');
       loadBaeResults();
+      _carregarPendentesTeste('bae', 'baePendentesList');
     }
 
     var generatedBaeLink = '';
@@ -9556,9 +9558,10 @@
     // Carrega e exibe, num container proprio, os links enviados e ainda NAO respondidos
     // (pendentes, dentro do prazo de 30 dias) de um TIPO de teste especifico. Cada linha
     // traz o botao Cancelar (laranja). E um EXTRA: se a busca falhar, o container apenas
-    // fica vazio, sem atrapalhar a tabela de resultados. BAE/BRPI nao usam isto (o backend
-    // ja devolve lista vazia para eles). 'tipo' e o tipo de teste (ex.: 'tref','corsi').
-    // 'containerId' e o id do <div> onde a lista sera injetada.
+    // fica vazio, sem atrapalhar a tabela de resultados. 'tipo' e o tipo de teste (ex.:
+    // 'tref','corsi','bae','brpi'). 'containerId' e o id do <div> onde a lista sera injetada.
+    // Para testes MODULARES (BAE, BRPI) o backend devolve modulosFeitos/modulosTotal, e a
+    // coluna "Modulos" mostra "X de N" (quantos modulos ja foram feitos naquele link).
     async function _carregarPendentesTeste(tipo, containerId) {
       var cont = document.getElementById(containerId);
       if (!cont) return;
@@ -9581,7 +9584,10 @@
         sessions.sort(function(a, b) { return String(b.date || '').localeCompare(String(a.date || '')); });
         var html = '<div style="background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:10px 12px;margin-bottom:12px;">';
         html += '<p style="font-size:13px;font-weight:bold;color:#e65100;margin-bottom:8px;">&#128231; Links enviados aguardando resposta (' + sessions.length + ')</p>';
-        html += '<table class="results-table"><tr><th>Data</th><th>Paciente</th><th>Prazo</th><th>Cancelar Link</th></tr>';
+        // So mostra a coluna "Modulos" quando ao menos um link informa modulosTotal > 1
+        // (caso dos testes modulares BAE/BRPI). Nos testes simples, a coluna nem aparece.
+        var _temModulos = sessions.some(function(s){ return typeof s.modulosTotal === 'number' && s.modulosTotal > 1; });
+        html += '<table class="results-table"><tr><th>Data</th><th>Paciente</th>' + (_temModulos ? '<th>Modulos</th>' : '') + '<th>Prazo</th><th>Cancelar Link</th></tr>';
         sessions.forEach(function(ps) {
           try {
             var _dataPs = ps.date ? new Date(ps.date).toLocaleString('pt-BR') : '-';
@@ -9589,11 +9595,21 @@
             var _prazo = (typeof ps.diasRestantes === 'number')
               ? ('faltam ' + ps.diasRestantes + ' dia' + (ps.diasRestantes === 1 ? '' : 's'))
               : 'Aguardando';
+            var _modCel = '';
+            if (_temModulos) {
+              if (typeof ps.modulosTotal === 'number' && ps.modulosTotal > 1) {
+                var _feitos = (typeof ps.modulosFeitos === 'number') ? ps.modulosFeitos : 0;
+                _modCel = '<td>' + _feitos + ' de ' + ps.modulosTotal + '</td>';
+              } else {
+                _modCel = '<td>-</td>';
+              }
+            }
             var _sid = String(ps.sessionId || '').replace(/'/g, '');
             var _cb = "_carregarPendentesTeste('" + tipo + "','" + containerId + "')";
             html += '<tr>';
             html += '<td>' + _dataPs + '</td>';
             html += '<td>' + _pac + '</td>';
+            html += _modCel;
             html += '<td><span style="display:inline-block;background:#ffe082;color:#5d4037;border-radius:10px;padding:2px 8px;font-size:11px;font-weight:bold;">' + _prazo + '</span></td>';
             html += '<td><button class="btn btn-orange" style="padding:4px 10px;font-size:11px;" onclick="_cancelarLinkPendente(\'' + _sid + '\', function(){ ' + _cb + '; })">Cancelar</button></td>';
             html += '</tr>';
@@ -14027,6 +14043,7 @@
         var html = '<h2>Resultados BRPI</h2>';
         html += '<div class="btn-row" style="margin-bottom:10px;">';
         html += '<button class="btn btn-red" onclick="eliminarResultadosBrpi()">Eliminar selecionados</button></div>';
+        html += '<div id="brpiPendentesList"></div>';
         if (data.results && data.results.length > 0) {
           html += '<table class="results-table"><tr>';
           html += '<th><input type="checkbox" id="brpiSelectAll" onclick="toggleAllBrpi(this)"></th>';
@@ -14057,6 +14074,8 @@
           html += '<p style="color:#777;">Nenhum resultado BRPI encontrado. (Os resultados aparecerao aqui quando o servidor reconhecer o tipo BRPI e um paciente concluir a bateria.)</p>';
         }
         sec.innerHTML = html;
+        // Links pendentes (enviados e nao respondidos) da BRPI, com botao Cancelar.
+        _carregarPendentesTeste('brpi', 'brpiPendentesList');
       } catch (e) {
         sec.innerHTML = '<h2>Resultados BRPI</h2><p style="color:#c62828;">Erro ao carregar resultados: ' + e.message + '</p>';
       }
