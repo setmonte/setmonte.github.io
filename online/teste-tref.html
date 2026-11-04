@@ -217,7 +217,7 @@ var totalRegioes = 0;
 // Escala dos indices: 0..100. Alterar SO aqui recalibra todo o teste.
 var LIMIAR_ZIGUEZAGUE = 22;     // acima disso o ziguezague e considerado "alto" (calibrado pela distribuicao: organizado<=~14, caotico>=~22; ancora Emilly=15/14 tipica)
 var LIMIAR_DISCREPANCIA = 18;   // acima disso a discrepancia entre os rostos e sinalizada para investigar no inquerito (calibrado: casos discrepantes ~27)
-var TREF_VERSAO = 'TREF v3.1';
+var TREF_VERSAO = 'TREF v3.2';
 
 // OVERRIDE_CATEGORIA = fonte unica de verdade das categorias (Req 1).
 // Mapa nome_normalizado -> categoria. A categoria efetiva vem SEMPRE deste override;
@@ -389,6 +389,47 @@ function _classificarTREF(zigA, zigB, discrep) {
             + 'de trajet\u00f3ria. Resultado meramente descritivo.',
         discrepanciaAlta: discrepanciaAlta,
         notaDiscrepancia: notaDiscrepancia
+    };
+}
+
+// _classificarTREFUmRosto(zig)
+//   -> {chave, classificacao, texto, discrepanciaAlta, notaDiscrepancia, umRosto}
+// Usada quando so ha 1 rosto (criancas ate 12 anos). Funcao PURA e DETERMINISTA.
+// Aplica o mesmo LIMIAR_ZIGUEZAGUE ao ziguezague do unico rosto. ATENCAO: o limiar
+// foi calibrado com dados de adulto, entao e PROVISORIO para criancas.
+// Chaves: 'ATIPICO' (zig > limiar), 'TIPICO', 'INDEFINIDO' (zig nao numerico).
+function _classificarTREFUmRosto(zig) {
+    if (typeof zig !== 'number') {
+        return {
+            chave: 'INDEFINIDO',
+            classificacao: 'Padrao nao classificavel (dados insuficientes)',
+            texto: 'Poucos cliques para calcular o indice de ziguezague; nao foi possivel classificar este rosto.',
+            discrepanciaAlta: false,
+            notaDiscrepancia: '',
+            umRosto: true
+        };
+    }
+    if (zig > LIMIAR_ZIGUEZAGUE) {
+        return {
+            chave: 'ATIPICO',
+            classificacao: 'Escaneamento atipico (um rosto)',
+            texto: 'Escaneamento at\u00edpico de acordo com os estudos. Necess\u00e1rio investigar. '
+                + 'Padrao sugestivo de processamento atipico com base em um \u00fanico rosto; '
+                + 'recomenda-se investigar com outros instrumentos, como o TECFE e demais testes do avaliador. '
+                + 'Isso NAO \u00e9 um diagn\u00f3stico.',
+            discrepanciaAlta: false,
+            notaDiscrepancia: '',
+            umRosto: true
+        };
+    }
+    return {
+        chave: 'TIPICO',
+        classificacao: 'Padrao tipico (um rosto)',
+        texto: 'Padr\u00e3o de escaneamento dentro do esperado para este instrumento experimental, '
+            + 'com base em um \u00fanico rosto. Resultado meramente descritivo.',
+        discrepanciaAlta: false,
+        notaDiscrepancia: '',
+        umRosto: true
     };
 }
 
@@ -820,7 +861,7 @@ function mostrarResultados() {
     var zigA = (fasesAnalise.length > 0) ? fasesAnalise[0].zig : null;
     var zigB = (fasesAnalise.length > 1) ? fasesAnalise[1].zig : null;
     var discrep = _indiceDiscrepancia(zigA, zigB);
-    var classif = _classificarTREF(zigA, zigB, discrep);
+    var classif = (fasesAnalise.length === 1) ? _classificarTREFUmRosto(zigA) : _classificarTREF(zigA, zigB, discrep);
 
     // Rotulo e cor principais vem de classif (Req 6: IFS nao dispara mais rotulo).
     // Cor cautelosa por chave; os textos detalhados sao refinados na tarefa 9.2.

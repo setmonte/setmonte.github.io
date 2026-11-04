@@ -1986,25 +1986,17 @@
             </div>
             <div style="background:#f1f8e9;border:1px solid #c8e6c9;border-radius:8px;padding:12px;margin:10px 0;font-size:0.8em;color:#333;line-height:1.7;">
               <strong>&#128202; Como interpretar os resultados:</strong><br>
-              <strong>IFS (Indice de Fixacao Social)</strong> = percentual de cliques em regioes sociais (olhos + boca) sobre o total de cliques.<br>
-              <strong>Formula:</strong> (cliques em olhos + cliques em boca) / total de cliques x 100.<br><br>
-              <strong>Classificacao do IFS:</strong><br>
-              <table style="width:100%;border-collapse:collapse;font-size:0.95em;margin:8px 0;">
-                <tr style="background:#e8f5e9;"><th style="padding:4px 8px;border:1px solid #c8e6c9;text-align:left;">IFS</th><th style="padding:4px 8px;border:1px solid #c8e6c9;">Classificacao</th><th style="padding:4px 8px;border:1px solid #c8e6c9;">Interpretacao</th></tr>
-                <tr><td style="padding:4px 8px;border:1px solid #c8e6c9;font-weight:bold;color:#2e7d32;">&ge; 50%</td><td style="padding:4px 8px;border:1px solid #c8e6c9;">Atencao social adequada</td><td style="padding:4px 8px;border:1px solid #c8e6c9;">Processamento facial tipico</td></tr>
-                <tr style="background:#f9fbe7;"><td style="padding:4px 8px;border:1px solid #c8e6c9;font-weight:bold;color:#f57f17;">35-49%</td><td style="padding:4px 8px;border:1px solid #c8e6c9;">Atencao social moderada</td><td style="padding:4px 8px;border:1px solid #c8e6c9;">Acompanhar e reteste</td></tr>
-                <tr><td style="padding:4px 8px;border:1px solid #c8e6c9;font-weight:bold;color:#e65100;">20-34%</td><td style="padding:4px 8px;border:1px solid #c8e6c9;">Atencao social reduzida</td><td style="padding:4px 8px;border:1px solid #c8e6c9;">Dificuldade no processamento facial social</td></tr>
-                <tr style="background:#f9fbe7;"><td style="padding:4px 8px;border:1px solid #c8e6c9;font-weight:bold;color:#c62828;">&lt; 20%</td><td style="padding:4px 8px;border:1px solid #c8e6c9;">Predominantemente periferica</td><td style="padding:4px 8px;border:1px solid #c8e6c9;">Padrao atipico - investigar TEA</td></tr>
-              </table>
-              <strong>Padrao de escaneamento:</strong><br>
-              &bull; <strong>Social-first:</strong> Primeiros cliques nos olhos/boca (tipico)<br>
-              &bull; <strong>Misto:</strong> Sem preferencia clara (acompanhar)<br>
-              &bull; <strong>Periferia-first:</strong> Primeiros cliques fora de olhos/boca (atipico)<br><br>
+              <strong>Classifica&#231;&#227;o (v3.2) por ziguezague de trajet&#243;ria:</strong> o ziguezague (0 a 100) &#233; a dist&#226;ncia m&#233;dia entre cliques consecutivos ao longo de toda a sequ&#234;ncia de reconstru&#231;&#227;o do rosto. Quanto maior, mais o escaneamento saltou entre regi&#245;es distantes do rosto.<br><br>
+              &bull; <strong>Dois rostos:</strong> ziguezague acima de 22 nos dois rostos = padr&#227;o sugestivo de processamento at&#237;pico. Alto em apenas um rosto n&#227;o classifica como at&#237;pico.<br>
+              &bull; <strong>Crian&#231;as at&#233; 12 anos (um rosto):</strong> ziguezague acima de 22 = escaneamento at&#237;pico de acordo com os estudos; necess&#225;rio investigar.<br>
+              &bull; <strong>Discrep&#226;ncia</strong> = diferen&#231;a entre os ziguezagues dos dois rostos. Acima de 18 = achado a investigar no inqu&#233;rito (n&#227;o &#233; diagn&#243;stico).<br>
+              &bull; <strong>IFS (&#205;ndice de Fixa&#231;&#227;o Social)</strong> = % de cliques em regi&#245;es sociais (olhos + boca). Junto com o IFS-O (ponderado pela ordem), &#233; apenas informativo e n&#227;o define a classifica&#231;&#227;o.<br>
+              &bull; Os limiares (22 e 18) s&#227;o provis&#243;rios e calibr&#225;veis; instrumento experimental, sem valida&#231;&#227;o formal.<br><br>
               <span style="font-size:0.9em;color:#555;">Base: Klin et al. (2002) - eye-tracking em TEA; Pelphrey et al. (2002) - fixacao facial.</span>
             </div>
             <div style="background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:10px 12px;margin:0 0 10px 0;font-size:0.92em;color:#5d4037;line-height:1.5;font-weight:bold;">
               <strong>&#127873; 1 credito gratis ao se cadastrar!</strong> Depois: R$5/aplicacao (avulso) | R$4 (pacote 10) | R$3 (pacote 50).<br>
-              Inclui laudo PDF com classificacao automatica por IA (Tipico / Ansiedade Social / Compativel com TEA).
+              Inclui laudo PDF com a classificacao do instrumento e analise descritiva por IA.
             </div>
             <div class="btn-row">
               <button class="btn btn-green" id="btnNewTref" onclick="showNewTref()">Nova Aplicacao</button>
@@ -19424,17 +19416,14 @@
             // Calcular classificacao rapida
             var classif = '-';
             if (resultados.length > 0) {
-              var totalOlhos5 = 0; var totalCliques5 = 0;
-              for (var ri = 0; ri < resultados.length; ri++) {
-                var cliques = resultados[ri].cliques || [];
-                var top5 = cliques.slice(0, 5);
-                for (var ci = 0; ci < top5.length; ci++) { if (top5[ci].cat === 'olhos') totalOlhos5++; }
-                totalCliques5 += top5.length;
-              }
-              var pctOlhos = totalCliques5 > 0 ? (totalOlhos5 / totalCliques5 * 100) : 0;
-              if (pctOlhos >= 60) classif = 'Tipico';
-              else if (pctOlhos >= 30) classif = 'Misto';
-              else classif = 'Atipico';
+              try {
+                var _avL = _trefAvaliar(resultados);
+                var _cc = _avL.classif;
+                if (_cc.chave === 'ATIPICO') classif = _avL.umRosto ? 'Atipico (um rosto)' : 'Sugestivo de atipico';
+                else if (_cc.chave === 'TIPICO') classif = 'Tipico';
+                else classif = 'Indefinido';
+                if (_cc.discrepanciaAlta) classif += ' + discrepancia a investigar';
+              } catch (eTref) { classif = '-'; }
             }
             html += '<tr>';
             html += '<td><input type="checkbox" class="tref-result-check" data-idx="' + _trefResultCache.length + '"></td>';
@@ -19479,6 +19468,248 @@
       loadTrefResults();
     }
 
+    // ===== INICIO REGRAS TREF v3.2 (espelho de online/teste-tref.html) =====
+    var _TREF_LIMIAR_ZIG = 22;
+    var _TREF_LIMIAR_DISC = 18;
+    var _TREF_OVERRIDE = {
+        'olho': 'social', 'iris': 'social', 'pupila': 'social', 'palpebra': 'social',
+        'labio': 'social', 'boca': 'social',
+        'bochecha': 'limitrofe', 'infraorbital': 'limitrofe', 'tempora': 'limitrofe',
+        'sobrancelha': 'limitrofe', 'nariz': 'limitrofe', 'rosto': 'limitrofe',
+        'testa': 'periferia', 'cabelo': 'periferia', 'orelha': 'periferia',
+        'queixo': 'periferia', 'pescoco': 'periferia', 'roupa': 'periferia'
+    };
+
+    function _trefCat(nome) {
+        var bruto = (nome == null) ? '' : String(nome);
+        var chave = bruto.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        chave = chave.replace(/\([^)]*\)/g, ' ');
+        chave = chave.replace(/\b(esquerda|esquerdo|direita|direito|superior|inferior|lateral|franja|contorno|parte)\b/g, ' ');
+        chave = chave.replace(/\s+/g, ' ').trim();
+        for (var termo in _TREF_OVERRIDE) {
+            if (_TREF_OVERRIDE.hasOwnProperty(termo) && chave.indexOf(termo) !== -1) {
+                return _TREF_OVERRIDE[termo];
+            }
+        }
+        return 'periferia';
+    }
+
+    function _trefZig(cliques) {
+        var lista = cliques || [];
+        var pts = [];
+        for (var i = 0; i < lista.length; i++) {
+            var c = lista[i];
+            if (c && typeof c.cx === 'number' && typeof c.cy === 'number') {
+                pts.push(c);
+            }
+        }
+        if (pts.length < 2) return null; // Req 2.3: dados insuficientes -> indefinido
+        var soma = 0;
+        for (var k = 0; k < pts.length - 1; k++) {
+            var dx = pts[k + 1].cx - pts[k].cx;
+            var dy = pts[k + 1].cy - pts[k].cy;
+            soma += Math.sqrt(dx * dx + dy * dy);
+        }
+        var dmedia = soma / (pts.length - 1);
+        return Math.min(100, Math.round((dmedia / 1.41421356) * 100));
+    }
+
+    function _trefDisc(zigA, zigB) {
+        if (typeof zigA !== 'number' || typeof zigB !== 'number') return null; // Req 3.2
+        return Math.abs(zigA - zigB); // ja esta em 0..100 (Req 3.1, 3.4)
+    }
+
+    function _trefClassif2(zigA, zigB, discrep) {
+        var ambosDefinidos = (zigA != null) && (zigB != null);
+        var zigAltoNosDois = ambosDefinidos && zigA > _TREF_LIMIAR_ZIG && zigB > _TREF_LIMIAR_ZIG;
+
+        var discrepanciaAlta = (discrep != null) && discrep > _TREF_LIMIAR_DISC;
+        var notaDiscrepancia = '';
+        if (discrepanciaAlta) {
+            notaDiscrepancia = 'Discrep\u00e2ncia entre os rostos: os dois rostos foram reconstru\u00eddos de formas '
+                + 'bastante diferentes. Isso NAO \u00e9 um diagn\u00f3stico; recomenda-se esclarecer no inqu\u00e9rito '
+                + 'com o paciente. Pode refletir reatividade ao est\u00edmulo/contexto (como em ansiedade social), '
+                + 'entre outras causas.';
+        }
+
+        if (zigAltoNosDois) {
+            return {
+                chave: 'ATIPICO',
+                classificacao: 'Padrao sugestivo de processamento atipico',
+                texto: 'padrao sugestivo de processamento visual at\u00edpico: o escaneamento saltou de forma '
+                    + 'polar e repetida entre regi\u00f5es distantes nos dois rostos. Isso NAO \u00e9 um diagn\u00f3stico; '
+                    + 'recomenda-se investigar com outros instrumentos, como o TECFE e demais testes do avaliador, '
+                    + 'antes de qualquer conclus\u00e3o.',
+                discrepanciaAlta: discrepanciaAlta,
+                notaDiscrepancia: notaDiscrepancia
+            };
+        }
+
+        return {
+            chave: 'TIPICO',
+            classificacao: 'Padrao tipico',
+            texto: 'Padr\u00e3o de escaneamento dentro do esperado para este instrumento experimental. '
+                + 'N\u00e3o foram observados indicadores que justifiquem preocupa\u00e7\u00e3o quanto ao padr\u00e3o '
+                + 'de trajet\u00f3ria. Resultado meramente descritivo.',
+            discrepanciaAlta: discrepanciaAlta,
+            notaDiscrepancia: notaDiscrepancia
+        };
+    }
+
+    function _trefClassif1(zig) {
+        if (typeof zig !== 'number') {
+            return {
+                chave: 'INDEFINIDO',
+                classificacao: 'Padrao nao classificavel (dados insuficientes)',
+                texto: 'Poucos cliques para calcular o indice de ziguezague; nao foi possivel classificar este rosto.',
+                discrepanciaAlta: false,
+                notaDiscrepancia: '',
+                umRosto: true
+            };
+        }
+        if (zig > _TREF_LIMIAR_ZIG) {
+            return {
+                chave: 'ATIPICO',
+                classificacao: 'Escaneamento atipico (um rosto)',
+                texto: 'Escaneamento at\u00edpico de acordo com os estudos. Necess\u00e1rio investigar. '
+                    + 'Padrao sugestivo de processamento atipico com base em um \u00fanico rosto; '
+                    + 'recomenda-se investigar com outros instrumentos, como o TECFE e demais testes do avaliador. '
+                    + 'Isso NAO \u00e9 um diagn\u00f3stico.',
+                discrepanciaAlta: false,
+                notaDiscrepancia: '',
+                umRosto: true
+            };
+        }
+        return {
+            chave: 'TIPICO',
+            classificacao: 'Padrao tipico (um rosto)',
+            texto: 'Padr\u00e3o de escaneamento dentro do esperado para este instrumento experimental, '
+                + 'com base em um \u00fanico rosto. Resultado meramente descritivo.',
+            discrepanciaAlta: false,
+            notaDiscrepancia: '',
+            umRosto: true
+        };
+    }
+
+    var _TREF_CENTROS = {
+      Mulher: {
+        'Cabelo': [0.5108, 0.49],
+        'Roupa': [0.5072, 0.886],
+        'Rosto': [0.506, 0.4625],
+        'Pesco\u00e7o': [0.5243, 0.7636],
+        'Cabelo (lateral direita)': [0.3405, 0.5841],
+        'Testa': [0.5016, 0.2412],
+        'Cabelo (lateral esquerda)': [0.7544, 0.7269],
+        'Bochecha Esquerda': [0.6308, 0.504],
+        'Bochecha Direita': [0.3888, 0.488],
+        'Queixo': [0.4964, 0.618],
+        'Nariz': [0.4992, 0.4446],
+        'Bochecha Direita (contorno)': [0.3529, 0.4944],
+        'Orelha Esquerda': [0.7018, 0.429],
+        'Orelha Direita': [0.3114, 0.4318],
+        'Cabelo (franja)': [0.4769, 0.175],
+        'L\u00e1bio Inferior': [0.5052, 0.5714],
+        'L\u00e1bio Superior': [0.5064, 0.5486],
+        'Olho Esquerdo': [0.5981, 0.3776],
+        'Olho Direito': [0.4127, 0.378],
+        'Sobrancelha Esquerda': [0.6025, 0.321],
+        'Sobrancelha Direita': [0.4079, 0.3222],
+        '\u00cdris Esquerda': [0.5973, 0.3748],
+        'Pupila Direita': [0.4143, 0.3772],
+        'Pupila Direita (parte 2)': [0.4139, 0.3736],
+        'Pupila Esquerda': [0.5969, 0.374],
+        'Infraorbital Direita': [0.4127, 0.378],
+        'Infraorbital Esquerda': [0.5981, 0.3776]
+      },
+      Homem: {
+        'Roupa': [0.5008, 0.8624],
+        'Cabelo': [0.4936, 0.2073],
+        'Rosto': [0.4968, 0.4904],
+        'Pesco\u00e7o': [0.5068, 0.7779],
+        'Testa': [0.4992, 0.2492],
+        'Bochecha Esquerda': [0.6224, 0.5028],
+        'Bochecha Direita': [0.3684, 0.5323],
+        'Nariz': [0.5012, 0.4294],
+        'T\u00eampora Esquerda': [0.5961, 0.3537],
+        'Queixo (parte 1)': [0.5028, 0.703],
+        'Olho Direito (parte 2)': [0.2871, 0.4466],
+        'Orelha Esquerda': [0.7109, 0.4362],
+        'P\u00e1lpebra Direita': [0.3868, 0.3844],
+        'Queixo (parte 2)': [0.504, 0.6707],
+        'Olho Direito (parte 3)': [0.2827, 0.4737],
+        'Olho Esquerdo (parte 2)': [0.7309, 0.4334],
+        'L\u00e1bio Inferior': [0.5028, 0.6204],
+        'L\u00e1bio Superior': [0.5, 0.5925],
+        'Sobrancelha Direita': [0.3967, 0.3425],
+        'Sobrancelha Esquerda': [0.5989, 0.3409],
+        'Olho Direito': [0.4039, 0.3892],
+        'Olho Esquerdo': [0.5897, 0.3864],
+        '\u00cdris Esquerda': [0.5909, 0.3848],
+        '\u00cdris Direita': [0.4035, 0.3872],
+        'Pupila Esquerda': [0.5917, 0.3816],
+        'Pupila Direita': [0.4051, 0.3836],
+        'Infraorbital Direita': [0.4039, 0.3892],
+        'Infraorbital Esquerda': [0.5897, 0.3864]
+      }
+    };
+
+    function _trefSemAcento(s) {
+      return String(s == null ? '' : s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    }
+    var _trefCentrosNorm = null;
+    function _trefCentroPorNome(rosto, nome) {
+      var tab = _TREF_CENTROS[rosto];
+      if (!tab) return null;
+      if (tab.hasOwnProperty(nome)) return tab[nome];
+      if (!_trefCentrosNorm) {
+        _trefCentrosNorm = {};
+        for (var r in _TREF_CENTROS) {
+          if (!_TREF_CENTROS.hasOwnProperty(r)) continue;
+          _trefCentrosNorm[r] = {};
+          for (var n in _TREF_CENTROS[r]) {
+            if (_TREF_CENTROS[r].hasOwnProperty(n)) _trefCentrosNorm[r][_trefSemAcento(n)] = _TREF_CENTROS[r][n];
+          }
+        }
+      }
+      var k = _trefSemAcento(nome);
+      return _trefCentrosNorm[rosto].hasOwnProperty(k) ? _trefCentrosNorm[rosto][k] : null;
+    }
+    function _trefPontos(res) {
+      var lista = (res && res.cliques) || [];
+      var out = [];
+      var estimado = false;
+      for (var i = 0; i < lista.length; i++) {
+        var cl = lista[i] || {};
+        var c = {};
+        for (var k in cl) { if (cl.hasOwnProperty(k)) c[k] = cl[k]; }
+        if (typeof cl.cx === 'number' && typeof cl.cy === 'number') {
+          c.cx = cl.cx; c.cy = cl.cy;
+        } else {
+          var ct = _trefCentroPorNome(res && res.rosto, cl.nome);
+          if (ct) { c.cx = ct[0]; c.cy = ct[1]; estimado = true; }
+          else { c.cx = null; c.cy = null; }
+        }
+        out.push(c);
+      }
+      return { cliques: out, estimado: estimado };
+    }
+    function _trefAvaliar(resultados) {
+      var lista = resultados || [];
+      var zigs = [];
+      var estimado = false;
+      for (var i = 0; i < lista.length; i++) {
+        var p = _trefPontos(lista[i]);
+        if (p.estimado) estimado = true;
+        zigs.push(_trefZig(p.cliques));
+      }
+      var zigA = zigs.length > 0 ? zigs[0] : null;
+      var zigB = zigs.length > 1 ? zigs[1] : null;
+      var discrep = _trefDisc(zigA, zigB);
+      var classif = (lista.length === 1) ? _trefClassif1(zigA) : _trefClassif2(zigA, zigB, discrep);
+      return { zigs: zigs, zigA: zigA, zigB: zigB, discrep: discrep, classif: classif, estimado: estimado, umRosto: lista.length === 1 };
+    }
+    // ===== FIM REGRAS TREF v3.2 =====
+
     async function generateTrefPDF(idx) {
       var r = _trefResultCache[idx];
       if (!r) { alert('Resultado nao encontrado'); return; }
@@ -19500,86 +19731,91 @@
       var d = r.data || {};
       var fd = d.formData || {};
       var resultados = d.resultados || [];
+      var _av = _trefAvaliar(resultados);
 
-      // Calcular metricas por rosto
+      // Calcular metricas por rosto (IFS e IFS-O sao apenas informativos na v3.2)
       function calcMetricas(res) {
         var cliques = res.cliques || [];
-        var olhosPos = []; var primeiros5 = {olhos:0,boca:0,periferia:0};
+        var olhosPos = []; var primeiros5 = {social:0,limitrofe:0,periferia:0};
         var tempoAteOlhos = null; var saltos = 0;
-        // IFS linear (proporcao) e IFS-O (ponderado pela ordem).
-        // IFS linear  = (cliques olhos + boca) / total x 100  -> QUANTO olhou o social.
+        // IFS linear (proporcao) e IFS-O (ponderado pela ordem), ambos informativos.
+        // IFS linear  = (cliques sociais) / total x 100  -> QUANTO olhou o social.
         // IFS-O       = soma dos pesos dos cliques sociais / soma de TODOS os pesos x 100.
-        //   Peso decrescente pela ordem: numa sessao de N cliques, o 1o clique vale N,
-        //   o 2o vale N-1, ..., o ultimo vale 1. Da mais peso ao que a pessoa buscou
-        //   PRIMEIRO (hipotese: reconstroi primeiro o que mais chamou a atencao -
-        //   proxy comportamental do escaneamento de fixacao de Klin). Limitrofe e
-        //   periferia NAO entram como social em nenhum dos dois.
+        //   Peso decrescente pela ordem: o 1o clique vale N, o 2o vale N-1, ..., o ultimo vale 1.
+        // A categoria vem SEMPRE de _trefCat (social/limitrofe/periferia), nunca de cl.cat gravado.
         var n = cliques.length;
-        var socialCount = 0;       // num. de cliques sociais (olhos+boca)
+        var socialCount = 0;       // num. de cliques sociais
         var pesoSocial = 0;        // soma dos pesos dos cliques sociais
         var pesoTotal = 0;         // soma de todos os pesos
+        var catAnt = null;
         for (var c = 0; c < cliques.length; c++) {
           var cl = cliques[c];
-          if (cl.cat === 'olhos') { olhosPos.push(cl.ordem); if (tempoAteOlhos === null) tempoAteOlhos = cl.tempo; }
-          if (cl.ordem <= 5) primeiros5[cl.cat]++;
-          if (c > 0 && cliques[c].cat !== cliques[c-1].cat) saltos++;
+          var catC = _trefCat(cl.nome);
+          var nomeSem = _trefSemAcento(cl.nome);
+          var ehOlho = (catC === 'social' && nomeSem.indexOf('labio') === -1 && nomeSem.indexOf('boca') === -1);
+          if (ehOlho) { olhosPos.push(cl.ordem); if (tempoAteOlhos === null) tempoAteOlhos = cl.tempo; }
+          if (cl.ordem <= 5) primeiros5[catC]++;
+          if (c > 0 && catC !== catAnt) saltos++;
+          catAnt = catC;
           var peso = n - c;        // posicao c (0-based): 1o = N, 2o = N-1, ... ultimo = 1
           pesoTotal += peso;
-          if (cl.cat === 'olhos' || cl.cat === 'boca') { socialCount++; pesoSocial += peso; }
+          if (catC === 'social') { socialCount++; pesoSocial += peso; }
         }
         var mediaOlhos = olhosPos.length > 0 ? (olhosPos.reduce(function(a,b){return a+b;},0) / olhosPos.length) : null;
-        var pctOlhos5 = Math.min(5, cliques.length) > 0 ? (primeiros5.olhos / Math.min(5, cliques.length) * 100) : 0;
+        var pctSocial5 = Math.min(5, cliques.length) > 0 ? (primeiros5.social / Math.min(5, cliques.length) * 100) : 0;
         var indiceSalto = cliques.length > 1 ? (saltos / (cliques.length - 1) * 100) : 0;
         var cobertura = res.totalRegioes > 0 ? (cliques.length / res.totalRegioes * 100) : 0;
         var ifsLinear = n > 0 ? (socialCount / n * 100) : 0;
         var ifsO = pesoTotal > 0 ? (pesoSocial / pesoTotal * 100) : 0;
-        return { olhosPos: olhosPos, mediaOlhos: mediaOlhos, primeiros5: primeiros5, pctOlhos5: pctOlhos5, tempoAteOlhos: tempoAteOlhos, indiceSalto: indiceSalto, cobertura: cobertura, saltos: saltos, ifsLinear: ifsLinear, ifsO: ifsO };
+        return { olhosPos: olhosPos, mediaOlhos: mediaOlhos, primeiros5: primeiros5, pctSocial5: pctSocial5, tempoAteOlhos: tempoAteOlhos, indiceSalto: indiceSalto, cobertura: cobertura, saltos: saltos, ifsLinear: ifsLinear, ifsO: ifsO };
       }
 
-      // Chamar IA
+      function _zigTxt(z) { return (z === null || z === undefined) ? 'indefinido' : String(z); }
+
+      // Chamar IA (a classificacao ja foi calculada pelo instrumento; a IA so descreve)
       var laudoIA = null;
       try {
-        var aiPrompt = 'Voce e um neuropsicologo experiente especializado em processamento facial e rastreio de TEA.\n' +
-          'Analise os resultados do TREF (Teste de Reconstrucao e Escaneamento Facial) e classifique o padrao.\n\n' +
-          'CRITERIOS (Klin et al. 2002, Pelphrey et al. 2002):\n' +
-          '- TIPICO: Primeiros 3-5 cliques nos OLHOS (>60%). Sequencia organizada.\n' +
-          '- ANSIEDADE SOCIAL: Evita olhos, prioriza BOCA/periferia inferior. Hesitacao >3s ate olhos. Muda padrao entre rostos.\n' +
-          '- COMPATIVEL COM TEA: Prioriza PERIFERIA (cabelo, orelhas). Olhos tarde (posicao >5). Padrao CONSISTENTE nos dois rostos. Sequencia SALTITANTE.\n' +
-          '- MISTO/INCONCLUSIVO: Nao se encaixa claramente.\n\n' +
-          'DADOS: Idade: ' + (fd.idade || 'N/I') + ' | Sexo: ' + (fd.sexo || 'N/I') + '\n\n' +
-          'RESULTADOS:\n';
+        var _cI = _av.classif;
+        var aiPrompt = 'Voce e um neuropsicologo experiente em processamento facial. Redija a ANALISE DESCRITIVA do TREF (Teste de Reconstrucao e Escaneamento Facial, v3.2).\n' +
+          'A classificacao do instrumento JA FOI CALCULADA por regra objetiva e NAO deve ser reclassificada nem trocada.\n\n' +
+          'CLASSIFICACAO DO INSTRUMENTO (ja calculada): ' + _cI.classificacao + '\n' +
+          'Texto do instrumento: ' + _cI.texto + '\n';
+        for (var zi = 0; zi < _av.zigs.length; zi++) {
+          aiPrompt += 'Ziguezague do rosto ' + ((resultados[zi] && resultados[zi].rosto) || (zi+1)) + ' (0-100; acima de ' + _TREF_LIMIAR_ZIG + ' = alto): ' + _zigTxt(_av.zigs[zi]) + '\n';
+        }
+        aiPrompt += 'Discrepancia entre os rostos (acima de ' + _TREF_LIMIAR_DISC + ' = achado a investigar): ' + _zigTxt(_av.discrep) + '\n';
+        if (_cI.discrepanciaAlta) aiPrompt += 'Discrepancia ALTA: ' + _cI.notaDiscrepancia + '\n';
+        if (_av.umRosto) aiPrompt += 'Foi aplicado UM unico rosto (crianca ate 12 anos): nao ha comparacao entre rostos.\n';
+        aiPrompt += '\nDADOS: Idade: ' + (fd.idade || 'N/I') + ' | Sexo: ' + (fd.sexo || 'N/I') + '\n\nRESULTADOS POR ROSTO:\n';
 
         for (var ri = 0; ri < resultados.length; ri++) {
           var res = resultados[ri];
           var m = calcMetricas(res);
           aiPrompt += '\n--- Rosto ' + (res.rosto || (ri+1)) + ' ---\n';
           aiPrompt += 'Tempo total: ' + ((res.tempoTotal||0)/1000).toFixed(1) + 's | Cobertura: ' + m.cobertura.toFixed(0) + '%\n';
-          aiPrompt += 'IFS linear (proporcao olhos+boca): ' + m.ifsLinear.toFixed(0) + '% | IFS-O (ponderado pela ORDEM, da peso ao que veio primeiro): ' + m.ifsO.toFixed(0) + '%\n';
+          aiPrompt += 'Metricas informativas (NAO definem a classificacao): IFS linear (olhos+boca/total): ' + m.ifsLinear.toFixed(0) + '% | IFS-O (ponderado pela ordem): ' + m.ifsO.toFixed(0) + '%\n';
           aiPrompt += 'Posicao media olhos: ' + (m.mediaOlhos ? m.mediaOlhos.toFixed(1) : 'N/A') + '\n';
-          aiPrompt += 'Primeiros 5: Olhos=' + m.primeiros5.olhos + ' Boca=' + m.primeiros5.boca + ' Periferia=' + m.primeiros5.periferia + ' (' + m.pctOlhos5.toFixed(0) + '% olhos)\n';
+          aiPrompt += 'Primeiros 5: Social=' + m.primeiros5.social + ' Limitrofe=' + m.primeiros5.limitrofe + ' Periferia=' + m.primeiros5.periferia + ' (' + m.pctSocial5.toFixed(0) + '% social)\n';
           aiPrompt += 'Tempo ate olhos: ' + (m.tempoAteOlhos ? (m.tempoAteOlhos/1000).toFixed(1) + 's' : 'N/A') + '\n';
-          aiPrompt += 'Indice salto: ' + m.indiceSalto.toFixed(0) + '%\n';
+          aiPrompt += 'Indice de salto entre categorias: ' + m.indiceSalto.toFixed(0) + '%\n';
           var cliques = res.cliques || [];
-          aiPrompt += 'Primeiros 10: ';
-          for (var c = 0; c < Math.min(cliques.length, 10); c++) {
-            aiPrompt += cliques[c].ordem + '.' + (cliques[c].nome||'') + '[' + cliques[c].cat + '] ';
+          aiPrompt += 'Sequencia de cliques (ordem.regiao[categoria]): ';
+          for (var c = 0; c < Math.min(cliques.length, 40); c++) {
+            aiPrompt += cliques[c].ordem + '.' + (cliques[c].nome||'') + '[' + _trefCat(cliques[c].nome) + '] ';
           }
           aiPrompt += '\n';
         }
 
-        aiPrompt += '\nSOBRE OS DOIS ESCORES:\n' +
-          '- IFS linear = QUANTO a pessoa olhou o social (olhos+boca) no total.\n' +
-          '- IFS-O = ponderado pela ORDEM; alto quando o social foi buscado PRIMEIRO. A diferenca entre os dois\n' +
-          '  revela a ESTRATEGIA: IFS-O >> IFS linear = foi ao social cedo; IFS-O << IFS linear = social so no fim.\n\n' +
-          'INSTRUCOES:\n' +
-          '- Comece com INTERPRETACAO GERAL (2-4 linhas): uma sintese consolidada dos DOIS rostos, lendo IFS linear x IFS-O\n' +
-          '  e a consistencia (ou discrepancia) entre os rostos. Esta e a leitura global do caso.\n' +
-          '- Depois, classifique: TIPICO, ANSIEDADE SOCIAL, COMPATIVEL COM TEA ou MISTO\n' +
-          '- Justifique com base nas metricas (3-5 linhas)\n' +
-          '- Mencione indicadores-chave: priorizacao, hesitacao, organizacao, consistencia entre rostos, e a estrategia revelada pelo IFS-O\n' +
-          '- Hipotese diferencial: por que NAO e cada outra classificacao\n' +
-          '- Portugues brasileiro. Seja objetivo. NAO repita numeros crus, interprete-os.\n' +
-          '- Na ULTIMA LINHA escreva: CLASSIFICACAO: [tipo]';
+        aiPrompt += '\nINSTRUCOES:\n' +
+          '- NAO reclassifique e NAO troque a classificacao do instrumento acima.\n' +
+          '- NAO use rotulos diagnosticos (por exemplo TEA, ansiedade social, misto) como conclusao.\n' +
+          '- Descreva o MODO DE ESCANEAR cada rosto: onde comecou, quando chegou aos olhos, organizacao da sequencia e saltos.\n' +
+          '- Se a discrepancia entre os rostos for alta, trate como ACHADO A INVESTIGAR NO INQUERITO, citando como hipoteses a reatividade ao estimulo (como em ansiedade social) e o vies do proprio genero.\n' +
+          '- Use linguagem cautelosa ("padrao sugestivo de", "recomenda-se investigar com outros instrumentos").\n' +
+          '- Lembre que o TREF mede a ORDEM de reconstrucao de memoria, nao fixacao ocular (eye-tracking).\n' +
+          (_av.umRosto ? '- Com um rosto so (criancas), diga explicitamente que nao ha comparacao entre rostos.\n' : '') +
+          '- Portugues brasileiro, 2 a 4 paragrafos curtos. NAO repita numeros crus, interprete-os.\n' +
+          '- Na ULTIMA LINHA escreva exatamente: CLASSIFICACAO DO INSTRUMENTO: ' + _cI.classificacao;
 
         var aiTimeout = new Promise(function(_, reject) { setTimeout(function() { reject('timeout'); }, 30000); });
         var aiCall = fetch(API_URL + '/generate-ai', {
@@ -19630,17 +19866,53 @@
       doc.setTextColor(21, 101, 192); doc.setFontSize(10); doc.setFont(undefined, 'bold');
       doc.text('COMO INTERPRETAR', ml, y); y += 6;
       doc.setTextColor(0); doc.setFont(undefined, 'normal'); doc.setFontSize(8);
-      doc.text('IFS linear (Indice de Fixacao Social) = (cliques olhos + boca) / total cliques x 100', ml, y); y += 4;
-      doc.text('IFS-O (ponderado pela ordem) = da mais peso ao que foi reconstruido PRIMEIRO. 1o clique vale N,', ml, y); y += 4;
-      doc.text('2o vale N-1, ..., ultimo vale 1. Escore alto = o social (olhos/boca) foi buscado no inicio.', ml, y); y += 5;
+      var _txtInterp = [
+        'Ziguezague (0-100) = distancia media entre cliques consecutivos ao longo da trajetoria inteira de reconstrucao do rosto. Quanto maior, mais o escaneamento saltou entre regioes distantes.',
+        'Dois rostos: ziguezague acima de ' + _TREF_LIMIAR_ZIG + ' nos DOIS rostos = padrao sugestivo de processamento atipico. Alto em apenas um rosto nao classifica como atipico.',
+        'Um rosto (criancas ate 12 anos): ziguezague acima de ' + _TREF_LIMIAR_ZIG + ' = escaneamento atipico de acordo com os estudos; necessario investigar.',
+        'Discrepancia = diferenca entre os ziguezagues dos dois rostos; acima de ' + _TREF_LIMIAR_DISC + ' = achado a investigar no inquerito (nao e diagnostico).',
+        'IFS linear (olhos+boca / total x 100) e IFS-O (ponderado pela ordem: 1o clique vale N, ..., ultimo vale 1) sao apenas informativos e NAO definem a classificacao.',
+        'Os limiares (' + _TREF_LIMIAR_ZIG + ' e ' + _TREF_LIMIAR_DISC + ') sao provisorios e calibraveis; instrumento experimental.'
+      ];
+      _txtInterp.forEach(function(t) {
+        doc.splitTextToSize('- ' + t, lu - 3).forEach(function(l) { verificarQuebra(5); doc.text(l, ml, y); y += 4; });
+        y += 1;
+      });
+      y += 4;
+
+      // Classificacao do instrumento (TREF v3.2)
+      var _cl = _av.classif;
+      var _corT = _cl.chave === 'ATIPICO' ? [230, 81, 0] : (_cl.chave === 'TIPICO' ? [46, 125, 50] : [117, 117, 117]);
+      var _bxL = [];
+      doc.setFontSize(8); doc.setFont(undefined, 'normal');
+      doc.splitTextToSize(_cl.texto, lu - 4).forEach(function(l) { _bxL.push(l); });
+      var _idxTxt = '';
+      for (var zi = 0; zi < _av.zigs.length; zi++) {
+        _idxTxt += 'Ziguezague ' + ((resultados[zi] && resultados[zi].rosto) || (zi+1)) + ': ' + _zigTxt(_av.zigs[zi]) + ' | ';
+      }
+      _idxTxt += 'Discrepancia: ' + _zigTxt(_av.discrep);
+      var _idxL = doc.splitTextToSize(_idxTxt, lu - 4);
+      var _notaL = _cl.discrepanciaAlta ? doc.splitTextToSize(_cl.notaDiscrepancia, lu - 4) : [];
+      var _estL = _av.estimado ? doc.splitTextToSize('Posicoes das regioes estimadas pelo mapa do rosto (resultado gerado antes da v3.1).', lu - 4) : [];
+      var _bxAlt = 18 + (_bxL.length + _idxL.length + _notaL.length + _estL.length) * 4 + 4;
+      verificarQuebra(_bxAlt + 4);
+      doc.setFillColor(245, 245, 250);
+      doc.rect(ml - 3, y - 5, lu + 6, _bxAlt, 'F');
+      doc.setTextColor(_corT[0], _corT[1], _corT[2]); doc.setFontSize(10); doc.setFont(undefined, 'bold');
+      doc.text('CLASSIFICACAO DO INSTRUMENTO (TREF v3.2)', ml, y); y += 6;
+      doc.setTextColor(0, 0, 0); doc.setFontSize(10); doc.setFont(undefined, 'bold');
+      doc.text(_cl.classificacao, ml, y); y += 6;
+      doc.setFontSize(8); doc.setFont(undefined, 'normal');
+      _bxL.forEach(function(l) { doc.text(l, ml, y); y += 4; });
+      y += 1;
       doc.setFont(undefined, 'bold');
-      doc.text('Faixas de classificacao (IFS):', ml, y); y += 5;
+      _idxL.forEach(function(l) { doc.text(l, ml, y); y += 4; });
       doc.setFont(undefined, 'normal');
-      doc.text('>= 50%: Atencao social adequada (processamento tipico)', ml + 3, y); y += 4;
-      doc.text('35-49%: Atencao social moderada (acompanhar e reteste)', ml + 3, y); y += 4;
-      doc.text('20-34%: Atencao social reduzida (dificuldade processamento social)', ml + 3, y); y += 4;
-      doc.text('< 20%: Predominantemente periferica (padrao atipico - investigar TEA)', ml + 3, y); y += 5;
-      doc.text('Padrao: Social-first (tipico) > Misto (acompanhar) > Periferia-first (atipico)', ml, y); y += 7;
+      _notaL.forEach(function(l) { doc.text(l, ml, y); y += 4; });
+      doc.setTextColor(90, 90, 90);
+      _estL.forEach(function(l) { doc.text(l, ml, y); y += 4; });
+      doc.setTextColor(0, 0, 0);
+      y += 8;
 
       // Resultados por rosto
       for (var ri = 0; ri < resultados.length; ri++) {
@@ -19652,11 +19924,13 @@
         doc.text('ROSTO ' + (res.rosto || (ri+1)).toString().toUpperCase(), ml, y); y += 7;
         doc.setTextColor(0, 0, 0); doc.setFont(undefined, 'normal'); doc.setFontSize(9);
         doc.text('Tempo total: ' + ((res.tempoTotal||0)/1000).toFixed(1) + 's | Regioes pintadas: ' + (res.cliques||[]).length + '/' + (res.totalRegioes||0) + ' (' + m.cobertura.toFixed(0) + '%)', ml, y); y += 6;
-        // Os DOIS escores lado a lado (como no WISC: bruto/linear e ponderado).
+        // Ziguezague (base da classificacao) + IFS/IFS-O (informativos).
+        var _zR = _av.zigs[ri];
+        var _zRot = (_zR === null || _zR === undefined) ? 'indefinido' : (_zR > _TREF_LIMIAR_ZIG ? 'alto' : 'baixo');
         doc.setFont(undefined, 'bold');
-        doc.text('IFS linear: ' + m.ifsLinear.toFixed(0) + '% (quanto olhou o social)  |  IFS-O ponderado pela ordem: ' + m.ifsO.toFixed(0) + '% (o que buscou primeiro)', ml, y); y += 6;
+        doc.text('Ziguezague: ' + _zigTxt(_zR) + ' (' + _zRot + '; limiar ' + _TREF_LIMIAR_ZIG + ') | IFS: ' + m.ifsLinear.toFixed(0) + '% | IFS-O: ' + m.ifsO.toFixed(0) + '% (informativos)', ml, y); y += 6;
         doc.setFont(undefined, 'normal');
-        doc.text('Posicao media olhos: ' + (m.mediaOlhos ? m.mediaOlhos.toFixed(1) : 'N/A') + ' | % olhos nos 5 primeiros: ' + m.pctOlhos5.toFixed(0) + '%', ml, y); y += 6;
+        doc.text('Posicao media olhos: ' + (m.mediaOlhos ? m.mediaOlhos.toFixed(1) : 'N/A') + ' | % social (olhos/boca) nos 5 primeiros: ' + m.pctSocial5.toFixed(0) + '%', ml, y); y += 6;
         doc.text('Tempo ate primeiro olho: ' + (m.tempoAteOlhos ? (m.tempoAteOlhos/1000).toFixed(1) + 's' : 'N/A') + ' | Indice de salto: ' + m.indiceSalto.toFixed(0) + '%', ml, y); y += 6;
 
         // MAPA DE ESCANEAMENTO: a sequencia COMPLETA de cliques do avaliando, na ordem.
@@ -19676,7 +19950,7 @@
           if (c % 2 === 0) { doc.setFillColor(250, 248, 255); doc.rect(ml - 2, y - 3, lu + 4, 5, 'F'); }
           doc.text(String(cl.ordem), ml, y);
           doc.text(cl.nome || '-', ml+8, y);
-          doc.text(cl.cat || '-', ml+70, y);
+          doc.text(_trefCat(cl.nome), ml+70, y);
           doc.text((cl.tempo/1000).toFixed(2) + 's', ml+118, y);
           doc.text((cl.intervalo/1000).toFixed(2) + 's', ml+150, y);
           y += 5;
@@ -19709,16 +19983,16 @@
       }
 
       // Disclaimer
-      verificarQuebra(25);
+      verificarQuebra(32);
       doc.setFillColor(255, 248, 225);
-      doc.rect(ml - 3, y - 4, lu + 6, 18, 'F');
+      doc.rect(ml - 3, y - 4, lu + 6, 24, 'F');
       doc.setTextColor(183, 110, 0); doc.setFontSize(8); doc.setFont(undefined, 'bold');
       doc.text('AVISO IMPORTANTE:', ml, y); y += 5;
       doc.setFont(undefined, 'normal');
-      var aviso = 'Este e um instrumento experimental de rastreio sem validacao empirica formal. Os resultados devem ser interpretados no contexto clinico mais amplo. Nao substitui avaliacao clinica completa com instrumentos padronizados.';
+      var aviso = 'Este e um instrumento experimental de rastreio sem validacao empirica formal. Os resultados devem ser interpretados no contexto clinico mais amplo. Nao substitui avaliacao clinica completa com instrumentos padronizados. Os limiares de classificacao (ziguezague ' + _TREF_LIMIAR_ZIG + ' e discrepancia ' + _TREF_LIMIAR_DISC + ') sao provisorios e calibraveis.';
       var avisoL = doc.splitTextToSize(aviso, lu);
       avisoL.forEach(function(l) { doc.text(l, ml, y); y += 4; });
-      y += 12;
+      y += 16;
 
       // Referencias
       verificarQuebra(35);
@@ -19728,8 +20002,9 @@
       var refs = [
         'KLIN, A. et al. Visual fixation patterns during viewing of naturalistic social situations. Archives of General Psychiatry, v. 59, n. 9, p. 809-816, 2002.',
         'PELPHREY, K. A. et al. Visual Scanning of Faces in Autism. Journal of Autism and Developmental Disorders, v. 32, n. 4, p. 249-261, 2002.',
-        'JONES, W.; KLIN, A. Attention to eyes is present but in decline in 2-6-month-old infants later diagnosed with autism. Nature, v. 504, p. 427-431, 2013.',
-        'HERLITZ, A.; LOVEN, J. Sex differences in face recognition. Brain and Cognition, v. 82, n. 2, p. 181-186, 2013.',
+        'JONES, W.; KLIN, A. Attention to eyes is present but in decline in 2-6-month-old infants later diagnosed with autism. Nature, v. 504, n. 7480, p. 427-431, 2013.',
+        'HERLITZ, A.; LOVEN, J. Sex differences and the own-gender bias in face recognition: a meta-analytic review. Visual Cognition, v. 21, n. 9-10, p. 1306-1336, 2013.',
+        'REYNOLDS, G. D.; ROTH, K. C. The development of attentional biases for faces in infancy: a developmental systems perspective. Frontiers in Psychology, v. 9, art. 222, 2018.',
         'DSM-5-TR. Manual Diagnostico e Estatistico de Transtornos Mentais. 5. ed. rev. APA, 2022.'
       ];
       refs.forEach(function(ref) {
@@ -19742,7 +20017,7 @@
       // Rodape
       doc.setTextColor(130, 130, 130); doc.setFontSize(7);
       doc.text('Relatorio gerado em: ' + new Date().toLocaleString('pt-BR'), ml, 285);
-      doc.text('S\u03A8M Online - TREF v2.0', ml, 289);
+      doc.text('S\u03A8M Online - TREF v3.2', ml, 289);
 
       // Salvar
       var nome = (fd.nome || 'paciente').replace(/\s+/g, '_');
