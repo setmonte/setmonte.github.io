@@ -212,6 +212,186 @@ var resultados = []; // array de resultados por fase
 var recAtual = {regioes:[], cliques:[], inicio:0};
 var totalRegioes = 0;
 
+// ===== CONSTANTES DE CLASSIFICACAO (ponto unico de calibracao - Req 7.1) =====
+// LIMIARES PROVISORIOS E CALIBRAVEIS (instrumento experimental, sem validacao formal).
+// Escala dos indices: 0..100. Alterar SO aqui recalibra todo o teste.
+var LIMIAR_ZIGUEZAGUE = 22;     // acima disso o ziguezague e considerado "alto" (calibrado pela distribuicao: organizado<=~14, caotico>=~22; ancora Emilly=15/14 tipica)
+var LIMIAR_DISCREPANCIA = 18;   // acima disso a discrepancia entre os rostos e sinalizada para investigar no inquerito (calibrado: casos discrepantes ~27)
+var TREF_VERSAO = 'TREF v3.1';
+
+// OVERRIDE_CATEGORIA = fonte unica de verdade das categorias (Req 1).
+// Mapa nome_normalizado -> categoria. A categoria efetiva vem SEMPRE deste override;
+// o campo "cat" original de MAPA_MULHER/MAPA_HOMEM e ignorado.
+// Chave = nome normalizado (minusculas, sem acento, sem sufixos de lado/parte).
+// 'social' = olhos e boca | 'limitrofe' = proximo do centro | 'periferia' = distante.
+var OVERRIDE_CATEGORIA = {
+    // SOCIAL (Req 1.1)
+    'olho': 'social', 'iris': 'social', 'pupila': 'social', 'palpebra': 'social',
+    'labio': 'social', 'boca': 'social',
+    // LIMITROFE (Req 1.2)
+    'bochecha': 'limitrofe', 'infraorbital': 'limitrofe', 'tempora': 'limitrofe',
+    'sobrancelha': 'limitrofe', 'nariz': 'limitrofe', 'rosto': 'limitrofe',
+    // PERIFERIA (Req 1.3)
+    'testa': 'periferia', 'cabelo': 'periferia', 'orelha': 'periferia',
+    'queixo': 'periferia', 'pescoco': 'periferia', 'roupa': 'periferia'
+};
+
+// _naoMapeadas = regioes de MAPA_MULHER/MAPA_HOMEM que nao casaram com nenhum
+// termo do OVERRIDE (Req 1.6). Ficam registradas para revisao do profissional.
+var _naoMapeadas = [];
+
+// _catDaRegiao(nome) -> 'social' | 'limitrofe' | 'periferia' (Req 1.1-1.4, 1.6, 1.7).
+// Normaliza o nome (minusculas, sem acento, sem sufixos de lado/parte) e procura
+// o primeiro termo do OVERRIDE_CATEGORIA que esteja contido na chave normalizada.
+// Fallback = 'periferia' + registra em _naoMapeadas quando nada casa (Req 1.6).
+function _catDaRegiao(nome) {
+    var bruto = (nome == null) ? '' : String(nome);
+    // minuscula + remove acentos (mesma tecnica do gerarID: NFD + tira diacriticos).
+    var chave = bruto.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    // remove sufixos entre parenteses, ex.: "(parte 2)", "(lateral direita)".
+    chave = chave.replace(/\([^)]*\)/g, ' ');
+    // remove palavras de lado/parte que nunca sao termo-chave de categoria.
+    chave = chave.replace(/\b(esquerda|esquerdo|direita|direito|superior|inferior|lateral|franja|contorno|parte)\b/g, ' ');
+    chave = chave.replace(/\s+/g, ' ').trim();
+    // itera OVERRIDE_CATEGORIA na ordem de insercao (social -> limitrofe -> periferia)
+    // e retorna no primeiro termo contido na chave. Sem colisao entre os termos atuais.
+    for (var termo in OVERRIDE_CATEGORIA) {
+        if (OVERRIDE_CATEGORIA.hasOwnProperty(termo) && chave.indexOf(termo) !== -1) {
+            return OVERRIDE_CATEGORIA[termo];
+        }
+    }
+    _naoMapeadas.push(nome); // nenhuma correspondencia: registra para revisao (Req 1.6)
+    return 'periferia';
+}
+
+// _centroRegiao(bbox, cod) -> {cx, cy} normalizados em 0..1 (Req 2.1).
+// Recebe o objeto bbox (recAtual.bbox) e o cod da regiao; devolve o centro da
+// bounding box dividido por MW/MH (dimensoes da mascara). Retorna null se a
+// bbox daquele cod estiver ausente (robustez: clique sem bbox nao quebra o calculo).
+function _centroRegiao(bbox, cod) {
+    var b = bbox ? bbox[cod] : undefined;
+    if (!b) return null;
+    return {
+        cx: ((b.minX + b.maxX) / 2) / MW,
+        cy: ((b.minY + b.maxY) / 2) / MH
+    };
+}
+
+// _indiceZiguezague(cliques) -> number | null (Req 2.1, 2.2, 2.3, 2.5).
+// Opcao A (posicao real): mede o quanto o escaneamento saltou entre regioes
+// fisicamente distantes ao longo de TODA a trajetoria (Req 2.2). Usa o centro
+// normalizado (cx,cy em 0..1) de cada clique, filtrando os pontos sem centro
+// valido (cx/cy numericos; null/undefined sao ignorados por robustez).
+// Se sobrarem menos de 2 pontos validos, o indice e indefinido -> null (Req 2.3).
+// Caso contrario: soma as distancias euclidianas entre cliques consecutivos,
+// tira a media por passo e normaliza para 0..100 dividindo pela distancia
+// maxima possivel no quadrado unitario (sqrt(2) ~= 1.41421356), arredondando
+// e limitando a 100 (Req 2.1, 2.5).
+function _indiceZiguezague(cliques) {
+    var lista = cliques || [];
+    var pts = [];
+    for (var i = 0; i < lista.length; i++) {
+        var c = lista[i];
+        if (c && typeof c.cx === 'number' && typeof c.cy === 'number') {
+            pts.push(c);
+        }
+    }
+    if (pts.length < 2) return null; // Req 2.3: dados insuficientes -> indefinido
+    var soma = 0;
+    for (var k = 0; k < pts.length - 1; k++) {
+        var dx = pts[k + 1].cx - pts[k].cx;
+        var dy = pts[k + 1].cy - pts[k].cy;
+        soma += Math.sqrt(dx * dx + dy * dy);
+    }
+    var dmedia = soma / (pts.length - 1);
+    return Math.min(100, Math.round((dmedia / 1.41421356) * 100));
+}
+
+// _indiceDiscrepancia(zigA, zigB) -> number | null (Req 3.1, 3.2, 3.4).
+// ----------------------------------------------------------------------
+// Compara o padrao de escaneamento dos dois rostos pela diferenca absoluta
+// entre seus indices de ziguezague (ambos ja em 0..100). Se qualquer um dos
+// indices for indefinido (apenas 1 rosto util / rosto com ziguezague null),
+// a discrepancia tambem e indefinida -> retorna null (Req 3.2). Checagem
+// explicita por typeof para tratar null E undefined (e qualquer valor nao
+// numerico) com seguranca; so calcula quando os dois sao numeros validos.
+function _indiceDiscrepancia(zigA, zigB) {
+    if (typeof zigA !== 'number' || typeof zigB !== 'number') return null; // Req 3.2
+    return Math.abs(zigA - zigB); // ja esta em 0..100 (Req 3.1, 3.4)
+}
+
+// _classificarTREF(zigA, zigB, discrep)
+//   -> {chave, classificacao, texto, discrepanciaAlta, notaDiscrepancia} (Req 4/5).
+// ----------------------------------------------------------------------
+// Combina os dois indices de ziguezague (podem ser null) e a discrepancia
+// (pode ser null) e devolve a classificacao final + texto cauteloso. Funcao
+// PURA e DETERMINISTA: nao usa Date, Math.random nem estado mutavel externo;
+// depende apenas dos argumentos e das constantes LIMIAR_ZIGUEZAGUE /
+// LIMIAR_DISCREPANCIA. Passo-a-passo conforme a secao "Classificacao" do design.
+//
+// AJUSTE POS-CALIBRACAO: agora existem APENAS DUAS classificacoes (TIPICO e
+// ATIPICO). A "ansiedade social" DEIXOU de ser rotulo: a discrepancia alta entre
+// os rostos virou um SINALIZADOR CAUTELOSO devolvido SEPARADAMENTE (campos
+// discrepanciaAlta/notaDiscrepancia), tratado como "achado a investigar no
+// inquerito", citando ansiedade social apenas como UMA hipotese, sem cravar.
+//
+// Regras (tabela-verdade do design):
+//   1) ATIPICO -> ziguezague alto nos DOIS rostos (inclui o empate do Req 4.6).
+//   2) TIPICO  -> qualquer outro caso: inclui ziguezague alto em so um rosto
+//                 (Req 5.1) e o caso de um indice null (dado insuficiente ->
+//                 resultado seguro e nao-alarmista).
+//   Independente da chave: discrepanciaAlta = (discrep != null && discrep >
+//   LIMIAR_DISCREPANCIA). Quando true, notaDiscrepancia traz a nota de inquerito.
+//
+// NOTA SOBRE ACENTOS (Req 10): dentro de <script> nao usamos acento/emoji cru.
+// Os textos sao exibidos ao usuario; as EXPRESSOES-CHAVE que a Property 11
+// procura como substring ("padrao sugestivo de" e "recomenda-se investigar com
+// outros instrumentos") sao escritas DELIBERADAMENTE SEM acento, em ASCII puro,
+// para que o teste de substring case de forma confiavel. O restante do texto
+// usa escapes \uXXXX quando precisa de acento.
+function _classificarTREF(zigA, zigB, discrep) {
+    var ambosDefinidos = (zigA != null) && (zigB != null);
+    var zigAltoNosDois = ambosDefinidos && zigA > LIMIAR_ZIGUEZAGUE && zigB > LIMIAR_ZIGUEZAGUE;
+
+    // Sinalizador de discrepancia: vale INDEPENDENTE da chave (TIPICO ou ATIPICO).
+    // Nao e mais um rotulo; e um achado cauteloso a esclarecer no inquerito.
+    var discrepanciaAlta = (discrep != null) && discrep > LIMIAR_DISCREPANCIA;
+    var notaDiscrepancia = '';
+    if (discrepanciaAlta) {
+        // "recomenda-se" presente; NAO usa "diagnostico de"/"conclui"/"e autista"/"tem tea".
+        notaDiscrepancia = 'Discrep\u00e2ncia entre os rostos: os dois rostos foram reconstru\u00eddos de formas '
+            + 'bastante diferentes. Isso NAO \u00e9 um diagn\u00f3stico; recomenda-se esclarecer no inqu\u00e9rito '
+            + 'com o paciente. Pode refletir reatividade ao est\u00edmulo/contexto (como em ansiedade social), '
+            + 'entre outras causas.';
+    }
+
+    // 1) Atipico (inclui o empate do Req 4.6).
+    if (zigAltoNosDois) {
+        return {
+            chave: 'ATIPICO',
+            classificacao: 'Padrao sugestivo de processamento atipico',
+            // "padrao sugestivo de" e "recomenda-se investigar com outros instrumentos" em ASCII (Property 11).
+            texto: 'padrao sugestivo de processamento visual at\u00edpico: o escaneamento saltou de forma '
+                + 'polar e repetida entre regi\u00f5es distantes nos dois rostos. Isso NAO \u00e9 um diagn\u00f3stico; '
+                + 'recomenda-se investigar com outros instrumentos, como o TECFE e demais testes do avaliador, '
+                + 'antes de qualquer conclus\u00e3o.',
+            discrepanciaAlta: discrepanciaAlta,
+            notaDiscrepancia: notaDiscrepancia
+        };
+    }
+
+    // 2) Caso contrario (inclui ziguezague alto em so um rosto -> Req 5.1 e null).
+    return {
+        chave: 'TIPICO',
+        classificacao: 'Padrao tipico',
+        texto: 'Padr\u00e3o de escaneamento dentro do esperado para este instrumento experimental. '
+            + 'N\u00e3o foram observados indicadores que justifiquem preocupa\u00e7\u00e3o quanto ao padr\u00e3o '
+            + 'de trajet\u00f3ria. Resultado meramente descritivo.',
+        discrepanciaAlta: discrepanciaAlta,
+        notaDiscrepancia: notaDiscrepancia
+    };
+}
+
 // ===== UTILIDADES =====
 function calcularIdade() {
     var dn = document.getElementById('dataNasc').value;
@@ -537,13 +717,16 @@ function cliqueRegiao(e) {
 
     var agora = Date.now();
     var tempo = agora - recAtual.inicio;
+    var _ctr = _centroRegiao(recAtual.bbox, cod);
     recAtual.cliques.push({
         ordem: recAtual.cliques.length + 1,
         cod: cod,
         nome: info.nome,
         cat: info.cat,
         tempo: tempo,
-        intervalo: recAtual.cliques.length > 0 ? tempo - recAtual.cliques[recAtual.cliques.length-1].tempo : tempo
+        intervalo: recAtual.cliques.length > 0 ? tempo - recAtual.cliques[recAtual.cliques.length-1].tempo : tempo,
+        cx: _ctr ? _ctr.cx : null,
+        cy: _ctr ? _ctr.cy : null
     });
 
     _revelarRegiao(cod);
@@ -584,57 +767,73 @@ function mostrarResultados() {
     trocarTela('tela-resultados');
     setTimeout(function(){var _s=document.createElement('script');_s.src='auto-close.js';_s.onload=function(){if(window._autoFechar)_autoFechar();};document.body.appendChild(_s);},2000);
 
-    // Calcular metricas por fase
+    // Calcular metricas por fase.
+    // Tarefa 9.1: a categoria clinica de cada clique e SEMPRE re-derivada por
+    // _catDaRegiao(c.nome) (Req 1.4) -> 'social' | 'limitrofe' | 'periferia'.
+    // O campo c.cat antigo (olhos/boca/periferia dos mapas) NAO e mais usado aqui.
+    // A recategorizacao agrupa olhos E boca em 'social' (nao ha mais separacao
+    // olhos/boca). Para nao quebrar a UI/_escalaDados atuais (que ainda falam em
+    // olhos/boca), tratamos todo o grupo social como "olhos" e deixamos "boca" em
+    // zero; a reestruturacao visual fica para a tarefa 9.2 e o _escalaDados para 10.1.
     var fasesAnalise = [];
-    var totalOlhos = 0, totalBoca = 0, totalPeriferia = 0, totalLimitrofe = 0, totalCliques = 0;
+    var totalSocial = 0, totalPeriferia = 0, totalLimitrofe = 0, totalCliques = 0;
     for (var i = 0; i < resultados.length; i++) {
         var r = resultados[i];
-        var olhos = 0, boca = 0, periferia = 0, limitrofe = 0;
+        var social = 0, periferia = 0, limitrofe = 0;
         var primeirosCinco = [];
         for (var j = 0; j < r.cliques.length; j++) {
             var c = r.cliques[j];
-            if (c.cat === 'olhos') olhos++;
-            else if (c.cat === 'boca') boca++;
-            else if (c.cat === 'limitrofe') limitrofe++; // zona a investigar: NAO entra no IFS.
+            var catRe = _catDaRegiao(c.nome); // re-derivacao (Req 1.4)
+            if (catRe === 'social') social++;
+            else if (catRe === 'limitrofe') limitrofe++;
             else periferia++;
-            if (j < 5) primeirosCinco.push(c.cat);
+            if (j < 5) primeirosCinco.push(catRe);
         }
         var totalFase = r.cliques.length;
-        // IFS = (olhos + boca) / total. Limitrofe e periferia NAO contam como social.
-        var ifs = totalFase > 0 ? Math.round(((olhos + boca) / totalFase) * 100) : 0;
-        var socialPrimeiros = primeirosCinco.filter(function(c) { return c === 'olhos' || c === 'boca'; }).length;
+        // IFS = social / total (informativo; NAO dispara mais rotulo - Req 6).
+        var ifs = totalFase > 0 ? Math.round((social / totalFase) * 100) : 0;
+        // Indice de Ziguezague deste rosto (Req 2). null se < 2 cliques validos.
+        var zig = _indiceZiguezague(r.cliques);
+        var socialPrimeiros = primeirosCinco.filter(function(cat) { return cat === 'social'; }).length;
         var padraoScan = socialPrimeiros >= 3 ? 'Social-first' : (socialPrimeiros >= 2 ? 'Misto' : 'Periferia-first');
         var tempoMedio = totalFase > 0 ? Math.round(r.cliques[r.cliques.length - 1].tempo / totalFase) : 0;
-        fasesAnalise.push({rosto: r.rosto, olhos: olhos, boca: boca, periferia: periferia, limitrofe: limitrofe, total: totalFase, totalRegioes: r.totalRegioes, ifs: ifs, padraoScan: padraoScan, socialPrimeiros: socialPrimeiros, tempoTotal: r.tempoTotal, tempoMedio: tempoMedio});
-        totalOlhos += olhos;
-        totalBoca += boca;
+        fasesAnalise.push({rosto: r.rosto, social: social, periferia: periferia, limitrofe: limitrofe, total: totalFase, totalRegioes: r.totalRegioes, ifs: ifs, zig: zig, padraoScan: padraoScan, socialPrimeiros: socialPrimeiros, tempoTotal: r.tempoTotal, tempoMedio: tempoMedio});
+        totalSocial += social;
         totalPeriferia += periferia;
         totalLimitrofe += limitrofe;
         totalCliques += totalFase;
     }
 
-    // IFS geral
-    var ifsGeral = totalCliques > 0 ? Math.round(((totalOlhos + totalBoca) / totalCliques) * 100) : 0;
+    // Compatibilidade com a UI/_escalaDados atuais (olhos/boca): todo o grupo
+    // social entra como "olhos"; "boca" fica zerado. A tarefa 9.2 refaz essa UI.
+    var totalOlhos = totalSocial, totalBoca = 0;
+
+    // IFS geral (informativo).
+    var ifsGeral = totalCliques > 0 ? Math.round((totalSocial / totalCliques) * 100) : 0;
     var completude = 0;
     var totalRegioes = 0;
     for (var k = 0; k < resultados.length; k++) { totalRegioes += resultados[k].totalRegioes; }
     completude = totalRegioes > 0 ? Math.round((totalCliques / totalRegioes) * 100) : 0;
 
-    // Classificacao baseada no IFS
-    var classificacaoIFS = '';
-    var corIFS = '';
-    if (ifsGeral >= 50) { classificacaoIFS = 'Atencao social adequada'; corIFS = '#2e7d32'; }
-    else if (ifsGeral >= 35) { classificacaoIFS = 'Atencao social moderada'; corIFS = '#f57f17'; }
-    else if (ifsGeral >= 20) { classificacaoIFS = 'Atencao social reduzida'; corIFS = '#e65100'; }
-    else { classificacaoIFS = 'Atencao predominantemente periferica'; corIFS = '#c62828'; }
+    // ===== CLASSIFICACAO POR ZIGUEZAGUE E DISCREPANCIA (Req 4/5) =====
+    // A classificacao final vem de _classificarTREF (NAO das faixas de IFS - Req 6).
+    var zigA = (fasesAnalise.length > 0) ? fasesAnalise[0].zig : null;
+    var zigB = (fasesAnalise.length > 1) ? fasesAnalise[1].zig : null;
+    var discrep = _indiceDiscrepancia(zigA, zigB);
+    var classif = _classificarTREF(zigA, zigB, discrep);
+
+    // Rotulo e cor principais vem de classif (Req 6: IFS nao dispara mais rotulo).
+    // Cor cautelosa por chave; os textos detalhados sao refinados na tarefa 9.2.
+    var classificacaoIFS = classif.classificacao;
+    var corIFS = '#2e7d32';
+    if (classif.chave === 'ATIPICO') corIFS = '#e65100';
 
     // Classificacao do padrao de escaneamento
     var padraoGeral = '';
     var socialPrimeirosGeral = 0;
     if (resultados.length > 0 && resultados[0].cliques.length >= 5) {
         for (var p = 0; p < Math.min(5, resultados[0].cliques.length); p++) {
-            var cat = resultados[0].cliques[p].cat;
-            if (cat === 'olhos' || cat === 'boca') socialPrimeirosGeral++;
+            if (_catDaRegiao(resultados[0].cliques[p].nome) === 'social') socialPrimeirosGeral++;
         }
     }
     if (socialPrimeirosGeral >= 3) padraoGeral = 'Social-first (prioriza regiao social)';
@@ -647,31 +846,34 @@ function mostrarResultados() {
     html += '<h3 style="color:#4a148c;text-align:center;">Resultado TREF - ' + dadosForm.nome + '</h3>';
     html += '<p style="text-align:center;color:#555;font-size:0.85em;margin-bottom:15px;">' + dadosForm.idade + ' | ' + (dadosForm.sexo === 'M' ? 'Masculino' : 'Feminino') + ' | ' + dadosForm.dataAval + '</p>';
 
-    // Card principal - IFS
+    // Card principal - CLASSIFICACAO (protagonista). O IFS vira numero secundario
+    // informativo (Req 6: IFS nao e mais o eixo da leitura, nao classifica).
     html += '<div style="background:linear-gradient(135deg,' + corIFS + '22,' + corIFS + '11);border:2px solid ' + corIFS + ';border-radius:12px;padding:20px;text-align:center;margin:15px 0;">';
-    html += '<p style="font-size:0.8em;color:#555;margin-bottom:5px;">Indice de Fixacao Social (IFS)</p>';
-    html += '<p style="font-size:2.5em;font-weight:bold;color:' + corIFS + ';margin:5px 0;">' + ifsGeral + '%</p>';
-    html += '<p style="font-size:1.1em;font-weight:600;color:' + corIFS + ';">' + classificacaoIFS + '</p>';
-    html += '<p style="font-size:0.75em;color:#777;margin-top:8px;">(olhos + boca) / total de cliques x 100</p>';
+    html += '<p style="font-size:0.8em;color:#555;margin-bottom:5px;">Classifica\u00e7\u00e3o</p>';
+    html += '<p style="font-size:1.6em;font-weight:bold;color:' + corIFS + ';margin:5px 0;line-height:1.3;">' + classificacaoIFS + '</p>';
+    html += '<p style="font-size:0.8em;color:#777;margin-top:10px;">IFS: <strong style="color:#555;">' + ifsGeral + '%</strong> <span style="font-size:0.92em;">(informativo, n\u00e3o classifica)</span></p>';
+    html += '<p style="font-size:0.68em;color:#999;margin-top:3px;">IFS = (olhos + boca) / total de cliques x 100; mantido apenas como refer\u00eancia descritiva.</p>';
     html += '</div>';
 
-    // Barra visual de distribuicao
-    var pctOlhos = totalCliques > 0 ? Math.round((totalOlhos / totalCliques) * 100) : 0;
-    var pctBoca = totalCliques > 0 ? Math.round((totalBoca / totalCliques) * 100) : 0;
+    // Barra visual de distribuicao (Social / Limitrofe / Periferia sobre totalCliques).
+    // A recategorizacao (Req 1) agrupa olhos+boca em 'social'; nao ha mais olhos/boca
+    // separados na barra. Cores: social #1565c0, limitrofe #8e24aa, periferia #2e7d32.
+    var pctSocial = totalCliques > 0 ? Math.round((totalSocial / totalCliques) * 100) : 0;
     var pctPerif = totalCliques > 0 ? Math.round((totalPeriferia / totalCliques) * 100) : 0;
     var pctLimitrofe = totalCliques > 0 ? Math.round((totalLimitrofe / totalCliques) * 100) : 0;
+    // Compat com _escalaDados/sendBeacon atuais (olhos/boca) - refeito nas tarefas
+    // 10.1/10.2. Social entra como "olhos"; "boca" fica zerado.
+    var pctOlhos = pctSocial, pctBoca = 0;
     html += '<div style="margin:15px 0;">';
-    html += '<p style="font-size:0.85em;font-weight:600;color:#333;margin-bottom:8px;">Distribuicao da atencao visual:</p>';
+    html += '<p style="font-size:0.85em;font-weight:600;color:#333;margin-bottom:8px;">Distribui\u00e7\u00e3o da aten\u00e7\u00e3o visual:</p>';
     html += '<div style="display:flex;height:30px;border-radius:8px;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,0.1);">';
-    if (pctOlhos > 0) html += '<div style="width:' + pctOlhos + '%;background:#1565c0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:bold;">' + pctOlhos + '%</div>';
-    if (pctBoca > 0) html += '<div style="width:' + pctBoca + '%;background:#c62828;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:bold;">' + pctBoca + '%</div>';
+    if (pctSocial > 0) html += '<div style="width:' + pctSocial + '%;background:#1565c0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:bold;">' + pctSocial + '%</div>';
     if (pctLimitrofe > 0) html += '<div style="width:' + pctLimitrofe + '%;background:#8e24aa;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:bold;">' + pctLimitrofe + '%</div>';
     if (pctPerif > 0) html += '<div style="width:' + pctPerif + '%;background:#2e7d32;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:bold;">' + pctPerif + '%</div>';
     html += '</div>';
     html += '<div style="display:flex;justify-content:space-between;margin-top:5px;font-size:0.75em;color:#555;flex-wrap:wrap;gap:4px;">';
-    html += '<span><span style="display:inline-block;width:10px;height:10px;background:#1565c0;border-radius:50%;margin-right:4px;"></span>Olhos (' + totalOlhos + ')</span>';
-    html += '<span><span style="display:inline-block;width:10px;height:10px;background:#c62828;border-radius:50%;margin-right:4px;"></span>Boca (' + totalBoca + ')</span>';
-    html += '<span><span style="display:inline-block;width:10px;height:10px;background:#8e24aa;border-radius:50%;margin-right:4px;"></span>Limitrofe (' + totalLimitrofe + ')</span>';
+    html += '<span><span style="display:inline-block;width:10px;height:10px;background:#1565c0;border-radius:50%;margin-right:4px;"></span>Social (' + totalSocial + ')</span>';
+    html += '<span><span style="display:inline-block;width:10px;height:10px;background:#8e24aa;border-radius:50%;margin-right:4px;"></span>Lim\u00edtrofe (' + totalLimitrofe + ')</span>';
     html += '<span><span style="display:inline-block;width:10px;height:10px;background:#2e7d32;border-radius:50%;margin-right:4px;"></span>Periferia (' + totalPeriferia + ')</span>';
     html += '</div></div>';
 
@@ -686,15 +888,17 @@ function mostrarResultados() {
         html += '<div style="margin-top:15px;">';
         html += '<p style="font-size:0.85em;font-weight:600;color:#333;margin-bottom:8px;">Detalhes por rosto:</p>';
         html += '<table style="width:100%;border-collapse:collapse;font-size:0.8em;">';
-        html += '<tr style="background:#ede7f6;"><th style="padding:6px;">Rosto</th><th>Olhos</th><th>Boca</th><th>Limitrofe</th><th>Periferia</th><th>IFS</th><th>Padrao</th><th>Tempo</th></tr>';
+        // Tabela por rosto (ajuste minimo p/ 9.1: Social agrupado + coluna Ziguezague).
+        // A reestruturacao visual completa (cores/barra/textos) fica para a tarefa 9.2.
+        html += '<tr style="background:#ede7f6;"><th style="padding:6px;">Rosto</th><th>Social</th><th>Limitrofe</th><th>Periferia</th><th>Ziguezague</th><th>IFS</th><th>Padrao</th><th>Tempo</th></tr>';
         for (var f = 0; f < fasesAnalise.length; f++) {
             var fa = fasesAnalise[f];
             html += '<tr style="border-bottom:1px solid #eee;"><td style="padding:5px;font-weight:600;">' + fa.rosto + '</td>';
-            html += '<td style="text-align:center;">' + fa.olhos + '</td>';
-            html += '<td style="text-align:center;">' + fa.boca + '</td>';
+            html += '<td style="text-align:center;">' + fa.social + '</td>';
             html += '<td style="text-align:center;color:#8e24aa;font-weight:600;">' + fa.limitrofe + '</td>';
             html += '<td style="text-align:center;">' + fa.periferia + '</td>';
-            html += '<td style="text-align:center;font-weight:bold;color:' + (fa.ifs >= 50 ? '#2e7d32' : fa.ifs >= 35 ? '#f57f17' : '#c62828') + ';">' + fa.ifs + '%</td>';
+            html += '<td style="text-align:center;font-weight:600;">' + (fa.zig == null ? 'indefinido' : fa.zig) + '</td>';
+            html += '<td style="text-align:center;color:#555;">' + fa.ifs + '%</td>';
             html += '<td style="text-align:center;">' + fa.padraoScan + '</td>';
             html += '<td style="text-align:center;">' + Math.round(fa.tempoTotal / 1000) + 's</td></tr>';
         }
@@ -704,32 +908,81 @@ function mostrarResultados() {
     // Interpretacao
     html += '<div style="background:#f3e5f5;border-left:4px solid #7c4dff;padding:12px;border-radius:0 8px 8px 0;margin-top:15px;font-size:0.82em;line-height:1.6;color:#333;">';
     html += '<strong>Interpretacao:</strong><br>';
-    if (ifsGeral >= 50) html += 'O padrao de escaneamento facial indica atencao preferencial para regioes socialmente relevantes (olhos e boca), compativel com processamento facial tipico.';
-    else if (ifsGeral >= 35) html += 'O padrao de escaneamento facial indica atencao moderada para regioes sociais. Sugere-se acompanhamento e reteste para confirmar o perfil.';
-    else if (ifsGeral >= 20) html += 'O padrao de escaneamento facial indica atencao reduzida para regioes sociais (olhos e boca), com predominancia de fixacao periferica. Este padrao pode estar associado a dificuldades no processamento de informacoes faciais socialmente relevantes.';
-    else html += 'O padrao de escaneamento facial indica predominancia quase exclusiva de fixacao periferica, com atencao minima para olhos e boca. Este perfil e frequentemente associado a padroes atipicos de processamento facial, podendo indicar necessidade de avaliacao complementar.';
-    html += '<br><br><em style="color:#777;">Nota: Este e um instrumento experimental de rastreio. Os resultados devem ser interpretados no contexto de uma avaliacao clinica abrangente.</em>';
+    // Tarefa 9.1: o texto vem de _classificarTREF (ziguezague/discrepancia), NAO
+    // mais das faixas de IFS (Req 6). Os textos cautelosos completos e as notas
+    // obrigatorias (TECFE, limiares provisorios, etc.) sao detalhados na tarefa 9.2.
+    html += classif.texto;
+    // Req 4.5: para TIPICO, acrescenta de forma leve que o resultado e descritivo
+    // e deve ser lido no conjunto da avaliacao (ATIPICO ja traz a recomendacao de
+    // TECFE/outros instrumentos dentro de classif.texto).
+    if (classif.chave === 'TIPICO') {
+        html += ' Ainda assim, trata-se de um resultado descritivo que deve ser lido no conjunto da avalia\u00e7\u00e3o, junto ao TECFE e aos demais testes do avaliador.';
+    }
+    // Sinalizador de discrepancia (independente da chave): achado a investigar no
+    // inquerito, NAO um rotulo. So aparece quando discrepanciaAlta for true.
+    if (classif.discrepanciaAlta && classif.notaDiscrepancia) {
+        html += '<br><br><strong>Achado a investigar no inqu\u00e9rito:</strong> ' + classif.notaDiscrepancia;
+    }
+    html += '<br><br>\u00cdndices (informativos): ziguezague rosto A = ' + (zigA == null ? 'indefinido' : zigA) + ', rosto B = ' + (zigB == null ? 'indefinido' : zigB) + ', discrep\u00e2ncia = ' + (discrep == null ? 'indefinido' : discrep) + '. IFS = ' + ifsGeral + '% (n\u00e3o classifica).';
     html += '</div>';
 
-    // Zona limitrofe (a investigar) - metrica separada, NAO entra no IFS.
+    // ===== NOTAS OBRIGATORIAS (tom cauteloso) - Req 7.2, 7.3, 8.3, 8.4 =====
+    html += '<div style="background:#fff8e1;border-left:4px solid #f9a825;padding:12px;border-radius:0 8px 8px 0;margin-top:12px;font-size:0.8em;line-height:1.6;color:#444;">';
+    html += '<strong style="color:#e65100;">Notas importantes para a leitura do resultado</strong><br>';
+    // Req 7.2: limiares provisorios e calibraveis.
+    html += '<br><strong>Limiares provis\u00f3rios:</strong> os cortes que separam ziguezague "alto" de "baixo" e discrep\u00e2ncia "alta" de "baixa" s\u00e3o <strong>provis\u00f3rios e calibr\u00e1veis</strong>. O instrumento est\u00e1 em calibra\u00e7\u00e3o e esses valores podem mudar.';
+    // Req 7.3: instrumento experimental sem validacao formal.
+    html += '<br><br><strong>Instrumento experimental:</strong> o TREF \u00e9 um instrumento experimental de rastreio, <strong>sem valida\u00e7\u00e3o emp\u00edrica formal</strong>. Nenhum resultado conclui diagn\u00f3stico; recomenda-se investigar com outros instrumentos e ler o resultado no contexto de uma avalia\u00e7\u00e3o cl\u00ednica abrangente.';
+    // Req 8.3: primeiros movimentos x meio/fim do escaneamento.
+    html += '<br><br><strong>Sobre a trajet\u00f3ria:</strong> os primeiros movimentos tendem a capturar melhor a ansiedade social, enquanto o padr\u00e3o at\u00edpico costuma se revelar mais no meio e no fim do escaneamento. Por isso o \u00edndice de ziguezague considera a trajet\u00f3ria inteira, do primeiro ao \u00faltimo clique.';
+    // Req 8.4: limitacao da reconstrucao de memoria x fixacao ocular ao vivo.
+    html += '<br><br><strong>Limita\u00e7\u00e3o:</strong> o TREF mede a <strong>ordem de reconstru\u00e7\u00e3o de mem\u00f3ria</strong> de um rosto, o que \u00e9 diferente da fixa\u00e7\u00e3o ocular ao vivo dos estudos de refer\u00eancia. Essa diferen\u00e7a pode ser contaminada por fatores alheios ao processamento social e mascarar o padr\u00e3o real.';
+    html += '</div>';
+
+    // Zona limitrofe - metrica descritiva reportada a parte (texto neutro, Req 6.3).
     html += '<div style="background:#f3e5f5;border-left:4px solid #8e24aa;padding:12px;border-radius:0 8px 8px 0;margin-top:12px;font-size:0.82em;line-height:1.6;color:#333;">';
-    html += '<strong style="color:#6a1b9a;">Zona limitrofe (a investigar):</strong> ' + totalLimitrofe + ' clique(s) (' + pctLimitrofe + '% do total).<br>';
-    html += 'A zona infraorbital fica logo abaixo do olho. Olhar abaixo do olho, sem fixar o olho em si, e um sinal inespecifico que pode acompanhar ansiedade social ou evitacao do contato visual. ';
-    html += 'Por nao ser fixacao social direta, NAO entra no calculo do IFS; e reportada a parte como marcador "a investigar".';
+    html += '<strong style="color:#6a1b9a;">Zona lim\u00edtrofe:</strong> ' + totalLimitrofe + ' clique(s) (' + pctLimitrofe + '% do total).<br>';
+    html += 'S\u00e3o regi\u00f5es pr\u00f3ximas do centro do rosto (como bochecha, infraorbital, t\u00eampora, sobrancelha, nariz e contorno). Por estarem pr\u00f3ximas do centro, <strong>n\u00e3o contam como periferia nem como evita\u00e7\u00e3o</strong>; s\u00e3o reportadas \u00e0 parte apenas como informa\u00e7\u00e3o descritiva.';
     html += '</div>';
 
     html += '</div>';
-    html += '<div style="text-align:center;color:#aaa;font-size:0.7em;margin-top:14px;">TREF v2.0</div>';
+    html += '<div style="text-align:center;color:#aaa;font-size:0.7em;margin-top:14px;">' + TREF_VERSAO + '</div>';
     document.getElementById('area-resultados').innerHTML = html;
 
-    // _escalaDados com dados significativos
-    window._escalaDados = {escala:'TREF', escore:ifsGeral, classificacao:classificacaoIFS + ' (IFS:' + ifsGeral + '% | ' + padraoGeral.split(' (')[0] + ')', dominios:{IFS:{pontuacao:ifsGeral,max:100,classificacao:classificacaoIFS},Olhos:{pontuacao:totalOlhos,max:totalRegioes,classificacao:pctOlhos+'%'},Boca:{pontuacao:totalBoca,max:totalRegioes,classificacao:pctBoca+'%'},Limitrofe:{pontuacao:totalLimitrofe,max:totalRegioes,classificacao:pctLimitrofe+'% (a investigar)'},Periferia:{pontuacao:totalPeriferia,max:totalRegioes,classificacao:pctPerif+'%'},Completude:{pontuacao:totalCliques,max:totalRegioes,classificacao:completude+'%'}}};
+    // ===== _escalaDados (Req 9) =====
+    // Nova estrutura por ziguezague/discrepancia. Indices indefinidos (null)
+    // entram como pontuacao:null e classificacao:'indefinido' (NAO forcar 0).
+    // Rotulos 'alto'/'baixo' por LIMIAR_ZIGUEZAGUE e 'alta'/'baixa' por LIMIAR_DISCREPANCIA.
+    var _classZigA = (zigA == null) ? 'indefinido' : (zigA > LIMIAR_ZIGUEZAGUE ? 'alto' : 'baixo');
+    var _classZigB = (zigB == null) ? 'indefinido' : (zigB > LIMIAR_ZIGUEZAGUE ? 'alto' : 'baixo');
+    var _classDiscrep = (discrep == null) ? 'indefinido' : (discrep > LIMIAR_DISCREPANCIA ? 'alta' : 'baixa');
+    // Escore representativo: media dos dois ziguezagues se ambos definidos;
+    // senao o que existir; senao null.
+    var _escoreRep = null;
+    if (zigA != null && zigB != null) { _escoreRep = Math.round((zigA + zigB) / 2); }
+    else if (zigA != null) { _escoreRep = zigA; }
+    else if (zigB != null) { _escoreRep = zigB; }
+    window._escalaDados = {
+        escala: 'TREF',
+        escore: _escoreRep,
+        classificacao: classif.classificacao,
+        dominios: {
+            ZiguezagueRostoA: { pontuacao: (zigA == null ? null : zigA), max: 100, classificacao: _classZigA },
+            ZiguezagueRostoB: { pontuacao: (zigB == null ? null : zigB), max: 100, classificacao: _classZigB },
+            Discrepancia:     { pontuacao: (discrep == null ? null : discrep), max: 100, classificacao: _classDiscrep },
+            IFS:              { pontuacao: ifsGeral, max: 100, classificacao: 'informativo (nao classifica)' },
+            Social:           { pontuacao: totalSocial, max: totalCliques, classificacao: pctSocial + '%' },
+            Limitrofe:        { pontuacao: totalLimitrofe, max: totalCliques, classificacao: pctLimitrofe + '%' },
+            Periferia:        { pontuacao: totalPeriferia, max: totalCliques, classificacao: pctPerif + '%' }
+        }
+    };
 
-    // Salvar na Lambda
+    // Salvar na Lambda (caminho nao-bloqueante: resultado ja foi exibido acima - Req 9.4)
     salvarResultadoLambda();
 
-    // Coleta anonima via sendBeacon (garante envio completo antes de fechar aba)
-    try{var _cUrl='https://script.google.com/macros/s/AKfycbzYl7-ageXnHHyvrKMb6iS_7gX2l6ZBngPpbCHNfj7YYbXylcZ_vQ9iJkrbko8ICPcW/exec';var _idadeVal=null;if(window.sessionInfo&&window.sessionInfo.birthDate){var _n=new Date(window.sessionInfo.birthDate);var _h=new Date();_idadeVal=_h.getFullYear()-_n.getFullYear();if(_h.getMonth()<_n.getMonth()||(_h.getMonth()===_n.getMonth()&&_h.getDate()<_n.getDate()))_idadeVal--;}if(!_idadeVal&&dadosForm.idade){var _m2=dadosForm.idade.match(/(\d+)/);if(_m2)_idadeVal=parseInt(_m2[1]);}if(_idadeVal&&window._escalaDados&&window._escalaDados.escala){var _pkt={email:sessionInfo.email||'',escala:'TREF',idade:_idadeVal,sexo:sessionInfo.sex||dadosForm.sexo||'',escolaridade:sessionInfo.education||'',pontuacao:ifsGeral.toFixed(2),dominios:'IFS:'+ifsGeral.toFixed(0)+'%; Olhos:'+totalOlhos+' ('+pctOlhos.toFixed(0)+'%); Boca:'+totalBoca+' ('+pctBoca.toFixed(0)+'%); Limitrofe:'+totalLimitrofe+' ('+pctLimitrofe.toFixed(0)+'%); Periferia:'+totalPeriferia+' ('+pctPerif.toFixed(0)+'%); Completude:'+completude.toFixed(0)+'%',classificacao:classificacaoIFS+' | '+padraoGeral.split(' (')[0]};navigator.sendBeacon(_cUrl,JSON.stringify(_pkt));window._jaEnviou=true;}}catch(e){}
+    // Coleta anonima via sendBeacon (garante envio completo antes de fechar aba).
+    // Protegido por try/catch para nunca bloquear a exibicao do resultado (Req 9.4).
+    try{var _cUrl='https://script.google.com/macros/s/AKfycbzYl7-ageXnHHyvrKMb6iS_7gX2l6ZBngPpbCHNfj7YYbXylcZ_vQ9iJkrbko8ICPcW/exec';var _idadeVal=null;if(window.sessionInfo&&window.sessionInfo.birthDate){var _n=new Date(window.sessionInfo.birthDate);var _h=new Date();_idadeVal=_h.getFullYear()-_n.getFullYear();if(_h.getMonth()<_n.getMonth()||(_h.getMonth()===_n.getMonth()&&_h.getDate()<_n.getDate()))_idadeVal--;}if(!_idadeVal&&dadosForm.idade){var _m2=dadosForm.idade.match(/(\d+)/);if(_m2)_idadeVal=parseInt(_m2[1]);}if(_idadeVal&&window._escalaDados&&window._escalaDados.escala){var _zigAtxt=(zigA!=null?zigA:'-');var _zigBtxt=(zigB!=null?zigB:'-');var _discreptxt=(discrep!=null?discrep:'-');var _pkt={email:sessionInfo.email||'',escala:'TREF',idade:_idadeVal,sexo:sessionInfo.sex||dadosForm.sexo||'',escolaridade:sessionInfo.education||'',pontuacao:(_escoreRep!=null?_escoreRep:0).toFixed(2),dominios:'ZigA:'+_zigAtxt+' ('+_classZigA+'); ZigB:'+_zigBtxt+' ('+_classZigB+'); Discrep:'+_discreptxt+' ('+_classDiscrep+'); Social:'+totalSocial+' ('+pctSocial.toFixed(0)+'%); Limitrofe:'+totalLimitrofe+' ('+pctLimitrofe.toFixed(0)+'%); Periferia:'+totalPeriferia+' ('+pctPerif.toFixed(0)+'%); IFS:'+ifsGeral.toFixed(0)+'%',classificacao:classif.classificacao};navigator.sendBeacon(_cUrl,JSON.stringify(_pkt));window._jaEnviou=true;}}catch(e){}
 }
 
 // ===== DADOS DA URL (versao online) =====
