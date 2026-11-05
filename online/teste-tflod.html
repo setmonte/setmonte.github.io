@@ -1232,6 +1232,23 @@ async function salvarAudioParaPainel(audioS3Key) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(dados)
         });
+        // Marca window._escalaDados APENAS no caminho de sucesso (audio ja aceito pelo painel).
+        // Isso permite que a coleta-anonima.js identifique e registre o TFLOD mesmo sem
+        // calculo no lado do paciente (o PCPM e gerado depois pelo profissional no painel).
+        window._escalaDados = {
+            escala: 'TFLOD',
+            paciente: dadosForm.nome,
+            idade: dadosForm.idadeAnos,
+            sexo: dadosForm.sexo || (sessionInfo && sessionInfo.sex) || '',
+            classificacao: 'Aguardando processamento',
+            dominios: {
+                'Status': {
+                    pontuacao: 'Audio enviado - aguardando processamento no painel',
+                    max: '',
+                    classificacao: 'Aguardando processamento'
+                }
+            }
+        };
     } catch (e) { console.error('Erro ao salvar audio no painel:', e); }
 }
 
