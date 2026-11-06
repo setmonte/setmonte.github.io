@@ -82,6 +82,8 @@ async function startTesteConcentrada() {
   canvasConc.style.height = '100%';
   quadro.innerHTML = '';
   quadro.appendChild(canvasConc);
+  // fundo escuro aparece junto com o canvas (ver .com-canvas no CSS)
+  quadro.classList.add('com-canvas');
 
   showInstructionsConc();
 }
