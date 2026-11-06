@@ -125,8 +125,19 @@
         return partes.join('; ');
     }
 
+        // BAE: devolve apenas os subtestes CONCLUIDOS (ignora abandonado/parado/bypassado),
+    // para nao contaminar a coleta anonima com contagens parciais.
+    function _soConcluidosBAE() {
+        var orig = window.resultadosBAE || {};
+        var out = {};
+        ['concentrada', 'seletiva', 'dividida', 'alternada', 'sustentada'].forEach(function(t) {
+            var x = orig[t];
+            if (x && x.abandonado !== true && (!x.statusTeste || String(x.statusTeste).indexOf('CONCLU') === 0)) out[t] = x;
+        });
+        return out;
+    }
     function _formatarResultadosBAE() {
-        var r = window.resultadosBAE || {};
+        var r = _soConcluidosBAE();
         var partes = [];
         var testes = ['concentrada', 'seletiva', 'dividida', 'alternada', 'sustentada'];
         testes.forEach(function(t) {
@@ -167,7 +178,7 @@
     }
 
     function _classificarBAE() {
-        var r = window.resultadosBAE || {};
+        var r = _soConcluidosBAE();
         var testes = ['concentrada', 'seletiva', 'dividida', 'alternada', 'sustentada'];
         var nomes = {concentrada:'Concentrada', seletiva:'Seletiva', dividida:'Dividida', alternada:'Alternada', sustentada:'Sustentada'};
         var partes = [];
