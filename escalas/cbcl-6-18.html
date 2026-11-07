@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-QY1N9587DG"></script>
@@ -569,92 +569,6 @@ function calcularResultados() {
     if (window.injetarBotaoSalvar) injetarBotaoSalvar('resultados');
 }
 
-// ===== PERFIL CBCL (grafico de linhas, um traco por informante) =====
-// Estilo do relatorio CBCL: colunas separadas por sindrome, caixas Internalizante/Externalizante
-// no topo, linhas pontilhadas de corte e legenda a direita. Eixo vertical em % do escore
-// bruto maximo (sem T-score ate existirem tabelas normativas). Retorna o Y logo abaixo dos rotulos.
-function _cbclDesenharPerfil(doc, gX, gY, gW, gH, rotulosX, informantes, cores) {
-  var n = rotulosX.length;
-  var colW = gW / n;
-  var yBase = gY + gH;
-  function yDe(v) { v = Math.max(0, Math.min(100, v)); return yBase - (v / 100) * gH; }
-  function tracejada(y, r, g, b) {
-    doc.setDrawColor(r, g, b); doc.setLineWidth(0.35);
-    for (var lx = gX; lx < gX + gW; lx += 3) { doc.line(lx, y, Math.min(lx + 1.6, gX + gW), y); }
-  }
-  function marcador(tipo, x, y, r) {
-    if (tipo === 0) { doc.rect(x - r, y - r, 2 * r, 2 * r, 'F'); }
-    else if (tipo === 1) { doc.circle(x, y, r, 'F'); }
-    else if (tipo === 2) { doc.triangle(x, y - r * 1.3, x - r * 1.2, y + r, x + r * 1.2, y + r, 'F'); }
-    else {
-      doc.triangle(x, y - r * 1.4, x - r * 1.4, y, x + r * 1.4, y, 'F');
-      doc.triangle(x, y + r * 1.4, x - r * 1.4, y, x + r * 1.4, y, 'F');
-    }
-  }
-  // Caixas Internalizante (3 primeiras colunas) e Externalizante (2 ultimas)
-  var hCx = 6; var yCx = gY - hCx;
-  doc.setDrawColor(60, 60, 60); doc.setLineWidth(0.3);
-  doc.rect(gX, yCx, colW * 3, hCx);
-  doc.rect(gX + colW * (n - 2), yCx, colW * 2, hCx);
-  doc.setFontSize(7); doc.setFont(undefined, 'normal'); doc.setTextColor(40, 40, 40);
-  doc.text('Internalizante', gX + colW * 1.5, yCx + 4, { align: 'center' });
-  doc.text('Externalizante', gX + colW * (n - 1), yCx + 4, { align: 'center' });
-  // Separadores verticais entre as sindromes
-  doc.setDrawColor(150, 150, 150); doc.setLineWidth(0.2);
-  for (var c = 1; c < n; c++) { doc.line(gX + colW * c, gY, gX + colW * c, yBase); }
-  // Escala vertical (0 a 100%)
-  doc.setFontSize(6); doc.setFont(undefined, 'normal'); doc.setTextColor(90, 90, 90);
-  for (var pv = 0; pv <= 100; pv += 10) {
-    doc.text(pv + '%', gX - 2, yDe(pv) + 1, { align: 'right' });
-  }
-  // Linhas de corte pontilhadas (provisorias: 25% e 40% do escore maximo)
-  tracejada(yDe(25), 90, 90, 90);
-  tracejada(yDe(40), 90, 90, 90);
-  // Nomes das faixas, a esquerda da escala
-  doc.setFontSize(6.5); doc.setFont(undefined, 'normal'); doc.setTextColor(60, 60, 60);
-  doc.text('Clinico', gX - 11, yDe(70) + 1, { align: 'right' });
-  doc.text('Limitrofe', gX - 11, yDe(32.5) + 1, { align: 'right' });
-  doc.text('Nao Clinico', gX - 11, yDe(12.5) + 1, { align: 'right' });
-  // Moldura do grafico
-  doc.setDrawColor(60, 60, 60); doc.setLineWidth(0.3); doc.rect(gX, gY, gW, gH);
-  // Linhas e marcadores de cada informante
-  for (var i = 0; i < informantes.length; i++) {
-    var inf = informantes[i]; var cor = cores[i % cores.length];
-    doc.setDrawColor(cor[0], cor[1], cor[2]); doc.setLineWidth(0.8);
-    for (var p = 0; p < inf.valores.length - 1; p++) {
-      doc.line(gX + colW * (p + 0.5), yDe(inf.valores[p]), gX + colW * (p + 1.5), yDe(inf.valores[p + 1]));
-    }
-    doc.setFillColor(cor[0], cor[1], cor[2]);
-    for (var q = 0; q < inf.valores.length; q++) {
-      marcador(i % 4, gX + colW * (q + 0.5), yDe(inf.valores[q]), 1.1);
-    }
-  }
-  // Rotulos das sindromes, abaixo do grafico
-  doc.setFontSize(6); doc.setFont(undefined, 'normal'); doc.setTextColor(50, 50, 50);
-  for (var li = 0; li < n; li++) {
-    var partes = String(rotulosX[li]).split('\n');
-    for (var lp = 0; lp < partes.length; lp++) {
-      doc.text(partes[lp], gX + colW * (li + 0.5), yBase + 4 + lp * 3.2, { align: 'center' });
-    }
-  }
-  // Legenda a direita
-  var lgX = gX + gW + 4; var lgY = gY + 4;
-  for (var k = 0; k < informantes.length; k++) {
-    var ck = cores[k % cores.length]; var ik = informantes[k];
-    doc.setDrawColor(ck[0], ck[1], ck[2]); doc.setLineWidth(0.8); doc.line(lgX, lgY - 1, lgX + 6, lgY - 1);
-    doc.setFillColor(ck[0], ck[1], ck[2]); marcador(k % 4, lgX + 3, lgY - 1, 1.1);
-    doc.setFontSize(6.5); doc.setFont(undefined, 'bold'); doc.setTextColor(40, 40, 40);
-    doc.text(String(ik.label || '').substring(0, 22), lgX + 8, lgY);
-    if (ik.data) {
-      doc.setFontSize(5.5); doc.setFont(undefined, 'normal'); doc.setTextColor(110, 110, 110);
-      doc.text(ik.data, lgX + 8, lgY + 3);
-      lgY += 3;
-    }
-    lgY += 6;
-  }
-  return yBase + 4 + 2 * 3.2 + 2;
-}
-
 // === GERAR PDF ===
 function gerarRelatorioPDF() {
     var nome = document.getElementById('nome').value;
@@ -738,21 +652,103 @@ function gerarRelatorioPDF() {
     y += 24;
     doc.text('Total Geral: ' + somaTotal + '/' + maxTotal + ' (' + ((somaTotal/maxTotal)*100).toFixed(1) + '%)', 20, y);
 
-    // === GRAFICO DE SINDROMES (estilo perfil CBCL, igual ao do painel) ===
+    // === GRAFICO DE SINDROMES ===
     y += 10;
-    if (y + 110 > 285) { doc.addPage(); y = 20; }
+    if (y + 85 > 275) { doc.addPage(); y = 20; }
     doc.setTextColor(21,101,192); doc.setFontSize(10); doc.setFont(undefined,'bold');
-    doc.text('CBCL 6/18 - Escalas de Sindromes', 105, y, {align:'center'}); y += 4;
+    doc.text('CBCL 6/18 - Escalas de Sindromes', 105, y, {align:'center'}); y += 3;
     var nomeResp = document.getElementById('nomeRespondente').value || respondente || 'Respondente';
     doc.setFontSize(7); doc.setFont(undefined,'normal'); doc.setTextColor(100,100,100);
-    doc.text('Paciente: ' + nome + '   |   Respondente: ' + nomeResp, 105, y, {align:'center'}); y += 12;
-    var rotulosGraf = ['Ansiedade/\nDepressao','Retraimento/\nDepressao','Queixas\nSomaticas','Problemas\nSociais','Alteracoes de\nPensamento','Problemas de\nAtencao','Comport.\nDisruptivo','Comport.\nAgressivo'];
-    var valoresPct = nomes.map(function(k) { return parseFloat(resultadosEscalas[k].pct); });
-    var yFimGraf = _cbclDesenharPerfil(doc, 36, y, 128, 70, rotulosGraf, [{label: (respondente || nomeResp), data: (respondente ? nomeResp : ''), valores: valoresPct}], [[21,101,192]]);
-    doc.setFontSize(6); doc.setFont(undefined,'italic'); doc.setTextColor(130,130,130);
-    doc.text('Eixo vertical: % do escore bruto maximo de cada sindrome (sem T-score; aguarda tabelas normativas).', 36, yFimGraf + 4);
-    doc.text('Cortes provisorios (pontilhados): Nao Clinico ate 25% | Limitrofe 25-40% | Clinico acima de 40%.', 36, yFimGraf + 8);
-    y = yFimGraf + 12;
+    doc.text('Respondente: ' + nomeResp, 105, y, {align:'center'}); y += 5;
+
+    // Dimensoes do grafico
+    var gX = 30; var gY = y; var gW = 160; var gH = 65;
+    var sindromesGraf = ['Ansiedade/\nDepressao','Isolamento/\nDepressao','Queixas\nSomaticas','Problemas\nSociais','Problemas de\nPensamento','Problemas de\nAtencao','Quebrar\nRegras','Compto\nAgressivo'];
+    var sindromesChaves = Object.keys(ESCALAS);
+    var valoresPct = sindromesChaves.map(function(k) { return parseFloat(resultadosEscalas[k].pct); });
+
+    // Fundo com faixas coloridas
+    var yBase = gY + gH; var yTop = gY;
+    var y25 = yBase - (25/100)*gH; // Limite Normal/Limitrofe
+    var y40 = yBase - (40/100)*gH; // Limite Limitrofe/Clinico
+
+    // Faixa verde (Normal: 0-25%)
+    doc.setFillColor(232,245,233); doc.rect(gX, y25, gW, yBase - y25, 'F');
+    // Faixa amarela (Limitrofe: 25-40%)
+    doc.setFillColor(255,248,225); doc.rect(gX, y40, gW, y25 - y40, 'F');
+    // Faixa vermelha (Clinico: >40%)
+    doc.setFillColor(255,235,238); doc.rect(gX, yTop, gW, y40 - yTop, 'F');
+
+    // Labels das faixas
+    doc.setFontSize(6); doc.setFont(undefined,'bold');
+    doc.setTextColor(46,125,50); doc.text('Nao Clinico', gX - 2, yBase - 5, {align:'right'});
+    doc.setTextColor(245,127,23); doc.text('Limitrofe', gX - 2, y25 - 3, {align:'right'});
+    doc.setTextColor(198,40,40); doc.text('Clinico', gX - 2, y40 - 8, {align:'right'});
+
+    // Linhas de corte tracejadas
+    doc.setDrawColor(255,152,0); doc.setLineWidth(0.3);
+    for (var lx = gX; lx < gX + gW; lx += 4) { doc.line(lx, y25, lx + 2, y25); }
+    doc.setDrawColor(244,67,54);
+    for (var lx2 = gX; lx2 < gX + gW; lx2 += 4) { doc.line(lx2, y40, lx2 + 2, y40); }
+
+    // Eixo Y - escala 0-100%
+    doc.setDrawColor(150,150,150); doc.setLineWidth(0.2);
+    doc.line(gX, yTop, gX, yBase); // eixo vertical
+    doc.line(gX, yBase, gX + gW, yBase); // eixo horizontal
+    doc.setFontSize(5.5); doc.setFont(undefined,'normal'); doc.setTextColor(100,100,100);
+    for (var pv = 0; pv <= 100; pv += 20) {
+        var yv = yBase - (pv/100)*gH;
+        doc.text(pv + '%', gX - 3, yv + 1, {align:'right'});
+        if (pv > 0 && pv < 100) { doc.setDrawColor(220,220,220); doc.line(gX, yv, gX + gW, yv); }
+    }
+
+    // Separadores Internalizante / Externalizante
+    var sepX1 = gX + (3/8)*gW; // Apos Queixas Somaticas
+    var sepX2 = gX + (6/8)*gW; // Apos Problemas de Atencao
+    doc.setDrawColor(180,180,180); doc.setLineWidth(0.15);
+    doc.line(sepX1, yTop, sepX1, yBase);
+    doc.line(sepX2, yTop, sepX2, yBase);
+    doc.setFontSize(6); doc.setFont(undefined,'italic'); doc.setTextColor(120,120,120);
+    doc.text('Internalizante', gX + (sepX1 - gX)/2, yTop - 1, {align:'center'});
+    doc.text('Externalizante', sepX2 + (gX + gW - sepX2)/2, yTop - 1, {align:'center'});
+
+    // Plotar a linha do respondente
+    var stepX = gW / (sindromesChaves.length - 1);
+    doc.setDrawColor(21,101,192); doc.setLineWidth(0.8);
+    for (var pi = 0; pi < valoresPct.length - 1; pi++) {
+        var px1 = gX + pi * stepX;
+        var py1 = yBase - (valoresPct[pi]/100)*gH;
+        var px2 = gX + (pi+1) * stepX;
+        var py2 = yBase - (valoresPct[pi+1]/100)*gH;
+        doc.line(px1, py1, px2, py2);
+    }
+    // Pontos
+    doc.setFillColor(21,101,192);
+    for (var pp = 0; pp < valoresPct.length; pp++) {
+        var ppx = gX + pp * stepX;
+        var ppy = yBase - (valoresPct[pp]/100)*gH;
+        doc.circle(ppx, ppy, 1.2, 'F');
+    }
+
+    // Labels do eixo X (nomes das sindromes)
+    doc.setFontSize(5); doc.setFont(undefined,'normal'); doc.setTextColor(50,50,50);
+    var labelsX = ['Depr/Ans','Afastam','Queixas\nSomat','Probl\nSociais','Probl\nPensam','Probl\nAtencao','Quebrar\nRegras','Compto\nAgress'];
+    for (var li = 0; li < labelsX.length; li++) {
+        var lxp = gX + li * stepX;
+        var partes = labelsX[li].split('\n');
+        for (var lpi = 0; lpi < partes.length; lpi++) {
+            doc.text(partes[lpi], lxp, yBase + 3 + lpi*3, {align:'center'});
+        }
+    }
+
+    // Legenda
+    var legY = yBase + 12;
+    doc.setFillColor(21,101,192); doc.rect(gX, legY, 6, 2, 'F');
+    doc.setFontSize(6); doc.setFont(undefined,'normal'); doc.setTextColor(50,50,50);
+    doc.text(nomeResp, gX + 8, legY + 1.5);
+
+    y = legY + 8;
+
     // Alerta de risco no PDF
     if ((r[18] || 0) >= 1 || (r[91] || 0) >= 1) {
         y += 10;
