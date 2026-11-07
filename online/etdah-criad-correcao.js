@@ -231,35 +231,6 @@ function _criadAutoScroll(el) {
   }
 }
 
-// === INTEGRACAO COM ABA PACIENTES ===
-function criadPreencherPaciente() {
-  var sel = document.getElementById('criadSelPac');
-  if (!sel || sel.selectedIndex === 0) return;
-  var opt = sel.options[sel.selectedIndex];
-  var pacId = opt.value || '';
-  var pac = null;
-  if (window._pacientesCache && pacId) {
-    for (var i = 0; i < _pacientesCache.length; i++) {
-      if (_pacientesCache[i].id === pacId) { pac = _pacientesCache[i]; break; }
-    }
-  }
-  if (!pac) pac = { nome: opt.dataset.nome||'', dataNascimento: opt.dataset.dn||'', sexo: opt.dataset.sexo||'' };
-  var nomeEl = document.getElementById('criadNome');
-  var idadeEl = document.getElementById('criadIdade');
-  var sexoEl = document.getElementById('criadSexo');
-  if (nomeEl && pac.nome) nomeEl.value = pac.nome;
-  if (sexoEl && pac.sexo) sexoEl.value = pac.sexo;
-  if (idadeEl && pac.dataNascimento) {
-    var partes = pac.dataNascimento.split('/');
-    if (partes.length === 3) {
-      var nasc = new Date(partes[2], partes[1]-1, partes[0]);
-      var hoje = new Date();
-      var idade = hoje.getFullYear() - nasc.getFullYear();
-      if (hoje.getMonth() < nasc.getMonth() || (hoje.getMonth() === nasc.getMonth() && hoje.getDate() < nasc.getDate())) idade--;
-      idadeEl.value = idade;
-    }
-  }
-}
 
 // === ATUALIZAR SOMAS EM TEMPO REAL ===
 function _criadAtualizarSomas() {

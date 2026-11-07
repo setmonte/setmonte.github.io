@@ -2262,11 +2262,11 @@
             <div style="background:white;border:1px solid #e0e0e0;border-radius:10px;padding:15px;margin-bottom:12px;">
               <p style="font-weight:bold;color:#4a148c;margin-bottom:10px;font-size:13px;">Dados do Paciente</p>
               <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:8px;">
-                <label style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:#555;font-weight:600;">Paciente cadastrado<select id="bvrtSelPac" onchange="bvrtPreencherPaciente()" style="padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-size:12px;width:200px;"><option value="">-- Digitar manualmente --</option></select></label>
+                <label style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:#555;font-weight:600;">Paciente cadastrado<select id="bvrtSelPac" onchange="preencherPaciente('bvrt')" style="padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-size:12px;width:200px;"><option value="">-- Digitar manualmente --</option></select></label>
               </div>
               <div style="display:flex;gap:10px;flex-wrap:wrap;">
                 <label style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:#555;font-weight:600;">Nome<input type="text" id="bvrtNome" style="padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-size:12px;" placeholder="Nome"></label>
-                <label style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:#555;font-weight:600;">Idade (anos)<input type="number" id="bvrtIdade" min="7" max="99" style="padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-size:12px;width:80px;" placeholder="25"></label>
+                <label style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:#555;font-weight:600;">Idade (anos)<input type="number" id="bvrtIdade" min="7" max="99" style="padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-size:12px;width:80px;" placeholder="anos"></label>
                 <label style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:#555;font-weight:600;">Escolaridade<select id="bvrtEscolaridade" style="padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-size:12px;"><option value="">Selecione...</option><option value="fundamental">Fundamental</option><option value="medio">Ensino Medio</option><option value="superior">Superior</option></select></label>
               </div>
             </div>
@@ -2328,7 +2328,7 @@
             <div style="background:white;border:1px solid #e0e0e0;border-radius:10px;padding:12px;margin-bottom:12px;">
               <p style="font-weight:bold;color:#1565c0;margin-bottom:8px;font-size:13px;">Dados do Paciente</p>
               <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
-                <label style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:#555;font-weight:600;">Paciente cadastrado<select id="etdahSelPac" onchange="etdahPreencherPaciente()" style="padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-size:12px;width:200px;"><option value="">-- Digitar manualmente --</option></select></label>
+                <label style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:#555;font-weight:600;">Paciente cadastrado<select id="etdahSelPac" onchange="preencherPaciente('etdah')" style="padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-size:12px;width:200px;"><option value="">-- Digitar manualmente --</option></select></label>
               </div>
               <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;">
                 <label style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:#555;font-weight:600;">Nome<input type="text" id="etdahNome" style="padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-size:12px;width:180px;" placeholder="Nome"></label>
@@ -2361,7 +2361,7 @@
             <div style="background:white;border:1px solid #e0e0e0;border-radius:10px;padding:12px;margin-bottom:12px;">
               <p style="font-weight:bold;color:#e65100;margin-bottom:8px;font-size:13px;">Dados do Paciente</p>
               <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
-                <label style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:#555;font-weight:600;">Paciente cadastrado<select id="criadSelPac" onchange="criadPreencherPaciente()" style="padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-size:12px;width:200px;"><option value="">-- Digitar manualmente --</option></select></label>
+                <label style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:#555;font-weight:600;">Paciente cadastrado<select id="criadSelPac" onchange="preencherPaciente('criad')" style="padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-size:12px;width:200px;"><option value="">-- Digitar manualmente --</option></select></label>
               </div>
               <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;">
                 <label style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:#555;font-weight:600;">Nome<input type="text" id="criadNome" style="padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-size:12px;width:180px;" placeholder="Nome"></label>
@@ -8641,6 +8641,35 @@
       campoEsc.value = valorCadastro;
     }
 
+    // Calcula a idade em anos a partir da data de nascimento do cadastro.
+    // Aceita AAAA-MM-DD (formato gravado pela aba Pacientes) e DD/MM/AAAA (legado).
+    function _idadeEmAnos(dn) {
+      if (!dn) return null;
+      var s = (''+dn).trim();
+      var a, m, d, p;
+      if (/^\d{4}-\d{2}-\d{2}/.test(s)) { a = +s.substr(0,4); m = +s.substr(5,2); d = +s.substr(8,2); }
+      else if ((p = s.split('/')).length === 3) { d = +p[0]; m = +p[1]; a = +p[2]; }
+      else return null;
+      if (!a || !m || !d) return null;
+      var hoje = new Date();
+      var idade = hoje.getFullYear() - a;
+      var mesHoje = hoje.getMonth() + 1;
+      if (mesHoje < m || (mesHoje === m && hoje.getDate() < d)) idade--;
+      return (idade >= 0 && idade < 130) ? idade : null;
+    }
+
+    // BVRT so tem 3 categorias de escolaridade. Traduz o cadastro (1o ano..9o ano,
+    // Ensino Medio, Superior..., Pos-graduacao) para fundamental / medio / superior.
+    // Devolve vazio se nao souber (nesse caso o campo nao e alterado).
+    function _escolaridadeBvrt(valor) {
+      if (!valor) return '';
+      var s = (''+valor).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+      if (/superior|\bpos\b|graduacao|mestrado|doutorado|especializacao/.test(s)) return 'superior';
+      if (/\bmedio\b|\bem\b/.test(s)) return 'medio';
+      if (/fundamental|\bef\b|^\d+o? ?ano/.test(s)) return 'fundamental';
+      return '';
+    }
+
     function preencherPaciente(tipo) {
       var sel = document.getElementById(tipo + 'SelPac');
       if (!sel) return;
@@ -8693,6 +8722,9 @@
       else if (tipo === 'vineland3') { campoNome = document.getElementById('vineland3Nome'); campoDN = document.getElementById('vineland3Dn'); }
       else if (tipo === 'ideia') { campoNome = document.getElementById('ideiaNome'); campoDN = document.getElementById('ideiaDn'); }
       else if (tipo === 'brpi') { campoNome = document.getElementById('brpiNome'); campoDN = document.getElementById('brpiDn'); campoCPF = document.getElementById('brpiCpf'); }
+      else if (tipo === 'bvrt') { campoNome = document.getElementById('bvrtNome'); }
+      else if (tipo === 'etdah') { campoNome = document.getElementById('etdahNome'); }
+      else if (tipo === 'criad') { campoNome = document.getElementById('criadNome'); }
       // Preencher campos basicos
       if (campoNome) campoNome.value = pac.nome || '';
       if (campoDN) campoDN.value = pac.dataNascimento || '';
@@ -8710,7 +8742,10 @@
       // diferente da lista do teste (ex: cadastro "1o ano" vs BAE "1o ano EF").
       // A funcao tenta casar exato, depois por equivalencia/aproximado e, se nada
       // casar, adiciona o valor como opcao para o dado nunca sumir.
-      if (campoEsc && pac.escolaridade) _selecionarEscolaridade(campoEsc, pac.escolaridade);
+      if (campoEsc && pac.escolaridade) {
+        if (tipo === 'bvrt') { var _cat = _escolaridadeBvrt(pac.escolaridade); if (_cat) campoEsc.value = _cat; }
+        else _selecionarEscolaridade(campoEsc, pac.escolaridade);
+      }
       // Lateralidade
       var campoLat = document.getElementById(tipo + 'Lateralidade') || document.getElementById(tipo + 'Laterality');
       if (!campoLat && tipo === 'tecfe') campoLat = document.getElementById('onLaterality');
@@ -8719,6 +8754,9 @@
       var campoCV = document.getElementById(tipo + 'CorrecaoVisual');
       if (!campoCV && tipo === 'tecfe') campoCV = document.getElementById('onCorrecaoVisual');
       if (campoCV && pac.correcaoVisual) campoCV.value = pac.correcaoVisual;
+      // Idade (anos) calculada da data de nascimento do cadastro, quando o formulario tem o campo {tipo}Idade
+      var campoIdade = document.getElementById(tipo + 'Idade');
+      if (campoIdade && pac.dataNascimento) { var _idc = _idadeEmAnos(pac.dataNascimento); if (_idc !== null) campoIdade.value = _idc; }
     }
 
     // === REOCUPA - Funcoes do painel ===
