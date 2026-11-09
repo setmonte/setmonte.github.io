@@ -17881,6 +17881,34 @@
           // fallback: segue para o desenho antigo abaixo (nao deixa o usuario sem PDF).
         }
       }
+      // RBQ-2A e BSL-23: PDF visual (reguas, mapa de respostas, cartoes) igual ao da tela de resultados.
+      // O desenho fica em escalas/pdf-rbq-bsl.js, compartilhado com a propria pagina da escala. Recalcula
+      // tudo a partir de d.respostas. Se faltar resposta ou o arquivo nao carregar, cai no PDF generico abaixo.
+      var _escRB = String(d.escala || '').toUpperCase();
+      if ((_escRB === 'RBQ-2A' || _escRB === 'BSL-23') && d.respostas && !r._semPdfNovo) {
+        var _nRB = (_escRB === 'RBQ-2A') ? 20 : 35, _arrRB = [], _okRB = true;
+        for (var _kRB = 1; _kRB <= _nRB; _kRB++) { var _vRB = d.respostas[_kRB]; if (_vRB === undefined || _vRB === null || isNaN(parseInt(_vRB, 10))) { _okRB = false; break; } _arrRB.push(parseInt(_vRB, 10)); }
+        if (_okRB) {
+          var _gerarRB = function () {
+            try {
+              var _infoRB = { nome: d.paciente || '', sexo: d.sexo || '', idade: d.idade || '', dataAval: (r.date ? new Date(r.date).toLocaleDateString('pt-BR') : ''), idPaciente: d.idPaciente || '', respostas: _arrRB };
+              if (_escRB === 'RBQ-2A') window.SYM_PDF.rbq2a(_infoRB); else window.SYM_PDF.bsl23(_infoRB);
+            } catch (eRB) {
+              if (typeof window._registrarFalhaPDF === 'function') { try { window._registrarFalhaPDF('gerarPDFEscala(' + _escRB + ')', (eRB && eRB.message) || String(eRB), d.paciente || ''); } catch (e3) {} }
+              r._semPdfNovo = true; gerarPDFEscala(idx);
+            }
+          };
+          if (window.SYM_PDF && window.SYM_PDF.rbq2a && window.SYM_PDF.bsl23) { _gerarRB(); }
+          else {
+            var _sRB = document.createElement('script');
+            _sRB.src = '../escalas/pdf-rbq-bsl.js?v=' + Date.now();
+            _sRB.onload = _gerarRB;
+            _sRB.onerror = function () { r._semPdfNovo = true; gerarPDFEscala(idx); };
+            document.body.appendChild(_sRB);
+          }
+          return;
+        }
+      }
       var jsPDF = window.jspdf.jsPDF;
       var doc = new jsPDF();
       var maxY = 280;

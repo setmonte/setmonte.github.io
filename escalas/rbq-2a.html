@@ -147,6 +147,7 @@
     </div>
 </div>
 <script src="../id-paciente.js"></script>
+<script src="pdf-rbq-bsl.js"></script>
 <script>
 // === DADOS ===
 var OPCOES_TIPOS = {
@@ -379,176 +380,23 @@ function calcularResultados() {
     if (window.injetarBotaoSalvar) injetarBotaoSalvar('resultados');
 }
 
-// === PDF (3 paginas) ===
-function _desenharGrafico(res) {
-    var cv = document.createElement('canvas');
-    cv.width = 900; cv.height = 440;
-    var cx = cv.getContext('2d');
-    cx.fillStyle = '#fff'; cx.fillRect(0, 0, 900, 440);
-    var x0 = 50, x1 = 850, w = x1 - x0, i;
-    function px(v) { return x0 + (v - MIN_TOTAL) / (MAX_TOTAL - MIN_TOTAL) * w; }
-    cx.fillStyle = '#00695c'; cx.font = 'bold 20px Segoe UI, Arial'; cx.textAlign = 'left';
-    cx.fillText('Escore total (20 a 60)', x0, 28);
-    var g = cx.createLinearGradient(x0, 0, x1, 0);
-    var p = (CORTE - MIN_TOTAL) / (MAX_TOTAL - MIN_TOTAL);
-    g.addColorStop(0, '#81c784'); g.addColorStop(p, '#81c784'); g.addColorStop(p, '#ffd54f'); g.addColorStop(0.45, '#ffb74d'); g.addColorStop(1, '#ef5350');
-    cx.fillStyle = g; cx.fillRect(x0, 100, w, 36);
-    // marcador do escore
-    var mx = px(res.total);
-    cx.fillStyle = '#004d40'; cx.beginPath(); cx.moveTo(mx, 98); cx.lineTo(mx - 12, 78); cx.lineTo(mx + 12, 78); cx.closePath(); cx.fill();
-    cx.fillRect(mx - 30, 46, 60, 32);
-    cx.fillStyle = '#fff'; cx.font = 'bold 20px Segoe UI, Arial'; cx.textAlign = 'center';
-    cx.fillText(String(res.total), mx, 69);
-    // linhas de referencia
-    cx.lineWidth = 3;
-    cx.strokeStyle = '#78909c'; cx.beginPath(); cx.moveTo(px(MEDIA_NTEA), 94); cx.lineTo(px(MEDIA_NTEA), 142); cx.stroke();
-    cx.strokeStyle = '#c62828'; cx.beginPath(); cx.moveTo(px(CORTE), 94); cx.lineTo(px(CORTE), 142); cx.stroke();
-    cx.strokeStyle = '#37474f'; cx.beginPath(); cx.moveTo(px(MEDIA_TEA), 94); cx.lineTo(px(MEDIA_TEA), 142); cx.stroke();
-    cx.font = '15px Segoe UI, Arial'; cx.fillStyle = '#455a64';
-    cx.textAlign = 'right'; cx.fillText('M\u00e9dia sem autismo: 25', px(MEDIA_NTEA) - 5, 165);
-    cx.textAlign = 'left'; cx.fillStyle = '#c62828'; cx.fillText('Corte: 26', px(CORTE) + 5, 165);
-    cx.textAlign = 'center'; cx.fillStyle = '#37474f'; cx.fillText('M\u00e9dia autistas: 36', px(MEDIA_TEA), 192);
-    cx.fillStyle = '#777'; cx.textAlign = 'left'; cx.fillText('20', x0, 192);
-    cx.textAlign = 'right'; cx.fillText('60', x1, 192);
-    // barras por aspecto
-    cx.fillStyle = '#00695c'; cx.font = 'bold 20px Segoe UI, Arial'; cx.textAlign = 'left';
-    cx.fillText('Perfil por aspecto (m\u00e9dia por item, de 1 a 3)', x0, 240);
-    var bx = 360, bw = 460;
-    for (i = 0; i < res.fat.length; i++) {
-        var ft = res.fat[i], by = 262 + i * 44;
-        cx.fillStyle = '#444'; cx.font = '16px Segoe UI, Arial'; cx.textAlign = 'left';
-        cx.fillText(ft.nome, x0, by + 20);
-        cx.fillStyle = '#eceff1'; cx.fillRect(bx, by, bw, 28);
-        cx.fillStyle = ft.cor; cx.fillRect(bx, by, Math.max(4, (ft.media - 1) / 2 * bw), 28);
-        cx.fillStyle = '#333'; cx.font = 'bold 15px Segoe UI, Arial'; cx.textAlign = 'left';
-        cx.fillText(_fmt(ft.media), bx + bw + 8, by + 20);
-    }
-    return cv.toDataURL('image/png');
-}
-
-function _rodapePDF(doc) {
-    doc.setFillColor(80, 80, 80); doc.rect(0, 285, 210, 12, 'F');
-    doc.setTextColor(200, 200, 200); doc.setFontSize(7); doc.setFont(undefined, 'normal');
-    doc.text('Relat\u00f3rio gerado em: ' + new Date().toLocaleString('pt-BR'), 105, 291, {align: 'center'});
-}
-
+// === PDF (gerador compartilhado: pdf-rbq-bsl.js, tambem usado pelo Painel) ===
 function gerarRelatorioPDF() {
     var nome = document.getElementById('nome').value.trim();
     if (!nome) { alert('Preencha o nome.'); return; }
     var lr = _lerRespostas();
     if (lr.faltam > 0) { alert('Responda todos os 20 itens antes de gerar o PDF. Faltam ' + lr.faltam + '.'); return; }
     if (!window._escalaDados) { calcularResultados(); }
-    var res = _calcular(lr.vals);
-    var total = res.total, positivo = total >= CORTE, i, f;
-    var idade = document.getElementById('idadeCalculada').value;
-    var sexo = document.getElementById('sexo').value;
-    var dataAval = document.getElementById('data').value || new Date().toLocaleDateString('pt-BR');
-    var idPac = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
-    var img = _desenharGrafico(res);
-
-    var jsPDF = window.jspdf.jsPDF;
-    var doc = new jsPDF();
-
-    // ---------- PAGINA 1 ----------
-    doc.setFillColor(0, 77, 64); doc.rect(0, 0, 210, 35, 'F');
-    doc.setTextColor(255, 255, 255); doc.setFontSize(15); doc.setFont(undefined, 'bold');
-    doc.text('RBQ-2A - RELAT\u00d3RIO DE AVALIA\u00c7\u00c3O', 105, 15, {align: 'center'});
-    doc.setFontSize(9); doc.setFont(undefined, 'normal');
-    doc.text('Question\u00e1rio de Comportamentos Repetitivos para Adultos (Barrett et al., 2015)', 105, 23, {align: 'center'});
-    doc.text('Ponto de corte >= 26 | Escore de 20 a 60', 105, 29, {align: 'center'});
-
-    var y = 42;
-    doc.setFillColor(248, 249, 250); doc.rect(15, y, 180, 20, 'F');
-    doc.setTextColor(0, 105, 92); doc.setFontSize(10); doc.setFont(undefined, 'bold');
-    doc.text('DADOS PESSOAIS', 20, y + 6);
-    doc.setTextColor(0, 0, 0); doc.setFontSize(9); doc.setFont(undefined, 'normal');
-    doc.text('Nome: ' + nome + '   |   Sexo: ' + sexo, 20, y + 12);
-    doc.text('Idade: ' + idade + '   |   Data: ' + dataAval + (idPac ? '   |   ID: ' + idPac : ''), 20, y + 17);
-
-    y = 68;
-    if (positivo) { doc.setFillColor(255, 205, 210); doc.setTextColor(198, 40, 40); }
-    else { doc.setFillColor(200, 230, 201); doc.setTextColor(46, 125, 50); }
-    doc.rect(15, y, 180, 10, 'F');
-    doc.setFontSize(10); doc.setFont(undefined, 'bold');
-    doc.text((positivo ? 'RASTREIO POSITIVO' : 'RASTREIO NEGATIVO') + ' - escore ' + total + '/60 (limiar: >=' + CORTE + ')', 105, y + 7, {align: 'center'});
-
-    y = 82;
-    doc.addImage(img, 'PNG', 15, y, 180, 88);
-    y += 94;
-
-    doc.setTextColor(0, 105, 92); doc.setFontSize(10); doc.setFont(undefined, 'bold');
-    doc.text('ASPECTOS AVALIADOS', 20, y); y += 5;
-    doc.setFillColor(224, 242, 241); doc.rect(15, y, 180, 7, 'F');
-    doc.setTextColor(0, 77, 64); doc.setFontSize(8.5);
-    doc.text('Aspecto', 18, y + 5); doc.text('Pontua\u00e7\u00e3o', 105, y + 5); doc.text('M\u00e9dia', 135, y + 5); doc.text('Classifica\u00e7\u00e3o', 157, y + 5);
-    y += 7;
-    doc.setTextColor(0, 0, 0); doc.setFont(undefined, 'normal');
-    for (f = 0; f < res.fat.length; f++) {
-        var ft = res.fat[f];
-        doc.text(ft.nome, 18, y + 5);
-        doc.text(ft.soma + ' (de ' + ft.min + ' a ' + ft.max + ')', 105, y + 5);
-        doc.text(_fmt(ft.media), 135, y + 5);
-        doc.text(ft.cl.txt, 157, y + 5);
-        doc.setDrawColor(230, 230, 230); doc.line(15, y + 7, 195, y + 7);
-        y += 7.5;
-    }
-    _rodapePDF(doc);
-
-    // ---------- PAGINA 2 ----------
-    doc.addPage();
-    y = 20;
-    doc.setTextColor(0, 105, 92); doc.setFontSize(12); doc.setFont(undefined, 'bold');
-    doc.text('AN\u00c1LISE DO PERFIL', 20, y); y += 8;
-    var an = _analise(res);
-    doc.setFontSize(9);
-    for (i = 0; i < an.length; i++) {
-        if (y > 245) { doc.addPage(); y = 20; }
-        doc.setFont(undefined, 'bold'); doc.setTextColor(0, 77, 64);
-        doc.text(an[i].t, 20, y); y += 5;
-        doc.setFont(undefined, 'normal'); doc.setTextColor(40, 40, 40);
-        var linhas = doc.splitTextToSize(an[i].x, 170);
-        doc.text(linhas, 20, y); y += linhas.length * 4.3 + 4;
-    }
-    if (y > 225) { doc.addPage(); y = 20; }
-    doc.setTextColor(0, 105, 92); doc.setFontSize(10); doc.setFont(undefined, 'bold');
-    doc.text('RESPOSTAS POR ITEM (1 = raro/ausente, 2 = leve, 3 = acentuado/frequente)', 20, y); y += 6;
-    doc.setTextColor(0, 0, 0); doc.setFontSize(8); doc.setFont(undefined, 'normal');
-    for (i = 0; i < lr.vals.length; i++) {
-        doc.text('Item ' + (i + 1) + ': ' + lr.vals[i], 22 + Math.floor(i / 5) * 45, y + (i % 5) * 4.8);
-    }
-    y += 5 * 4.8 + 6;
-    if (y > 255) { doc.addPage(); y = 20; }
-    doc.setFillColor(255, 248, 235); doc.rect(15, y, 180, 26, 'F');
-    doc.setTextColor(180, 90, 0); doc.setFontSize(7.5); doc.setFont(undefined, 'normal');
-    var disc = doc.splitTextToSize('IMPORTANTE: o RBQ-2A e um instrumento de rastreio, nao um teste diagnostico. Indica sinais de atencao, mas nao confirma nem descarta Transtorno do Espectro Autista. O diagnostico exige avaliacao clinica completa. Traducao livre, sem estudo de validacao brasileira localizado; ponto de corte e medias de referencia conforme o material de pontuacao do instrumento.', 170);
-    doc.text(disc, 20, y + 5);
-    _rodapePDF(doc);
-
-    // ---------- PAGINA 3 ----------
-    doc.addPage();
-    y = 20;
-    doc.setTextColor(0, 105, 92); doc.setFontSize(12); doc.setFont(undefined, 'bold');
-    doc.text('REFER\u00caNCIAS', 20, y); y += 9;
-    doc.setTextColor(40, 40, 40); doc.setFontSize(9); doc.setFont(undefined, 'normal');
-    var refs = [
-        'AMERICAN PSYCHIATRIC ASSOCIATION. Diagnostic and Statistical Manual of Mental Disorders: DSM-5-TR. 5. ed., text rev. Washington, DC: APA, 2022.',
-        'BARRETT, S. L.; ULJAREVIC, M.; BAKER, E. K.; RICHDALE, A. L.; JONES, C. R. G.; LEEKAM, S. R. The Adult Repetitive Behaviours Questionnaire-2 (RBQ-2A): a self-report measure of restricted and repetitive behaviours. Journal of Autism and Developmental Disorders, v. 45, n. 11, p. 3680-3692, 2015. DOI: 10.1007/s10803-015-2514-6.',
-        'BARRETT, S. L.; ULJAREVIC, M.; JONES, C. R. G.; LEEKAM, S. R. Assessing subtypes of restricted and repetitive behaviour using the Adult Repetitive Behaviour Questionnaire-2 in autistic adults. Molecular Autism, v. 9, art. 58, 2018. DOI: 10.1186/s13229-018-0242-4.'
-    ];
-    for (i = 0; i < refs.length; i++) {
-        var lr2 = doc.splitTextToSize(refs[i], 170);
-        doc.text(lr2, 20, y); y += lr2.length * 4.6 + 5;
-    }
-    doc.setFontSize(8); doc.setTextColor(110, 110, 110);
-    var nota = doc.splitTextToSize('Nota: tradu\u00e7\u00e3o livre para o portugu\u00eas, feita para este site. N\u00e3o foi localizado estudo de valida\u00e7\u00e3o brasileira do RBQ-2A. O ponto de corte (26), as m\u00e9dias de refer\u00eancia (25 e 36) e a organiza\u00e7\u00e3o em quatro aspectos seguem o material de pontua\u00e7\u00e3o do instrumento. Os estudos originais (Barrett et al., 2015) descrevem duas dimens\u00f5es: comportamentos motores repetitivos e insist\u00eancia na mesmice.', 170);
-    doc.text(nota, 20, y);
-    _rodapePDF(doc);
-
-    var ts = new Date();
-    var tsStr = ts.getFullYear() + String(ts.getMonth() + 1).padStart(2, '0') + String(ts.getDate()).padStart(2, '0') + String(ts.getHours()).padStart(2, '0') + String(ts.getMinutes()).padStart(2, '0');
-    doc.save('RBQ2A_' + nome.replace(/\s+/g, '_') + '_' + tsStr + '.pdf');
+    if (!window.SYM_PDF || !window.SYM_PDF.rbq2a) { alert('O gerador de PDF n\u00e3o foi carregado. Recarregue a p\u00e1gina e tente novamente.'); return; }
+    window.SYM_PDF.rbq2a({
+        nome: nome,
+        sexo: document.getElementById('sexo').value,
+        idade: document.getElementById('idadeCalculada').value,
+        dataAval: document.getElementById('data').value,
+        idPaciente: document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '',
+        respostas: lr.vals
+    });
 }
-
 function limparDados() {
     if (!confirm('Limpar todos os dados?')) return;
     document.getElementById('nome').value = '';
