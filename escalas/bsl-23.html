@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-QY1N9587DG"></script>
+    <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-QY1N9587DG');</script>
+    <meta name="description" content="BSL-23: Lista de Sintomas Borderline. Mede a gravidade dos sintomas borderline na última semana. 23 itens, versão brasileira.">
+    <meta property="og:description" content="BSL-23: Lista de Sintomas Borderline. Mede a gravidade dos sintomas borderline na última semana. 23 itens, versão brasileira.">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BSL-23 — Lista de Sintomas Borderline</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background: linear-gradient(135deg, #1a237e 0%, #3949ab 60%, #7e57c2 100%); min-height: 100vh; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; border-radius: 15px; box-shadow: 0 20px 40px rgba(0,0,0,0.15); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #1a237e 0%, #3949ab 60%, #7e57c2 100%); color: white; padding: 30px; text-align: center; }
+        .header h1 { font-size: 2.2em; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        .header p { font-size: 1.1em; opacity: 0.9; }
+        .content { padding: 30px; }
+        .info-tecnica { background: #e8eaf6; padding: 25px; border-radius: 10px; margin-bottom: 30px; border-left: 5px solid #1a237e; position: relative; }
+        .info-tecnica h2 { color: #1a237e; margin-bottom: 15px; font-size: 1.4em; }
+        .info-tecnica p { color: #555; line-height: 1.7; font-size: 0.95em; }
+        .dados-pessoais { background: #f8f9fa; padding: 25px; border-radius: 10px; margin-bottom: 30px; border-left: 5px solid #1a237e; }
+        .dados-pessoais h2 { color: #1a237e; margin-bottom: 20px; font-size: 1.5em; }
+        .form-row { display: flex; gap: 20px; margin-bottom: 15px; flex-wrap: wrap; }
+        .form-group { flex: 1; min-width: 200px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; color: #555; }
+        .form-group input, .form-group select { width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 16px; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: #1a237e; }
+        .instrucoes { background: #e0f2f1; padding: 20px; border-radius: 10px; margin-bottom: 30px; border-left: 5px solid #00695c; }
+        .instrucoes h3 { color: #00695c; margin-bottom: 10px; }
+        .instrucoes p { color: #555; font-size: 0.95em; line-height: 1.7; }
+        .secao-titulo { background: #1a237e; color: #fff; padding: 12px 18px; border-radius: 8px; margin: 22px 0 6px; font-weight: bold; }
+        .secao-titulo small { display: block; font-weight: normal; opacity: 0.9; margin-top: 3px; line-height: 1.4; }
+        .item { padding: 16px 20px; border-bottom: 1px solid #f0f0f0; transition: background-color 0.3s; }
+        .item:hover { background-color: #e8eaf6; }
+        .item-texto { font-size: 1em; margin-bottom: 12px; color: #444; line-height: 1.5; }
+        .item-numero { font-weight: bold; color: #1a237e; margin-right: 8px; }
+        .opcoes { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+        .opcao { flex: 1 1 110px; display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 9px 10px; border-radius: 8px; border: 2px solid #eceff1; background: #fafafa; transition: all 0.2s; }
+        .opcoes-qv .opcao { flex: 1 1 78px; }
+        .opcao:hover { background-color: #e8eaf6; border-color: #3949ab; }
+        .opcao.sel { background-color: #c5cae9; border-color: #1a237e; }
+        .opcao input[type="radio"] { width: 18px; height: 18px; cursor: pointer; accent-color: #1a237e; flex-shrink: 0; }
+        .opcao label { cursor: pointer; font-weight: 500; color: #555; font-size: 0.82em; line-height: 1.25; flex: 1; }
+        .botoes { display: flex; gap: 15px; justify-content: center; margin: 30px 0; flex-wrap: wrap; }
+        .btn { padding: 15px 30px; border: none; border-radius: 25px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+        .btn-primary { background: linear-gradient(135deg, #1a237e 0%, #3949ab 100%); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(26,35,126,0.3); }
+        .btn-secondary { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; }
+        .btn-danger { background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%); color: white; }
+        .btn-imprimir { position: absolute; top: 20px; right: 20px; padding: 10px 20px; background: #1a237e; color: white; border: none; border-radius: 20px; font-size: 14px; font-weight: 600; cursor: pointer; }
+        .resultados { background: #f8f9fa; padding: 30px; border-radius: 10px; margin-top: 30px; border-left: 5px solid #1a237e; display: none; }
+        .resultados h2 { color: #1a237e; margin-bottom: 20px; text-align: center; }
+        .resultados h3 { color: #1a237e; margin: 28px 0 10px; font-size: 1.15em; }
+        .sev-box { padding: 22px; border-radius: 12px; text-align: center; margin: 15px 0; font-size: 1.15em; font-weight: 700; }
+        .explica { background: white; padding: 16px 18px; border-radius: 10px; box-shadow: 0 3px 10px rgba(0,0,0,0.06); font-size: 0.93em; color: #444; line-height: 1.7; margin-bottom: 10px; }
+        .regua { position: relative; margin: 62px 25px 20px; }
+        .regua-barra { display: flex; height: 30px; border-radius: 15px; overflow: hidden; box-shadow: inset 0 1px 4px rgba(0,0,0,0.25); }
+        .regua-seg { height: 100%; }
+        .regua-bolha { position: absolute; top: -52px; transform: translateX(-50%); background: #1a237e; color: #fff; padding: 4px 14px; border-radius: 14px; font-weight: 700; white-space: nowrap; }
+        .regua-bolha:after { content: ''; position: absolute; left: 50%; bottom: -8px; margin-left: -8px; border-left: 8px solid transparent; border-right: 8px solid transparent; border-top: 8px solid #1a237e; }
+        .regua-marca { position: absolute; top: 34px; transform: translateX(-50%); font-size: 0.72em; color: #555; }
+        .faixas { display: flex; flex-wrap: wrap; gap: 8px; margin: 34px 0 8px; }
+        .faixa-chip { padding: 5px 11px; border-radius: 12px; font-size: 0.78em; font-weight: 600; }
+        .legenda-mapa { font-size: 0.82em; color: #555; margin: 6px 0 10px; }
+        .legenda-mapa span { display: inline-block; margin-right: 14px; }
+        .legenda-mapa i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 5px; vertical-align: middle; border: 1px solid #ccc; }
+        .mapa { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+        .mapa-q { width: 38px; height: 38px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.95em; cursor: help; }
+        .mapa-q.v0 { background: #eceff1; color: #607d8b; }
+        .mapa-q.v1 { background: #c8e6c9; color: #1b5e20; }
+        .mapa-q.v2 { background: #ffe082; color: #7a5300; }
+        .mapa-q.v3 { background: #ffb74d; color: #6d3a00; }
+        .mapa-q.v4 { background: #ef5350; color: #fff; }
+        .qv-barra { position: relative; height: 22px; border-radius: 11px; background: linear-gradient(90deg, #ef5350 0%, #ffd54f 50%, #66bb6a 100%); margin: 46px 14px 8px; }
+        .qv-marca { position: absolute; top: -40px; transform: translateX(-50%); background: #1a237e; color: #fff; padding: 3px 12px; border-radius: 12px; font-weight: 700; white-space: nowrap; }
+        .qv-marca:after { content: ''; position: absolute; left: 50%; bottom: -7px; margin-left: -7px; border-left: 7px solid transparent; border-right: 7px solid transparent; border-top: 7px solid #1a237e; }
+        .qv-fim { display: flex; justify-content: space-between; font-size: 0.75em; color: #666; margin: 0 14px 6px; }
+        .comp-linha { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 12px; border-bottom: 1px solid #eee; background: white; font-size: 0.9em; }
+        .comp-chip { padding: 3px 10px; border-radius: 10px; font-size: 0.8em; font-weight: 700; white-space: nowrap; }
+        .alerta-risco { background: #ffebee; border: 3px solid #c62828; color: #b71c1c; border-radius: 12px; padding: 18px 20px; margin: 18px 0; line-height: 1.7; }
+        .alerta-risco.leve { background: #fff3e0; border-color: #ef6c00; color: #bf360c; }
+        .alerta-risco strong.tit { display: block; font-size: 1.1em; margin-bottom: 6px; }
+        .disclaimer { background: #fff3e0; padding: 15px; border-radius: 8px; margin-top: 20px; border-left: 4px solid #ff9800; font-size: 0.85em; color: #e65100; line-height: 1.6; }
+        .referencias { background: #f8f9fa; padding: 25px; border-radius: 10px; margin-top: 30px; border-left: 5px solid #1a237e; }
+        .referencias h2 { color: #1a237e; margin-bottom: 15px; }
+        .referencias p { color: #555; line-height: 1.9; font-size: 0.88em; }
+        @media print { body { background: white !important; padding: 0 !important; } .botoes, .btn, .btn-imprimir { display: none !important; } .container { box-shadow: none !important; max-width: 100% !important; } .info-tecnica { display: none !important; } .resultados { display: none !important; } .item { page-break-inside: avoid; } .secao-titulo { -webkit-print-color-adjust: exact; print-color-adjust: exact; } .header { -webkit-print-color-adjust: exact; print-color-adjust: exact; } .opcao { background: white !important; } .referencias { display: block !important; page-break-inside: avoid; } }
+        @media (max-width: 768px) { .container { margin: 10px; } .content { padding: 15px; } .form-row { flex-direction: column; } .opcoes { flex-direction: column; } .botoes { flex-direction: column; } .btn { width: 100%; } .regua { margin-left: 14px; margin-right: 14px; } }
+    </style>
+</head>
+<body>
+<div style="padding:10px 20px;background:#2e7d32;"><a href="../" style="display:inline-block;background:#fff;color:#2e7d32;text-decoration:none;font-size:14px;font-weight:bold;padding:8px 20px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.15);">&#11013; Voltar ao Início</a></div>
+<div class="container">
+    <div class="header">
+        <h1>🧠 BSL-23</h1>
+        <p>Lista de Sintomas Borderline</p>
+        <p style="font-size:0.85em;opacity:0.8;margin-top:5px;">Borderline Symptom List · Bohus et al. (2009) · Versão brasileira: Catelan e Nardi (2021)</p>
+    </div>
+    <div class="content">
+        <div class="info-tecnica">
+            <button class="btn-imprimir" onclick="window.print()">🖨️ Imprimir Formulário</button>
+            <h2>📚 Informações Técnicas</h2>
+            <p>
+                <strong>Instrumento:</strong> BSL-23 — Lista de Sintomas Borderline (versão curta), autorrelato<br>
+                <strong>Versão original:</strong> Bohus et al. (2009). <strong>Tradução e adaptação brasileira:</strong> Catelan e Nardi (2021)<br>
+                <strong>Base teórica:</strong> Sintomas do Transtorno de Personalidade Borderline (critérios do DSM-5-TR)<br>
+                <strong>Estrutura:</strong> escala principal com 23 itens (0 a 4); pergunta de qualidade de vida (0 a 100%); BSL complementar com 11 itens de comportamentos (0 a 4)<br>
+                <strong>Período de referência:</strong> última semana<br>
+                <strong>Resultado:</strong> média dos 23 itens (0 a 4), em seis faixas de gravidade: nenhum ou baixo, suave, moderado, alto, muito alto e extremamente alto<br>
+                <strong>Evidência brasileira:</strong> validação em amostra não clínica (n = 2.682) com estrutura de um fator e alfa de Cronbach de 0,95 (Catelan et al., 2026)<br>
+                <strong>População:</strong> Adultos (18+), autoaplicável
+            </p>
+        </div>
+        <div class="dados-pessoais">
+            <h2>📋 Dados Pessoais</h2>
+            <div class="form-row">
+                <div class="form-group"><label for="nome">Nome:</label><input type="text" id="nome" placeholder="Nome completo"></div>
+                <div class="form-group"><label for="dataNascimento">Data de Nascimento:</label><input type="date" id="dataNascimento" onchange="calcularIdade()"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label for="idadeCalculada">Idade:</label><input type="text" id="idadeCalculada" readonly style="background-color:#f0f0f0;" placeholder="Calculada automaticamente"></div>
+                <div class="form-group"><label for="sexo">Sexo:</label><select id="sexo"><option value="">Selecione</option><option value="Masculino">Masculino</option><option value="Feminino">Feminino</option></select></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label for="escolaridade">Escolaridade:</label><select id="escolaridade"><option value="">Selecione</option><option value="Fundamental incompleto">Fundamental incompleto</option><option value="Fundamental completo">Fundamental completo</option><option value="Medio incompleto">Médio incompleto</option><option value="Medio completo">Médio completo</option><option value="Superior incompleto">Superior incompleto</option><option value="Superior completo">Superior completo</option><option value="Pos-graduacao">Pós-graduação</option></select></div>
+                <div class="form-group"><label for="data">Data da Avaliação:</label><input type="date" id="data"></div>
+                <div class="form-group"><label for="observacoes">Observações:</label><input type="text" id="observacoes" placeholder="Opcional"></div>
+            </div>
+        </div>
+        <div class="instrucoes">
+            <h3>📝 Instruções</h3>
+            <p>Logo abaixo você encontrará uma série de dificuldades e problemas que possivelmente descrevam ou se apliquem a você. Leia cada questão e pense no quanto você experimentou ou sofreu com cada problema ou dificuldade ao longo da <strong>última semana</strong>. Por favor, responda honestamente. <strong>Todas as questões se referem à sua última semana.</strong> Se ao longo da semana você sentiu-se de formas diferentes sobre a mesma questão, busque fazer uma média para responder ao item. Procure responder a todas as questões.</p>
+        </div>
+        <div id="questionario"></div>
+        <div class="botoes">
+            <button class="btn btn-primary" onclick="calcularResultados()">Calcular Resultados</button>
+            <button class="btn btn-secondary" onclick="gerarRelatorioPDF()">Gerar Relatório PDF</button>
+            <button class="btn btn-danger" onclick="limparDados()">Limpar Dados</button>
+        </div>
+        <div id="resultados" class="resultados"></div>
+        <div class="referencias" id="referencias">
+            <h2>Referências</h2>
+            <p>
+                <strong>AMERICAN PSYCHIATRIC ASSOCIATION.</strong> <em>Diagnostic and Statistical Manual of Mental Disorders</em>: DSM-5-TR. 5. ed., text rev. Washington, DC: APA, 2022.<br><br>
+                <strong>BOHUS, M. et al.</strong> The short version of the Borderline Symptom List (BSL-23): development and initial data on psychometric properties. <em>Psychopathology</em>, v. 42, n. 1, p. 32-39, 2009.<br><br>
+                <strong>CATELAN, R. F.; NARDI, A. E.</strong> <em>Lista de sintomas borderline - BSL-23 - nova versão brasileira</em>. Relatório técnico. 2021. DOI: 10.13140/RG.2.2.29619.76321.<br><br>
+                <strong>CATELAN, R. F. et al.</strong> Psychometric properties of the Borderline Symptom List 23 for Brazilian Portuguese in a nonclinical sample. <em>Primary Care Companion for CNS Disorders</em>, v. 28, 2026. DOI: 10.4088/PCC.26m04184.<br><br>
+                <em style="font-size:0.88em;color:#777">Nota: as faixas de gravidade seguem as instruções de correção da versão brasileira (Catelan e Nardi, 2021). A validação brasileira disponível foi feita em amostra não clínica; os próprios autores indicam que parâmetros clínicos e teste-reteste ainda precisam ser estudados. A pergunta de qualidade de vida e o BSL complementar não entram na média principal e não possuem pontos de corte.</em>
+            </p>
+        </div>
+    </div>
+</div>
+<script src="../id-paciente.js"></script>
+<script>
+// === DADOS ===
+var OPC_SINT = ["Nem um pouco","Um pouco","Consideravelmente","Muito","Muito fortemente"];
+var OPC_FREQ = ["Nenhuma vez","Uma vez","2 a 3 vezes","4 a 6 vezes","Diariamente ou com muita frequ\u00eancia"];
+
+var PARTES = [
+    {t:"Escala principal: sintomas borderline", s:"DURANTE A \u00daLTIMA SEMANA..."},
+    {t:"Qualidade de vida", s:"Agora, gostar\u00edamos de saber a qualidade do seu estado geral de vida na \u00faltima semana. 0% significa absolutamente baixo, 100% significa excelente. Marque a porcentagem que mais se aproxima."},
+    {t:"BSL complementar: comportamentos", s:"DURANTE A \u00daLTIMA SEMANA..."}
+];
+
+var ITENS = [
+{texto:"Tive dificuldade em me concentrar.",parte:1,tipo:"sint"},
+{texto:"Eu me senti abandonada(o).",parte:1,tipo:"sint"},
+{texto:"Eu estava distra\u00edda(o) e n\u00e3o consegui me lembrar do que estava fazendo.",parte:1,tipo:"sint"},
+{texto:"Eu senti desprezo.",parte:1,tipo:"sint"},
+{texto:"Pensei em me machucar.",parte:1,tipo:"sint"},
+{texto:"N\u00e3o confiei em outras pessoas.",parte:1,tipo:"sint"},
+{texto:"Duvidei do meu direito de viver.",parte:1,tipo:"sint"},
+{texto:"Eu me senti sozinha(o).",parte:1,tipo:"sint"},
+{texto:"Senti uma ang\u00fastia muito grande dentro de mim.",parte:1,tipo:"sint"},
+{texto:"Pensei em coisas que me assustaram muito.",parte:1,tipo:"sint"},
+{texto:"Senti \u00f3dio de mim.",parte:1,tipo:"sint"},
+{texto:"Eu quis me punir.",parte:1,tipo:"sint"},
+{texto:"Senti muita vergonha.",parte:1,tipo:"sint"},
+{texto:"Meu humor mudou rapidamente, variando entre ansiedade, raiva e tristeza.",parte:1,tipo:"sint"},
+{texto:"Eu fui perturbada(o) por vozes e barulhos dentro da minha cabe\u00e7a ou fora dela.",parte:1,tipo:"sint"},
+{texto:"Receber cr\u00edticas me deixou arrasada(o).",parte:1,tipo:"sint"},
+{texto:"Eu me senti vulner\u00e1vel/fr\u00e1gil.",parte:1,tipo:"sint"},
+{texto:"Eu me senti atra\u00edda(o) pela ideia de morrer.",parte:1,tipo:"sint"},
+{texto:"Nada pareceu fazer sentido para mim.",parte:1,tipo:"sint"},
+{texto:"Tive medo de perder o controle.",parte:1,tipo:"sint"},
+{texto:"Senti nojo de mim.",parte:1,tipo:"sint"},
+{texto:"Senti como se eu estivesse muito distante de mim mesma(o).",parte:1,tipo:"sint"},
+{texto:"Senti que eu n\u00e3o valho nada.",parte:1,tipo:"sint"},
+{texto:"Qual foi a qualidade do seu estado geral de vida na \u00faltima semana?",parte:2,tipo:"qv"},
+{texto:"Eu me machuquei me cortando, queimando, sufocando, batendo a cabe\u00e7a etc.",curto:"Autoles\u00e3o",parte:3,tipo:"freq"},
+{texto:"Falei para outras pessoas que eu iria me matar.",curto:"Disse a outras pessoas que iria se matar",parte:3,tipo:"freq"},
+{texto:"Tentei me matar.",curto:"Tentativa de suic\u00eddio",parte:3,tipo:"freq"},
+{texto:"Tive momentos em que comi de forma compulsiva.",curto:"Compuls\u00e3o alimentar",parte:3,tipo:"freq"},
+{texto:"Eu forcei/provoquei v\u00f4mito de prop\u00f3sito.",curto:"V\u00f4mito provocado",parte:3,tipo:"freq"},
+{texto:"Tive comportamentos de alto risco, como dirigir em alta velocidade, ficar na beira da janela, sair \u00e0 noite pelas ruas sem rumo etc.",curto:"Comportamentos de alto risco",parte:3,tipo:"freq"},
+{texto:"Fiquei b\u00eabada(o).",curto:"Embriaguez",parte:3,tipo:"freq"},
+{texto:"Usei drogas il\u00edcitas.",curto:"Uso de drogas il\u00edcitas",parte:3,tipo:"freq"},
+{texto:"Tomei rem\u00e9dios que n\u00e3o foram prescritos ou usei rem\u00e9dios prescritos em dose fora da recomenda\u00e7\u00e3o m\u00e9dica.",curto:"Uso indevido de medicamentos",parte:3,tipo:"freq"},
+{texto:"Tive explos\u00f5es/surtos de raiva ou acabei brigando fisicamente com algu\u00e9m.",curto:"Explos\u00f5es de raiva ou brigas f\u00edsicas",parte:3,tipo:"freq"},
+{texto:"Tive rela\u00e7\u00f5es sexuais impulsivas que me fizeram sentir vergonha ou raiva depois.",curto:"Rela\u00e7\u00f5es sexuais impulsivas",parte:3,tipo:"freq"}
+];
+var N_PRINC = 23;
+var IDX_QV = 23;
+var IDX_COMP = 24;
+var N_COMP = 11;
+
+var FAIXAS = [
+{max:0.3,nome:"Nenhum ou baixo",faixa:"0 a 0,3",cor:"#2e7d32",bg:"#c8e6c9",seg:"#81c784",w:0.3},
+{max:0.7,nome:"Suave",faixa:"0,3 a 0,7",cor:"#33691e",bg:"#dcedc8",seg:"#aed581",w:0.4},
+{max:1.7,nome:"Moderado",faixa:"0,7 a 1,7",cor:"#7a5f00",bg:"#fff59d",seg:"#fff176",w:1.0},
+{max:2.7,nome:"Alto",faixa:"1,7 a 2,7",cor:"#bf5600",bg:"#ffe0b2",seg:"#ffb74d",w:1.0},
+{max:3.5,nome:"Muito alto",faixa:"2,7 a 3,5",cor:"#bf360c",bg:"#ffccbc",seg:"#ff7043",w:0.8},
+{max:4.01,nome:"Extremamente alto",faixa:"3,5 a 4,0",cor:"#b71c1c",bg:"#ffcdd2",seg:"#e53935",w:0.5}
+];
+var CORES_VAL = ["#eceff1","#c8e6c9","#ffe082","#ffb74d","#ef5350"];
+
+// === FUNCOES UTILITARIAS ===
+function calcularIdade() {
+    var d = document.getElementById('dataNascimento').value;
+    if (!d) return;
+    var h = new Date(), n = new Date(d);
+    var a = h.getFullYear() - n.getFullYear(), m = h.getMonth() - n.getMonth(), di = h.getDate() - n.getDate();
+    if (di < 0) { m--; di += new Date(h.getFullYear(), h.getMonth(), 0).getDate(); }
+    if (m < 0) { a--; m += 12; }
+    document.getElementById('idadeCalculada').value = a + ' anos, ' + m + ' meses e ' + di + ' dias';
+}
+
+function _opcoesDoItem(item) {
+    var r = [], v;
+    if (item.tipo === 'qv') {
+        for (v = 0; v <= 10; v++) {
+            var t = (v * 10) + '%';
+            if (v === 0) t += ' (absolutamente baixo)';
+            if (v === 10) t += ' (excelente)';
+            r.push({valor: v * 10, texto: t});
+        }
+        return r;
+    }
+    var lista = (item.tipo === 'freq') ? OPC_FREQ : OPC_SINT;
+    for (v = 0; v < lista.length; v++) { r.push({valor: v, texto: lista[v]}); }
+    return r;
+}
+
+function gerarQuestionario() {
+    var c = document.getElementById('questionario');
+    var h = '', parteAtual = 0, numero = 0, i, v;
+    for (i = 0; i < ITENS.length; i++) {
+        var it = ITENS[i];
+        if (it.parte !== parteAtual) {
+            parteAtual = it.parte;
+            h += '<div class="secao-titulo">' + PARTES[parteAtual - 1].t + '<small>' + PARTES[parteAtual - 1].s + '</small></div>';
+            numero = 0;
+        }
+        numero++;
+        var ops = _opcoesDoItem(it);
+        h += '<div class="item" id="item_' + i + '"><div class="item-texto"><span class="item-numero">' + numero + '.</span> ' + it.texto + '</div><div class="opcoes' + (it.tipo === 'qv' ? ' opcoes-qv' : '') + '">';
+        for (v = 0; v < ops.length; v++) {
+            h += '<div class="opcao"><input type="radio" id="q' + i + '_' + ops[v].valor + '" name="q' + i + '" value="' + ops[v].valor + '"><label for="q' + i + '_' + ops[v].valor + '">' + ops[v].texto + '</label></div>';
+        }
+        h += '</div></div>';
+    }
+    c.innerHTML = h;
+}
+
+function _fmt(n, d) { return n.toFixed(d === undefined ? 2 : d).replace('.', ','); }
+
+function _faixa(m) {
+    for (var i = 0; i < FAIXAS.length; i++) { if (m < FAIXAS[i].max) return FAIXAS[i]; }
+    return FAIXAS[FAIXAS.length - 1];
+}
+
+function _lerRespostas() {
+    var r = [], falt = 0;
+    for (var i = 0; i < ITENS.length; i++) {
+        var s = document.querySelector('input[name="q' + i + '"]:checked');
+        if (!s) { r.push(null); falt++; } else { r.push(parseInt(s.value, 10)); }
+    }
+    return {vals: r, faltam: falt};
+}
+
+function _calcular(vals) {
+    var soma = 0, i;
+    for (i = 0; i < N_PRINC; i++) soma += vals[i];
+    var media = soma / N_PRINC;
+    var qv = vals[IDX_QV];
+    var comp = [], nPres = 0;
+    for (i = 0; i < N_COMP; i++) {
+        var v = vals[IDX_COMP + i];
+        comp.push({curto: ITENS[IDX_COMP + i].curto, valor: v, rotulo: OPC_FREQ[v]});
+        if (v > 0) nPres++;
+    }
+    var altos = [];
+    for (i = 0; i < N_PRINC; i++) { if (vals[i] >= 3) altos.push(i + 1); }
+    // Risco: pensar em se machucar (5), duvidar do direito de viver (7), ideia de morrer (18), e comportamentos 1 a 3
+    var ideacao = [
+        {n: 5, rot: "Pensei em me machucar", v: vals[4]},
+        {n: 7, rot: "Duvidei do meu direito de viver", v: vals[6]},
+        {n: 18, rot: "Eu me senti atra\u00edda(o) pela ideia de morrer", v: vals[17]}
+    ];
+    var risco = [], i2;
+    for (i2 = 0; i2 < ideacao.length; i2++) {
+        if (ideacao[i2].v >= 1) risco.push({rot: "Item " + ideacao[i2].n + " - " + ideacao[i2].rot, resp: OPC_SINT[ideacao[i2].v], alto: ideacao[i2].v >= 2});
+    }
+    for (i2 = 0; i2 < 3; i2++) {
+        var cv = comp[i2].valor;
+        if (cv >= 1) risco.push({rot: "Comportamento - " + comp[i2].curto, resp: OPC_FREQ[cv], alto: (i2 === 0) ? (cv >= 2) : true});
+    }
+    var grave = false;
+    for (i2 = 0; i2 < risco.length; i2++) { if (risco[i2].alto) grave = true; }
+    return {soma: soma, media: media, faixa: _faixa(media), qv: qv, comp: comp, nPres: nPres, altos: altos, risco: risco, grave: grave};
+}
+
+function _analise(res) {
+    var out = [], f = res.faixa;
+    out.push({t: "Gravidade dos sintomas borderline", x: "A m\u00e9dia dos 23 itens foi " + _fmt(res.media) + " (soma " + res.soma + " de 92), o que corresponde \u00e0 faixa \"" + f.nome + "\" (" + f.faixa + "). Esta m\u00e9dia resume o quanto a pessoa sofreu com os sintomas borderline na \u00faltima semana; ela mede gravidade atual dos sintomas e n\u00e3o fecha diagn\u00f3stico."});
+    var ex;
+    if (res.altos.length === 0) ex = "Nenhum item foi marcado como \"Muito\" ou \"Muito fortemente\".";
+    else ex = "Itens marcados como \"Muito\" ou \"Muito fortemente\": " + res.altos.join(', ') + ". Vale conversar sobre eles na entrevista cl\u00ednica.";
+    out.push({t: "Itens mais intensos", x: ex});
+    out.push({t: "Qualidade de vida", x: "A pessoa avaliou a qualidade do seu estado geral de vida na \u00faltima semana em " + res.qv + "% (0% = absolutamente baixo; 100% = excelente). Esta resposta n\u00e3o entra na m\u00e9dia principal e n\u00e3o tem ponto de corte; serve para acompanhar a mudan\u00e7a ao longo do tempo."});
+    var cx;
+    if (res.nPres === 0) cx = "Nenhum dos 11 comportamentos do BSL complementar foi relatado na \u00faltima semana.";
+    else {
+        var nomes = [];
+        for (var i = 0; i < res.comp.length; i++) { if (res.comp[i].valor > 0) nomes.push(res.comp[i].curto + " (" + res.comp[i].rotulo.toLowerCase() + ")"); }
+        cx = res.nPres + " de 11 comportamentos foram relatados: " + nomes.join('; ') + ".";
+    }
+    out.push({t: "Comportamentos (BSL complementar)", x: cx});
+    return out;
+}
+
+// === CALCULO E RESULTADOS ===
+function calcularResultados() {
+    var nome = document.getElementById('nome').value.trim();
+    var idade = document.getElementById('idadeCalculada').value;
+    var sexo = document.getElementById('sexo').value;
+    if (!nome) { alert('Preencha o nome.'); return; }
+    var lr = _lerRespostas();
+    if (lr.faltam > 0) { alert('Responda todos os ' + ITENS.length + ' itens. Faltam ' + lr.faltam + '.'); return; }
+    var vals = lr.vals;
+    var res = _calcular(vals);
+    var f = res.faixa, i;
+
+    var h = '<h2>&#129504; Resultados BSL-23</h2>';
+    h += '<div class="sev-box" style="background:' + f.bg + ';border:3px solid ' + f.cor + ';color:' + f.cor + '">GRAVIDADE DOS SINTOMAS BORDERLINE: ' + f.nome.toUpperCase() + '<br><span style="font-size:1.4em">M\u00e9dia ' + _fmt(res.media) + '</span> <span style="font-size:0.8em;font-weight:600">(de 0 a 4)</span></div>';
+
+    if (res.risco.length > 0) {
+        h += '<div class="alerta-risco' + (res.grave ? '' : ' leve') + '"><strong class="tit">&#9888;&#65039; ALERTA DE RISCO' + (res.grave ? '' : ' (aten\u00e7\u00e3o)') + '</strong>';
+        h += 'Foram assinalados itens relacionados a autoles\u00e3o ou idea\u00e7\u00e3o suicida:<br>';
+        for (i = 0; i < res.risco.length; i++) { h += '&bull; ' + res.risco[i].rot + ': <strong>' + res.risco[i].resp + '</strong><br>'; }
+        h += '<br>Recomenda-se avalia\u00e7\u00e3o imediata do risco. Em situa\u00e7\u00e3o de crise: <strong>CVV 188</strong> (24 horas, gratuito) ou <strong>SAMU 192</strong>.</div>';
+    }
+
+    h += '<h3>&#128207; Onde est\u00e1 a m\u00e9dia?</h3>';
+    h += '<div class="explica">A r\u00e9gua vai de 0 (nenhum sintoma) a 4 (sintomas muito fortes em todos os itens). Ela est\u00e1 dividida nas seis faixas de gravidade da escala. Quanto mais \u00e0 direita e mais quente a cor, maior o sofrimento relatado na \u00faltima semana.</div>';
+    h += '<div class="regua"><div class="regua-bolha" style="left:' + (res.media / 4 * 100).toFixed(2) + '%">' + _fmt(res.media) + '</div><div class="regua-barra">';
+    for (i = 0; i < FAIXAS.length; i++) { h += '<div class="regua-seg" style="width:' + (FAIXAS[i].w / 4 * 100) + '%;background:' + FAIXAS[i].seg + '"></div>'; }
+    h += '</div>';
+    var lim = [0, 0.3, 0.7, 1.7, 2.7, 3.5, 4];
+    for (i = 0; i < lim.length; i++) { h += '<div class="regua-marca" style="left:' + (lim[i] / 4 * 100) + '%">' + _fmt(lim[i], lim[i] === 0.3 || lim[i] === 0.7 || lim[i] === 1.7 || lim[i] === 2.7 || lim[i] === 3.5 ? 1 : 0) + '</div>'; }
+    h += '</div><div class="faixas">';
+    for (i = 0; i < FAIXAS.length; i++) {
+        h += '<span class="faixa-chip" style="background:' + FAIXAS[i].bg + ';color:' + FAIXAS[i].cor + ';' + (FAIXAS[i] === f ? 'outline:3px solid ' + FAIXAS[i].cor + ';' : '') + '">' + FAIXAS[i].nome + ': ' + FAIXAS[i].faixa + '</span>';
+    }
+    h += '</div>';
+
+    var an = _analise(res);
+    h += '<div class="explica"><strong>' + an[0].t + ':</strong> ' + an[0].x + '</div>';
+
+    h += '<h3>&#128506;&#65039; Mapa das respostas (23 itens)</h3>';
+    h += '<div class="legenda-mapa"><span><i style="background:' + CORES_VAL[0] + '"></i>0 nem um pouco</span><span><i style="background:' + CORES_VAL[1] + '"></i>1 um pouco</span><span><i style="background:' + CORES_VAL[2] + '"></i>2 consideravelmente</span><span><i style="background:' + CORES_VAL[3] + '"></i>3 muito</span><span><i style="background:' + CORES_VAL[4] + '"></i>4 muito fortemente</span></div>';
+    h += '<div class="mapa">';
+    for (i = 0; i < N_PRINC; i++) { h += '<div class="mapa-q v' + vals[i] + '" title="Item ' + (i + 1) + ': ' + ITENS[i].texto + '">' + (i + 1) + '</div>'; }
+    h += '</div><div class="legenda-mapa">Passe o mouse (ou toque) em um quadrado para ver a frase do item.</div>';
+    h += '<div class="explica"><strong>' + an[1].t + ':</strong> ' + an[1].x + '</div>';
+
+    h += '<h3>&#127793; Qualidade de vida na \u00faltima semana</h3>';
+    h += '<div class="qv-barra"><div class="qv-marca" style="left:' + res.qv + '%">' + res.qv + '%</div></div><div class="qv-fim"><span>0% (absolutamente baixo)</span><span>100% (excelente)</span></div>';
+    h += '<div class="explica">' + an[2].x + '</div>';
+
+    h += '<h3>&#129513; Comportamentos na \u00faltima semana (BSL complementar)</h3>';
+    h += '<div style="border-radius:10px;overflow:hidden;box-shadow:0 3px 10px rgba(0,0,0,0.06)">';
+    for (i = 0; i < res.comp.length; i++) {
+        var cv = res.comp[i].valor;
+        var bg = cv === 0 ? '#eceff1' : (cv === 1 ? '#fff9c4' : (cv === 2 ? '#ffe0b2' : (cv === 3 ? '#ffccbc' : '#ffcdd2')));
+        var co = cv === 0 ? '#607d8b' : (cv === 1 ? '#7a5f00' : (cv === 2 ? '#bf5600' : '#b71c1c'));
+        h += '<div class="comp-linha"><span>' + (i + 1) + '. ' + res.comp[i].curto + '</span><span class="comp-chip" style="background:' + bg + ';color:' + co + '">' + res.comp[i].rotulo + '</span></div>';
+    }
+    h += '</div><div class="explica" style="margin-top:10px">' + an[3].x + '</div>';
+
+    h += '<div class="disclaimer"><strong>IMPORTANTE:</strong> a BSL-23 \u00e9 um instrumento de autorrelato que mede a gravidade atual (\u00faltima semana) dos sintomas borderline. Ela n\u00e3o diagnostica o Transtorno de Personalidade Borderline e deve ser interpretada junto com entrevista cl\u00ednica, hist\u00f3ria de vida e outros instrumentos. A valida\u00e7\u00e3o brasileira dispon\u00edvel foi feita em amostra n\u00e3o cl\u00ednica. A pergunta de qualidade de vida e o BSL complementar n\u00e3o entram na m\u00e9dia principal e n\u00e3o t\u00eam pontos de corte.</div>';
+
+    var el = document.getElementById('resultados');
+    el.innerHTML = h;
+    el.style.display = 'block';
+    el.scrollIntoView({behavior: 'smooth'});
+
+    var compObj = {};
+    for (i = 0; i < res.comp.length; i++) { compObj[res.comp[i].curto] = res.comp[i].valor; }
+    var dom = {};
+    dom["BSL-23 (sintomas)"] = {pontuacao: res.soma, max: 92, classificacao: f.nome, media: parseFloat(res.media.toFixed(2)), itens: N_PRINC};
+    dom["Comportamentos (BSL compl.)"] = {pontuacao: res.nPres, max: N_COMP, classificacao: res.nPres === 0 ? 'Nenhum comportamento relatado' : (res.nPres + ' de ' + N_COMP + ' comportamentos relatados'), itens: N_COMP};
+    dom["Qualidade de vida (%)"] = {pontuacao: res.qv, max: 100, classificacao: 'Relatada: ' + res.qv + '%', itens: 1};
+    var respObj = {};
+    for (i = 0; i < vals.length; i++) { respObj[i + 1] = vals[i]; }
+    window._escalaDados = {
+        escala: 'BSL-23',
+        paciente: nome,
+        escore: parseFloat(res.media.toFixed(2)),
+        classificacao: 'Gravidade ' + f.nome + ' (media ' + res.media.toFixed(2) + ' de 4)',
+        dominios: dom,
+        respostas: respObj,
+        alertaRisco: res.risco.length > 0,
+        riscoGrave: res.grave,
+        sexo: sexo,
+        idPaciente: (document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : ''),
+        idade: idade,
+        data: new Date().toISOString()
+    };
+    if (window.injetarBotaoSalvar) injetarBotaoSalvar('resultados');
+}
+
+// === PDF ===
+function _desenharGrafico(res) {
+    var cv = document.createElement('canvas');
+    cv.width = 900; cv.height = 300;
+    var cx = cv.getContext('2d');
+    cx.fillStyle = '#fff'; cx.fillRect(0, 0, 900, 300);
+    var x0 = 50, x1 = 850, w = x1 - x0, i;
+    cx.fillStyle = '#1a237e'; cx.font = 'bold 20px Segoe UI, Arial'; cx.textAlign = 'left';
+    cx.fillText('Gravidade dos sintomas borderline (m\u00e9dia dos 23 itens, de 0 a 4)', x0, 28);
+    var xx = x0;
+    for (i = 0; i < FAIXAS.length; i++) {
+        var sw = FAIXAS[i].w / 4 * w;
+        cx.fillStyle = FAIXAS[i].seg; cx.fillRect(xx, 92, sw, 36);
+        xx += sw;
+    }
+    var mx = x0 + res.media / 4 * w;
+    cx.fillStyle = '#1a237e'; cx.beginPath(); cx.moveTo(mx, 90); cx.lineTo(mx - 12, 70); cx.lineTo(mx + 12, 70); cx.closePath(); cx.fill();
+    cx.fillRect(mx - 34, 38, 68, 32);
+    cx.fillStyle = '#fff'; cx.font = 'bold 20px Segoe UI, Arial'; cx.textAlign = 'center';
+    cx.fillText(_fmt(res.media), mx, 61);
+    var lim = [0, 0.3, 0.7, 1.7, 2.7, 3.5, 4];
+    cx.fillStyle = '#555'; cx.font = '14px Segoe UI, Arial';
+    for (i = 0; i < lim.length; i++) { cx.fillText(_fmt(lim[i], i === 0 || i === 6 ? 0 : 1), x0 + lim[i] / 4 * w, 152); }
+    cx.fillStyle = res.faixa.cor; cx.font = 'bold 18px Segoe UI, Arial'; cx.textAlign = 'center';
+    cx.fillText('Faixa: ' + res.faixa.nome + ' (' + res.faixa.faixa + ')', 450, 184);
+    cx.fillStyle = '#1a237e'; cx.font = 'bold 20px Segoe UI, Arial'; cx.textAlign = 'left';
+    cx.fillText('Qualidade de vida na \u00faltima semana (0% a 100%)', x0, 226);
+    var g = cx.createLinearGradient(x0, 0, x1, 0);
+    g.addColorStop(0, '#ef5350'); g.addColorStop(0.5, '#ffd54f'); g.addColorStop(1, '#66bb6a');
+    cx.fillStyle = g; cx.fillRect(x0, 244, w, 22);
+    var qx = x0 + res.qv / 100 * w;
+    cx.fillStyle = '#1a237e'; cx.fillRect(qx - 2, 238, 4, 34);
+    cx.font = 'bold 16px Segoe UI, Arial'; cx.textAlign = 'center';
+    cx.fillText(res.qv + '%', Math.min(Math.max(qx, x0 + 20), x1 - 20), 290);
+    return cv.toDataURL('image/png');
+}
+
+function _rodapePDF(doc) {
+    doc.setFillColor(80, 80, 80); doc.rect(0, 285, 210, 12, 'F');
+    doc.setTextColor(200, 200, 200); doc.setFontSize(7); doc.setFont(undefined, 'normal');
+    doc.text('Relat\u00f3rio gerado em: ' + new Date().toLocaleString('pt-BR'), 105, 291, {align: 'center'});
+}
+
+function gerarRelatorioPDF() {
+    var nome = document.getElementById('nome').value.trim();
+    if (!nome) { alert('Preencha o nome.'); return; }
+    var lr = _lerRespostas();
+    if (lr.faltam > 0) { alert('Responda todos os ' + ITENS.length + ' itens antes de gerar o PDF. Faltam ' + lr.faltam + '.'); return; }
+    if (!window._escalaDados) { calcularResultados(); }
+    var res = _calcular(lr.vals);
+    var f = res.faixa, i;
+    var idade = document.getElementById('idadeCalculada').value;
+    var sexo = document.getElementById('sexo').value;
+    var dataAval = document.getElementById('data').value || new Date().toLocaleDateString('pt-BR');
+    var idPac = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
+    var img = _desenharGrafico(res);
+    var jsPDF = window.jspdf.jsPDF;
+    var doc = new jsPDF();
+
+    // ---------- PAGINA 1 ----------
+    doc.setFillColor(26, 35, 126); doc.rect(0, 0, 210, 35, 'F');
+    doc.setTextColor(255, 255, 255); doc.setFontSize(15); doc.setFont(undefined, 'bold');
+    doc.text('BSL-23 - RELAT\u00d3RIO DE AVALIA\u00c7\u00c3O', 105, 15, {align: 'center'});
+    doc.setFontSize(9); doc.setFont(undefined, 'normal');
+    doc.text('Lista de Sintomas Borderline (Bohus et al., 2009; vers\u00e3o brasileira: Catelan e Nardi, 2021)', 105, 23, {align: 'center'});
+    doc.text('M\u00e9dia dos 23 itens (0 a 4) | Refer\u00eancia: \u00faltima semana', 105, 29, {align: 'center'});
+
+    var y = 42;
+    doc.setFillColor(248, 249, 250); doc.rect(15, y, 180, 20, 'F');
+    doc.setTextColor(26, 35, 126); doc.setFontSize(10); doc.setFont(undefined, 'bold');
+    doc.text('DADOS PESSOAIS', 20, y + 6);
+    doc.setTextColor(0, 0, 0); doc.setFontSize(9); doc.setFont(undefined, 'normal');
+    doc.text('Nome: ' + nome + '   |   Sexo: ' + sexo, 20, y + 12);
+    doc.text('Idade: ' + idade + '   |   Data: ' + dataAval + (idPac ? '   |   ID: ' + idPac : ''), 20, y + 17);
+
+    y = 68;
+    var rgb = [[200,230,201,46,125,50],[220,237,200,51,105,30],[255,245,157,122,95,0],[255,224,178,191,86,0],[255,204,188,191,54,12],[255,205,210,183,28,28]];
+    var idxF = 0; for (i = 0; i < FAIXAS.length; i++) { if (FAIXAS[i] === f) idxF = i; }
+    doc.setFillColor(rgb[idxF][0], rgb[idxF][1], rgb[idxF][2]); doc.setTextColor(rgb[idxF][3], rgb[idxF][4], rgb[idxF][5]);
+    doc.rect(15, y, 180, 12, 'F');
+    doc.setFontSize(10); doc.setFont(undefined, 'bold');
+    doc.text('GRAVIDADE: ' + f.nome.toUpperCase() + ' - m\u00e9dia ' + _fmt(res.media) + ' (soma ' + res.soma + ' de 92)', 105, y + 8, {align: 'center'});
+
+    y = 84;
+    doc.addImage(img, 'PNG', 15, y, 180, 60);
+    y += 66;
+
+    doc.setTextColor(26, 35, 126); doc.setFontSize(10); doc.setFont(undefined, 'bold');
+    doc.text('RESUMO', 20, y); y += 5;
+    doc.setTextColor(0, 0, 0); doc.setFontSize(9); doc.setFont(undefined, 'normal');
+    doc.text('Escala principal: soma ' + res.soma + '/92 | m\u00e9dia ' + _fmt(res.media) + ' | faixa ' + f.nome, 22, y); y += 5;
+    doc.text('Qualidade de vida relatada: ' + res.qv + '%', 22, y); y += 5;
+    doc.text('Comportamentos relatados (BSL complementar): ' + res.nPres + ' de ' + N_COMP, 22, y); y += 8;
+
+    doc.setTextColor(26, 35, 126); doc.setFontSize(10); doc.setFont(undefined, 'bold');
+    doc.text('FAIXAS DE GRAVIDADE (m\u00e9dia dos 23 itens)', 20, y); y += 5;
+    doc.setFontSize(8.5); doc.setFont(undefined, 'normal'); doc.setTextColor(60, 60, 60);
+    for (i = 0; i < FAIXAS.length; i++) {
+        doc.text((FAIXAS[i] === f ? '> ' : '   ') + FAIXAS[i].nome + ': ' + FAIXAS[i].faixa, 22, y); y += 4.6;
+    }
+
+    if (res.risco.length > 0) {
+        y += 4;
+        doc.setFillColor(255, 235, 238); doc.rect(15, y, 180, 8 + res.risco.length * 4.6 + 12, 'F');
+        doc.setTextColor(183, 28, 28); doc.setFontSize(9.5); doc.setFont(undefined, 'bold');
+        doc.text('ALERTA DE RISCO' + (res.grave ? '' : ' (aten\u00e7\u00e3o)') + ' - autoles\u00e3o / idea\u00e7\u00e3o suicida', 20, y + 6);
+        doc.setFontSize(8.5); doc.setFont(undefined, 'normal');
+        for (i = 0; i < res.risco.length; i++) { doc.text('- ' + res.risco[i].rot + ': ' + res.risco[i].resp, 22, y + 11 + i * 4.6); }
+        doc.setFont(undefined, 'bold');
+        doc.text('Avaliar risco imediatamente. CVV 188 (24h) | SAMU 192', 20, y + 11 + res.risco.length * 4.6 + 3);
+    }
+    _rodapePDF(doc);
+
+    // ---------- PAGINA 2 ----------
+    doc.addPage();
+    y = 20;
+    doc.setTextColor(26, 35, 126); doc.setFontSize(12); doc.setFont(undefined, 'bold');
+    doc.text('AN\u00c1LISE DO PERFIL', 20, y); y += 8;
+    var an = _analise(res);
+    doc.setFontSize(9);
+    for (i = 0; i < an.length; i++) {
+        if (y > 245) { doc.addPage(); y = 20; }
+        doc.setFont(undefined, 'bold'); doc.setTextColor(26, 35, 126);
+        doc.text(an[i].t, 20, y); y += 5;
+        doc.setFont(undefined, 'normal'); doc.setTextColor(40, 40, 40);
+        var linhas = doc.splitTextToSize(an[i].x, 170);
+        doc.text(linhas, 20, y); y += linhas.length * 4.3 + 4;
+    }
+    if (y > 215) { doc.addPage(); y = 20; }
+    doc.setTextColor(26, 35, 126); doc.setFontSize(10); doc.setFont(undefined, 'bold');
+    doc.text('COMPORTAMENTOS NA \u00daLTIMA SEMANA (BSL complementar)', 20, y); y += 6;
+    doc.setFontSize(8.5); doc.setFont(undefined, 'normal'); doc.setTextColor(0, 0, 0);
+    for (i = 0; i < res.comp.length; i++) {
+        doc.text((i + 1) + '. ' + res.comp[i].curto, 22, y);
+        doc.text(res.comp[i].rotulo, 150, y);
+        y += 4.8;
+    }
+    y += 4;
+    if (y > 250) { doc.addPage(); y = 20; }
+    doc.setTextColor(26, 35, 126); doc.setFontSize(10); doc.setFont(undefined, 'bold');
+    doc.text('RESPOSTAS DOS 23 ITENS (0 a 4)', 20, y); y += 6;
+    doc.setTextColor(0, 0, 0); doc.setFontSize(8); doc.setFont(undefined, 'normal');
+    for (i = 0; i < N_PRINC; i++) {
+        doc.text('Item ' + (i + 1) + ': ' + lr.vals[i], 22 + Math.floor(i / 5) * 36, y + (i % 5) * 4.8);
+    }
+    y += 5 * 4.8 + 6;
+    if (y > 255) { doc.addPage(); y = 20; }
+    doc.setFillColor(255, 248, 235); doc.rect(15, y, 180, 26, 'F');
+    doc.setTextColor(180, 90, 0); doc.setFontSize(7.5); doc.setFont(undefined, 'normal');
+    var disc = doc.splitTextToSize('IMPORTANTE: a BSL-23 e um instrumento de autorrelato que mede a gravidade atual (ultima semana) dos sintomas borderline. Nao diagnostica o Transtorno de Personalidade Borderline e deve ser interpretada junto com entrevista clinica e outros instrumentos. A validacao brasileira disponivel foi feita em amostra nao clinica. Qualidade de vida e BSL complementar nao entram na media principal e nao possuem pontos de corte.', 170);
+    doc.text(disc, 20, y + 5);
+    _rodapePDF(doc);
+
+    // ---------- REFERENCIAS ----------
+    doc.addPage();
+    y = 20;
+    doc.setTextColor(26, 35, 126); doc.setFontSize(12); doc.setFont(undefined, 'bold');
+    doc.text('REFER\u00caNCIAS', 20, y); y += 9;
+    doc.setTextColor(40, 40, 40); doc.setFontSize(9); doc.setFont(undefined, 'normal');
+    var refs = [
+        'AMERICAN PSYCHIATRIC ASSOCIATION. Diagnostic and Statistical Manual of Mental Disorders: DSM-5-TR. 5. ed., text rev. Washington, DC: APA, 2022.',
+        'BOHUS, M. et al. The short version of the Borderline Symptom List (BSL-23): development and initial data on psychometric properties. Psychopathology, v. 42, n. 1, p. 32-39, 2009.',
+        'CATELAN, R. F.; NARDI, A. E. Lista de sintomas borderline - BSL-23 - nova vers\u00e3o brasileira. Relat\u00f3rio t\u00e9cnico. 2021. DOI: 10.13140/RG.2.2.29619.76321.',
+        'CATELAN, R. F. et al. Psychometric properties of the Borderline Symptom List 23 for Brazilian Portuguese in a nonclinical sample. Primary Care Companion for CNS Disorders, v. 28, 2026. DOI: 10.4088/PCC.26m04184.'
+    ];
+    for (i = 0; i < refs.length; i++) {
+        var lr2 = doc.splitTextToSize(refs[i], 170);
+        doc.text(lr2, 20, y); y += lr2.length * 4.6 + 5;
+    }
+    doc.setFontSize(8); doc.setTextColor(110, 110, 110);
+    var nota = doc.splitTextToSize('Nota: as faixas de gravidade seguem as instru\u00e7\u00f5es de corre\u00e7\u00e3o da vers\u00e3o brasileira (Catelan e Nardi, 2021). A valida\u00e7\u00e3o brasileira dispon\u00edvel foi feita em amostra n\u00e3o cl\u00ednica; par\u00e2metros cl\u00ednicos e teste-reteste ainda precisam ser estudados.', 170);
+    doc.text(nota, 20, y);
+    _rodapePDF(doc);
+
+    var ts = new Date();
+    var tsStr = ts.getFullYear() + String(ts.getMonth() + 1).padStart(2, '0') + String(ts.getDate()).padStart(2, '0') + String(ts.getHours()).padStart(2, '0') + String(ts.getMinutes()).padStart(2, '0');
+    doc.save('BSL23_' + nome.replace(/\s+/g, '_') + '_' + tsStr + '.pdf');
+}
+
+function limparDados() {
+    if (!confirm('Limpar todos os dados?')) return;
+    document.getElementById('nome').value = '';
+    document.getElementById('dataNascimento').value = '';
+    document.getElementById('idadeCalculada').value = '';
+    document.getElementById('sexo').value = '';
+    document.getElementById('escolaridade').value = '';
+    document.getElementById('observacoes').value = '';
+    var rs = document.querySelectorAll('input[type="radio"]');
+    for (var i = 0; i < rs.length; i++) { rs[i].checked = false; }
+    var ops = document.querySelectorAll('.opcao');
+    for (var j = 0; j < ops.length; j++) { ops[j].classList.remove('sel'); }
+    var its = document.querySelectorAll('.item');
+    for (var k = 0; k < its.length; k++) { its[k].style.backgroundColor = ''; its[k].style.borderLeft = ''; }
+    document.getElementById('resultados').style.display = 'none';
+    window._escalaDados = null;
+    document.getElementById('data').value = new Date().toISOString().split('T')[0];
+}
+
+// === MODO PAINEL ===
+var _sessionInfo = null;
+var _API_URL = 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
+
+function _decodificarURL() {
+    var params = new URLSearchParams(window.location.search);
+    var d = params.get('d');
+    if (!d) return false;
+    try { _sessionInfo = JSON.parse(atob(decodeURIComponent(d))); } catch (e) { return false; }
+    var nomeEl = document.getElementById('nome');
+    var nascEl = document.getElementById('dataNascimento');
+    var sexoEl = document.getElementById('sexo');
+    if (nomeEl && _sessionInfo.patientName) nomeEl.value = _sessionInfo.patientName;
+    if (nascEl && _sessionInfo.birthDate) nascEl.value = _sessionInfo.birthDate;
+    if (sexoEl && _sessionInfo.sex) sexoEl.value = _sessionInfo.sex;
+    var escEl = document.getElementById('escolaridade'); if (escEl && _sessionInfo.education) escEl.value = _sessionInfo.education;
+    if (typeof calcularIdade === 'function') calcularIdade();
+    if (nomeEl) nomeEl.dispatchEvent(new Event('input'));
+    if (nascEl) nascEl.dispatchEvent(new Event('change'));
+    var botoes = document.querySelector('.botoes');
+    if (botoes) {
+        botoes.innerHTML = '<button class="btn btn-primary" style="padding:15px 30px;border:none;border-radius:25px;font-size:16px;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#2e7d32,#43a047);color:white;" onclick="_enviarResultadosPainel()">Enviar Resultados ao Profissional</button>';
+    }
+    var els = document.querySelectorAll('.info-tecnica');
+    for (var i = 0; i < els.length; i++) { els[i].style.display = 'none'; }
+    var _dp = document.querySelector('.dados-pessoais'); if (_dp) _dp.style.display = 'none';
+    return true;
+}
+
+async function _enviarResultadosPainel() {
+    var nomeEl = document.getElementById('nome');
+    if (!nomeEl || !nomeEl.value.trim()) { alert('Preencha o nome antes de enviar.'); return; }
+    var totalItens = document.querySelectorAll('.item').length;
+    var respondidos = document.querySelectorAll('input[type="radio"]:checked').length;
+    if (respondidos < totalItens) { alert('Responda todos os ' + totalItens + ' itens antes de enviar. Faltam ' + (totalItens - respondidos) + '.'); return; }
+    var sexoEl = document.getElementById('sexo');
+    if (sexoEl && !sexoEl.value) { sexoEl.value = 'Nao informado'; }
+    var idadeEl = document.getElementById('idadeCalculada');
+    if (idadeEl && !idadeEl.value) { idadeEl.value = 'Nao informado'; }
+    var calcFn = window.calcularResultados;
+    if (calcFn && !window._escalaDados) { try { calcFn(); } catch (e) {} }
+    var dados = window._escalaDados || {};
+    var _escEl = document.getElementById('escolaridade'); dados.escolaridade = (_escEl && _escEl.value) ? _escEl.value : ((_sessionInfo && _sessionInfo.education) ? _sessionInfo.education : '');
+    if (!dados.escala) dados.escala = 'BSL-23';
+    dados.idPaciente = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
+    dados.pacienteId = _sessionInfo ? (_sessionInfo.pacienteId || '') : '';
+    dados.data = new Date().toISOString();
+    var btn = document.querySelector('.botoes button');
+    if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
+    try {
+        // Reforco: sendBeacon garante a entrega mesmo que a aba feche ou navegue.
+        try { navigator.sendBeacon(_API_URL + '/save-escala', new Blob([JSON.stringify({sessionId: _sessionInfo.sessionId, email: _sessionInfo.email, data: dados, originalSessionId: _sessionInfo.sessionId})], {type: 'application/json'})); } catch (e) {}
+        var resp = await fetch(_API_URL + '/save-escala', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({sessionId: _sessionInfo.sessionId, email: _sessionInfo.email, data: dados, originalSessionId: _sessionInfo.sessionId})
+        });
+        var result = await resp.json();
+        if (result.ok || resp.ok) {
+            document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#e8f5e9,#c8e6c9);text-align:center;padding:20px;"><div style="font-size:60px;margin-bottom:10px;">\u2705</div><h1 style="color:#2e7d32;font-size:24px;margin-bottom:12px;">Respostas enviadas com sucesso!</h1><p style="font-size:16px;color:#555;margin-bottom:6px;">O profissional j\u00e1 pode visualizar os resultados no painel.</p><p style="font-size:14px;color:#777;">Voc\u00ea pode fechar esta aba.</p></div>';
+        } else {
+            if (btn) { btn.disabled = false; btn.textContent = 'Enviar Resultados ao Profissional'; }
+            alert('Erro ao enviar. Tente novamente.');
+        }
+    } catch (e) {
+        if (btn) { btn.disabled = false; btn.textContent = 'Enviar Resultados ao Profissional'; }
+        alert('Erro de conexao. Verifique sua internet e tente novamente.');
+    }
+}
+
+// === INICIALIZACAO (direta, sem wrapper) ===
+gerarQuestionario();
+document.getElementById('questionario').addEventListener('change',function(e){if(e.target.type==='radio'){var item=e.target.closest('.item');if(item){item.style.backgroundColor='#f1f8e9';item.style.borderLeft='4px solid #4caf50';}if(item&&item.nextElementSibling){item.nextElementSibling.scrollIntoView({behavior:'smooth',block:'center'});}}});
+document.getElementById('questionario').addEventListener('change',function(e){if(e.target.type==='radio'){var grupo=e.target.closest('.opcoes').querySelectorAll('.opcao');for(var k=0;k<grupo.length;k++){grupo[k].classList.remove('sel');}e.target.closest('.opcao').classList.add('sel');}});
+document.getElementById('data').value = new Date().toISOString().split('T')[0];
+var params = new URLSearchParams(window.location.search);
+if (params.get('s')) {
+    fetch(_API_URL + '/get-session?id=' + params.get('s')).then(function(r){if(r.status===410){document.body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#e8f5e9,#c8e6c9);text-align:center;padding:20px;"><h1 style="color:#c62828;font-size:24px;margin-bottom:10px;">Este link j\u00e1 foi utilizado.</h1><p style="font-size:16px;color:#555;">Solicite um novo link ao seu avaliador.</p></div>';throw new Error("link_usado");}return r.json();}).then(function(data){if(data.sessionId){_sessionInfo=data;var nomeEl=document.getElementById('nome');var nascEl=document.getElementById('dataNascimento');var sexoEl=document.getElementById('sexo');if(nomeEl&&data.patientName)nomeEl.value=data.patientName;if(nascEl&&data.birthDate)nascEl.value=data.birthDate;if(sexoEl&&data.sex)sexoEl.value=data.sex;var escEl=document.getElementById('escolaridade');if(escEl&&data.education)escEl.value=data.education;if(typeof calcularIdade==='function')calcularIdade();if(nomeEl)nomeEl.dispatchEvent(new Event('input'));if(nascEl)nascEl.dispatchEvent(new Event('change'));var botoes=document.querySelector('.botoes');if(botoes){botoes.innerHTML='<button class="btn btn-primary" style="padding:15px 30px;border:none;border-radius:25px;font-size:16px;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#2e7d32,#43a047);color:white;" onclick="_enviarResultadosPainel()">Enviar Resultados ao Profissional</button>';}var els=document.querySelectorAll('.info-tecnica');els.forEach(function(el){el.style.display='none';});var _dp=document.querySelector('.dados-pessoais');if(_dp)_dp.style.display='none';}}).catch(function(){});
+} else if (params.get('d')) {
+    _decodificarURL();
+} else if (params.get('print')) {
+    var elsP = document.querySelectorAll('.info-tecnica');
+    for (var ip = 0; ip < elsP.length; ip++) { elsP[ip].style.display = 'none'; }
+    var botoesP = document.querySelector('.botoes');
+    if (botoesP) botoesP.style.display = 'none';
+    setTimeout(function() { window.print(); }, 500);
+} else {
+    window.location.href = 'https://setmonte.github.io/online/';
+}
+</script>
+<script>
+// Carregar scripts auxiliares (apenas fora do modo painel ?d=)
+if (!new URLSearchParams(window.location.search).get('d')) {
+    var s1 = document.createElement('script'); s1.src = 'pdf-escalas.js'; document.body.appendChild(s1);
+    var s2 = document.createElement('script'); s2.src = 'salvar-escala.js'; document.body.appendChild(s2);
+}
+// Coleta anonima carrega SEMPRE
+var _sc = document.createElement('script'); _sc.src = 'coleta-anonima.js'; document.body.appendChild(_sc);
+if (new URLSearchParams(window.location.search).get('d')) { var _ac = document.createElement('script'); _ac.src = 'auto-close.js'; document.body.appendChild(_ac); }
+</script>
+<div style="text-align:center;padding:15px;color:#999;font-size:0.75em;margin-top:20px;">Dados anônimos e não-identificáveis podem ser utilizados para fins de pesquisa e normatização.</div>
+</body>
+</html>

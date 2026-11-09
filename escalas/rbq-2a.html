@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-QY1N9587DG"></script>
+    <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-QY1N9587DG');</script>
+    <meta name="description" content="RBQ-2A: rastreio de comportamentos repetitivos e interesses restritos do autismo em adultos. 20 itens, autoaplicável.">
+    <meta property="og:description" content="RBQ-2A: rastreio de comportamentos repetitivos e interesses restritos do autismo em adultos. 20 itens, autoaplicável.">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RBQ-2A — Questionário de Comportamentos Repetitivos para Adultos</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background: linear-gradient(135deg, #004d40 0%, #00897b 55%, #ef6c00 100%); min-height: 100vh; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; border-radius: 15px; box-shadow: 0 20px 40px rgba(0,0,0,0.15); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #004d40 0%, #00897b 55%, #ef6c00 100%); color: white; padding: 30px; text-align: center; }
+        .header h1 { font-size: 2.2em; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        .header p { font-size: 1.1em; opacity: 0.9; }
+        .content { padding: 30px; }
+        .info-tecnica { background: #e0f2f1; padding: 25px; border-radius: 10px; margin-bottom: 30px; border-left: 5px solid #00695c; position: relative; }
+        .info-tecnica h2 { color: #00695c; margin-bottom: 15px; font-size: 1.4em; }
+        .info-tecnica p { color: #555; line-height: 1.7; font-size: 0.95em; }
+        .dados-pessoais { background: #f8f9fa; padding: 25px; border-radius: 10px; margin-bottom: 30px; border-left: 5px solid #00695c; }
+        .dados-pessoais h2 { color: #00695c; margin-bottom: 20px; font-size: 1.5em; }
+        .form-row { display: flex; gap: 20px; margin-bottom: 15px; flex-wrap: wrap; }
+        .form-group { flex: 1; min-width: 200px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; color: #555; }
+        .form-group input, .form-group select { width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 16px; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: #00695c; }
+        .instrucoes { background: #fff3e0; padding: 20px; border-radius: 10px; margin-bottom: 30px; border-left: 5px solid #ef6c00; }
+        .instrucoes h3 { color: #e65100; margin-bottom: 10px; }
+        .instrucoes p { color: #555; font-size: 0.95em; line-height: 1.7; }
+        .item { padding: 18px 20px; border-bottom: 1px solid #f0f0f0; transition: background-color 0.3s; }
+        .item:hover { background-color: #e0f2f1; }
+        .item-texto { font-size: 1em; margin-bottom: 12px; color: #444; line-height: 1.5; }
+        .item-numero { font-weight: bold; color: #00695c; margin-right: 8px; }
+        .opcoes { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+        .opcao { flex: 1 1 200px; display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 10px 12px; border-radius: 8px; border: 2px solid #eceff1; background: #fafafa; transition: all 0.2s; }
+        .opcao:hover { background-color: #e0f2f1; border-color: #00897b; }
+        .opcao.sel { background-color: #b2dfdb; border-color: #00695c; }
+        .opcao input[type="radio"] { width: 18px; height: 18px; cursor: pointer; accent-color: #00695c; flex-shrink: 0; }
+        .opcao label { cursor: pointer; font-weight: 500; color: #555; font-size: 0.85em; line-height: 1.3; flex: 1; }
+        .botoes { display: flex; gap: 15px; justify-content: center; margin: 30px 0; flex-wrap: wrap; }
+        .btn { padding: 15px 30px; border: none; border-radius: 25px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+        .btn-primary { background: linear-gradient(135deg, #00695c 0%, #00897b 100%); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,105,92,0.3); }
+        .btn-secondary { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; }
+        .btn-danger { background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%); color: white; }
+        .btn-imprimir { position: absolute; top: 20px; right: 20px; padding: 10px 20px; background: #00695c; color: white; border: none; border-radius: 20px; font-size: 14px; font-weight: 600; cursor: pointer; }
+        .resultados { background: #f8f9fa; padding: 30px; border-radius: 10px; margin-top: 30px; border-left: 5px solid #00695c; display: none; }
+        .resultados h2 { color: #00695c; margin-bottom: 20px; text-align: center; }
+        .resultados h3 { color: #00695c; margin: 28px 0 10px; font-size: 1.15em; }
+        .rastreio-box { padding: 22px; border-radius: 12px; text-align: center; margin: 15px 0; font-size: 1.15em; font-weight: 700; }
+        .rastreio-pos { background: #ffcdd2; border: 3px solid #c62828; color: #b71c1c; }
+        .rastreio-neg { background: #c8e6c9; border: 3px solid #2e7d32; color: #1b5e20; }
+        .explica { background: white; padding: 16px 18px; border-radius: 10px; box-shadow: 0 3px 10px rgba(0,0,0,0.06); font-size: 0.93em; color: #444; line-height: 1.7; margin-bottom: 10px; }
+        .termo { position: relative; margin: 60px 25px 110px; }
+        .termo-barra { position: relative; height: 28px; border-radius: 14px; background: linear-gradient(90deg, #81c784 0%, #81c784 15%, #ffd54f 15%, #ffb74d 45%, #ef5350 100%); box-shadow: inset 0 1px 4px rgba(0,0,0,0.25); }
+        .termo-bolha { position: absolute; top: -50px; transform: translateX(-50%); background: #004d40; color: #fff; padding: 4px 14px; border-radius: 14px; font-weight: 700; font-size: 1.05em; white-space: nowrap; }
+        .termo-bolha:after { content: ''; position: absolute; left: 50%; bottom: -8px; margin-left: -8px; border-left: 8px solid transparent; border-right: 8px solid transparent; border-top: 8px solid #004d40; }
+        .termo-tick { position: absolute; top: -6px; width: 3px; height: 40px; border-radius: 2px; transform: translateX(-50%); }
+        .termo-lab { position: absolute; font-size: 0.74em; color: #444; line-height: 1.25; white-space: nowrap; }
+        .legenda-mapa { font-size: 0.82em; color: #555; margin: 6px 0 10px; }
+        .legenda-mapa span { display: inline-block; margin-right: 14px; }
+        .legenda-mapa i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 5px; vertical-align: middle; }
+        .mapa { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+        .mapa-q { width: 38px; height: 38px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.95em; cursor: help; }
+        .mapa-q.v1 { background: #c8e6c9; color: #1b5e20; }
+        .mapa-q.v2 { background: #ffe082; color: #7a5300; }
+        .mapa-q.v3 { background: #ef9a9a; color: #7f0000; }
+        .fator-card { background: white; padding: 18px 20px; border-radius: 10px; margin-bottom: 14px; box-shadow: 0 3px 10px rgba(0,0,0,0.08); border-left: 6px solid #00695c; }
+        .fator-topo { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+        .fator-topo h4 { font-size: 1.05em; }
+        .badge { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 0.8em; font-weight: bold; }
+        .fator-desc { font-size: 0.88em; color: #666; margin: 6px 0 10px; line-height: 1.5; }
+        .barra-fundo { height: 16px; background: #eceff1; border-radius: 8px; overflow: hidden; }
+        .barra-preench { height: 100%; border-radius: 8px; }
+        .fator-num { font-size: 0.88em; color: #444; margin-top: 8px; }
+        .fator-altos { font-size: 0.8em; color: #7f0000; margin-top: 6px; }
+        .disclaimer { background: #fff3e0; padding: 15px; border-radius: 8px; margin-top: 20px; border-left: 4px solid #ff9800; font-size: 0.85em; color: #e65100; line-height: 1.6; }
+        .referencias { background: #f8f9fa; padding: 25px; border-radius: 10px; margin-top: 30px; border-left: 5px solid #00695c; }
+        .referencias h2 { color: #00695c; margin-bottom: 15px; }
+        .referencias p { color: #555; line-height: 1.9; font-size: 0.88em; }
+        @media print { body { background: white !important; padding: 0 !important; } .botoes, .btn, .btn-imprimir { display: none !important; } .container { box-shadow: none !important; max-width: 100% !important; } .info-tecnica { display: none !important; } .resultados { display: none !important; } .item { page-break-inside: avoid; } .opcoes { flex-direction: row !important; } .opcao { background: white !important; } .referencias { display: block !important; page-break-inside: avoid; } .header { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+        @media (max-width: 768px) { .container { margin: 10px; } .content { padding: 15px; } .form-row { flex-direction: column; } .opcoes { flex-direction: column; } .botoes { flex-direction: column; } .btn { width: 100%; } .termo { margin-left: 18px; margin-right: 18px; } }
+    </style>
+</head>
+<body>
+<div style="padding:10px 20px;background:#2e7d32;"><a href="../" style="display:inline-block;background:#fff;color:#2e7d32;text-decoration:none;font-size:14px;font-weight:bold;padding:8px 20px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.15);">&#11013; Voltar ao Início</a></div>
+<div class="container">
+    <div class="header">
+        <h1>🧠 RBQ-2A</h1>
+        <p>Questionário de Comportamentos Repetitivos para Adultos</p>
+        <p style="font-size:0.85em;opacity:0.8;margin-top:5px;">Adult Repetitive Behaviours Questionnaire-2 · Barrett et al. (2015) · Baseado nos critérios do DSM-5-TR</p>
+    </div>
+    <div class="content">
+        <div class="info-tecnica">
+            <button class="btn-imprimir" onclick="window.print()">🖨️ Imprimir Formulário</button>
+            <h2>📚 Informações Técnicas</h2>
+            <p>
+                <strong>Instrumento:</strong> RBQ-2A — Adult Repetitive Behaviours Questionnaire-2 (autorrelato)<br>
+                <strong>Autores:</strong> Barrett, Uljarević, Baker, Richdale, Jones e Leekam (2015)<br>
+                <strong>Base teórica:</strong> Critério B do DSM-5-TR para TEA (comportamentos repetitivos e interesses restritos)<br>
+                <strong>Estrutura:</strong> 20 itens, 3 opções de resposta (valores 1, 2 e 3)<br>
+                <strong>Escore:</strong> 20 a 60 pontos. Ponto de corte: 26 (média de referência de adultos autistas: 36; não autistas: 25)<br>
+                <strong>Aspectos avaliados (4):</strong> Movimentos Motores Repetitivos, Rigidez e Rotina, Interesses Restritos e Interesses Sensoriais Incomuns<br>
+                <strong>População:</strong> Adultos (18+), autoaplicável<br>
+                <strong>Resultado:</strong> Rastreio positivo ou negativo + perfil por aspecto
+            </p>
+        </div>
+        <div class="dados-pessoais">
+            <h2>📋 Dados Pessoais</h2>
+            <div class="form-row">
+                <div class="form-group"><label for="nome">Nome:</label><input type="text" id="nome" placeholder="Nome completo"></div>
+                <div class="form-group"><label for="dataNascimento">Data de Nascimento:</label><input type="date" id="dataNascimento" onchange="calcularIdade()"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label for="idadeCalculada">Idade:</label><input type="text" id="idadeCalculada" readonly style="background-color:#f0f0f0;" placeholder="Calculada automaticamente"></div>
+                <div class="form-group"><label for="sexo">Sexo:</label><select id="sexo"><option value="">Selecione</option><option value="Masculino">Masculino</option><option value="Feminino">Feminino</option></select></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label for="escolaridade">Escolaridade:</label><select id="escolaridade"><option value="">Selecione</option><option value="Fundamental incompleto">Fundamental incompleto</option><option value="Fundamental completo">Fundamental completo</option><option value="Medio incompleto">Médio incompleto</option><option value="Medio completo">Médio completo</option><option value="Superior incompleto">Superior incompleto</option><option value="Superior completo">Superior completo</option><option value="Pos-graduacao">Pós-graduação</option></select></div>
+                <div class="form-group"><label for="data">Data da Avaliação:</label><input type="date" id="data"></div>
+                <div class="form-group"><label for="observacoes">Observações:</label><input type="text" id="observacoes" placeholder="Opcional"></div>
+            </div>
+        </div>
+        <div class="instrucoes">
+            <h3>📝 Instruções</h3>
+            <p>Leia cada pergunta com atenção e escolha a resposta que você sente que melhor representa você. Não existem respostas certas ou erradas, nem perguntas-armadilha. Responda todas as 20 perguntas.</p>
+        </div>
+        <div id="questionario"></div>
+        <div class="botoes">
+            <button class="btn btn-primary" onclick="calcularResultados()">Calcular Resultados</button>
+            <button class="btn btn-secondary" onclick="gerarRelatorioPDF()">Gerar Relatório PDF</button>
+            <button class="btn btn-danger" onclick="limparDados()">Limpar Dados</button>
+        </div>
+        <div id="resultados" class="resultados"></div>
+        <div class="referencias" id="referencias">
+            <h2>Referências</h2>
+            <p>
+                <strong>AMERICAN PSYCHIATRIC ASSOCIATION.</strong> <em>Diagnostic and Statistical Manual of Mental Disorders</em>: DSM-5-TR. 5. ed., text rev. Washington, DC: APA, 2022.<br><br>
+                <strong>BARRETT, S. L.; ULJAREVI&#262;, M.; BAKER, E. K.; RICHDALE, A. L.; JONES, C. R. G.; LEEKAM, S. R.</strong> The Adult Repetitive Behaviours Questionnaire-2 (RBQ-2A): a self-report measure of restricted and repetitive behaviours. <em>Journal of Autism and Developmental Disorders</em>, v. 45, n. 11, p. 3680-3692, 2015. DOI: 10.1007/s10803-015-2514-6.<br><br>
+                <strong>BARRETT, S. L.; ULJAREVI&#262;, M.; JONES, C. R. G.; LEEKAM, S. R.</strong> Assessing subtypes of restricted and repetitive behaviour using the Adult Repetitive Behaviour Questionnaire-2 in autistic adults. <em>Molecular Autism</em>, v. 9, art. 58, 2018. DOI: 10.1186/s13229-018-0242-4.<br><br>
+                <em style="font-size:0.88em;color:#777">Nota: esta é uma tradução livre para o português, feita para este site. Não foi localizado estudo de validação brasileira do RBQ-2A. O ponto de corte (26), as médias de referência (25 e 36) e a organização em quatro aspectos seguem o material de pontuação do instrumento e não foram verificados em amostra brasileira. Os estudos originais (BARRETT et al., 2015) descrevem duas dimensões: comportamentos motores repetitivos e insistência na mesmice.</em>
+            </p>
+        </div>
+    </div>
+</div>
+<script src="../id-paciente.js"></script>
+<script>
+// === DADOS ===
+var OPCOES_TIPOS = {
+    freq: ["Nunca ou raramente","Uma ou mais vezes por dia","15 ou mais vezes por dia"],
+    inten: ["Nunca ou raramente","Leve ou ocasional","Acentuado ou not\u00e1vel"],
+    afeta: ["Nunca ou raramente","Leve ou ocasional (n\u00e3o afeta outras pessoas)","Acentuado ou not\u00e1vel (\u00e0s vezes afeta outras pessoas)"],
+    flex1: ["Nunca ou raramente","Leve ou ocasional (n\u00e3o \u00e9 totalmente resistente a mudan\u00e7as ou novidades)","Acentuado ou not\u00e1vel (\u00e0s vezes afeta outras pessoas)"],
+    flex2: ["Nunca ou raramente","Leve ou ocasional (n\u00e3o \u00e9 totalmente resistente a mudan\u00e7as ou novidades)","Acentuado ou not\u00e1vel (aceita mudan\u00e7as quando necess\u00e1rio)"],
+    ativ: ["Uma variedade de atividades diferentes e flex\u00edveis, escolhidas por mim","Alguns interesses variados e flex\u00edveis, mas geralmente escolho as mesmas atividades","Quase sempre escolho dentre um conjunto restrito de atividades repetitivas"]
+};
+
+var ITENS = [
+{texto:"Voc\u00ea gosta de organizar objetos em fileiras ou padr\u00f5es?",tipo:"freq"},
+{texto:"Voc\u00ea mexe repetidamente em objetos? (ex.: girar, rodar entre os dedos, bater, tamborilar, torcer ou estalar algo v\u00e1rias vezes)",tipo:"freq"},
+{texto:"Voc\u00ea gosta de girar o pr\u00f3prio corpo, rodando sem parar?",tipo:"freq"},
+{texto:"Voc\u00ea se balan\u00e7a para frente e para tr\u00e1s, ou de um lado para o outro, quando est\u00e1 sentado(a) ou em p\u00e9?",tipo:"freq"},
+{texto:"Voc\u00ea anda de um lado para o outro ou se movimenta de forma repetitiva? (ex.: ir e vir pela sala ou percorrer sempre o mesmo caminho no jardim)",tipo:"freq"},
+{texto:"Voc\u00ea faz movimentos repetitivos com as m\u00e3os e/ou com os dedos? (ex.: balan\u00e7ar, abanar ou estalar as m\u00e3os ou os dedos repetidamente)",tipo:"inten"},
+{texto:"Voc\u00ea tem fascina\u00e7\u00e3o por objetos espec\u00edficos? (ex.: trens, placas de tr\u00e2nsito ou outras coisas)",tipo:"inten"},
+{texto:"Voc\u00ea gosta de olhar para objetos de \u00e2ngulos particulares ou incomuns?",tipo:"inten"},
+{texto:"Voc\u00ea tem acentuada sensibilidade ao cheiro de pessoas e objetos?",tipo:"inten"},
+{texto:"Voc\u00ea tem um interesse especial pela sensa\u00e7\u00e3o ao toque de diferentes superf\u00edcies?",tipo:"inten"},
+{texto:"Voc\u00ea tem algum objeto especial que gosta de carregar com voc\u00ea?",tipo:"inten"},
+{texto:"Voc\u00ea coleciona ou acumula itens de qualquer tipo?",tipo:"inten"},
+{texto:"Voc\u00ea insiste que as coisas em casa permane\u00e7am sempre iguais? (ex.: m\u00f3veis no mesmo lugar, objetos guardados em lugares certos ou arrumados de um jeito espec\u00edfico)",tipo:"afeta"},
+{texto:"Voc\u00ea fica chateado(a) com pequenas mudan\u00e7as em objetos? (ex.: uma manchinha de sujeira na roupa, pequenos arranh\u00f5es em objetos)",tipo:"afeta"},
+{texto:"Voc\u00ea insiste que aspectos da rotina di\u00e1ria permane\u00e7am sempre iguais?",tipo:"afeta"},
+{texto:"Voc\u00ea insiste em fazer as coisas de um jeito espec\u00edfico, ou em refaz\u00ea-las at\u00e9 ficarem \u201cno ponto certo\u201d?",tipo:"afeta"},
+{texto:"Voc\u00ea ouve a mesma m\u00fasica, joga o mesmo jogo, assiste ao mesmo v\u00eddeo ou l\u00ea o mesmo livro v\u00e1rias vezes?",tipo:"flex1"},
+{texto:"Voc\u00ea insiste em usar as mesmas roupas ou se recusa a usar roupas novas?",tipo:"flex2"},
+{texto:"Voc\u00ea insiste em comer os mesmos alimentos, ou uma variedade muito pequena de alimentos, em todas as refei\u00e7\u00f5es?",tipo:"flex2"},
+{texto:"Que tipo de atividade voc\u00ea escolhe quando est\u00e1 livre para se ocupar sozinho(a)?",tipo:"ativ"}
+];
+
+var FATORES = [
+{nome:"Movimentos Motores Repetitivos",itens:[2,3,4,5,6],cor:"#00897b",desc:"Movimentos do corpo, das m\u00e3os e dos dedos que se repetem, como balan\u00e7ar, girar, andar de um lado para o outro ou mexer em objetos."},
+{nome:"Rigidez e Rotina",itens:[13,14,15,16,17,18,19],cor:"#ef6c00",desc:"Necessidade de que as coisas fiquem sempre iguais: casa, rotina, roupas, comida e jeito de fazer as coisas. Pequenas mudan\u00e7as podem causar muito desconforto."},
+{nome:"Interesses Restritos",itens:[1,7,8,10,11,12,17],cor:"#5e35b1",desc:"Interesses muito focados ou fora do comum: fascina\u00e7\u00e3o por objetos espec\u00edficos, organizar em padr\u00f5es, colecionar, ter objetos favoritos e repetir as mesmas atividades."},
+{nome:"Interesses Sensoriais Incomuns",itens:[8,9,10,18],cor:"#c2185b",desc:"Interesse ou sensibilidade fora do comum por sensa\u00e7\u00f5es: o jeito de olhar para objetos, cheiros, texturas ao toque e a escolha de roupas."}
+];
+
+var CORTE = 26;
+var MEDIA_TEA = 36;
+var MEDIA_NTEA = 25;
+var MIN_TOTAL = 20;
+var MAX_TOTAL = 60;
+
+// === FUNCOES UTILITARIAS ===
+function calcularIdade() {
+    var d = document.getElementById('dataNascimento').value;
+    if (!d) return;
+    var h = new Date(), n = new Date(d);
+    var a = h.getFullYear() - n.getFullYear(), m = h.getMonth() - n.getMonth(), di = h.getDate() - n.getDate();
+    if (di < 0) { m--; di += new Date(h.getFullYear(), h.getMonth(), 0).getDate(); }
+    if (m < 0) { a--; m += 12; }
+    document.getElementById('idadeCalculada').value = a + ' anos, ' + m + ' meses e ' + di + ' dias';
+}
+
+function gerarQuestionario() {
+    var c = document.getElementById('questionario');
+    var h = '';
+    for (var i = 0; i < ITENS.length; i++) {
+        var ops = OPCOES_TIPOS[ITENS[i].tipo];
+        h += '<div class="item" id="item_' + i + '"><div class="item-texto"><span class="item-numero">' + (i + 1) + '.</span> ' + ITENS[i].texto + '</div><div class="opcoes">';
+        for (var v = 0; v < ops.length; v++) {
+            h += '<div class="opcao"><input type="radio" id="q' + i + '_' + (v + 1) + '" name="q' + i + '" value="' + (v + 1) + '"><label for="q' + i + '_' + (v + 1) + '">' + ops[v] + '</label></div>';
+        }
+        h += '</div></div>';
+    }
+    c.innerHTML = h;
+}
+
+function _fmt(n) { return n.toFixed(2).replace('.', ','); }
+
+function _classeMedia(m) {
+    if (m < 1.5) return {txt: "Pouco presente", cor: "#2e7d32", bg: "#c8e6c9"};
+    if (m < 2.0) return {txt: "Presente de forma leve", cor: "#7a5300", bg: "#fff3b0"};
+    if (m < 2.5) return {txt: "Moderadamente presente", cor: "#bf360c", bg: "#ffe0b2"};
+    return {txt: "Muito presente", cor: "#b71c1c", bg: "#ffcdd2"};
+}
+
+function _lerRespostas() {
+    var r = [], falt = 0;
+    for (var i = 0; i < ITENS.length; i++) {
+        var s = document.querySelector('input[name="q' + i + '"]:checked');
+        if (!s) { r.push(null); falt++; } else { r.push(parseInt(s.value, 10)); }
+    }
+    return {vals: r, faltam: falt};
+}
+
+function _calcular(vals) {
+    var total = 0, i, f, k;
+    for (i = 0; i < vals.length; i++) total += vals[i];
+    var fat = [];
+    for (f = 0; f < FATORES.length; f++) {
+        var F = FATORES[f], soma = 0, altos = [];
+        for (k = 0; k < F.itens.length; k++) {
+            var v = vals[F.itens[k] - 1];
+            soma += v;
+            if (v === 3) altos.push(F.itens[k]);
+        }
+        var n = F.itens.length, media = soma / n;
+        fat.push({
+            nome: F.nome, desc: F.desc, cor: F.cor, itens: F.itens,
+            soma: soma, min: n, max: n * 3,
+            media: parseFloat(media.toFixed(2)),
+            pct: Math.round((soma - n) / (2 * n) * 100),
+            altos: altos, cl: _classeMedia(media)
+        });
+    }
+    return {total: total, fat: fat};
+}
+
+function _analise(res) {
+    var out = [], total = res.total, pos = total >= CORTE, f;
+    var t1;
+    if (pos) {
+        t1 = "O escore total foi " + total + " (de 20 a 60), igual ou acima do ponto de corte de " + CORTE + ". Isso indica rastreio positivo: a pessoa relata uma quantidade de comportamentos repetitivos, rigidez e interesses restritos que merece investiga\u00e7\u00e3o cl\u00ednica.";
+    } else {
+        t1 = "O escore total foi " + total + " (de 20 a 60), abaixo do ponto de corte de " + CORTE + ". Isso indica rastreio negativo: por este instrumento, o relato n\u00e3o sugere presen\u00e7a marcante de comportamentos repetitivos e rigidez t\u00edpicos do espectro autista.";
+    }
+    out.push({t: "Resultado geral", x: t1});
+    var d25 = Math.abs(total - MEDIA_NTEA), d36 = Math.abs(total - MEDIA_TEA);
+    var t2 = "Comparando com as m\u00e9dias de refer\u00eancia do material do instrumento (adultos n\u00e3o autistas: " + MEDIA_NTEA + "; adultos autistas: " + MEDIA_TEA + "), este escore est\u00e1 mais pr\u00f3ximo da m\u00e9dia de " + (d36 < d25 ? "adultos autistas." : "adultos n\u00e3o autistas.");
+    if (pos && d36 >= d25) t2 += " Como o escore est\u00e1 acima do corte, mas ainda perto da m\u00e9dia de adultos n\u00e3o autistas, trata-se de uma faixa de transi\u00e7\u00e3o: vale interpretar com cautela.";
+    out.push({t: "Compara\u00e7\u00e3o com as m\u00e9dias de refer\u00eancia", x: t2});
+    var frase = {
+        "Pouco presente": "aparece pouco ou quase nunca nas respostas.",
+        "Presente de forma leve": "aparece de forma leve ou ocasional.",
+        "Moderadamente presente": "aparece com frequ\u00eancia relevante e merece aten\u00e7\u00e3o na entrevista cl\u00ednica.",
+        "Muito presente": "\u00e9 uma das \u00e1reas mais marcantes do perfil e vale ser explorada em detalhe, inclusive quanto ao impacto no dia a dia."
+    };
+    var melhor = res.fat[0];
+    for (f = 0; f < res.fat.length; f++) {
+        var ft = res.fat[f];
+        if (ft.media > melhor.media) melhor = ft;
+        var x = "Pontua\u00e7\u00e3o " + ft.soma + " de " + ft.max + " (m\u00e9dia " + _fmt(ft.media) + " por item, em uma escala de 1 a 3). Este aspecto " + frase[ft.cl.txt];
+        if (ft.altos.length) x += " Itens com a resposta mais intensa: " + ft.altos.join(', ') + ".";
+        out.push({t: ft.nome, x: x});
+    }
+    var dest;
+    if (melhor.media < 1.5) dest = "Nenhum dos quatro aspectos se destacou no perfil.";
+    else dest = "O aspecto de maior destaque no perfil foi: " + melhor.nome + ".";
+    dest += " Observa\u00e7\u00e3o: alguns itens contam em mais de um aspecto (8, 10, 17 e 18), por isso a soma dos aspectos n\u00e3o \u00e9 igual ao escore total.";
+    out.push({t: "Destaque do perfil", x: dest});
+    return out;
+}
+
+// === CALCULO E RESULTADOS ===
+function calcularResultados() {
+    var nome = document.getElementById('nome').value.trim();
+    var idade = document.getElementById('idadeCalculada').value;
+    var sexo = document.getElementById('sexo').value;
+    if (!nome) { alert('Preencha o nome.'); return; }
+    var lr = _lerRespostas();
+    if (lr.faltam > 0) { alert('Responda todos os 20 itens. Faltam ' + lr.faltam + '.'); return; }
+    var vals = lr.vals;
+    var res = _calcular(vals);
+    var total = res.total, positivo = total >= CORTE, i, f;
+    function pp(v) { return ((v - MIN_TOTAL) / (MAX_TOTAL - MIN_TOTAL) * 100).toFixed(2); }
+
+    var h = '<h2>&#129504; Resultados RBQ-2A</h2>';
+    h += '<div class="rastreio-box ' + (positivo ? 'rastreio-pos' : 'rastreio-neg') + '">' + (positivo ? 'RASTREIO POSITIVO' : 'RASTREIO NEGATIVO') + ' \u2014 escore ' + total + '/60 (limiar: >=' + CORTE + ')</div>';
+
+    h += '<h3>&#128207; Onde est\u00e1 o seu escore?</h3>';
+    h += '<div class="explica">A barra abaixo vai de 20 (m\u00ednimo poss\u00edvel) a 60 (m\u00e1ximo). A parte verde \u00e9 a faixa abaixo do ponto de corte; a partir da linha vermelha (26) o rastreio \u00e9 positivo. Quanto mais \u00e0 direita, mais comportamentos repetitivos e rigidez foram relatados.</div>';
+    h += '<div class="termo"><div class="termo-bolha" style="left:' + pp(total) + '%">' + total + '</div><div class="termo-barra">';
+    h += '<div class="termo-tick" style="left:' + pp(MEDIA_NTEA) + '%;background:#455a64;opacity:0.55"></div>';
+    h += '<div class="termo-tick" style="left:' + pp(CORTE) + '%;background:#c62828"></div>';
+    h += '<div class="termo-tick" style="left:' + pp(MEDIA_TEA) + '%;background:#455a64"></div></div>';
+    h += '<div class="termo-lab" style="top:42px;left:' + pp(MEDIA_NTEA) + '%;transform:translateX(-100%);text-align:right;padding-right:4px">M\u00e9dia sem autismo<br><strong>25</strong></div>';
+    h += '<div class="termo-lab" style="top:42px;left:' + pp(CORTE) + '%;padding-left:4px;color:#c62828"><strong>Corte</strong><br><strong>26</strong></div>';
+    h += '<div class="termo-lab" style="top:78px;left:' + pp(MEDIA_TEA) + '%;transform:translateX(-50%);text-align:center">M\u00e9dia autistas<br><strong>36</strong></div>';
+    h += '<div class="termo-lab" style="top:78px;left:0">20 (m\u00ednimo)</div>';
+    h += '<div class="termo-lab" style="top:78px;right:0;text-align:right">60 (m\u00e1ximo)</div></div>';
+
+    var an = _analise(res);
+    h += '<div class="explica"><strong>' + an[0].t + ':</strong> ' + an[0].x + '</div>';
+    h += '<div class="explica"><strong>' + an[1].t + ':</strong> ' + an[1].x + '</div>';
+
+    h += '<h3>&#128506;&#65039; Mapa das suas respostas</h3>';
+    h += '<div class="legenda-mapa"><span><i style="background:#c8e6c9"></i>1 = raro ou ausente</span><span><i style="background:#ffe082"></i>2 = leve ou intermedi\u00e1rio</span><span><i style="background:#ef9a9a"></i>3 = acentuado ou frequente</span></div>';
+    h += '<div class="mapa">';
+    for (i = 0; i < vals.length; i++) {
+        h += '<div class="mapa-q v' + vals[i] + '" title="Item ' + (i + 1) + ': ' + ITENS[i].texto + '">' + (i + 1) + '</div>';
+    }
+    h += '</div><div class="legenda-mapa">Passe o mouse (ou toque) em um quadrado para ver a pergunta.</div>';
+
+    h += '<h3>&#129513; Perfil por aspecto</h3>';
+    h += '<div class="explica">O escore total \u00e9 dividido em quatro aspectos do crit\u00e9rio B do autismo. A faixa de cada aspecto (pouco presente at\u00e9 muito presente) \u00e9 uma refer\u00eancia did\u00e1tica baseada na m\u00e9dia das respostas (1 a 3); n\u00e3o \u00e9 um ponto de corte validado.</div>';
+    for (f = 0; f < res.fat.length; f++) {
+        var ft = res.fat[f];
+        h += '<div class="fator-card" style="border-left-color:' + ft.cor + '"><div class="fator-topo"><h4 style="color:' + ft.cor + '">' + ft.nome + '</h4><span class="badge" style="background:' + ft.cl.bg + ';color:' + ft.cl.cor + '">' + ft.cl.txt + '</span></div>';
+        h += '<p class="fator-desc">' + ft.desc + '</p>';
+        h += '<div class="barra-fundo"><div class="barra-preench" style="width:' + Math.max(ft.pct, 3) + '%;background:' + ft.cor + '"></div></div>';
+        h += '<p class="fator-num">Pontua\u00e7\u00e3o: <strong>' + ft.soma + '</strong> (varia de ' + ft.min + ' a ' + ft.max + ') \u00b7 M\u00e9dia por item: <strong>' + _fmt(ft.media) + '</strong> (de 1 a 3) \u00b7 Itens deste aspecto: ' + ft.itens.join(', ') + '</p>';
+        if (ft.altos.length) h += '<p class="fator-altos">Itens com resposta mais intensa (3): ' + ft.altos.join(', ') + '</p>';
+        h += '</div>';
+    }
+
+    h += '<h3>&#128221; An\u00e1lise do perfil</h3>';
+    for (i = 2; i < an.length; i++) {
+        h += '<div class="explica"><strong>' + an[i].t + ':</strong> ' + an[i].x + '</div>';
+    }
+    h += '<div class="disclaimer"><strong>IMPORTANTE:</strong> o RBQ-2A \u00e9 um instrumento de rastreio, n\u00e3o um teste diagn\u00f3stico. Ele funciona como um term\u00f4metro: indica sinais de aten\u00e7\u00e3o, mas n\u00e3o confirma nem descarta Transtorno do Espectro Autista. O diagn\u00f3stico exige avalia\u00e7\u00e3o cl\u00ednica completa. Esta \u00e9 uma tradu\u00e7\u00e3o livre, sem estudo de valida\u00e7\u00e3o brasileira localizado; o ponto de corte e as m\u00e9dias de refer\u00eancia seguem o material de pontua\u00e7\u00e3o do instrumento e n\u00e3o foram verificados em amostra brasileira.</div>';
+
+    var el = document.getElementById('resultados');
+    el.innerHTML = h;
+    el.style.display = 'block';
+    el.scrollIntoView({behavior: 'smooth'});
+
+    var dom = {};
+    for (f = 0; f < res.fat.length; f++) {
+        dom[res.fat[f].nome] = {pontuacao: res.fat[f].soma, max: res.fat[f].max, classificacao: res.fat[f].cl.txt, media: res.fat[f].media, itens: res.fat[f].itens.length};
+    }
+    var respObj = {};
+    for (i = 0; i < vals.length; i++) { respObj[i + 1] = vals[i]; }
+    window._escalaDados = {
+        escala: 'RBQ-2A',
+        paciente: nome,
+        escore: total,
+        classificacao: (positivo ? 'Rastreio Positivo' : 'Rastreio Negativo') + ' (' + total + '/60; corte ' + CORTE + ')',
+        dominios: dom,
+        respostas: respObj,
+        sexo: sexo,
+        idPaciente: (document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : ''),
+        idade: idade,
+        data: new Date().toISOString()
+    };
+    if (window.injetarBotaoSalvar) injetarBotaoSalvar('resultados');
+}
+
+// === PDF (3 paginas) ===
+function _desenharGrafico(res) {
+    var cv = document.createElement('canvas');
+    cv.width = 900; cv.height = 440;
+    var cx = cv.getContext('2d');
+    cx.fillStyle = '#fff'; cx.fillRect(0, 0, 900, 440);
+    var x0 = 50, x1 = 850, w = x1 - x0, i;
+    function px(v) { return x0 + (v - MIN_TOTAL) / (MAX_TOTAL - MIN_TOTAL) * w; }
+    cx.fillStyle = '#00695c'; cx.font = 'bold 20px Segoe UI, Arial'; cx.textAlign = 'left';
+    cx.fillText('Escore total (20 a 60)', x0, 28);
+    var g = cx.createLinearGradient(x0, 0, x1, 0);
+    var p = (CORTE - MIN_TOTAL) / (MAX_TOTAL - MIN_TOTAL);
+    g.addColorStop(0, '#81c784'); g.addColorStop(p, '#81c784'); g.addColorStop(p, '#ffd54f'); g.addColorStop(0.45, '#ffb74d'); g.addColorStop(1, '#ef5350');
+    cx.fillStyle = g; cx.fillRect(x0, 100, w, 36);
+    // marcador do escore
+    var mx = px(res.total);
+    cx.fillStyle = '#004d40'; cx.beginPath(); cx.moveTo(mx, 98); cx.lineTo(mx - 12, 78); cx.lineTo(mx + 12, 78); cx.closePath(); cx.fill();
+    cx.fillRect(mx - 30, 46, 60, 32);
+    cx.fillStyle = '#fff'; cx.font = 'bold 20px Segoe UI, Arial'; cx.textAlign = 'center';
+    cx.fillText(String(res.total), mx, 69);
+    // linhas de referencia
+    cx.lineWidth = 3;
+    cx.strokeStyle = '#78909c'; cx.beginPath(); cx.moveTo(px(MEDIA_NTEA), 94); cx.lineTo(px(MEDIA_NTEA), 142); cx.stroke();
+    cx.strokeStyle = '#c62828'; cx.beginPath(); cx.moveTo(px(CORTE), 94); cx.lineTo(px(CORTE), 142); cx.stroke();
+    cx.strokeStyle = '#37474f'; cx.beginPath(); cx.moveTo(px(MEDIA_TEA), 94); cx.lineTo(px(MEDIA_TEA), 142); cx.stroke();
+    cx.font = '15px Segoe UI, Arial'; cx.fillStyle = '#455a64';
+    cx.textAlign = 'right'; cx.fillText('M\u00e9dia sem autismo: 25', px(MEDIA_NTEA) - 5, 165);
+    cx.textAlign = 'left'; cx.fillStyle = '#c62828'; cx.fillText('Corte: 26', px(CORTE) + 5, 165);
+    cx.textAlign = 'center'; cx.fillStyle = '#37474f'; cx.fillText('M\u00e9dia autistas: 36', px(MEDIA_TEA), 192);
+    cx.fillStyle = '#777'; cx.textAlign = 'left'; cx.fillText('20', x0, 192);
+    cx.textAlign = 'right'; cx.fillText('60', x1, 192);
+    // barras por aspecto
+    cx.fillStyle = '#00695c'; cx.font = 'bold 20px Segoe UI, Arial'; cx.textAlign = 'left';
+    cx.fillText('Perfil por aspecto (m\u00e9dia por item, de 1 a 3)', x0, 240);
+    var bx = 360, bw = 460;
+    for (i = 0; i < res.fat.length; i++) {
+        var ft = res.fat[i], by = 262 + i * 44;
+        cx.fillStyle = '#444'; cx.font = '16px Segoe UI, Arial'; cx.textAlign = 'left';
+        cx.fillText(ft.nome, x0, by + 20);
+        cx.fillStyle = '#eceff1'; cx.fillRect(bx, by, bw, 28);
+        cx.fillStyle = ft.cor; cx.fillRect(bx, by, Math.max(4, (ft.media - 1) / 2 * bw), 28);
+        cx.fillStyle = '#333'; cx.font = 'bold 15px Segoe UI, Arial'; cx.textAlign = 'left';
+        cx.fillText(_fmt(ft.media), bx + bw + 8, by + 20);
+    }
+    return cv.toDataURL('image/png');
+}
+
+function _rodapePDF(doc) {
+    doc.setFillColor(80, 80, 80); doc.rect(0, 285, 210, 12, 'F');
+    doc.setTextColor(200, 200, 200); doc.setFontSize(7); doc.setFont(undefined, 'normal');
+    doc.text('Relat\u00f3rio gerado em: ' + new Date().toLocaleString('pt-BR'), 105, 291, {align: 'center'});
+}
+
+function gerarRelatorioPDF() {
+    var nome = document.getElementById('nome').value.trim();
+    if (!nome) { alert('Preencha o nome.'); return; }
+    var lr = _lerRespostas();
+    if (lr.faltam > 0) { alert('Responda todos os 20 itens antes de gerar o PDF. Faltam ' + lr.faltam + '.'); return; }
+    if (!window._escalaDados) { calcularResultados(); }
+    var res = _calcular(lr.vals);
+    var total = res.total, positivo = total >= CORTE, i, f;
+    var idade = document.getElementById('idadeCalculada').value;
+    var sexo = document.getElementById('sexo').value;
+    var dataAval = document.getElementById('data').value || new Date().toLocaleDateString('pt-BR');
+    var idPac = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
+    var img = _desenharGrafico(res);
+
+    var jsPDF = window.jspdf.jsPDF;
+    var doc = new jsPDF();
+
+    // ---------- PAGINA 1 ----------
+    doc.setFillColor(0, 77, 64); doc.rect(0, 0, 210, 35, 'F');
+    doc.setTextColor(255, 255, 255); doc.setFontSize(15); doc.setFont(undefined, 'bold');
+    doc.text('RBQ-2A - RELAT\u00d3RIO DE AVALIA\u00c7\u00c3O', 105, 15, {align: 'center'});
+    doc.setFontSize(9); doc.setFont(undefined, 'normal');
+    doc.text('Question\u00e1rio de Comportamentos Repetitivos para Adultos (Barrett et al., 2015)', 105, 23, {align: 'center'});
+    doc.text('Ponto de corte >= 26 | Escore de 20 a 60', 105, 29, {align: 'center'});
+
+    var y = 42;
+    doc.setFillColor(248, 249, 250); doc.rect(15, y, 180, 20, 'F');
+    doc.setTextColor(0, 105, 92); doc.setFontSize(10); doc.setFont(undefined, 'bold');
+    doc.text('DADOS PESSOAIS', 20, y + 6);
+    doc.setTextColor(0, 0, 0); doc.setFontSize(9); doc.setFont(undefined, 'normal');
+    doc.text('Nome: ' + nome + '   |   Sexo: ' + sexo, 20, y + 12);
+    doc.text('Idade: ' + idade + '   |   Data: ' + dataAval + (idPac ? '   |   ID: ' + idPac : ''), 20, y + 17);
+
+    y = 68;
+    if (positivo) { doc.setFillColor(255, 205, 210); doc.setTextColor(198, 40, 40); }
+    else { doc.setFillColor(200, 230, 201); doc.setTextColor(46, 125, 50); }
+    doc.rect(15, y, 180, 10, 'F');
+    doc.setFontSize(10); doc.setFont(undefined, 'bold');
+    doc.text((positivo ? 'RASTREIO POSITIVO' : 'RASTREIO NEGATIVO') + ' - escore ' + total + '/60 (limiar: >=' + CORTE + ')', 105, y + 7, {align: 'center'});
+
+    y = 82;
+    doc.addImage(img, 'PNG', 15, y, 180, 88);
+    y += 94;
+
+    doc.setTextColor(0, 105, 92); doc.setFontSize(10); doc.setFont(undefined, 'bold');
+    doc.text('ASPECTOS AVALIADOS', 20, y); y += 5;
+    doc.setFillColor(224, 242, 241); doc.rect(15, y, 180, 7, 'F');
+    doc.setTextColor(0, 77, 64); doc.setFontSize(8.5);
+    doc.text('Aspecto', 18, y + 5); doc.text('Pontua\u00e7\u00e3o', 105, y + 5); doc.text('M\u00e9dia', 135, y + 5); doc.text('Classifica\u00e7\u00e3o', 157, y + 5);
+    y += 7;
+    doc.setTextColor(0, 0, 0); doc.setFont(undefined, 'normal');
+    for (f = 0; f < res.fat.length; f++) {
+        var ft = res.fat[f];
+        doc.text(ft.nome, 18, y + 5);
+        doc.text(ft.soma + ' (de ' + ft.min + ' a ' + ft.max + ')', 105, y + 5);
+        doc.text(_fmt(ft.media), 135, y + 5);
+        doc.text(ft.cl.txt, 157, y + 5);
+        doc.setDrawColor(230, 230, 230); doc.line(15, y + 7, 195, y + 7);
+        y += 7.5;
+    }
+    _rodapePDF(doc);
+
+    // ---------- PAGINA 2 ----------
+    doc.addPage();
+    y = 20;
+    doc.setTextColor(0, 105, 92); doc.setFontSize(12); doc.setFont(undefined, 'bold');
+    doc.text('AN\u00c1LISE DO PERFIL', 20, y); y += 8;
+    var an = _analise(res);
+    doc.setFontSize(9);
+    for (i = 0; i < an.length; i++) {
+        if (y > 245) { doc.addPage(); y = 20; }
+        doc.setFont(undefined, 'bold'); doc.setTextColor(0, 77, 64);
+        doc.text(an[i].t, 20, y); y += 5;
+        doc.setFont(undefined, 'normal'); doc.setTextColor(40, 40, 40);
+        var linhas = doc.splitTextToSize(an[i].x, 170);
+        doc.text(linhas, 20, y); y += linhas.length * 4.3 + 4;
+    }
+    if (y > 225) { doc.addPage(); y = 20; }
+    doc.setTextColor(0, 105, 92); doc.setFontSize(10); doc.setFont(undefined, 'bold');
+    doc.text('RESPOSTAS POR ITEM (1 = raro/ausente, 2 = leve, 3 = acentuado/frequente)', 20, y); y += 6;
+    doc.setTextColor(0, 0, 0); doc.setFontSize(8); doc.setFont(undefined, 'normal');
+    for (i = 0; i < lr.vals.length; i++) {
+        doc.text('Item ' + (i + 1) + ': ' + lr.vals[i], 22 + Math.floor(i / 5) * 45, y + (i % 5) * 4.8);
+    }
+    y += 5 * 4.8 + 6;
+    if (y > 255) { doc.addPage(); y = 20; }
+    doc.setFillColor(255, 248, 235); doc.rect(15, y, 180, 26, 'F');
+    doc.setTextColor(180, 90, 0); doc.setFontSize(7.5); doc.setFont(undefined, 'normal');
+    var disc = doc.splitTextToSize('IMPORTANTE: o RBQ-2A e um instrumento de rastreio, nao um teste diagnostico. Indica sinais de atencao, mas nao confirma nem descarta Transtorno do Espectro Autista. O diagnostico exige avaliacao clinica completa. Traducao livre, sem estudo de validacao brasileira localizado; ponto de corte e medias de referencia conforme o material de pontuacao do instrumento.', 170);
+    doc.text(disc, 20, y + 5);
+    _rodapePDF(doc);
+
+    // ---------- PAGINA 3 ----------
+    doc.addPage();
+    y = 20;
+    doc.setTextColor(0, 105, 92); doc.setFontSize(12); doc.setFont(undefined, 'bold');
+    doc.text('REFER\u00caNCIAS', 20, y); y += 9;
+    doc.setTextColor(40, 40, 40); doc.setFontSize(9); doc.setFont(undefined, 'normal');
+    var refs = [
+        'AMERICAN PSYCHIATRIC ASSOCIATION. Diagnostic and Statistical Manual of Mental Disorders: DSM-5-TR. 5. ed., text rev. Washington, DC: APA, 2022.',
+        'BARRETT, S. L.; ULJAREVIC, M.; BAKER, E. K.; RICHDALE, A. L.; JONES, C. R. G.; LEEKAM, S. R. The Adult Repetitive Behaviours Questionnaire-2 (RBQ-2A): a self-report measure of restricted and repetitive behaviours. Journal of Autism and Developmental Disorders, v. 45, n. 11, p. 3680-3692, 2015. DOI: 10.1007/s10803-015-2514-6.',
+        'BARRETT, S. L.; ULJAREVIC, M.; JONES, C. R. G.; LEEKAM, S. R. Assessing subtypes of restricted and repetitive behaviour using the Adult Repetitive Behaviour Questionnaire-2 in autistic adults. Molecular Autism, v. 9, art. 58, 2018. DOI: 10.1186/s13229-018-0242-4.'
+    ];
+    for (i = 0; i < refs.length; i++) {
+        var lr2 = doc.splitTextToSize(refs[i], 170);
+        doc.text(lr2, 20, y); y += lr2.length * 4.6 + 5;
+    }
+    doc.setFontSize(8); doc.setTextColor(110, 110, 110);
+    var nota = doc.splitTextToSize('Nota: tradu\u00e7\u00e3o livre para o portugu\u00eas, feita para este site. N\u00e3o foi localizado estudo de valida\u00e7\u00e3o brasileira do RBQ-2A. O ponto de corte (26), as m\u00e9dias de refer\u00eancia (25 e 36) e a organiza\u00e7\u00e3o em quatro aspectos seguem o material de pontua\u00e7\u00e3o do instrumento. Os estudos originais (Barrett et al., 2015) descrevem duas dimens\u00f5es: comportamentos motores repetitivos e insist\u00eancia na mesmice.', 170);
+    doc.text(nota, 20, y);
+    _rodapePDF(doc);
+
+    var ts = new Date();
+    var tsStr = ts.getFullYear() + String(ts.getMonth() + 1).padStart(2, '0') + String(ts.getDate()).padStart(2, '0') + String(ts.getHours()).padStart(2, '0') + String(ts.getMinutes()).padStart(2, '0');
+    doc.save('RBQ2A_' + nome.replace(/\s+/g, '_') + '_' + tsStr + '.pdf');
+}
+
+function limparDados() {
+    if (!confirm('Limpar todos os dados?')) return;
+    document.getElementById('nome').value = '';
+    document.getElementById('dataNascimento').value = '';
+    document.getElementById('idadeCalculada').value = '';
+    document.getElementById('sexo').value = '';
+    document.getElementById('escolaridade').value = '';
+    document.getElementById('observacoes').value = '';
+    var rs = document.querySelectorAll('input[type="radio"]');
+    for (var i = 0; i < rs.length; i++) { rs[i].checked = false; }
+    var ops = document.querySelectorAll('.opcao');
+    for (var j = 0; j < ops.length; j++) { ops[j].classList.remove('sel'); }
+    var its = document.querySelectorAll('.item');
+    for (var k = 0; k < its.length; k++) { its[k].style.backgroundColor = ''; its[k].style.borderLeft = ''; }
+    document.getElementById('resultados').style.display = 'none';
+    window._escalaDados = null;
+    document.getElementById('data').value = new Date().toISOString().split('T')[0];
+}
+
+// === MODO PAINEL ===
+var _sessionInfo = null;
+var _API_URL = 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
+
+function _decodificarURL() {
+    var params = new URLSearchParams(window.location.search);
+    var d = params.get('d');
+    if (!d) return false;
+    try { _sessionInfo = JSON.parse(atob(decodeURIComponent(d))); } catch (e) { return false; }
+    var nomeEl = document.getElementById('nome');
+    var nascEl = document.getElementById('dataNascimento');
+    var sexoEl = document.getElementById('sexo');
+    if (nomeEl && _sessionInfo.patientName) nomeEl.value = _sessionInfo.patientName;
+    if (nascEl && _sessionInfo.birthDate) nascEl.value = _sessionInfo.birthDate;
+    if (sexoEl && _sessionInfo.sex) sexoEl.value = _sessionInfo.sex;
+    var escEl = document.getElementById('escolaridade'); if (escEl && _sessionInfo.education) escEl.value = _sessionInfo.education;
+    if (typeof calcularIdade === 'function') calcularIdade();
+    if (nomeEl) nomeEl.dispatchEvent(new Event('input'));
+    if (nascEl) nascEl.dispatchEvent(new Event('change'));
+    var botoes = document.querySelector('.botoes');
+    if (botoes) {
+        botoes.innerHTML = '<button class="btn btn-primary" style="padding:15px 30px;border:none;border-radius:25px;font-size:16px;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#2e7d32,#43a047);color:white;" onclick="_enviarResultadosPainel()">Enviar Resultados ao Profissional</button>';
+    }
+    var els = document.querySelectorAll('.info-tecnica');
+    for (var i = 0; i < els.length; i++) { els[i].style.display = 'none'; }
+    var _dp = document.querySelector('.dados-pessoais'); if (_dp) _dp.style.display = 'none';
+    return true;
+}
+
+async function _enviarResultadosPainel() {
+    var nomeEl = document.getElementById('nome');
+    if (!nomeEl || !nomeEl.value.trim()) { alert('Preencha o nome antes de enviar.'); return; }
+    var totalItens = document.querySelectorAll('.item').length;
+    var respondidos = document.querySelectorAll('input[type="radio"]:checked').length;
+    if (respondidos < totalItens) { alert('Responda todos os ' + totalItens + ' itens antes de enviar. Faltam ' + (totalItens - respondidos) + '.'); return; }
+    var sexoEl = document.getElementById('sexo');
+    if (sexoEl && !sexoEl.value) { sexoEl.value = 'Nao informado'; }
+    var idadeEl = document.getElementById('idadeCalculada');
+    if (idadeEl && !idadeEl.value) { idadeEl.value = 'Nao informado'; }
+    var calcFn = window.calcularResultados;
+    if (calcFn && !window._escalaDados) { try { calcFn(); } catch (e) {} }
+    var dados = window._escalaDados || {};
+    var _escEl = document.getElementById('escolaridade'); dados.escolaridade = (_escEl && _escEl.value) ? _escEl.value : ((_sessionInfo && _sessionInfo.education) ? _sessionInfo.education : '');
+    if (!dados.escala) dados.escala = 'RBQ-2A';
+    dados.idPaciente = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
+    dados.pacienteId = _sessionInfo ? (_sessionInfo.pacienteId || '') : '';
+    dados.data = new Date().toISOString();
+    var btn = document.querySelector('.botoes button');
+    if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
+    try {
+        // Reforco: sendBeacon garante a entrega mesmo que a aba feche ou navegue.
+        try { navigator.sendBeacon(_API_URL + '/save-escala', new Blob([JSON.stringify({sessionId: _sessionInfo.sessionId, email: _sessionInfo.email, data: dados, originalSessionId: _sessionInfo.sessionId})], {type: 'application/json'})); } catch (e) {}
+        var resp = await fetch(_API_URL + '/save-escala', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({sessionId: _sessionInfo.sessionId, email: _sessionInfo.email, data: dados, originalSessionId: _sessionInfo.sessionId})
+        });
+        var result = await resp.json();
+        if (result.ok || resp.ok) {
+            document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#e8f5e9,#c8e6c9);text-align:center;padding:20px;"><div style="font-size:60px;margin-bottom:10px;">\u2705</div><h1 style="color:#2e7d32;font-size:24px;margin-bottom:12px;">Respostas enviadas com sucesso!</h1><p style="font-size:16px;color:#555;margin-bottom:6px;">O profissional j\u00e1 pode visualizar os resultados no painel.</p><p style="font-size:14px;color:#777;">Voc\u00ea pode fechar esta aba.</p></div>';
+        } else {
+            if (btn) { btn.disabled = false; btn.textContent = 'Enviar Resultados ao Profissional'; }
+            alert('Erro ao enviar. Tente novamente.');
+        }
+    } catch (e) {
+        if (btn) { btn.disabled = false; btn.textContent = 'Enviar Resultados ao Profissional'; }
+        alert('Erro de conexao. Verifique sua internet e tente novamente.');
+    }
+}
+
+// === INICIALIZACAO (direta, sem wrapper) ===
+gerarQuestionario();
+document.getElementById('questionario').addEventListener('change',function(e){if(e.target.type==='radio'){var item=e.target.closest('.item');if(item){item.style.backgroundColor='#f1f8e9';item.style.borderLeft='4px solid #4caf50';}if(item&&item.nextElementSibling){item.nextElementSibling.scrollIntoView({behavior:'smooth',block:'center'});}}});
+document.getElementById('questionario').addEventListener('change',function(e){if(e.target.type==='radio'){var grupo=e.target.closest('.opcoes').querySelectorAll('.opcao');for(var k=0;k<grupo.length;k++){grupo[k].classList.remove('sel');}e.target.closest('.opcao').classList.add('sel');}});
+document.getElementById('data').value = new Date().toISOString().split('T')[0];
+var params = new URLSearchParams(window.location.search);
+if (params.get('s')) {
+    fetch(_API_URL + '/get-session?id=' + params.get('s')).then(function(r){if(r.status===410){document.body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#e8f5e9,#c8e6c9);text-align:center;padding:20px;"><h1 style="color:#c62828;font-size:24px;margin-bottom:10px;">Este link j\u00e1 foi utilizado.</h1><p style="font-size:16px;color:#555;">Solicite um novo link ao seu avaliador.</p></div>';throw new Error("link_usado");}return r.json();}).then(function(data){if(data.sessionId){_sessionInfo=data;var nomeEl=document.getElementById('nome');var nascEl=document.getElementById('dataNascimento');var sexoEl=document.getElementById('sexo');if(nomeEl&&data.patientName)nomeEl.value=data.patientName;if(nascEl&&data.birthDate)nascEl.value=data.birthDate;if(sexoEl&&data.sex)sexoEl.value=data.sex;var escEl=document.getElementById('escolaridade');if(escEl&&data.education)escEl.value=data.education;if(typeof calcularIdade==='function')calcularIdade();if(nomeEl)nomeEl.dispatchEvent(new Event('input'));if(nascEl)nascEl.dispatchEvent(new Event('change'));var botoes=document.querySelector('.botoes');if(botoes){botoes.innerHTML='<button class="btn btn-primary" style="padding:15px 30px;border:none;border-radius:25px;font-size:16px;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#2e7d32,#43a047);color:white;" onclick="_enviarResultadosPainel()">Enviar Resultados ao Profissional</button>';}var els=document.querySelectorAll('.info-tecnica');els.forEach(function(el){el.style.display='none';});var _dp=document.querySelector('.dados-pessoais');if(_dp)_dp.style.display='none';}}).catch(function(){});
+} else if (params.get('d')) {
+    _decodificarURL();
+} else if (params.get('print')) {
+    var elsP = document.querySelectorAll('.info-tecnica');
+    for (var ip = 0; ip < elsP.length; ip++) { elsP[ip].style.display = 'none'; }
+    var botoesP = document.querySelector('.botoes');
+    if (botoesP) botoesP.style.display = 'none';
+    setTimeout(function() { window.print(); }, 500);
+} else {
+    window.location.href = 'https://setmonte.github.io/online/';
+}
+</script>
+<script>
+// Carregar scripts auxiliares (apenas fora do modo painel ?d=)
+if (!new URLSearchParams(window.location.search).get('d')) {
+    var s1 = document.createElement('script'); s1.src = 'pdf-escalas.js'; document.body.appendChild(s1);
+    var s2 = document.createElement('script'); s2.src = 'salvar-escala.js'; document.body.appendChild(s2);
+}
+// Coleta anonima carrega SEMPRE
+var _sc = document.createElement('script'); _sc.src = 'coleta-anonima.js'; document.body.appendChild(_sc);
+if (new URLSearchParams(window.location.search).get('d')) { var _ac = document.createElement('script'); _ac.src = 'auto-close.js'; document.body.appendChild(_ac); }
+</script>
+<div style="text-align:center;padding:15px;color:#999;font-size:0.75em;margin-top:20px;">Dados anônimos e não-identificáveis podem ser utilizados para fins de pesquisa e normatização.</div>
+</body>
+</html>
