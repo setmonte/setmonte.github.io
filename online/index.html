@@ -17932,6 +17932,26 @@
         }
         return;
       }
+      // ASRS-18: PDF visual sob medida (escalas/asrs18-visual.js) com os pontos de corte OFICIAIS da OMS.
+      // Registros anteriores a correcao (sem d.cortesOficiais) saem recalculados, com nota explicativa.
+      if (String(d.escala || '').toUpperCase() === 'ASRS-18' && d.respostas && !r._semPdfNovo) {
+        var _gerarASRS = function () {
+          var _okA = false;
+          try { _okA = window.SYM_ASRS.pdfPainel(d, r); } catch (eA) {
+            if (typeof window._registrarFalhaPDF === 'function') { try { window._registrarFalhaPDF('gerarPDFEscala(ASRS-18)', (eA && eA.message) || String(eA), d.paciente || ''); } catch (e6) {} }
+          }
+          if (!_okA) { r._semPdfNovo = true; gerarPDFEscala(idx); }
+        };
+        if (window.SYM_ASRS && window.SYM_ASRS.pdfPainel) { _gerarASRS(); }
+        else {
+          var _sA = document.createElement('script');
+          _sA.src = '../escalas/asrs18-visual.js?v=' + Date.now();
+          _sA.onload = _gerarASRS;
+          _sA.onerror = function () { r._semPdfNovo = true; gerarPDFEscala(idx); };
+          document.body.appendChild(_sA);
+        }
+        return;
+      }
       // DASS-21: PDF visual sob medida (escalas/dass21-visual.js), igual a tela da escala.
       // Reconstroi a partir das 21 respostas salvas; se faltar algo ou falhar, cai no PDF generico abaixo.
       if (String(d.escala || '').toUpperCase() === 'DASS-21' && d.respostas && !r._semPdfNovo) {
