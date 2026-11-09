@@ -17909,6 +17909,49 @@
           return;
         }
       }
+      // ERTs de criterios (PA, PB, PD, PEs, PEt, PEv, PH, PN, POC, PP, TB): PDF visual igual a tela
+      // de resultados, pela mascara unica escalas/ert-visual.js (a mesma usada na pagina da escala).
+      // ERT-VT fica de fora (escala propria). Resultados antigos sem respostasDetalhadas (ex.: ERT-TB
+      // anterior) ou qualquer falha caem no PDF generico abaixo.
+      var _escERT = String(d.escala || '').toUpperCase();
+      if (/^ERT-(PA|PB|PD|PES|PET|PEV|PH|PN|POC|PP|TB)$/.test(_escERT) && Array.isArray(d.respostasDetalhadas) && d.respostasDetalhadas.length && !r._semPdfNovo) {
+        var _gerarERT = function () {
+          var _okERT = false;
+          try { _okERT = window.SYM_ERT.pdfPainel(d, r); } catch (eERT) {
+            if (typeof window._registrarFalhaPDF === 'function') { try { window._registrarFalhaPDF('gerarPDFEscala(' + _escERT + ')', (eERT && eERT.message) || String(eERT), d.paciente || ''); } catch (e4) {} }
+          }
+          if (!_okERT) { r._semPdfNovo = true; gerarPDFEscala(idx); }
+        };
+        if (window.SYM_ERT && window.SYM_ERT.pdfPainel) { _gerarERT(); }
+        else {
+          var _sERT = document.createElement('script');
+          _sERT.src = '../escalas/ert-visual.js?v=' + Date.now();
+          _sERT.onload = _gerarERT;
+          _sERT.onerror = function () { r._semPdfNovo = true; gerarPDFEscala(idx); };
+          document.body.appendChild(_sERT);
+        }
+        return;
+      }
+      // DASS-21: PDF visual sob medida (escalas/dass21-visual.js), igual a tela da escala.
+      // Reconstroi a partir das 21 respostas salvas; se faltar algo ou falhar, cai no PDF generico abaixo.
+      if (String(d.escala || '').toUpperCase() === 'DASS-21' && d.respostas && !r._semPdfNovo) {
+        var _gerarDASS = function () {
+          var _okD = false;
+          try { _okD = window.SYM_DASS.pdfPainel(d, r); } catch (eD) {
+            if (typeof window._registrarFalhaPDF === 'function') { try { window._registrarFalhaPDF('gerarPDFEscala(DASS-21)', (eD && eD.message) || String(eD), d.paciente || ''); } catch (e5) {} }
+          }
+          if (!_okD) { r._semPdfNovo = true; gerarPDFEscala(idx); }
+        };
+        if (window.SYM_DASS && window.SYM_DASS.pdfPainel) { _gerarDASS(); }
+        else {
+          var _sD = document.createElement('script');
+          _sD.src = '../escalas/dass21-visual.js?v=' + Date.now();
+          _sD.onload = _gerarDASS;
+          _sD.onerror = function () { r._semPdfNovo = true; gerarPDFEscala(idx); };
+          document.body.appendChild(_sD);
+        }
+        return;
+      }
       var jsPDF = window.jspdf.jsPDF;
       var doc = new jsPDF();
       var maxY = 280;

@@ -124,6 +124,7 @@
         </div>
     </div>
     <script src="../id-paciente.js"></script>
+    <script src="ert-visual.js"></script>
     <script>
 var ITENS=[{texto:"Evito aceitar tarefas no trabalho que envolvam contato significativo com outras pessoas por medo de cr\u00edticas.",criterio:1,invertido:false},{texto:"S\u00f3 me envolvo com pessoas quando tenho certeza de que serei bem recebido(a).",criterio:2,invertido:false},{texto:"Nas rela\u00e7\u00f5es \u00edntimas, me contenho por medo de ser ridicularizado(a) ou humilhado(a).",criterio:3,invertido:false},{texto:"Em situa\u00e7\u00f5es sociais, fico constantemente preocupado(a) com a possibilidade de ser criticado(a) ou rejeitado(a).",criterio:4,invertido:false},{texto:"Fico inibido(a) em situa\u00e7\u00f5es sociais novas porque me sinto inadequado(a).",criterio:5,invertido:false},{texto:"Vejo a mim mesmo(a) como socialmente inepto(a), sem atrativos ou inferior aos outros.",criterio:6,invertido:false},{texto:"Evito assumir riscos pessoais ou participar de atividades novas por medo de passar vergonha.",criterio:7,invertido:false},{texto:"Recuso oportunidades profissionais que exigem intera\u00e7\u00e3o social frequente.",criterio:1,invertido:false},{texto:"Preciso de garantias repetidas de aceita\u00e7\u00e3o antes de me aproximar de algu\u00e9m.",criterio:2,invertido:false},{texto:"Compartilho meus sentimentos mais profundos com facilidade nas rela\u00e7\u00f5es pr\u00f3ximas.",criterio:3,invertido:true},{texto:"Fico hipervigilante a qualquer sinal de desaprova\u00e7\u00e3o nas intera\u00e7\u00f5es sociais.",criterio:4,invertido:false},{texto:"Em situa\u00e7\u00f5es novas com pessoas desconhecidas, sinto-me paralisado(a) pela sensa\u00e7\u00e3o de n\u00e3o ser bom(boa) o suficiente.",criterio:5,invertido:false},{texto:"Penso frequentemente que sou menos capaz socialmente do que as outras pessoas.",criterio:6,invertido:false},{texto:"Deixo de experimentar coisas novas porque tenho medo de me sentir constrangido(a).",criterio:7,invertido:false},{texto:"Evito reuni\u00f5es ou eventos profissionais onde possa ser avaliado(a) ou julgado(a).",criterio:1,invertido:false},{texto:"Consigo me envolver em novos relacionamentos sem precisar de garantias pr\u00e9vias de aceita\u00e7\u00e3o.",criterio:2,invertido:true},{texto:"Tenho medo de me expor emocionalmente porque podem me achar rid\u00edculo(a).",criterio:3,invertido:false},{texto:"Interpreto express\u00f5es neutras dos outros como sinais de rejei\u00e7\u00e3o ou desaprova\u00e7\u00e3o.",criterio:4,invertido:false},{texto:"Sinto-me \u00e0 vontade ao conhecer pessoas novas, mesmo em ambientes desconhecidos.",criterio:5,invertido:true},{texto:"Considero-me uma pessoa interessante e socialmente competente.",criterio:6,invertido:true},{texto:"Aceito desafios e atividades novas com entusiasmo, mesmo que envolvam exposi\u00e7\u00e3o social.",criterio:7,invertido:true},{texto:"Prefiro trabalhos isolados, mesmo que limitem minha carreira, para evitar julgamentos.",criterio:1,invertido:false},{texto:"Testo sutilmente se as pessoas gostam de mim antes de me abrir com elas.",criterio:2,invertido:false},{texto:"Evito demonstrar vulnerabilidade nas rela\u00e7\u00f5es por medo de ser desprezado(a).",criterio:3,invertido:false},{texto:"Antes de falar em grupo, penso excessivamente se v\u00e3o me achar est\u00fapido(a) ou inadequado(a).",criterio:4,invertido:false},{texto:"Quando estou em um grupo novo, sinto que todos percebem minhas falhas e limita\u00e7\u00f5es.",criterio:5,invertido:false},{texto:"Comparo-me constantemente com os outros e sempre me sinto em desvantagem.",criterio:6,invertido:false},{texto:"Evito situa\u00e7\u00f5es onde possa ser o centro das aten\u00e7\u00f5es por medo de cometer erros.",criterio:7,invertido:false},{texto:"Participo ativamente de atividades profissionais que envolvem trabalho em equipe.",criterio:1,invertido:true},{texto:"N\u00e3o preciso de confirma\u00e7\u00e3o de que sou aceito(a) para me relacionar com os outros.",criterio:2,invertido:true},{texto:"Sinto-me confort\u00e1vel em expressar minhas emo\u00e7\u00f5es e opini\u00f5es nas rela\u00e7\u00f5es pr\u00f3ximas.",criterio:3,invertido:true},{texto:"N\u00e3o me preocupo excessivamente com o que os outros pensam de mim em situa\u00e7\u00f5es sociais.",criterio:4,invertido:true},{texto:"Sinto-me confiante ao interagir com pessoas que n\u00e3o conhe\u00e7o bem.",criterio:5,invertido:true},{texto:"Tenho uma vis\u00e3o positiva de mim mesmo(a) como pessoa social.",criterio:6,invertido:true},{texto:"Quando surge uma oportunidade nova, meu primeiro pensamento \u00e9 o medo de fracassar publicamente.",criterio:7,invertido:false},{texto:"Deixo de ir a eventos sociais porque imagino que serei ignorado(a) ou rejeitado(a).",criterio:1,invertido:false}];
 
@@ -175,188 +176,52 @@ function classificarIntensidade(m) {
     return {texto: "Intenso", cor: "#f44336"};
 }
 
+function _ertMontarDados() {
+    // Junta as respostas marcadas no formato da mascara visual das ERTs (ert-visual.js)
+    var itens = [];
+    for (var i = 0; i < ITENS.length; i++) {
+        var sel = document.querySelector('input[name="q' + i + '"]:checked');
+        itens.push({n: i + 1, texto: ITENS[i].texto, criterio: ITENS[i].criterio, invertido: !!ITENS[i].invertido, valorBruto: sel ? parseInt(sel.value) : null});
+    }
+    return {sigla: 'ERT-PEv', itens: itens, criterios: CRITERIOS, dominios: DOMINIOS};
+}
+
 function calcularResultados() {
     var n = document.getElementById('nome').value;
     var id = document.getElementById('idadeCalculada').value;
     var s = document.getElementById('sexo').value;
     if (!n || !id || !s) { alert('Preencha todos os dados pessoais.'); return; }
     var r = obterRespostas();
-    if (!r) { alert('Responda todos os 36 itens.'); return; }
-
-    // Calcular por criterio
-    var cr = {};
-    for (var c = 1; c <= 7; c++) {
-        var it = r.filter(function(x) { return x.criterio === c; });
-        var soma = it.reduce(function(a, x) { return a + x.valor; }, 0);
-        var media = soma / it.length;
-        cr[c] = {media: parseFloat(media.toFixed(2)), presente: media >= 3.5};
-    }
-
-    // Media geral
-    var sg = r.reduce(function(a, x) { return a + x.valor; }, 0);
-    var mg = sg / r.length;
-
-    // Criterios presentes
-    var cp = 0;
-    for (var c = 1; c <= 7; c++) { if (cr[c].presente) cp++; }
-
-    // Dominios
-    var dom = {};
-    Object.keys(DOMINIOS).forEach(function(nome) {
-        var cs = DOMINIOS[nome];
-        var s = cs.reduce(function(a, c) { return a + cr[c].media; }, 0);
-        dom[nome] = {media: parseFloat((s / cs.length).toFixed(2)), criterios: cs};
-    });
-
-    // Montar HTML
+    if (!r) { alert('Responda todos os ' + ITENS.length + ' itens.'); return; }
+    if (!window.SYM_ERT) { alert('N\u00e3o foi poss\u00edvel carregar o m\u00f3dulo de resultados. Recarregue a p\u00e1gina e tente novamente.'); return; }
+    // Calculo, tela e dados do painel vem da mascara unica das ERTs (ert-visual.js).
+    // O calculo e identico ao anterior (item invertido = 6 - resposta; presente >= 3,5).
+    var res = window.SYM_ERT.calcular(_ertMontarDados());
+    var mg = res.media, cp = res.cp, dom = res.domPainel, _respostasObj = res.respObj, _respDet = res.respDet;
     var el = document.getElementById('resultados');
-    var h = '<h2>Resultados ERT-PEv</h2>';
-    if (cp >= 4) h += '<div class="rastreio-box rastreio-positivo">RASTREIO POSITIVO - ' + cp + '/7 criterios presentes (limiar: 4)</div>';
-    else h += '<div class="rastreio-box rastreio-negativo">RASTREIO NEGATIVO - ' + cp + '/7 criterios presentes (limiar: 4)</div>';
-    h += '<div class="total-geral"><h3>Media Geral: ' + mg.toFixed(2) + ' / 5,00</h3><h3>Classificacao: ' + classificarIntensidade(mg).texto + '</h3></div>';
-
-    // Dominios
-    Object.keys(dom).forEach(function(nome) {
-        var d = dom[nome];
-        var int = classificarIntensidade(d.media);
-        h += '<div class="dominio-card"><h4>' + nome + '</h4><p>Media: <strong>' + d.media + '</strong> - ' + int.texto + '</p></div>';
-    });
-
-    // Criterios individuais
-    h += '<div class="analise-texto"><h3>Criterios DSM-5-TR</h3>';
-    for (var c = 1; c <= 7; c++) {
-        var status = cr[c].presente ? '<span style="color:#c62828;font-weight:bold;">PRESENTE</span>' : (cr[c].media >= 3.0 ? '<span style="color:#f57f17;">Subclinico</span>' : '<span style="color:#2e7d32;">Ausente</span>');
-        h += '<p>' + CRITERIOS[c] + ': ' + cr[c].media + ' - ' + status + '</p>';
-    }
-    h += '</div>';
-
-    h += '<div class="disclaimer"><strong>IMPORTANTE:</strong> Esta escala e um instrumento de rastreio baseado nos criterios do DSM-5-TR e nao possui validacao empirica formal. Nao substitui avaliacao clinica profissional.</div>';
-
-    el.innerHTML = h;
+    el.innerHTML = window.SYM_ERT.htmlTela(res);
     el.style.display = 'block';
     el.scrollIntoView({behavior: 'smooth'});
-
-    var _respostasObj = {}; for (var _i = 0; _i < r.length; _i++) { _respostasObj[_i + 1] = r[_i].valor; }
-    var _respDet = [];
-    for (var _j = 0; _j < ITENS.length; _j++) {
-        var _sel = document.querySelector('input[name="q' + _j + '"]:checked');
-        _respDet.push({ n: _j + 1, texto: ITENS[_j].texto, criterio: ITENS[_j].criterio, invertido: !!ITENS[_j].invertido, valorBruto: _sel ? parseInt(_sel.value) : 0 });
-    }
     window._escalaDados = {escala:'ERT-PEv', paciente:n, escore:mg, classificacao: classificarIntensidade(mg).texto + ' (' + cp + '/7 criterios)', dominios:dom, respostas:_respostasObj, respostasDetalhadas:_respDet, criteriosNomes:CRITERIOS, escalaLikert:'1-5', idPaciente:(document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''), idade:id, sexo:s, notaRodape:'A ERTs \u00e9 um conjunto de instrumentos de rastreio baseados nos crit\u00e9rios diagn\u00f3sticos especificamente de Transtornos de personalidade do DSM-5-TR. N\u00e3o substitui avalia\u00e7\u00e3o cl\u00ednica; os resultados devem ser interpretados por profissional qualificado.', referenciasPdf:['AMERICAN PSYCHIATRIC ASSOCIATION. Diagnostic and Statistical Manual of Mental Disorders (DSM-5-TR). 5th ed., text rev. Washington, DC: APA, 2022.','CARVALHO, L. F. Dimensional Clinical Personality Inventory 2: antecedents, development, and future improvements. Psicologia: Teoria e Pesquisa, v. 37, e37316, 2021.','MILLON, T. Disorders of Personality: DSM-IV and Beyond. 2nd ed. New York: John Wiley & Sons, 1996.'], data:new Date().toISOString()};
     if (window.injetarBotaoSalvar) injetarBotaoSalvar('resultados');
 }
 
 function gerarRelatorioPDF() {
+    // PDF igual a tela de resultados (mascara unica das ERTs, ert-visual.js; o painel usa a mesma)
     var nome = document.getElementById('nome').value;
     if (!nome) { alert('Preencha o nome.'); return; }
     var r = obterRespostas();
-    if (!r) { alert('Responda todos os itens.'); return; }
-    var cr = {};
-    for (var c = 1; c <= 7; c++) {
-        var it = r.filter(function(x) { return x.criterio === c; });
-        var soma = it.reduce(function(a, x) { return a + x.valor; }, 0);
-        cr[c] = {media: parseFloat((soma / it.length).toFixed(2)), presente: (soma / it.length) >= 3.5};
-    }
-    var sg = r.reduce(function(a, x) { return a + x.valor; }, 0);
-    var mg = sg / r.length;
-    var cp = 0; for (var c = 1; c <= 7; c++) { if (cr[c].presente) cp++; }
-    var idade = document.getElementById('idadeCalculada').value;
-    var sexo = document.getElementById('sexo').value;
-    var dataAval = document.getElementById('data').value || new Date().toLocaleDateString('pt-BR');
-    var idPac = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
-    var canvasG = document.createElement('canvas'); canvasG.width = 700; canvasG.height = 240;
-    var cx = canvasG.getContext('2d');
-    cx.fillStyle = '#fff'; cx.fillRect(0, 0, 700, 240);
-    cx.fillStyle = '#333'; cx.font = 'bold 12px Segoe UI'; cx.textAlign = 'left';
-    cx.fillText('Perfil dos Criterios (media por criterio, escala 1-5)', 10, 15);
-    var nomes = []; var valores = [];
-    for (var c = 1; c <= 7; c++) { nomes.push(CRITERIOS[c]); valores.push(cr[c].media); }
-    var bh = 22; var gap = 4; var startY = 28; var maxW = 350; var labelW = 180;
-    for (var i = 0; i < nomes.length; i++) {
-        var by = startY + i * (bh + gap);
-        var pct = valores[i] / 5; var bw = pct * maxW;
-        var cor = valores[i] < 2 ? '#4caf50' : valores[i] < 3 ? '#ffb300' : valores[i] < 3.5 ? '#ff9800' : '#e53935';
-        cx.fillStyle = '#555'; cx.font = '11px Segoe UI'; cx.textAlign = 'right';
-        cx.fillText(nomes[i], labelW - 5, by + 15);
-        cx.fillStyle = cor; cx.fillRect(labelW, by, bw, bh);
-        cx.fillStyle = '#333'; cx.font = 'bold 11px Segoe UI'; cx.textAlign = 'left';
-        cx.fillText(valores[i].toFixed(2), labelW + bw + 5, by + 15);
-        if (i === 0) { var limX = labelW + (3.5/5)*maxW; cx.strokeStyle = '#c62828'; cx.setLineDash([4,3]); cx.lineWidth = 1.5; cx.beginPath(); cx.moveTo(limX, startY - 5); cx.lineTo(limX, startY + nomes.length*(bh+gap)); cx.stroke(); cx.setLineDash([]); cx.fillStyle = '#c62828'; cx.font = '9px Segoe UI'; cx.textAlign = 'center'; cx.fillText('Limiar 3.5', limX, startY - 8); }
-    }
-    var ly = startY + nomes.length*(bh+gap) + 10;
-    var cores = [['#4caf50','Minimo (<2)'],['#ffb300','Leve (2-3)'],['#ff9800','Moderado (3-3.5)'],['#e53935','Significativo (>=3.5)']];
-    cx.font = '10px Segoe UI'; cx.textAlign = 'left';
-    for (var li = 0; li < cores.length; li++) { cx.fillStyle = cores[li][0]; cx.fillRect(labelW + li*130, ly, 12, 12); cx.fillStyle = '#555'; cx.fillText(cores[li][1], labelW + li*130 + 15, ly + 10); }
-    var imgGrafico = canvasG.toDataURL('image/png');
-    var jsPDF = window.jspdf.jsPDF; var doc = new jsPDF(); var ml = 15; var lu = 180;
-    doc.setFillColor(26,35,126); doc.rect(0,0,210,32,'F');
-    doc.setTextColor(255,255,255); doc.setFontSize(14); doc.setFont(undefined,'bold');
-    doc.text('ERT-PEv - RELATORIO DE AVALIACAO', 105, 13, {align:'center'});
-    doc.setFontSize(9); doc.setFont(undefined,'normal');
-    doc.text('Escala de Rastreio para Tracos de Personalidade Evitativa (DSM-5-TR)', 105, 21, {align:'center'});
-    doc.text('Sistema SYM - Avaliacao Neuropsicologica', 105, 27, {align:'center'});
-    var y = 38;
-    doc.setFillColor(248,249,250); doc.rect(ml,y,lu,18,'F');
-    doc.setDrawColor(26,35,126); doc.setLineWidth(0.8); doc.line(ml,y,ml,y+18);
-    doc.setTextColor(26,35,126); doc.setFontSize(10); doc.setFont(undefined,'bold');
-    doc.text('DADOS DO AVALIANDO', ml+4, y+6);
-    doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont(undefined,'normal');
-    doc.text('Nome: ' + nome + '   |   Sexo: ' + sexo + (idPac ? '   |   ID: ' + idPac : ''), ml+4, y+12);
-    doc.text('Idade: ' + idade + '   |   Data: ' + dataAval, ml+4, y+17);
-    y = 62;
-    if (cp >= 4) { doc.setFillColor(255,205,210); doc.setTextColor(198,40,40); }
-    else { doc.setFillColor(200,230,201); doc.setTextColor(46,125,50); }
-    doc.rect(ml,y,lu,12,'F');
-    doc.setFontSize(11); doc.setFont(undefined,'bold');
-    doc.text((cp >= 4 ? 'RASTREIO POSITIVO' : 'RASTREIO NEGATIVO') + ' - ' + cp + '/7 criterios presentes (limiar >= 4)', 105, y+8, {align:'center'});
-    doc.setFontSize(9); doc.setFont(undefined,'normal'); doc.setTextColor(0,0,0);
-    y += 15; doc.text('Media geral: ' + mg.toFixed(2) + '/5.00', ml+4, y); y += 8;
-    doc.setFont(undefined,'bold'); doc.setFontSize(10);
-    doc.text('PERFIL GRAFICO DOS CRITERIOS', ml, y); y += 3;
-    var imgH = Math.min(80, 56);
-    doc.addImage(imgGrafico, 'PNG', ml, y, lu, imgH); y += imgH + 4;
-    doc.setFont(undefined,'bold'); doc.setFontSize(10); doc.setTextColor(26,35,126);
-    doc.text('DOMINIOS', ml, y); y += 6;
-    doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont(undefined,'normal');
-    var domKeys = Object.keys(DOMINIOS);
-    for (var di = 0; di < domKeys.length; di++) {
-        var dk = domKeys[di]; var crits = DOMINIOS[dk];
-        var somaDom = 0; for (var ci = 0; ci < crits.length; ci++) { somaDom += cr[crits[ci]].media; }
-        var mediaDom = somaDom / crits.length;
-        var classDom = mediaDom < 2 ? 'Minimo' : mediaDom < 3 ? 'Leve' : mediaDom < 3.5 ? 'Moderado' : 'Significativo';
-        var barW = (mediaDom/5) * 80;
-        var corDom = mediaDom < 2 ? [76,175,80] : mediaDom < 3 ? [255,179,0] : mediaDom < 3.5 ? [255,152,0] : [229,57,53];
-        doc.setFillColor(240,240,240); doc.rect(ml, y-3, lu, 8, 'F');
-        doc.setFillColor(corDom[0],corDom[1],corDom[2]); doc.rect(ml+100, y-2, barW, 5, 'F');
-        doc.setFont(undefined,'bold'); doc.text(dk + ':', ml+2, y+2);
-        doc.setFont(undefined,'normal'); doc.text(mediaDom.toFixed(2) + ' - ' + classDom, ml+100+barW+3, y+2);
-        y += 10;
-    }
-    y += 5;
-    doc.setFont(undefined,'bold'); doc.setFontSize(10); doc.setTextColor(26,35,126);
-    doc.text('CRITERIOS DETALHADOS', ml, y); y += 6;
-    doc.setTextColor(0,0,0); doc.setFontSize(8.5); doc.setFont(undefined,'normal');
-    for (var c = 1; c <= 7; c++) {
-        if (y > 265) { doc.addPage(); y = 20; }
-        var status = cr[c].presente ? 'PRESENTE' : (cr[c].media >= 2.5 ? 'Subclinico' : 'Ausente');
-        var corTxt = cr[c].presente ? [198,40,40] : (cr[c].media >= 2.5 ? [255,152,0] : [46,125,50]);
-        doc.setTextColor(0,0,0); doc.text('C' + c + '. ' + CRITERIOS[c] + ': ' + cr[c].media.toFixed(2), ml+2, y);
-        doc.setTextColor(corTxt[0],corTxt[1],corTxt[2]); doc.text(' [' + status + ']', ml + 2 + doc.getTextWidth('C' + c + '. ' + CRITERIOS[c] + ': ' + cr[c].media.toFixed(2)), y);
-        y += 5;
-    }
-    y += 6;
-    if (y > 265) { doc.addPage(); y = 20; }
-    doc.setFillColor(255,248,235); doc.rect(ml,y,lu,12,'F');
-    doc.setDrawColor(200,150,50); doc.setLineWidth(0.5); doc.line(ml,y,ml,y+12);
-    doc.setTextColor(150,80,0); doc.setFontSize(7); doc.setFont(undefined,'bold');
-    doc.text('IMPORTANTE:', ml+3, y+4); doc.setFont(undefined,'normal');
-    doc.text('Instrumento de rastreio sem validacao empirica formal. Nao substitui avaliacao clinica.', ml+3, y+8);
-    doc.setFillColor(50,50,50); doc.rect(0,285,210,12,'F');
-    doc.setTextColor(200,200,200); doc.setFontSize(7);
-    doc.text('SYM Online  |  ' + dataAval + '  |  Gerado em ' + new Date().toLocaleString('pt-BR'), 105, 291, {align:'center'});
-    var ts = new Date();
-    var tsStr = ts.getFullYear() + String(ts.getMonth()+1).padStart(2,'0') + String(ts.getDate()).padStart(2,'0') + String(ts.getHours()).padStart(2,'0') + String(ts.getMinutes()).padStart(2,'0');
-    doc.save('ERT-PEv_' + nome.replace(/\s+/g,'_') + '_' + tsStr + '.pdf');
+    if (!r) { alert('Responda todos os ' + ITENS.length + ' itens antes de gerar o PDF.'); return; }
+    if (!window.SYM_ERT) { alert('N\u00e3o foi poss\u00edvel carregar o gerador de PDF. Recarregue a p\u00e1gina e tente novamente.'); return; }
+    var _idade = document.getElementById('idadeCalculada').value, _sexo = document.getElementById('sexo').value;
+    if (!window._escalaDados && _idade && _sexo) { try { calcularResultados(); } catch (e) {} }
+    var ed = window._escalaDados || {};
+    window.SYM_ERT.pdf(window.SYM_ERT.calcular(_ertMontarDados()), {
+        nome: nome, sexo: _sexo, idade: _idade,
+        dataAval: document.getElementById('data').value,
+        idPaciente: document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '',
+        referencias: ed.referenciasPdf || [], nota: ed.notaRodape || ''
+    });
 }
 
 function limparDados() {
