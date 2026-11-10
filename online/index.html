@@ -272,11 +272,11 @@
               <option value="ernd-professores">ERND-Professores (Neurodesenvolvimento - Professor) — 6-18 anos</option>
               <option value="brief-2-pais">BRIEF-2 Pais (Funcoes Executivas - Pais) — 5-18 anos</option>
               <option value="brief-2-professores">BRIEF-2 Professores (Funcoes Executivas - Professor) — 5-18 anos</option>
-              <option value="sdq">SDQ (Dificuldades Infantil) — 2-17 anos</option>
+              <option value="sdq" data-admin-only="1">SDQ (Dificuldades Infantil) — 4-17 anos (admin)</option>
               <option value="mchat-r">M-CHAT-R (Autismo Bebes) — 16-30 meses</option>
               </optgroup>
               <optgroup label="TDAH">
-              <option value="snap-iv">SNAP-IV (TDAH/TOD) — 6-18 anos</option>
+              <option value="snap-iv">SNAP-IV (TDAH/TOD) — 5-17 anos</option>
               <option value="conners">CONNERS (Hiperatividade/Comportamento - Pais) — 6-18 anos</option>
               <option value="asrs-18">ASRS-18 (TDAH Adulto) — 18+</option>
               </optgroup>
@@ -3649,6 +3649,11 @@
       if (currentUser === 'camilarinos@gmail.com') {
         document.getElementById('tabReabilitacao').classList.remove('hidden');
         document.getElementById('tabProgramasOcultos').classList.remove('hidden');
+      }
+      // Escalas restritas ao admin (data-admin-only): SDQ - versoes eletronicas dependem de autorizacao da Youthinmind.
+      // Para os demais usuarios a opcao e removida do menu.
+      if (currentUser !== 'setmonte@gmail.com') {
+        document.querySelectorAll('option[data-admin-only]').forEach(function (o) { if (o.parentNode) o.parentNode.removeChild(o); });
       }
       // Aplicar modo gratuito para qualquer usuario (o toggle so aparece para admin, mas o efeito e global)
       if (isFreeModeActive()) { aplicarFreeMode(true); }
@@ -17948,6 +17953,46 @@
           _sG.onload = _gerarGAD;
           _sG.onerror = function () { r._semPdfNovo = true; gerarPDFEscala(idx); };
           document.body.appendChild(_sG);
+        }
+        return;
+      }
+      // SNAP-IV: desenho sob medida (escalas/snap-visual.js), refeito pelas 26 respostas salvas, com os cortes de Swanson
+      // de pais ou professor (d.respondente). Registros sem d.cortesOficiais usavam media >= 1,5 (sem fonte): saem recalculados, com nota.
+      if (String(d.escala || '').toUpperCase() === 'SNAP-IV' && d.respostas && !r._semPdfNovo) {
+        var _gerarSNAP = function () {
+          var _okSn = false;
+          try { _okSn = window.SYM_SNAP.pdfPainel(d, r); } catch (eSn) {
+            if (typeof window._registrarFalhaPDF === 'function') { try { window._registrarFalhaPDF('gerarPDFEscala(SNAP-IV)', (eSn && eSn.message) || String(eSn), d.paciente || ''); } catch (e2) {} }
+          }
+          if (!_okSn) { r._semPdfNovo = true; gerarPDFEscala(idx); }
+        };
+        if (window.SYM_SNAP && window.SYM_SNAP.pdfPainel) { _gerarSNAP(); }
+        else {
+          var _sSn = document.createElement('script');
+          _sSn.src = '../escalas/snap-visual.js?v=' + Date.now();
+          _sSn.onload = _gerarSNAP;
+          _sSn.onerror = function () { r._semPdfNovo = true; gerarPDFEscala(idx); };
+          document.body.appendChild(_sSn);
+        }
+        return;
+      }
+      // SDQ: desenho sob medida (escalas/sdq-visual.js), refeito pelas 25 respostas salvas. Usa as faixas de pais ou professor
+      // conforme d.respondente (registros antigos sem respondente usam as faixas dos pais, com nota).
+      if (String(d.escala || '').toUpperCase() === 'SDQ' && d.respostas && !r._semPdfNovo) {
+        var _gerarSDQ = function () {
+          var _okS = false;
+          try { _okS = window.SYM_SDQ.pdfPainel(d, r); } catch (eS) {
+            if (typeof window._registrarFalhaPDF === 'function') { try { window._registrarFalhaPDF('gerarPDFEscala(SDQ)', (eS && eS.message) || String(eS), d.paciente || ''); } catch (e3) {} }
+          }
+          if (!_okS) { r._semPdfNovo = true; gerarPDFEscala(idx); }
+        };
+        if (window.SYM_SDQ && window.SYM_SDQ.pdfPainel) { _gerarSDQ(); }
+        else {
+          var _sS = document.createElement('script');
+          _sS.src = '../escalas/sdq-visual.js?v=' + Date.now();
+          _sS.onload = _gerarSDQ;
+          _sS.onerror = function () { r._semPdfNovo = true; gerarPDFEscala(idx); };
+          document.body.appendChild(_sS);
         }
         return;
       }
