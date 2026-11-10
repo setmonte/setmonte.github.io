@@ -35,7 +35,7 @@
         .item-texto { font-size: 1em; margin-bottom: 12px; color: #444; }
         .item-numero { font-weight: bold; color: #4a148c; margin-right: 8px; }
         .opcoes { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
-        .opcao { display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; padding: 6px; border-radius: 8px; border: 2px solid transparent; min-width: 55px; }
+        .opcao { display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; padding: 6px; border-radius: 8px; border: 2px solid transparent; min-width: 74px; }
         .opcao:hover { background-color: #f3e5f5; border-color: #4a148c; }
         .opcao input[type="radio"] { width: 18px; height: 18px; cursor: pointer; accent-color: #4a148c; }
         .opcao label { cursor: pointer; font-weight: 500; color: #555; text-align: center; font-size: 0.75em; line-height: 1.2; }
@@ -72,9 +72,10 @@
                     <strong>Autores:</strong> Hull et al. (2019)<br>
                     <strong>Estrutura:</strong> 25 itens, escala Likert 7 pontos (1-7)<br>
                     <strong>Subescalas:</strong> Compensa&#231;&#227;o (C, 9 itens), Mascaramento (M, 8 itens), Assimila&#231;&#227;o (A, 8 itens)<br>
-                    <strong>Ponto de corte:</strong> &#8805; 124 pontos (total) sugere camuflagem significativa<br>
+                    <strong>Itens invertidos:</strong> 3, 12, 19, 22 e 24<br>
+                    <strong>Ponto de corte:</strong> n&#227;o h&#225; ponto de corte validado; o resultado &#233; comparado &#224;s m&#233;dias de refer&#234;ncia de Hull et al. (2019)<br>
                     <strong>Popula&#231;&#227;o:</strong> Adultos (&#8805;16 anos) &#8212; autoaplicavel<br>
-                    <strong>Dom&#237;nio p&#250;blico:</strong> Sim
+                    <strong>Uso:</strong> livre, citando Hull et al. (2019). Tradu&#231;&#227;o livre dos 25 itens oficiais
                 </p>
             </div>
             <div class="dados-pessoais">
@@ -95,7 +96,7 @@
             </div>
             <div class="instrucoes">
                 <h3>Instru&#231;&#245;es</h3>
-                <p>Para cada afirma&#231;&#227;o, indique o quanto ela se aplica a voc&#234; em uma escala de 1 (Discordo totalmente) a 7 (Concordo totalmente).</p>
+                <p>Leia cada afirma&#231;&#227;o e escolha a resposta que melhor representa as suas experi&#234;ncias durante intera&#231;&#245;es sociais.</p>
             </div>
             <div id="questionario"></div>
             <div class="botoes">
@@ -107,43 +108,47 @@
             <div class="info-tecnica" style="margin-top:30px;background:#f8f9fa;border-left-color:#4a148c;">
                 <h2 style="color:#4a148c;">Refer&#234;ncias</h2>
                 <p style="color:#555;line-height:1.9;font-size:0.88em;">
-                    <strong>HULL, L. et al.</strong> Development and Validation of the Camouflaging Autistic Traits Questionnaire (CAT-Q). <em>Journal of Autism and Developmental Disorders</em>, v. 49, p. 819-833, 2019.<br><br>
-                    <strong>AMERICAN PSYCHIATRIC ASSOCIATION.</strong> <em>DSM-5-TR</em>. Washington, DC: APA, 2022.
+                    <strong>HULL, L.; MANDY, W.; LAI, M.-C.; BARON-COHEN, S.; ALLISON, C.; SMITH, P.; PETRIDES, K. V.</strong> Development and validation of the Camouflaging Autistic Traits Questionnaire (CAT-Q). <em>Journal of Autism and Developmental Disorders</em>, v. 49, n. 3, p. 819-833, 2019. DOI: 10.1007/s10803-018-3792-6.<br><br>
+                    <strong>AMERICAN PSYCHIATRIC ASSOCIATION.</strong> <em>Diagnostic and Statistical Manual of Mental Disorders</em> (DSM-5-TR). 5th ed., text rev. Washington, DC: APA, 2022.<br><br>
+                    <em style="font-size:0.88em;color:#777">Nota: tradu&#231;&#227;o livre para o portugu&#234;s dos 25 itens oficiais. Existe uma vers&#227;o brasileira dos pr&#243;prios autores (CAT-Q-BR) ainda em preprint. O CAT-Q n&#227;o possui ponto de corte validado.</em>
                 </p>
             </div>
         </div>
     </div>
     <script src="../id-paciente.js"></script>
+    <script src="catq-visual.js"></script>
     <script>
+// 25 itens OFICIAIS do CAT-Q (Hull et al., 2019), ordem oficial, traducao livre. Corrigido em 2026-11-09.
+// Compensacao=1,4,5,8,11,14,17,20,23 | Mascaramento=2,6,9,12,15,18,21,24 | Assimilacao=3,7,10,13,16,19,22,25 | invertidos=3,12,19,22,24
 var ITENS=[
-{texto:"Quando estou interagindo com algu\u00e9m, deliberadamente copio suas express\u00f5es faciais ou linguagem corporal para parecer mais envolvido(a).",sub:"C",inv:false},
-{texto:"Eu monitoro minha linguagem corporal ou express\u00f5es faciais para que pare\u00e7am relaxadas.",sub:"M",inv:false},
-{texto:"Eu raramente sinto a necessidade de me encaixar em situa\u00e7\u00f5es sociais.",sub:"A",inv:true},
-{texto:"Eu preciso me for\u00e7ar a interagir com as pessoas.",sub:"A",inv:false},
-{texto:"Eu pratico express\u00f5es faciais e gestos para que pare\u00e7am naturais.",sub:"M",inv:false},
-{texto:"Eu n\u00e3o preciso de muito suporte social para me sentir confort\u00e1vel.",sub:"A",inv:true},
-{texto:"Eu desenvolvi um personagem para situa\u00e7\u00f5es sociais.",sub:"M",inv:false},
-{texto:"Eu sempre penso sobre a impress\u00e3o que estou causando nos outros.",sub:"C",inv:false},
-{texto:"Eu preciso de tempo para me recuperar ap\u00f3s socializar.",sub:"A",inv:false},
-{texto:"Eu pesquiso e preparo t\u00f3picos de conversa antes de uma situa\u00e7\u00e3o social.",sub:"C",inv:false},
-{texto:"Eu pratico como agir em situa\u00e7\u00f5es sociais.",sub:"C",inv:false},
-{texto:"Eu n\u00e3o me sinto como eu mesmo(a) durante intera\u00e7\u00f5es sociais.",sub:"A",inv:false},
-{texto:"Eu ajusto minhas express\u00f5es faciais para que pare\u00e7am apropriadas ao contexto.",sub:"M",inv:false},
-{texto:"Eu aprendi a imitar as respostas sociais de outras pessoas.",sub:"C",inv:false},
-{texto:"Eu me esfor\u00e7o para manter uma express\u00e3o facial adequada durante conversas.",sub:"M",inv:false},
-{texto:"Quando em situa\u00e7\u00f5es sociais, tento encontrar maneiras de evitar interagir com os outros.",sub:"A",inv:false},
-{texto:"Eu uso comportamentos que aprendi observando outras pessoas para parecer socialmente competente.",sub:"C",inv:false},
-{texto:"Eu me sinto esgotado(a) ap\u00f3s situa\u00e7\u00f5es sociais, mesmo quando foram agrad\u00e1veis.",sub:"A",inv:false},
-{texto:"Eu uso scripts ou frases prontas em conversas.",sub:"C",inv:false},
-{texto:"Eu me preocupo em parecer diferente dos outros.",sub:"A",inv:false},
-{texto:"Eu escondo meu verdadeiro eu em situa\u00e7\u00f5es sociais.",sub:"M",inv:false},
-{texto:"Eu aprendi regras sociais observando outras pessoas e as aplico de forma consciente.",sub:"C",inv:false},
-{texto:"Eu me sinto como se estivesse atuando em situa\u00e7\u00f5es sociais.",sub:"M",inv:false},
-{texto:"Eu for\u00e7o contato visual durante conversas.",sub:"M",inv:false},
-{texto:"Eu tenho regras sobre como agir em situa\u00e7\u00f5es sociais que sigo conscientemente.",sub:"C",inv:false}
+{texto:"Quando estou interagindo com algu\u00e9m, copio deliberadamente sua linguagem corporal ou suas express\u00f5es faciais.",sub:"C",inv:false},
+{texto:"Monitoro minha linguagem corporal ou minhas express\u00f5es faciais para parecer relaxado(a).",sub:"M",inv:false},
+{texto:"Raramente sinto necessidade de \"fazer um papel\" para conseguir passar por uma situa\u00e7\u00e3o social.",sub:"A",inv:true},
+{texto:"Desenvolvi um roteiro para seguir em situa\u00e7\u00f5es sociais (por exemplo, uma lista de perguntas ou de assuntos para conversar).",sub:"C",inv:false},
+{texto:"Repito frases que ouvi outras pessoas dizerem, exatamente do mesmo jeito que as ouvi pela primeira vez.",sub:"C",inv:false},
+{texto:"Ajusto minha linguagem corporal ou minhas express\u00f5es faciais para parecer interessado(a) na pessoa com quem estou interagindo.",sub:"M",inv:false},
+{texto:"Em situa\u00e7\u00f5es sociais, sinto que estou \"atuando\" em vez de ser eu mesmo(a).",sub:"A",inv:false},
+{texto:"Nas minhas intera\u00e7\u00f5es sociais, uso comportamentos que aprendi observando outras pessoas interagindo.",sub:"C",inv:false},
+{texto:"Sempre penso na impress\u00e3o que causo nas outras pessoas.",sub:"M",inv:false},
+{texto:"Preciso do apoio de outras pessoas para socializar.",sub:"A",inv:false},
+{texto:"Pratico minhas express\u00f5es faciais e minha linguagem corporal para garantir que pare\u00e7am naturais.",sub:"C",inv:false},
+{texto:"N\u00e3o sinto necessidade de fazer contato visual com outras pessoas se eu n\u00e3o quiser.",sub:"M",inv:true},
+{texto:"Tenho que me for\u00e7ar a interagir com as pessoas quando estou em situa\u00e7\u00f5es sociais.",sub:"A",inv:false},
+{texto:"Tentei melhorar minha compreens\u00e3o das habilidades sociais observando outras pessoas.",sub:"C",inv:false},
+{texto:"Monitoro minha linguagem corporal ou minhas express\u00f5es faciais para parecer interessado(a) na pessoa com quem estou interagindo.",sub:"M",inv:false},
+{texto:"Em situa\u00e7\u00f5es sociais, tento encontrar maneiras de evitar interagir com os outros.",sub:"A",inv:false},
+{texto:"Pesquisei as regras das intera\u00e7\u00f5es sociais (por exemplo, estudando psicologia ou lendo livros sobre o comportamento humano) para melhorar minhas pr\u00f3prias habilidades sociais.",sub:"C",inv:false},
+{texto:"Estou sempre atento(a) \u00e0 impress\u00e3o que causo nas outras pessoas.",sub:"M",inv:false},
+{texto:"Sinto-me livre para ser eu mesmo(a) quando estou com outras pessoas.",sub:"A",inv:true},
+{texto:"Aprendo como as pessoas usam o corpo e o rosto para interagir assistindo \u00e0 televis\u00e3o ou a filmes, ou lendo fic\u00e7\u00e3o.",sub:"C",inv:false},
+{texto:"Ajusto minha linguagem corporal ou minhas express\u00f5es faciais para parecer relaxado(a).",sub:"M",inv:false},
+{texto:"Quando converso com outras pessoas, sinto que a conversa flui naturalmente.",sub:"A",inv:true},
+{texto:"Passei tempo aprendendo habilidades sociais com programas de televis\u00e3o e filmes, e tento us\u00e1-las nas minhas intera\u00e7\u00f5es.",sub:"C",inv:false},
+{texto:"Em intera\u00e7\u00f5es sociais, n\u00e3o presto aten\u00e7\u00e3o ao que meu rosto ou meu corpo est\u00e3o fazendo.",sub:"M",inv:true},
+{texto:"Em situa\u00e7\u00f5es sociais, sinto que estou fingindo ser \"normal\".",sub:"A",inv:false}
 ];
 
-var OPCOES=[{valor:1,texto:"1<br>Discordo<br>totalmente"},{valor:2,texto:"2"},{valor:3,texto:"3"},{valor:4,texto:"4<br>Neutro"},{valor:5,texto:"5"},{valor:6,texto:"6"},{valor:7,texto:"7<br>Concordo<br>totalmente"}];
+var OPCOES=[{valor:1,texto:"Discordo<br>totalmente"},{valor:2,texto:"Discordo"},{valor:3,texto:"Discordo<br>parcialmente"},{valor:4,texto:"Nem concordo<br>nem discordo"},{valor:5,texto:"Concordo<br>parcialmente"},{valor:6,texto:"Concordo"},{valor:7,texto:"Concordo<br>totalmente"}];
 
 function gerarQuestionario() {
     var c = document.getElementById('questionario');
@@ -173,167 +178,43 @@ function calcularResultados() {
     var idade = document.getElementById('idadeCalculada').value;
     var sexo = document.getElementById('sexo').value;
     if (!nome || !idade || !sexo) { alert('Preencha nome, data de nascimento e sexo.'); return; }
-
-    var respostas = [];
+    var brutas = [];
     for (var i = 0; i < ITENS.length; i++) {
         var s = document.querySelector('input[name="q' + i + '"]:checked');
         if (!s) { alert('Responda todos os 25 itens.'); return; }
-        var v = parseInt(s.value);
-        if (ITENS[i].inv) v = 8 - v;
-        respostas.push({valor: v, sub: ITENS[i].sub});
+        brutas.push(parseInt(s.value));
     }
-
-    var somaC = 0, somaM = 0, somaA = 0, nC = 0, nM = 0, nA = 0;
-    respostas.forEach(function(r) {
-        if (r.sub === 'C') { somaC += r.valor; nC++; }
-        else if (r.sub === 'M') { somaM += r.valor; nM++; }
-        else { somaA += r.valor; nA++; }
-    });
-    var total = somaC + somaM + somaA;
-    var positivo = total >= 124;
-
+    if (!window.SYM_CATQ) { alert('N\u00e3o foi poss\u00edvel carregar o m\u00f3dulo de resultados. Recarregue a p\u00e1gina e tente novamente.'); return; }
+    // Versao oficial (Hull et al., 2019): calculo, tela e PDF vem do catq-visual.js
+    var res = window.SYM_CATQ.calcular(brutas);
     var el = document.getElementById('resultados');
-    var h = '<h2>Resultados CAT-Q</h2>';
-    h += '<div style="padding:20px;border-radius:10px;text-align:center;margin:20px 0;font-size:1.1em;font-weight:700;background:' + (positivo ? '#ffcdd2;border:3px solid #c62828;color:#b71c1c' : '#c8e6c9;border:3px solid #2e7d32;color:#1b5e20') + ';">' + (positivo ? 'CAMUFLAGEM SIGNIFICATIVA' : 'CAMUFLAGEM NAO SIGNIFICATIVA') + ' - Total: ' + total + '/175 (corte: 124)</div>';
-
-    h += '<div class="dominio-card" style="border-left-color:#7b1fa2;"><h4 style="color:#7b1fa2;">Compensacao (C)</h4><p>Pontuacao: <strong>' + somaC + '</strong> / ' + (nC*7) + ' (media: ' + (somaC/nC).toFixed(1) + ')</p><p style="font-size:0.85em;color:#666;">Estrategias aprendidas para compensar dificuldades sociais</p></div>';
-    h += '<div class="dominio-card" style="border-left-color:#c2185b;"><h4 style="color:#c2185b;">Mascaramento (M)</h4><p>Pontuacao: <strong>' + somaM + '</strong> / ' + (nM*7) + ' (media: ' + (somaM/nM).toFixed(1) + ')</p><p style="font-size:0.85em;color:#666;">Esconder caracteristicas autistas e apresentar persona social</p></div>';
-    h += '<div class="dominio-card" style="border-left-color:#e65100;"><h4 style="color:#e65100;">Assimilacao (A)</h4><p>Pontuacao: <strong>' + somaA + '</strong> / ' + (nA*7) + ' (media: ' + (somaA/nA).toFixed(1) + ')</p><p style="font-size:0.85em;color:#666;">Necessidade de se encaixar e custo emocional da socializacao</p></div>';
-
-    h += '<div class="disclaimer"><strong>IMPORTANTE:</strong> O CAT-Q mede o grau de camuflagem de tracos autistas, nao diagnostica autismo. Camuflagem elevada e comum em mulheres e pessoas diagnosticadas tardiamente. Interpretar por profissional qualificado.</div>';
-
-    el.innerHTML = h;
+    el.innerHTML = window.SYM_CATQ.htmlTela(res);
     el.style.display = 'block';
     el.scrollIntoView({behavior:'smooth'});
-
-    window._escalaDados = {escala:'CAT-Q', paciente:nome, escore:total, classificacao:positivo?'Camuflagem Significativa ('+total+'/175)':'Camuflagem Nao Significativa ('+total+'/175)', dominios:{Compensacao:{pontuacao:somaC,media:parseFloat((somaC/nC).toFixed(1))},Mascaramento:{pontuacao:somaM,media:parseFloat((somaM/nM).toFixed(1))},Assimilacao:{pontuacao:somaA,media:parseFloat((somaA/nA).toFixed(1))}}, respostas:(function(){var o={};for(var i=0;i<respostas.length;i++){o[i+1]=respostas[i].valor;}return o;})(), sexo:sexo, idPaciente:(document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''), idade:idade, data:new Date().toISOString()};
+    var _pont = {}, _brut = {};
+    for (var j = 0; j < brutas.length; j++) { _pont[j + 1] = res.pont[j]; _brut[j + 1] = brutas[j]; }
+    window._escalaDados = {escala:'CAT-Q', paciente:nome, escore:res.total, classificacao:res.classificacao, dominios:window.SYM_CATQ.dadosPainel(res), respostas:_pont, respostasBrutas:_brut,
+        mediaPorItem:parseFloat(res.media.toFixed(2)), versaoOficial:'Hull et al. 2019 - 25 itens oficiais (corrigido em 2026-11-09)',
+        sexo:sexo, idPaciente:(document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''), idade:idade, data:new Date().toISOString()};
     if (window.injetarBotaoSalvar) injetarBotaoSalvar('resultados');
 }
 
 function gerarRelatorioPDF() {
+    // PDF igual a tela de resultados (catq-visual.js; o painel usa o mesmo desenho)
     var nome = document.getElementById('nome').value;
     if (!nome) { alert('Preencha o nome.'); return; }
-    // Calcular automaticamente se necessario
-    var respostas = [];
+    var brutas = [];
     for (var i = 0; i < ITENS.length; i++) {
         var s = document.querySelector('input[name="q' + i + '"]:checked');
         if (!s) { alert('Responda todos os 25 itens antes de gerar o PDF.'); return; }
-        var v = parseInt(s.value);
-        if (ITENS[i].inv) v = 8 - v;
-        respostas.push({valor: v, sub: ITENS[i].sub});
+        brutas.push(parseInt(s.value));
     }
-    if (!window._escalaDados) { calcularResultados(); }
-    var dados = window._escalaDados;
-    if (!dados) { alert('Erro ao calcular resultados.'); return; }
-    var idade = document.getElementById('idadeCalculada').value;
-    var sexo = document.getElementById('sexo').value;
-    var dataAval = document.getElementById('data').value || new Date().toLocaleDateString('pt-BR');
-    var idPac = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
-
-    var somaC = 0, somaM = 0, somaA = 0, nC = 0, nM = 0, nA = 0;
-    respostas.forEach(function(r) {
-        if (r.sub === 'C') { somaC += r.valor; nC++; }
-        else if (r.sub === 'M') { somaM += r.valor; nM++; }
-        else { somaA += r.valor; nA++; }
+    if (!window.SYM_CATQ) { alert('N\u00e3o foi poss\u00edvel carregar o gerador de PDF. Recarregue a p\u00e1gina e tente novamente.'); return; }
+    window.SYM_CATQ.pdf(window.SYM_CATQ.calcular(brutas), {
+        nome: nome, sexo: document.getElementById('sexo').value, idade: document.getElementById('idadeCalculada').value,
+        dataAval: document.getElementById('data').value,
+        idPaciente: document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : ''
     });
-    var total = somaC + somaM + somaA;
-    var positivo = total >= 124;
-
-    // Gerar grafico em canvas
-    var mediaC = somaC/nC, mediaM = somaM/nM, mediaA = somaA/nA;
-    var canvasG = document.createElement('canvas'); canvasG.width = 700; canvasG.height = 160;
-    var cx = canvasG.getContext('2d');
-    cx.fillStyle = '#fff'; cx.fillRect(0, 0, 700, 160);
-    cx.fillStyle = '#333'; cx.font = 'bold 12px Segoe UI'; cx.textAlign = 'left';
-    cx.fillText('Perfil por Subscala (media, escala 1-7)', 10, 15);
-    var nomes = ['Compensacao (C)', 'Mascaramento (M)', 'Assimilacao (A)'];
-    var valores = [mediaC, mediaM, mediaA];
-    var bh = 28; var gap = 8; var startY = 30; var maxW = 350; var labelW = 180;
-    for (var gi = 0; gi < nomes.length; gi++) {
-        var by = startY + gi * (bh + gap);
-        var pct = valores[gi] / 7;
-        var bw = pct * maxW;
-        var cor = valores[gi] < 3 ? '#4caf50' : valores[gi] < 4.5 ? '#ffb300' : valores[gi] < 5.5 ? '#ff9800' : '#e53935';
-        cx.fillStyle = '#555'; cx.font = '11px Segoe UI'; cx.textAlign = 'right';
-        cx.fillText(nomes[gi], labelW - 5, by + 18);
-        cx.fillStyle = cor; cx.fillRect(labelW, by, bw, bh);
-        cx.fillStyle = '#333'; cx.font = 'bold 11px Segoe UI'; cx.textAlign = 'left';
-        cx.fillText(valores[gi].toFixed(1), labelW + bw + 5, by + 18);
-    }
-    // Linha corte (media 4.96 = 124/25)
-    var limX = labelW + (4.96/7)*maxW; cx.strokeStyle = '#c62828'; cx.setLineDash([4,3]); cx.lineWidth = 1.5;
-    cx.beginPath(); cx.moveTo(limX, startY - 5); cx.lineTo(limX, startY + nomes.length*(bh+gap)); cx.stroke(); cx.setLineDash([]);
-    cx.fillStyle = '#c62828'; cx.font = '9px Segoe UI'; cx.textAlign = 'center'; cx.fillText('Corte (4.96)', limX, startY - 8);
-    // Legenda
-    var ly = startY + nomes.length*(bh+gap) + 8;
-    var cores = [['#4caf50','Baixo (<3)'],['#ffb300','Moderado (3-4.5)'],['#ff9800','Elevado (4.5-5.5)'],['#e53935','Muito elevado (>=5.5)']];
-    cx.font = '10px Segoe UI'; cx.textAlign = 'left';
-    for (var li = 0; li < cores.length; li++) { cx.fillStyle = cores[li][0]; cx.fillRect(labelW + li*135, ly, 12, 12); cx.fillStyle = '#555'; cx.fillText(cores[li][1], labelW + li*135 + 15, ly + 10); }
-    var imgGrafico = canvasG.toDataURL('image/png');
-
-    var jsPDF = window.jspdf.jsPDF; var doc = new jsPDF();
-    doc.setFillColor(74,20,140); doc.rect(0,0,210,35,'F');
-    doc.setTextColor(255,255,255); doc.setFontSize(14); doc.setFont(undefined,'bold');
-    doc.text('CAT-Q - RELATORIO DE AVALIACAO', 105, 15, {align:'center'});
-    doc.setFontSize(9); doc.setFont(undefined,'normal');
-    doc.text('Questionario de Camuflagem de Tracos Autistas (Hull et al., 2019)', 105, 23, {align:'center'});
-    doc.text('Ponto de corte >= 124', 105, 29, {align:'center'});
-
-    var y = 42;
-    doc.setFillColor(248,249,250); doc.rect(15,y,180,20,'F');
-    doc.setTextColor(74,20,140); doc.setFontSize(10); doc.setFont(undefined,'bold');
-    doc.text('DADOS PESSOAIS', 20, y+6);
-    doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont(undefined,'normal');
-    doc.text('Nome: '+nome+'   |   Sexo: '+sexo, 20, y+12);
-    doc.text('Idade: '+idade+'   |   Data: '+dataAval+(idPac?'   |   ID: '+idPac:''), 20, y+17);
-
-    // --- RASTREIO ---
-    y = 68;
-    if (positivo) { doc.setFillColor(255,205,210); doc.setTextColor(198,40,40); }
-    else { doc.setFillColor(200,230,201); doc.setTextColor(46,125,50); }
-    doc.rect(15,y,180,10,'F');
-    doc.setFontSize(10); doc.setFont(undefined,'bold');
-    doc.text((positivo ? 'CAMUFLAGEM SIGNIFICATIVA' : 'CAMUFLAGEM NAO SIGNIFICATIVA') + ' - Total: ' + total + '/175 (corte: 124)', 105, y+7, {align:'center'});
-
-    // --- GRAFICO ---
-    y = 82;
-    doc.setTextColor(74,20,140); doc.setFontSize(10); doc.setFont(undefined,'bold');
-    doc.text('PERFIL GRAFICO DAS SUBSCALAS', 20, y); y += 3;
-    doc.addImage(imgGrafico, 'PNG', 15, y, 180, 42); y += 46;
-
-    // --- DOMINIOS ---
-    doc.setTextColor(74,20,140); doc.setFontSize(10); doc.setFont(undefined,'bold');
-    doc.text('DOMINIOS', 20, y); y += 7;
-    doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont(undefined,'normal');
-    doc.text('Compensacao (C): '+somaC+'/'+nC*7+' (media: '+(somaC/nC).toFixed(1)+')', 22, y); y += 6;
-    doc.text('Mascaramento (M): '+somaM+'/'+nM*7+' (media: '+(somaM/nM).toFixed(1)+')', 22, y); y += 6;
-    doc.text('Assimilacao (A): '+somaA+'/'+nA*7+' (media: '+(somaA/nA).toFixed(1)+')', 22, y); y += 10;
-
-    // --- DETALHAMENTO ---
-    doc.setTextColor(74,20,140); doc.setFontSize(10); doc.setFont(undefined,'bold');
-    doc.text('RESPOSTAS POR ITEM', 20, y); y += 7;
-    doc.setTextColor(0,0,0); doc.setFontSize(7.5); doc.setFont(undefined,'normal');
-    for (var i = 0; i < respostas.length; i++) {
-        if (y > 270) { doc.addPage(); y = 20; }
-        var sub = respostas[i].sub === 'C' ? '(C)' : respostas[i].sub === 'M' ? '(M)' : '(A)';
-        doc.text((i+1) + '. ' + sub + ' = ' + respostas[i].valor + '/7' + (ITENS[i].inv ? ' [inv]' : ''), 22, y);
-        y += 4.5;
-    }
-
-    // --- DISCLAIMER ---
-    y += 6;
-    if (y > 260) { doc.addPage(); y = 20; }
-    doc.setFillColor(255,248,235); doc.rect(15,y,180,14,'F');
-    doc.setTextColor(180,90,0); doc.setFontSize(7); doc.setFont(undefined,'normal');
-    doc.text('IMPORTANTE: O CAT-Q mede o grau de camuflagem de tracos autistas, nao diagnostica autismo.', 20, y+5);
-    doc.text('Camuflagem elevada e comum em mulheres e diagnosticados tardiamente. Interpretar por profissional.', 20, y+10);
-
-    doc.setFillColor(80,80,80); doc.rect(0,285,210,12,'F');
-    doc.setTextColor(200,200,200); doc.setFontSize(7);
-    doc.text('Relatorio gerado em: '+new Date().toLocaleString('pt-BR'), 105, 291, {align:'center'});
-
-    var ts = new Date(); var tsStr = ts.getFullYear()+String(ts.getMonth()+1).padStart(2,'0')+String(ts.getDate()).padStart(2,'0')+String(ts.getHours()).padStart(2,'0')+String(ts.getMinutes()).padStart(2,'0');
-    doc.save('CATQ_'+nome.replace(/\s+/g,'_')+'_'+tsStr+'.pdf');
 }
 
 function limparDados() {

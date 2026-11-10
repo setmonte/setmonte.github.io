@@ -17932,6 +17932,31 @@
         }
         return;
       }
+      // CAT-Q: registros da versao OFICIAL (d.versaoOficial, desde 09/11/2026) saem no desenho sob medida
+      // (escalas/catq-visual.js). Registros antigos usavam perguntas NAO oficiais e nao podem ser recalculados:
+      // seguem no PDF generico, com nota de aviso.
+      if (String(d.escala || '').toUpperCase() === 'CAT-Q') {
+        if (!d.versaoOficial) {
+          if (!d.notaRodape) d.notaRodape = 'ATENCAO: este registro foi aplicado com uma versao NAO OFICIAL do CAT-Q que existia no site antes de 09/11/2026 (perguntas, subescalas e ponto de corte diferentes do instrumento original de Hull et al., 2019). O resultado nao e comparavel ao CAT-Q oficial e nao pode ser recalculado. Recomenda-se reaplicar a versao oficial.';
+        } else if (d.respostasBrutas && !r._semPdfNovo) {
+          var _gerarCAT = function () {
+            var _okC = false;
+            try { _okC = window.SYM_CATQ.pdfPainel(d, r); } catch (eC) {
+              if (typeof window._registrarFalhaPDF === 'function') { try { window._registrarFalhaPDF('gerarPDFEscala(CAT-Q)', (eC && eC.message) || String(eC), d.paciente || ''); } catch (e7) {} }
+            }
+            if (!_okC) { r._semPdfNovo = true; gerarPDFEscala(idx); }
+          };
+          if (window.SYM_CATQ && window.SYM_CATQ.pdfPainel) { _gerarCAT(); }
+          else {
+            var _sC = document.createElement('script');
+            _sC.src = '../escalas/catq-visual.js?v=' + Date.now();
+            _sC.onload = _gerarCAT;
+            _sC.onerror = function () { r._semPdfNovo = true; gerarPDFEscala(idx); };
+            document.body.appendChild(_sC);
+          }
+          return;
+        }
+      }
       // ASRS-18: PDF visual sob medida (escalas/asrs18-visual.js) com os pontos de corte OFICIAIS da OMS.
       // Registros anteriores a correcao (sem d.cortesOficiais) saem recalculados, com nota explicativa.
       if (String(d.escala || '').toUpperCase() === 'ASRS-18' && d.respostas && !r._semPdfNovo) {
