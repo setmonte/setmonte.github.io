@@ -17932,6 +17932,25 @@
         }
         return;
       }
+      // GAD-7: desenho sob medida (escalas/gad7-visual.js), refeito pelas 7 respostas salvas (vale para antigos).
+      if (String(d.escala || '').toUpperCase() === 'GAD-7' && d.respostas && !r._semPdfNovo) {
+        var _gerarGAD = function () {
+          var _okG = false;
+          try { _okG = window.SYM_GAD7.pdfPainel(d, r); } catch (eG) {
+            if (typeof window._registrarFalhaPDF === 'function') { try { window._registrarFalhaPDF('gerarPDFEscala(GAD-7)', (eG && eG.message) || String(eG), d.paciente || ''); } catch (e9) {} }
+          }
+          if (!_okG) { r._semPdfNovo = true; gerarPDFEscala(idx); }
+        };
+        if (window.SYM_GAD7 && window.SYM_GAD7.pdfPainel) { _gerarGAD(); }
+        else {
+          var _sG = document.createElement('script');
+          _sG.src = '../escalas/gad7-visual.js?v=' + Date.now();
+          _sG.onload = _gerarGAD;
+          _sG.onerror = function () { r._semPdfNovo = true; gerarPDFEscala(idx); };
+          document.body.appendChild(_sG);
+        }
+        return;
+      }
       // ERND (Adolescentes, Pais, Professores): mascara unica escalas/ernd-visual.js. Funciona tambem para
       // registros antigos (refeitos pelas respostas; sem as frases quando nao houver respostasDetalhadas).
       if (/^ERND-(ADOLESCENTES|PAIS|PROFESSORES)$/.test(String(d.escala || '').toUpperCase()) && d.respostas && !r._semPdfNovo) {

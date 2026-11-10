@@ -76,7 +76,8 @@
                     <strong>Instrumento:</strong> GAD-7 &#8212; Generalized Anxiety Disorder-7<br>
                     <strong>Base te&#243;rica:</strong> Crit&#233;rios do DSM-5-TR para Transtorno de Ansiedade Generalizada<br>
                     <strong>Estrutura:</strong> 7 itens, escala Likert 4 pontos (0-3)<br>
-                    <strong>Resultado:</strong> Escore total (0-21) com classifica&#231;&#227;o de gravidade<br>
+                    <strong>Resultado:</strong> Escore total (0-21) com classifica&#231;&#227;o de gravidade; corte de rastreio &#8805; 10 para prov&#225;vel TAG<br>
+                    <strong>Complementos:</strong> GAD-2 (itens 1 e 2, corte &#8805; 3) e pergunta oficial de dificuldade funcional (opcional, n&#227;o entra na soma)<br>
                     <strong>Per&#237;odo:</strong> &#218;ltimas 2 semanas<br>
                     <strong>Popula&#231;&#227;o:</strong> Adultos (&#8805;18 anos) &#8212; instrumento validado no Brasil
                 </p>
@@ -102,6 +103,7 @@
                 <p>Nas &#250;ltimas <strong>2 semanas</strong>, com que frequ&#234;ncia voc&#234; foi incomodado(a) pelos problemas abaixo?</p>
             </div>
             <div id="questionario"></div>
+            <div id="funcional"></div>
             <div class="botoes">
                 <button class="btn btn-primary" onclick="calcularResultados()">Calcular Resultados</button>
                 <button class="btn btn-secondary" onclick="gerarRelatorioPDF()">Gerar Relat&#243;rio PDF</button>
@@ -111,14 +113,16 @@
             <div class="info-tecnica" id="referencias" style="margin-top:30px; background:#f8f9fa; border-left-color:#6a1b9a;">
                 <h2 style="color:#6a1b9a;">Refer&#234;ncias</h2>
                 <p style="color:#555; line-height:1.9; font-size:0.88em;">
-                    <strong>SPITZER, R. L.; KROENKE, K.; WILLIAMS, J. B.; LOWE, B.</strong> A brief measure for assessing generalized anxiety disorder: the GAD-7. <em>Archives of Internal Medicine</em>, v. 166, n. 10, p. 1092-1097, 2006.<br><br>
-                    <strong>MORENO, A. L. et al.</strong> Propriedades psicom&#233;tricas do Invent&#225;rio de Ansiedade Generalizada-7 (GAD-7) em uma amostra brasileira. <em>Cadernos de Sa&#250;de P&#250;blica</em>, v. 32, n. 4, 2016.<br><br>
+                    <strong>SPITZER, R. L.; KROENKE, K.; WILLIAMS, J. B. W.; L&#214;WE, B.</strong> A brief measure for assessing generalized anxiety disorder: the GAD-7. <em>Archives of Internal Medicine</em>, v. 166, n. 10, p. 1092-1097, 2006.<br><br>
+                    <strong>MORENO, A. L. et al.</strong> Factor structure, reliability, and item parameters of the Brazilian-Portuguese version of the GAD-7 questionnaire. <em>Temas em Psicologia</em>, v. 24, n. 1, p. 367-376, 2016. DOI: 10.9788/tp2016.1-25.<br><br>
+                    <strong>KROENKE, K.; SPITZER, R. L.; WILLIAMS, J. B. W.; MONAHAN, P. O.; L&#214;WE, B.</strong> Anxiety disorders in primary care: prevalence, impairment, comorbidity, and detection. <em>Annals of Internal Medicine</em>, v. 146, n. 5, p. 317-325, 2007.<br><br>
                     <strong>AMERICAN PSYCHIATRIC ASSOCIATION.</strong> <em>Diagnostic and Statistical Manual of Mental Disorders</em> (DSM-5-TR). 5th ed., text rev. Washington, DC: APA, 2022.
                 </p>
             </div>
         </div>
     </div>
     <script src="../id-paciente.js"></script>
+    <script src="gad7-visual.js"></script>
     <script>
 var ITENS=[
 {texto:"Sentir-se nervoso(a), ansioso(a) ou muito tenso(a)"},
@@ -145,6 +149,19 @@ function gerarQuestionario() {
     c.innerHTML = h;
 }
 
+function gerarFuncional() {
+    var c = document.getElementById('funcional');
+    if (!c || !window.SYM_GAD7) return;
+    var h = '<div class="item-func" style="padding:18px 20px;margin-top:12px;background:#f3e5f5;border-radius:10px;border-left:4px solid #6a1b9a;"><div class="item-texto"><strong>Pergunta complementar (opcional, n\u00e3o entra na soma):</strong> ' + window.SYM_GAD7.FUNC_PERGUNTA + '</div><div class="opcoes">';
+    for (var k = 0; k < 4; k++) {
+        h += '<div class="opcao"><input type="radio" id="func_' + k + '" name="func" value="' + k + '"><label for="func_' + k + '">' + window.SYM_GAD7.FUNC[k] + '</label></div>';
+    }
+    c.innerHTML = h + '</div></div>';
+}
+function _gadFuncional() {
+    var s = document.querySelector('input[name="func"]:checked');
+    return s ? parseInt(s.value) : null;
+}
 function calcularIdade() {
     var d = document.getElementById('dataNascimento').value;
     if (!d) return;
@@ -179,152 +196,35 @@ function calcularResultados() {
     var r = obterRespostas();
     if (!r) {
         var respondidos = 0;
-        for (var i = 0; i < ITENS.length; i++) {
-            if (document.querySelector('input[name="q' + i + '"]:checked')) respondidos++;
-        }
+        for (var i = 0; i < ITENS.length; i++) { if (document.querySelector('input[name="q' + i + '"]:checked')) respondidos++; }
         alert('Responda todos os 7 itens. Faltam ' + (7 - respondidos) + ' itens.');
         return;
     }
-
-    var escore = r.reduce(function(a, b) { return a + b; }, 0);
-    var classif = classificarGAD7(escore);
-
+    if (!window.SYM_GAD7) { alert('N\u00e3o foi poss\u00edvel carregar o m\u00f3dulo de resultados. Recarregue a p\u00e1gina e tente novamente.'); return; }
+    // Calculo oficial, tela e PDF vem do desenho do GAD-7 (gad7-visual.js)
+    var res = window.SYM_GAD7.calcular(r, _gadFuncional());
     var el = document.getElementById('resultados');
-    var h = '<h2>Resultados GAD-7</h2>';
-
-    h += '<div class="classificacao-box" style="background:' + classif.cor + '22;border:3px solid ' + classif.cor + ';color:' + classif.cor + ';">';
-    h += '<div style="font-size:1.5em;">' + classif.texto + '</div>';
-    h += '<div style="font-size:1.1em;margin-top:5px;">Escore: ' + escore + ' / 21</div>';
-    h += '</div>';
-
-    h += '<div class="total-geral"><h3>Pontua\u00e7\u00e3o Total: ' + escore + ' / 21</h3><h3>Classifica\u00e7\u00e3o: ' + classif.texto + '</h3></div>';
-
-    h += '<div class="dominio-card"><h4>Detalhamento por Item</h4>';
-    for (var i = 0; i < ITENS.length; i++) {
-        h += '<p><strong>Item ' + (i+1) + ':</strong> ' + ITENS[i].texto + ' \u2014 <strong>' + r[i] + '</strong> (' + OPCOES[r[i]].texto + ')</p>';
-    }
-    h += '</div>';
-
-    h += '<div class="dominio-card"><h4>Faixas de Classifica\u00e7\u00e3o</h4>';
-    h += '<p>0-4: M\u00ednimo | 5-9: Leve | 10-14: Moderado | 15-21: Grave</p>';
-    h += '</div>';
-
-    h += '<div class="disclaimer"><strong>IMPORTANTE:</strong> O GAD-7 \u00e9 um instrumento de rastreio validado para ansiedade generalizada. N\u00e3o substitui avalia\u00e7\u00e3o cl\u00ednica profissional. Resultados devem ser interpretados por profissional qualificado.</div>';
-
-    el.innerHTML = h;
+    el.innerHTML = window.SYM_GAD7.htmlTela(res);
     el.style.display = 'block';
     el.scrollIntoView({behavior: 'smooth'});
-
-    var sexo = document.getElementById('sexo').value;
-    var idade = document.getElementById('idadeCalculada').value;
-    var idPac = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
-    window._escalaDados = {escala:'GAD-7', paciente:nome, escore:escore, classificacao:classif.texto, dominios:{}, respostas:(function(){var o={};for(var i=0;i<r.length;i++){o[i+1]=r[i];}return o;})(), sexo:sexo, idPaciente:idPac, idade:idade, data:new Date().toISOString()};
+    var _resp = {}; for (var j = 0; j < r.length; j++) { _resp[j + 1] = r[j]; }
+    window._escalaDados = {escala:'GAD-7', paciente:nome, escore:res.escore, classificacao:res.f.txt, dominios:window.SYM_GAD7.dadosPainel(res), respostas:_resp,
+        rastreioTAG:res.tag, gad2:res.gad2, dificuldadeFuncionalValor:res.func, dificuldadeFuncional:(res.func === null ? '' : window.SYM_GAD7.FUNC[res.func]),
+        sexo:document.getElementById('sexo').value, idPaciente:(document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : ''), idade:idade, data:new Date().toISOString()};
     if (window.injetarBotaoSalvar) injetarBotaoSalvar('resultados');
 }
 function gerarRelatorioPDF() {
+    // PDF igual a tela de resultados (gad7-visual.js; o painel usa o mesmo desenho)
     var nome = document.getElementById('nome').value;
     if (!nome) { alert('Preencha o nome do paciente.'); return; }
     var r = obterRespostas();
     if (!r) { alert('Responda todos os 7 itens.'); return; }
-
-    var escore = r.reduce(function(a, b) { return a + b; }, 0);
-    var classif = classificarGAD7(escore);
-    var idade = document.getElementById('idadeCalculada').value;
-    var sexo = document.getElementById('sexo').value;
-    var dataAval = document.getElementById('data').value || new Date().toLocaleDateString('pt-BR');
-    var obs = document.getElementById('observacoes').value;
-    var idPac = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
-
-    // Gerar grafico em canvas (pontuacao por item)
-    var canvasG = document.createElement('canvas'); canvasG.width = 700; canvasG.height = 240;
-    var cx = canvasG.getContext('2d');
-    cx.fillStyle = '#fff'; cx.fillRect(0, 0, 700, 240);
-    cx.fillStyle = '#333'; cx.font = 'bold 12px Segoe UI'; cx.textAlign = 'left';
-    cx.fillText('Perfil por Item (escala 0-3)', 10, 15);
-    var bh = 20; var gap = 5; var startY = 28; var maxW = 250; var labelW = 340;
-    for (var gi = 0; gi < ITENS.length; gi++) {
-        var by = startY + gi * (bh + gap);
-        var pct = r[gi] / 3;
-        var bw = pct * maxW;
-        var cor = r[gi] === 0 ? '#4caf50' : r[gi] === 1 ? '#8bc34a' : r[gi] === 2 ? '#ff9800' : '#f44336';
-        cx.fillStyle = '#555'; cx.font = '10px Segoe UI'; cx.textAlign = 'right';
-        var txt = (gi+1) + '. ' + ITENS[gi].texto;
-        if (txt.length > 55) txt = txt.substring(0, 52) + '...';
-        cx.fillText(txt, labelW - 5, by + 14);
-        cx.fillStyle = cor; cx.fillRect(labelW, by, bw, bh);
-        cx.fillStyle = '#333'; cx.font = 'bold 11px Segoe UI'; cx.textAlign = 'left';
-        cx.fillText(r[gi] + '/3', labelW + bw + 5, by + 14);
-    }
-    // Legenda
-    var ly = startY + ITENS.length*(bh+gap) + 5;
-    var cores = [['#4caf50','0-Nenhuma'],['#8bc34a','1-Varios dias'],['#ff9800','2-Mais da metade'],['#f44336','3-Quase todos']];
-    cx.font = '10px Segoe UI'; cx.textAlign = 'left';
-    for (var li = 0; li < cores.length; li++) { cx.fillStyle = cores[li][0]; cx.fillRect(10 + li*160, ly, 12, 12); cx.fillStyle = '#555'; cx.fillText(cores[li][1], 10 + li*160 + 15, ly + 10); }
-    var imgGrafico = canvasG.toDataURL('image/png');
-
-    var jsPDF = window.jspdf.jsPDF;
-    var doc = new jsPDF();
-
-    // Cabecalho
-    doc.setFillColor(106,27,154); doc.rect(0,0,210,35,'F');
-    doc.setTextColor(255,255,255); doc.setFontSize(14); doc.setFont(undefined,'bold');
-    doc.text('GAD-7 - RELAT\u00d3RIO DE AVALIA\u00c7\u00c3O', 105, 15, {align:'center'});
-    doc.setFontSize(9); doc.setFont(undefined,'normal');
-    doc.text('Generalized Anxiety Disorder-7 - Rastreio de Ansiedade', 105, 23, {align:'center'});
-    doc.text('Spitzer, Kroenke, Williams & Lowe (2006)', 105, 29, {align:'center'});
-
-    // Dados pessoais
-    var y = 42;
-    doc.setFillColor(248,249,250); doc.rect(15,y,180,22,'F');
-    doc.setTextColor(106,27,154); doc.setFontSize(10); doc.setFont(undefined,'bold');
-    doc.text('DADOS PESSOAIS', 20, y+6);
-    doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont(undefined,'normal');
-    doc.text('Nome: ' + nome + '   |   Sexo: ' + sexo, 20, y+12);
-    doc.text('Idade: ' + idade + '   |   Data: ' + dataAval + (idPac ? '   |   ID: ' + idPac : ''), 20, y+18);
-    // Classificacao
-    y = 70;
-    var corR, corG, corB;
-    if (escore <= 4) { corR=76; corG=175; corB=80; }
-    else if (escore <= 9) { corR=139; corG=195; corB=74; }
-    else if (escore <= 14) { corR=255; corG=152; corB=0; }
-    else { corR=244; corG=67; corB=54; }
-    doc.setFillColor(corR, corG, corB); doc.rect(15,y,180,14,'F');
-    doc.setTextColor(255,255,255); doc.setFontSize(12); doc.setFont(undefined,'bold');
-    doc.text('Classifica\u00e7\u00e3o: ' + classif.texto + '  |  Escore: ' + escore + '/21', 105, y+9, {align:'center'});
-
-    // Grafico
-    y = 88;
-    doc.setTextColor(106,27,154); doc.setFontSize(10); doc.setFont(undefined,'bold');
-    doc.text('PERFIL GRAFICO POR ITEM', 20, y); y += 3;
-    doc.addImage(imgGrafico, 'PNG', 15, y, 180, 60); y += 64;
-
-    // Pontuacao por item (texto)
-    doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont(undefined,'bold');
-    doc.text('PONTUA\u00c7\u00c3O POR ITEM:', 20, y); y += 7;
-    doc.setFont(undefined,'normal');
-    for (var i = 0; i < ITENS.length; i++) {
-        var textoItem = (i+1) + '. ' + ITENS[i].texto;
-        if (textoItem.length > 85) textoItem = textoItem.substring(0, 82) + '...';
-        doc.text(textoItem + ' = ' + r[i], 22, y);
-        y += 5;
-    }
-
-    // Disclaimer
-    y += 10;
-    doc.setFillColor(255,248,235); doc.rect(15,y,180,14,'F');
-    doc.setTextColor(180,90,0); doc.setFontSize(7);
-    doc.text('IMPORTANTE: O GAD-7 e um instrumento de rastreio. Nao substitui avaliacao clinica profissional.', 20, y+5);
-    doc.text('Resultados devem ser interpretados por profissional qualificado.', 20, y+10);
-
-    // Rodape
-    doc.setFillColor(80,80,80); doc.rect(0,285,210,12,'F');
-    doc.setTextColor(200,200,200); doc.setFontSize(7);
-    doc.text('Relat\u00f3rio gerado em: ' + new Date().toLocaleString('pt-BR'), 105, 291, {align:'center'});
-
-    // Salvar
-    var ts = new Date();
-    var tsStr = ts.getFullYear() + String(ts.getMonth()+1).padStart(2,'0') + String(ts.getDate()).padStart(2,'0') + String(ts.getHours()).padStart(2,'0') + String(ts.getMinutes()).padStart(2,'0');
-    doc.save('GAD7_' + nome.replace(/\s+/g,'_') + '_' + tsStr + '.pdf');
+    if (!window.SYM_GAD7) { alert('N\u00e3o foi poss\u00edvel carregar o gerador de PDF. Recarregue a p\u00e1gina e tente novamente.'); return; }
+    window.SYM_GAD7.pdf(window.SYM_GAD7.calcular(r, _gadFuncional()), {
+        nome: nome, sexo: document.getElementById('sexo').value, idade: document.getElementById('idadeCalculada').value,
+        dataAval: document.getElementById('data').value,
+        idPaciente: document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : ''
+    });
 }
 function limparDados() {
     if (!confirm('Limpar todos os dados?')) return;
@@ -370,7 +270,7 @@ async function _enviarResultadosPainel() {
     var nomeEl = document.getElementById('nome');
     if (!nomeEl || !nomeEl.value.trim()) { alert('Preencha o nome antes de enviar.'); return; }
     var totalItens = document.querySelectorAll('.item').length;
-    var respondidos = document.querySelectorAll('input[type="radio"]:checked').length;
+    var respondidos = document.querySelectorAll('#questionario input[type="radio"]:checked').length;
     if (respondidos < totalItens) { alert('Responda todos os ' + totalItens + ' itens antes de enviar. Faltam ' + (totalItens - respondidos) + '.'); return; }
     var sexoEl = document.getElementById('sexo');
     if (sexoEl && !sexoEl.value) { sexoEl.value = 'Nao informado'; }
@@ -408,6 +308,7 @@ async function _enviarResultadosPainel() {
 }
 // === INICIALIZACAO ===
 gerarQuestionario();
+gerarFuncional();
 document.getElementById('questionario').addEventListener('change',function(e){if(e.target.type==='radio'){var item=e.target.closest('.item');if(item){item.style.backgroundColor='#f1f8e9';item.style.borderLeft='4px solid #4caf50';}if(item&&item.nextElementSibling){item.nextElementSibling.scrollIntoView({behavior:'smooth',block:'center'});}}});
 document.getElementById('data').value = new Date().toISOString().split('T')[0];
 var params = new URLSearchParams(window.location.search);
