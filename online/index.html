@@ -17932,6 +17932,26 @@
         }
         return;
       }
+      // ERND (Adolescentes, Pais, Professores): mascara unica escalas/ernd-visual.js. Funciona tambem para
+      // registros antigos (refeitos pelas respostas; sem as frases quando nao houver respostasDetalhadas).
+      if (/^ERND-(ADOLESCENTES|PAIS|PROFESSORES)$/.test(String(d.escala || '').toUpperCase()) && d.respostas && !r._semPdfNovo) {
+        var _gerarERND = function () {
+          var _okN = false;
+          try { _okN = window.SYM_ERND.pdfPainel(d, r); } catch (eN) {
+            if (typeof window._registrarFalhaPDF === 'function') { try { window._registrarFalhaPDF('gerarPDFEscala(' + d.escala + ')', (eN && eN.message) || String(eN), d.paciente || ''); } catch (e8) {} }
+          }
+          if (!_okN) { r._semPdfNovo = true; gerarPDFEscala(idx); }
+        };
+        if (window.SYM_ERND && window.SYM_ERND.pdfPainel) { _gerarERND(); }
+        else {
+          var _sN = document.createElement('script');
+          _sN.src = '../escalas/ernd-visual.js?v=' + Date.now();
+          _sN.onload = _gerarERND;
+          _sN.onerror = function () { r._semPdfNovo = true; gerarPDFEscala(idx); };
+          document.body.appendChild(_sN);
+        }
+        return;
+      }
       // CAT-Q: registros da versao OFICIAL (d.versaoOficial, desde 09/11/2026) saem no desenho sob medida
       // (escalas/catq-visual.js). Registros antigos usavam perguntas NAO oficiais e nao podem ser recalculados:
       // seguem no PDF generico, com nota de aviso.

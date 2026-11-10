@@ -133,14 +133,15 @@
                 <h2 style="color:#6a1b9a;">Refer&#234;ncias</h2>
                 <p style="color:#555; line-height:1.9; font-size:0.88em;">
                     <strong>AMERICAN PSYCHIATRIC ASSOCIATION.</strong> <em>Manual Diagn&#243;stico e Estat&#237;stico de Transtornos Mentais</em> (DSM-5-TR). 5. ed., texto revisado. Porto Alegre: Artmed, 2023.<br><br>
-                    <strong>ROHDE, L. A.; HALPERN, R.</strong> Transtorno de d&#233;ficit de aten&#231;&#227;o/hiperatividade: atualiza&#231;&#227;o. <em>Jornal de Pediatria</em>, v. 80, n. 2 (supl.), p. 61-70, 2004.<br><br>
-                    <strong>SILVA, M.; MULICK, J. A.</strong> Diagnosticando o transtorno autista no primeiro ano de vida. <em>Psicologia: Reflex&#227;o e Cr&#237;tica</em>, v. 22, n. 3, p. 300-307, 2009.<br><br>
-                    <strong>BORDIN, I. A. S.; MARI, J. J.; CAEIRO, M. F.</strong> Valida&#231;&#227;o da vers&#227;o brasileira do Child Behavior Checklist (CBCL). <em>Revista de Sa&#250;de P&#250;blica</em>, v. 29, n. 6, p. 491-498, 1995.
+                    <strong>ROHDE, L. A.; HALPERN, R.</strong> Transtorno de d&#233;ficit de aten&#231;&#227;o/hiperatividade: atualiza&#231;&#227;o. <em>Jornal de Pediatria</em>, v. 80, n. 2 (supl.), p. S61-S70, 2004.<br><br>
+                    <strong>SILVA, M.; MULICK, J. A.</strong> Diagnosticando o transtorno autista: aspectos fundamentais e considera&#231;&#245;es pr&#225;ticas. <em>Psicologia: Ci&#234;ncia e Profiss&#227;o</em>, v. 29, n. 1, p. 116-131, 2009.<br><br>
+                    <strong>BORDIN, I. A. S.; MARI, J. J.; CAEIRO, M. F.</strong> Valida&#231;&#227;o da vers&#227;o brasileira do Child Behavior Checklist (CBCL) (Invent&#225;rio de Comportamentos da Inf&#226;ncia e Adolesc&#234;ncia): dados preliminares. <em>Revista ABP-APAL</em>, v. 17, n. 2, p. 55-66, 1995.
                 </p>
             </div>
         </div>
     </div>
     <script src="../id-paciente.js"></script>
+    <script src="ernd-visual.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script>
 // === DADOS ===
@@ -275,9 +276,9 @@ function gerarQuestionario() {
 function classificarGravidade(soma, transtorno) {
     if (transtorno === 'TEA') {
         if (soma <= 10) return {texto: "Sem indicativo", nivel: "", cor: "#4caf50"};
-        if (soma <= 20) return {texto: "N\u00edvel 1", nivel: "Necessita de suporte", cor: "#ffc107"};
-        if (soma <= 32) return {texto: "N\u00edvel 2", nivel: "Suporte substancial", cor: "#ff9800"};
-        return {texto: "N\u00edvel 3", nivel: "Suporte muito substancial", cor: "#f44336"};
+        if (soma <= 20) return {texto: "Indicadores leves", nivel: "", cor: "#ffc107"};
+        if (soma <= 32) return {texto: "Indicadores moderados", nivel: "", cor: "#ff9800"};
+        return {texto: "Indicadores intensos", nivel: "", cor: "#f44336"};
     }
     if (soma <= 10) return {texto: "Sem indicativo", nivel: "", cor: "#4caf50"};
     if (soma <= 20) return {texto: "Leve", nivel: "", cor: "#ffc107"};
@@ -285,244 +286,58 @@ function classificarGravidade(soma, transtorno) {
     return {texto: "Grave", nivel: "", cor: "#f44336"};
 }
 
+function _erndRespostas() {
+    var r = [];
+    for (var i = 0; i < ITENS.length; i++) { var sel = document.querySelector('input[name="q' + i + '"]:checked'); r.push(sel ? parseInt(sel.value) : null); }
+    return r;
+}
+
 function calcularResultados() {
     var nome = document.getElementById('nome').value;
     if (!nome) { alert('Preencha seu nome.'); return; }
     var idade = document.getElementById('idadeCalculada').value;
     if (!idade) { alert('Preencha a data de nascimento.'); return; }
-
     var totalItens = ITENS.length;
     var respondidos = document.querySelectorAll('input[type="radio"]:checked').length;
-    if (respondidos < totalItens) {
-        alert('Responda todos os ' + totalItens + ' itens antes de calcular. Faltam ' + (totalItens - respondidos) + ' itens.');
-        return;
-    }
-
-    var respostas = [];
-    for (var i = 0; i < totalItens; i++) {
-        var sel = document.querySelector('input[name="q' + i + '"]:checked');
-        respostas.push(parseInt(sel.value));
-    }
-
-    var resultados = {};
-    Object.keys(TRANSTORNOS).forEach(function(sigla) {
-        var t = TRANSTORNOS[sigla];
-        var soma = 0;
-        var criteriosPresentes = 0;
-        t.itens.forEach(function(idx) {
-            soma += respostas[idx];
-            if (respostas[idx] >= 2) criteriosPresentes++;
-        });
-        var media = soma / 15;
-        var classificacao = classificarGravidade(soma, sigla);
-        var rastreioPositivo = criteriosPresentes >= 7;
-        resultados[sigla] = {
-            soma: soma,
-            media: parseFloat(media.toFixed(2)),
-            criteriosPresentes: criteriosPresentes,
-            classificacao: classificacao,
-            rastreioPositivo: rastreioPositivo
-        };
-    });
-
+    if (respondidos < totalItens) { alert('Responda todos os ' + totalItens + ' itens antes de calcular. Faltam ' + (totalItens - respondidos) + ' itens.'); return; }
+    if (!window.SYM_ERND) { alert('N\u00e3o foi poss\u00edvel carregar o m\u00f3dulo de resultados. Recarregue a p\u00e1gina e tente novamente.'); return; }
+    // Calculo (identico ao anterior), tela e PDF vem da mascara unica das ERND (ernd-visual.js)
+    var respostas = _erndRespostas();
+    var res = window.SYM_ERND.calcular({sigla: 'ERND-Adolescentes', respostas: respostas.slice(), itens: ITENS, transtornos: TRANSTORNOS});
     var el = document.getElementById('resultados');
-    var h = '<h2>Resultados ERND-Adolescentes</h2>';
-
-    var positivos = [];
-    Object.keys(resultados).forEach(function(sigla) {
-        if (resultados[sigla].rastreioPositivo) positivos.push(sigla);
-    });
-
-    if (positivos.length > 0) {
-        h += '<div class="rastreio-box rastreio-positivo">RASTREIO POSITIVO para: ' + positivos.join(', ') + '</div>';
-    } else {
-        h += '<div class="rastreio-box rastreio-negativo">RASTREIO NEGATIVO \u2014 Nenhum transtorno atingiu o limiar de rastreio</div>';
-    }
-
-    Object.keys(TRANSTORNOS).forEach(function(sigla) {
-        var t = TRANSTORNOS[sigla];
-        var r = resultados[sigla];
-        var pct = Math.round((r.soma / 45) * 100);
-        var statusTexto = r.rastreioPositivo ? '<span style="color:#c62828;font-weight:bold;">POSITIVO</span>' : '<span style="color:#2e7d32;">Negativo</span>';
-        var nivelTexto = r.classificacao.texto;
-        if (r.classificacao.nivel) nivelTexto += ' \u2014 ' + r.classificacao.nivel;
-
-        h += '<div class="dominio-card" style="border-left-color:' + t.cor + ';">';
-        h += '<h4 style="color:' + t.cor + ';">' + sigla + ' \u2014 ' + t.nome + '</h4>';
-        h += '<div class="barra-progresso"><div class="barra-preenchida" style="width:' + pct + '%;background:' + r.classificacao.cor + ';"></div></div>';
-        h += '<p>Pontua\u00e7\u00e3o: <strong>' + r.soma + '/45</strong> | M\u00e9dia: ' + r.media + ' | Crit\u00e9rios presentes: ' + r.criteriosPresentes + '/15</p>';
-        h += '<p>Rastreio: ' + statusTexto + ' | Classifica\u00e7\u00e3o: <span class="badge" style="background:' + r.classificacao.cor + ';">' + nivelTexto + '</span></p>';
-        h += '</div>';
-    });
-
-    h += '<div class="analise-texto"><h3>An\u00e1lise por Transtorno</h3>';
-    Object.keys(TRANSTORNOS).forEach(function(sigla) {
-        var t = TRANSTORNOS[sigla];
-        var r = resultados[sigla];
-        h += '<p><strong>' + sigla + ':</strong> ';
-        if (r.rastreioPositivo) {
-            h += 'Rastreio positivo com ' + r.criteriosPresentes + ' crit\u00e9rios acima do limiar. ';
-            h += 'Classifica\u00e7\u00e3o: ' + r.classificacao.texto + '. ';
-            h += 'Recomenda-se avalia\u00e7\u00e3o aprofundada para ' + t.nome + '.';
-        } else {
-            h += 'Rastreio negativo (' + r.criteriosPresentes + ' crit\u00e9rios presentes, abaixo do limiar de 7). ';
-            if (r.criteriosPresentes >= 5) {
-                h += 'Embora negativo, apresenta indicadores subcl\u00ednicos que merecem acompanhamento.';
-            } else {
-                h += 'Sem indicativos significativos no momento.';
-            }
-        }
-        h += '</p>';
-    });
-    h += '</div>';
-
-    h += '<div class="disclaimer"><strong>IMPORTANTE:</strong> Esta escala \u00e9 um instrumento de rastreio baseado nos crit\u00e9rios do DSM-5-TR e n\u00e3o possui valida\u00e7\u00e3o emp\u00edrica formal. N\u00e3o substitui avalia\u00e7\u00e3o cl\u00ednica profissional, testagem neuropsicol\u00f3gica ou diagn\u00f3stico especializado. Os resultados devem ser interpretados exclusivamente por profissional qualificado.</div>';
-
-    el.innerHTML = h;
+    el.innerHTML = window.SYM_ERND.htmlTela(res);
     el.style.display = 'block';
     el.scrollIntoView({behavior: 'smooth'});
-
-    var idade = document.getElementById('idadeCalculada').value;
-    var sexo = document.getElementById('sexo').value;
-    var _escoreTotal=0;Object.keys(resultados).forEach(function(k){_escoreTotal+=resultados[k].soma;});
+    var _resp = {}; for (var i = 0; i < respostas.length; i++) { _resp[i + 1] = respostas[i]; }
     window._escalaDados = {
         escala: 'ERND-Adolescentes',
         paciente: nome,
-        escore: _escoreTotal,
-        classificacao: positivos.length > 0 ? 'Rastreio positivo: ' + positivos.join(', ') : 'Rastreio negativo',
-        dominios: resultados,
-        respostas: (function(){var o={};for(var i=0;i<respostas.length;i++){o[i+1]=respostas[i];}return o;})(),
+        escore: res.escore,
+        classificacao: res.classificacao,
+        dominios: res.domPainel,
+        _resultadosCompletos: res.compat,
+        respostas: _resp,
+        respostasDetalhadas: res.respDet,
         idPaciente: document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '',
         idade: idade,
-        sexo: sexo,
+        sexo: document.getElementById('sexo').value,
         data: new Date().toISOString()
     };
     if (window.injetarBotaoSalvar) injetarBotaoSalvar('resultados');
 }
 function gerarRelatorioPDF() {
+    // PDF igual a tela de resultados (mascara ernd-visual.js; o painel usa a mesma)
     var nome = document.getElementById('nome').value;
     if (!nome) { alert('Preencha o nome.'); return; }
-    var totalItens = ITENS.length;
     var respondidos = document.querySelectorAll('input[type="radio"]:checked').length;
-    if (respondidos < totalItens) { alert('Responda todos os itens primeiro.'); return; }
-    if (!window._escalaDados) calcularResultados();
-    var dados = window._escalaDados;
-    if (!dados) return;
-
-    var idade = document.getElementById('idadeCalculada').value;
-    var sexo = document.getElementById('sexo').value;
-    var dataAval = document.getElementById('data').value || new Date().toLocaleDateString('pt-BR');
-    var idPac = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
-
-    var jsPDF = window.jspdf.jsPDF;
-    var doc = new jsPDF();
-
-    doc.setFillColor(106,27,154); doc.rect(0,0,210,35,'F');
-    doc.setTextColor(255,255,255); doc.setFontSize(14); doc.setFont(undefined,'bold');
-    doc.text('ERND-Adolescentes - RELATORIO DE RASTREIO', 105, 13, {align:'center'});
-    doc.setFontSize(9); doc.setFont(undefined,'normal');
-    doc.text('Escala de Rastreio do Neurodesenvolvimento (Autorrelato)', 105, 21, {align:'center'});
-    doc.text('Baseada nos criterios do DSM-5-TR | 75 itens | 5 transtornos', 105, 28, {align:'center'});
-
-    var y = 42;
-    doc.setFillColor(248,249,250); doc.rect(15,y,180,22,'F');
-    doc.setTextColor(106,27,154); doc.setFontSize(10); doc.setFont(undefined,'bold');
-    doc.text('DADOS DO ADOLESCENTE', 20, y+6);
-    doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont(undefined,'normal');
-    doc.text('Nome: ' + nome + '   |   Sexo: ' + sexo, 20, y+12);
-    doc.text('Idade: ' + idade + '   |   Data: ' + dataAval, 20, y+17);
-    if (idPac) doc.text('ID: ' + idPac, 20, y+22);
-
-    y = 70;
-    var positivos = [];
-    Object.keys(dados.dominios).forEach(function(sigla) {
-        if (dados.dominios[sigla].rastreioPositivo) positivos.push(sigla);
+    if (respondidos < ITENS.length) { alert('Responda todos os itens primeiro.'); return; }
+    if (!window.SYM_ERND) { alert('N\u00e3o foi poss\u00edvel carregar o gerador de PDF. Recarregue a p\u00e1gina e tente novamente.'); return; }
+    var res = window.SYM_ERND.calcular({sigla: 'ERND-Adolescentes', respostas: _erndRespostas(), itens: ITENS, transtornos: TRANSTORNOS});
+    window.SYM_ERND.pdf(res, {
+        nome: nome, sexo: document.getElementById('sexo').value, idade: document.getElementById('idadeCalculada').value,
+        dataAval: document.getElementById('data').value,
+        idPaciente: document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : ''
     });
-    if (positivos.length > 0) {
-        doc.setFillColor(255,205,210); doc.setTextColor(198,40,40);
-        doc.rect(15,y,180,10,'F');
-        doc.setFontSize(10); doc.setFont(undefined,'bold');
-        doc.text('RASTREIO POSITIVO: ' + positivos.join(', '), 105, y+7, {align:'center'});
-    } else {
-        doc.setFillColor(200,230,201); doc.setTextColor(46,125,50);
-        doc.rect(15,y,180,10,'F');
-        doc.setFontSize(10); doc.setFont(undefined,'bold');
-        doc.text('RASTREIO NEGATIVO - Nenhum transtorno atingiu o limiar', 105, y+7, {align:'center'});
-    }
-
-    y = 86;
-    doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont(undefined,'bold');
-    doc.text('RESULTADOS POR TRANSTORNO:', 20, y); y += 7;
-    doc.setFont(undefined,'normal');
-    Object.keys(TRANSTORNOS).forEach(function(sigla) {
-        var r = dados.dominios[sigla];
-        var status = r.rastreioPositivo ? '  [POSITIVO]' : '  [negativo]';
-        var classif = r.classificacao.texto;
-        if (r.classificacao.nivel) classif += ' - ' + r.classificacao.nivel;
-        doc.text(sigla + ': ' + r.soma + '/45 | Criterios: ' + r.criteriosPresentes + '/15 | ' + classif + status, 22, y);
-        y += 6;
-    });
-
-    // Pagina 2
-    doc.addPage();
-    doc.setFillColor(106,27,154); doc.rect(0,0,210,20,'F');
-    doc.setTextColor(255,255,255); doc.setFontSize(11); doc.setFont(undefined,'bold');
-    doc.text('ANALISE DETALHADA', 105, 13, {align:'center'});
-    y = 30;
-    doc.setTextColor(0,0,0); doc.setFontSize(9);
-    Object.keys(TRANSTORNOS).forEach(function(sigla) {
-        var t = TRANSTORNOS[sigla];
-        var r = dados.dominios[sigla];
-        doc.setFont(undefined,'bold');
-        doc.text(sigla + ' - ' + t.nome, 20, y); y += 5;
-        doc.setFont(undefined,'normal');
-        if (r.rastreioPositivo) {
-            doc.text('Rastreio positivo com ' + r.criteriosPresentes + ' criterios acima do limiar.', 22, y); y += 4;
-            doc.text('Classificacao: ' + r.classificacao.texto + (r.classificacao.nivel ? ' - ' + r.classificacao.nivel : '') + '.', 22, y); y += 4;
-            doc.text('Recomenda-se avaliacao aprofundada.', 22, y); y += 7;
-        } else {
-            doc.text('Rastreio negativo (' + r.criteriosPresentes + ' criterios, abaixo do limiar de 7).', 22, y); y += 4;
-            if (r.criteriosPresentes >= 5) {
-                doc.text('Indicadores subclinicos presentes - acompanhamento sugerido.', 22, y); y += 7;
-            } else {
-                doc.text('Sem indicativos significativos.', 22, y); y += 7;
-            }
-        }
-    });
-    y += 5;
-    doc.setFillColor(255,248,235); doc.rect(15,y,180,20,'F');
-    doc.setTextColor(180,90,0); doc.setFontSize(7);
-    doc.text('IMPORTANTE: Instrumento de rastreio sem validacao empirica formal.', 20, y+5);
-    doc.text('Nao substitui avaliacao clinica profissional ou diagnostico especializado.', 20, y+10);
-    doc.text('Os resultados devem ser interpretados exclusivamente por profissional qualificado.', 20, y+15);
-
-    // Pagina 3 - Referencias
-    doc.addPage();
-    doc.setFillColor(106,27,154); doc.rect(0,0,210,20,'F');
-    doc.setTextColor(255,255,255); doc.setFontSize(11); doc.setFont(undefined,'bold');
-    doc.text('REFERENCIAS', 105, 13, {align:'center'});
-    y = 30;
-    doc.setTextColor(0,0,0); doc.setFontSize(8); doc.setFont(undefined,'normal');
-    doc.text('AMERICAN PSYCHIATRIC ASSOCIATION. Manual Diagnostico e Estatistico de Transtornos', 20, y); y += 4;
-    doc.text('Mentais (DSM-5-TR). 5. ed., texto revisado. Porto Alegre: Artmed, 2023.', 20, y); y += 8;
-    doc.text('ROHDE, L. A.; HALPERN, R. Transtorno de deficit de atencao/hiperatividade: atualizacao.', 20, y); y += 4;
-    doc.text('Jornal de Pediatria, v. 80, n. 2 (supl.), p. 61-70, 2004.', 20, y); y += 8;
-    doc.text('SILVA, M.; MULICK, J. A. Diagnosticando o transtorno autista no primeiro ano de vida.', 20, y); y += 4;
-    doc.text('Psicologia: Reflexao e Critica, v. 22, n. 3, p. 300-307, 2009.', 20, y); y += 8;
-    doc.text('BORDIN, I. A. S.; MARI, J. J.; CAEIRO, M. F. Validacao da versao brasileira do Child', 20, y); y += 4;
-    doc.text('Behavior Checklist (CBCL). Revista de Saude Publica, v. 29, n. 6, p. 491-498, 1995.', 20, y);
-
-    var totalPages = doc.internal.getNumberOfPages();
-    for (var p = 1; p <= totalPages; p++) {
-        doc.setPage(p);
-        doc.setFillColor(80,80,80); doc.rect(0,285,210,12,'F');
-        doc.setTextColor(200,200,200); doc.setFontSize(7);
-        doc.text('Relatorio gerado em: ' + new Date().toLocaleString('pt-BR') + ' | Pagina ' + p + '/' + totalPages, 105, 291, {align:'center'});
-    }
-
-    var ts = new Date();
-    var tsStr = ts.getFullYear() + String(ts.getMonth()+1).padStart(2,'0') + String(ts.getDate()).padStart(2,'0') + String(ts.getHours()).padStart(2,'0') + String(ts.getMinutes()).padStart(2,'0');
-    doc.save('ERND-Adolescentes_' + nome.replace(/\s+/g,'_') + '_' + tsStr + '.pdf');
 }
 function limparDados() {
     if (!confirm('Limpar todos os dados preenchidos?')) return;
