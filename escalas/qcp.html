@@ -125,6 +125,7 @@
         </div>
     </div>
     <script src="../id-paciente.js"></script>
+    <script src="qcp-visual.js"></script>
     <script>
 var ITENS=[
 {texto:"Ser exposto como inferior ou inadequado \u00e9 intoler\u00e1vel para mim.",perfil:"Evitativa"},
@@ -194,19 +195,6 @@ var ITENS=[
 {texto:"N\u00e3o consigo enfrentar situa\u00e7\u00f5es como outras pessoas.",perfil:"Borderline"}
 ];
 
-var PERFIS={
-"Esquizoide":{itens:[12,25,28,29,36,50,53],media:8.99,dp:5.60},
-"Paranoide":{itens:[3,13,14,17,24,48,49],media:6.99,dp:6.22},
-"Passivo-agressiva":{itens:[4,7,20,21,41,47,51],media:8.09,dp:5.97},
-"Borderline":{itens:[31,39,44,45,49,56,64,65],media:8.07,dp:6.05},
-"Histrionica":{itens:[8,22,34,37,52,54,55],media:6.47,dp:6.09},
-"Antissocial":{itens:[23,32,35,38,42,59,61],media:4.25,dp:4.30},
-"Narcisista":{itens:[10,16,26,27,46,58,60],media:3.42,dp:4.23},
-"Dependente":{itens:[15,18,44,45,56,62,63],media:9.26,dp:6.12},
-"Evitativa":{itens:[1,2,5,31,33,39,43],media:10.86,dp:6.46},
-"Obsessivo-compulsiva":{itens:[6,9,11,19,30,40,57],media:10.56,dp:7.20}
-};
-
 var OPCOES=[
 {valor:0,texto:"N\u00e3o acredito<br>nisso"},
 {valor:1,texto:"Acredito<br>um pouco"},
@@ -251,25 +239,7 @@ return{respostas:r};
 }
 
 function calcularPerfis(respostas){
-var resultado={};
-Object.keys(PERFIS).forEach(function(nome){
-var p=PERFIS[nome];
-var soma=0;
-p.itens.forEach(function(numItem){
-soma+=respostas[numItem-1];
-});
-var eb=soma;
-var z=parseFloat(((eb-p.media)/p.dp).toFixed(2));
-var classif='Dentro da media';
-var cor='#4caf50';
-if(z>=2.0){classif='Muito elevado';cor='#c62828';}
-else if(z>=1.5){classif='Elevado';cor='#e65100';}
-else if(z>=1.0){classif='Acima da media';cor='#f57f17';}
-else if(z>=0.5){classif='Levemente acima';cor='#fbc02d';}
-else if(z<=-1.0){classif='Abaixo da media';cor='#1565c0';}
-resultado[nome]={eb:eb,z:z,classificacao:classif,cor:cor,maxPossivel:p.itens.length*4};
-});
-return resultado;
+return window.SYM_QCP.calcular(respostas).perfis;
 }
 
 function calcularResultados(){
@@ -280,254 +250,29 @@ if(!n){alert('Preencha o nome.');return;}
 if(!id){alert('Preencha a data de nascimento.');return;}
 var r=obterRespostas();
 if(r.erro){alert('Faltam '+r.erro+' itens sem resposta. Responda todos os 65 itens.');return;}
-var perfis=calcularPerfis(r.respostas);
+if(!window.SYM_QCP){alert('N\u00e3o foi poss\u00edvel carregar o m\u00f3dulo de resultados. Recarregue a p\u00e1gina e tente novamente.');return;}
+var res=window.SYM_QCP.calcular(r.respostas);
 var el=document.getElementById('resultados');
-var h='<h2>Resultados QCP</h2>';
-h+='<p style="text-align:center;color:#666;margin-bottom:20px;">Escores-Z baseados em amostra de 683 pacientes psiqui\u00e1tricos ambulatoriais (Leahy, 2019)</p>';
-
-var ordem=Object.keys(perfis).sort(function(a,b){return perfis[b].z-perfis[a].z;});
-ordem.forEach(function(nome){
-var p=perfis[nome];
-var pct=Math.min(100,Math.max(5,(p.eb/p.maxPossivel)*100));
-h+='<div class="perfil-card"><h4>'+nome+'</h4>';
-h+='<span style="min-width:80px;font-size:0.85em;color:#555;">EB: '+p.eb+' | Z: '+p.z+'</span>';
-h+='<div class="perfil-barra"><div class="perfil-barra-inner" style="width:'+pct+'%;background:'+p.cor+';"></div></div>';
-h+='<span class="perfil-badge" style="background:'+p.cor+'22;color:'+p.cor+';border:1px solid '+p.cor+';">'+p.classificacao+'</span>';
-h+='</div>';
-});
-
-var elevados=ordem.filter(function(n){return perfis[n].z>=1.5;});
-h+='<div class="analise-texto"><h3>An\u00e1lise dos Perfis</h3>';
-if(elevados.length>0){
-h+='<p><strong>Perfis elevados (Z \u2265 1.5):</strong> '+elevados.join(', ')+'</p>';
-h+='<p>Estes perfis indicam cren\u00e7as centrais significativamente mais intensas que a m\u00e9dia cl\u00ednica. Podem refletir padr\u00f5es cognitivos r\u00edgidos associados a dificuldades interpessoais e sofrimento emocional.</p>';
-}else{
-h+='<p>Nenhum perfil apresentou eleva\u00e7\u00e3o significativa (Z \u2265 1.5) em rela\u00e7\u00e3o \u00e0 amostra cl\u00ednica.</p>';
-}
-h+='</div>';
-h+='<div class="disclaimer"><strong>IMPORTANTE:</strong> Este instrumento avalia cren\u00e7as centrais associadas a perfis de personalidade. Os escores-Z s\u00e3o baseados em normas de pacientes psiqui\u00e1tricos ambulatoriais. N\u00e3o substitui avalia\u00e7\u00e3o cl\u00ednica profissional e n\u00e3o deve ser usado isoladamente para diagn\u00f3stico.</div>';
-el.innerHTML=h;
+el.innerHTML=window.SYM_QCP.htmlTela(res);
 el.style.display='block';
 el.scrollIntoView({behavior:'smooth'});
-
-var _escoreTotal=0;Object.keys(perfis).forEach(function(nome){_escoreTotal+=perfis[nome].eb;});
-var _domQCP={};Object.keys(perfis).forEach(function(nome){_domQCP[nome]={media:perfis[nome].z,classificacao:perfis[nome].classificacao,pontuacao:perfis[nome].eb};});
-window._escalaDados={escala:'QCP',paciente:n,escore:_escoreTotal,classificacao:elevados.length>0?'Perfis elevados: '+elevados.join(', '):'Sem elevacoes significativas',dominios:_domQCP,perfis:perfis,perfisElevados:elevados,respostas:(function(){var o={};for(var i=0;i<r.respostas.length;i++){o[i+1]=r.respostas[i];}return o;})(),idPaciente:(document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''),idade:id,sexo:s,data:new Date().toISOString()};
+var _resp={};for(var i=0;i<r.respostas.length;i++){_resp[i+1]=r.respostas[i];}
+var _escEl=document.getElementById('escolaridade');
+window._escalaDados={escala:'QCP',paciente:n,escore:res.total,classificacao:window.SYM_QCP.classifGeral(res),dominios:window.SYM_QCP.dadosPainel(res),perfis:res.perfis,perfisElevados:res.elevados,respostas:_resp,escolaridade:(_escEl&&_escEl.value)?_escEl.value:'',idPaciente:(document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''),idade:id,sexo:s,data:new Date().toISOString()};
 if(window.injetarBotaoSalvar)injetarBotaoSalvar('resultados');
 }
 
 function gerarRelatorioPDF(){
+// PDF igual a tela de resultados (qcp-visual.js; o painel usa o mesmo desenho)
 var nome=document.getElementById('nome').value;
 if(!nome){alert('Preencha o nome.');return;}
 var r=obterRespostas();
 if(r.erro){alert('Responda todos os 65 itens antes de gerar o PDF.');return;}
-var perfis=calcularPerfis(r.respostas);
-var idade=document.getElementById('idadeCalculada').value||'';
-var sexo=document.getElementById('sexo').value||'';
-var dataAval=document.getElementById('data').value||new Date().toLocaleDateString('pt-BR');
-var idPac=document.getElementById('idPaciente')?document.getElementById('idPaciente').value:'';
-var escol=document.getElementById('escolaridade').value||'';
-
-var jsPDF=window.jspdf.jsPDF;
-var doc=new jsPDF();
-
-// === PAGINA 1 ===
-doc.setFillColor(74,20,140);doc.rect(0,0,210,35,'F');
-doc.setTextColor(255,255,255);doc.setFontSize(14);doc.setFont(undefined,'bold');
-doc.text('QCP - RELATORIO DE AVALIACAO',105,15,{align:'center'});
-doc.setFontSize(9);doc.setFont(undefined,'normal');
-doc.text('Questionario de Crencas da Personalidade (Leahy, 2019)',105,23,{align:'center'});
-doc.setFontSize(7);
-doc.text('Normas: N=683 pacientes psiquiatricos ambulatoriais',105,29,{align:'center'});
-
-var y=42;
-doc.setFillColor(248,249,250);doc.rect(15,y,180,22,'F');
-doc.setTextColor(74,20,140);doc.setFontSize(10);doc.setFont(undefined,'bold');
-doc.text('DADOS PESSOAIS',20,y+6);
-doc.setTextColor(0,0,0);doc.setFontSize(9);doc.setFont(undefined,'normal');
-doc.text('Nome: '+nome,20,y+12);
-doc.text('Idade: '+idade+'   |   Sexo: '+sexo+(escol?'   |   Escolaridade: '+escol:''),20,y+17);
-doc.text('Data: '+dataAval+(idPac?'   |   ID: '+idPac:''),20,y+22);
-
-y=70;
-doc.setTextColor(74,20,140);doc.setFontSize(10);doc.setFont(undefined,'bold');
-doc.text('PERFIL DE CRENCAS DA PERSONALIDADE',20,y);
-y+=8;
-
-// Tabela de perfis
-doc.setFillColor(74,20,140);doc.rect(15,y,180,7,'F');
-doc.setTextColor(255,255,255);doc.setFontSize(8);doc.setFont(undefined,'bold');
-doc.text('Perfil',20,y+5);
-doc.text('EB',95,y+5);
-doc.text('Media',110,y+5);
-doc.text('DP',128,y+5);
-doc.text('Z',143,y+5);
-doc.text('Classificacao',155,y+5);
-y+=9;
-
-var ordem=Object.keys(PERFIS);
-ordem.forEach(function(nome,idx){
-var p=perfis[nome];
-var pf=PERFIS[nome];
-if(idx%2===0){doc.setFillColor(248,245,253);doc.rect(15,y-3,180,7,'F');}
-doc.setTextColor(0,0,0);doc.setFontSize(8);doc.setFont(undefined,'normal');
-doc.text(nome,20,y+1);
-doc.text(String(p.eb),97,y+1);
-doc.text(pf.media.toFixed(2),110,y+1);
-doc.text(pf.dp.toFixed(2),128,y+1);
-var zStr=(p.z>=0?'+':'')+p.z.toFixed(2);
-if(p.z>=1.5){doc.setTextColor(198,40,40);doc.setFont(undefined,'bold');}
-else if(p.z>=1.0){doc.setTextColor(230,81,0);}
-doc.text(zStr,143,y+1);
-doc.setTextColor(0,0,0);doc.setFont(undefined,'normal');
-doc.text(p.classificacao,155,y+1);
-y+=7;
-});
-
-// Grafico de barras
-y+=8;
-doc.setTextColor(74,20,140);doc.setFontSize(10);doc.setFont(undefined,'bold');
-doc.text('REPRESENTACAO GRAFICA (Escores-Z)',20,y);
-y+=8;
-doc.setFontSize(7);doc.setTextColor(100,100,100);doc.setFont(undefined,'normal');
-doc.text('-2       -1        0        +1       +2       +3',75,y);
-doc.setDrawColor(150,150,150);doc.line(95,y+2,95,y+2+ordem.length*6);
-y+=4;
-ordem.forEach(function(nome){
-var p=perfis[nome];
-doc.setTextColor(0,0,0);doc.setFontSize(7);
-doc.text(nome,20,y+3);
-var baseX=95;
-var barW=p.z*15;
-if(p.z>=1.5){doc.setFillColor(198,40,40);}
-else if(p.z>=1.0){doc.setFillColor(230,81,0);}
-else if(p.z>=0.5){doc.setFillColor(251,192,45);}
-else if(p.z>=0){doc.setFillColor(76,175,80);}
-else{doc.setFillColor(21,101,192);}
-if(barW>=0){doc.rect(baseX,y,barW,4,'F');}
-else{doc.rect(baseX+barW,y,-barW,4,'F');}
-y+=6;
-});
-
-// Rodape pagina 1
-doc.setFillColor(80,80,80);doc.rect(0,285,210,12,'F');
-doc.setTextColor(200,200,200);doc.setFontSize(7);
-doc.text('QCP - Questionario de Crencas da Personalidade | Pagina 1/3',105,291,{align:'center'});
-
-// === PAGINA 2 ===
-doc.addPage();
-doc.setFillColor(74,20,140);doc.rect(0,0,210,20,'F');
-doc.setTextColor(255,255,255);doc.setFontSize(11);doc.setFont(undefined,'bold');
-doc.text('ANALISE CLINICA',105,13,{align:'center'});
-
-y=30;
-var elevados=ordem.filter(function(n){return perfis[n].z>=1.5;});
-var acima=ordem.filter(function(n){return perfis[n].z>=1.0&&perfis[n].z<1.5;});
-
-doc.setTextColor(74,20,140);doc.setFontSize(10);doc.setFont(undefined,'bold');
-doc.text('Perfis com elevacao significativa (Z >= 1.5):',20,y);
-y+=7;
-doc.setTextColor(0,0,0);doc.setFontSize(9);doc.setFont(undefined,'normal');
-if(elevados.length>0){
-elevados.forEach(function(n){
-doc.setTextColor(198,40,40);doc.setFont(undefined,'bold');
-doc.text('>> '+n+' (Z = '+perfis[n].z.toFixed(2)+')',25,y);
-y+=6;
-});
-}else{
-doc.text('Nenhum perfil com elevacao significativa.',25,y);
-y+=6;
-}
-
-y+=5;
-doc.setTextColor(74,20,140);doc.setFontSize(10);doc.setFont(undefined,'bold');
-doc.text('Perfis acima da media (1.0 <= Z < 1.5):',20,y);
-y+=7;
-doc.setTextColor(0,0,0);doc.setFontSize(9);doc.setFont(undefined,'normal');
-if(acima.length>0){
-acima.forEach(function(n){
-doc.setTextColor(230,81,0);
-doc.text('> '+n+' (Z = '+perfis[n].z.toFixed(2)+')',25,y);
-y+=6;
-});
-}else{
-doc.text('Nenhum perfil nesta faixa.',25,y);
-y+=6;
-}
-
-y+=10;
-doc.setTextColor(74,20,140);doc.setFontSize(10);doc.setFont(undefined,'bold');
-doc.text('INTERPRETACAO',20,y);
-y+=8;
-doc.setTextColor(0,0,0);doc.setFontSize(9);doc.setFont(undefined,'normal');
-var desc={
-"Esquizoide":"Preferencia por isolamento, distanciamento emocional e autonomia.",
-"Paranoide":"Desconfianca pervasiva e interpretacao de intencoes alheias como maliciosas.",
-"Passivo-agressiva":"Resistencia a demandas externas com hostilidade indireta.",
-"Borderline":"Instabilidade emocional, medo de abandono e pensamento dicotomico.",
-"Histrionica":"Busca excessiva de atencao e validacao atraves de comportamento dramatico.",
-"Antissocial":"Desrespeito por regras sociais, manipulacao e busca de vantagem pessoal.",
-"Narcisista":"Grandiosidade, senso de merecimento especial e necessidade de admiracao.",
-"Dependente":"Necessidade excessiva de apoio, medo de ficar so e submissao.",
-"Evitativa":"Hipersensibilidade a rejeicao, inibicao e sentimentos de inadequacao.",
-"Obsessivo-compulsiva":"Perfeccionismo rigido, controle excessivo e intolerancia a erros."
-};
-var todosRelevantes=elevados.concat(acima);
-if(todosRelevantes.length>0){
-todosRelevantes.forEach(function(n){
-if(y>260){doc.addPage();y=20;}
-doc.setFont(undefined,'bold');
-doc.text(n+':',25,y);
-doc.setFont(undefined,'normal');
-doc.text(desc[n]||'',25,y+5);
-y+=13;
-});
-}else{
-doc.text('O perfil de crencas nao apresenta elevacoes clinicamente significativas',25,y);
-y+=5;
-doc.text('em relacao a amostra normativa clinica.',25,y);
-y+=10;
-}
-
-y+=10;
-if(y>250){doc.addPage();y=20;}
-doc.setFillColor(255,248,235);doc.rect(15,y,180,20,'F');
-doc.setTextColor(180,90,0);doc.setFontSize(7);doc.setFont(undefined,'normal');
-doc.text('IMPORTANTE: Este instrumento avalia crencas centrais associadas a perfis de personalidade.',20,y+5);
-doc.text('Os escores-Z sao baseados em normas de pacientes psiquiatricos ambulatoriais (N=683).',20,y+10);
-doc.text('Nao substitui avaliacao clinica profissional e nao deve ser usado isoladamente para diagnostico.',20,y+15);
-
-doc.setFillColor(80,80,80);doc.rect(0,285,210,12,'F');
-doc.setTextColor(200,200,200);doc.setFontSize(7);
-doc.text('QCP - Questionario de Crencas da Personalidade | Pagina 2/3',105,291,{align:'center'});
-
-// === PAGINA 3 - REFERENCIAS ===
-doc.addPage();
-doc.setFillColor(74,20,140);doc.rect(0,0,210,20,'F');
-doc.setTextColor(255,255,255);doc.setFontSize(11);doc.setFont(undefined,'bold');
-doc.text('REFERENCIAS',105,13,{align:'center'});
-
-y=30;
-doc.setTextColor(0,0,0);doc.setFontSize(9);doc.setFont(undefined,'normal');
-doc.text('LEAHY, R. L. Tecnicas de Terapia Cognitiva: manual do terapeuta. 2. ed.',20,y);
-y+=5;doc.text('Porto Alegre: Artmed, 2019.',20,y);
-y+=10;
-doc.text('BECK, A. T.; FREEMAN, A.; DAVIS, D. D. Terapia Cognitiva dos Transtornos',20,y);
-y+=5;doc.text('da Personalidade. 2. ed. Porto Alegre: Artmed, 2005.',20,y);
-y+=10;
-doc.text('AMERICAN PSYCHIATRIC ASSOCIATION. Diagnostic and Statistical Manual of',20,y);
-y+=5;doc.text('Mental Disorders (DSM-5-TR). 5th ed., text rev. Washington, DC: APA, 2022.',20,y);
-y+=10;
-doc.text('BECK, A. T. et al. Beliefs associated with personality disorders: an empirical',20,y);
-y+=5;doc.text('study. Journal of Cognitive Psychotherapy, v. 15, n. 2, 2001.',20,y);
-
-doc.setFillColor(80,80,80);doc.rect(0,285,210,12,'F');
-doc.setTextColor(200,200,200);doc.setFontSize(7);
-doc.text('Relatorio gerado em: '+new Date().toLocaleString('pt-BR')+' | Pagina 3/3',105,291,{align:'center'});
-
-var ts=new Date();
-var tsStr=ts.getFullYear()+String(ts.getMonth()+1).padStart(2,'0')+String(ts.getDate()).padStart(2,'0')+String(ts.getHours()).padStart(2,'0')+String(ts.getMinutes()).padStart(2,'0');
-doc.save('QCP_'+nome.replace(/\s+/g,'_')+'_'+tsStr+'.pdf');
+if(!window.SYM_QCP){alert('N\u00e3o foi poss\u00edvel carregar o gerador de PDF. Recarregue a p\u00e1gina e tente novamente.');return;}
+window.SYM_QCP.pdf(window.SYM_QCP.calcular(r.respostas),{
+nome:nome,sexo:document.getElementById('sexo').value,idade:document.getElementById('idadeCalculada').value,
+escolaridade:document.getElementById('escolaridade').value,dataAval:document.getElementById('data').value,
+idPaciente:document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''});
 }
 
 function limparDados(){

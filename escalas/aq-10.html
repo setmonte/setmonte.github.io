@@ -84,7 +84,7 @@
                     <strong>Estrutura:</strong> 10 itens, escala de 4 pontos, pontua&#231;&#227;o dicot&#244;mica (0 ou 1)<br>
                     <strong>Ponto de corte:</strong> &#8805; 6 pontos = rastreio positivo (sensibilidade 0,88; especificidade 0,91)<br>
                     <strong>Popula&#231;&#227;o:</strong> Adultos (&#8805;16 anos) sem defici&#234;ncia intelectual<br>
-                    <strong>Dom&#237;nio p&#250;blico:</strong> Sim &#8212; Autism Research Centre, Universidade de Cambridge
+                    <strong>Acesso:</strong> Instrumento de acesso livre &#8212; Autism Research Centre, Universidade de Cambridge
                 </p>
             </div>
             <div class="dados-pessoais">
@@ -117,14 +117,16 @@
             <div class="info-tecnica" id="referencias" style="margin-top:30px; background:#f8f9fa; border-left-color:#0d47a1;">
                 <h2 style="color:#0d47a1;">&#128218; Refer&#234;ncias</h2>
                 <p style="color:#555; line-height:1.9; font-size:0.88em;">
-                    <strong>ALLISON, C.; AUYEUNG, B.; BARON-COHEN, S.</strong> Toward brief "Red Flags" for autism screening: The Short Autism Spectrum Quotient and the Short Quantitative Checklist in 1,000 cases and 3,000 controls. <em>Journal of the American Academy of Child &amp; Adolescent Psychiatry</em>, v. 51, n. 2, p. 202-212, 2012.<br><br>
+                    <strong>ALLISON, C.; AUYEUNG, B.; BARON-COHEN, S.</strong> Toward brief "red flags" for autism screening: the Short Autism Spectrum Quotient and the Short Quantitative Checklist for Autism in toddlers in 1,000 cases and 3,000 controls. <em>Journal of the American Academy of Child &amp; Adolescent Psychiatry</em>, v. 51, n. 2, p. 202-212, 2012.<br><br>
                     <strong>BARON-COHEN, S. et al.</strong> The Autism-Spectrum Quotient (AQ): Evidence from Asperger Syndrome/High-Functioning Autism, Males and Females, Scientists and Mathematicians. <em>Journal of Autism and Developmental Disorders</em>, v. 31, n. 1, p. 5-17, 2001.<br><br>
+                    <strong>BOOTH, T. et al.</strong> Brief report: an evaluation of the AQ-10 as a brief screening instrument for ASD in adults. <em>Journal of Autism and Developmental Disorders</em>, 2013. DOI: 10.1007/s10803-013-1844-5.<br><br>
                     <strong>AMERICAN PSYCHIATRIC ASSOCIATION.</strong> <em>Diagnostic and Statistical Manual of Mental Disorders</em> (DSM-5-TR). 5th ed., text rev. Washington, DC: APA, 2022.
                 </p>
             </div>
         </div>
     </div>
     <script src="../id-paciente.js"></script>
+    <script src="aq10-visual.js"></script>
     <script>
 var ITENS=[
 {texto:"Frequentemente percebo pequenos sons que os outros n\u00e3o percebem.",pontuaAcordo:true},
@@ -190,75 +192,29 @@ if(!n||!id||!s){alert('Por favor, preencha todos os dados pessoais.');return;}
 var r=obterRespostas();
 if(!r){alert('Por favor, responda todos os 10 itens.');return;}
 var total=calcularPontuacao(r);
-var positivo=total>=6;
+if(!window.SYM_AQ10){alert('N\u00e3o foi poss\u00edvel carregar o m\u00f3dulo de resultados. Recarregue a p\u00e1gina e tente novamente.');return;}
+var res=window.SYM_AQ10.calcular(r);
+var positivo=res.positivo;
 var el=document.getElementById('resultados');
-var h='<h2>Resultados AQ-10</h2>';
-if(positivo) h+='<div class="rastreio-box rastreio-positivo">RASTREIO POSITIVO - '+total+'/10 pontos (ponto de corte: 6)</div>';
-else h+='<div class="rastreio-box rastreio-negativo">RASTREIO NEGATIVO - '+total+'/10 pontos (ponto de corte: 6)</div>';
-h+='<div class="total-geral"><h3>Escore: '+total+' / 10</h3></div>';
-h+='<div class="analise-texto"><h3>Analise dos Resultados</h3>';
-if(positivo){
-h+='<p><strong>Rastreio Positivo:</strong> O escore de '+total+'/10 esta acima do ponto de corte de 6 pontos. Segundo Allison et al. (2012), este resultado sugere a presenca de tracos do espectro autista e indica a <strong>necessidade de encaminhamento para avaliacao diagnostica especializada</strong>.</p>';
-h+='<p>A sensibilidade do AQ-10 neste ponto de corte e de 0,88 e a especificidade de 0,91.</p>';
-} else {
-h+='<p><strong>Rastreio Negativo:</strong> O escore de '+total+'/10 esta abaixo do ponto de corte de 6 pontos. O resultado nao sugere presenca significativa de tracos do espectro autista.</p>';
-if(total>=4) h+='<p>No entanto, o escore de '+total+' esta proximo do limiar. Se houver suspeita clinica, considerar avaliacao mais detalhada (AQ-50, RAADS-R).</p>';
-}
-h+='</div>';
-h+='<div class="disclaimer"><strong>IMPORTANTE:</strong> O AQ-10 e um instrumento de rastreio breve. Nao e diagnostico. Um resultado positivo indica necessidade de avaliacao especializada, nao confirma autismo. Interpretar por profissional qualificado.</div>';
-el.innerHTML=h;
+el.innerHTML=window.SYM_AQ10.htmlTela(res);
 el.style.display='block';
 el.scrollIntoView({behavior:'smooth'});
-window._escalaDados={escala:'AQ-10',paciente:n,escore:total,classificacao:positivo?'RASTREIO POSITIVO - '+total+'/10':'RASTREIO NEGATIVO - '+total+'/10',pontosCorte:'>=6',respostas:(function(){var o={};for(var i=0;i<r.length;i++){o[i+1]=r[i];}return o;})(),sexo:s,idPaciente:(document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''),idade:id,data:new Date().toISOString()};
+var _escEl=document.getElementById('escolaridade');
+window._escalaDados={escala:'AQ-10',paciente:n,escore:total,classificacao:window.SYM_AQ10.classifGeral(res),dominios:window.SYM_AQ10.dadosPainel(res),pontosCorte:'>=6',respostas:(function(){var o={};for(var i=0;i<r.length;i++){o[i+1]=r[i];}return o;})(),escolaridade:(_escEl&&_escEl.value)?_escEl.value:'',sexo:s,idPaciente:(document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''),idade:id,data:new Date().toISOString()};
 if(window.injetarBotaoSalvar)injetarBotaoSalvar('resultados');
 }
 
 function gerarRelatorioPDF(){
+// PDF igual a tela de resultados (aq10-visual.js; o painel usa o mesmo desenho)
 var nome=document.getElementById('nome').value;
 if(!nome){alert('Preencha pelo menos o nome.');return;}
 var r=obterRespostas();
 if(!r){alert('Responda todos os itens.');return;}
-var total=calcularPontuacao(r);
-var positivo=total>=6;
-var idade=document.getElementById('idadeCalculada').value;
-var sexo=document.getElementById('sexo').value;
-var dataAval=document.getElementById('data').value||new Date().toLocaleDateString('pt-BR');
-var jsPDF=window.jspdf.jsPDF;
-var doc=new jsPDF();
-doc.setFillColor(13,71,161);doc.rect(0,0,210,40,'F');
-doc.setTextColor(255,255,255);doc.setFontSize(16);doc.setFont(undefined,'bold');
-doc.text('AQ-10 - RELATORIO DE AVALIACAO',105,18,{align:'center'});
-doc.setFontSize(10);doc.text('Quociente do Espectro Autista - Versao Breve',105,27,{align:'center'});
-doc.setFontSize(8);doc.text('Allison, Auyeung & Baron-Cohen (2012)',105,34,{align:'center'});
-doc.setFillColor(248,249,250);doc.rect(15,48,180,22,'F');
-doc.setTextColor(13,71,161);doc.setFontSize(11);doc.setFont(undefined,'bold');doc.text('DADOS PESSOAIS',20,56);
-doc.setTextColor(0,0,0);doc.setFontSize(9);doc.setFont(undefined,'normal');
-var idPac=document.getElementById('idPaciente')?document.getElementById('idPaciente').value:'';
-doc.text('Nome: '+nome,20,63);doc.text('Idade: '+idade,120,63);
-doc.text('Sexo: '+sexo+'   Data: '+dataAval,20,69);
-if(idPac)doc.text('ID: '+idPac,120,69);
-var y=78;
-if(positivo){doc.setFillColor(255,205,210);doc.rect(15,y,180,12,'F');doc.setTextColor(198,40,40);}
-else{doc.setFillColor(200,230,201);doc.rect(15,y,180,12,'F');doc.setTextColor(46,125,50);}
-doc.setFontSize(11);doc.setFont(undefined,'bold');
-doc.text((positivo?'RASTREIO POSITIVO':'RASTREIO NEGATIVO')+' - '+total+'/10 pontos (corte: >=6)',105,y+8,{align:'center'});
-y=96;doc.setTextColor(0,0,0);doc.setFontSize(9);doc.setFont(undefined,'normal');
-if(positivo){doc.text('Escore acima do ponto de corte. Sugere presenca de tracos do espectro autista.',20,y);y+=6;doc.text('Recomenda-se encaminhamento para avaliacao diagnostica especializada.',20,y);}
-else{doc.text('Escore abaixo do ponto de corte. Nao sugere presenca significativa de tracos autistas.',20,y);}
-y+=15;doc.setFillColor(255,243,224);doc.rect(15,y-4,180,16,'F');doc.setTextColor(230,81,0);doc.setFontSize(7);
-doc.setFont(undefined,'bold');doc.text('IMPORTANTE:',20,y+2);doc.setFont(undefined,'normal');
-doc.text('O AQ-10 e instrumento de rastreio breve. Nao e diagnostico.',20,y+7);
-doc.text('Resultado positivo indica necessidade de avaliacao especializada.',20,y+11);
-y+=20;doc.setFillColor(13,71,161);doc.rect(15,y,180,7,'F');doc.setTextColor(255,255,255);doc.setFontSize(9);doc.setFont(undefined,'bold');doc.text('REFERENCIAS',18,y+5);
-y+=11;doc.setTextColor(0,0,0);doc.setFontSize(7.5);doc.setFont(undefined,'normal');
-doc.text('ALLISON, C.; AUYEUNG, B.; BARON-COHEN, S. Toward brief Red Flags for autism screening.',20,y);y+=4;
-doc.text('JAACAP, v. 51, n. 2, p. 202-212, 2012.',20,y);y+=6;
-doc.text('BARON-COHEN, S. et al. The Autism-Spectrum Quotient (AQ). JADD, v. 31, n. 1, p. 5-17, 2001.',20,y);y+=6;
-doc.text('AMERICAN PSYCHIATRIC ASSOCIATION. DSM-5-TR. Washington, DC: APA, 2022.',20,y);
-doc.setFillColor(80,80,80);doc.rect(0,285,210,12,'F');doc.setTextColor(255,255,255);doc.setFontSize(8);
-doc.text('Relatorio gerado em: '+new Date().toLocaleString('pt-BR'),105,291,{align:'center'});
-var ts=new Date();var tsStr=ts.getFullYear()+String(ts.getMonth()+1).padStart(2,'0')+String(ts.getDate()).padStart(2,'0')+String(ts.getHours()).padStart(2,'0')+String(ts.getMinutes()).padStart(2,'0');
-doc.save('AQ10_'+nome.replace(/\s+/g,'_')+'_'+tsStr+'.pdf');
+if(!window.SYM_AQ10){alert('N\u00e3o foi poss\u00edvel carregar o gerador de PDF. Recarregue a p\u00e1gina e tente novamente.');return;}
+window.SYM_AQ10.pdf(window.SYM_AQ10.calcular(r),{
+nome:nome,sexo:document.getElementById('sexo').value,idade:document.getElementById('idadeCalculada').value,
+dataAval:document.getElementById('data').value,
+idPaciente:document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''});
 }
 
 function limparDados(){

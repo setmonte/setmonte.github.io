@@ -17951,6 +17951,44 @@
         }
         return;
       }
+      // AQ-10: desenho sob medida (escalas/aq10-visual.js), refeito pelas 10 respostas salvas (vale para antigos).
+      if (String(d.escala || '').toUpperCase() === 'AQ-10' && d.respostas && !r._semPdfNovo) {
+        var _gerarAQ = function () {
+          var _okA = false;
+          try { _okA = window.SYM_AQ10.pdfPainel(d, r); } catch (eA) {
+            if (typeof window._registrarFalhaPDF === 'function') { try { window._registrarFalhaPDF('gerarPDFEscala(AQ-10)', (eA && eA.message) || String(eA), d.paciente || ''); } catch (e6) {} }
+          }
+          if (!_okA) { r._semPdfNovo = true; gerarPDFEscala(idx); }
+        };
+        if (window.SYM_AQ10 && window.SYM_AQ10.pdfPainel) { _gerarAQ(); }
+        else {
+          var _sA = document.createElement('script');
+          _sA.src = '../escalas/aq10-visual.js?v=' + Date.now();
+          _sA.onload = _gerarAQ;
+          _sA.onerror = function () { r._semPdfNovo = true; gerarPDFEscala(idx); };
+          document.body.appendChild(_sA);
+        }
+        return;
+      }
+      // QCP: desenho sob medida (escalas/qcp-visual.js), refeito pelas 65 respostas salvas (vale para antigos).
+      if (String(d.escala || '').toUpperCase() === 'QCP' && d.respostas && !r._semPdfNovo) {
+        var _gerarQCP = function () {
+          var _okQ = false;
+          try { _okQ = window.SYM_QCP.pdfPainel(d, r); } catch (eQ) {
+            if (typeof window._registrarFalhaPDF === 'function') { try { window._registrarFalhaPDF('gerarPDFEscala(QCP)', (eQ && eQ.message) || String(eQ), d.paciente || ''); } catch (e7) {} }
+          }
+          if (!_okQ) { r._semPdfNovo = true; gerarPDFEscala(idx); }
+        };
+        if (window.SYM_QCP && window.SYM_QCP.pdfPainel) { _gerarQCP(); }
+        else {
+          var _sQ = document.createElement('script');
+          _sQ.src = '../escalas/qcp-visual.js?v=' + Date.now();
+          _sQ.onload = _gerarQCP;
+          _sQ.onerror = function () { r._semPdfNovo = true; gerarPDFEscala(idx); };
+          document.body.appendChild(_sQ);
+        }
+        return;
+      }
       // ERND (Adolescentes, Pais, Professores): mascara unica escalas/ernd-visual.js. Funciona tambem para
       // registros antigos (refeitos pelas respostas; sem as frases quando nao houver respostasDetalhadas).
       if (/^ERND-(ADOLESCENTES|PAIS|PROFESSORES)$/.test(String(d.escala || '').toUpperCase()) && d.respostas && !r._semPdfNovo) {
