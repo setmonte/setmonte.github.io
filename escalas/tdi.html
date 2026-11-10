@@ -35,8 +35,8 @@
         .item-numero { font-weight: bold; color: #37474f; min-width: 30px; }
         .item-btns { display: flex; gap: 8px; }
         .item-btns button { padding: 8px 20px; border: 2px solid #ccc; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; background: white; transition: all 0.2s; }
-        .item-btns button.sel-sim { background: #4caf50; color: white; border-color: #4caf50; }
-        .item-btns button.sel-nao { background: #f44336; color: white; border-color: #f44336; }
+        .item-btns button.sel-sim { background: #37474f; color: white; border-color: #37474f; }
+        .item-btns button.sel-nao { background: #78909c; color: white; border-color: #78909c; }
         .botoes { display: flex; gap: 15px; justify-content: center; margin: 30px 0; flex-wrap: wrap; }
         .btn { padding: 15px 30px; border: none; border-radius: 25px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s; }
         .btn-primary { background: linear-gradient(135deg, #37474f 0%, #78909c 100%); color: white; }
@@ -69,7 +69,8 @@
                     <strong>Estrutura:</strong> 35 itens (SIM/N&#195;O), 3 dom&#237;nios adaptativos<br>
                     <strong>Dom&#237;nios:</strong> Conceitual, Social, Pr&#225;tico<br>
                     <strong>Respondente:</strong> Cuidadores/respons&#225;veis<br>
-                    <strong>Resultado:</strong> Percentual de dificuldade por dom&#237;nio
+                    <strong>Base te&#243;rica:</strong> dom&#237;nios do funcionamento adaptativo do DSM-5-TR (instrumento aut&#244;ral do SYM)<br>
+                    <strong>Resultado:</strong> Percentual de itens com dificuldade, por dom&#237;nio e no total (faixas = crit&#233;rio do instrumento, n&#227;o equivalem aos n&#237;veis de gravidade do DSM-5-TR)
                 </p>
             </div>
             <div class="dados-pessoais">
@@ -85,12 +86,18 @@
                 <div class="form-row">
                     <div class="form-group"><label for="escolaridade">Escolaridade:</label><select id="escolaridade"><option value="">Selecione</option><option value="Fundamental incompleto">Fundamental incompleto</option><option value="Fundamental completo">Fundamental completo</option><option value="Medio incompleto">M&#233;dio incompleto</option><option value="Medio completo">M&#233;dio completo</option><option value="Superior incompleto">Superior incompleto</option><option value="Superior completo">Superior completo</option><option value="Pos-graduacao">P&#243;s-gradua&#231;&#227;o</option></select></div>
                     <div class="form-group"><label for="data">Data da Avalia&#231;&#227;o:</label><input type="date" id="data"></div>
-                    <div class="form-group"><label for="respondente">Respondente:</label><input type="text" id="respondente" placeholder="Nome do cuidador"></div>
+                    
                 </div>
             </div>
             <div class="instrucoes">
                 <h3>Instru&#231;&#245;es</h3>
                 <p>Marque <strong>SIM</strong> ou <strong>N&#195;O</strong> para cada comportamento observado no avaliado.</p>
+            </div>
+                        <div id="blocoRespondente" style="background:#eceff1;padding:18px 20px;border-radius:10px;margin-bottom:20px;border-left:5px solid #37474f;">
+                <h3 style="color:#37474f;margin-bottom:10px;">Quem est&#225; respondendo? (opcional)</h3>
+                <div class="form-row">
+                    <div class="form-group"><label for="respondente">Respondente (cuidador):</label><input type="text" id="respondente" placeholder="Nome ou v&#237;nculo (ex.: m&#227;e, pai, cuidador)"></div>
+                </div>
             </div>
             <div id="questionario"></div>
             <div class="botoes">
@@ -99,55 +106,29 @@
                 <button class="btn btn-danger" onclick="limparDados()">Limpar Dados</button>
             </div>
             <div id="resultados" class="resultados"></div>
+            <div id="referencias" style="margin-top:30px;background:#f8f9fa;border-left:5px solid #37474f;padding:20px;border-radius:10px;">
+                <h2 style="color:#37474f;margin-bottom:10px;">Refer&#234;ncias</h2>
+                <p style="color:#555;line-height:1.9;font-size:0.88em;">
+                    <strong>AMERICAN PSYCHIATRIC ASSOCIATION.</strong> <em>Diagnostic and Statistical Manual of Mental Disorders</em> (DSM-5-TR). 5th ed., text rev. Washington, DC: APA, 2022.<br><br>
+                    <strong>SCHALOCK, R. L.; LUCKASSON, R.; TASS&#201;, M. J.</strong> <em>Intellectual Disability: Definition, Diagnosis, Classification, and Systems of Supports</em>. 12th ed. Washington, DC: American Association on Intellectual and Developmental Disabilities, 2021.<br><br>
+                    <strong>SYM.</strong> Escala TDI: instrumento de rastreio de dificuldades de funcionamento adaptativo (autoral), baseado nos dom&#237;nios conceitual, social e pr&#225;tico do DSM-5-TR. 2026.
+                </p>
+            </div>
+
         </div>
     </div>
     <script src="../id-paciente.js"></script>
+    <script src="tdi-visual.js"></script>
     <script>
-var ITENS=[
-{texto:"Tem dificuldades para entender conceitos abstratos, como o tempo (ex.: ontem, amanh\u00e3, mais tarde) ou express\u00f5es que n\u00e3o s\u00e3o literais (ex.: quando algu\u00e9m diz que algo \"foi um sonho de ver\u00e3o\", querendo dizer que uma coisa boa durou pouco).",dom:"conceitual",val:0},
-{texto:"\u00c9 capaz de compreender instru\u00e7\u00f5es com v\u00e1rias etapas sem dificuldade.",dom:"conceitual",val:1},
-{texto:"Tem dificuldade em lembrar informa\u00e7\u00f5es aprendidas recentemente.",dom:"conceitual",val:0},
-{texto:"Tem dificuldades com habilidades b\u00e1sicas de autossufici\u00eancia, como higiene pessoal.",dom:"pratico",val:0},
-{texto:"Consegue controlar suas emo\u00e7\u00f5es de forma adequada.",dom:"social",val:1},
-{texto:"Necessita de ajuda frequente para realizar tarefas di\u00e1rias.",dom:"pratico",val:0},
-{texto:"\u00c9 capaz de entender piadas e sarcasmo.",dom:"social",val:1},
-{texto:"Mostra uma falta de iniciativa para realizar tarefas por conta pr\u00f3pria.",dom:"social",val:0},
-{texto:"Sabe identificar sentimentos e emo\u00e7\u00f5es em outras pessoas.",dom:"social",val:1},
-{texto:"Tem dificuldades para entender e seguir regras sociais.",dom:"social",val:0},
-{texto:"Necessita de ajuda constante para atividades di\u00e1rias, como cozinhar.",dom:"pratico",val:0},
-{texto:"Consegue realizar c\u00e1lculos matem\u00e1ticos simples.",dom:"conceitual",val:1},
-{texto:"Demonstra habilidades b\u00e1sicas de planejamento (ex.: pensar antes no que precisa fazer primeiro, como separar a roupa antes de se arrumar para sair).",dom:"conceitual",val:1},
-{texto:"Apresenta dificuldades em fazer amigos.",dom:"social",val:0},
-{texto:"\u00c9 capaz de resolver conflitos de forma aut\u00f4noma (ex.: conseguir resolver sozinho uma briga ou um desentendimento, sem precisar que outra pessoa intervenha).",dom:"social",val:1},
-{texto:"Necessita de apoio para realizar atividades cotidianas como compras.",dom:"pratico",val:0},
-{texto:"Demonstra um vocabul\u00e1rio limitado para sua idade.",dom:"conceitual",val:0},
-{texto:"Tem dificuldades para entender conceitos financeiros simples, como dinheiro.",dom:"conceitual",val:0},
-{texto:"Sabe gerenciar seu tempo de forma produtiva (ex.: se organizar para n\u00e3o se atrasar e dividir o dia entre as tarefas e o descanso).",dom:"conceitual",val:1},
-{texto:"Tem dificuldade para seguir uma rotina.",dom:"conceitual",val:0},
-{texto:"Consegue fazer escolhas adequadas sem orienta\u00e7\u00e3o.",dom:"pratico",val:1},
-{texto:"\u00c9 capaz de cuidar de suas pr\u00f3prias necessidades b\u00e1sicas.",dom:"pratico",val:1},
-{texto:"Mostra baixa resist\u00eancia a frustra\u00e7\u00f5es.",dom:"pratico",val:0},
-{texto:"Consegue comunicar bem suas ideias e necessidades.",dom:"pratico",val:1},
-{texto:"Sabe administrar suas pr\u00f3prias finan\u00e7as de forma adequada.",dom:"pratico",val:1},
-{texto:"Se sente bem com as pessoas que conhece e conversa?",dom:"social",val:1},
-{texto:"Apresenta pouca capacidade para resolver problemas complexos.",dom:"conceitual",val:0},
-{texto:"Tem dificuldade em expressar emo\u00e7\u00f5es de maneira adequada (ex.: demonstrar raiva gritando ou batendo em vez de dizer que est\u00e1 bravo, ou n\u00e3o conseguir demonstrar carinho).",dom:"social",val:0},
-{texto:"Tem dificuldade para lidar com mudan\u00e7as na rotina.",dom:"pratico",val:0},
-{texto:"Necessita de supervis\u00e3o constante para tarefas simples.",dom:"pratico",val:0},
-{texto:"Mant\u00e9m o foco em uma tarefa at\u00e9 conclu\u00ed-la.",dom:"conceitual",val:1},
-{texto:"Apresenta dificuldade para realizar tarefas que envolvam planejamento.",dom:"conceitual",val:0},
-{texto:"Lida bem com situa\u00e7\u00f5es inesperadas e novas.",dom:"pratico",val:1},
-{texto:"Mostra pouca capacidade de reflex\u00e3o sobre suas a\u00e7\u00f5es.",dom:"pratico",val:0},
-{texto:"Demonstra boa compreens\u00e3o das normas sociais e culturais.",dom:"social",val:1}
-];
-
+// Itens, calculo, tela e PDF vivem em tdi-visual.js (Escala TDI, instrumento autoral do SYM)
+var ITENS = window.SYM_TDI ? window.SYM_TDI.ITENS : [];
 var respostas = {};
 
 function gerarQuestionario() {
     var c = document.getElementById('questionario');
     var h = '';
     ITENS.forEach(function(item, i) {
-        h += '<div class="item"><span class="item-numero">' + (i+1) + '.</span><span class="item-texto">' + item.texto + '</span><div class="item-btns"><button id="bs' + i + '" onclick="resp(' + i + ',1)">SIM</button><button id="bn' + i + '" onclick="resp(' + i + ',0)">NAO</button></div></div>';
+        h += '<div class="item"><span class="item-numero">' + (i+1) + '.</span><span class="item-texto">' + item.t + '</span><div class="item-btns"><button id="bs' + i + '" onclick="resp(' + i + ',1)">SIM</button><button id="bn' + i + '" onclick="resp(' + i + ',0)">N\u00c3O</button></div></div>';
     });
     c.innerHTML = h;
 }
@@ -173,121 +154,41 @@ function calcularIdade() {
     document.getElementById('idadeCalculada').value = a + ' anos, ' + m + ' meses e ' + di + ' dias';
 }
 
+// devolve as respostas (1 = SIM, 0 = N\u00c3O) na ordem dos itens, ou null se faltar alguma
+function _tdiRespostas() {
+    var r = [];
+    for (var i = 0; i < ITENS.length; i++) { if (respostas[i] !== 0 && respostas[i] !== 1) return null; r.push(respostas[i]); }
+    return r;
+}
+function _tdiCampo(id) { var e = document.getElementById(id); return e ? e.value : ''; }
+
 function calcularResultados() {
     var nome = document.getElementById('nome').value;
     var idade = document.getElementById('idadeCalculada').value;
     var sexo = document.getElementById('sexo').value;
-    if (!nome || !idade || !sexo) { alert('Preencha nome, data de nascimento e sexo.'); return; }
-    if (Object.keys(respostas).length < ITENS.length) { alert('Responda todos os ' + ITENS.length + ' itens. Faltam ' + (ITENS.length - Object.keys(respostas).length) + '.'); return; }
-
-    var dif = {conceitual:0, social:0, pratico:0, total:0};
-    var tot = {conceitual:0, social:0, pratico:0};
-    ITENS.forEach(function(item, i) {
-        tot[item.dom]++;
-        // Se val=0 (item de dificuldade): SIM=dificuldade presente
-        // Se val=1 (item de habilidade): NAO=dificuldade presente
-        if (item.val === 0 && respostas[i] === 1) dif[item.dom]++;
-        if (item.val === 1 && respostas[i] === 0) dif[item.dom]++;
-    });
-    dif.total = dif.conceitual + dif.social + dif.pratico;
-    var totalItens = ITENS.length;
-
-    var pctC = ((dif.conceitual / tot.conceitual) * 100).toFixed(0);
-    var pctS = ((dif.social / tot.social) * 100).toFixed(0);
-    var pctP = ((dif.pratico / tot.pratico) * 100).toFixed(0);
-    var pctT = ((dif.total / totalItens) * 100).toFixed(0);
-
-    var classif;
-    if (pctT <= 20) classif = 'Funcionamento Adequado';
-    else if (pctT <= 40) classif = 'Dificuldades Leves';
-    else if (pctT <= 60) classif = 'Dificuldades Moderadas';
-    else if (pctT <= 80) classif = 'Dificuldades Significativas';
-    else classif = 'Dificuldades Graves';
-
+    if (!nome || !idade) { alert('Preencha o nome e a data de nascimento.'); return; }
+    var r = _tdiRespostas();
+    if (!r) { alert('Responda todos os ' + ITENS.length + ' itens. Faltam ' + (ITENS.length - Object.keys(respostas).length) + '.'); return; }
+    if (!window.SYM_TDI) { alert('N\u00e3o foi poss\u00edvel carregar o m\u00f3dulo de resultados. Recarregue a p\u00e1gina e tente novamente.'); return; }
+    // Calculo, tela e PDF vem do desenho do TDI (tdi-visual.js)
+    var res = window.SYM_TDI.calcular(r, _tdiCampo('respondente'));
     var el = document.getElementById('resultados');
-    var h = '<h2>Resultados TDI</h2>';
-    h += '<div style="padding:20px;border-radius:10px;text-align:center;margin:20px 0;font-size:1.1em;font-weight:700;background:#eceff1;border:3px solid #37474f;color:#37474f;">' + classif + ' (' + pctT + '% de dificuldades)</div>';
-    h += '<div class="dominio-card" style="border-left-color:#1565c0;"><h4 style="color:#1565c0;">Conceitual</h4><p>Dificuldades: ' + dif.conceitual + '/' + tot.conceitual + ' (' + pctC + '%)</p></div>';
-    h += '<div class="dominio-card" style="border-left-color:#2e7d32;"><h4 style="color:#2e7d32;">Social</h4><p>Dificuldades: ' + dif.social + '/' + tot.social + ' (' + pctS + '%)</p></div>';
-    h += '<div class="dominio-card" style="border-left-color:#e65100;"><h4 style="color:#e65100;">Pratico</h4><p>Dificuldades: ' + dif.pratico + '/' + tot.pratico + ' (' + pctP + '%)</p></div>';
-    h += '<div class="disclaimer"><strong>IMPORTANTE:</strong> Instrumento de rastreio. Nao e diagnostico. O diagnostico de TDI requer avaliacao clinica abrangente incluindo testes de inteligencia e avaliacao de comportamento adaptativo.</div>';
-
-    el.innerHTML = h;
+    el.innerHTML = window.SYM_TDI.htmlTela(res);
     el.style.display = 'block';
     el.scrollIntoView({behavior:'smooth'});
-
-    window._escalaDados = {escala:'TDI', paciente:nome, escore:dif.total, classificacao:classif+' ('+pctT+'%)', dominios:{Conceitual:{pontuacao:dif.conceitual,max:tot.conceitual,classificacao:pctC<=20?'Adequado':(pctC<=40?'Leve':(pctC<=60?'Moderado':(pctC<=80?'Significativo':'Grave')))},Social:{pontuacao:dif.social,max:tot.social,classificacao:pctS<=20?'Adequado':(pctS<=40?'Leve':(pctS<=60?'Moderado':(pctS<=80?'Significativo':'Grave')))},Pratico:{pontuacao:dif.pratico,max:tot.pratico,classificacao:pctP<=20?'Adequado':(pctP<=40?'Leve':(pctP<=60?'Moderado':(pctP<=80?'Significativo':'Grave')))}}, respostas:(function(){var o={};for(var k in respostas){o[parseInt(k)+1]=respostas[k];}return o;})(), sexo:sexo, idPaciente:(document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''), idade:idade, data:new Date().toISOString()};
+    var _resp = {}; for (var j = 0; j < r.length; j++) { _resp[j + 1] = r[j]; }
+    window._escalaDados = {escala:'TDI', paciente:nome, escore:res.total, classificacao:window.SYM_TDI.classifGeral(res), dominios:window.SYM_TDI.dadosPainel(res), respostas:_resp, respondente:_tdiCampo('respondente'), sexo:sexo, idPaciente:(document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''), idade:idade, data:new Date().toISOString()};
     if (window.injetarBotaoSalvar) injetarBotaoSalvar('resultados');
 }
 
 function gerarRelatorioPDF() {
+    // PDF igual a tela de resultados (tdi-visual.js; o painel usa o mesmo desenho)
     var nome = document.getElementById('nome').value;
     if (!nome) { alert('Preencha o nome.'); return; }
-    if (!window._escalaDados) { alert('Calcule os resultados primeiro.'); return; }
-    var dados = window._escalaDados;
-    var idade = document.getElementById('idadeCalculada').value;
-    var sexo = document.getElementById('sexo').value;
-    var dataAval = document.getElementById('data').value || new Date().toLocaleDateString('pt-BR');
-    var idPac = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
-    var jsPDF = window.jspdf.jsPDF; var doc = new jsPDF();
-    // Gerar grafico em canvas
-    var canvasG = document.createElement('canvas'); canvasG.width = 700; canvasG.height = 150;
-    var cx = canvasG.getContext('2d');
-    cx.fillStyle = '#fff'; cx.fillRect(0, 0, 700, 150);
-    cx.fillStyle = '#333'; cx.font = 'bold 12px Segoe UI'; cx.textAlign = 'left';
-    cx.fillText('Perfil TDI - Percentual de Dificuldades por Dominio', 10, 15);
-    var nomesG = ['Conceitual', 'Social', 'Pratico'];
-    var valoresG = [parseInt(dados.dominios.Conceitual.pct), parseInt(dados.dominios.Social.pct), parseInt(dados.dominios.Pratico.pct)];
-    var bh = 28; var gap = 10; var startY = 30; var maxW = 300; var labelW = 180;
-    for (var gi = 0; gi < nomesG.length; gi++) {
-        var by = startY + gi * (bh + gap);
-        var pct = valoresG[gi] / 100;
-        var bw = pct * maxW;
-        var cor = valoresG[gi] <= 20 ? '#4caf50' : valoresG[gi] <= 40 ? '#8bc34a' : valoresG[gi] <= 60 ? '#ff9800' : '#f44336';
-        cx.fillStyle = '#555'; cx.font = '12px Segoe UI'; cx.textAlign = 'right';
-        cx.fillText(nomesG[gi], labelW - 5, by + 18);
-        cx.fillStyle = cor; cx.fillRect(labelW, by, bw, bh);
-        cx.fillStyle = '#333'; cx.font = 'bold 12px Segoe UI'; cx.textAlign = 'left';
-        cx.fillText(valoresG[gi] + '%', labelW + bw + 5, by + 18);
-    }
-    var ly = startY + nomesG.length*(bh+gap) + 5;
-    var cores = [['#4caf50','Adequado (0-20%)'],['#8bc34a','Leve (21-40%)'],['#ff9800','Moderado (41-60%)'],['#f44336','Significativo (>60%)']];
-    cx.font = '10px Segoe UI'; cx.textAlign = 'left';
-    for (var li = 0; li < cores.length; li++) { cx.fillStyle = cores[li][0]; cx.fillRect(labelW + li*135, ly, 12, 12); cx.fillStyle = '#555'; cx.fillText(cores[li][1], labelW + li*135 + 15, ly + 10); }
-    var imgGrafico = canvasG.toDataURL('image/png');
-
-    doc.setFillColor(55,71,79); doc.rect(0,0,210,35,'F');
-    doc.setTextColor(255,255,255); doc.setFontSize(14); doc.setFont(undefined,'bold');
-    doc.text('TDI - RELATORIO', 105, 15, {align:'center'});
-    doc.setFontSize(9); doc.setFont(undefined,'normal');
-    doc.text('Escala de Avaliacao de Transtorno do Desenvolvimento Intelectual', 105, 23, {align:'center'});
-    var y = 42;
-    doc.setFillColor(248,249,250); doc.rect(15,y,180,18,'F');
-    doc.setTextColor(55,71,79); doc.setFontSize(10); doc.setFont(undefined,'bold');
-    doc.text('DADOS', 20, y+6);
-    doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont(undefined,'normal');
-    doc.text('Nome: '+nome+'   |   Sexo: '+sexo, 20, y+12);
-    doc.text('Idade: '+idade+'   |   Data: '+dataAval+(idPac?'   |   ID: '+idPac:''), 20, y+17);
-    y = 66;
-    doc.setFontSize(11); doc.setFont(undefined,'bold');
-    doc.text('Classificacao: '+dados.classificacao, 20, y); y += 10;
-    // Grafico
-    doc.setTextColor(55,71,79); doc.setFontSize(10); doc.setFont(undefined,'bold');
-    doc.text('PERFIL GRAFICO DOS DOMINIOS', 20, y); y += 3;
-    doc.addImage(imgGrafico, 'PNG', 15, y, 180, 42); y += 46;
-    // Dominios texto
-    doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont(undefined,'normal');
-    doc.text('Conceitual: '+dados.dominios.Conceitual.dificuldades+'/'+dados.dominios.Conceitual.total+' ('+dados.dominios.Conceitual.pct+'%)', 20, y); y += 6;
-    doc.text('Social: '+dados.dominios.Social.dificuldades+'/'+dados.dominios.Social.total+' ('+dados.dominios.Social.pct+'%)', 20, y); y += 6;
-    doc.text('Pratico: '+dados.dominios.Pratico.dificuldades+'/'+dados.dominios.Pratico.total+' ('+dados.dominios.Pratico.pct+'%)', 20, y); y += 12;
-    doc.setFillColor(255,248,235); doc.rect(15,y,180,10,'F');
-    doc.setTextColor(180,90,0); doc.setFontSize(7);
-    doc.text('Instrumento de rastreio. Nao e diagnostico. Interpretar por profissional qualificado.', 20, y+6);
-    doc.setFillColor(80,80,80); doc.rect(0,285,210,12,'F');
-    doc.setTextColor(200,200,200); doc.setFontSize(7);
-    doc.text('Relatorio gerado em: '+new Date().toLocaleString('pt-BR'), 105, 291, {align:'center'});
-    var ts = new Date(); var tsStr = ts.getFullYear()+String(ts.getMonth()+1).padStart(2,'0')+String(ts.getDate()).padStart(2,'0')+String(ts.getHours()).padStart(2,'0')+String(ts.getMinutes()).padStart(2,'0');
-    doc.save('TDI_'+nome.replace(/\s+/g,'_')+'_'+tsStr+'.pdf');
+    var r = _tdiRespostas();
+    if (!r) { alert('Responda todos os ' + ITENS.length + ' itens.'); return; }
+    if (!window.SYM_TDI) { alert('N\u00e3o foi poss\u00edvel carregar o gerador de PDF. Recarregue a p\u00e1gina e tente novamente.'); return; }
+    window.SYM_TDI.pdf(window.SYM_TDI.calcular(r, _tdiCampo('respondente')), {nome:nome, sexo:document.getElementById('sexo').value, idade:document.getElementById('idadeCalculada').value, dataAval:document.getElementById('data').value, idPaciente:document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''});
 }
 
 function limparDados() {
@@ -338,7 +239,7 @@ async function _enviarResultadosPainel() {
     var respondidos = Object.keys(respostas).length;
     if (respondidos < totalItens) { alert('Responda todos os ' + totalItens + ' itens antes de enviar. Faltam ' + (totalItens - respondidos) + '.'); return; }
     var sexoEl = document.getElementById('sexo');
-    if (sexoEl && !sexoEl.value) { sexoEl.value = 'Nao informado'; }
+    if(sexoEl&&!sexoEl.value){alert('O sexo (Masculino ou Feminino) \u00e9 obrigat\u00f3rio e n\u00e3o foi informado no cadastro. Pe\u00e7a ao profissional para completar o cadastro do paciente e gerar um novo link.');return;}
     var idadeEl = document.getElementById('idadeCalculada');
     if (idadeEl && !idadeEl.value) { idadeEl.value = 'Nao informado'; }
     var calcFn = window.calcularResultados;

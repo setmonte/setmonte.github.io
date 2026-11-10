@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <!-- v2026.07.06 -->
 <html lang="pt-BR">
 <head>
@@ -5111,6 +5111,7 @@
       var whats = document.getElementById('agendaNovoPacWhats').value.trim();
       var email = document.getElementById('agendaNovoPacEmail').value.trim();
       if (!nome || !dn) { alert('Preencha pelo menos o nome e a data de nascimento.'); return; }
+      if (!sexo) { alert('O sexo (Masculino ou Feminino) e obrigatorio. Selecione o sexo do paciente.'); return; }
       try {
         var resp = await fetch(API_URL + '/save-paciente', {
           method: 'POST',
@@ -5537,6 +5538,7 @@
       var escolaridade = document.getElementById('pacEscolaridade').value;
       var lateralidade = document.getElementById('pacLateralidade').value;
       if (!nome || !dn) { alert('Preencha pelo menos o nome e a data de nascimento.'); return; }
+      if (!sexo) { alert('O sexo (Masculino ou Feminino) e obrigatorio. Selecione o sexo do paciente.'); return; }
       try {
         var resp = await fetch(API_URL + '/save-paciente', {
           method: 'POST',
@@ -5591,6 +5593,7 @@
       var nome = document.getElementById('editPacNome').value.trim();
       var dn = document.getElementById('editPacDN').value;
       if (!nome || !dn) { alert('Nome e data de nascimento sao obrigatorios.'); return; }
+      if (!document.getElementById('editPacSexo').value) { alert('O sexo (Masculino ou Feminino) e obrigatorio. Selecione o sexo do paciente.'); return; }
       try {
         var resp = await fetch(API_URL + '/save-paciente', {
           method: 'POST',
@@ -17176,8 +17179,10 @@
       var dn = document.getElementById('escalaDn').value;
       if (!nome) { alert('Preencha o nome do paciente.'); return; }
       if (!dn) { alert('Preencha a data de nascimento.'); return; }
+      if (!document.getElementById('escalaSexo').value) { alert('O sexo (Masculino ou Feminino) e obrigatorio. Selecione o sexo do paciente.'); return; }
       var _dnErr = _validarDataNascimento(dn);
       if (_dnErr) { alert(_dnErr); return; }
+      if (!document.getElementById('escalaSexo').value) { alert('O sexo (Masculino ou Feminino) e obrigatorio. Selecione o sexo do paciente (ou complete o cadastro dele).'); return; }
       // Trava anti-clique-duplo: impede aplicar a mesma sessao 2x em sequencia
       if (_travaSessaoEscalaAtiva('aplicar|' + escala + '|' + nome + '|' + dn)) return;
       var _btnAplicar = (event && event.target) ? event.target.closest('button') : null;
@@ -17221,8 +17226,10 @@
       if (!escala) { alert('Selecione uma escala.'); return; }
       if (!nome) { alert('Preencha o nome do paciente.'); return; }
       if (!dn) { alert('Preencha a data de nascimento. O ID do paciente depende desse dado.'); return; }
+      if (!document.getElementById('escalaSexo').value) { alert('O sexo (Masculino ou Feminino) e obrigatorio. Selecione o sexo do paciente.'); return; }
       var _dnErr = _validarDataNascimento(dn);
       if (_dnErr) { alert(_dnErr); return; }
+      if (!document.getElementById('escalaSexo').value) { alert('O sexo (Masculino ou Feminino) e obrigatorio. Selecione o sexo do paciente (ou complete o cadastro dele).'); return; }
       // Trava anti-clique-duplo: impede gerar a mesma sessao 2x em sequencia
       if (_travaSessaoEscalaAtiva('link|' + escala + '|' + nome + '|' + dn)) return;
       var _btnLink = (event && event.target) ? event.target.closest('button') : null;
@@ -17953,6 +17960,25 @@
           _sG.onload = _gerarGAD;
           _sG.onerror = function () { r._semPdfNovo = true; gerarPDFEscala(idx); };
           document.body.appendChild(_sG);
+        }
+        return;
+      }
+      // TDI: desenho sob medida (escalas/tdi-visual.js), refeito pelas 35 respostas salvas (1 = SIM, 0 = NAO; vale para antigos).
+      if (String(d.escala || '').toUpperCase() === 'TDI' && d.respostas && !r._semPdfNovo) {
+        var _gerarTDI = function () {
+          var _okTd = false;
+          try { _okTd = window.SYM_TDI.pdfPainel(d, r); } catch (eTd) {
+            if (typeof window._registrarFalhaPDF === 'function') { try { window._registrarFalhaPDF('gerarPDFEscala(TDI)', (eTd && eTd.message) || String(eTd), d.paciente || ''); } catch (e0) {} }
+          }
+          if (!_okTd) { r._semPdfNovo = true; gerarPDFEscala(idx); }
+        };
+        if (window.SYM_TDI && window.SYM_TDI.pdfPainel) { _gerarTDI(); }
+        else {
+          var _sTd = document.createElement('script');
+          _sTd.src = '../escalas/tdi-visual.js?v=' + Date.now();
+          _sTd.onload = _gerarTDI;
+          _sTd.onerror = function () { r._semPdfNovo = true; gerarPDFEscala(idx); };
+          document.body.appendChild(_sTd);
         }
         return;
       }
