@@ -131,6 +131,30 @@ function estilizarBotaoHover(botao, cor, icone) {
     `;
     botao.textContent = icone;
     
+    // Rotulo explicativo ao lado do botao (os botoes continuam escondidos na lateral;
+    // o texto so aparece ao passar o mouse / tocar no botao). Escolhido pela cor.
+    var rotulos = {
+        '#e74c3c': 'Encerrar este teste (ABANDONAR)',
+        '#3498db': 'Pular para o pr\u00f3ximo teste',
+        '#f39c12': 'Voltar ao teste anterior',
+        '#9b59b6': 'Finalizar bateria e enviar resultados'
+    };
+    if (rotulos[cor]) {
+        botao.title = rotulos[cor];
+        botao.setAttribute('aria-label', rotulos[cor]);
+        botao.style.position = 'relative';
+        var rotulo = document.createElement('span');
+        rotulo.textContent = rotulos[cor];
+        rotulo.style.cssText = 'position:absolute;left:70px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,0.85);color:#fff;font-size:14px;font-family:Arial,sans-serif;font-weight:normal;padding:6px 10px;border-radius:6px;white-space:nowrap;pointer-events:none;display:none;';
+        botao.appendChild(rotulo);
+        // No toque nao existe "passar o mouse": o menu ja abre pelo botao hamburguer, entao o texto fica sempre visivel
+        if (window.dispositivoBAE && window.dispositivoBAE.isTouch) rotulo.style.display = 'block';
+        botao.addEventListener('mouseenter', function() { rotulo.style.display = 'block'; });
+        botao.addEventListener('mouseleave', function() { rotulo.style.display = 'none'; });
+        botao.addEventListener('focus', function() { rotulo.style.display = 'block'; });
+        botao.addEventListener('blur', function() { rotulo.style.display = 'none'; });
+    }
+    
     botao.addEventListener('mouseenter', () => {
         botao.style.transform = 'scale(1.1)';
         botao.style.boxShadow = '0 6px 12px rgba(0,0,0,0.4)';

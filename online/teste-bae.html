@@ -439,8 +439,62 @@
     // Flag para saber se já enviou como completo
     var _resultadosEnviados = false;
 
+    // Coleta anonima quando a bateria e interrompida (janela fechada / abandono).
+    // Envia SOMENTE os subtestes CONCLUIDOS (pelo menos 1). Os abandonados nao entram
+    // (contagens parciais distorceriam os dados normativos). Marca abandonado=true.
+    function _enviarColetaAnonimaAbandono() {
+      try {
+        if (window._jaEnviou) return;
+        var _cUrl = 'https://script.google.com/macros/s/AKfycbzYl7-ageXnHHyvrKMb6iS_7gX2l6ZBngPpbCHNfj7YYbXylcZ_vQ9iJkrbko8ICPcW/exec';
+        var _r = window.resultadosBAE || {};
+        var _idadeVal = null;
+        if (_r.paciente && _r.paciente.idadeAnos) _idadeVal = _r.paciente.idadeAnos;
+        if (!_idadeVal && sessionData && sessionData.birthDate) {
+          var _nasc = new Date(sessionData.birthDate);
+          var _hj = new Date();
+          _idadeVal = _hj.getFullYear() - _nasc.getFullYear();
+          if (_hj.getMonth() < _nasc.getMonth() || (_hj.getMonth() === _nasc.getMonth() && _hj.getDate() < _nasc.getDate())) _idadeVal--;
+        }
+        if (!_idadeVal) return;
+        var _testes = ['concentrada','seletiva','dividida','alternada','sustentada'];
+        var _nomes = {concentrada:'Concentrada',seletiva:'Seletiva',dividida:'Dividida',alternada:'Alternada',sustentada:'Sustentada'};
+        function _classe(tx) { if (tx < 50) return 'Muito Baixo'; if (tx < 60) return 'Baixo'; if (tx < 70) return 'Limitrofe'; if (tx < 85) return 'Normal'; if (tx < 95) return 'Acima da Media'; return 'Superior'; }
+        var _dom = [], _cls = [], _abn = [];
+        _testes.forEach(function(t) {
+          var x = _r[t];
+          if (!x) return;
+          var concluido = x.abandonado !== true && (!x.statusTeste || String(x.statusTeste).indexOf('CONCLU') === 0);
+          if (!concluido) { _abn.push(t + ':' + (x.statusTeste || 'ABANDONADO')); return; }
+          var ac = x.acertos !== undefined ? x.acertos : (x.corretas !== undefined ? x.corretas : 0);
+          var er = x.erros !== undefined ? x.erros : 0;
+          var om = x.omissoes !== undefined ? x.omissoes : 0;
+          _dom.push(t + '(ac:' + ac + ' er:' + er + ' om:' + om + ')');
+          var tot = (t === 'seletiva') ? (ac + om) : (ac + er + om);
+          _cls.push(_nomes[t] + ':' + _classe(tot > 0 ? (ac / tot) * 100 : 0));
+        });
+        if (_dom.length === 0) return; // nenhum subteste concluido: nada a enviar
+        var _pkt = {
+          email: sessionData.email || '',
+          escala: 'BAE',
+          idade: _idadeVal,
+          sexo: (_r.paciente && _r.paciente.sexo) || sessionData.sex || '',
+          escolaridade: (_r.paciente && _r.paciente.escolaridade) || sessionData.education || '',
+          pontuacao: '',
+          dominios: _dom.join('; '),
+          classificacao: _cls.join('; '),
+          statusAbandono: _abn.join('; '),
+          abandonado: true
+        };
+        window._jaEnviou = true; // trava antes do envio (evita duplicidade)
+        navigator.sendBeacon(_cUrl, JSON.stringify(_pkt));
+      } catch (e) {}
+    }
+    // pagehide cobre celular/Safari, onde beforeunload nem sempre dispara
+    window.addEventListener('pagehide', _enviarColetaAnonimaAbandono);
+
     // Se paciente fechar a janela no meio, envia o que tem (só se não enviou como completo)
     window.addEventListener('beforeunload', function() {
+      _enviarColetaAnonimaAbandono(); // coleta anonima dos subtestes concluidos (se houver)
       if (_resultadosEnviados) return; // já enviou como completo, não sobrescrever
       var r = window.resultadosBAE || {};
       var realizados = ['concentrada','seletiva','dividida','alternada','sustentada'].filter(function(t) { return r[t]; });

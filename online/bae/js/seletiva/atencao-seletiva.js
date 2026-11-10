@@ -106,6 +106,7 @@ async function startTesteSeletiva() {
 
   // Correção 3: Reset de contadores
   resetarContadoresSeletiva();
+  window._seletUltimaPos = null; // zera a posicao da figura anterior no inicio do teste
 
   await mostrarInstrucoesSeletiva();
   
@@ -263,8 +264,19 @@ function showNextAnimal(forceCall = false) {
   const areaUtilWidth = quadroWidth - (2 * margem) - imgWidth;
   const areaUtilHeight = quadroHeight - (2 * margem) - imgHeight;
   
-  const posX = margem + (Math.random() * areaUtilWidth);
-  const posY = margem + (Math.random() * areaUtilHeight);
+  // Sorteia a posicao, mas evita cair no mesmo lugar (ou muito perto) da figura anterior.
+  // Distancia minima = 1,5x o tamanho da figura. Ate 50 tentativas (evita loop infinito).
+  const distMinima = imgWidth * 1.5;
+  let posX = 0, posY = 0;
+  for (let tentativa = 0; tentativa < 50; tentativa++) {
+    posX = margem + (Math.random() * areaUtilWidth);
+    posY = margem + (Math.random() * areaUtilHeight);
+    if (!window._seletUltimaPos) break;
+    const dx = posX - window._seletUltimaPos.x;
+    const dy = posY - window._seletUltimaPos.y;
+    if (Math.sqrt(dx * dx + dy * dy) >= distMinima) break;
+  }
+  window._seletUltimaPos = { x: posX, y: posY };
   
   img.style.left = `${posX}px`;
   img.style.top = `${posY}px`;
