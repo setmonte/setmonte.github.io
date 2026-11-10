@@ -299,7 +299,7 @@
               </optgroup>
               <optgroup label="Humor / Depressao / Estresse">
               <option value="dass-21">DASS-21 (Depressao/Ansiedade/Estresse) — 18+</option>
-              <option value="phq-9">PHQ-9 (Depressao) — 12+</option>
+              <option value="phq-9">PHQ-9 (Depressao) — 18+</option>
               <option value="pss-10">PSS-10 (Estresse Percebido) — 12+</option>
               <option value="ert-tb">ERT-TB (Transtorno Bipolar) — 18+</option>
               <option value="pcl-5">PCL-5 (TEPT) — 18+</option>
@@ -17948,6 +17948,25 @@
           _sG.onload = _gerarGAD;
           _sG.onerror = function () { r._semPdfNovo = true; gerarPDFEscala(idx); };
           document.body.appendChild(_sG);
+        }
+        return;
+      }
+      // PHQ-9: desenho sob medida (escalas/phq9-visual.js), refeito pelas 9 respostas salvas (vale para antigos).
+      if (String(d.escala || '').toUpperCase() === 'PHQ-9' && d.respostas && !r._semPdfNovo) {
+        var _gerarPHQ = function () {
+          var _okP = false;
+          try { _okP = window.SYM_PHQ9.pdfPainel(d, r); } catch (eP) {
+            if (typeof window._registrarFalhaPDF === 'function') { try { window._registrarFalhaPDF('gerarPDFEscala(PHQ-9)', (eP && eP.message) || String(eP), d.paciente || ''); } catch (e4) {} }
+          }
+          if (!_okP) { r._semPdfNovo = true; gerarPDFEscala(idx); }
+        };
+        if (window.SYM_PHQ9 && window.SYM_PHQ9.pdfPainel) { _gerarPHQ(); }
+        else {
+          var _sP = document.createElement('script');
+          _sP.src = '../escalas/phq9-visual.js?v=' + Date.now();
+          _sP.onload = _gerarPHQ;
+          _sP.onerror = function () { r._semPdfNovo = true; gerarPDFEscala(idx); };
+          document.body.appendChild(_sP);
         }
         return;
       }

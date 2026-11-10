@@ -76,9 +76,9 @@
                 <h2>&#128218; Informa&#231;&#245;es T&#233;cnicas</h2>
                 <p>
                     <strong>Instrumento:</strong> PHQ-9 &#8212; Patient Health Questionnaire-9<br>
-                    <strong>Base te&#243;rica:</strong> Crit&#233;rios diagn&#243;sticos do DSM-5-TR para Transtorno Depressivo Maior<br>
+                    <strong>Base te&#243;rica:</strong> Os 9 crit&#233;rios do epis&#243;dio depressivo maior (originalmente DSM-IV, mantidos no DSM-5-TR)<br>
                     <strong>Estrutura:</strong> 9 itens, escala Likert 4 pontos (0-3)<br>
-                    <strong>Resultado:</strong> Escore total (0-27) com classifica&#231;&#227;o de gravidade<br>
+                    <strong>Resultado:</strong> Escore total (0-27) com classifica&#231;&#227;o de gravidade; corte de rastreio &#8805;10 (sensibilidade 88%, especificidade 88%); PHQ-2 (&#8805;3); alerta de risco quando o item 9 for maior que zero<br>
                     <strong>Per&#237;odo:</strong> &#218;ltimas 2 semanas<br>
                     <strong>Popula&#231;&#227;o:</strong> Adultos (&#8805;18 anos) &#8212; instrumento de rastreio validado no Brasil
                 </p>
@@ -104,6 +104,7 @@
                 <p>Nas &#250;ltimas <strong>2 semanas</strong>, com que frequ&#234;ncia voc&#234; foi incomodado(a) por qualquer um dos problemas abaixo? Marque a op&#231;&#227;o que melhor descreve sua experi&#234;ncia.</p>
             </div>
             <div id="questionario"></div>
+            <div id="funcional"></div>
             <div class="botoes">
                 <button class="btn btn-primary" onclick="calcularResultados()">Calcular Resultados</button>
                 <button class="btn btn-secondary" onclick="gerarRelatorioPDF()">Gerar Relat&#243;rio PDF</button>
@@ -113,7 +114,8 @@
             <div class="info-tecnica" id="referencias" style="margin-top:30px; background:#f8f9fa; border-left-color:#1565c0;">
                 <h2 style="color:#1565c0;">Refer&#234;ncias</h2>
                 <p style="color:#555; line-height:1.9; font-size:0.88em;">
-                    <strong>KROENKE, K.; SPITZER, R. L.; WILLIAMS, J. B.</strong> The PHQ-9: validity of a brief depression severity measure. <em>Journal of General Internal Medicine</em>, v. 16, n. 9, p. 606-613, 2001.<br><br>
+                    <strong>KROENKE, K.; SPITZER, R. L.; WILLIAMS, J. B.</strong> The PHQ-9: validity of a brief depression severity measure. <em>Journal of General Internal Medicine</em>, v. 16, n. 9, p. 606-613, 2001. DOI: 10.1046/j.1525-1497.2001.016009606.x.<br><br>
+                    <strong>KROENKE, K.; SPITZER, R. L.; WILLIAMS, J. B. W.</strong> The Patient Health Questionnaire-2: validity of a two-item depression screener. <em>Medical Care</em>, v. 41, n. 11, p. 1284-1292, 2003.<br><br>
                     <strong>SANTOS, I. S. et al.</strong> Sensibilidade e especificidade do Patient Health Questionnaire-9 (PHQ-9) entre adultos da popula&#231;&#227;o geral. <em>Cadernos de Sa&#250;de P&#250;blica</em>, v. 29, n. 8, p. 1533-1543, 2013.<br><br>
                     <strong>AMERICAN PSYCHIATRIC ASSOCIATION.</strong> <em>Diagnostic and Statistical Manual of Mental Disorders</em> (DSM-5-TR). 5th ed., text rev. Washington, DC: APA, 2022.
                 </p>
@@ -121,6 +123,7 @@
         </div>
     </div>
     <script src="../id-paciente.js"></script>
+    <script src="phq9-visual.js"></script>
     <script>
 var ITENS=[
 {texto:"Pouco interesse ou pouco prazer em fazer as coisas"},
@@ -169,12 +172,18 @@ function obterRespostas() {
     return r;
 }
 
-function classificarPHQ9(escore) {
-    if (escore <= 4) return {texto: "M\u00ednimo", cor: "#4caf50"};
-    if (escore <= 9) return {texto: "Leve", cor: "#8bc34a"};
-    if (escore <= 14) return {texto: "Moderado", cor: "#ff9800"};
-    if (escore <= 19) return {texto: "Moderadamente grave", cor: "#f57c00"};
-    return {texto: "Grave", cor: "#f44336"};
+function gerarFuncional() {
+    var c = document.getElementById('funcional');
+    if (!c || !window.SYM_PHQ9) return;
+    var h = '<div class="item-func" style="padding:18px 20px;margin-top:12px;background:#e3f2fd;border-radius:10px;border-left:4px solid #1565c0;"><div class="item-texto"><strong>Pergunta complementar (opcional, n\u00e3o entra na soma):</strong> ' + window.SYM_PHQ9.FUNC_PERGUNTA + '</div><div class="opcoes">';
+    for (var k = 0; k < 4; k++) {
+        h += '<div class="opcao"><input type="radio" id="func_' + k + '" name="func" value="' + k + '"><label for="func_' + k + '">' + window.SYM_PHQ9.FUNC[k] + '</label></div>';
+    }
+    c.innerHTML = h + '</div></div>';
+}
+function _phqFuncional() {
+    var s = document.querySelector('input[name="func"]:checked');
+    return s ? parseInt(s.value, 10) : null;
 }
 
 function calcularResultados() {
@@ -191,141 +200,32 @@ function calcularResultados() {
         alert('Responda todos os 9 itens. Faltam ' + (9 - respondidos) + ' itens.');
         return;
     }
-
-    var escore = r.reduce(function(a, b) { return a + b; }, 0);
-    var classif = classificarPHQ9(escore);
-    var riscoSuicidio = r[8] >= 2;
-
+    if (!window.SYM_PHQ9) { alert('N\u00e3o foi poss\u00edvel carregar o m\u00f3dulo de resultados. Recarregue a p\u00e1gina e tente novamente.'); return; }
+    // Calculo oficial, tela e PDF vem do desenho do PHQ-9 (phq9-visual.js)
+    var res = window.SYM_PHQ9.calcular(r, _phqFuncional());
     var el = document.getElementById('resultados');
-    var h = '<h2>Resultados PHQ-9</h2>';
-
-    h += '<div class="classificacao-box" style="background:' + classif.cor + '22;border:3px solid ' + classif.cor + ';color:' + classif.cor + ';">';
-    h += '<div style="font-size:1.5em;">' + classif.texto + '</div>';
-    h += '<div style="font-size:1.1em;margin-top:5px;">Escore: ' + escore + ' / 27</div>';
-    h += '</div>';
-
-    h += '<div class="total-geral"><h3>Pontua\u00e7\u00e3o Total: ' + escore + ' / 27</h3><h3>Classifica\u00e7\u00e3o: ' + classif.texto + '</h3></div>';
-
-    if (riscoSuicidio) {
-        h += '<div class="alerta-risco">';
-        h += '<h3>\u26a0\ufe0f ALERTA DE RISCO DE SUIC\u00cdDIO \u26a0\ufe0f</h3>';
-        h += '<p>O item 9 (ideac\u0327a\u0303o suicida/autolesiva) pontua >= 2. Recomenda-se avalia\u00e7\u00e3o imediata de risco.</p>';
-        h += '<p style="margin-top:10px;font-size:1.1em;"><strong>CVV (Centro de Valoriza\u00e7\u00e3o da Vida): 188</strong></p>';
-        h += '<p><strong>SAMU: 192</strong></p>';
-        h += '</div>';
-    }
-
-    h += '<div class="dominio-card"><h4>Detalhamento por Item</h4>';
-    for (var i = 0; i < ITENS.length; i++) {
-        h += '<p><strong>Item ' + (i+1) + ':</strong> ' + ITENS[i].texto + ' \u2014 <strong>' + r[i] + '</strong> (' + OPCOES[r[i]].texto + ')</p>';
-    }
-    h += '</div>';
-
-    h += '<div class="dominio-card"><h4>Faixas de Classifica\u00e7\u00e3o</h4>';
-    h += '<p>0-4: M\u00ednimo | 5-9: Leve | 10-14: Moderado | 15-19: Moderadamente grave | 20-27: Grave</p>';
-    h += '</div>';
-
-    h += '<div class="disclaimer"><strong>IMPORTANTE:</strong> O PHQ-9 \u00e9 um instrumento de rastreio validado para depress\u00e3o. N\u00e3o substitui avalia\u00e7\u00e3o cl\u00ednica profissional. Resultados devem ser interpretados por profissional qualificado.</div>';
-
-    el.innerHTML = h;
+    el.innerHTML = window.SYM_PHQ9.htmlTela(res);
     el.style.display = 'block';
     el.scrollIntoView({behavior: 'smooth'});
-
-    var sexo = document.getElementById('sexo').value;
-    var idade = document.getElementById('idadeCalculada').value;
-    var idPac = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
-    window._escalaDados = {escala:'PHQ-9', paciente:nome, escore:escore, classificacao:classif.texto, dominios:{}, respostas:(function(){var o={};for(var i=0;i<r.length;i++){o[i+1]=r[i];}return o;})(), sexo:sexo, idPaciente:idPac, idade:idade, data:new Date().toISOString()};
+    var _resp = {}; for (var j = 0; j < r.length; j++) { _resp[j + 1] = r[j]; }
+    window._escalaDados = {escala:'PHQ-9', paciente:nome, escore:res.escore, classificacao:window.SYM_PHQ9.classifGeral(res), dominios:window.SYM_PHQ9.dadosPainel(res), respostas:_resp,
+        riscoItem9:res.vals[8], rastreioDepressao:res.rastreio, phq2:res.phq2, sintomasPresentes:res.nSint, dificuldadeFuncionalValor:res.func, dificuldadeFuncional:(res.func === null ? '' : window.SYM_PHQ9.FUNC[res.func]),
+        sexo:document.getElementById('sexo').value, idPaciente:(document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : ''), idade:idade, data:new Date().toISOString()};
     if (window.injetarBotaoSalvar) injetarBotaoSalvar('resultados');
 }
 
 function gerarRelatorioPDF() {
+    // PDF igual a tela de resultados (phq9-visual.js; o painel usa o mesmo desenho)
     var nome = document.getElementById('nome').value;
     if (!nome) { alert('Preencha o nome do paciente.'); return; }
     var r = obterRespostas();
     if (!r) { alert('Responda todos os 9 itens.'); return; }
-
-    var escore = r.reduce(function(a, b) { return a + b; }, 0);
-    var classif = classificarPHQ9(escore);
-    var riscoSuicidio = r[8] >= 2;
-    var idade = document.getElementById('idadeCalculada').value;
-    var sexo = document.getElementById('sexo').value;
-    var dataAval = document.getElementById('data').value || new Date().toLocaleDateString('pt-BR');
-    var obs = document.getElementById('observacoes').value;
-    var idPac = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
-
-    var jsPDF = window.jspdf.jsPDF;
-    var doc = new jsPDF();
-
-    // Cabecalho
-    doc.setFillColor(21,101,192); doc.rect(0,0,210,35,'F');
-    doc.setTextColor(255,255,255); doc.setFontSize(14); doc.setFont(undefined,'bold');
-    doc.text('PHQ-9 - RELAT\u00d3RIO DE AVALIA\u00c7\u00c3O', 105, 15, {align:'center'});
-    doc.setFontSize(9); doc.setFont(undefined,'normal');
-    doc.text('Patient Health Questionnaire-9 - Rastreio de Depress\u00e3o', 105, 23, {align:'center'});
-    doc.text('Kroenke, Spitzer & Williams (2001)', 105, 29, {align:'center'});
-
-    // Dados pessoais
-    var y = 42;
-    doc.setFillColor(248,249,250); doc.rect(15,y,180,22,'F');
-    doc.setTextColor(21,101,192); doc.setFontSize(10); doc.setFont(undefined,'bold');
-    doc.text('DADOS PESSOAIS', 20, y+6);
-    doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont(undefined,'normal');
-    doc.text('Nome: ' + nome + '   |   Sexo: ' + sexo, 20, y+12);
-    doc.text('Idade: ' + idade + '   |   Data: ' + dataAval + (idPac ? '   |   ID: ' + idPac : ''), 20, y+18);
-
-    // Classificacao
-    y = 70;
-    var corR, corG, corB;
-    if (escore <= 4) { corR=76; corG=175; corB=80; }
-    else if (escore <= 9) { corR=139; corG=195; corB=74; }
-    else if (escore <= 14) { corR=255; corG=152; corB=0; }
-    else if (escore <= 19) { corR=245; corG=124; corB=0; }
-    else { corR=244; corG=67; corB=54; }
-    doc.setFillColor(corR, corG, corB); doc.rect(15,y,180,14,'F');
-    doc.setTextColor(255,255,255); doc.setFontSize(12); doc.setFont(undefined,'bold');
-    doc.text('Classifica\u00e7\u00e3o: ' + classif.texto + '  |  Escore: ' + escore + '/27', 105, y+9, {align:'center'});
-
-    // Pontuacao por item
-    y = 90;
-    doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont(undefined,'bold');
-    doc.text('PONTUA\u00c7\u00c3O POR ITEM:', 20, y); y += 7;
-    doc.setFont(undefined,'normal');
-    for (var i = 0; i < ITENS.length; i++) {
-        var textoItem = (i+1) + '. ' + ITENS[i].texto;
-        if (textoItem.length > 85) textoItem = textoItem.substring(0, 82) + '...';
-        doc.text(textoItem + ' = ' + r[i], 22, y);
-        y += 5;
-    }
-
-    // Alerta risco
-    if (riscoSuicidio) {
-        y += 5;
-        doc.setFillColor(255,205,210); doc.rect(15,y,180,18,'F');
-        doc.setTextColor(198,40,40); doc.setFontSize(10); doc.setFont(undefined,'bold');
-        doc.text('ALERTA: RISCO DE SUIC\u00cdDIO', 105, y+6, {align:'center'});
-        doc.setFontSize(8); doc.setFont(undefined,'normal');
-        doc.text('Item 9 (idea\u00e7\u00e3o suicida) com pontua\u00e7\u00e3o >= 2. Avalia\u00e7\u00e3o imediata recomendada.', 105, y+11, {align:'center'});
-        doc.text('CVV: 188 | SAMU: 192', 105, y+15, {align:'center'});
-        y += 22;
-    } else {
-        y += 5;
-    }
-
-    // Disclaimer
-    doc.setFillColor(255,248,235); doc.rect(15,y,180,14,'F');
-    doc.setTextColor(180,90,0); doc.setFontSize(7);
-    doc.text('IMPORTANTE: O PHQ-9 e um instrumento de rastreio. Nao substitui avaliacao clinica profissional.', 20, y+5);
-    doc.text('Resultados devem ser interpretados por profissional qualificado.', 20, y+10);
-
-    // Rodape
-    doc.setFillColor(80,80,80); doc.rect(0,285,210,12,'F');
-    doc.setTextColor(200,200,200); doc.setFontSize(7);
-    doc.text('Relat\u00f3rio gerado em: ' + new Date().toLocaleString('pt-BR'), 105, 291, {align:'center'});
-
-    // Salvar
-    var ts = new Date();
-    var tsStr = ts.getFullYear() + String(ts.getMonth()+1).padStart(2,'0') + String(ts.getDate()).padStart(2,'0') + String(ts.getHours()).padStart(2,'0') + String(ts.getMinutes()).padStart(2,'0');
-    doc.save('PHQ9_' + nome.replace(/\s+/g,'_') + '_' + tsStr + '.pdf');
+    if (!window.SYM_PHQ9) { alert('N\u00e3o foi poss\u00edvel carregar o gerador de PDF. Recarregue a p\u00e1gina e tente novamente.'); return; }
+    window.SYM_PHQ9.pdf(window.SYM_PHQ9.calcular(r, _phqFuncional()), {
+        nome: nome, sexo: document.getElementById('sexo').value, idade: document.getElementById('idadeCalculada').value,
+        dataAval: document.getElementById('data').value,
+        idPaciente: document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : ''
+    });
 }
 
 function limparDados() {
@@ -373,7 +273,7 @@ async function _enviarResultadosPainel() {
     var nomeEl = document.getElementById('nome');
     if (!nomeEl || !nomeEl.value.trim()) { alert('Preencha o nome antes de enviar.'); return; }
     var totalItens = document.querySelectorAll('.item').length;
-    var respondidos = document.querySelectorAll('input[type="radio"]:checked').length;
+    var respondidos = document.querySelectorAll('input[type="radio"][name^="q"]:checked').length;
     if (respondidos < totalItens) { alert('Responda todos os ' + totalItens + ' itens antes de enviar. Faltam ' + (totalItens - respondidos) + '.'); return; }
     var sexoEl = document.getElementById('sexo');
     if (sexoEl && !sexoEl.value) { sexoEl.value = 'Nao informado'; }
@@ -412,6 +312,7 @@ async function _enviarResultadosPainel() {
 
 // === INICIALIZACAO ===
 gerarQuestionario();
+gerarFuncional();
 document.getElementById('questionario').addEventListener('change',function(e){if(e.target.type==='radio'){var item=e.target.closest('.item');if(item){item.style.backgroundColor='#f1f8e9';item.style.borderLeft='4px solid #4caf50';}if(item&&item.nextElementSibling){item.nextElementSibling.scrollIntoView({behavior:'smooth',block:'center'});}}});
 document.getElementById('data').value = new Date().toISOString().split('T')[0];
 var params = new URLSearchParams(window.location.search);
