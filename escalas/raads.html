@@ -57,8 +57,9 @@
             <p style="color:#555;line-height:1.6;font-size:0.9em">
                 <strong>Instrumento:</strong> RAADS-R (Ritvo et al., 2011)<br>
                 <strong>Estrutura:</strong> 80 itens, 4 dom&#237;nios, escala 0-3<br>
-                <strong>Dom&#237;nios:</strong> Social (S:40), Sensorial/Motor (M:16), Interesses Restritos (R:15), Linguagem (L:9)<br>
-                <strong>Ponto de corte:</strong> &#8805;65 (Sens: 97%, Espec: 100%)<br>
+                <strong>Dom&#237;nios (itens):</strong> Rela&#231;&#227;o Social (39), Interesses Restritos (14), Sensorial/Motor (20), Linguagem (7)<br>
+                <strong>Ponto de corte:</strong> &#8805;65 no total (sensibilidade 97%, especificidade 100% na amostra original); cortes por dom&#237;nio: Social 31, Interesses 15, Sensorial/Motor 16, Linguagem 4<br>
+                <strong>Vers&#227;o:</strong> tradu&#231;&#227;o livre feita para o site (a adapta&#231;&#227;o brasileira RAADS-R-BR &#233; de Hartwig, 2023)<br>
                 <strong>Popula&#231;&#227;o:</strong> Adultos (&#8805;18 anos)
             </p>
         </div>
@@ -86,94 +87,25 @@
             <button class="btn btn-danger" onclick="limparDados()">Limpar Dados</button>
         </div>
         <div id="resultados" class="resultados"></div>
+        <div class="referencias-box" id="referencias" style="margin-top:30px;background:#f8f9fa;border-left:5px solid #1a237e;padding:20px;border-radius:10px">
+            <h2 style="color:#1a237e;margin-bottom:10px">Refer&#234;ncias</h2>
+            <p style="color:#555;line-height:1.9;font-size:0.88em">
+                <strong>RITVO, R. A. et al.</strong> The Ritvo Autism Asperger Diagnostic Scale-Revised (RAADS-R): a scale to assist the diagnosis of Autism Spectrum Disorder in adults: an international validation study. <em>Journal of Autism and Developmental Disorders</em>, v. 41, n. 8, p. 1076-1089, 2011. DOI: 10.1007/s10803-010-1133-5.<br><br>
+                <strong>ANDERSEN, L. M. et al.</strong> The Swedish version of the Ritvo Autism and Asperger Diagnostic Scale: Revised (RAADS-R). A validation study of a rating scale for adults. <em>Journal of Autism and Developmental Disorders</em>, v. 41, n. 12, p. 1635-1645, 2011.<br><br>
+                <strong>CONNER, C. M.; CRAMER, R. D.; McGONIGLE, J. J.</strong> Examining the diagnostic validity of autism measures among adults in an outpatient clinic sample. <em>Autism in Adulthood</em>, v. 1, n. 1, p. 60-68, 2019. DOI: 10.1089/aut.2018.0023.<br><br>
+                <strong>HARTWIG, M. D.</strong> <em>Tradu&#231;&#227;o e adapta&#231;&#227;o transcultural do Ritvo Autism Asperger Scale Revised (RAADS-R) para o portugu&#234;s do Brasil</em>. 2023. 179 f. Tese (Doutorado em Psicologia) - Instituto de Educa&#231;&#227;o, Universidade Federal Rural do Rio de Janeiro, Serop&#233;dica, 2023.<br><br>
+                <strong>AMERICAN PSYCHIATRIC ASSOCIATION.</strong> <em>Diagnostic and Statistical Manual of Mental Disorders</em> (DSM-5-TR). 5th ed., text rev. Washington, DC: APA, 2022.
+            </p>
+        </div>
+
     </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="raads-visual.js"></script>
 <script>
-var ITENS = [
-{n:1,t:"Eu sou uma pessoa simp\u00e1tica.",d:"S",inv:true},
-{n:2,t:"Costumo usar palavras e frases de filmes e TV em conversas.",d:"L",inv:false},
-{n:3,t:"Muitas vezes fico surpreso quando outras pessoas me dizem que fui rude.",d:"S",inv:false},
-{n:4,t:"\u00c0s vezes falo muito alto ou muito baixo, e n\u00e3o percebo.",d:"M",inv:false},
-{n:5,t:"Frequentemente n\u00e3o sei como agir em situa\u00e7\u00f5es sociais.",d:"S",inv:false},
-{n:6,t:"N\u00e3o consigo me colocar no lugar dos outros.",d:"S",inv:true},
-{n:7,t:"Tenho dificuldade em entender algumas frases, como \"voc\u00ea \u00e9 a menina dos meus olhos\".",d:"L",inv:false},
-{n:8,t:"S\u00f3 gosto de conversar com pessoas que compartilham meus interesses especiais.",d:"R",inv:false},
-{n:9,t:"Foco nos detalhes em vez da ideia geral.",d:"R",inv:false},
-{n:10,t:"Sempre noto como a comida se sente na boca. Isso \u00e9 mais importante para mim do que o sabor.",d:"M",inv:false},
-{n:11,t:"Sinto falta dos meus melhores amigos ou familiares quando estamos separados por muito tempo.",d:"S",inv:true},
-{n:12,t:"\u00c0s vezes ofendo os outros dizendo o que estou pensando, mesmo sem querer.",d:"S",inv:false},
-{n:13,t:"S\u00f3 gosto de pensar e falar sobre algumas poucas coisas que me interessam.",d:"R",inv:false},
-{n:14,t:"Prefiro comer sozinho em um restaurante do que com algu\u00e9m que conhe\u00e7o.",d:"S",inv:false},
-{n:15,t:"N\u00e3o consigo imaginar como seria ser outra pessoa.",d:"S",inv:false},
-{n:16,t:"Me disseram que sou desajeitado ou descoordenado.",d:"M",inv:false},
-{n:17,t:"Alguns sons comuns do dia a dia parecem ser muito mais altos para mim do que para outras pessoas.",d:"M",inv:false},
-{n:18,t:"Frequentemente preciso afastar pensamentos intrusivos ou preocupa\u00e7\u00f5es.",d:"R",inv:false},
-{n:19,t:"Minha express\u00e3o facial nem sempre corresponde ao que estou sentindo.",d:"S",inv:false},
-{n:20,t:"Tenho uma boa imagina\u00e7\u00e3o.",d:"R",inv:true},
-{n:21,t:"Considero-me tolerante com outras pessoas.",d:"S",inv:true},
-{n:22,t:"Minha pele \u00e9 muito sens\u00edvel a certos tecidos e etiquetas de roupas.",d:"M",inv:false},
-{n:23,t:"Quando converso com algu\u00e9m, tenho dificuldade em saber quando \u00e9 minha vez de falar ou ouvir.",d:"L",inv:false},
-{n:24,t:"Tenho que me \"aquecer\" para situa\u00e7\u00f5es sociais.",d:"S",inv:false},
-{n:25,t:"Frequentemente me dizem que meus coment\u00e1rios s\u00e3o rudes, mesmo quando n\u00e3o tenho inten\u00e7\u00e3o de ser rude.",d:"S",inv:false},
-{n:26,t:"Posso me preparar mentalmente antes de um evento social.",d:"S",inv:false},
-{n:27,t:"Quando crian\u00e7a, eu era considerado t\u00edmido por outras pessoas.",d:"S",inv:false},
-{n:28,t:"\u00c0s vezes fico preso em um pensamento ou assunto e n\u00e3o consigo parar.",d:"R",inv:false},
-{n:29,t:"Quando fa\u00e7o algo errado, tenho dificuldade em entender por que foi errado.",d:"S",inv:false},
-{n:30,t:"Tenho muita dificuldade em lidar com mudan\u00e7as na minha rotina.",d:"R",inv:false},
-{n:31,t:"Quando crian\u00e7a, eu brincava de faz de conta ou jogos imagin\u00e1rios com outras crian\u00e7as.",d:"S",inv:true},
-{n:32,t:"Quando caminho, presto muita aten\u00e7\u00e3o em como meus passos soam.",d:"M",inv:false},
-{n:33,t:"Consigo perceber quando algu\u00e9m diz uma coisa mas quer dizer outra.",d:"L",inv:true},
-{n:34,t:"Fa\u00e7o amizades facilmente.",d:"S",inv:true},
-{n:35,t:"Frequentemente noto pequenos sons que outras pessoas n\u00e3o percebem.",d:"M",inv:false},
-{n:36,t:"\u00c0s vezes, o som de uma palavra ou um ru\u00eddo agudo pode ser doloroso para os meus ouvidos.",d:"M",inv:false},
-{n:37,t:"Sou um tipo compreensivo de pessoa.",d:"S",inv:true},
-{n:38,t:"N\u00e3o me conecto com personagens de filmes e n\u00e3o consigo sentir o que eles sentem.",d:"S",inv:false},
-{n:39,t:"N\u00e3o consigo identificar quando algu\u00e9m est\u00e1 flertando comigo.",d:"S",inv:false},
-{n:40,t:"Posso ver em minha mente, com detalhes exatos, coisas que me interessam.",d:"R",inv:false},
-{n:41,t:"Mantenho listas de coisas que me interessam, mesmo que n\u00e3o tenham utilidade pr\u00e1tica (ex.: estat\u00edsticas esportivas, hor\u00e1rios de trens, datas hist\u00f3ricas).",d:"R",inv:false},
-{n:42,t:"Quando me sinto sobrecarregado pelos meus sentidos, preciso me isolar para deslig\u00e1-los.",d:"M",inv:false},
-{n:43,t:"Gosto de conversar sobre as coisas com meus amigos.",d:"S",inv:true},
-{n:44,t:"N\u00e3o consigo dizer se algu\u00e9m est\u00e1 interessado ou entediado com o que estou dizendo.",d:"S",inv:false},
-{n:45,t:"Pode ser muito dif\u00edcil ler a face, as m\u00e3os e os movimentos corporais de algu\u00e9m enquanto conversam.",d:"S",inv:false},
-{n:46,t:"A mesma coisa (como roupas ou temperaturas) pode parecer muito diferente para mim em momentos diferentes.",d:"M",inv:false},
-{n:47,t:"Sinto-me muito confort\u00e1vel em encontros rom\u00e2nticos ou em situa\u00e7\u00f5es sociais com outras pessoas.",d:"S",inv:true},
-{n:48,t:"Tento ser o mais prestativo poss\u00edvel quando outras pessoas me contam seus problemas pessoais.",d:"S",inv:true},
-{n:49,t:"Me disseram que tenho uma voz incomum (ex.: mon\u00f3tona, infantil ou aguda).",d:"L",inv:false},
-{n:50,t:"\u00c0s vezes, um pensamento ou assunto fica preso na minha mente e eu tenho que falar sobre ele, mesmo que ningu\u00e9m se interesse.",d:"R",inv:false},
-{n:51,t:"Fa\u00e7o certas coisas com as m\u00e3os repetidamente (ex.: bater palmas, girar gravetos, agitar objetos perto dos olhos).",d:"M",inv:false},
-{n:52,t:"Nunca me interessei pelo que a maioria das pessoas que conhe\u00e7o considera interessante.",d:"R",inv:false},
-{n:53,t:"Sou considerado um tipo compassivo de pessoa.",d:"S",inv:true},
-{n:54,t:"Me dou bem com outras pessoas seguindo um conjunto de regras espec\u00edficas que me ajudam a parecer normal.",d:"S",inv:false},
-{n:55,t:"\u00c9 dif\u00edcil para mim entender como os outros se sentem quando olho para eles.",d:"S",inv:false},
-{n:56,t:"Fui intimidado ou provocado muito quando era crian\u00e7a.",d:"S",inv:false},
-{n:57,t:"Tenho uma necessidade forte de manter a mesmice (sameness) no meu ambiente.",d:"R",inv:false},
-{n:58,t:"N\u00e3o consigo cortar minha comida de forma coordenada.",d:"M",inv:false},
-{n:59,t:"Tenho dificuldade em determinar se algo \u00e9 ou n\u00e3o apropriado em uma situa\u00e7\u00e3o social.",d:"S",inv:false},
-{n:60,t:"Consigo perceber quando algu\u00e9m est\u00e1 entediado.",d:"S",inv:true},
-{n:61,t:"Tenho dificuldade em manter contato visual com outras pessoas.",d:"S",inv:false},
-{n:62,t:"Quando estou em uma multid\u00e3o, sinto-me desconectado e sobrecarregado.",d:"M",inv:false},
-{n:63,t:"Coleciono coisas que me interessam.",d:"R",inv:false},
-{n:64,t:"N\u00e3o consigo dizer quando \u00e9 hora de parar de falar sobre algo que me interessa.",d:"L",inv:false},
-{n:65,t:"\u00c0s vezes sou ofensivo sem perceber.",d:"S",inv:false},
-{n:66,t:"Tenho uma forma peculiar de andar.",d:"M",inv:false},
-{n:67,t:"Tenho dificuldade em entender sarcasmo.",d:"L",inv:false},
-{n:68,t:"Parece que as pessoas sempre precisam me dizer o que est\u00e3o sentindo.",d:"S",inv:false},
-{n:69,t:"Tenho dificuldade em entender piadas ou humor.",d:"L",inv:false},
-{n:70,t:"N\u00e3o gosto de ser tocado por outras pessoas.",d:"M",inv:false},
-{n:71,t:"Tenho dificuldade em entender como uma pessoa se sente com base na express\u00e3o facial.",d:"S",inv:false},
-{n:72,t:"Tenho dificuldade em fazer amigos, mesmo quando me esfor\u00e7o.",d:"S",inv:false},
-{n:73,t:"Tenho melhor compreens\u00e3o de um assunto quando posso ver um padr\u00e3o.",d:"R",inv:false},
-{n:74,t:"N\u00e3o gosto de ser abra\u00e7ado ou segurado.",d:"M",inv:false},
-{n:75,t:"Quando vou a algum lugar, preciso seguir uma rota familiar, sen\u00e3o posso ficar muito confuso e chateado.",d:"R",inv:false},
-{n:76,t:"\u00c9 dif\u00edcil descobrir o que outras pessoas esperam de mim.",d:"S",inv:false},
-{n:77,t:"Gosto de ter amigos pr\u00f3ximos.",d:"S",inv:true},
-{n:78,t:"As pessoas me dizem que eu dou muitos detalhes.",d:"L",inv:false},
-{n:79,t:"Frequentemente me dizem que fa\u00e7o perguntas embara\u00e7osas.",d:"S",inv:false},
-{n:80,t:"Tendo a apontar os erros das outras pessoas.",d:"S",inv:false}
-];
-var OPCOES = ["Nunca verdadeiro","Verdadeiro s\u00f3 quando jovem","Verdadeiro s\u00f3 agora","Verdadeiro agora e quando jovem"];
-var DOMINIOS = {S:"Rela\u00e7\u00e3o Social",L:"Linguagem",M:"Sensorial/Motor",R:"Interesses Restritos"};
+// Itens, opcoes e dominios oficiais vivem em raads-visual.js (RAADS-R, Ritvo et al., 2011)
+var ITENS = window.SYM_RAADS ? window.SYM_RAADS.ITENS : [];
+var OPCOES = window.SYM_RAADS ? window.SYM_RAADS.OPCOES : [];
 
 function gerarQuestionario() {
     var container = document.getElementById('questionario');
@@ -205,118 +137,39 @@ function calcularResultados() {
     if (!nome) { alert('Preencha o nome.'); return; }
     var idade = document.getElementById('idadeCalculada').value;
     if (!idade) { alert('Preencha a data de nascimento.'); return; }
-    var total = 0;
-    var domScores = {S:0, L:0, M:0, R:0};
-    var naoResp = 0;
+    var vals = []; var naoResp = 0;
     for (var i = 0; i < ITENS.length; i++) {
         var resp = document.querySelector('input[name="q' + i + '"]:checked');
-        if (!resp) { naoResp++; continue; }
-        var valor = parseInt(resp.value);
-        if (ITENS[i].inv) valor = 3 - valor;
-        total += valor;
-        domScores[ITENS[i].d] += valor;
+        if (!resp) { naoResp++; vals.push(null); continue; }
+        vals.push(parseInt(resp.value, 10));
     }
     if (naoResp > 0) { alert('Responda todos os 80 itens. Faltam ' + naoResp + '.'); return; }
+    if (!window.SYM_RAADS) { alert('N\u00e3o foi poss\u00edvel carregar o m\u00f3dulo de resultados. Recarregue a p\u00e1gina e tente novamente.'); return; }
+    var res = window.SYM_RAADS.calcular(vals);
     var container = document.getElementById('resultados');
-    var html = '<h2 style="color:#1a237e;text-align:center;margin-bottom:15px">Resultados RAADS-R</h2>';
-    html += '<div style="background:#e8eaf6;padding:15px;border-radius:8px;text-align:center;margin-bottom:15px">';
-    html += '<h3 style="font-size:2em;color:#1a237e">' + total + ' pontos</h3>';
-    var classif = '';
-    var cor = '';
-    if (total >= 65) { classif = 'RASTREIO POSITIVO para TEA'; cor = '#d32f2f'; }
-    else { classif = 'RASTREIO NEGATIVO para TEA'; cor = '#388e3c'; }
-    html += '<p style="font-size:1.2em;color:' + cor + ';font-weight:bold;margin-top:8px">' + classif + '</p>';
-    html += '<p style="font-size:0.9em;color:#666">Ponto de corte: >= 65 (Sens: 97%, Espec: 100%)</p></div>';
-    html += '<h3 style="margin-bottom:10px">Pontua\u00e7\u00e3o por Dom\u00ednio:</h3>';
-    var domKeys = ['S','M','R','L'];
-    var domMax = {S:120, M:48, R:45, L:27};
-    for (var d = 0; d < domKeys.length; d++) {
-        var k = domKeys[d];
-        var pct = Math.round((domScores[k] / domMax[k]) * 100);
-        html += '<div style="margin:8px 0;padding:10px;background:white;border-radius:6px;border-left:4px solid #1a237e">';
-        html += '<strong>' + DOMINIOS[k] + ':</strong> ' + domScores[k] + '/' + domMax[k] + ' (' + pct + '%)';
-        html += '<div style="background:#e0e0e0;height:8px;border-radius:4px;margin-top:5px"><div style="background:#1a237e;height:8px;border-radius:4px;width:' + pct + '%"></div></div></div>';
-    }
-    html += '<p style="font-size:0.85em;color:#666;margin-top:15px;text-align:center"><em>Instrumento de rastreio. N\u00e3o substitui avalia\u00e7\u00e3o diagn\u00f3stica profissional.</em></p>';
-    container.innerHTML = html;
+    container.innerHTML = window.SYM_RAADS.htmlTela(res);
     container.style.display = 'block';
     container.scrollIntoView({behavior:'smooth'});
-    var _respostasObj=(function(){var o={};for(var i=0;i<ITENS.length;i++){var _r=document.querySelector('input[name="q'+i+'"]:checked');if(_r)o[i+1]=parseInt(_r.value);}return o;})();
-    window._escalaDados = {escala:'RAADS-R', paciente:nome, escore:total, classificacao:classif, dominios:domScores, respostas:_respostasObj, idPaciente:(document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''), data:new Date().toISOString()};
+    var _respostasObj = {}; for (var j = 0; j < vals.length; j++) { _respostasObj[j + 1] = vals[j]; }
+    window._escalaDados = {escala:'RAADS-R', paciente:nome, escore:res.total, classificacao:window.SYM_RAADS.classifGeral(res), dominios:window.SYM_RAADS.dadosPainel(res), respostas:_respostasObj, versaoOficial:true, sexo:document.getElementById('sexo').value, idade:idade, idPaciente:(document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''), data:new Date().toISOString()};
     if (window.injetarBotaoSalvar) injetarBotaoSalvar('resultados');
 }
 
 function gerarRelatorioPDF() {
-    if (!window._escalaDados) { calcularResultados(); if (!window._escalaDados) return; }
-    var dados = window._escalaDados;
-    var domMax = {S:120, M:48, R:45, L:27};
-    var domNomes = {S:'Relacao Social', M:'Sensorial/Motor', R:'Interesses Restritos', L:'Linguagem'};
-    var domKeys = ['S','M','R','L'];
-    // Gerar grafico em canvas
-    var canvasG = document.createElement('canvas'); canvasG.width = 700; canvasG.height = 180;
-    var cx = canvasG.getContext('2d');
-    cx.fillStyle = '#fff'; cx.fillRect(0, 0, 700, 180);
-    cx.fillStyle = '#333'; cx.font = 'bold 12px Segoe UI'; cx.textAlign = 'left';
-    cx.fillText('Perfil por Dominio RAADS-R (percentual do maximo)', 10, 15);
-    var bh = 26; var gap = 8; var startY = 30; var maxW = 320; var labelW = 200;
-    for (var gi = 0; gi < domKeys.length; gi++) {
-        var k = domKeys[gi];
-        var by = startY + gi * (bh + gap);
-        var pct = dados.dominios[k] / domMax[k];
-        var bw = pct * maxW;
-        var cor = pct < 0.3 ? '#4caf50' : pct < 0.5 ? '#8bc34a' : pct < 0.7 ? '#ff9800' : '#f44336';
-        cx.fillStyle = '#555'; cx.font = '11px Segoe UI'; cx.textAlign = 'right';
-        cx.fillText(domNomes[k], labelW - 5, by + 17);
-        cx.fillStyle = cor; cx.fillRect(labelW, by, bw, bh);
-        cx.fillStyle = '#333'; cx.font = 'bold 11px Segoe UI'; cx.textAlign = 'left';
-        cx.fillText(dados.dominios[k] + '/' + domMax[k] + ' (' + Math.round(pct*100) + '%)', labelW + bw + 5, by + 17);
+    // PDF igual a tela de resultados (raads-visual.js; o painel usa o mesmo desenho)
+    var nome = document.getElementById('nome').value.trim();
+    if (!nome) { alert('Preencha o nome.'); return; }
+    var vals = [];
+    for (var i = 0; i < ITENS.length; i++) {
+        var resp = document.querySelector('input[name="q' + i + '"]:checked');
+        if (!resp) { alert('Responda todos os 80 itens antes de gerar o PDF.'); return; }
+        vals.push(parseInt(resp.value, 10));
     }
-    // Linha corte (65/240 total ~27%)
-    var limX = labelW + 0.27*maxW; cx.strokeStyle = '#c62828'; cx.setLineDash([4,3]); cx.lineWidth = 1.5;
-    cx.beginPath(); cx.moveTo(limX, startY - 5); cx.lineTo(limX, startY + domKeys.length*(bh+gap)); cx.stroke(); cx.setLineDash([]);
-    cx.fillStyle = '#c62828'; cx.font = '9px Segoe UI'; cx.textAlign = 'center'; cx.fillText('Corte (~27%)', limX, startY - 8);
-    var ly = startY + domKeys.length*(bh+gap) + 8;
-    var cores = [['#4caf50','Baixo (<30%)'],['#8bc34a','Moderado (30-50%)'],['#ff9800','Elevado (50-70%)'],['#f44336','Muito elevado (>=70%)']];
-    cx.font = '10px Segoe UI'; cx.textAlign = 'left';
-    for (var li = 0; li < cores.length; li++) { cx.fillStyle = cores[li][0]; cx.fillRect(labelW + li*130, ly, 12, 12); cx.fillStyle = '#555'; cx.fillText(cores[li][1], labelW + li*130 + 15, ly + 10); }
-    var imgGrafico = canvasG.toDataURL('image/png');
-
-    var jsPDF = window.jspdf.jsPDF; var doc = new jsPDF();
-    doc.setFillColor(26,35,126); doc.rect(0,0,210,30,'F');
-    doc.setTextColor(255,255,255); doc.setFontSize(16); doc.setFont(undefined,'bold');
-    doc.text('RAADS-R - RELATORIO', 105, 15, {align:'center'});
-    doc.setFontSize(10); doc.text('Ritvo Autism Asperger Diagnostic Scale - Revised', 105, 23, {align:'center'});
-    doc.setTextColor(0,0,0); doc.setFont(undefined,'normal'); doc.setFontSize(10);
-    var y = 38;
-    doc.text('Nome: ' + document.getElementById('nome').value, 20, y);
-    var idEl = document.getElementById('idPaciente');
-    if (idEl && idEl.value) doc.text('ID: ' + idEl.value, 140, y);
-    y += 6; doc.text('Idade: ' + (document.getElementById('idadeCalculada').value || ''), 20, y);
-    doc.text('Sexo: ' + (document.getElementById('sexo').value || ''), 120, y);
-    y += 10;
-    doc.setFillColor(232,234,246); doc.rect(15,y-4,180,15,'F');
-    doc.setFont(undefined,'bold'); doc.setFontSize(14);
-    doc.text('TOTAL: ' + dados.escore + ' pontos - ' + dados.classificacao, 105, y+6, {align:'center'});
-    y += 18;
-    // Grafico
-    doc.setTextColor(26,35,126); doc.setFontSize(10); doc.setFont(undefined,'bold');
-    doc.text('PERFIL GRAFICO DOS DOMINIOS', 20, y); y += 3;
-    doc.addImage(imgGrafico, 'PNG', 15, y, 180, 48); y += 52;
-    // Dominios texto
-    doc.setFontSize(11); doc.text('DOMINIOS:', 20, y); y += 8;
-    doc.setFont(undefined,'normal'); doc.setFontSize(10); doc.setTextColor(0,0,0);
-    for (var d = 0; d < domKeys.length; d++) {
-        var k = domKeys[d];
-        doc.text(domNomes[k] + ': ' + dados.dominios[k] + '/' + domMax[k], 25, y); y += 6;
-    }
-    y += 5;
-    doc.setFontSize(9); doc.text('Ponto de corte: >= 65 (Sensibilidade: 97%, Especificidade: 100%)', 20, y); y += 5;
-    doc.text('Referencia: Ritvo et al. (2011). J Autism Dev Disord, 41(8), 1076-1085.', 20, y);
-    doc.setFillColor(80,80,80); doc.rect(0,285,210,12,'F');
-    doc.setTextColor(200,200,200); doc.setFontSize(7);
-    doc.text('Relatorio gerado em: ' + new Date().toLocaleString('pt-BR'), 105, 291, {align:'center'});
-    var ts = new Date();
-    doc.save('RAADS_' + (document.getElementById('nome').value||'Paciente').replace(/\s+/g,'_') + '_' + ts.getFullYear() + String(ts.getMonth()+1).padStart(2,'0') + String(ts.getDate()).padStart(2,'0') + '.pdf');
+    if (!window.SYM_RAADS) { alert('N\u00e3o foi poss\u00edvel carregar o gerador de PDF. Recarregue a p\u00e1gina e tente novamente.'); return; }
+    window.SYM_RAADS.pdf(window.SYM_RAADS.calcular(vals), {
+        nome:nome, sexo:document.getElementById('sexo').value, idade:document.getElementById('idadeCalculada').value,
+        dataAval:document.getElementById('data').value,
+        idPaciente:document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''});
 }
 
 function limparDados() {

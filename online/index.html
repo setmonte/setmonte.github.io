@@ -18034,6 +18034,31 @@
           return;
         }
       }
+      // RAADS-R: registros da versao OFICIAL (d.versaoOficial, desde 10/11/2026) saem no desenho sob medida
+      // (escalas/raads-visual.js). Registros antigos usavam itens/dominios/inversoes que NAO correspondem ao
+      // instrumento original e nao podem ser recalculados: seguem no PDF generico, com nota de aviso.
+      if (String(d.escala || '').toUpperCase() === 'RAADS-R') {
+        if (!d.versaoOficial) {
+          if (!d.notaRodape) d.notaRodape = 'ATENCAO: este registro foi aplicado com uma versao NAO OFICIAL do RAADS-R que existia no site antes de 10/11/2026 (cerca de metade dos itens, os dominios e os itens invertidos diferiam do instrumento de Ritvo et al., 2011). O resultado nao e comparavel ao RAADS-R oficial e nao pode ser recalculado. Recomenda-se reaplicar a versao oficial.';
+        } else if (d.respostas && !r._semPdfNovo) {
+          var _gerarRAADS = function () {
+            var _okR = false;
+            try { _okR = window.SYM_RAADS.pdfPainel(d, r); } catch (eR) {
+              if (typeof window._registrarFalhaPDF === 'function') { try { window._registrarFalhaPDF('gerarPDFEscala(RAADS-R)', (eR && eR.message) || String(eR), d.paciente || ''); } catch (e5) {} }
+            }
+            if (!_okR) { r._semPdfNovo = true; gerarPDFEscala(idx); }
+          };
+          if (window.SYM_RAADS && window.SYM_RAADS.pdfPainel) { _gerarRAADS(); }
+          else {
+            var _sR = document.createElement('script');
+            _sR.src = '../escalas/raads-visual.js?v=' + Date.now();
+            _sR.onload = _gerarRAADS;
+            _sR.onerror = function () { r._semPdfNovo = true; gerarPDFEscala(idx); };
+            document.body.appendChild(_sR);
+          }
+          return;
+        }
+      }
       // ASRS-18: PDF visual sob medida (escalas/asrs18-visual.js) com os pontos de corte OFICIAIS da OMS.
       // Registros anteriores a correcao (sem d.cortesOficiais) saem recalculados, com nota explicativa.
       if (String(d.escala || '').toUpperCase() === 'ASRS-18' && d.respostas && !r._semPdfNovo) {
