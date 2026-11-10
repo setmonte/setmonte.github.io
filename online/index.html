@@ -17982,6 +17982,25 @@
         }
         return;
       }
+      // SCARED (autorrelato, 41 itens): desenho sob medida (escalas/scared-visual.js), refeito pelas 41 respostas salvas (valores 0-2).
+      if (String(d.escala || '').toUpperCase() === 'SCARED' && d.respostas && !r._semPdfNovo) {
+        var _gerarSCARED = function () {
+          var _okSc = false;
+          try { _okSc = window.SYM_SCARED.pdfPainel(d, r); } catch (eSc) {
+            if (typeof window._registrarFalhaPDF === 'function') { try { window._registrarFalhaPDF('gerarPDFEscala(SCARED)', (eSc && eSc.message) || String(eSc), d.paciente || ''); } catch (e3) {} }
+          }
+          if (!_okSc) { r._semPdfNovo = true; gerarPDFEscala(idx); }
+        };
+        if (window.SYM_SCARED && window.SYM_SCARED.pdfPainel) { _gerarSCARED(); }
+        else {
+          var _sSc = document.createElement('script');
+          _sSc.src = '../escalas/scared-visual.js?v=' + Date.now();
+          _sSc.onload = _gerarSCARED;
+          _sSc.onerror = function () { r._semPdfNovo = true; gerarPDFEscala(idx); };
+          document.body.appendChild(_sSc);
+        }
+        return;
+      }
       // CONNERS (Pais, 42 itens): desenho sob medida (escalas/conners-visual.js), refeito pelas 42 respostas salvas
       // (d.respostas ja sao os pontos, com os 3 itens invertidos convertidos - vale para registros antigos).
       if (String(d.escala || '').toUpperCase() === 'CONNERS' && d.respostas && !r._semPdfNovo) {
