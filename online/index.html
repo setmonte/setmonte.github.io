@@ -17956,6 +17956,26 @@
         }
         return;
       }
+      // CONNERS (Pais, 42 itens): desenho sob medida (escalas/conners-visual.js), refeito pelas 42 respostas salvas
+      // (d.respostas ja sao os pontos, com os 3 itens invertidos convertidos - vale para registros antigos).
+      if (String(d.escala || '').toUpperCase() === 'CONNERS' && d.respostas && !r._semPdfNovo) {
+        var _gerarCONN = function () {
+          var _okCn = false;
+          try { _okCn = window.SYM_CONNERS.pdfPainel(d, r); } catch (eCn) {
+            if (typeof window._registrarFalhaPDF === 'function') { try { window._registrarFalhaPDF('gerarPDFEscala(CONNERS)', (eCn && eCn.message) || String(eCn), d.paciente || ''); } catch (e1) {} }
+          }
+          if (!_okCn) { r._semPdfNovo = true; gerarPDFEscala(idx); }
+        };
+        if (window.SYM_CONNERS && window.SYM_CONNERS.pdfPainel) { _gerarCONN(); }
+        else {
+          var _sCn = document.createElement('script');
+          _sCn.src = '../escalas/conners-visual.js?v=' + Date.now();
+          _sCn.onload = _gerarCONN;
+          _sCn.onerror = function () { r._semPdfNovo = true; gerarPDFEscala(idx); };
+          document.body.appendChild(_sCn);
+        }
+        return;
+      }
       // SNAP-IV: desenho sob medida (escalas/snap-visual.js), refeito pelas 26 respostas salvas, com os cortes de Swanson
       // de pais ou professor (d.respondente). Registros sem d.cortesOficiais usavam media >= 1,5 (sem fonte): saem recalculados, com nota.
       if (String(d.escala || '').toUpperCase() === 'SNAP-IV' && d.respostas && !r._semPdfNovo) {
