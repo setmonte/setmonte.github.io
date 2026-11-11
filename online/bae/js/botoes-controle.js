@@ -374,6 +374,29 @@ function bypassarTestes() {
 
 // ===== BOTÃO LARANJA: VOLTAR PARA TESTE ANTERIOR =====
 function voltarTeste() {
+    // MODO LINK: volta para o teste ANTERIOR DA LISTA escolhida (nao pela ordem fixa das 5 telas)
+    if (window.filaTestes && typeof window.testeAtualIndex === 'number' && typeof window.iniciarProximoTesteDaFila === 'function') {
+        if (window.testeAtualIndex <= 0) return; // primeiro da lista: nao ha anterior
+        if (!_confirmarAbandonoComPerdaCredito()) return; // mesmo aviso dos outros botoes
+        pararTesteAtivo('ABANDONADO');
+        var mapaTela = {concentrada:'testeConcentrada', seletiva:'testeSeletiva', dividida:'testeDividida', alternada:'paginaTesteAlternado', sustentada:'testeSustentada'};
+        var atual = window.filaTestes[window.testeAtualIndex];
+        var elAtual = document.getElementById(mapaTela[atual]);
+        if (elAtual) elAtual.style.display = 'none';
+        // O teste atual sera refeito ao passar por ele de novo: libera o registro
+        if (window.resultadosBAE && window.resultadosBAE[atual]) window.resultadosBAE[atual] = null;
+        window.testeAtualIndex--;
+        var anterior = window.filaTestes[window.testeAtualIndex];
+        if (window.resultadosBAE && window.resultadosBAE[anterior]) {
+            registrarExecucao(anterior, 'SERA_REFEITO', window.resultadosBAE[anterior]);
+            window.resultadosBAE[anterior] = null;
+        }
+        resetarEstadoVisualTeste(anterior, mapaTela[anterior]);
+        window.iniciarProximoTesteDaFila(); // mostra a tela do teste anterior com o botao Iniciar
+        if (typeof atualizarBotoesFila === 'function') atualizarBotoesFila();
+        return;
+    }
+    // MODO LOCAL (presencial, sem lista): comportamento antigo
     pararTesteAtivo('ABANDONADO');
 
     const telaAtual = detectarTelaAtual();
@@ -470,6 +493,7 @@ function mostrarBotoesFixos() {
 
 function mostrarBotoesControle() {
     if (typeof configurarHoverBotoes === 'function') configurarHoverBotoes();
+    if (typeof atualizarBotoesFila === 'function') atualizarBotoesFila();
     mostrarBotoesNavegacao();
 }
 function esconderBotoesControle() {}

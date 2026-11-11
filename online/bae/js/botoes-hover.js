@@ -25,11 +25,13 @@ function configurarHoverBotoes() {
         
         var bb = document.createElement('button');
         estilizarBotaoHover(bb, '#3498db', '\u23ed\ufe0f');
+        bb.id = 'btn-hover-pular';
         bb.onclick = bypassarTestes;
         containerBotoes.appendChild(bb);
         
         var bv = document.createElement('button');
         estilizarBotaoHover(bv, '#f39c12', '\u23ee\ufe0f');
+        bv.id = 'btn-hover-voltar';
         bv.onclick = voltarTeste;
         containerBotoes.appendChild(bv);
         
@@ -37,6 +39,7 @@ function configurarHoverBotoes() {
         
         var aberto = false;
         btnHamburger.addEventListener('click', function() {
+            atualizarBotoesFila(); // confere a posicao na lista antes de abrir
             aberto = !aberto;
             containerBotoes.style.left = aberto ? '10px' : '-80px';
             btnHamburger.textContent = aberto ? '\u2715' : '\u2630';
@@ -70,17 +73,19 @@ function configurarHoverBotoes() {
         
         var db = document.createElement('button');
         estilizarBotaoHover(db, '#3498db', '\u23ed\ufe0f');
+        db.id = 'btn-hover-pular';
         db.onclick = bypassarTestes;
         containerBotoes.appendChild(db);
         
         var dv = document.createElement('button');
         estilizarBotaoHover(dv, '#f39c12', '\u23ee\ufe0f');
+        dv.id = 'btn-hover-voltar';
         dv.onclick = voltarTeste;
         containerBotoes.appendChild(dv);
         
         criarBotaoPDFHover(containerBotoes);
         
-        areaHover.addEventListener('mouseenter', function() { containerBotoes.style.left = '10px'; });
+        areaHover.addEventListener('mouseenter', function() { atualizarBotoesFila(); containerBotoes.style.left = '10px'; });
         areaHover.addEventListener('mouseleave', function() { containerBotoes.style.left = '-80px'; });
         containerBotoes.addEventListener('mouseenter', function() { containerBotoes.style.left = '10px'; });
         containerBotoes.addEventListener('mouseleave', function() { containerBotoes.style.left = '-80px'; });
@@ -191,4 +196,24 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
     // Hover so configura depois que iniciar bateria
 }
 
+// Mostra/esconde Pular e Voltar conforme a lista de testes escolhidos pelo profissional:
+// - Voltar so aparece se houver teste ANTES na lista
+// - Pular so aparece se houver teste DEPOIS na lista
+// - So 1 teste escolhido: nenhum dos dois aparece (ficam Encerrar e Finalizar)
+// Sem lista (modo presencial antigo): mantem todos visiveis.
+function atualizarBotoesFila() {
+    var pular = document.getElementById('btn-hover-pular');
+    var voltar = document.getElementById('btn-hover-voltar');
+    var fila = window.filaTestes;
+    var idx = window.testeAtualIndex;
+    if (!fila || typeof idx !== 'number') {
+        if (pular) pular.style.display = 'flex';
+        if (voltar) voltar.style.display = 'flex';
+        return;
+    }
+    if (pular) pular.style.display = (idx < fila.length - 1) ? 'flex' : 'none';
+    if (voltar) voltar.style.display = (idx > 0) ? 'flex' : 'none';
+}
+
 window.configurarHoverBotoes = configurarHoverBotoes;
+window.atualizarBotoesFila = atualizarBotoesFila;
