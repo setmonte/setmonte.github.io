@@ -61,7 +61,24 @@ function configurarHoverBotoes() {
         containerBotoes.style.cssText = 'position:fixed;left:-80px;top:50%;transform:translateY(-50%);z-index:10000;transition:left 0.3s ease;display:flex;flex-direction:column;gap:10px;';
         document.body.appendChild(containerBotoes);
         
-        moverBotoesParaContainer(containerBotoes);
+        // Cria os botoes de controle direto (antes dependia de elementos que nao existem
+        // mais no HTML online, por isso so o lilas aparecia no computador)
+        var dp = document.createElement('button');
+        estilizarBotaoHover(dp, '#e74c3c', '\ud83d\uded1');
+        dp.onclick = pararTeste;
+        containerBotoes.appendChild(dp);
+        
+        var db = document.createElement('button');
+        estilizarBotaoHover(db, '#3498db', '\u23ed\ufe0f');
+        db.onclick = bypassarTestes;
+        containerBotoes.appendChild(db);
+        
+        var dv = document.createElement('button');
+        estilizarBotaoHover(dv, '#f39c12', '\u23ee\ufe0f');
+        dv.onclick = voltarTeste;
+        containerBotoes.appendChild(dv);
+        
+        criarBotaoPDFHover(containerBotoes);
         
         areaHover.addEventListener('mouseenter', function() { containerBotoes.style.left = '10px'; });
         areaHover.addEventListener('mouseleave', function() { containerBotoes.style.left = '-80px'; });
