@@ -82,7 +82,8 @@
                     <strong>Resultado:</strong> Perfil dos 4 Pilares (Fragilizado/Inst&#225;vel/S&#243;lido) + Estilo de Pontua&#231;&#227;o dominante<br>
                     <strong>Eixo 1 &#8212; Pilares:</strong> Sexual, Financeiro, Divertimento, Projeto Futuro (o "corpo" da entidade Casal)<br>
                     <strong>Eixo 2 &#8212; Pontua&#231;&#227;o:</strong> Ponto, Exclama&#231;&#227;o, Interroga&#231;&#227;o (a "alma" da entidade Casal)<br>
-                    <strong>Popula&#231;&#227;o:</strong> Adultos em rela&#231;&#227;o conjugal &#8212; aplica&#231;&#227;o individual por parceiro
+                    <strong>Popula&#231;&#227;o:</strong> Adultos em rela&#231;&#227;o conjugal &#8212; aplica&#231;&#227;o individual por parceiro<br>
+                    <strong>Natureza:</strong> escala autoral (constru&#231;&#227;o pr&#243;pria), sem valida&#231;&#227;o psicom&#233;trica formal
                 </p>
             </div>
             <div class="dados-pessoais">
@@ -114,7 +115,7 @@
             <div class="info-tecnica" id="referencias" style="margin-top:30px; background:#f8f9fa; border-left-color:#880e4f;">
                 <h2 style="color:#880e4f;">Refer&#234;ncias</h2>
                 <p style="color:#555; line-height:1.9; font-size:0.88em;">
-                    <strong>MONTE, S. T.</strong> Pilares e Pontua&#231;&#245;es: A Comunica&#231;&#227;o como Fundamento nas Rela&#231;&#245;es Afetivas Contempor&#226;neas. 2025. (Artigo te&#243;rico &#8212; framework cl&#237;nico).<br><br>
+                    <strong>MONTE, S. T.</strong> Pilares e Pontua&#231;&#245;es: A Comunica&#231;&#227;o como Fundamento nas Rela&#231;&#245;es Afetivas Contempor&#226;neas. 2025. (Artigo te&#243;rico do autor &#8212; framework cl&#237;nico; base desta escala autoral, sem valida&#231;&#227;o formal.)<br><br>
                     <strong>YOUNG, J. E.; KLOSKO, J. S.; WEISHAAR, M. E.</strong> <em>Terapia do Esquema: guia de t&#233;cnicas cognitivo-comportamentais inovadoras</em>. Porto Alegre: Artmed, 2008.<br><br>
                     <strong>PERLS, F.; HEFFERLINE, R.; GOODMAN, P.</strong> <em>Gestalt-terapia</em>. S&#227;o Paulo: Summus, 1997.
                 </p>
@@ -123,51 +124,11 @@
     </div>
     <script src="../id-paciente.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="eppc-visual.js"></script>
     <script>
 // === DADOS ===
-var PILARES = {
-'Sexual': {itens: [0,1,2,3,4], nome: 'Pilar Sexual'},
-'Financeiro': {itens: [5,6,7,8,9,10], nome: 'Pilar Financeiro'},
-'Divertimento': {itens: [11,12,13,14,15], nome: 'Pilar Divertimento'},
-'ProjetoFuturo': {itens: [16,17,18,19,20], nome: 'Pilar Projeto Futuro'}
-};
-var PONTUACOES = {
-'Ponto': {itens: [21,22,23], nome: 'Tend\u00eancia ao Ponto'},
-'Exclamacao': {itens: [24,25,26], nome: 'Tend\u00eancia \u00e0 Exclama\u00e7\u00e3o'},
-'Interrogacao': {itens: [27,28,29], nome: 'Tend\u00eancia \u00e0 Interroga\u00e7\u00e3o'}
-};
-var ITENS = [
-{texto:"Na \u00faltima vez em que tivemos intimidade f\u00edsica, senti proximidade emocional genu\u00edna \u2014 n\u00e3o apenas rotina ou obriga\u00e7\u00e3o.", secao:'pilar', pilar:'Sexual', temporal:true},
-{texto:"Consigo expressar meus desejos e limites sexuais com meu(minha) parceiro(a) sem medo de julgamento.", secao:'pilar', pilar:'Sexual'},
-{texto:"A frequ\u00eancia da nossa vida sexual \u00e9 satisfat\u00f3ria para mim atualmente.", secao:'pilar', pilar:'Sexual'},
-{texto:"Nas \u00faltimas semanas, iniciei ou correspondi a um gesto de desejo (verbal ou f\u00edsico) do(a) meu(minha) parceiro(a).", secao:'pilar', pilar:'Sexual', temporal:true},
-{texto:"Quando h\u00e1 distanciamento sexual entre n\u00f3s, conseguimos conversar sobre isso sem conflito.", secao:'pilar', pilar:'Sexual'},
-{texto:"Sei exatamente como meu(minha) parceiro(a) pensa sobre gastar e poupar dinheiro.", secao:'pilar', pilar:'Financeiro'},
-{texto:"Concordamos, na pr\u00e1tica (n\u00e3o s\u00f3 na teoria), sobre como o dinheiro do casal deve ser administrado.", secao:'pilar', pilar:'Financeiro'},
-{texto:"Decis\u00f5es financeiras importantes s\u00e3o tomadas em conjunto, n\u00e3o impostas por um dos dois.", secao:'pilar', pilar:'Financeiro'},
-{texto:"Na \u00faltima vez que discordamos sobre uma despesa, conseguimos resolver sem que sobrasse m\u00e1goa.", secao:'pilar', pilar:'Financeiro', temporal:true},
-{texto:"Na \u00faltima vez que conversamos sobre uma d\u00edvida ou gasto importante, a conversa n\u00e3o virou briga.", secao:'pilar', pilar:'Financeiro', temporal:true},
-{texto:"Sinto seguran\u00e7a quanto ao futuro financeiro do nosso casal.", secao:'pilar', pilar:'Financeiro'},
-{texto:"Reservamos tempo de qualidade s\u00f3 para n\u00f3s, sem filhos, trabalho ou terceiros.", secao:'pilar', pilar:'Divertimento'},
-{texto:"Nos \u00faltimos 30 dias, fizemos pelo menos uma atividade nova ou diferente da nossa rotina, s\u00f3 os dois.", secao:'pilar', pilar:'Divertimento', temporal:true},
-{texto:"Rimos juntos com frequ\u00eancia no nosso dia a dia.", secao:'pilar', pilar:'Divertimento'},
-{texto:"Sinto que meu(minha) parceiro(a) \u00e9 tamb\u00e9m meu(minha) parceiro(a) de divers\u00e3o, n\u00e3o s\u00f3 de responsabilidades.", secao:'pilar', pilar:'Divertimento'},
-{texto:"Temos interesses ou atividades compartilhadas que nutrem nossa conex\u00e3o.", secao:'pilar', pilar:'Divertimento'},
-{texto:"Temos uma vis\u00e3o compartilhada de para onde nossa rela\u00e7\u00e3o est\u00e1 indo.", secao:'pilar', pilar:'ProjetoFuturo'},
-{texto:"Nos \u00faltimos 3 meses, conversamos sobre pelo menos um plano de longo prazo (filhos, moradia, carreira ou aposentadoria) de forma tranquila, sem evitar o assunto.", secao:'pilar', pilar:'ProjetoFuturo', temporal:true},
-{texto:"Na \u00faltima vez que conversamos sobre planos de longo prazo (filhos, casa, aposentadoria, mudan\u00e7a), meu(minha) parceiro(a) participou ativamente da decis\u00e3o, n\u00e3o apenas concordou ou evitou o assunto.", secao:'pilar', pilar:'ProjetoFuturo', temporal:true},
-{texto:"Quando surgem diverg\u00eancias sobre o futuro, conseguimos negociar um caminho comum.", secao:'pilar', pilar:'ProjetoFuturo'},
-{texto:"Consigo citar uma decis\u00e3o importante dos \u00faltimos 6 meses em que abrimos m\u00e3o de algo que um de n\u00f3s queria, em favor do que fazia sentido pro casal.", secao:'pilar', pilar:'ProjetoFuturo', temporal:true},
-{texto:"Quando discordamos, tendo a encerrar o assunto com uma posi\u00e7\u00e3o fixa, sem muito espa\u00e7o para negocia\u00e7\u00e3o.", secao:'pontuacao', tipo:'Ponto'},
-{texto:"Prefiro afirmar o que penso de forma direta, mesmo que isso feche a conversa.", secao:'pontuacao', tipo:'Ponto'},
-{texto:"Meu(minha) parceiro(a) costuma sentir que \u0022n\u00e3o h\u00e1 mais o que discutir\u0022 depois que eu falo.", secao:'pontuacao', tipo:'Ponto'},
-{texto:"Quando algo me incomoda, expresso isso com intensidade emocional (tom mais alto, urg\u00eancia).", secao:'pontuacao', tipo:'Exclamacao'},
-{texto:"Costumo demonstrar entusiasmo e efusividade quando algo bom acontece entre n\u00f3s.", secao:'pontuacao', tipo:'Exclamacao'},
-{texto:"Em momentos de tens\u00e3o, minha comunica\u00e7\u00e3o tende a pressionar ou exigir uma resposta r\u00e1pida.", secao:'pontuacao', tipo:'Exclamacao'},
-{texto:"Quando discordamos, costumo fazer perguntas para entender o ponto de vista do outro antes de concluir.", secao:'pontuacao', tipo:'Interrogacao'},
-{texto:"Prefiro perguntar \u0022como voc\u00ea est\u00e1 vendo isso?\u0022 a afirmar minha posi\u00e7\u00e3o de imediato.", secao:'pontuacao', tipo:'Interrogacao'},
-{texto:"Sinto que minhas perguntas ao(a) meu(minha) parceiro(a) abrem espa\u00e7o para di\u00e1logo, n\u00e3o s\u00e3o ret\u00f3ricas ou acusat\u00f3rias.", secao:'pontuacao', tipo:'Interrogacao'}
-];
+// Itens, calculo, tela e PDF vivem em eppc-visual.js (EPPC, escala autoral)
+var ITENS = window.SYM_EPPC ? window.SYM_EPPC.ITENS : [];
 var OPCOES = [
 {valor:1, texto:"Discordo<br>totalmente"},
 {valor:2, texto:"Discordo<br>em parte"},
@@ -212,391 +173,52 @@ function gerarQuestionario() {
     }
     c.innerHTML = h;
 }
-function classificarPilar(soma) {
-    if (soma <= 9) return {texto: 'Fragilizado', cor: '#f44336', corFundo: '#ffcdd2', r:244,g:67,b:54};
-    if (soma <= 14) return {texto: 'Inst\u00e1vel', cor: '#ff9800', corFundo: '#fff3e0', r:255,g:152,b:0};
-    return {texto: 'S\u00f3lido', cor: '#4caf50', corFundo: '#e8f5e9', r:76,g:175,b:80};
-}
-function classificarPontuacao(soma) {
-    if (soma <= 5) return {texto: 'Discreto', cor: '#90a4ae', r:144,g:164,b:174};
-    if (soma <= 8) return {texto: 'Moderado', cor: '#7b1fa2', r:123,g:31,b:162};
-    return {texto: 'Expressivo', cor: '#c2185b', r:194,g:24,b:91};
-}
-
-function classificarCorpo(total) {
-    if (total <= 36) return {texto: 'Corpo Fragilizado', desc: 'M\u00faltiplos pilares em risco', cor: '#f44336', corFundo: '#ffcdd2'};
-    if (total <= 58) return {texto: 'Corpo em Ajuste', desc: 'Equil\u00edbrio parcial', cor: '#ff9800', corFundo: '#fff3e0'};
-    return {texto: 'Corpo S\u00f3lido', desc: 'Estrutura bem sustentada', cor: '#4caf50', corFundo: '#e8f5e9'};
+// devolve as 30 respostas (0 = Nao aconteceu, 1-4) ou null se faltar algum item
+function obterRespostas() {
+    var r = [];
+    for (var i = 0; i < ITENS.length; i++) {
+        var s = document.querySelector('input[name="q' + i + '"]:checked');
+        if (!s) return null;
+        r.push(parseInt(s.value, 10));
+    }
+    return r;
 }
 
 function calcularResultados() {
     var nome = document.getElementById('nome').value;
     if (!nome) { alert('Preencha o nome.'); return; }
-    // Verificar se todos respondidos
-    var totalItens = ITENS.length;
-    var respondidos = document.querySelectorAll('input[type="radio"]:checked').length;
-    if (respondidos < totalItens) { alert('Responda todos os ' + totalItens + ' itens antes de calcular. Faltam ' + (totalItens - respondidos) + '.'); return; }
-
-    // Coletar respostas
-    var respostas = [];
-    for (var i = 0; i < totalItens; i++) {
-        var sel = document.querySelector('input[name="q' + i + '"]:checked');
-        respostas.push(parseInt(sel.value));
+    var idade = document.getElementById('idadeCalculada').value;
+    if (!idade) { alert('Preencha a data de nascimento.'); return; }
+    var sexo = document.getElementById('sexo').value;
+    if (!sexo) { alert('Selecione o sexo (Masculino ou Feminino).'); return; }
+    var r = obterRespostas();
+    if (!r) {
+        var respondidos = 0;
+        for (var i = 0; i < ITENS.length; i++) { if (document.querySelector('input[name="q' + i + '"]:checked')) respondidos++; }
+        alert('Responda todos os ' + ITENS.length + ' itens antes de calcular. Faltam ' + (ITENS.length - respondidos) + '.');
+        return;
     }
-
-    // Calcular pilares
-    var resultPilares = {};
-    var totalPilares = 0;
-    var totalMaximo = 0;
-    var pilarKeys = Object.keys(PILARES);
-    for (var p = 0; p < pilarKeys.length; p++) {
-        var key = pilarKeys[p];
-        var soma = 0;
-        var itensValidos = 0;
-        var itens = PILARES[key].itens;
-        for (var i = 0; i < itens.length; i++) {
-            if (respostas[itens[i]] > 0) { soma += respostas[itens[i]]; itensValidos++; }
-        }
-        // Se tem itens validos, calcula proporcional a 5 itens (escala 1-4, max 20)
-        var somaProporcional = itensValidos > 0 ? Math.round((soma / itensValidos) * 5) : 0;
-        resultPilares[key] = {soma: somaProporcional, somaReal: soma, itensRespondidos: itensValidos, classificacao: classificarPilar(somaProporcional)};
-        totalPilares += somaProporcional;
-    }
-    var classCorpo = classificarCorpo(totalPilares);
-
-    // Calcular pontuacoes comunicacionais
-    var resultPontuacoes = {};
-    var pontKeys = Object.keys(PONTUACOES);
-    var maiorPont = '';
-    var maiorPontScore = 0;
-    for (var p = 0; p < pontKeys.length; p++) {
-        var key = pontKeys[p];
-        var soma = 0;
-        var itens = PONTUACOES[key].itens;
-        for (var i = 0; i < itens.length; i++) soma += respostas[itens[i]];
-        resultPontuacoes[key] = {soma: soma, media: parseFloat((soma / 3).toFixed(2))};
-        if (soma > maiorPontScore) { maiorPontScore = soma; maiorPont = key; }
-    }
-
-    // Identificar pilar mais fragil
-    var pilarMaisFraco = '';
-    var menorSoma = 26;
-    for (var p = 0; p < pilarKeys.length; p++) {
-        if (resultPilares[pilarKeys[p]].soma < menorSoma) {
-            menorSoma = resultPilares[pilarKeys[p]].soma;
-            pilarMaisFraco = pilarKeys[p];
-        }
-    }
-    // Montar HTML resultados
+    if (!window.SYM_EPPC) { alert('N\u00e3o foi poss\u00edvel carregar o m\u00f3dulo de resultados. Recarregue a p\u00e1gina e tente novamente.'); return; }
+    // Calculo, tela e PDF vem do desenho da EPPC (eppc-visual.js)
+    var res = window.SYM_EPPC.calcular(r);
     var el = document.getElementById('resultados');
-    var h = '<h2>Resultados EPPC</h2>';
-
-    // Box classificacao geral do corpo
-    h += '<div class="rastreio-box" style="background:' + classCorpo.corFundo + ';border:3px solid ' + classCorpo.cor + ';color:' + classCorpo.cor + ';padding:20px;border-radius:10px;text-align:center;margin:20px 0;font-size:1.2em;font-weight:700;">' + classCorpo.texto.toUpperCase() + ' \u2014 ' + totalPilares + '/80 pontos<br><span style="font-size:0.75em;font-weight:normal;">' + classCorpo.desc + '</span></div>';
-
-    // Cards dos pilares
-    h += '<h3 style="color:#880e4f;margin:20px 0 10px;">Eixo 1: Os Quatro Pilares</h3>';
-    var nomesPilarExibicao = {'Sexual':'Pilar Sexual','Financeiro':'Pilar Financeiro','Divertimento':'Pilar Divertimento','ProjetoFuturo':'Pilar Projeto Futuro'};
-    for (var p = 0; p < pilarKeys.length; p++) {
-        var key = pilarKeys[p];
-        var rp = resultPilares[key];
-        var pct = Math.round((rp.soma / 20) * 100);
-        h += '<div class="dominio-card"><h4>' + nomesPilarExibicao[key] + '</h4>';
-        h += '<p>' + rp.soma + ' / 20 (' + pct + '%) \u2014 <span style="color:' + rp.classificacao.cor + ';font-weight:bold;">' + rp.classificacao.texto + '</span>' + (rp.itensRespondidos < PILARES[key].itens.length ? ' <span style="font-size:0.8em;color:#999;">('+rp.itensRespondidos+'/'+PILARES[key].itens.length+' itens respondidos)</span>' : '') + '</p>';
-        h += '<div class="barra-progresso"><div class="barra-preenchida" style="width:' + pct + '%;background:' + rp.classificacao.cor + ';"></div></div></div>';
-    }
-
-    // Pontuacoes comunicacionais
-    h += '<h3 style="color:#880e4f;margin:20px 0 10px;">Eixo 2: Estilo de Pontua\u00e7\u00e3o Comunicacional</h3>';
-    var nomesPontExibicao = {'Ponto':'Ponto (.) \u2014 Fechamento','Exclamacao':'Exclama\u00e7\u00e3o (!) \u2014 Intensidade','Interrogacao':'Interroga\u00e7\u00e3o (?) \u2014 Abertura'};
-    var emojis = {'Ponto':'.','Exclamacao':'!','Interrogacao':'?'};
-    for (var p = 0; p < pontKeys.length; p++) {
-        var key = pontKeys[p];
-        var rpt = resultPontuacoes[key];
-        var pct = Math.round((rpt.soma / 12) * 100);
-        var destaque = (key === maiorPont) ? 'border:2px solid #880e4f;' : '';
-        h += '<div class="dominio-card" style="' + destaque + '"><h4>' + nomesPontExibicao[key] + (key === maiorPont ? ' <span style="background:#880e4f;color:white;padding:2px 8px;border-radius:10px;font-size:0.7em;">DOMINANTE</span>' : '') + '</h4>';
-        h += '<p>' + rpt.soma + ' / 12 (m\u00e9dia: ' + rpt.media + ')</p>';
-        h += '<div class="barra-progresso"><div class="barra-preenchida" style="width:' + pct + '%;background:#c2185b;"></div></div></div>';
-    }
-    // === SINTESE IA ===
-    var analise = '<div style="background:linear-gradient(135deg,#fce4ec,#f8bbd0);border-radius:12px;padding:25px;margin-top:20px;border:2px solid #c2185b;">';
-    analise += '<h3 style="color:#880e4f;margin-bottom:15px;">S\u00edntese Integrada <span style="display:inline-block;background:#880e4f;color:white;padding:3px 10px;border-radius:12px;font-size:0.75em;margin-left:8px;vertical-align:middle;">IA</span></h3>';
-
-    // Panorama geral
-    analise += '<div style="background:white;border-radius:10px;padding:18px;margin-bottom:15px;border-left:4px solid #c2185b;">';
-    analise += '<h4 style="color:#880e4f;margin-bottom:8px;">Panorama Geral</h4><p style="color:#444;line-height:1.7;font-size:0.95em;">';
-    if (totalPilares <= 36) analise += 'O relacionamento apresenta <strong>fragilidade estrutural significativa</strong> (escore ' + totalPilares + '/80). M\u00faltiplos pilares est\u00e3o comprometidos, indicando que a "entidade Casal" est\u00e1 sob press\u00e3o importante. Recomenda-se interven\u00e7\u00e3o terap\u00eautica com foco nos pilares mais fr\u00e1geis.';
-    else if (totalPilares <= 58) analise += 'O relacionamento apresenta <strong>equil\u00edbrio parcial</strong> (escore ' + totalPilares + '/80). Existem pilares funcionais, mas h\u00e1 \u00e1reas que merecem aten\u00e7\u00e3o cl\u00ednica. A "entidade Casal" est\u00e1 em ajuste \u2014 pode evoluir para solidez ou fragilizar-se, dependendo de como os pontos de tens\u00e3o forem manejados.';
-    else analise += 'O relacionamento apresenta <strong>estrutura s\u00f3lida</strong> (escore ' + totalPilares + '/80). Os quatro pilares est\u00e3o bem sustentados, indicando que a "entidade Casal" possui base funcional saud\u00e1vel. Foco terap\u00eautico pode ser em manuten\u00e7\u00e3o e fortalecimento cont\u00ednuo.';
-    analise += '</p></div>';
-
-    // Pilar mais fragil
-    analise += '<div style="background:white;border-radius:10px;padding:18px;margin-bottom:15px;border-left:4px solid #ff6f00;">';
-    analise += '<h4 style="color:#e65100;margin-bottom:8px;">Pilar que Merece Mais Aten\u00e7\u00e3o</h4><p style="color:#444;line-height:1.7;font-size:0.95em;">';
-    if (pilarMaisFraco === 'Sexual') analise += '<strong>Pilar Sexual (' + resultPilares.Sexual.soma + '/20)</strong> \u2014 A intimidade f\u00edsica e a conex\u00e3o sexual est\u00e3o fragilizadas. Pode haver dificuldade em expressar desejos, insatisfa\u00e7\u00e3o com a frequ\u00eancia ou dist\u00e2ncia emocional na sexualidade. Este pilar frequentemente reflete o estado dos demais.';
-    else if (pilarMaisFraco === 'Financeiro') analise += '<strong>Pilar Financeiro (' + resultPilares.Financeiro.soma + '/20)</strong> \u2014 Quest\u00f5es de dinheiro geram tens\u00e3o no casal. Pode haver falta de acordo, ressentimentos sobre gastos ou aus\u00eancia de planejamento financeiro conjunto. O financeiro \u00e9 frequentemente fonte de conflitos silenciosos.';
-    else if (pilarMaisFraco === 'Divertimento') analise += '<strong>Pilar Divertimento (' + resultPilares.Divertimento.soma + '/20)</strong> \u2014 O casal est\u00e1 funcionando mais como "s\u00f3cios de responsabilidades" do que como parceiros de vida. Faltam momentos de leveza, riso e prazer compartilhado. Este pilar \u00e9 o combust\u00edvel emocional da rela\u00e7\u00e3o.';
-    else analise += '<strong>Pilar Projeto Futuro (' + resultPilares.ProjetoFuturo.soma + '/20)</strong> \u2014 H\u00e1 incerteza sobre a dire\u00e7\u00e3o do relacionamento. Pode existir falta de conversa sobre planos, diverg\u00eancias n\u00e3o negociadas ou sensa\u00e7\u00e3o de que cada um caminha para um lado. Sem projeto futuro compartilhado, o v\u00ednculo perde sentido de continuidade.';
-    analise += '</p></div>';
-
-    // Estilo comunicacional
-    analise += '<div style="background:white;border-radius:10px;padding:18px;border-left:4px solid #2e7d32;">';
-    analise += '<h4 style="color:#2e7d32;margin-bottom:8px;">Estilo Comunicacional Dominante</h4><p style="color:#444;line-height:1.7;font-size:0.95em;">';
-    if (maiorPont === 'Ponto') analise += 'Predomina o <strong>estilo Ponto (.)</strong> \u2014 comunica\u00e7\u00e3o mais fechada e assertiva unilateral. Tende a encerrar discuss\u00f5es com posi\u00e7\u00f5es fixas, o que pode gerar no(a) parceiro(a) a sensa\u00e7\u00e3o de n\u00e3o ser ouvido(a). Em terapia, trabalhar a abertura ao di\u00e1logo e a tolera\u00e2ncia \u00e0 ambiguidade.';
-    else if (maiorPont === 'Exclamacao') analise += 'Predomina o <strong>estilo Exclama\u00e7\u00e3o (!)</strong> \u2014 comunica\u00e7\u00e3o intensa e emocional. Pode manifestar-se como entusiasmo genu\u00edno ou como press\u00e3o e cobran\u00e7a. Avaliar se a intensidade \u00e9 percebida como calor ou como invas\u00e3o pelo(a) parceiro(a).';
-    else analise += 'Predomina o <strong>estilo Interroga\u00e7\u00e3o (?)</strong> \u2014 comunica\u00e7\u00e3o mais aberta e colaborativa. H\u00e1 tend\u00eancia a buscar compreender o outro antes de concluir. Segundo o framework te\u00f3rico, este estilo est\u00e1 geralmente associado a maior satisfa\u00e7\u00e3o relacional.';
-    analise += '</p></div></div>';
-    h += analise;
-
-    h += '<div class="disclaimer"><strong>Nota t\u00e9cnica:</strong> Este instrumento \u00e9 de constru\u00e7\u00e3o pr\u00f3pria, sem valida\u00e7\u00e3o psicom\u00e9trica formal. Para uso cl\u00ednico qualitativo (ferramenta de conversa e diagn\u00f3stico em sess\u00e3o). <strong>Uso sugerido:</strong> aplicar individualmente a cada parceiro e comparar os perfis lado a lado.</div>';
-
-    el.innerHTML = h;
+    el.innerHTML = window.SYM_EPPC.htmlTela(res);
     el.style.display = 'block';
     el.scrollIntoView({behavior: 'smooth'});
-
-    // window._escalaDados
-    window._escalaDados = {escala:'EPPC', paciente:nome, escore:totalPilares, classificacao:classCorpo.texto, dominios:{sexual:{pontuacao:resultPilares.Sexual.soma,max:20,classificacao:resultPilares.Sexual.classificacao.texto},financeiro:{pontuacao:resultPilares.Financeiro.soma,max:20,classificacao:resultPilares.Financeiro.classificacao.texto},divertimento:{pontuacao:resultPilares.Divertimento.soma,max:20,classificacao:resultPilares.Divertimento.classificacao.texto},projetoFuturo:{pontuacao:resultPilares.ProjetoFuturo.soma,max:20,classificacao:resultPilares.ProjetoFuturo.classificacao.texto},ponto:{pontuacao:resultPontuacoes.Ponto.soma,max:12,media:resultPontuacoes.Ponto.media,classificacao:classificarPontuacao(resultPontuacoes.Ponto.soma).texto},exclamacao:{pontuacao:resultPontuacoes.Exclamacao.soma,max:12,media:resultPontuacoes.Exclamacao.media,classificacao:classificarPontuacao(resultPontuacoes.Exclamacao.soma).texto},interrogacao:{pontuacao:resultPontuacoes.Interrogacao.soma,max:12,media:resultPontuacoes.Interrogacao.media,classificacao:classificarPontuacao(resultPontuacoes.Interrogacao.soma).texto}}, respostas:(function(){var o={};for(var i=0;i<respostas.length;i++){o[i+1]=respostas[i];}return o;})(), estiloDominante:maiorPont, idPaciente:document.getElementById('idPaciente')?document.getElementById('idPaciente').value:'', idade:document.getElementById('idadeCalculada').value, sexo:document.getElementById('sexo').value, data:new Date().toISOString()};
+    window._escalaDados = {escala:'EPPC', paciente:nome, escore:res.total, classificacao:window.SYM_EPPC.classifGeral(res), dominios:window.SYM_EPPC.dadosPainel(res), respostas:window.SYM_EPPC.respostasObj(res), estiloDominante:res.dominante, idPaciente:(document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''), idade:idade, sexo:sexo, data:new Date().toISOString()};
     if (window.injetarBotaoSalvar) injetarBotaoSalvar('resultados');
 }
+
 function gerarRelatorioPDF() {
-    if (!window._escalaDados) { alert('Calcule os resultados primeiro.'); return; }
-    var d = window._escalaDados;
-    var doc = new window.jspdf.jsPDF();
-    var W = 210, M = 15, TW = W - 2*M;
-    var y = 0;
-    // === PAGINA 1 ===
-    // Cabecalho gradiente (simulado com 2 rects)
-    doc.setFillColor(136,14,79); doc.rect(0,0,W,42,'F');
-    doc.setFillColor(194,24,91); doc.rect(0,30,W,12,'F');
-    doc.setTextColor(255,255,255); doc.setFontSize(18); doc.setFont(undefined,'bold');
-    doc.text('EPPC - RELATORIO', W/2, 14, {align:'center'});
-    doc.setFontSize(10); doc.setFont(undefined,'normal');
-    doc.text('Escala de Pilares e Pontuacoes Conjugais', W/2, 22, {align:'center'});
-    doc.text('Framework: Terapia do Esquema + Gestalt (Monte, 2025)', W/2, 29, {align:'center'});
-    doc.setFontSize(9);
-    doc.text('Paciente: ' + d.paciente + '  |  Data: ' + new Date().toLocaleDateString('pt-BR') + '  |  Sexo: ' + (d.sexo||'N/I'), W/2, 38, {align:'center'});
-    y = 50;
-    // Box dados pessoais
-    doc.setFillColor(252,228,236); doc.rect(M, y, TW, 20, 'F');
-    doc.setDrawColor(136,14,79); doc.setLineWidth(1); doc.line(M, y, M, y+20);
-    doc.setTextColor(136,14,79); doc.setFontSize(10); doc.setFont(undefined,'bold');
-    doc.text('DADOS DO AVALIANDO', M+4, y+6);
-    doc.setTextColor(40,40,40); doc.setFontSize(9); doc.setFont(undefined,'normal');
-    var txtId = 'ID: ' + (d.idPaciente||'N/I') + '    Idade: ' + (d.idade||'N/I') + '    Sexo: ' + (d.sexo||'N/I');
-    doc.text(txtId, M+4, y+12);
-    doc.text('Data: ' + new Date().toLocaleDateString('pt-BR'), M+4, y+17);
-    y += 27;
-    // === ESCORE TOTAL COM GRAFICO ===
-    doc.setFillColor(136,14,79); doc.rect(M, y, TW, 9, 'F');
-    doc.setTextColor(255,255,255); doc.setFontSize(10); doc.setFont(undefined,'bold');
-    doc.text('ESCORE TOTAL DOS PILARES', M+3, y+6);
-    y += 13;
-    // Classificacao corpo
-    var corCorpo = d.classificacao === 'Corpo Fragilizado' ? [244,67,54] : (d.classificacao === 'Corpo em Ajuste' ? [255,152,0] : [76,175,80]);
-    doc.setFillColor(corCorpo[0],corCorpo[1],corCorpo[2]);
-    doc.roundedRect(M, y, TW, 14, 3, 3, 'F');
-    doc.setTextColor(255,255,255); doc.setFontSize(13); doc.setFont(undefined,'bold');
-    doc.text('Escore: ' + d.escore + ' / 80   |   ' + d.classificacao, W/2, y+9, {align:'center'});
-    y += 18;
-    // Barra horizontal total
-    doc.setFillColor(230,230,230); doc.roundedRect(M, y, TW, 6, 2, 2, 'F');
-    var pctTotal = Math.round((d.escore / 80) * TW);
-    doc.setFillColor(corCorpo[0],corCorpo[1],corCorpo[2]); doc.roundedRect(M, y, pctTotal, 6, 2, 2, 'F');
-    doc.setTextColor(80,80,80); doc.setFontSize(7); doc.setFont(undefined,'normal');
-    doc.text('0', M, y+10); doc.text('46', M+Math.round(0.46*TW), y+10); doc.text('73', M+Math.round(0.73*TW), y+10); doc.text('100', M+TW-5, y+10);
-    doc.setFontSize(6);
-    doc.text('Fragilizado', M+5, y+14); doc.text('Em Ajuste', M+Math.round(0.5*TW), y+14); doc.text('Solido', M+Math.round(0.8*TW), y+14);
-    y += 20;
-    // === TABELA + GRAFICOS DOS 4 PILARES ===
-    doc.setFillColor(136,14,79); doc.rect(M, y, TW, 9, 'F');
-    doc.setTextColor(255,255,255); doc.setFontSize(10); doc.setFont(undefined,'bold');
-    doc.text('EIXO 1: OS QUATRO PILARES (Corpo da Entidade Casal)', M+3, y+6);
-    y += 13;
-    // Header tabela
-    doc.setFillColor(248,187,208); doc.rect(M, y, TW, 7, 'F');
-    doc.setTextColor(136,14,79); doc.setFontSize(8); doc.setFont(undefined,'bold');
-    doc.text('Pilar', M+3, y+5); doc.text('Escore', M+55, y+5); doc.text('%', M+80, y+5); doc.text('Classificacao', M+92, y+5); doc.text('Grafico', M+125, y+5);
-    y += 9;
-    var pilarNomes = ['Sexual','Financeiro','Divertimento','Projeto Futuro'];
-    var pilarChaves = ['sexual','financeiro','divertimento','projetoFuturo'];
-    for (var i = 0; i < pilarNomes.length; i++) {
-        var pd = d.dominios[pilarChaves[i]];
-        var pct = Math.round((pd.pontuacao / pd.max) * 100);
-        var cls = classificarPilar(pd.pontuacao);
-        if (i % 2 === 0) { doc.setFillColor(252,228,236); doc.rect(M, y-4, TW, 10, 'F'); }
-        doc.setTextColor(40,40,40); doc.setFontSize(9); doc.setFont(undefined,'normal');
-        doc.text(pilarNomes[i], M+3, y+2);
-        doc.text(pd.pontuacao + ' / ' + pd.max, M+55, y+2);
-        doc.text(pct + '%', M+80, y+2);
-        doc.setTextColor(cls.r, cls.g, cls.b); doc.setFont(undefined,'bold');
-        doc.text(cls.texto, M+92, y+2);
-        // Barra grafico
-        doc.setFillColor(230,230,230); doc.roundedRect(M+125, y-2, 50, 5, 1.5, 1.5, 'F');
-        var barW = Math.round((pct/100)*50);
-        doc.setFillColor(cls.r, cls.g, cls.b); doc.roundedRect(M+125, y-2, barW, 5, 1.5, 1.5, 'F');
-        y += 10;
-    }
-    y += 5;
-    // === TABELA + GRAFICOS DAS PONTUACOES ===
-    doc.setFillColor(136,14,79); doc.rect(M, y, TW, 9, 'F');
-    doc.setTextColor(255,255,255); doc.setFontSize(10); doc.setFont(undefined,'bold');
-    doc.text('EIXO 2: ESTILO DE PONTUACAO COMUNICACIONAL (Alma do Casal)', M+3, y+6);
-    y += 13;
-    // Header tabela
-    doc.setFillColor(248,187,208); doc.rect(M, y, TW, 7, 'F');
-    doc.setTextColor(136,14,79); doc.setFontSize(8); doc.setFont(undefined,'bold');
-    doc.text('Estilo', M+3, y+5); doc.text('Escore', M+55, y+5); doc.text('Media', M+80, y+5); doc.text('Intensidade', M+100, y+5); doc.text('Grafico', M+135, y+5);
-    y += 9;
-    var estNomes = ['Ponto (.)', 'Exclamacao (!)', 'Interrogacao (?)'];
-    var estChaves = ['ponto','exclamacao','interrogacao'];
-    var estKeys = ['Ponto','Exclamacao','Interrogacao'];
-    for (var i = 0; i < estChaves.length; i++) {
-        var ed = d.dominios[estChaves[i]];
-        var pctE = Math.round((ed.pontuacao / ed.max) * 100);
-        var clsE = classificarPontuacao(ed.pontuacao);
-        var isDom = (estKeys[i] === d.estiloDominante);
-        if (i % 2 === 0) { doc.setFillColor(252,228,236); doc.rect(M, y-4, TW, 10, 'F'); }
-        if (isDom) { doc.setFillColor(255,243,224); doc.rect(M, y-4, TW, 10, 'F'); }
-        doc.setTextColor(40,40,40); doc.setFontSize(9); doc.setFont(undefined,'normal');
-        doc.text(estNomes[i] + (isDom ? ' *' : ''), M+3, y+2);
-        doc.text(ed.pontuacao + ' / ' + ed.max, M+55, y+2);
-        doc.text((ed.pontuacao/3).toFixed(1), M+80, y+2);
-        doc.setTextColor(clsE.r, clsE.g, clsE.b); doc.setFont(undefined,'bold');
-        doc.text(clsE.texto, M+100, y+2);
-        // Barra grafico
-        doc.setFillColor(230,230,230); doc.roundedRect(M+135, y-2, 40, 5, 1.5, 1.5, 'F');
-        var barWe = Math.round((pctE/100)*40);
-        doc.setFillColor(clsE.r, clsE.g, clsE.b); doc.roundedRect(M+135, y-2, barWe, 5, 1.5, 1.5, 'F');
-        y += 10;
-    }
-    y += 3;
-    doc.setTextColor(136,14,79); doc.setFontSize(8); doc.setFont(undefined,'italic');
-    doc.text('* Estilo comunicacional DOMINANTE', M+3, y); y += 4;
-    doc.setFont(undefined,'normal'); doc.setTextColor(80,80,80); doc.setFontSize(7);
-    doc.text('Discreto (3-6): pouco expressivo | Moderado (7-10): presente | Expressivo (11-15): estilo marcante', M+3, y);
-    y += 8;
-    // Disclaimer
-    doc.setFillColor(255,248,235); doc.rect(M, y, TW, 14, 'F');
-    doc.setDrawColor(200,150,50); doc.setLineWidth(0.5); doc.line(M, y, M, y+14);
-    doc.setTextColor(150,80,0); doc.setFontSize(7); doc.setFont(undefined,'bold');
-    doc.text('NOTA TECNICA:', M+4, y+5);
-    doc.setFont(undefined,'normal');
-    doc.text('Instrumento de construcao propria sem validacao psicometrica formal. Uso clinico qualitativo.', M+4, y+9);
-    doc.text('Uso sugerido: aplicar individualmente a cada parceiro e comparar perfis lado a lado.', M+4, y+13);
-    // Rodape pag 1
-    doc.setFillColor(80,80,80); doc.rect(0,285,W,12,'F');
-    doc.setTextColor(200,200,200); doc.setFontSize(7); doc.setFont(undefined,'normal');
-    doc.text('SYM Online | EPPC | Gerado em ' + new Date().toLocaleString('pt-BR') + ' | Pag. 1/3', W/2, 291, {align:'center'});
-    // === PAGINA 2: SINTESE TEXTUAL ===
-    doc.addPage(); y = 15;
-    doc.setFillColor(136,14,79); doc.rect(0,0,W,10,'F');
-    doc.setTextColor(255,255,255); doc.setFontSize(9); doc.setFont(undefined,'bold');
-    doc.text('EPPC - Sintese Integrada', W/2, 7, {align:'center'});
-    y = 18;
-    // Panorama geral
-    doc.setFillColor(252,228,236); doc.rect(M, y, TW, 8, 'F');
-    doc.setTextColor(136,14,79); doc.setFontSize(10); doc.setFont(undefined,'bold');
-    doc.text('Panorama Geral', M+3, y+6); y += 12;
-    doc.setTextColor(40,40,40); doc.setFontSize(9); doc.setFont(undefined,'normal');
-    var txtPan = '';
-    if (d.escore <= 36) txtPan = 'O relacionamento apresenta fragilidade estrutural significativa (escore ' + d.escore + '/80). Multiplos pilares estao comprometidos, indicando que a "entidade Casal" esta sob pressao importante. Recomenda-se intervencao terapeutica com foco nos pilares mais frageis.';
-    else if (d.escore <= 58) txtPan = 'O relacionamento apresenta equilibrio parcial (escore ' + d.escore + '/80). Existem pilares funcionais, mas ha areas que merecem atencao clinica. A "entidade Casal" esta em ajuste - pode evoluir para solidez ou fragilizar-se, dependendo de como os pontos de tensao forem manejados.';
-    else txtPan = 'O relacionamento apresenta estrutura solida (escore ' + d.escore + '/80). Os quatro pilares estao bem sustentados, indicando que a "entidade Casal" possui base funcional saudavel. Foco terapeutico pode ser em manutencao e fortalecimento continuo.';
-    var linhasPan = doc.splitTextToSize(txtPan, TW-6);
-    doc.text(linhasPan, M+3, y); y += linhasPan.length * 4.5 + 6;
-    // Detalhe de cada pilar
-    doc.setFillColor(252,228,236); doc.rect(M, y, TW, 8, 'F');
-    doc.setTextColor(136,14,79); doc.setFontSize(10); doc.setFont(undefined,'bold');
-    doc.text('Analise por Pilar', M+3, y+6); y += 12;
-    var descPilares = {
-        'sexual': 'Pilar Sexual - A intimidade fisica e a conexao sexual. Avalia proximidade emocional, comunicacao de desejos e satisfacao com a frequencia.',
-        'financeiro': 'Pilar Financeiro - Administracao conjunta do dinheiro. Avalia acordo sobre gastos, decisoes compartilhadas e seguranca financeira.',
-        'divertimento': 'Pilar Divertimento - Leveza e prazer compartilhado. Avalia tempo de qualidade, atividades conjuntas e presenca de riso no cotidiano.',
-        'projetoFuturo': 'Pilar Projeto Futuro - Visao compartilhada de futuro. Avalia planejamento conjunto, negociacao de divergencias e sentido de continuidade.'
-    };
-    for (var i = 0; i < pilarChaves.length; i++) {
-        var pk = pilarChaves[i];
-        var pd2 = d.dominios[pk];
-        var cls2 = classificarPilar(pd2.pontuacao);
-        doc.setTextColor(cls2.r, cls2.g, cls2.b); doc.setFontSize(9); doc.setFont(undefined,'bold');
-        doc.text(pilarNomes[i] + ': ' + pd2.pontuacao + '/20 (' + cls2.texto + ')', M+3, y);
-        y += 5;
-        doc.setTextColor(60,60,60); doc.setFont(undefined,'normal'); doc.setFontSize(8);
-        var linhasP = doc.splitTextToSize(descPilares[pk], TW-10);
-        doc.text(linhasP, M+5, y); y += linhasP.length * 3.8 + 5;
-    }
-    y += 4;
-    // Estilo comunicacional textual
-    doc.setFillColor(252,228,236); doc.rect(M, y, TW, 8, 'F');
-    doc.setTextColor(136,14,79); doc.setFontSize(10); doc.setFont(undefined,'bold');
-    doc.text('Estilo Comunicacional Dominante', M+3, y+6); y += 12;
-    doc.setTextColor(40,40,40); doc.setFontSize(9); doc.setFont(undefined,'normal');
-    var txtEst = '';
-    if (d.estiloDominante === 'Ponto') txtEst = 'Predomina o estilo Ponto (.) - comunicacao mais fechada e assertiva unilateral. Tende a encerrar discussoes com posicoes fixas, o que pode gerar no(a) parceiro(a) a sensacao de nao ser ouvido(a). Em terapia, trabalhar a abertura ao dialogo e a tolerancia a ambiguidade.';
-    else if (d.estiloDominante === 'Exclamacao') txtEst = 'Predomina o estilo Exclamacao (!) - comunicacao intensa e emocional. Pode manifestar-se como entusiasmo genuino ou como pressao e cobranca. Avaliar se a intensidade e percebida como calor ou como invasao pelo(a) parceiro(a).';
-    else txtEst = 'Predomina o estilo Interrogacao (?) - comunicacao mais aberta e colaborativa. Ha tendencia a buscar compreender o outro antes de concluir. Segundo o framework teorico, este estilo esta geralmente associado a maior satisfacao relacional.';
-    var linhasEst = doc.splitTextToSize(txtEst, TW-6);
-    doc.text(linhasEst, M+3, y); y += linhasEst.length * 4.5 + 8;
-    // Resumo visual comparativo (mini-grafico de barras verticais)
-    doc.setFillColor(248,248,248); doc.rect(M, y, TW, 45, 'F');
-    doc.setDrawColor(200,200,200); doc.rect(M, y, TW, 45);
-    doc.setTextColor(136,14,79); doc.setFontSize(9); doc.setFont(undefined,'bold');
-    doc.text('Comparativo Visual dos Pilares', W/2, y+8, {align:'center'});
-    // 4 barras verticais
-    var barBaseY = y + 40;
-    var barMaxH = 25;
-    var barSpacing = TW / 5;
-    for (var i = 0; i < 4; i++) {
-        var pd3 = d.dominios[pilarChaves[i]];
-        var cls3 = classificarPilar(pd3.pontuacao);
-        var barH = Math.round((pd3.pontuacao / 20) * barMaxH);
-        var barX = M + barSpacing * (i + 0.7);
-        // Barra fundo
-        doc.setFillColor(230,230,230); doc.rect(barX, barBaseY - barMaxH, 14, barMaxH, 'F');
-        // Barra valor
-        doc.setFillColor(cls3.r, cls3.g, cls3.b); doc.rect(barX, barBaseY - barH, 14, barH, 'F');
-        // Label
-        doc.setTextColor(60,60,60); doc.setFontSize(7); doc.setFont(undefined,'normal');
-        doc.text(pilarNomes[i].substring(0,6), barX+2, barBaseY+5);
-        doc.setTextColor(cls3.r, cls3.g, cls3.b); doc.setFont(undefined,'bold');
-        doc.text(pd3.pontuacao + '', barX+4, barBaseY - barH - 2);
-    }
-    y += 50;
-    // Rodape pag 2
-    doc.setFillColor(80,80,80); doc.rect(0,285,W,12,'F');
-    doc.setTextColor(200,200,200); doc.setFontSize(7); doc.setFont(undefined,'normal');
-    doc.text('SYM Online | EPPC | Gerado em ' + new Date().toLocaleString('pt-BR') + ' | Pag. 2/3', W/2, 291, {align:'center'});
-    // === PAGINA 3: REFERENCIAS ===
-    doc.addPage(); y = 15;
-    doc.setFillColor(136,14,79); doc.rect(0,0,W,10,'F');
-    doc.setTextColor(255,255,255); doc.setFontSize(9); doc.setFont(undefined,'bold');
-    doc.text('EPPC - Referencias Bibliograficas', W/2, 7, {align:'center'});
-    y = 22;
-    doc.setTextColor(40,40,40); doc.setFontSize(9); doc.setFont(undefined,'normal');
-    doc.text('MONTE, S. T. Pilares e Pontuacoes: A Comunicacao como Fundamento nas Relacoes', M, y); y += 5;
-    doc.text('Afetivas Contemporaneas. 2025. (Artigo teorico - framework clinico).', M+5, y); y += 9;
-    doc.text('YOUNG, J. E.; KLOSKO, J. S.; WEISHAAR, M. E. Terapia do Esquema: guia de tecnicas', M, y); y += 5;
-    doc.text('cognitivo-comportamentais inovadoras. Porto Alegre: Artmed, 2008.', M+5, y); y += 9;
-    doc.text('PERLS, F.; HEFFERLINE, R.; GOODMAN, P. Gestalt-terapia. Sao Paulo: Summus, 1997.', M, y); y += 12;
-    // Legenda
-    doc.setFillColor(248,248,248); doc.rect(M, y, TW, 35, 'F');
-    doc.setDrawColor(136,14,79); doc.setLineWidth(0.5); doc.line(M, y, M, y+35);
-    doc.setTextColor(136,14,79); doc.setFontSize(9); doc.setFont(undefined,'bold');
-    doc.text('Legenda de Classificacoes', M+4, y+7);
-    doc.setTextColor(60,60,60); doc.setFontSize(8); doc.setFont(undefined,'normal');
-    doc.text('PILARES: Fragilizado (0-9) | Instavel (10-14) | Solido (15-20)', M+4, y+14);
-    doc.text('CORPO: Fragilizado (0-36) | Em Ajuste (37-58) | Solido (59-80)', M+4, y+20);
-    doc.text('PONTUACAO: Discreto (3-5) | Moderado (6-8) | Expressivo (9-12)', M+4, y+26);
-    doc.text('Estilo DOMINANTE: maior escore entre Ponto/Exclamacao/Interrogacao', M+4, y+32);
-    // Rodape pag 3
-    doc.setFillColor(80,80,80); doc.rect(0,285,W,12,'F');
-    doc.setTextColor(200,200,200); doc.setFontSize(7); doc.setFont(undefined,'normal');
-    doc.text('SYM Online | EPPC | Gerado em ' + new Date().toLocaleString('pt-BR') + ' | Pag. 3/3', W/2, 291, {align:'center'});
-    // Salvar
-    var nomeArq = 'EPPC_' + d.paciente.replace(/\s+/g,'_') + '_' + new Date().toISOString().slice(0,10).replace(/-/g,'') + '.pdf';
-    doc.save(nomeArq);
+    // PDF igual a tela de resultados (eppc-visual.js; o painel usa o mesmo desenho)
+    var nome = document.getElementById('nome').value;
+    if (!nome) { alert('Preencha o nome.'); return; }
+    var r = obterRespostas();
+    if (!r) { alert('Responda todos os ' + ITENS.length + ' itens antes de gerar o PDF.'); return; }
+    if (!window.SYM_EPPC) { alert('N\u00e3o foi poss\u00edvel carregar o gerador de PDF. Recarregue a p\u00e1gina e tente novamente.'); return; }
+    window.SYM_EPPC.pdf(window.SYM_EPPC.calcular(r), {nome:nome, sexo:document.getElementById('sexo').value, idade:document.getElementById('idadeCalculada').value, dataAval:document.getElementById('data').value, idPaciente:document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''});
 }
+
 function limparDados() {
     if (!confirm('Tem certeza que deseja limpar todos os dados?')) return;
     document.getElementById('nome').value = '';

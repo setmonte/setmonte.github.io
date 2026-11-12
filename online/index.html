@@ -17982,6 +17982,84 @@
         }
         return;
       }
+      // ERT-VT (escala autoral, 20 itens): desenho sob medida (escalas/ertvt-visual.js), refeito pelas respostas salvas (d.respostas 1..20, valores 0-4).
+      // Fica antes do bloco generico das demais ERTs (que exclui a ERT-VT).
+      if (String(d.escala || '').toUpperCase() === 'ERT-VT' && d.respostas && !r._semPdfNovo) {
+        var _gerarVT = function () {
+          var _okVt = false;
+          try { _okVt = window.SYM_ERTVT.pdfPainel(d, r); } catch (eVt) {
+            if (typeof window._registrarFalhaPDF === 'function') { try { window._registrarFalhaPDF('gerarPDFEscala(ERT-VT)', (eVt && eVt.message) || String(eVt), d.paciente || ''); } catch (e8) {} }
+          }
+          if (!_okVt) { r._semPdfNovo = true; gerarPDFEscala(idx); }
+        };
+        if (window.SYM_ERTVT && window.SYM_ERTVT.pdfPainel) { _gerarVT(); }
+        else {
+          var _sVt = document.createElement('script');
+          _sVt.src = '../escalas/ertvt-visual.js?v=' + Date.now();
+          _sVt.onload = _gerarVT;
+          _sVt.onerror = function () { r._semPdfNovo = true; gerarPDFEscala(idx); };
+          document.body.appendChild(_sVt);
+        }
+        return;
+      }
+      // DIZCALC (escala autoral, 30 itens): desenho sob medida (escalas/dizcalc-visual.js), refeito pelas respostas salvas (d.respostas 1..30, valores 0-3).
+      if (String(d.escala || '').toUpperCase() === 'DIZCALC' && d.respostas && !r._semPdfNovo) {
+        var _gerarDZ = function () {
+          var _okDz = false;
+          try { _okDz = window.SYM_DIZCALC.pdfPainel(d, r); } catch (eDz) {
+            if (typeof window._registrarFalhaPDF === 'function') { try { window._registrarFalhaPDF('gerarPDFEscala(DIZCALC)', (eDz && eDz.message) || String(eDz), d.paciente || ''); } catch (e7) {} }
+          }
+          if (!_okDz) { r._semPdfNovo = true; gerarPDFEscala(idx); }
+        };
+        if (window.SYM_DIZCALC && window.SYM_DIZCALC.pdfPainel) { _gerarDZ(); }
+        else {
+          var _sDz = document.createElement('script');
+          _sDz.src = '../escalas/dizcalc-visual.js?v=' + Date.now();
+          _sDz.onload = _gerarDZ;
+          _sDz.onerror = function () { r._semPdfNovo = true; gerarPDFEscala(idx); };
+          document.body.appendChild(_sDz);
+        }
+        return;
+      }
+      // EPPC (escala autoral, 30 itens): desenho sob medida (escalas/eppc-visual.js), refeito pelas respostas salvas (d.respostas 1..30, 0 = Nao aconteceu).
+      if (String(d.escala || '').toUpperCase() === 'EPPC' && d.respostas && !r._semPdfNovo) {
+        var _gerarEPPC = function () {
+          var _okEp = false;
+          try { _okEp = window.SYM_EPPC.pdfPainel(d, r); } catch (eEp) {
+            if (typeof window._registrarFalhaPDF === 'function') { try { window._registrarFalhaPDF('gerarPDFEscala(EPPC)', (eEp && eEp.message) || String(eEp), d.paciente || ''); } catch (e6) {} }
+          }
+          if (!_okEp) { r._semPdfNovo = true; gerarPDFEscala(idx); }
+        };
+        if (window.SYM_EPPC && window.SYM_EPPC.pdfPainel) { _gerarEPPC(); }
+        else {
+          var _sEp = document.createElement('script');
+          _sEp.src = '../escalas/eppc-visual.js?v=' + Date.now();
+          _sEp.onload = _gerarEPPC;
+          _sEp.onerror = function () { r._semPdfNovo = true; gerarPDFEscala(idx); };
+          document.body.appendChild(_sEp);
+        }
+        return;
+      }
+      // CY-BOCS (escala de gravidade em entrevista): desenho sob medida (escalas/cybocs-visual.js), refeito pelas respostas salvas
+      // (d.respostas: obs1..obs5, comp6..comp10, compl11..compl16). Faixas de referencia da Y-BOCS, nao validadas para criancas.
+      if (String(d.escala || '').toUpperCase() === 'CY-BOCS' && d.respostas && !r._semPdfNovo) {
+        var _gerarCYB = function () {
+          var _okCy = false;
+          try { _okCy = window.SYM_CYBOCS.pdfPainel(d, r); } catch (eCy) {
+            if (typeof window._registrarFalhaPDF === 'function') { try { window._registrarFalhaPDF('gerarPDFEscala(CY-BOCS)', (eCy && eCy.message) || String(eCy), d.paciente || ''); } catch (e5) {} }
+          }
+          if (!_okCy) { r._semPdfNovo = true; gerarPDFEscala(idx); }
+        };
+        if (window.SYM_CYBOCS && window.SYM_CYBOCS.pdfPainel) { _gerarCYB(); }
+        else {
+          var _sCy = document.createElement('script');
+          _sCy.src = '../escalas/cybocs-visual.js?v=' + Date.now();
+          _sCy.onload = _gerarCYB;
+          _sCy.onerror = function () { r._semPdfNovo = true; gerarPDFEscala(idx); };
+          document.body.appendChild(_sCy);
+        }
+        return;
+      }
       // DISLEXIA (checklist autoral, 78 itens): desenho sob medida (escalas/dislexia-visual.js), refeito pelas 78 respostas brutas salvas,
       // com a inversao dos 44 itens positivos (registros antigos, sem d.pontuacaoInvertida, saem recalculados e com nota).
       if (String(d.escala || '').toUpperCase() === 'DISLEXIA' && d.respostas && !r._semPdfNovo) {
