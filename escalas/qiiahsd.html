@@ -44,124 +44,57 @@
 <div class="container">
     <div class="header"><h1>QIIAHSD</h1><p>Question�rio de Identifica��o de Indicadores de AH/SD</p></div>
     <div class="content">
-        <div class="dados-pessoais info-tecnica" style="position:relative"><button onclick="window.print()" style="position:absolute;top:15px;right:15px;padding:8px 16px;background:#1565c0;color:white;border:none;border-radius:15px;cursor:pointer;font-size:13px">Imprimir</button><h2>Informa&#231;&#245;es T&#233;cnicas</h2><p style="color:#555;line-height:1.6;font-size:0.9em"><strong>Instrumento:</strong> QIIAHSD<br><strong>Escala:</strong> Likert 5 pontos</p></div>
+        <div class="dados-pessoais info-tecnica" style="position:relative"><button onclick="window.print()" style="position:absolute;top:15px;right:15px;padding:8px 16px;background:#1565c0;color:white;border:none;border-radius:15px;cursor:pointer;font-size:13px">Imprimir</button><h2>Informa&#231;&#245;es T&#233;cnicas</h2><p style="color:#555;line-height:1.6;font-size:0.9em"><strong>Instrumento:</strong> QIIAHSD-R &#8212; Question&#225;rio de Identifica&#231;&#227;o de Indicadores de AH/SD, vers&#227;o Respons&#225;veis (perguntas 5 a 63)<br><strong>Autoria:</strong> Dra. Susana Graciela P&#233;rez Barrera P&#233;rez e Soraia Napole&#227;o Freitas (2016)<br><strong>Perguntas 5 a 9:</strong> abertas (texto). <strong>Perguntas 10 a 63:</strong> Nunca, Raramente, &#192;s vezes, Frequentemente, Sempre<br><strong>Interpreta&#231;&#227;o:</strong> compara&#231;&#227;o com as respostas mais comuns em pessoas com AH/SD (Quadro 2 do manual); n&#227;o h&#225; gabarito, soma nem ponto de corte</p></div>
         <div class="dados-pessoais"><h2>Dados Pessoais</h2>
             <div class="form-row"><div class="form-group"><label>Nome:</label><input type="text" id="nome"></div><div class="form-group"><label>Data de Nascimento:</label><input type="date" id="dataNascimento" onchange="calcularIdade()"></div></div>
             <div class="form-row"><div class="form-group"><label>Idade:</label><input type="text" id="idade" readonly style="background:#f0f0f0"></div><div class="form-group"><label>Sexo:</label><select id="sexo"><option value="">Selecione</option><option value="Masculino">Masculino</option><option value="Feminino">Feminino</option></select></div><div class="form-group"><label>Escolaridade:</label><select id="escolaridade"><option value="">Selecione</option><option value="Fundamental incompleto">Fundamental incompleto</option><option value="Fundamental completo">Fundamental completo</option><option value="Medio incompleto">M&#233;dio incompleto</option><option value="Medio completo">M&#233;dio completo</option><option value="Superior incompleto">Superior incompleto</option><option value="Superior completo">Superior completo</option><option value="Pos-graduacao">P&#243;s-gradua&#231;&#227;o</option></select></div><div class="form-group"><label>Data:</label><input type="date" id="data"></div></div>
         </div>
-        <div id="questionario"></div>
+        <div class="instrucoes" style="background:#e8eaf6;padding:15px 20px;border-radius:10px;margin-bottom:20px;border-left:5px solid #3949ab;"><h3 style="color:#1a237e;margin-bottom:8px;">&#128221; Instru&#231;&#245;es</h3><p style="font-size:0.95em;color:#444;">Responda considerando o comportamento do(a) seu/sua filho(a) nas atividades de interesse dele(a), n&#227;o necessariamente na escola, e ao longo do tempo (n&#227;o apenas hoje).</p></div>
+<div id="questionario"></div>
         <div class="botoes"><button class="btn btn-primary" onclick="calcularResultados()">Calcular Resultados</button><button class="btn btn-secondary" onclick="gerarRelatorioPDF()">Gerar PDF</button><button class="btn btn-danger" onclick="limparDados()">Limpar Dados</button></div>
         <div id="resultados" class="resultados"></div>
+<div class="info-tecnica" id="referencias" style="margin-top:30px;background:#f8f9fa;border-left-color:#3949ab;"><h2 style="color:#3949ab;">Refer&#234;ncias</h2><p style="color:#555;line-height:1.9;font-size:0.88em;"><strong>P&#201;REZ, S. G. P. B.; FREITAS, S. N.</strong> <em>Manual de identifica&#231;&#227;o de Altas Habilidades/Superdota&#231;&#227;o</em>. Guarapuava: Apprehendere, 2016. 121 p. ISBN 978-85-68398-11-1. <span style="color:#777;">(Question&#225;rios &#169; Dra. Susana Graciela P&#233;rez Barrera P&#233;rez, 2016.)</span></p></div>
     </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="qiiahsd-visual.js"></script>
 <script>
-var BLOCOS = {
-"Caracter\u00edsticas Gerais":[
-"Com quantos anos seu/sua filho/a come\u00e7ou a ler (n\u00e3o s\u00f3 o seu nome, mas frases)?",
-"Ele/ela l\u00ea por conta pr\u00f3pria livros de seu interesse? (fora os da escola). Quantos por ano?",
-"Sobre que assuntos seu/sua filho/a mais gosta de conversar ou estudar ou que atividades mais gosta de fazer?",
-"Que idade t\u00eam os/as 4 melhores amigos/as dele/dela?",
-"Em quais \u00e1reas seu/sua filho/a \u00e9 um/uma dos/das melhores da sua turma?"
-],
-"Comunica\u00e7\u00e3o":[
-"Seu/sua filho/a se sente diferente aos seus colegas na maneira de pensar, sentir ou agir?",
-"Seu/sua filho/a prefere trabalhar/estudar/treinar/praticar sozinho/a?",
-"Seu/sua filho/a prefere ler livros mais dif\u00edceis, ou enciclop\u00e9dias, biografias ou atlas?",
-"Seu/sua filho/a \u00e9 independente e faz as coisas sozinho/a?",
-"Seu/sua filho/a tem senso de humor e \u00e0s vezes encontra humor em situa\u00e7\u00f5es que n\u00e3o s\u00e3o humor\u00edsticas para os demais?",
-"Seu/sua filho/a se preocupa com temas que normalmente interessam aos adultos, como viol\u00eancia, corrup\u00e7\u00e3o, fome, injusti\u00e7a?",
-"Seu/sua filho/a \u00e9 perfeccionista?",
-"Ele/a \u00e9 mais observador/a que seus colegas, percebendo coisas que os demais n\u00e3o percebem?",
-"Seu/sua filho/a gosta e prefere jogar xadrez ou jogos de estrat\u00e9gia?",
-"Seu/sua filho/a \u00e9 autossuficiente?"
-],
-"Lideran\u00e7a":[
-"Seu/sua filho/a \u00e9 escolhido/a pelos seus colegas e amigos para fun\u00e7\u00f5es de l\u00edder (l\u00edder de turma, coordenador/a)?",
-"Ele/ela \u00e9 cooperativo/a com os demais?",
-"Ele/ela tende a organizar o grupo?",
-"Ele/ela sabe se expressar bem e convence os outros com os seus argumentos?"
-],
-"Habilidade Acima da M\u00e9dia":[
-"A mem\u00f3ria dele/a \u00e9 muito destacada, especialmente em assuntos do seu interesse?",
-"Ele/ela tem muitas informa\u00e7\u00f5es sobre os temas que s\u00e3o de seu interesse?",
-"Seu/sua filho/a conhece mais palavras que seus colegas, ou palavras mais dif\u00edceis e complexas que seus colegas n\u00e3o conhecem?",
-"Ele/a tenta entender coisas complicadas examinando-as parte por parte?",
-"Seu/sua filho/a aprende rapidamente coisas que lhe interessam e usa o que aprendeu em outras \u00e1reas?",
-"Seu/sua filho/a percebe facilmente as rela\u00e7\u00f5es entre as partes e o todo?",
-"Normalmente, seu/sua filho/a aprende mais de uma hist\u00f3ria, um filme, etc. do que as outras crian\u00e7as de sua idade?",
-"Seu/sua filho/a tenta descobrir o 'como' e o 'porqu\u00ea' das coisas fazendo perguntas inteligentes?",
-"As notas ou conceitos do/a seu/sua filho/a na escola s\u00e3o melhores que as dos demais colegas da sua turma?",
-"Seu/sua filho/a aprende mais r\u00e1pido que seus colegas?",
-"Seu/sua filho/a se adapta facilmente a situa\u00e7\u00f5es novas ou as modifica?",
-"Seu/sua filho/a tem um pensamento abstrato muito desenvolvido?"
-],
-"Criatividade":[
-"As ideias que ele/ela prop\u00f5e s\u00e3o vistas como diferentes ou esquisitas pelos demais?",
-"Seu/sua filho/a \u00e9 muito curioso/a?",
-"Seu/sua filho/a tem muitas ideias, solu\u00e7\u00f5es e respostas incomuns, diferentes e inteligentes?",
-"Seu/sua filho/a gosta de arriscar-se?",
-"Ele/a gosta de enfrentar desafios?",
-"Ele/ela \u00e9 muito imaginativo/a e inventivo/a?",
-"Ele/a \u00e9 sens\u00edvel \u00e0s coisas bonitas?",
-"Seu/sua filho/a \u00e9 inconformista e n\u00e3o se importa em ser diferente?",
-"Seu/sua filho/a sabe compreender ideias diferentes das suas?",
-"Fica chateado/a quando tem que repetir um exerc\u00edcio de algo que j\u00e1 sabe?",
-"Ele/a descobre novos e diferentes caminhos para solucionar problemas?",
-"Ele/ela \u00e9 questionador/a quando algum adulto fala algo com o qual n\u00e3o concorda?",
-"Ele/a presta aten\u00e7\u00e3o, mesmo que o assunto n\u00e3o lhe interesse?",
-"Os cadernos dele/a s\u00e3o completos e organizados?",
-"Ele/a gosta de cumprir regras?"
-],
-"Comprometimento com a Tarefa":[
-"Seu/sua filho/a dedica muito mais tempo e energia a algum tema ou atividade que gosta ou que lhe interessa?",
-"Seu/sua filho/a \u00e9 muito exigente e cr\u00edtico/a consigo mesmo/a, e nunca fica satisfeito/a com o que faz?",
-"Seu/sua filho/a insiste em buscar solu\u00e7\u00f5es para os problemas?",
-"Ele/a tem sua pr\u00f3pria organiza\u00e7\u00e3o?",
-"Seu/sua filho/a \u00e9 muito seguro/a e, \u00e0s vezes, teimoso/a, em suas convic\u00e7\u00f5es?",
-"Ele/a precisa de muito est\u00edmulo para terminar um trabalho que lhe interessa?",
-"Seu/sua filho/a deixa de fazer outras coisas para envolver-se numa atividade que lhe interessa?",
-"Seu/sua filho/a sabe identificar as \u00e1reas de dificuldade que podem surgir em uma atividade?",
-"Seu/sua filho/a sabe estabelecer prioridades com facilidade?",
-"Ele/a consegue prever as etapas e os detalhes para realizar uma atividade?",
-"Ele/ela \u00e9 persistente nas atividades que lhe interessam e busca concluir as tarefas?",
-"Seu/sua filho/a \u00e9 interessado/a e eficiente na organiza\u00e7\u00e3o de tarefas?",
-"Ele/ela sabe distinguir as consequ\u00eancias e os efeitos de a\u00e7\u00f5es?"
-]
-};
-var OPCOES = ["Nunca","Raramente","Ocasionalmente","Frequentemente","Sempre"];
+// Perguntas, comparacao com o Quadro 2, tela e PDF vivem em qiiahsd-visual.js (QIIAHSD-R, perguntas 5 a 63)
+function gerarQuestionario(){ document.getElementById('questionario').innerHTML = window.SYM_QIIAHSD ? window.SYM_QIIAHSD.htmlQuestionario() : ''; }
+function calcularIdade(){var dn=document.getElementById('dataNascimento').value;if(!dn)return;var nasc=new Date(dn+'T00:00:00');var hoje=new Date();var anos=hoje.getFullYear()-nasc.getFullYear();var meses=hoje.getMonth()-nasc.getMonth();if(hoje.getDate()<nasc.getDate())meses--;if(meses<0){anos--;meses+=12;}document.getElementById('idade').value=anos+' anos, '+meses+' meses';}
+// devolve {escala:{10..63:1-5}, abertas:{5..9:texto}} ou null se faltar alguma pergunta de escala
+function obterRespostas(){var esc={},ab={},q,s,falta=0;for(q=10;q<=63;q++){s=document.querySelector('input[name="q'+q+'"]:checked');if(!s){falta++;}else{esc[q]=parseInt(s.value,10);}}if(falta>0)return null;for(q=5;q<=9;q++){var e=document.getElementById('ab'+q);ab[q]=e?e.value.trim():'';}return {escala:esc,abertas:ab};}
+function calcularResultados() {
+    var nome = document.getElementById('nome').value;
+    if (!nome) { alert('Preencha o nome do paciente.'); return; }
+    var idade = document.getElementById('idade').value;
+    if (!idade) { alert('Preencha a data de nascimento.'); return; }
+    var sexo = document.getElementById('sexo').value;
+    if (!sexo) { alert('Selecione o sexo (Masculino ou Feminino).'); return; }
+    var r = obterRespostas();
+    if (!r) { alert('Responda todos os itens antes de calcular.'); return; }
+    if (!window.SYM_QIIAHSD) { alert('N\u00e3o foi poss\u00edvel carregar o m\u00f3dulo de resultados. Recarregue a p\u00e1gina e tente novamente.'); return; }
 
-function gerarQuestionario(){var c=document.getElementById("questionario");var html="";var idx=0;var blocos=Object.keys(BLOCOS);for(var b=0;b<blocos.length;b++){html+='<div class="bloco"><div class="bloco-header">'+blocos[b]+'</div>';for(var i=0;i<BLOCOS[blocos[b]].length;i++){html+='<div class="item"><div class="item-texto"><span class="item-numero">'+(idx+1)+'.</span> '+BLOCOS[blocos[b]][i]+'</div>';html+='<div class="opcoes">';for(var v=0;v<OPCOES.length;v++){html+='<div class="opcao"><input type="radio" id="it'+idx+'_'+(v+1)+'" name="it'+idx+'" value="'+(v+1)+'"><label for="it'+idx+'_'+(v+1)+'">'+OPCOES[v]+'</label></div>';}html+='</div></div>';idx++;}html+='</div>';}c.innerHTML=html;}
+    // Calculo, tela e PDF vem do mesmo desenho (qiiahsd-visual.js)
+    var res = window.SYM_QIIAHSD.calcular(r);
+    var el = document.getElementById('resultados');
+    el.innerHTML = window.SYM_QIIAHSD.htmlTela(res);
+    el.style.display = 'block';
+    el.scrollIntoView({behavior: 'smooth'});
+    window._escalaDados = {escala:'QIIAHSD', paciente:nome, escore:window.SYM_QIIAHSD.escore(res), classificacao:window.SYM_QIIAHSD.classifGeral(res), dominios:window.SYM_QIIAHSD.dadosPainel(res), respostas:window.SYM_QIIAHSD.respostasObj(res), abertas:window.SYM_QIIAHSD.abertasObj(res), versaoEscala:2, idPaciente:(document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''), idade:idade, sexo:sexo, data:new Date().toISOString()};
+    if (window.injetarBotaoSalvar) injetarBotaoSalvar('resultados');
+}
 
-function calcularIdade(){var dn=document.getElementById("dataNascimento").value;if(!dn)return;var nasc=new Date(dn+"T00:00:00");var hoje=new Date();var anos=hoje.getFullYear()-nasc.getFullYear();var meses=hoje.getMonth()-nasc.getMonth();if(hoje.getDate()<nasc.getDate())meses--;if(meses<0){anos--;meses+=12;}document.getElementById("idade").value=anos+" anos, "+meses+" meses";}
+function gerarRelatorioPDF() {
+    // PDF igual a tela de resultados (qiiahsd-visual.js; o painel usa o mesmo desenho)
+    var nome = document.getElementById('nome').value;
+    if (!nome) { alert('Preencha o nome do paciente.'); return; }
+    var r = obterRespostas();
+    if (!r) { alert('Responda todos os itens antes de gerar o PDF.'); return; }
+    if (!window.SYM_QIIAHSD) { alert('N\u00e3o foi poss\u00edvel carregar o gerador de PDF. Recarregue a p\u00e1gina e tente novamente.'); return; }
 
-function calcularResultados(){var nome=document.getElementById("nome").value.trim();if(!nome){alert("Preencha o nome.");return;}var _idade=document.getElementById("idadeCalculada").value;if(!_idade){alert("Preencha a data de nascimento.");return;}var resultados={};var totalGeral=0;var idx=0;var itensResp=0;var totalItens=0;var blocos=Object.keys(BLOCOS);for(var b=0;b<blocos.length;b++){var pont=0;var itens=0;for(var i=0;i<BLOCOS[blocos[b]].length;i++){var resp=document.querySelector('input[name="it'+idx+'"]:checked');if(resp){pont+=parseInt(resp.value);itens++;itensResp++;}idx++;totalItens++;}var media=itens>0?parseFloat((pont/itens).toFixed(2)):0;resultados[blocos[b]]={pontuacao:pont,media:media,itens:itens,max:BLOCOS[blocos[b]].length*OPCOES.length};totalGeral+=pont;}if(itensResp<totalItens){alert("Responda todos os itens. Faltam "+(totalItens-itensResp)+".");return;}var mediaGeral=parseFloat((totalGeral/totalItens).toFixed(2));var container=document.getElementById("resultados");var html='<h2 style="color:#1565c0;text-align:center;margin-bottom:15px">Resultados - '+document.title+'</h2>';for(var b=0;b<blocos.length;b++){var d=resultados[blocos[b]];var pct=Math.round((d.pontuacao/d.max)*100);html+='<div style="margin:8px 0;padding:10px;background:white;border-radius:6px;border-left:4px solid #1565c0"><strong>'+blocos[b]+':</strong> '+d.pontuacao+'/'+d.max+' (Media: '+d.media+')<div style="background:#e0e0e0;height:8px;border-radius:4px;margin-top:5px"><div style="background:#1565c0;height:8px;border-radius:4px;width:'+pct+'%"></div></div></div>';}html+='<div style="background:#f0f0f0;padding:15px;border-radius:8px;text-align:center;margin:15px 0"><h3>Total: '+totalGeral+' | Media Geral: '+mediaGeral+'</h3></div>';html+='<p style="font-size:0.85em;color:#666;text-align:center"><em>Instrumento de triagem. Nao substitui avaliacao profissional.</em></p>';container.innerHTML=html;container.style.display="block";container.scrollIntoView({behavior:"smooth"});window._escalaDados={escala:document.title,paciente:nome,escore:totalGeral,media:mediaGeral,classificacao:mediaGeral<2?"Baixa":mediaGeral<3?"Media":mediaGeral<4?"Alta":"Muito Alta",dominios:resultados,respostas:(function(){var o={};var _idx2=0;for(var _b2=0;_b2<blocos.length;_b2++){for(var _j2=0;_j2<BLOCOS[blocos[_b2]].length;_j2++){var _r2=document.querySelector('input[name="it'+_idx2+'"]:checked');if(_r2)o[_idx2+1]=parseInt(_r2.value);_idx2++;}}return o;})(),idPaciente:(document.getElementById("idPaciente")?document.getElementById("idPaciente").value:""),data:new Date().toISOString()};if(window.injetarBotaoSalvar)injetarBotaoSalvar("resultados");}
-
-function gerarRelatorioPDF(){if(!window._escalaDados){calcularResultados();if(!window._escalaDados)return;}var dados=window._escalaDados;var blocos=Object.keys(dados.dominios);
-// Gerar grafico em canvas
-var canvasG=document.createElement('canvas');canvasG.width=700;canvasG.height=230;
-var cx=canvasG.getContext('2d');cx.fillStyle='#fff';cx.fillRect(0,0,700,230);
-cx.fillStyle='#333';cx.font='bold 12px Segoe UI';cx.textAlign='left';
-cx.fillText('Perfil por Dominio QIIAHSD (media 1-5)',10,15);
-var bh=22;var gap=6;var startY=28;var maxW=300;var labelW=250;
-for(var gi=0;gi<blocos.length;gi++){var by=startY+gi*(bh+gap);var d=dados.dominios[blocos[gi]];var pct=d.media/5;var bw=pct*maxW;var cor=d.media<2?'#4caf50':d.media<3?'#8bc34a':d.media<4?'#ff9800':'#f44336';cx.fillStyle='#555';cx.font='10px Segoe UI';cx.textAlign='right';var lbl=blocos[gi];if(lbl.length>35)lbl=lbl.substring(0,32)+'...';cx.fillText(lbl,labelW-5,by+15);cx.fillStyle=cor;cx.fillRect(labelW,by,bw,bh);cx.fillStyle='#333';cx.font='bold 11px Segoe UI';cx.textAlign='left';cx.fillText(d.media.toFixed(1)+'/5',labelW+bw+5,by+15);}
-var ly=startY+blocos.length*(bh+gap)+8;
-var cores=[['#4caf50','Baixa (<2)'],['#8bc34a','Media (2-3)'],['#ff9800','Alta (3-4)'],['#f44336','Muito Alta (>=4)']];
-cx.font='10px Segoe UI';cx.textAlign='left';
-for(var li=0;li<cores.length;li++){cx.fillStyle=cores[li][0];cx.fillRect(labelW+li*130,ly,12,12);cx.fillStyle='#555';cx.fillText(cores[li][1],labelW+li*130+15,ly+10);}
-var imgGrafico=canvasG.toDataURL('image/png');
-
-var jsPDF=window.jspdf.jsPDF;var doc=new jsPDF();doc.setFillColor(21,101,192);doc.rect(0,0,210,30,"F");doc.setTextColor(255,255,255);doc.setFontSize(16);doc.setFont(undefined,"bold");doc.text("QIIAHSD - RELATORIO",105,15,{align:"center"});doc.setFontSize(9);doc.setFont(undefined,"normal");doc.text("Questionario de Identificacao de Indicadores de AH/SD",105,24,{align:"center"});
-doc.setTextColor(0,0,0);doc.setFont(undefined,"normal");doc.setFontSize(10);var y=38;doc.text("Nome: "+document.getElementById("nome").value,20,y);var idEl=document.getElementById("idPaciente");if(idEl&&idEl.value)doc.text("ID: "+idEl.value,140,y);y+=6;doc.text("Idade: "+(document.getElementById("idade").value||""),20,y);y+=6;doc.text("Data: "+(document.getElementById("data").value||""),20,y);y+=10;
-
-// Grafico
-doc.setTextColor(21,101,192);doc.setFontSize(10);doc.setFont(undefined,'bold');
-doc.text('PERFIL GRAFICO DOS DOMINIOS',20,y);y+=3;
-doc.addImage(imgGrafico,'PNG',15,y,180,58);y+=62;
-
-doc.setFont(undefined,"bold");doc.setFontSize(9);doc.setTextColor(0,0,0);doc.text("RESULTADOS POR DOMINIO:",20,y);y+=7;doc.setFont(undefined,"normal");for(var b=0;b<blocos.length;b++){var d=dados.dominios[blocos[b]];doc.text(blocos[b]+": "+d.pontuacao+"/"+d.max+" (Media: "+d.media+")",25,y);y+=6;if(y>270){doc.addPage();y=20;}}y+=5;doc.setFont(undefined,"bold");doc.text("TOTAL: "+dados.escore+" | MEDIA GERAL: "+dados.media,20,y);
-doc.setFillColor(80,80,80);doc.rect(0,285,210,12,'F');doc.setTextColor(200,200,200);doc.setFontSize(7);doc.text("Relatorio gerado em: "+new Date().toLocaleString('pt-BR'),105,291,{align:"center"});
-var ts=new Date();doc.save("QIIAHSD_"+(document.getElementById("nome").value||"Paciente").replace(/\s+/g,'_')+"_"+ts.getFullYear()+String(ts.getMonth()+1).padStart(2,"0")+String(ts.getDate()).padStart(2,"0")+".pdf");}
+    window.SYM_QIIAHSD.pdf(window.SYM_QIIAHSD.calcular(r), {nome:nome, sexo:document.getElementById('sexo').value, idade:document.getElementById('idade').value, dataAval:document.getElementById('data').value, idPaciente:document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''});
+}
 
 function limparDados(){if(!confirm("Limpar todos os dados?"))return;document.querySelectorAll("input[type=radio]").forEach(function(el){el.checked=false;});document.querySelectorAll("input[type=text],input[type=date]").forEach(function(el){if(el.id!=="data")el.value="";});document.getElementById("sexo").value="";document.getElementById("resultados").style.display="none";window._escalaDados=null;}
 

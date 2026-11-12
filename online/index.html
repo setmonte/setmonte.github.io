@@ -305,7 +305,7 @@
               <option value="pcl-5">PCL-5 (TEPT) — 18+</option>
               </optgroup>
               <optgroup label="Altas Habilidades / Superdotacao">
-              <option value="qiiahsd">QIIAHSD (Altas Habilidades) — 6-18 anos</option>
+              <option value="qiiahsd" data-admin-only="1">QIIAHSD (Altas Habilidades) — 6-18 anos (admin)</option>
               <option value="renzulli">Renzulli (Superdotacao) — 6-18 anos</option>
               <option value="sobrexcitabilidade">Sobrexcitabilidade (Dabrowski) — 12+</option>
               <option value="tea-ah">TEA+AH (Dupla Excepcionalidade) — 6-18 anos</option>
@@ -17921,6 +17921,66 @@
           return;
         }
       }
+      // TEA-R: desenho sob medida (escalas/tear-visual.js), refeito pelas respostas salvas (d.respostas). Tela e PDF vem dos mesmos blocos.
+      if (String(d.escala || '').toUpperCase() === 'TEA-R' && d.respostas && !r._semPdfNovo) {
+        var _gerTR = function () {
+          var _okTR = false;
+          try { _okTR = window.SYM_TEAR.pdfPainel(d, r); } catch (eTR) {
+            if (typeof window._registrarFalhaPDF === 'function') { try { window._registrarFalhaPDF('gerarPDFEscala(TEA-R)', (eTR && eTR.message) || String(eTR), d.paciente || ''); } catch (xTR) {} }
+          }
+          if (!_okTR) { r._semPdfNovo = true; gerarPDFEscala(idx); }
+        };
+        if (window.SYM_TEAR && window.SYM_TEAR.pdfPainel) { _gerTR(); }
+        else {
+          var _sTR = document.createElement('script');
+          _sTR.src = '../escalas/tear-visual.js?v=' + Date.now();
+          _sTR.onload = _gerTR;
+          _sTR.onerror = function () { r._semPdfNovo = true; gerarPDFEscala(idx); };
+          document.body.appendChild(_sTR);
+        }
+        return;
+      }
+
+      // ISI: desenho sob medida (escalas/isi-visual.js), refeito pelas respostas salvas (d.respostas). Tela e PDF vem dos mesmos blocos.
+      if (String(d.escala || '').toUpperCase() === 'ISI' && d.respostas && !r._semPdfNovo) {
+        var _gerISI = function () {
+          var _okISI = false;
+          try { _okISI = window.SYM_ISI.pdfPainel(d, r); } catch (eISI) {
+            if (typeof window._registrarFalhaPDF === 'function') { try { window._registrarFalhaPDF('gerarPDFEscala(ISI)', (eISI && eISI.message) || String(eISI), d.paciente || ''); } catch (xISI) {} }
+          }
+          if (!_okISI) { r._semPdfNovo = true; gerarPDFEscala(idx); }
+        };
+        if (window.SYM_ISI && window.SYM_ISI.pdfPainel) { _gerISI(); }
+        else {
+          var _sISI = document.createElement('script');
+          _sISI.src = '../escalas/isi-visual.js?v=' + Date.now();
+          _sISI.onload = _gerISI;
+          _sISI.onerror = function () { r._semPdfNovo = true; gerarPDFEscala(idx); };
+          document.body.appendChild(_sISI);
+        }
+        return;
+      }
+
+      // QIIAHSD: desenho sob medida (escalas/qiiahsd-visual.js), refeito pelas respostas salvas (d.respostas). Tela e PDF vem dos mesmos blocos.
+      if (String(d.escala || '').toUpperCase() === 'QIIAHSD' && d.respostas && !r._semPdfNovo) {
+        var _gerQI = function () {
+          var _okQI = false;
+          try { _okQI = window.SYM_QIIAHSD.pdfPainel(d, r); } catch (eQI) {
+            if (typeof window._registrarFalhaPDF === 'function') { try { window._registrarFalhaPDF('gerarPDFEscala(QIIAHSD)', (eQI && eQI.message) || String(eQI), d.paciente || ''); } catch (xQI) {} }
+          }
+          if (!_okQI) { r._semPdfNovo = true; gerarPDFEscala(idx); }
+        };
+        if (window.SYM_QIIAHSD && window.SYM_QIIAHSD.pdfPainel) { _gerQI(); }
+        else {
+          var _sQI = document.createElement('script');
+          _sQI.src = '../escalas/qiiahsd-visual.js?v=' + Date.now();
+          _sQI.onload = _gerQI;
+          _sQI.onerror = function () { r._semPdfNovo = true; gerarPDFEscala(idx); };
+          document.body.appendChild(_sQI);
+        }
+        return;
+      }
+
       // ERTs de criterios (PA, PB, PD, PEs, PEt, PEv, PH, PN, POC, PP, TB): PDF visual igual a tela
       // de resultados, pela mascara unica escalas/ert-visual.js (a mesma usada na pagina da escala).
       // ERT-VT fica de fora (escala propria). Resultados antigos sem respostasDetalhadas (ex.: ERT-TB

@@ -110,31 +110,20 @@
             <div class="info-tecnica" id="referencias" style="margin-top:30px; background:#f8f9fa; border-left-color:#1a237e;">
                 <h2 style="color:#1a237e;">Refer&#234;ncias</h2>
                 <p style="color:#555; line-height:1.9; font-size:0.88em;">
-                    <strong>MORIN, C. M.</strong> <em>Insomnia: psychological assessment and management.</em> New York: Guilford Press, 1993.<br><br>
                     <strong>BASTIEN, C. H.; VALLI&#200;RES, A.; MORIN, C. M.</strong> Validation of the Insomnia Severity Index as an outcome measure for insomnia research. <em>Sleep Medicine</em>, v. 2, n. 4, p. 297-307, 2001.<br><br>
-                    <strong>CASTRO, L. S.</strong> Adapta&#231;&#227;o e valida&#231;&#227;o do &#205;ndice de Gravidade de Ins&#244;nia (IGI): caracteriza&#231;&#227;o da ins&#244;nia na cidade de S&#227;o Paulo. Tese de Doutorado &#8212; UNIFESP, 2011.
+                    <strong>MORIN, C. M.; BELLEVILLE, G.; B&#201;LANGER, L.; IVERS, H.</strong> The Insomnia Severity Index: psychometric indicators to detect insomnia cases and evaluate treatment response. <em>Sleep</em>, v. 34, n. 5, p. 601-608, 2011.<br><br>
+                    <strong>CASTRO, L. S.</strong> Adapta&#231;&#227;o e valida&#231;&#227;o do &#205;ndice de Gravidade de Ins&#244;nia (IGI): caracteriza&#231;&#227;o populacional, valores normativos e aspectos associados. Disserta&#231;&#227;o (Mestrado) &#8212; Universidade Federal de S&#227;o Paulo, 2011. <span style="color:#777;">(Ano conforme cita&#231;&#227;o anterior do site.)</span><br><br>
+                    <strong>MORIN, C. M.</strong> <em>Insomnia: psychological assessment and management.</em> New York: Guilford Press, 1993.
                 </p>
             </div>
         </div>
     </div>
     <script src="../id-paciente.js"></script>
+    <script src="isi-visual.js"></script>
     <script>
-var ITENS=[
-{texto:"Dificuldade para pegar no sono (adormecer)",grupo:"grupo1"},
-{texto:"Dificuldade para permanecer dormindo (acordar durante a noite)",grupo:"grupo1"},
-{texto:"Problemas para acordar muito cedo (antes do hor\u00e1rio desejado)",grupo:"grupo1"},
-{texto:"Qu\u00e3o SATISFEITO(A)/insatisfeito(a) voc\u00ea est\u00e1 com seu padr\u00e3o de sono atual?",grupo:"grupo2"},
-{texto:"Em que medida voc\u00ea acha que seu problema de sono INTERFERE no seu funcionamento di\u00e1rio (fadiga, concentra\u00e7\u00e3o, mem\u00f3ria, humor)?",grupo:"grupo3"},
-{texto:"Em que medida os outros PERCEBEM que seu problema de sono prejudica sua qualidade de vida?",grupo:"grupo3"},
-{texto:"Qu\u00e3o PREOCUPADO(A) voc\u00ea est\u00e1 com seu problema de sono atual?",grupo:"grupo4"}
-];
-
-var OPCOES_GRUPO={
-grupo1:[{valor:0,texto:"Nenhuma"},{valor:1,texto:"Leve"},{valor:2,texto:"Moderada"},{valor:3,texto:"Grave"},{valor:4,texto:"Muito grave"}],
-grupo2:[{valor:0,texto:"Muito satisfeito(a)"},{valor:1,texto:"Satisfeito(a)"},{valor:2,texto:"Neutro"},{valor:3,texto:"Insatisfeito(a)"},{valor:4,texto:"Muito insatisfeito(a)"}],
-grupo3:[{valor:0,texto:"Nada"},{valor:1,texto:"Um pouco"},{valor:2,texto:"Razoavelmente"},{valor:3,texto:"Muito"},{valor:4,texto:"Muit\u00edssimo"}],
-grupo4:[{valor:0,texto:"Nada"},{valor:1,texto:"Um pouco"},{valor:2,texto:"Razoavelmente"},{valor:3,texto:"Muito"},{valor:4,texto:"Muit\u00edssimo"}]
-};
+// Itens, calculo, tela e PDF vivem em isi-visual.js (ISI)
+var ITENS = window.SYM_ISI ? window.SYM_ISI.ITENS : [];
+var OPCOES_GRUPO = window.SYM_ISI ? window.SYM_ISI.OPCOES_GRUPO : {};
 
 function gerarQuestionario() {
     var c = document.getElementById('questionario');
@@ -170,169 +159,36 @@ function obterRespostas() {
     return r;
 }
 
-function classificarISI(escore) {
-    if (escore <= 7) return {texto: "Sem ins\u00f4nia cl\u00ednica", cor: "#4caf50"};
-    if (escore <= 14) return {texto: "Ins\u00f4nia sublimiar", cor: "#ffeb3b"};
-    if (escore <= 21) return {texto: "Ins\u00f4nia cl\u00ednica moderada", cor: "#ff9800"};
-    return {texto: "Ins\u00f4nia cl\u00ednica grave", cor: "#f44336"};
-}
-
 function calcularResultados() {
     var nome = document.getElementById('nome').value;
     if (!nome) { alert('Preencha o nome do paciente.'); return; }
     var idade = document.getElementById('idadeCalculada').value;
     if (!idade) { alert('Preencha a data de nascimento.'); return; }
+    var sexo = document.getElementById('sexo').value;
+    if (!sexo) { alert('Selecione o sexo (Masculino ou Feminino).'); return; }
     var r = obterRespostas();
-    if (!r) {
-        var respondidos = 0;
-        for (var i = 0; i < ITENS.length; i++) {
-            if (document.querySelector('input[name="q' + i + '"]:checked')) respondidos++;
-        }
-        alert('Responda todos os 7 itens. Faltam ' + (7 - respondidos) + ' itens.');
-        return;
-    }
+    if (!r) { alert('Responda todos os itens antes de calcular.'); return; }
+    if (!window.SYM_ISI) { alert('N\u00e3o foi poss\u00edvel carregar o m\u00f3dulo de resultados. Recarregue a p\u00e1gina e tente novamente.'); return; }
 
-    var escore = r.reduce(function(a, b) { return a + b; }, 0);
-    var classif = classificarISI(escore);
-
+    // Calculo, tela e PDF vem do mesmo desenho (isi-visual.js)
+    var res = window.SYM_ISI.calcular(r);
     var el = document.getElementById('resultados');
-    var h = '<h2>Resultados ISI</h2>';
-
-    h += '<div class="classificacao-box" style="background:' + classif.cor + '22;border:3px solid ' + classif.cor + ';color:' + classif.cor + ';">';
-    h += '<div style="font-size:1.5em;">' + classif.texto + '</div>';
-    h += '<div style="font-size:1.1em;margin-top:5px;">Escore: ' + escore + ' / 28</div>';
-    h += '</div>';
-
-    h += '<div class="total-geral"><h3>Pontua\u00e7\u00e3o Total: ' + escore + ' / 28</h3><h3>Classifica\u00e7\u00e3o: ' + classif.texto + '</h3></div>';
-
-    h += '<div class="dominio-card"><h4>Detalhamento por Item</h4>';
-    for (var i = 0; i < ITENS.length; i++) {
-        var opcoes = OPCOES_GRUPO[ITENS[i].grupo];
-        h += '<p><strong>Item ' + (i+1) + ':</strong> ' + ITENS[i].texto + ' \u2014 <strong>' + r[i] + '</strong> (' + opcoes[r[i]].texto + ')</p>';
-    }
-    h += '</div>';
-
-    h += '<div class="dominio-card"><h4>Faixas de Classifica\u00e7\u00e3o</h4>';
-    h += '<p>0-7: Sem ins\u00f4nia cl\u00ednica | 8-14: Ins\u00f4nia sublimiar | 15-21: Ins\u00f4nia cl\u00ednica moderada | 22-28: Ins\u00f4nia cl\u00ednica grave</p>';
-    h += '</div>';
-
-    h += '<div class="disclaimer"><strong>IMPORTANTE:</strong> O ISI \u00e9 um instrumento de rastreio validado para ins\u00f4nia. N\u00e3o substitui avalia\u00e7\u00e3o cl\u00ednica profissional. Resultados devem ser interpretados por profissional qualificado.</div>';
-
-    el.innerHTML = h;
+    el.innerHTML = window.SYM_ISI.htmlTela(res);
     el.style.display = 'block';
     el.scrollIntoView({behavior: 'smooth'});
-
-    var sexo = document.getElementById('sexo').value;
-    var idade = document.getElementById('idadeCalculada').value;
-    var idPac = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
-    window._escalaDados = {escala:'ISI', paciente:nome, escore:escore, classificacao:classif.texto, dominios:{}, respostas:(function(){var o={};for(var i=0;i<r.length;i++){o[i+1]=r[i];}return o;})(), sexo:sexo, idPaciente:idPac, idade:idade, data:new Date().toISOString()};
+    window._escalaDados = {escala:'ISI', paciente:nome, escore:window.SYM_ISI.escore(res), classificacao:window.SYM_ISI.classifGeral(res), dominios:window.SYM_ISI.dadosPainel(res), respostas:window.SYM_ISI.respostasObj(res), idPaciente:(document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''), idade:idade, sexo:sexo, data:new Date().toISOString()};
     if (window.injetarBotaoSalvar) injetarBotaoSalvar('resultados');
 }
 
 function gerarRelatorioPDF() {
+    // PDF igual a tela de resultados (isi-visual.js; o painel usa o mesmo desenho)
     var nome = document.getElementById('nome').value;
     if (!nome) { alert('Preencha o nome do paciente.'); return; }
     var r = obterRespostas();
-    if (!r) { alert('Responda todos os 7 itens.'); return; }
+    if (!r) { alert('Responda todos os itens antes de gerar o PDF.'); return; }
+    if (!window.SYM_ISI) { alert('N\u00e3o foi poss\u00edvel carregar o gerador de PDF. Recarregue a p\u00e1gina e tente novamente.'); return; }
 
-    var escore = r.reduce(function(a, b) { return a + b; }, 0);
-    var classif = classificarISI(escore);
-    var idade = document.getElementById('idadeCalculada').value;
-    var sexo = document.getElementById('sexo').value;
-    var dataAval = document.getElementById('data').value || new Date().toLocaleDateString('pt-BR');
-    var obs = document.getElementById('observacoes').value;
-    var idPac = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
-
-    // Gerar grafico em canvas (pontuacao por item)
-    var canvasG = document.createElement('canvas'); canvasG.width = 700; canvasG.height = 230;
-    var cx = canvasG.getContext('2d');
-    cx.fillStyle = '#fff'; cx.fillRect(0, 0, 700, 230);
-    cx.fillStyle = '#333'; cx.font = 'bold 12px Segoe UI'; cx.textAlign = 'left';
-    cx.fillText('Perfil por Item (escala 0-4)', 10, 15);
-    var bh = 20; var gap = 5; var startY = 28; var maxW = 220; var labelW = 380;
-    for (var gi = 0; gi < ITENS.length; gi++) {
-        var by = startY + gi * (bh + gap);
-        var pct = r[gi] / 4;
-        var bw = pct * maxW;
-        var cor = r[gi] === 0 ? '#4caf50' : r[gi] === 1 ? '#8bc34a' : r[gi] === 2 ? '#ffeb3b' : r[gi] === 3 ? '#ff9800' : '#f44336';
-        cx.fillStyle = '#555'; cx.font = '10px Segoe UI'; cx.textAlign = 'right';
-        var txt = (gi+1) + '. ' + ITENS[gi].texto;
-        if (txt.length > 60) txt = txt.substring(0, 57) + '...';
-        cx.fillText(txt, labelW - 5, by + 14);
-        cx.fillStyle = cor; cx.fillRect(labelW, by, bw, bh);
-        cx.fillStyle = '#333'; cx.font = 'bold 11px Segoe UI'; cx.textAlign = 'left';
-        cx.fillText(r[gi] + '/4', labelW + bw + 5, by + 14);
-    }
-    var ly = startY + ITENS.length*(bh+gap) + 5;
-    var cores = [['#4caf50','0-Nenhuma'],['#8bc34a','1-Leve'],['#ffeb3b','2-Moderada'],['#ff9800','3-Grave'],['#f44336','4-Muito grave']];
-    cx.font = '10px Segoe UI'; cx.textAlign = 'left';
-    for (var li = 0; li < cores.length; li++) { cx.fillStyle = cores[li][0]; cx.fillRect(10 + li*130, ly, 12, 12); cx.fillStyle = '#555'; cx.fillText(cores[li][1], 10 + li*130 + 15, ly + 10); }
-    var imgGrafico = canvasG.toDataURL('image/png');
-
-    var jsPDF = window.jspdf.jsPDF;
-    var doc = new jsPDF();
-
-    // Cabecalho
-    doc.setFillColor(26,35,126); doc.rect(0,0,210,35,'F');
-    doc.setTextColor(255,255,255); doc.setFontSize(14); doc.setFont(undefined,'bold');
-    doc.text('ISI - RELAT\u00d3RIO DE AVALIA\u00c7\u00c3O', 105, 15, {align:'center'});
-    doc.setFontSize(9); doc.setFont(undefined,'normal');
-    doc.text('Insomnia Severity Index - \u00cdndice de Gravidade da Ins\u00f4nia', 105, 23, {align:'center'});
-    doc.text('Morin (1993), Bastien, Valli\u00e8res & Morin (2001)', 105, 29, {align:'center'});
-
-    // Dados pessoais
-    var y = 42;
-    doc.setFillColor(248,249,250); doc.rect(15,y,180,22,'F');
-    doc.setTextColor(26,35,126); doc.setFontSize(10); doc.setFont(undefined,'bold');
-    doc.text('DADOS PESSOAIS', 20, y+6);
-    doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont(undefined,'normal');
-    doc.text('Nome: ' + nome + '   |   Sexo: ' + sexo, 20, y+12);
-    doc.text('Idade: ' + idade + '   |   Data: ' + dataAval + (idPac ? '   |   ID: ' + idPac : ''), 20, y+18);
-
-    // Classificacao
-    y = 70;
-    var corR, corG, corB;
-    if (escore <= 7) { corR=76; corG=175; corB=80; }
-    else if (escore <= 14) { corR=255; corG=235; corB=59; }
-    else if (escore <= 21) { corR=255; corG=152; corB=0; }
-    else { corR=244; corG=67; corB=54; }
-    doc.setFillColor(corR, corG, corB); doc.rect(15,y,180,14,'F');
-    doc.setTextColor(255,255,255); doc.setFontSize(12); doc.setFont(undefined,'bold');
-    doc.text('Classifica\u00e7\u00e3o: ' + classif.texto + '  |  Escore: ' + escore + '/28', 105, y+9, {align:'center'});
-
-    // Grafico
-    y = 88;
-    doc.setTextColor(26,35,126); doc.setFontSize(10); doc.setFont(undefined,'bold');
-    doc.text('PERFIL GRAFICO POR ITEM', 20, y); y += 3;
-    doc.addImage(imgGrafico, 'PNG', 15, y, 180, 56); y += 60;
-
-    // Pontuacao por item
-    doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont(undefined,'bold');
-    doc.text('PONTUA\u00c7\u00c3O POR ITEM:', 20, y); y += 7;
-    doc.setFont(undefined,'normal');
-    for (var i = 0; i < ITENS.length; i++) {
-        var textoItem = (i+1) + '. ' + ITENS[i].texto;
-        if (textoItem.length > 85) textoItem = textoItem.substring(0, 82) + '...';
-        doc.text(textoItem + ' = ' + r[i], 22, y);
-        y += 5;
-    }
-
-    // Disclaimer
-    y += 5;
-    doc.setFillColor(255,248,235); doc.rect(15,y,180,14,'F');
-    doc.setTextColor(180,90,0); doc.setFontSize(7);
-    doc.text('IMPORTANTE: O ISI e um instrumento de rastreio. Nao substitui avaliacao clinica profissional.', 20, y+5);
-    doc.text('Resultados devem ser interpretados por profissional qualificado.', 20, y+10);
-
-    // Rodape
-    doc.setFillColor(80,80,80); doc.rect(0,285,210,12,'F');
-    doc.setTextColor(200,200,200); doc.setFontSize(7);
-    doc.text('Relat\u00f3rio gerado em: ' + new Date().toLocaleString('pt-BR'), 105, 291, {align:'center'});
-
-    // Salvar
-    var ts = new Date();
-    var tsStr = ts.getFullYear() + String(ts.getMonth()+1).padStart(2,'0') + String(ts.getDate()).padStart(2,'0') + String(ts.getHours()).padStart(2,'0') + String(ts.getMinutes()).padStart(2,'0');
-    doc.save('ISI_' + nome.replace(/\s+/g,'_') + '_' + tsStr + '.pdf');
+    window.SYM_ISI.pdf(window.SYM_ISI.calcular(r), {nome:nome, sexo:document.getElementById('sexo').value, idade:document.getElementById('idadeCalculada').value, dataAval:document.getElementById('data').value, idPaciente:document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''});
 }
 
 function limparDados() {
