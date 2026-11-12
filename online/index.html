@@ -17982,6 +17982,26 @@
         }
         return;
       }
+      // DISLEXIA (checklist autoral, 78 itens): desenho sob medida (escalas/dislexia-visual.js), refeito pelas 78 respostas brutas salvas,
+      // com a inversao dos 44 itens positivos (registros antigos, sem d.pontuacaoInvertida, saem recalculados e com nota).
+      if (String(d.escala || '').toUpperCase() === 'DISLEXIA' && d.respostas && !r._semPdfNovo) {
+        var _gerarDISL = function () {
+          var _okDx = false;
+          try { _okDx = window.SYM_DISLEXIA.pdfPainel(d, r); } catch (eDx) {
+            if (typeof window._registrarFalhaPDF === 'function') { try { window._registrarFalhaPDF('gerarPDFEscala(DISLEXIA)', (eDx && eDx.message) || String(eDx), d.paciente || ''); } catch (e4) {} }
+          }
+          if (!_okDx) { r._semPdfNovo = true; gerarPDFEscala(idx); }
+        };
+        if (window.SYM_DISLEXIA && window.SYM_DISLEXIA.pdfPainel) { _gerarDISL(); }
+        else {
+          var _sDx = document.createElement('script');
+          _sDx.src = '../escalas/dislexia-visual.js?v=' + Date.now();
+          _sDx.onload = _gerarDISL;
+          _sDx.onerror = function () { r._semPdfNovo = true; gerarPDFEscala(idx); };
+          document.body.appendChild(_sDx);
+        }
+        return;
+      }
       // SCARED (autorrelato, 41 itens): desenho sob medida (escalas/scared-visual.js), refeito pelas 41 respostas salvas (valores 0-2).
       if (String(d.escala || '').toUpperCase() === 'SCARED' && d.respostas && !r._semPdfNovo) {
         var _gerarSCARED = function () {
