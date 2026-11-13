@@ -264,17 +264,32 @@ function showNextAnimal(forceCall = false) {
   const areaUtilWidth = quadroWidth - (2 * margem) - imgWidth;
   const areaUtilHeight = quadroHeight - (2 * margem) - imgHeight;
   
-  // Sorteia a posicao, mas evita cair no mesmo lugar (ou muito perto) da figura anterior.
-  // Distancia minima = 1,5x o tamanho da figura. Ate 50 tentativas (evita loop infinito).
-  const distMinima = imgWidth * 1.5;
-  let posX = 0, posY = 0;
-  for (let tentativa = 0; tentativa < 50; tentativa++) {
-    posX = margem + (Math.random() * areaUtilWidth);
-    posY = margem + (Math.random() * areaUtilHeight);
-    if (!window._seletUltimaPos) break;
-    const dx = posX - window._seletUltimaPos.x;
-    const dy = posY - window._seletUltimaPos.y;
-    if (Math.sqrt(dx * dx + dy * dy) >= distMinima) break;
+  // Sorteia a posicao, mas a figura nova NUNCA aparece perto da anterior
+  // (perto demais o paciente nao percebe a troca -> erro falso ou omissao).
+  // Regras: (1) distancia minima = 1/3 do lado menor do quadro (nunca menos que 3x a figura)
+  //         (2) quadrante (3x3) diferente do anterior.
+  // Ate 50 sorteios; se nenhum servir, usa o candidato MAIS LONGE encontrado.
+  const distMinima = Math.max(imgWidth * 3, Math.min(quadroWidth, quadroHeight) / 3);
+  const _qDe = function (x, y) {
+    var c = x < quadroWidth / 3 ? 0 : x < (quadroWidth / 3) * 2 ? 1 : 2;
+    var l = y < quadroHeight / 3 ? 0 : y < (quadroHeight / 3) * 2 ? 1 : 2;
+    return l * 3 + c;
+  };
+  const _ult = window._seletUltimaPos;
+  let posX = margem + (Math.random() * areaUtilWidth);
+  let posY = margem + (Math.random() * areaUtilHeight);
+  if (_ult) {
+    let melhor = null, melhorDist = -1;
+    for (let tentativa = 0; tentativa < 50; tentativa++) {
+      const cx = margem + (Math.random() * areaUtilWidth);
+      const cy = margem + (Math.random() * areaUtilHeight);
+      const dx = cx - _ult.x, dy = cy - _ult.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const outroQuadrante = _qDe(cx, cy) !== _qDe(_ult.x, _ult.y);
+      if (dist >= distMinima && outroQuadrante) { melhor = { x: cx, y: cy }; break; }
+      if (dist > melhorDist) { melhorDist = dist; melhor = { x: cx, y: cy }; }
+    }
+    posX = melhor.x; posY = melhor.y;
   }
   window._seletUltimaPos = { x: posX, y: posY };
   
