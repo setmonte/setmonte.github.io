@@ -197,7 +197,15 @@
       // (o credito so e cobrado ao iniciar cada subteste, que nunca chega a rodar aqui).
       // O desktop NAO e afetado: so bloqueia quando o tipo detectado e 'Mobile' ou 'Tablet'.
       var _tipoDisp = (window.dispositivoBAE && window.dispositivoBAE.tipo) ? window.dispositivoBAE.tipo : '';
-      if (_tipoDisp === 'Mobile' || _tipoDisp === 'Tablet') {
+      // Reforco: so o tamanho da tela deixava passar tablets grandes (iPad Air/Pro,
+      // Android grandes) e celulares dobraveis. Tambem identifica pelo sistema:
+      // Android, iPhone, iPad, iPod ou "Mobile" no navegador = celular/tablet.
+      // iPad moderno se apresenta como Mac: Mac com tela de toque = iPad.
+      // Notebook Windows com tela de toque NAO e bloqueado (tem teclado).
+      var _ua = navigator.userAgent || '';
+      var _ehMovelPorSistema = /Android|iPhone|iPad|iPod|Mobile|Silk|Kindle/i.test(_ua) ||
+        (/Macintosh/.test(_ua) && navigator.maxTouchPoints > 1);
+      if (_tipoDisp === 'Mobile' || _tipoDisp === 'Tablet' || _ehMovelPorSistema) {
         document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#e8f5e9,#c8e6c9);text-align:center;padding:30px;box-sizing:border-box;">' +
           '<div style="font-size:48px;margin-bottom:10px;">\uD83D\uDCBB</div>' +
           '<h1 style="color:#2e7d32;font-size:24px;margin:10px 0;">Este teste precisa ser feito no computador</h1>' +
