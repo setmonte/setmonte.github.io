@@ -64,7 +64,7 @@
             <p style="color:#555;line-height:1.6;font-size:0.9em">
                 <strong>Instrumento:</strong> YSQ-S3 (Young Schema Questionnaire - Short Form 3)<br>
                 <strong>Autor:</strong> Jeffrey Young, Ph.D.<br>
-                <strong>Estrutura:</strong> 90 itens, 18 esquemas, escala Likert 1-6<br>
+                <strong>Estrutura:</strong> 90 itens, 18 esquemas (5 itens cada, intercalados: esquema k = itens k, k+18, k+36, k+54, k+72), escala de 1 a 6<br><strong>Vers&#227;o:</strong> tradu&#231;&#227;o e adapta&#231;&#227;o oficial para uso no Brasil por Souza, Damasceno e Oliveira; &#169; 2014 Jeffrey Young, Ph.D.<br><strong>Resultado:</strong> total e m&#233;dia por esquema, sem pontos de corte (n&#227;o h&#225; pontos de corte na folha oficial de corre&#231;&#227;o)<br>
                 <strong>Popula&#231;&#227;o:</strong> Adultos e adolescentes (&#8805;16 anos)
             </p>
         </div>
@@ -82,11 +82,11 @@
             </div>
         </div>
         <div class="instrucoes">
-            <strong>Instru&#231;&#245;es:</strong> Leia cada afirmativa e classifique baseando-se em qu&#227;o bem ela descreve voc&#234; ao longo do &#250;ltimo ano.
+            <strong>Instru&#231;&#245;es:</strong> Leia cada afirmativa e classifique baseando-se em qu&#227;o bem ela descreve voc&#234; ao longo do &#250;ltimo ano. Quando n&#227;o tiver certeza, baseie sua resposta nos seus sentimentos, e n&#227;o no que voc&#234; acredita racionalmente que &#233; verdade. Alguns itens se referem aos seus pais ou parceiro(s): se algum j&#225; faleceu, responda pela rela&#231;&#227;o que tinha enquanto vivia ou com quem fez esse papel; se n&#227;o tem parceiro(a) agora, pense no mais significativo que teve recentemente.
             <ul>
                 <li>1 &#8211; Completamente falso sobre mim</li>
                 <li>2 &#8211; Em grande parte falso sobre mim</li>
-                <li>3 &#8211; Um pouco mais verdadeiro do que falso</li>
+                <li>3 &#8211; Um pouco mais verdadeiro do que falso sobre mim</li>
                 <li>4 &#8211; Moderadamente verdadeiro sobre mim</li>
                 <li>5 &#8211; Em grande parte verdadeiro sobre mim</li>
                 <li>6 &#8211; Me descreve perfeitamente</li>
@@ -99,136 +99,45 @@
             <button class="btn btn-danger" onclick="limparDados()">Limpar Dados</button>
         </div>
         <div id="resultados" class="resultados"></div>
+<div class="info-tecnica" id="referencias" style="margin-top:30px;background:#f8f9fa;border-left-color:#2c3e50;">
+<h2 style="color:#2c3e50;">Refer&#234;ncias</h2>
+<p style="color:#555;line-height:1.9;font-size:0.88em;">
+<strong>SOUZA, L. H. de; DAMASCENO, E. S.; FERRONATTO, F.; OLIVEIRA, M. da S.</strong> Adapta&#231;&#227;o brasileira do Question&#225;rio de Esquemas de Young &#8211; vers&#227;o breve (YSQ-S3). <em>Avalia&#231;&#227;o Psicol&#243;gica</em>, v. 19, n. 4, 2020. DOI: 10.15689/ap.2020.1904.17377.11.<br><br>
+<strong>YOUNG, J. E.; KLOSKO, J. S.; WEISHAAR, M. E.</strong> <em>Terapia do esquema</em>: guia de t&#233;cnicas cognitivo-comportamentais inovadoras. Porto Alegre: Artmed, 2008.<br><br>
+<strong>YOUNG, J. E.</strong> <em>Question&#225;rio de Esquemas de Young &#8211; vers&#227;o breve (YSQ-S3)</em>. Tradu&#231;&#227;o e adapta&#231;&#227;o oficial para uso no Brasil: Lauren Heineck de Souza, Elisa Steinhorst Damasceno e Margareth da Silva Oliveira. &#169; 2014 Jeffrey Young, Ph.D. Autoriza&#231;&#227;o exclusiva do Schema Therapy Institute.
+</p>
+</div>
     </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="ysqs3-visual.js"></script>
 <script>
-var ITENS = [
-"As pessoas n\u00e3o estiveram dispon\u00edveis para atender as minhas necessidades emocionais.",
-"Eu n\u00e3o tive praticamente ningu\u00e9m com quem pudesse contar para me dar conselhos e apoio emocional.",
-"No geral, as pessoas n\u00e3o estiveram dispon\u00edveis para me dar conforto, suporte e afeto.",
-"Na maior parte do tempo, eu n\u00e3o tive ningu\u00e9m que realmente me escutasse, me compreendesse ou estivesse conectado com as minhas verdadeiras necessidades e sentimentos.",
-"Eu poucas vezes tive uma pessoa forte para me dar conselhos sensatos ou orienta\u00e7\u00e3o.",
-"Me preocupa muito que as pessoas que eu amo morram logo, ainda que n\u00e3o haja raz\u00f5es m\u00e9dicas para essa preocupa\u00e7\u00e3o.",
-"Eu me preocupo muito que pessoas pr\u00f3ximas a mim me deixem ou me abandonem.",
-"Eu sinto que os relacionamentos importantes para mim n\u00e3o ser\u00e3o duradouros; acredito que em algum momento eles terminar\u00e3o.",
-"Quando eu sinto que algu\u00e9m de que gosto est\u00e1 se afastando de mim, me desespero.",
-"Eu me preocupo muito que as pessoas que eu amo encontrem uma outra pessoa que elas prefiram e me deixem.",
-"Eu sinto que as pessoas v\u00e3o tirar vantagem de mim.",
-"Eu sinto que n\u00e3o posso baixar a guarda na presen\u00e7a de outras pessoas; sen\u00e3o, elas me machucar\u00e3o intencionalmente.",
-"Eu tenho muita dificuldade em confiar nas pessoas.",
-"Eu geralmente estou atento aos motivos ocultos e \u00e0s segundas inten\u00e7\u00f5es das outras pessoas.",
-"Eu fico com raiva quando penso na forma como fui maltratado pelas pessoas ao longo da minha vida.",
-"Eu n\u00e3o me encaixo.",
-"Eu sou fundamentalmente diferente das outras pessoas.",
-"Eu me sinto isolado e sozinho.",
-"Ningu\u00e9m me entende realmente.",
-"Se eu desaparecesse amanh\u00e3, ningu\u00e9m notaria.",
-"Nenhum homem/mulher que eu deseje seria capaz de me amar depois de ver meus defeitos.",
-"Eu sou defeituoso e cheio de falhas por natureza.",
-"Eu n\u00e3o sou digno do amor, da aten\u00e7\u00e3o e do respeito dos outros.",
-"Se as outras pessoas descobrissem os meus defeitos fundamentais, eu n\u00e3o conseguiria encar\u00e1-las.",
-"Um dos meus maiores medos \u00e9 que meus defeitos sejam expostos.",
-"Quase nada do que eu fa\u00e7o no trabalho (ou nos estudos) \u00e9 t\u00e3o bom quanto o que os outros s\u00e3o capazes de fazer.",
-"A maioria das pessoas \u00e9 mais capaz do que eu no trabalho e nas realiza\u00e7\u00f5es pessoais.",
-"Eu sou um fracasso.",
-"Eu sou humilhado pelas minhas falhas e inadequa\u00e7\u00f5es no trabalho (ou estudos).",
-"Eu geralmente comparo minhas realiza\u00e7\u00f5es \u00e0s das outras pessoas e sinto que elas s\u00e3o muito mais bem-sucedidas.",
-"Eu n\u00e3o sinto que sou capaz de me virar sem a ajuda dos outros no dia a dia.",
-"Eu sinto que n\u00e3o consigo lidar bem sozinho com as dificuldades da vida.",
-"Eu me vejo como uma pessoa que depende muito dos outros no que se refere ao meu funcionamento di\u00e1rio.",
-"Se eu confiar no meu pr\u00f3prio julgamento para tomar decis\u00f5es no dia-a-dia, eu tomarei as decis\u00f5es erradas.",
-"Eu n\u00e3o tenho confian\u00e7a na minha habilidade de resolver os problemas que surgem no dia a dia.",
-"Parece que eu n\u00e3o consigo parar de sentir que algo ruim est\u00e1 prestes a acontecer.",
-"Eu sinto que uma trag\u00e9dia (natural, financeira, criminal ou de sa\u00fade) pode acontecer a qualquer momento.",
-"Eu me preocupo com a possibilidade de desenvolver uma doen\u00e7a grave, mesmo que nada s\u00e9rio tenha sido diagnosticado pelo m\u00e9dico.",
-"Eu sou uma pessoa medrosa.",
-"Eu sinto que o mundo \u00e9 um lugar perigoso.",
-"Eu ainda n\u00e3o consegui me separar dos meus pais (ambos ou um deles) do jeito que as outras pessoas da minha idade parecem ter se separado.",
-"Eu e meu pai/m\u00e3e temos a tend\u00eancia de nos envolver demais nos problemas e na vida uns dos outros.",
-"Eu muitas vezes sinto que n\u00e3o tenho uma identidade separada da dos meus pais ou companheiro(a).",
-"Eu frequentemente sinto como se meus pais vivessem a minha vida ou vivessem atrav\u00e9s de mim \u2013 \u00e9 como se eu n\u00e3o tivesse uma vida pr\u00f3pria.",
-"Eu sinto que meus pais (ambos ou somente um deles) est\u00e3o, ou ficariam, muito magoados por eu sair de casa para morar sozinho, longe deles.",
-"Eu deixo as pessoas fazerem as coisas como elas querem, pois tenho receio das consequ\u00eancias.",
-"Eu sinto que n\u00e3o tenho outra op\u00e7\u00e3o a n\u00e3o ser ceder aos desejos dos outros; se n\u00e3o, eles v\u00e3o ficar bravos, me rejeitar ou retaliar de alguma forma.",
-"Nas rela\u00e7\u00f5es, eu deixo a outra pessoa ter o controle.",
-"Eu me preocupo muito em agradar os outros para que eles n\u00e3o me rejeitem.",
-"Para mim, \u00e9 muito dif\u00edcil exigir que meus direitos sejam respeitados e que meus sentimentos sejam levados em considera\u00e7\u00e3o.",
-"Eu coloco as necessidades dos outros antes das minhas; se n\u00e3o, me sinto culpado.",
-"Eu dou mais para os outros do que recebo em troca.",
-"Geralmente sou eu quem acaba cuidando das pessoas que s\u00e3o pr\u00f3ximas de mim.",
-"Eu sou uma boa pessoa por pensar mais nos outros do que em mim.",
-"N\u00e3o importa o quanto eu fa\u00e7a, eu sinto que nunca \u00e9 suficiente.",
-"Eu me preocupo em perder o controle das minhas a\u00e7\u00f5es.",
-"Eu sinto que preciso controlar muito minhas emo\u00e7\u00f5es e impulsos; caso contr\u00e1rio, \u00e9 prov\u00e1vel que algo ruim aconte\u00e7a.",
-"Muita raiva e ressentimento se acumulam dentro de mim, e eu n\u00e3o expresso.",
-"Eu acho constrangedor demonstrar o que eu sinto para as outras pessoas.",
-"Eu sou t\u00e3o fechado que muitas pessoas acham que eu n\u00e3o tenho emo\u00e7\u00f5es.",
-"Eu tenho que ser o melhor na maioria das coisas que eu fa\u00e7o; n\u00e3o consigo aceitar o segundo lugar.",
-"Eu me esfor\u00e7o para manter quase tudo em perfeita ordem.",
-"Eu tenho tanto a realizar que quase n\u00e3o h\u00e1 tempo para relaxar de verdade.",
-"Quase nada do que eu fa\u00e7o \u00e9 de fato bom o suficiente; sempre posso fazer melhor.",
-"Eu sinto que h\u00e1 uma press\u00e3o constante para que eu conquiste e termine as coisas.",
-"Eu tenho dificuldade de aceitar um n\u00e3o quando quero algo dos outros.",
-"Eu sou diferenciado e n\u00e3o deveria ter que aceitar muitas das restri\u00e7\u00f5es ou limita\u00e7\u00f5es impostas \u00e0s outras pessoas.",
-"Eu sinto que n\u00e3o deveria ter que seguir as regras e normas que as outras pessoas t\u00eam que seguir.",
-"Eu geralmente coloco as minhas necessidades na frente das dos outros.",
-"Eu n\u00e3o consigo tolerar outras pessoas me dizendo o que fazer.",
-"Eu tenho uma enorme dificuldade para parar de beber, fumar, comer ou outros comportamentos problem\u00e1ticos.",
-"Parece que eu n\u00e3o consigo me disciplinar para concluir a maioria das tarefas rotineiras ou entediantes.",
-"Se eu n\u00e3o consigo atingir um objetivo, me frustro facilmente e desisto.",
-"Eu tenho a tend\u00eancia de fazer coisas em excesso, mesmo sabendo que isso me faz mal.",
-"Eu n\u00e3o consigo me for\u00e7ar para fazer coisas de que eu n\u00e3o goste, mesmo quando sei que \u00e9 para o meu pr\u00f3prio bem.",
-"Para mim, \u00e9 importante que quase todas as pessoas que eu conhe\u00e7a gostem de mim.",
-"Eu me esfor\u00e7o muito para me encaixar.",
-"Minha autoestima \u00e9 baseada principalmente na forma como as outras pessoas me veem.",
-"Minhas realiza\u00e7\u00f5es t\u00eam mais valor para mim se os outros reparam nelas.",
-"Se eu n\u00e3o receber muita aten\u00e7\u00e3o dos outros, me sinto menos importante.",
-"Mesmo quando as coisas parecem estar indo bem, eu sinto que \u00e9 apenas uma quest\u00e3o de tempo para que elas comecem a dar errado.",
-"Se algo de bom acontece, fico preocupado e pensando que algo ruim provavelmente vai acontecer depois.",
-"Cuidado nunca \u00e9 demais; quase sempre algo vai dar errado.",
-"Eu me preocupo que uma decis\u00e3o errada possa causar um desastre.",
-"Eu tenho tend\u00eancia a ser pessimista.",
-"Se eu cometer um erro, mere\u00e7o ser punido.",
-"N\u00e3o h\u00e1 desculpas se eu cometer um erro.",
-"Se eu n\u00e3o fizer a minha parte, devo sofrer as consequ\u00eancias.",
-"Eu frequentemente penso nos erros que cometi e fico com raiva de mim mesmo.",
-"N\u00e3o importa porque eu cometi um erro; quando fa\u00e7o algo errado, devo sofrer as consequ\u00eancias."
-];
-var ESQUEMAS = [
-{nome:"Priva\u00e7\u00e3o Emocional",code:"pe",inicio:1,fim:5},
-{nome:"Abandono",code:"ab",inicio:6,fim:10},
-{nome:"Desconfian\u00e7a/Abuso",code:"da",inicio:11,fim:15},
-{nome:"Isolamento Social",code:"is",inicio:16,fim:20},
-{nome:"Defectividade",code:"dv",inicio:21,fim:25},
-{nome:"Fracasso",code:"fr",inicio:26,fim:30},
-{nome:"Depend\u00eancia",code:"di",inicio:31,fim:35},
-{nome:"Vulnerabilidade",code:"vd",inicio:36,fim:40},
-{nome:"Emaranhamento",code:"em",inicio:41,fim:45},
-{nome:"Subjuga\u00e7\u00e3o",code:"sb",inicio:46,fim:50},
-{nome:"Autossacrif\u00edcio",code:"as",inicio:51,fim:55},
-{nome:"Inibi\u00e7\u00e3o Emocional",code:"ie",inicio:56,fim:60},
-{nome:"Padr\u00f5es Inflex\u00edveis",code:"pi",inicio:61,fim:65},
-{nome:"Arrogo",code:"ag",inicio:66,fim:70},
-{nome:"Autodisciplina Insuficiente",code:"ai",inicio:71,fim:75},
-{nome:"Busca de Aprova\u00e7\u00e3o",code:"ba",inicio:76,fim:80},
-{nome:"Negatividade/Pessimismo",code:"np",inicio:81,fim:85},
-{nome:"Postura Punitiva",code:"pp",inicio:86,fim:90}
-];
-var OPCOES_LABELS = ["Completamente falso","Em grande parte falso","Um pouco mais verdadeiro","Moderadamente verdadeiro","Em grande parte verdadeiro","Me descreve perfeitamente"];
+// Itens, esquemas, calculo, tela e PDF vivem em ysqs3-visual.js (YSQ-S3)
+var ITENS = window.SYM_YSQS3 ? window.SYM_YSQS3.ITENS : [];
+var OPCOES_LABELS = ["Completamente falso sobre mim", "Em grande parte falso sobre mim", "Um pouco mais verdadeiro do que falso sobre mim", "Moderadamente verdadeiro sobre mim", "Em grande parte verdadeiro sobre mim", "Me descreve perfeitamente"];
 
 function gerarQuestionario() {
     var container = document.getElementById('questionario');
     var html = '';
     for (var i = 0; i < ITENS.length; i++) {
-        html += '<div class="item"><div class="item-texto"><span class="item-numero">' + (i+1) + '.</span> ' + ITENS[i] + '</div>';
-        html += '<div class="opcoes">';
+        html += '<div class="item"><div class="item-texto"><span class="item-numero">' + (i + 1) + '.</span> ' + ITENS[i] + '</div><div class="opcoes">';
         for (var v = 1; v <= 6; v++) {
-            html += '<div class="opcao"><input type="radio" id="q' + (i+1) + '_' + v + '" name="q' + (i+1) + '" value="' + v + '"><label for="q' + (i+1) + '_' + v + '">' + v + '</label></div>';
+            html += '<div class="opcao"><input type="radio" id="q' + (i + 1) + '_' + v + '" name="q' + (i + 1) + '" value="' + v + '"><label for="q' + (i + 1) + '_' + v + '">' + v + '</label></div>';
         }
         html += '</div></div>';
     }
     container.innerHTML = html;
+}
+
+// devolve {n\u00ba do item (1-90): resposta 1-6} ou null se faltar algum item
+function obterRespostas() {
+    var r = {};
+    for (var i = 1; i <= ITENS.length; i++) {
+        var s = document.querySelector('input[name="q' + i + '"]:checked');
+        if (!s) return null;
+        r[i] = parseInt(s.value, 10);
+    }
+    return r;
 }
 
 function calcularIdade() {
@@ -243,111 +152,36 @@ function calcularIdade() {
 }
 
 function calcularResultados() {
-    var nome = document.getElementById('nome').value.trim();
-    if (!nome) { alert('Preencha o nome.'); return; }
-    var naoResp = 0;
-    for (var i = 1; i <= 90; i++) {
-        if (!document.querySelector('input[name="q' + i + '"]:checked')) naoResp++;
-    }
-    if (naoResp > 0) { alert('Responda todos os 90 itens. Faltam ' + naoResp + '.'); return; }
-    var container = document.getElementById('resultados');
-    var html = '<h2 style="color:#2c3e50;text-align:center;margin-bottom:15px">Resultados YSQ-S3</h2>';
-    var resultados = [];
-    for (var e = 0; e < ESQUEMAS.length; e++) {
-        var esq = ESQUEMAS[e];
-        var total = 0;
-        for (var i = esq.inicio; i <= esq.fim; i++) {
-            var resp = document.querySelector('input[name="q' + i + '"]:checked');
-            if (resp) total += parseInt(resp.value);
-        }
-        var pct = Math.round((total / 30) * 100);
-        var nivel = pct < 40 ? 'Baixa' : pct < 70 ? 'M\u00e9dia' : 'Alta';
-        var nivelClass = pct < 40 ? 'baixa' : pct < 70 ? 'media' : 'alta';
-        resultados.push({nome:esq.nome, total:total, pct:pct, nivel:nivel});
-        html += '<div class="schema-result">';
-        html += '<div class="schema-name">' + esq.nome + '</div>';
-        html += '<div class="schema-bar"><div class="schema-bar-fill" style="width:' + pct + '%"></div></div>';
-        html += '<div class="schema-score">' + total + '/30</div>';
-        html += '<div class="schema-level level-' + nivelClass + '">' + nivel + '</div>';
-        html += '</div>';
-    }
-    html += '<p style="font-size:0.85em;color:#666;text-align:center;margin-top:15px"><em>Instrumento de avalia\u00e7\u00e3o cl\u00ednica. N\u00e3o substitui avalia\u00e7\u00e3o profissional.</em></p>';
-    container.innerHTML = html;
-    container.style.display = 'block';
-    container.scrollIntoView({behavior:'smooth'});
-    var escoreTotal = 0;
-    for (var ri = 0; ri < resultados.length; ri++) escoreTotal += resultados[ri].total;
-    var mediaGeral = escoreTotal / resultados.length;
-    var classGeral = mediaGeral < 12 ? 'Baixa' : mediaGeral < 21 ? 'Media' : 'Alta';
-    var esquemasMaisAltos = resultados.filter(function(r){return r.nivel==='Alta';}).map(function(r){return r.nome;});
-    window._escalaDados = {escala:'YSQ-S3', paciente:nome, escore:escoreTotal, media:Math.round(mediaGeral*10)/10, classificacao:classGeral, esquemasMaisAltos:esquemasMaisAltos, esquemas:resultados, respostas:(function(){var o={};for(var i=1;i<=90;i++){var v=document.querySelector('input[name="q'+i+'"]:checked');if(v)o[i]=parseInt(v.value);}return o;})(), idPaciente:(document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''), data:new Date().toISOString()};
+    var nome = document.getElementById('nome').value;
+    if (!nome) { alert('Preencha o nome do paciente.'); return; }
+
+    var idade = document.getElementById('idadeCalculada').value;
+    if (!idade) { alert('Preencha a data de nascimento.'); return; }
+    var sexo = document.getElementById('sexo').value;
+    if (!sexo) { alert('Selecione o sexo (Masculino ou Feminino).'); return; }
+    var r = obterRespostas();
+    if (!r) { alert('Responda todos os itens antes de calcular.'); return; }
+    if (!window.SYM_YSQS3) { alert('N\u00e3o foi poss\u00edvel carregar o m\u00f3dulo de resultados. Recarregue a p\u00e1gina e tente novamente.'); return; }
+
+    // Calculo, tela e PDF vem do mesmo desenho (ysqs3-visual.js)
+    var res = window.SYM_YSQS3.calcular(r);
+    var el = document.getElementById('resultados');
+    el.innerHTML = window.SYM_YSQS3.htmlTela(res);
+    el.style.display = 'block';
+    el.scrollIntoView({behavior: 'smooth'});
+    window._escalaDados = {escala:'YSQ-S3', paciente:nome, escore:window.SYM_YSQS3.escore(res), classificacao:window.SYM_YSQS3.classifGeral(res), dominios:window.SYM_YSQS3.dadosPainel(res), respostas:window.SYM_YSQS3.respostasObj(res), versaoEscala:2, idPaciente:(document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''), idade:idade, sexo:sexo, data:new Date().toISOString()};
     if (window.injetarBotaoSalvar) injetarBotaoSalvar('resultados');
 }
 
 function gerarRelatorioPDF() {
-    if (!window._escalaDados) { calcularResultados(); if (!window._escalaDados) return; }
-    var dados = window._escalaDados;
-    // Gerar grafico em canvas (18 esquemas)
-    var canvasG = document.createElement('canvas'); canvasG.width = 700; canvasG.height = 420;
-    var cx = canvasG.getContext('2d');
-    cx.fillStyle = '#fff'; cx.fillRect(0, 0, 700, 420);
-    cx.fillStyle = '#333'; cx.font = 'bold 12px Segoe UI'; cx.textAlign = 'left';
-    cx.fillText('Perfil YSQ-S3 - 18 Esquemas Iniciais Desadaptativos (5-30 cada)', 10, 15);
-    var bh = 16; var gap = 3; var startY = 28; var maxW = 250; var labelW = 280;
-    for (var gi = 0; gi < dados.esquemas.length; gi++) {
-        var e = dados.esquemas[gi];
-        var by = startY + gi * (bh + gap);
-        var pct = e.total / 30;
-        var bw = pct * maxW;
-        var cor = e.pct < 40 ? '#4caf50' : e.pct < 70 ? '#ff9800' : '#f44336';
-        cx.fillStyle = '#555'; cx.font = '10px Segoe UI'; cx.textAlign = 'right';
-        cx.fillText(e.nome, labelW - 5, by + 12);
-        cx.fillStyle = cor; cx.fillRect(labelW, by, bw, bh);
-        cx.fillStyle = '#333'; cx.font = 'bold 10px Segoe UI'; cx.textAlign = 'left';
-        cx.fillText(e.total + '/30', labelW + bw + 4, by + 12);
-    }
-    var ly = startY + dados.esquemas.length*(bh+gap) + 5;
-    var cores = [['#4caf50','Baixa (<40%)'],['#ff9800','Media (40-70%)'],['#f44336','Alta (>=70%)']];
-    cx.font = '10px Segoe UI'; cx.textAlign = 'left';
-    for (var li = 0; li < cores.length; li++) { cx.fillStyle = cores[li][0]; cx.fillRect(labelW + li*120, ly, 12, 12); cx.fillStyle = '#555'; cx.fillText(cores[li][1], labelW + li*120 + 15, ly + 10); }
-    var imgGrafico = canvasG.toDataURL('image/png');
+    // PDF igual a tela de resultados (ysqs3-visual.js; o painel usa o mesmo desenho)
+    var nome = document.getElementById('nome').value;
+    if (!nome) { alert('Preencha o nome do paciente.'); return; }
+    var r = obterRespostas();
+    if (!r) { alert('Responda todos os itens antes de gerar o PDF.'); return; }
+    if (!window.SYM_YSQS3) { alert('N\u00e3o foi poss\u00edvel carregar o gerador de PDF. Recarregue a p\u00e1gina e tente novamente.'); return; }
 
-    var jsPDF = window.jspdf.jsPDF; var doc = new jsPDF();
-    doc.setFillColor(44,62,80); doc.rect(0,0,210,30,'F');
-    doc.setTextColor(255,255,255); doc.setFontSize(16); doc.setFont(undefined,'bold');
-    doc.text('YSQ-S3 - RELATORIO', 105, 15, {align:'center'});
-    doc.setFontSize(10); doc.text('Questionario de Esquemas de Young - Versao Breve', 105, 23, {align:'center'});
-    doc.setTextColor(0,0,0); doc.setFont(undefined,'normal'); doc.setFontSize(10);
-    var y = 38;
-    doc.text('Nome: ' + document.getElementById('nome').value, 20, y);
-    var idEl = document.getElementById('idPaciente');
-    if (idEl && idEl.value) doc.text('ID: ' + idEl.value, 140, y);
-    y += 6; doc.text('Idade: ' + (document.getElementById('idadeCalculada').value || ''), 20, y);
-    doc.text('Sexo: ' + (document.getElementById('sexo').value || ''), 120, y);
-    y += 10;
-    // Grafico
-    doc.setTextColor(44,62,80); doc.setFontSize(10); doc.setFont(undefined,'bold');
-    doc.text('PERFIL GRAFICO DOS ESQUEMAS', 20, y); y += 3;
-    doc.addImage(imgGrafico, 'PNG', 10, y, 190, 110); y += 114;
-    // Esquemas texto
-    doc.setFont(undefined,'bold'); doc.setFontSize(9); doc.setTextColor(0,0,0);
-    doc.text('ESQUEMAS:', 20, y); y += 6;
-    doc.setFont(undefined,'normal'); doc.setFontSize(8);
-    for (var i = 0; i < dados.esquemas.length; i++) {
-        var e = dados.esquemas[i];
-        if (y > 275) { doc.addPage(); y = 20; }
-        doc.text(e.nome + ': ' + e.total + '/30 (' + e.nivel + ')', 25, y); y += 4.5;
-    }
-    if (dados.esquemasMaisAltos && dados.esquemasMaisAltos.length > 0) {
-        y += 4;
-        doc.setFont(undefined,'bold'); doc.setFontSize(9);
-        doc.text('ESQUEMAS MAIS ELEVADOS: ' + dados.esquemasMaisAltos.join(', '), 20, y);
-    }
-    doc.setFillColor(80,80,80); doc.rect(0,285,210,12,'F');
-    doc.setTextColor(200,200,200); doc.setFontSize(7);
-    doc.text('Relatorio gerado em: ' + new Date().toLocaleString('pt-BR'), 105, 291, {align:'center'});
-    var ts = new Date();
-    doc.save('YSQ-S3_' + (document.getElementById('nome').value||'Paciente').replace(/\s+/g,'_') + '_' + ts.getFullYear() + String(ts.getMonth()+1).padStart(2,'0') + String(ts.getDate()).padStart(2,'0') + '.pdf');
+    window.SYM_YSQS3.pdf(window.SYM_YSQS3.calcular(r), {nome:nome, sexo:document.getElementById('sexo').value, idade:document.getElementById('idadeCalculada').value, dataAval:document.getElementById('data').value, idPaciente:document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''});
 }
 
 function limparDados() {

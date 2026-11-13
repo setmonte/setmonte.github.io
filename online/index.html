@@ -18356,6 +18356,46 @@
         return;
       }
 
+      // YSQ-S3: desenho sob medida (escalas/ysqs3-visual.js), refeito pelas respostas salvas (d.respostas). Tela e PDF vem dos mesmos blocos.
+      if (String(d.escala || '').toUpperCase() === 'YSQ-S3' && d.respostas && !r._semPdfNovo) {
+        var _gerYS3 = function () {
+          var _okYS3 = false;
+          try { _okYS3 = window.SYM_YSQS3.pdfPainel(d, r); } catch (eYS3) {
+            if (typeof window._registrarFalhaPDF === 'function') { try { window._registrarFalhaPDF('gerarPDFEscala(YSQ-S3)', (eYS3 && eYS3.message) || String(eYS3), d.paciente || ''); } catch (xYS3) {} }
+          }
+          if (!_okYS3) { r._semPdfNovo = true; gerarPDFEscala(idx); }
+        };
+        if (window.SYM_YSQS3 && window.SYM_YSQS3.pdfPainel) { _gerYS3(); }
+        else {
+          var _sYS3 = document.createElement('script');
+          _sYS3.src = '../escalas/ysqs3-visual.js?v=' + Date.now();
+          _sYS3.onload = _gerYS3;
+          _sYS3.onerror = function () { r._semPdfNovo = true; gerarPDFEscala(idx); };
+          document.body.appendChild(_sYS3);
+        }
+        return;
+      }
+
+      // YSQ-L3: desenho sob medida (escalas/ysql3-visual.js), refeito pelas respostas salvas (d.respostas). Tela e PDF vem dos mesmos blocos.
+      if (String(d.escala || '').toUpperCase() === 'YSQ-L3' && d.respostas && !r._semPdfNovo) {
+        var _gerYS4 = function () {
+          var _okYS4 = false;
+          try { _okYS4 = window.SYM_YSQL3.pdfPainel(d, r); } catch (eYS4) {
+            if (typeof window._registrarFalhaPDF === 'function') { try { window._registrarFalhaPDF('gerarPDFEscala(YSQ-L3)', (eYS4 && eYS4.message) || String(eYS4), d.paciente || ''); } catch (xYS4) {} }
+          }
+          if (!_okYS4) { r._semPdfNovo = true; gerarPDFEscala(idx); }
+        };
+        if (window.SYM_YSQL3 && window.SYM_YSQL3.pdfPainel) { _gerYS4(); }
+        else {
+          var _sYS4 = document.createElement('script');
+          _sYS4.src = '../escalas/ysql3-visual.js?v=' + Date.now();
+          _sYS4.onload = _gerYS4;
+          _sYS4.onerror = function () { r._semPdfNovo = true; gerarPDFEscala(idx); };
+          document.body.appendChild(_sYS4);
+        }
+        return;
+      }
+
       // ERTs de criterios (PA, PB, PD, PEs, PEt, PEv, PH, PN, POC, PP, TB): PDF visual igual a tela
       // de resultados, pela mascara unica escalas/ert-visual.js (a mesma usada na pagina da escala).
       // ERT-VT fica de fora (escala propria). Resultados antigos sem respostasDetalhadas (ex.: ERT-TB
