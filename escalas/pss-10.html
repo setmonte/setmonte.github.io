@@ -112,28 +112,19 @@
                 <h2 style="color:#e65100;">Refer&#234;ncias</h2>
                 <p style="color:#555; line-height:1.9; font-size:0.88em;">
                     <strong>COHEN, S.; KAMARCK, T.; MERMELSTEIN, R.</strong> A global measure of perceived stress. <em>Journal of Health and Social Behavior</em>, v. 24, n. 4, p. 385-396, 1983.<br><br>
-                    <strong>LUFT, C. D. B. et al.</strong> Vers&#227;o brasileira da Escala de Estresse Percebido: tradu&#231;&#227;o e valida&#231;&#227;o para idosos. <em>Revista de Sa&#250;de P&#250;blica</em>, v. 41, n. 4, p. 606-615, 2007.<br><br>
-                    <strong>MACHADO, W. L. et al.</strong> Evid&#234;ncias de validade da PSS-10 na popula&#231;&#227;o brasileira. <em>Psicologia: Teoria e Pesquisa</em>, v. 39, 2023.
+                    <strong>COHEN, S.; WILLIAMSON, G.</strong> Perceived stress in a probability sample of the United States. In: SPACAPAN, S.; OSKAMP, S. (ed.). <em>The social psychology of health</em>. Newbury Park: Sage, 1988. p. 31-67.<br><br>
+                    <strong>LUFT, C. D. B.; SANCHES, S. O.; MAZO, G. Z.; ANDRADE, A.</strong> Vers&#227;o brasileira da Escala de Estresse Percebido: tradu&#231;&#227;o e valida&#231;&#227;o para idosos. <em>Revista de Sa&#250;de P&#250;blica</em>, v. 41, n. 4, p. 606-615, 2007.<br><br>
+                    <strong>REIS, R. S.; HINO, A. A. F.; A&#209;EZ, C. R. R.</strong> Perceived Stress Scale: reliability and validity study in Brazil. <em>Journal of Health Psychology</em>, v. 15, n. 1, p. 107-114, 2010. DOI: 10.1177/1359105309346343.
                 </p>
             </div>
         </div>
     </div>
     <script src="../id-paciente.js"></script>
+    <script src="pss10-visual.js"></script>
     <script>
-var ITENS=[
-{texto:"Com que frequ\u00eancia voc\u00ea ficou aborrecido(a) por causa de algo que aconteceu inesperadamente?"},
-{texto:"Com que frequ\u00eancia voc\u00ea sentiu que era incapaz de controlar as coisas importantes da sua vida?"},
-{texto:"Com que frequ\u00eancia voc\u00ea se sentiu nervoso(a) e estressado(a)?"},
-{texto:"Com que frequ\u00eancia voc\u00ea se sentiu confiante em sua capacidade de lidar com seus problemas pessoais?",inv:true},
-{texto:"Com que frequ\u00eancia voc\u00ea sentiu que as coisas estavam indo do seu jeito?",inv:true},
-{texto:"Com que frequ\u00eancia voc\u00ea achou que n\u00e3o conseguiria dar conta de todas as coisas que tinha para fazer?"},
-{texto:"Com que frequ\u00eancia voc\u00ea foi capaz de controlar as irrita\u00e7\u00f5es da sua vida?",inv:true},
-{texto:"Com que frequ\u00eancia voc\u00ea sentiu que estava no controle de tudo?",inv:true},
-{texto:"Com que frequ\u00eancia voc\u00ea ficou irritado(a) por causa de coisas que estavam fora do seu controle?"},
-{texto:"Com que frequ\u00eancia voc\u00ea sentiu que os problemas se acumularam a ponto de n\u00e3o conseguir super\u00e1-los?"}
-];
-
-var OPCOES=[{valor:0,texto:"Nunca"},{valor:1,texto:"Quase nunca"},{valor:2,texto:"\u00c0s vezes"},{valor:3,texto:"Com alguma frequ\u00eancia"},{valor:4,texto:"Muito frequentemente"}];
+// Itens, calculo, tela e PDF vivem em pss10-visual.js (PSS-10)
+var ITENS = window.SYM_PSS10 ? window.SYM_PSS10.ITENS : [];
+var OPCOES = window.SYM_PSS10 ? window.SYM_PSS10.OPCOES : [];
 
 function gerarQuestionario() {
     var c = document.getElementById('questionario');
@@ -168,185 +159,36 @@ function obterRespostas() {
     return r;
 }
 
-function classificarPSS10(escore) {
-    if (escore <= 13) return {texto: "Baixo estresse", cor: "#4caf50"};
-    if (escore <= 26) return {texto: "Estresse moderado", cor: "#ff9800"};
-    return {texto: "Alto estresse", cor: "#f44336"};
-}
-
 function calcularResultados() {
     var nome = document.getElementById('nome').value;
     if (!nome) { alert('Preencha o nome do paciente.'); return; }
     var idade = document.getElementById('idadeCalculada').value;
     if (!idade) { alert('Preencha a data de nascimento.'); return; }
+    var sexo = document.getElementById('sexo').value;
+    if (!sexo) { alert('Selecione o sexo (Masculino ou Feminino).'); return; }
     var r = obterRespostas();
-    if (!r) {
-        var respondidos = 0;
-        for (var i = 0; i < ITENS.length; i++) {
-            if (document.querySelector('input[name="q' + i + '"]:checked')) respondidos++;
-        }
-        alert('Responda todos os 10 itens. Faltam ' + (10 - respondidos) + ' itens.');
-        return;
-    }
+    if (!r) { alert('Responda todos os itens antes de calcular.'); return; }
+    if (!window.SYM_PSS10) { alert('N\u00e3o foi poss\u00edvel carregar o m\u00f3dulo de resultados. Recarregue a p\u00e1gina e tente novamente.'); return; }
 
-    var escore = 0;
-    for (var i = 0; i < r.length; i++) {
-        if (ITENS[i].inv) {
-            escore += (4 - r[i]);
-        } else {
-            escore += r[i];
-        }
-    }
-    var classif = classificarPSS10(escore);
-
+    // Calculo, tela e PDF vem do mesmo desenho (pss10-visual.js)
+    var res = window.SYM_PSS10.calcular(r);
     var el = document.getElementById('resultados');
-    var h = '<h2>Resultados PSS-10</h2>';
-
-    h += '<div class="classificacao-box" style="background:' + classif.cor + '22;border:3px solid ' + classif.cor + ';color:' + classif.cor + ';">';
-    h += '<div style="font-size:1.5em;">' + classif.texto + '</div>';
-    h += '<div style="font-size:1.1em;margin-top:5px;">Escore: ' + escore + ' / 40</div>';
-    h += '</div>';
-
-    h += '<div class="total-geral"><h3>Pontua\u00e7\u00e3o Total: ' + escore + ' / 40</h3><h3>Classifica\u00e7\u00e3o: ' + classif.texto + '</h3></div>';
-
-    h += '<div class="dominio-card"><h4>Detalhamento por Item</h4>';
-    for (var i = 0; i < ITENS.length; i++) {
-        var pontuacao = ITENS[i].inv ? (4 - r[i]) : r[i];
-        h += '<p><strong>Item ' + (i+1) + (ITENS[i].inv ? ' (invertido)' : '') + ':</strong> ' + ITENS[i].texto + ' \u2014 Resposta: <strong>' + r[i] + '</strong> (' + OPCOES[r[i]].texto + ') \u2014 Pontos: <strong>' + pontuacao + '</strong></p>';
-    }
-    h += '</div>';
-
-    h += '<div class="dominio-card"><h4>Faixas de Classifica\u00e7\u00e3o</h4>';
-    h += '<p>0-13: Baixo estresse | 14-26: Estresse moderado | 27-40: Alto estresse</p>';
-    h += '</div>';
-
-    h += '<div class="disclaimer"><strong>IMPORTANTE:</strong> A PSS-10 \u00e9 um instrumento de rastreio para estresse percebido. N\u00e3o substitui avalia\u00e7\u00e3o cl\u00ednica profissional. Resultados devem ser interpretados por profissional qualificado.</div>';
-
-    el.innerHTML = h;
+    el.innerHTML = window.SYM_PSS10.htmlTela(res);
     el.style.display = 'block';
     el.scrollIntoView({behavior: 'smooth'});
-
-    var sexo = document.getElementById('sexo').value;
-    var idade = document.getElementById('idadeCalculada').value;
-    var idPac = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
-    window._escalaDados = {escala:'PSS-10', paciente:nome, escore:escore, classificacao:classif.texto, dominios:{}, respostas:(function(){var o={};for(var i=0;i<r.length;i++){o[i+1]=r[i];}return o;})(), sexo:sexo, idPaciente:idPac, idade:idade, data:new Date().toISOString()};
+    window._escalaDados = {escala:'PSS-10', paciente:nome, escore:window.SYM_PSS10.escore(res), classificacao:window.SYM_PSS10.classifGeral(res), dominios:window.SYM_PSS10.dadosPainel(res), respostas:window.SYM_PSS10.respostasObj(res), idPaciente:(document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''), idade:idade, sexo:sexo, data:new Date().toISOString()};
     if (window.injetarBotaoSalvar) injetarBotaoSalvar('resultados');
 }
 
 function gerarRelatorioPDF() {
+    // PDF igual a tela de resultados (pss10-visual.js; o painel usa o mesmo desenho)
     var nome = document.getElementById('nome').value;
     if (!nome) { alert('Preencha o nome do paciente.'); return; }
     var r = obterRespostas();
-    if (!r) { alert('Responda todos os 10 itens.'); return; }
+    if (!r) { alert('Responda todos os itens antes de gerar o PDF.'); return; }
+    if (!window.SYM_PSS10) { alert('N\u00e3o foi poss\u00edvel carregar o gerador de PDF. Recarregue a p\u00e1gina e tente novamente.'); return; }
 
-    var escore = 0;
-    for (var i = 0; i < r.length; i++) {
-        if (ITENS[i].inv) { escore += (4 - r[i]); } else { escore += r[i]; }
-    }
-    var classif = classificarPSS10(escore);
-    var idade = document.getElementById('idadeCalculada').value;
-    var sexo = document.getElementById('sexo').value;
-    var dataAval = document.getElementById('data').value || new Date().toLocaleDateString('pt-BR');
-    var obs = document.getElementById('observacoes').value;
-    var idPac = document.getElementById('idPaciente') ? document.getElementById('idPaciente').value : '';
-
-    // Gerar grafico em canvas (pontuacao por item)
-    var pontuacoes = [];
-    for (var gi = 0; gi < ITENS.length; gi++) { pontuacoes.push(ITENS[gi].inv ? (4 - r[gi]) : r[gi]); }
-    var canvasG = document.createElement('canvas'); canvasG.width = 700; canvasG.height = 300;
-    var cx = canvasG.getContext('2d');
-    cx.fillStyle = '#fff'; cx.fillRect(0, 0, 700, 300);
-    cx.fillStyle = '#333'; cx.font = 'bold 12px Segoe UI'; cx.textAlign = 'left';
-    cx.fillText('Perfil por Item - Estresse Percebido (escala 0-4)', 10, 15);
-    var bh = 20; var gap = 4; var startY = 28; var maxW = 200; var labelW = 400;
-    for (var gi = 0; gi < ITENS.length; gi++) {
-        var by = startY + gi * (bh + gap);
-        var pct = pontuacoes[gi] / 4;
-        var bw = pct * maxW;
-        var cor = pontuacoes[gi] === 0 ? '#4caf50' : pontuacoes[gi] === 1 ? '#8bc34a' : pontuacoes[gi] === 2 ? '#ffeb3b' : pontuacoes[gi] === 3 ? '#ff9800' : '#f44336';
-        cx.fillStyle = '#555'; cx.font = '10px Segoe UI'; cx.textAlign = 'right';
-        var txt = (gi+1) + '. ' + ITENS[gi].texto + (ITENS[gi].inv ? ' (inv)' : '');
-        if (txt.length > 65) txt = txt.substring(0, 62) + '...';
-        cx.fillText(txt, labelW - 5, by + 14);
-        cx.fillStyle = cor; cx.fillRect(labelW, by, bw, bh);
-        cx.fillStyle = '#333'; cx.font = 'bold 11px Segoe UI'; cx.textAlign = 'left';
-        cx.fillText(pontuacoes[gi] + '/4', labelW + bw + 5, by + 14);
-    }
-    var ly = startY + ITENS.length*(bh+gap) + 5;
-    var cores = [['#4caf50','0'],['#8bc34a','1'],['#ffeb3b','2'],['#ff9800','3'],['#f44336','4']];
-    cx.font = '10px Segoe UI'; cx.textAlign = 'left';
-    for (var li = 0; li < cores.length; li++) { cx.fillStyle = cores[li][0]; cx.fillRect(labelW + li*45, ly, 12, 12); cx.fillStyle = '#555'; cx.fillText(cores[li][1], labelW + li*45 + 15, ly + 10); }
-    var imgGrafico = canvasG.toDataURL('image/png');
-
-    var jsPDF = window.jspdf.jsPDF;
-    var doc = new jsPDF();
-
-    // Cabecalho
-    doc.setFillColor(230,81,0); doc.rect(0,0,210,35,'F');
-    doc.setTextColor(255,255,255); doc.setFontSize(14); doc.setFont(undefined,'bold');
-    doc.text('PSS-10 - RELAT\u00d3RIO DE AVALIA\u00c7\u00c3O', 105, 15, {align:'center'});
-    doc.setFontSize(9); doc.setFont(undefined,'normal');
-    doc.text('Perceived Stress Scale - Escala de Estresse Percebido', 105, 23, {align:'center'});
-    doc.text('Cohen, Kamarck & Mermelstein (1983)', 105, 29, {align:'center'});
-
-    // Dados pessoais
-    var y = 42;
-    doc.setFillColor(248,249,250); doc.rect(15,y,180,22,'F');
-    doc.setTextColor(230,81,0); doc.setFontSize(10); doc.setFont(undefined,'bold');
-    doc.text('DADOS PESSOAIS', 20, y+6);
-    doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont(undefined,'normal');
-    doc.text('Nome: ' + nome + '   |   Sexo: ' + sexo, 20, y+12);
-    doc.text('Idade: ' + idade + '   |   Data: ' + dataAval + (idPac ? '   |   ID: ' + idPac : ''), 20, y+18);
-
-    // Classificacao
-    y = 70;
-    var corR, corG, corB;
-    if (escore <= 13) { corR=76; corG=175; corB=80; }
-    else if (escore <= 26) { corR=255; corG=152; corB=0; }
-    else { corR=244; corG=67; corB=54; }
-    doc.setFillColor(corR, corG, corB); doc.rect(15,y,180,14,'F');
-    doc.setTextColor(255,255,255); doc.setFontSize(12); doc.setFont(undefined,'bold');
-    doc.text('Classifica\u00e7\u00e3o: ' + classif.texto + '  |  Escore: ' + escore + '/40', 105, y+9, {align:'center'});
-
-    // Grafico
-    y = 88;
-    doc.setTextColor(230,81,0); doc.setFontSize(10); doc.setFont(undefined,'bold');
-    doc.text('PERFIL GRAFICO POR ITEM', 20, y); y += 3;
-    doc.addImage(imgGrafico, 'PNG', 15, y, 180, 72); y += 76;
-
-    // Pontuacao por item
-    doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont(undefined,'bold');
-    doc.text('PONTUA\u00c7\u00c3O POR ITEM:', 20, y); y += 7;
-    doc.setFont(undefined,'normal');
-    for (var i = 0; i < ITENS.length; i++) {
-        var textoItem = (i+1) + '. ' + ITENS[i].texto;
-        if (textoItem.length > 80) textoItem = textoItem.substring(0, 77) + '...';
-        var pontuacao = ITENS[i].inv ? (4 - r[i]) : r[i];
-        doc.text(textoItem + ' = ' + pontuacao + (ITENS[i].inv ? ' (inv)' : ''), 22, y);
-        y += 5;
-    }
-
-    // Faixas
-    y += 5;
-    doc.setFontSize(8); doc.setFont(undefined,'bold');
-    doc.text('FAIXAS: 0-13 Baixo estresse | 14-26 Estresse moderado | 27-40 Alto estresse', 20, y);
-    y += 10;
-
-    // Disclaimer
-    doc.setFillColor(255,248,235); doc.rect(15,y,180,14,'F');
-    doc.setTextColor(180,90,0); doc.setFontSize(7); doc.setFont(undefined,'normal');
-    doc.text('IMPORTANTE: A PSS-10 e um instrumento de rastreio para estresse percebido. Nao substitui avaliacao clinica profissional.', 20, y+5);
-    doc.text('Resultados devem ser interpretados por profissional qualificado.', 20, y+10);
-
-    // Rodape
-    doc.setFillColor(80,80,80); doc.rect(0,285,210,12,'F');
-    doc.setTextColor(200,200,200); doc.setFontSize(7);
-    doc.text('Relat\u00f3rio gerado em: ' + new Date().toLocaleString('pt-BR'), 105, 291, {align:'center'});
-
-    // Salvar
-    var ts = new Date();
-    var tsStr = ts.getFullYear() + String(ts.getMonth()+1).padStart(2,'0') + String(ts.getDate()).padStart(2,'0') + String(ts.getHours()).padStart(2,'0') + String(ts.getMinutes()).padStart(2,'0');
-    doc.save('PSS10_' + nome.replace(/\s+/g,'_') + '_' + tsStr + '.pdf');
+    window.SYM_PSS10.pdf(window.SYM_PSS10.calcular(r), {nome:nome, sexo:document.getElementById('sexo').value, idade:document.getElementById('idadeCalculada').value, dataAval:document.getElementById('data').value, idPaciente:document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''});
 }
 
 function limparDados() {
