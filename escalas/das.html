@@ -82,9 +82,9 @@
                     <strong>Instrumento:</strong> DAS &#8212; Escala de Ajustamento de Casais (Dyadic Adjustment Scale)<br>
                     <strong>Autor:</strong> Graham B. Spanier (1976)<br>
                     <strong>Estrutura:</strong> 32 itens, 4 subescalas<br>
-                    <strong>Resultado:</strong> Escore total (0-151) + perfil por subescala<br>
-                    <strong>Subescalas:</strong> Consenso (13 itens), Satisfa&#231;&#227;o (10 itens), Coes&#227;o (5 itens), Express&#227;o Afetiva (4 itens)<br>
-                    <strong>Ponto de corte:</strong> &#8804;101 = sofrimento relacional; &#8805;102 = ajustamento adequado<br>
+                    <strong>Resultado:</strong> Escore total (0-151) + perfil por subescala (sem classifica&#231;&#227;o)<br>
+                    <strong>Subescalas:</strong> Consenso (13 itens), Satisfa&#231;&#227;o (10 itens: 16 a 23, 31 e 32), Coes&#227;o (5 itens), Express&#227;o Afetiva (4 itens: 4, 6, 29 e 30)<br>
+                    <strong>Refer&#234;ncia:</strong> sem faixas oficiais; o valor 97 &#233; muito usado na literatura internacional (n&#227;o definido para a popula&#231;&#227;o brasileira)<br>
                     <strong>Popula&#231;&#227;o:</strong> Adultos em rela&#231;&#227;o conjugal ou coabita&#231;&#227;o &#8212; autoaplicativo
                 </p>
             </div>
@@ -127,171 +127,65 @@
     </div>
     <script src="../id-paciente.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="das-visual.js"></script>
     <script>
-var ITENS=[
-{texto:"Administra\u00e7\u00e3o das finan\u00e7as da fam\u00edlia",grupo:"consenso",tipo:"acordo"},
-{texto:"Quest\u00f5es de lazer e divers\u00e3o",grupo:"consenso",tipo:"acordo"},
-{texto:"Quest\u00f5es religiosas",grupo:"consenso",tipo:"acordo"},
-{texto:"Demonstra\u00e7\u00f5es de afeto",grupo:"expressao",tipo:"acordo"},
-{texto:"Amizades",grupo:"consenso",tipo:"acordo"},
-{texto:"Rela\u00e7\u00f5es sexuais",grupo:"expressao",tipo:"acordo"},
-{texto:"Conven\u00e7\u00f5es sociais (comportamento correto ou adequado)",grupo:"consenso",tipo:"acordo"},
-{texto:"Filosofia de vida",grupo:"consenso",tipo:"acordo"},
-{texto:"Maneiras de lidar com pais e sogros",grupo:"consenso",tipo:"acordo"},
-{texto:"Objetivos, metas e coisas consideradas importantes",grupo:"consenso",tipo:"acordo"},
-{texto:"Quantidade de tempo passado juntos",grupo:"consenso",tipo:"acordo"},
-{texto:"Tomada de decis\u00f5es importantes",grupo:"consenso",tipo:"acordo"},
-{texto:"Tarefas dom\u00e9sticas",grupo:"consenso",tipo:"acordo"},
-{texto:"Interesses e atividades de lazer",grupo:"consenso",tipo:"acordo"},
-{texto:"Decis\u00f5es sobre carreira/trabalho",grupo:"consenso",tipo:"acordo"},
-{texto:"Com que frequ\u00eancia voc\u00ea discute ou j\u00e1 considerou divorciar-se, separar-se ou terminar o relacionamento?",grupo:"satisfacao",tipo:"frequencia",invertido:true},
-{texto:"Com que frequ\u00eancia voc\u00ea ou seu(sua) parceiro(a) sai de casa ap\u00f3s uma briga?",grupo:"satisfacao",tipo:"frequencia",invertido:true},
-{texto:"De modo geral, com que frequ\u00eancia voc\u00ea acha que as coisas entre voc\u00ea e seu(sua) parceiro(a) v\u00e3o bem?",grupo:"satisfacao",tipo:"frequencia",invertido:false},
-{texto:"Voc\u00ea confia no(a) seu(sua) parceiro(a)?",grupo:"satisfacao",tipo:"frequencia",invertido:false},
-{texto:"Voc\u00ea j\u00e1 se arrependeu de ter casado (ou de morar junto)?",grupo:"satisfacao",tipo:"frequencia",invertido:true},
-{texto:"Com que frequ\u00eancia voc\u00ea e seu(sua) parceiro(a) brigam?",grupo:"satisfacao",tipo:"frequencia",invertido:true},
-{texto:"Com que frequ\u00eancia voc\u00ea e seu(sua) parceiro(a) irritam um ao outro?",grupo:"satisfacao",tipo:"frequencia",invertido:true},
-{texto:"Voc\u00ea beija seu(sua) parceiro(a)?",grupo:"expressao",tipo:"beijo"},
-{texto:"Voc\u00ea e seu(sua) parceiro(a) participam juntos de atividades fora de casa?",grupo:"coesao",tipo:"interesses"},
-{texto:"Troca estimulante de ideias",grupo:"coesao",tipo:"eventos"},
-{texto:"Rir juntos",grupo:"coesao",tipo:"eventos"},
-{texto:"Discutir algo calmamente",grupo:"coesao",tipo:"eventos"},
-{texto:"Trabalhar juntos em um projeto",grupo:"coesao",tipo:"eventos"},
-{texto:"Estar cansado(a) demais para sexo",grupo:"expressao",tipo:"simNao",invertido:true},
-{texto:"N\u00e3o demonstrar amor",grupo:"expressao",tipo:"simNao",invertido:true},
-{texto:"Qual o grau de felicidade do seu relacionamento, considerando todos os aspectos?",grupo:"satisfacao",tipo:"felicidade"},
-{texto:"Qual das afirma\u00e7\u00f5es abaixo descreve melhor como voc\u00ea se sente sobre o futuro do seu relacionamento?",grupo:"satisfacao",tipo:"futuro"}
-];
-var OPCOES_ACORDO=[
-{valor:5,texto:"Sempre concordamos"},
-{valor:4,texto:"Quase sempre concordamos"},
-{valor:3,texto:"Ocasionalmente discordamos"},
-{valor:2,texto:"Frequentemente discordamos"},
-{valor:1,texto:"Quase sempre discordamos"},
-{valor:0,texto:"Sempre discordamos"}
-];
-var OPCOES_FREQUENCIA=[
-{valor:0,texto:"Sempre"},
-{valor:1,texto:"Quase sempre"},
-{valor:2,texto:"Mais que a metade do tempo"},
-{valor:3,texto:"Ocasionalmente"},
-{valor:4,texto:"Raramente"},
-{valor:5,texto:"Nunca"}
-];
-var OPCOES_FREQUENCIA_POS=[
-{valor:5,texto:"Sempre"},
-{valor:4,texto:"Quase sempre"},
-{valor:3,texto:"Mais que a metade do tempo"},
-{valor:2,texto:"Ocasionalmente"},
-{valor:1,texto:"Raramente"},
-{valor:0,texto:"Nunca"}
-];
-var OPCOES_BEIJO=[
-{valor:4,texto:"Todo dia"},
-{valor:3,texto:"Quase todo dia"},
-{valor:2,texto:"Ocasionalmente"},
-{valor:1,texto:"Raramente"},
-{valor:0,texto:"Nunca"}
-];
-var OPCOES_INTERESSES=[
-{valor:4,texto:"Todas"},
-{valor:3,texto:"A maioria"},
-{valor:2,texto:"Algumas"},
-{valor:1,texto:"Muito poucas"},
-{valor:0,texto:"Nenhuma"}
-];
-var OPCOES_EVENTOS=[
-{valor:0,texto:"Nunca"},
-{valor:1,texto:"Menos de 1x/m\u00eas"},
-{valor:2,texto:"1-2x/m\u00eas"},
-{valor:3,texto:"1-2x/semana"},
-{valor:4,texto:"1x/dia"},
-{valor:5,texto:"Mais de 1x/dia"}
-];
-var OPCOES_SIMNAO=[
-{valor:1,texto:"Sim"},
-{valor:0,texto:"N\u00e3o"}
-];
-var OPCOES_FELICIDADE=[
-{valor:0,texto:"Extremamente infeliz"},
-{valor:1,texto:"Bastante infeliz"},
-{valor:2,texto:"Um pouco infeliz"},
-{valor:3,texto:"Feliz"},
-{valor:4,texto:"Muito feliz"},
-{valor:5,texto:"Extremamente feliz"},
-{valor:6,texto:"Perfeito"}
-];
-var OPCOES_FUTURO=[
-{valor:5,texto:"Quero desesperadamente que d\u00ea certo e faria quase qualquer coisa para isso"},
-{valor:4,texto:"Quero muito que d\u00ea certo e farei tudo que puder"},
-{valor:3,texto:"Quero muito que d\u00ea certo e farei minha parte"},
-{valor:2,texto:"Seria bom se desse certo, mas n\u00e3o posso fazer muito mais do que j\u00e1 fa\u00e7o"},
-{valor:1,texto:"Seria bom se desse certo, mas me recuso a fazer mais do que j\u00e1 fa\u00e7o"},
-{valor:0,texto:"Meu relacionamento n\u00e3o pode dar certo e n\u00e3o h\u00e1 mais nada que eu possa fazer"}
-];
+// Itens, opcoes, calculo, tela e PDF vivem em das-visual.js (DAS)
+var ITENS = window.SYM_DAS ? window.SYM_DAS.ITENS : [];
+var OPCOES_ACORDO = window.SYM_DAS ? window.SYM_DAS.OPC.acordo : [];
+var OPCOES_FREQUENCIA = window.SYM_DAS ? window.SYM_DAS.OPC.frequencia : [];
+var OPCOES_FREQUENCIA_POS = window.SYM_DAS ? window.SYM_DAS.OPC.frequenciaPos : [];
+var OPCOES_BEIJO = window.SYM_DAS ? window.SYM_DAS.OPC.beijo : [];
+var OPCOES_INTERESSES = window.SYM_DAS ? window.SYM_DAS.OPC.interesses : [];
+var OPCOES_EVENTOS = window.SYM_DAS ? window.SYM_DAS.OPC.eventos : [];
+var OPCOES_SIMNAO = window.SYM_DAS ? window.SYM_DAS.OPC.simNao : [];
+var OPCOES_FELICIDADE = window.SYM_DAS ? window.SYM_DAS.OPC.felicidade : [];
+var OPCOES_FUTURO = window.SYM_DAS ? window.SYM_DAS.OPC.futuro : [];
+function obterRespostas() {
+    var r = [];
+    for (var i = 0; i < ITENS.length; i++) {
+        var s = document.querySelector('input[name="item' + i + '"]:checked');
+        if (!s) return null;
+        r.push(parseInt(s.value));
+    }
+    return r;
+}
 var _sessionInfo=null;
 var _API_URL='https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
 function calcularIdade(){var dn=document.getElementById('dataNascimento').value;if(!dn)return;var hoje=new Date();var nasc=new Date(dn+'T00:00:00');var anos=hoje.getFullYear()-nasc.getFullYear();var meses=hoje.getMonth()-nasc.getMonth();var dias=hoje.getDate()-nasc.getDate();if(dias<0){meses--;var ultimoDia=new Date(hoje.getFullYear(),hoje.getMonth(),0).getDate();dias+=ultimoDia;}if(meses<0){anos--;meses+=12;}document.getElementById('idadeCalculada').value=anos+' anos, '+meses+' meses e '+dias+' dias';}
 function getOpcoesPorItem(idx){var item=ITENS[idx];if(item.tipo==='acordo')return OPCOES_ACORDO;if(item.tipo==='frequencia'){if(item.invertido)return OPCOES_FREQUENCIA;return OPCOES_FREQUENCIA_POS;}if(item.tipo==='beijo')return OPCOES_BEIJO;if(item.tipo==='interesses')return OPCOES_INTERESSES;if(item.tipo==='eventos')return OPCOES_EVENTOS;if(item.tipo==='simNao')return OPCOES_SIMNAO;if(item.tipo==='felicidade')return OPCOES_FELICIDADE;if(item.tipo==='futuro')return OPCOES_FUTURO;return OPCOES_ACORDO;}
 function gerarQuestionario(){var container=document.getElementById('questionario');var html='';for(var i=0;i<ITENS.length;i++){var item=ITENS[i];var opcoes=getOpcoesPorItem(i);html+='<div class="item"><div class="item-texto"><span class="item-numero">'+(i+1)+'.</span> '+item.texto+'</div><div class="opcoes">';for(var j=0;j<opcoes.length;j++){html+='<label class="opcao"><input type="radio" name="item'+i+'" value="'+opcoes[j].valor+'"><label for="item'+i+'_'+j+'">'+opcoes[j].texto+'</label></label>';}html+='</div></div>';}container.innerHTML=html;}
-function calcularResultados(){var nome=document.getElementById('nome').value.trim();if(!nome){alert('Preencha o nome antes de calcular.');return;}var totalItens=ITENS.length;var respondidos=document.querySelectorAll('input[type="radio"]:checked').length;if(respondidos<totalItens){alert('Responda todos os '+totalItens+' itens antes de calcular. Faltam '+(totalItens-respondidos)+'.');return;}
-var escores=[];for(var i=0;i<ITENS.length;i++){var sel=document.querySelector('input[name="item'+i+'"]:checked');escores.push(parseInt(sel.value));}
-var idxConsenso=[0,1,2,4,6,7,8,9,10,11,12,13,14];var idxSatisfacao=[15,16,17,18,19,20,21,30,31];var idxCoesao=[23,24,25,26,27];var idxExpressao=[3,5,22,28,29];
-var somaConsenso=0;for(var i=0;i<idxConsenso.length;i++)somaConsenso+=escores[idxConsenso[i]];
-var somaSatisfacao=0;for(var i=0;i<idxSatisfacao.length;i++)somaSatisfacao+=escores[idxSatisfacao[i]];
-var somaCoesao=0;for(var i=0;i<idxCoesao.length;i++)somaCoesao+=escores[idxCoesao[i]];
-var somaExpressao=0;for(var i=0;i<idxExpressao.length;i++)somaExpressao+=escores[idxExpressao[i]];
-var total=somaConsenso+somaSatisfacao+somaCoesao+somaExpressao;
-var maxConsenso=65;var maxSatisfacao=50;var maxCoesao=24;var maxExpressao=12;var maxTotal=151;
-var classificacao='';var corFundo='';var corBorda='';var corTexto='';
-if(total<=101){classificacao='SOFRIMENTO RELACIONAL';corFundo='#ffcdd2';corBorda='#c62828';corTexto='#b71c1c';}else{classificacao='AJUSTAMENTO ADEQUADO';corFundo='#c8e6c9';corBorda='#2e7d32';corTexto='#1b5e20';}
-var pctConsenso=Math.round((somaConsenso/maxConsenso)*100);var pctSatisfacao=Math.round((somaSatisfacao/maxSatisfacao)*100);var pctCoesao=Math.round((somaCoesao/maxCoesao)*100);var pctExpressao=Math.round((somaExpressao/maxExpressao)*100);var pctTotal=Math.round((total/maxTotal)*100);
-function corBarra(pct){if(pct>=70)return'#4caf50';if(pct>=50)return'#ff9800';return'#f44336';}
-var resultDiv=document.getElementById('resultados');
-resultDiv.style.display='block';
-resultDiv.innerHTML='<h2>Resultados</h2>'+
-'<div class="rastreio-box" style="background:'+corFundo+';border:3px solid '+corBorda+';color:'+corTexto+';">'+classificacao+' \u2014 Escore Total: '+total+'/'+maxTotal+' (ponto de corte: 101)</div>'+
-'<div class="total-geral"><h3 style="margin-bottom:5px;">Escore Total: '+total+' / '+maxTotal+'</h3><p style="opacity:0.9;">Percentual: '+pctTotal+'%</p></div>'+
-'<div class="dominio-card"><h4>Consenso (acordo em assuntos do casal)</h4><p>'+somaConsenso+' / '+maxConsenso+' ('+pctConsenso+'%)</p><div class="barra-progresso"><div class="barra-preenchida" style="width:'+pctConsenso+'%;background:'+corBarra(pctConsenso)+';"></div></div></div>'+
-'<div class="dominio-card"><h4>Satisfa\u00e7\u00e3o (felicidade e estabilidade)</h4><p>'+somaSatisfacao+' / '+maxSatisfacao+' ('+pctSatisfacao+'%)</p><div class="barra-progresso"><div class="barra-preenchida" style="width:'+pctSatisfacao+'%;background:'+corBarra(pctSatisfacao)+';"></div></div></div>'+
-'<div class="dominio-card"><h4>Coes\u00e3o (atividades e interesses compartilhados)</h4><p>'+somaCoesao+' / '+maxCoesao+' ('+pctCoesao+'%)</p><div class="barra-progresso"><div class="barra-preenchida" style="width:'+pctCoesao+'%;background:'+corBarra(pctCoesao)+';"></div></div></div>'+
-'<div class="dominio-card"><h4>Express\u00e3o Afetiva (afeto e sexualidade)</h4><p>'+somaExpressao+' / '+maxExpressao+' ('+pctExpressao+'%)</p><div class="barra-progresso"><div class="barra-preenchida" style="width:'+pctExpressao+'%;background:'+corBarra(pctExpressao)+';"></div></div></div>';
-var analise='<div style="background:linear-gradient(135deg,#fce4ec,#f8bbd0);border-radius:12px;padding:25px;margin-top:20px;border:2px solid #c2185b;">';
-analise+='<h3 style="color:#880e4f;margin-bottom:15px;">An\u00e1lise Integrada <span style="display:inline-block;background:#880e4f;color:white;padding:3px 10px;border-radius:12px;font-size:0.75em;margin-left:8px;vertical-align:middle;">IA</span></h3>';
-analise+='<div style="background:white;border-radius:10px;padding:18px;margin-bottom:15px;border-left:4px solid #c2185b;">';
-analise+='<h4 style="color:#880e4f;margin-bottom:8px;">Panorama Geral</h4><p style="color:#444;line-height:1.7;font-size:0.95em;">';
-if(total<=70)analise+='O casal apresenta <strong>sofrimento relacional significativo</strong> (escore '+total+'/151). H\u00e1 dificuldades importantes em m\u00faltiplas dimens\u00f5es do relacionamento, indicando necessidade de interven\u00e7\u00e3o terap\u00eautica especializada. O padr\u00e3o de respostas sugere um relacionamento sob forte press\u00e3o, com risco de deteriora\u00e7\u00e3o progressiva caso n\u00e3o haja acompanhamento.';
-else if(total<=101)analise+='O casal apresenta <strong>sofrimento relacional</strong> (escore '+total+'/151). Existem insatisfa\u00e7\u00f5es em \u00e1reas relevantes do relacionamento que merecem aten\u00e7\u00e3o cl\u00ednica. Embora o v\u00ednculo ainda exista, h\u00e1 sinais de desgaste que, se n\u00e3o abordados, podem se intensificar.';
-else if(total<=120)analise+='O casal apresenta <strong>ajustamento adequado</strong> (escore '+total+'/151), com espa\u00e7o para crescimento em \u00e1reas espec\u00edficas. O relacionamento funciona bem no geral, mas existem pontos que podem ser fortalecidos para aumentar a satisfa\u00e7\u00e3o m\u00fatua.';
-else analise+='O casal apresenta <strong>bom ajustamento relacional</strong> (escore '+total+'/151). H\u00e1 harmonia, satisfa\u00e7\u00e3o e sintonia na maioria das dimens\u00f5es avaliadas. O relacionamento demonstra bases s\u00f3lidas e funcionalidade saud\u00e1vel.';
-analise+='</p></div>';
-var menorDim='';var menorPct=100;
-if(pctConsenso<menorPct){menorPct=pctConsenso;menorDim='consenso';}
-if(pctSatisfacao<menorPct){menorPct=pctSatisfacao;menorDim='satisfacao';}
-if(pctCoesao<menorPct){menorPct=pctCoesao;menorDim='coesao';}
-if(pctExpressao<menorPct){menorPct=pctExpressao;menorDim='expressao';}
-analise+='<div style="background:white;border-radius:10px;padding:18px;margin-bottom:15px;border-left:4px solid #ff6f00;">';
-analise+='<h4 style="color:#e65100;margin-bottom:8px;">\u00c1rea que Merece Mais Aten\u00e7\u00e3o</h4><p style="color:#444;line-height:1.7;font-size:0.95em;">';
-if(menorDim==='consenso')analise+='<strong>Consenso ('+pctConsenso+'%)</strong> \u2014 O casal tem dificuldade em chegar a acordos sobre temas importantes como finan\u00e7as, lazer, amizades ou valores. Isso pode gerar conflitos recorrentes por falta de alinhamento nas expectativas.';
-else if(menorDim==='satisfacao')analise+='<strong>Satisfa\u00e7\u00e3o ('+pctSatisfacao+'%)</strong> \u2014 H\u00e1 insatisfa\u00e7\u00e3o com a din\u00e2mica do relacionamento. Podem existir brigas frequentes, pensamentos sobre separa\u00e7\u00e3o ou sensa\u00e7\u00e3o de que as coisas n\u00e3o v\u00e3o bem entre o casal.';
-else if(menorDim==='coesao')analise+='<strong>Coes\u00e3o ('+pctCoesao+'%)</strong> \u2014 O casal compartilha poucas atividades e interesses. Faltam momentos de conex\u00e3o como conversar, rir juntos ou fazer projetos em comum, o que pode levar ao distanciamento emocional.';
-else analise+='<strong>Express\u00e3o Afetiva ('+pctExpressao+'%)</strong> \u2014 H\u00e1 dificuldades na express\u00e3o de afeto, carinho f\u00edsico ou satisfa\u00e7\u00e3o sexual. A intimidade do casal pode estar comprometida, gerando sensa\u00e7\u00e3o de frieza ou dist\u00e2ncia emocional.';
-analise+='</p></div>';
-analise+='<div style="background:white;border-radius:10px;padding:18px;border-left:4px solid #2e7d32;">';
-analise+='<h4 style="color:#2e7d32;margin-bottom:8px;">Sugest\u00f5es</h4><ul style="color:#444;line-height:2;font-size:0.95em;padding-left:20px;">';
-if(pctConsenso<50)analise+='<li><strong>Comunica\u00e7\u00e3o:</strong> Reservem momentos semanais para conversar sobre expectativas, sem cr\u00edticas. Pratiquem escuta ativa \u2014 ouvir sem interromper ou julgar.</li>';
-if(pctSatisfacao<50)analise+='<li><strong>Gest\u00e3o de conflitos:</strong> Evitem discuss\u00f5es no calor do momento. Combinem uma "pausa" quando a tens\u00e3o subir e retomem quando ambos estiverem calmos.</li>';
-if(pctCoesao<50)analise+='<li><strong>Tempo juntos:</strong> Criem rituais de conex\u00e3o: um jantar semanal, uma caminhada, um projeto em comum. Pequenos momentos constroem grandes v\u00ednculos.</li>';
-if(pctExpressao<50)analise+='<li><strong>Intimidade:</strong> Expressem afeto de formas variadas (palavras, toque, atos de cuidado). Conversem abertamente sobre necessidades afetivas e sexuais sem julgamento.</li>';
-if(total<=101)analise+='<li><strong>Terapia de casal:</strong> Considerar acompanhamento profissional especializado em terapia de casal. Um espa\u00e7o neutro e seguro pode ajudar a reconstruir a comunica\u00e7\u00e3o e o v\u00ednculo.</li>';
-if(total>101&&menorPct<70)analise+='<li><strong>Fortalecimento:</strong> O relacionamento est\u00e1 bem no geral. Foquem na \u00e1rea mais fr\u00e1gil como oportunidade de crescimento conjunto.</li>';
-if(total>120)analise+='<li><strong>Manuten\u00e7\u00e3o:</strong> Continuem investindo no que j\u00e1 funciona. Relacionamentos saud\u00e1veis tamb\u00e9m precisam de cuidado cont\u00ednuo para se manterem vibrantes.</li>';
-analise+='</ul></div></div>';
-resultDiv.innerHTML+=analise;
-resultDiv.innerHTML+='<div class="disclaimer"><strong>Aten\u00e7\u00e3o:</strong> Este instrumento \u00e9 uma ferramenta de rastreio e n\u00e3o substitui avalia\u00e7\u00e3o cl\u00ednica profissional. Os resultados devem ser interpretados por profissional qualificado no contexto de uma avalia\u00e7\u00e3o abrangente do relacionamento.</div>';
-resultDiv.scrollIntoView({behavior:'smooth'});
-window._escalaDados={escala:'DAS',paciente:nome,escore:total,classificacao:classificacao,dominios:{consenso:{pontuacao:somaConsenso,max:maxConsenso,classificacao:pctConsenso>=70?'Adequado':(pctConsenso>=50?'Moderado':'Baixo')},satisfacao:{pontuacao:somaSatisfacao,max:maxSatisfacao,classificacao:pctSatisfacao>=70?'Adequado':(pctSatisfacao>=50?'Moderado':'Baixo')},coesao:{pontuacao:somaCoesao,max:maxCoesao,classificacao:pctCoesao>=70?'Adequado':(pctCoesao>=50?'Moderado':'Baixo')},expressao:{pontuacao:somaExpressao,max:maxExpressao,classificacao:pctExpressao>=70?'Adequado':(pctExpressao>=50?'Moderado':'Baixo')}},respostas:(function(){var o={};for(var i=0;i<escores.length;i++){o[i+1]=escores[i];}return o;})(),idPaciente:document.getElementById('idPaciente')?document.getElementById('idPaciente').value:'',idade:document.getElementById('idadeCalculada').value,sexo:document.getElementById('sexo').value,data:new Date().toISOString()};}
-function gerarRelatorioPDF(){if(!window._escalaDados){alert('Calcule os resultados primeiro.');return;}var d=window._escalaDados;var doc=new window.jspdf.jsPDF();var y=20;doc.setFillColor(136,14,79);doc.rect(0,0,210,40,'F');doc.setTextColor(255,255,255);doc.setFontSize(18);doc.text('DAS - Escala de Ajustamento de Casais',105,18,{align:'center'});doc.setFontSize(11);doc.text('Dyadic Adjustment Scale (Spanier, 1976)',105,28,{align:'center'});doc.text('Relatorio de Resultados',105,35,{align:'center'});y=50;doc.setTextColor(0,0,0);doc.setFontSize(11);doc.text('Paciente: '+d.paciente,15,y);y+=7;doc.text('Idade: '+d.idade,15,y);doc.text('Sexo: '+d.sexo,110,y);y+=7;doc.text('Data: '+new Date().toLocaleDateString('pt-BR'),15,y);if(d.idPaciente)doc.text('ID: '+d.idPaciente,110,y);y+=12;doc.setFontSize(13);doc.setFont(undefined,'bold');doc.text('Resultado Geral',15,y);y+=8;doc.setFontSize(11);doc.setFont(undefined,'normal');doc.text('Escore Total: '+d.escore+' / 151',15,y);y+=7;doc.text('Classificacao: '+d.classificacao,15,y);y+=7;doc.text('Ponto de corte: 101 (<=101 sofrimento; >=102 ajustado)',15,y);y+=12;doc.setFontSize(13);doc.setFont(undefined,'bold');doc.text('Subescalas',15,y);y+=8;doc.setFontSize(11);doc.setFont(undefined,'normal');var doms=[['Consenso',d.dominios.consenso],['Satisfacao',d.dominios.satisfacao],['Coesao',d.dominios.coesao],['Expressao Afetiva',d.dominios.expressao]];for(var i=0;i<doms.length;i++){doc.text(doms[i][0]+': '+doms[i][1].escore+'/'+doms[i][1].maximo+' ('+doms[i][1].percentual+'%)',15,y);y+=7;}y+=10;doc.setFontSize(9);doc.setTextColor(100,100,100);doc.text('Este instrumento e uma ferramenta de rastreio e nao substitui avaliacao clinica.',15,y);y+=5;doc.text('Gerado em: '+new Date().toLocaleString('pt-BR'),15,y);doc.addPage();y=20;doc.setTextColor(0,0,0);doc.setFontSize(13);doc.setFont(undefined,'bold');doc.text('Referencias',15,y);y+=10;doc.setFontSize(9);doc.setFont(undefined,'normal');doc.text('SPANIER, G. B. Measuring dyadic adjustment: new scales for assessing the quality',15,y);y+=5;doc.text('of marriage and similar dyads. Journal of Marriage and the Family, v. 38, n. 1, p. 15-28, 1976.',15,y);y+=8;doc.text('HERNANDEZ, J. A. E. Avaliacao estrutural da Escala de Ajustamento Diadico.',15,y);y+=5;doc.text('Psicologia em Estudo, Maringa, v. 13, n. 3, p. 593-601, 2008.',15,y);y+=8;doc.text('SPANIER, G. B.; THOMPSON, L. A confirmatory analysis of the Dyadic Adjustment Scale.',15,y);y+=5;doc.text('Journal of Marriage and the Family, v. 44, n. 3, p. 731-738, 1982.',15,y);var nomeArq='DAS_'+d.paciente.replace(/\s+/g,'_')+'_'+new Date().toISOString().slice(0,10).replace(/-/g,'')+'.pdf';doc.save(nomeArq);}
+function calcularResultados() {
+    var nome = document.getElementById('nome').value;
+    if (!nome) { alert('Preencha o nome do paciente.'); return; }
+    var idade = document.getElementById('idadeCalculada').value;
+    if (!idade) { alert('Preencha a data de nascimento.'); return; }
+    var sexo = document.getElementById('sexo').value;
+    if (!sexo) { alert('Selecione o sexo (Masculino ou Feminino).'); return; }
+    var r = obterRespostas();
+    if (!r) { alert('Responda todos os itens antes de calcular.'); return; }
+    if (!window.SYM_DAS) { alert('N\u00e3o foi poss\u00edvel carregar o m\u00f3dulo de resultados. Recarregue a p\u00e1gina e tente novamente.'); return; }
+
+    // Calculo, tela e PDF vem do mesmo desenho (das-visual.js)
+    var res = window.SYM_DAS.calcular(r);
+    var el = document.getElementById('resultados');
+    el.innerHTML = window.SYM_DAS.htmlTela(res);
+    el.style.display = 'block';
+    el.scrollIntoView({behavior: 'smooth'});
+    window._escalaDados = {escala:'DAS', paciente:nome, escore:window.SYM_DAS.escore(res), classificacao:window.SYM_DAS.classifGeral(res), dominios:window.SYM_DAS.dadosPainel(res), respostas:window.SYM_DAS.respostasObj(res), versaoEscala:2, idPaciente:(document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''), idade:idade, sexo:sexo, data:new Date().toISOString()};
+    if (window.injetarBotaoSalvar) injetarBotaoSalvar('resultados');
+}
+
+function gerarRelatorioPDF() {
+    // PDF igual a tela de resultados (das-visual.js; o painel usa o mesmo desenho)
+    var nome = document.getElementById('nome').value;
+    if (!nome) { alert('Preencha o nome do paciente.'); return; }
+    var r = obterRespostas();
+    if (!r) { alert('Responda todos os itens antes de gerar o PDF.'); return; }
+    if (!window.SYM_DAS) { alert('N\u00e3o foi poss\u00edvel carregar o gerador de PDF. Recarregue a p\u00e1gina e tente novamente.'); return; }
+
+    window.SYM_DAS.pdf(window.SYM_DAS.calcular(r), {nome:nome, sexo:document.getElementById('sexo').value, idade:document.getElementById('idadeCalculada').value, dataAval:document.getElementById('data').value, idPaciente:document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''});
+}
+
 function limparDados(){if(!confirm('Tem certeza que deseja limpar todos os dados?'))return;document.getElementById('nome').value='';document.getElementById('dataNascimento').value='';document.getElementById('idadeCalculada').value='';document.getElementById('sexo').value='';document.getElementById('observacoes').value='';document.getElementById('data').value=new Date().toISOString().split('T')[0];var radios=document.querySelectorAll('input[type="radio"]:checked');for(var i=0;i<radios.length;i++)radios[i].checked=false;var items=document.querySelectorAll('.item');for(var i=0;i<items.length;i++){items[i].style.backgroundColor='';items[i].style.borderLeft='';}document.getElementById('resultados').style.display='none';window._escalaDados=null;}
 function _decodificarURL(){try{var params=new URLSearchParams(window.location.search);var dados=JSON.parse(atob(params.get('d')));if(dados.nome)document.getElementById('nome').value=dados.nome;if(dados.dataNascimento)document.getElementById('dataNascimento').value=dados.dataNascimento;if(dados.sexo)document.getElementById('sexo').value=dados.sexo;var escEl=document.getElementById('escolaridade');if(escEl&&dados.education)escEl.value=dados.education;calcularIdade();document.getElementById('nome').dispatchEvent(new Event('input'));document.getElementById('dataNascimento').dispatchEvent(new Event('change'));var botoes=document.querySelector('.botoes');if(botoes){botoes.innerHTML='<button class="btn btn-primary" style="padding:15px 30px;border:none;border-radius:25px;font-size:16px;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#2e7d32,#43a047);color:white;" onclick="_enviarResultadosPainel()">Enviar Resultados ao Profissional</button>';}var els=document.querySelectorAll('.info-tecnica');els.forEach(function(el){el.style.display='none';});var _dp=document.querySelector('.dados-pessoais');if(_dp)_dp.style.display='none';}catch(e){}}
 async function _enviarResultadosPainel(){var nomeEl=document.getElementById('nome');if(!nomeEl||!nomeEl.value.trim()){alert('Preencha o nome antes de enviar.');return;}var totalItens=document.querySelectorAll('.item').length;var respondidos=document.querySelectorAll('input[type="radio"]:checked').length;if(respondidos<totalItens){alert('Responda todos os '+totalItens+' itens antes de enviar. Faltam '+(totalItens-respondidos)+'.');return;}var sexoEl=document.getElementById('sexo');if(sexoEl&&!sexoEl.value){alert('O sexo (Masculino ou Feminino) \u00e9 obrigat\u00f3rio e n\u00e3o foi informado no cadastro. Pe\u00e7a ao profissional para completar o cadastro do paciente e gerar um novo link.');return;}var idadeEl=document.getElementById('idadeCalculada');if(idadeEl&&!idadeEl.value){idadeEl.value='Nao informado';}var calcFn=window.calcularResultados;if(calcFn&&!window._escalaDados){try{calcFn();}catch(e){}}var dados=window._escalaDados||{};var _escEl=document.getElementById('escolaridade');dados.escolaridade=(_escEl&&_escEl.value)?_escEl.value:((_sessionInfo&&_sessionInfo.education)?_sessionInfo.education:'');if(!dados.escala)dados.escala='DAS';dados.idPaciente=document.getElementById('idPaciente')?document.getElementById('idPaciente').value:'';dados.pacienteId=_sessionInfo?(_sessionInfo.pacienteId||''):'';dados.data=new Date().toISOString();var btn=document.querySelector('.botoes button');if(btn){btn.disabled=true;btn.textContent='Enviando...';}try{try { navigator.sendBeacon(_API_URL + '/save-escala', new Blob([JSON.stringify({sessionId:_sessionInfo.sessionId,email:_sessionInfo.email,data:dados,originalSessionId:_sessionInfo.sessionId})], {type:'application/json'})); } catch(e) {} var resp=await fetch(_API_URL+'/save-escala',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:_sessionInfo.sessionId,email:_sessionInfo.email,data:dados,originalSessionId:_sessionInfo.sessionId})});var result=await resp.json();if(result.ok||resp.ok){document.body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#e8f5e9,#c8e6c9);text-align:center;padding:20px;"><div style="font-size:60px;margin-bottom:10px;">\u2705</div><h1 style="color:#2e7d32;font-size:24px;margin-bottom:12px;">Respostas enviadas com sucesso!</h1><p style="font-size:16px;color:#555;margin-bottom:6px;">O profissional j\u00e1 pode visualizar os resultados no painel.</p><p style="font-size:14px;color:#777;">Voc\u00ea pode fechar esta aba.</p></div>';}else{if(btn){btn.disabled=false;btn.textContent='Enviar Resultados ao Profissional';}alert('Erro ao enviar. Tente novamente.');}}catch(e){if(btn){btn.disabled=false;btn.textContent='Enviar Resultados ao Profissional';}alert('Erro de conexao. Verifique sua internet e tente novamente.');}}
