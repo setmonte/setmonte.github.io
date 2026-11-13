@@ -18101,6 +18101,26 @@
         return;
       }
 
+      // M-CHAT-R: desenho sob medida (escalas/mchatr-visual.js), refeito pelas respostas salvas (d.respostas). Tela e PDF vem dos mesmos blocos.
+      if (String(d.escala || '').toUpperCase() === 'M-CHAT-R' && d.respostas && !r._semPdfNovo) {
+        var _gerMCHATR = function () {
+          var _okMCHATR = false;
+          try { _okMCHATR = window.SYM_MCHATR.pdfPainel(d, r); } catch (eMCHATR) {
+            if (typeof window._registrarFalhaPDF === 'function') { try { window._registrarFalhaPDF('gerarPDFEscala(M-CHAT-R)', (eMCHATR && eMCHATR.message) || String(eMCHATR), d.paciente || ''); } catch (xMCHATR) {} }
+          }
+          if (!_okMCHATR) { r._semPdfNovo = true; gerarPDFEscala(idx); }
+        };
+        if (window.SYM_MCHATR && window.SYM_MCHATR.pdfPainel) { _gerMCHATR(); }
+        else {
+          var _sMCHATR = document.createElement('script');
+          _sMCHATR.src = '../escalas/mchatr-visual.js?v=' + Date.now();
+          _sMCHATR.onload = _gerMCHATR;
+          _sMCHATR.onerror = function () { r._semPdfNovo = true; gerarPDFEscala(idx); };
+          document.body.appendChild(_sMCHATR);
+        }
+        return;
+      }
+
       // ERTs de criterios (PA, PB, PD, PEs, PEt, PEv, PH, PN, POC, PP, TB): PDF visual igual a tela
       // de resultados, pela mascara unica escalas/ert-visual.js (a mesma usada na pagina da escala).
       // ERT-VT fica de fora (escala propria). Resultados antigos sem respostasDetalhadas (ex.: ERT-TB
