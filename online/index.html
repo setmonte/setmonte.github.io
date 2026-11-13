@@ -4388,7 +4388,20 @@
             html += '<td>' + date + '</td>';
             html += '<td>' + nome + '</td>';
             html += '<td style="font-size:10px;font-family:monospace;color:#2e7d32;">' + idPac + '</td>';
-            html += '<td>' + (d.status || '-') + '</td>';
+            // Status exibido: o servidor recebe 'completo' sempre que a lista de testes chega
+            // ao fim, mesmo com subteste abandonado. Aqui conferimos cada subteste e, se algum
+            // foi abandonado/parado, mostramos "abandonado (siglas)". So muda a exibicao.
+            var _siglasStatus = { concentrada: 'Conc', seletiva: 'Sel', dividida: 'Div', alternada: 'Alt', sustentada: 'Sust' };
+            var _abandonados = [];
+            ['concentrada', 'seletiva', 'dividida', 'alternada', 'sustentada'].forEach(function(t) {
+              var x = d[t];
+              if (!x || x.statusTeste === 'BYPASSADO') return;
+              if (x.abandonado === true || (x.statusTeste && String(x.statusTeste).indexOf('CONCLU') !== 0)) _abandonados.push(_siglasStatus[t]);
+            });
+            var _statusExib = _abandonados.length > 0
+              ? '<span style="color:#c62828;font-weight:bold;">abandonado (' + _abandonados.join(', ') + ')</span>'
+              : (d.status || '-');
+            html += '<td>' + _statusExib + '</td>';
             html += '<td>' + taxa(d.concentrada) + '</td>';
             html += '<td>' + taxa(d.seletiva) + '</td>';
             html += '<td>' + taxa(d.dividida) + '</td>';
