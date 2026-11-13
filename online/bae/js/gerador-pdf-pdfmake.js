@@ -6,18 +6,25 @@ window.resultadosBAE = window.resultadosBAE || {};
 window.dadosPaciente = window.dadosPaciente || {};
 
 // ===== SIGLAS DOS SUBTESTES NO NOME DO PDF =====
-// Bateria completa (5 subtestes): retorna '' (nome continua como antes).
-// Bateria parcial: retorna ex. 'Sel_Sust_' com as siglas dos subtestes feitos,
-// sempre na ordem da bateria. Subteste BYPASSADO (nem iniciado) nao entra.
+// Bateria completa (5 subtestes concluidos): retorna '' (nome continua como antes).
+// Caso contrario: siglas dos subtestes feitos, na ordem da bateria (ex. 'Sel_Sust_').
+// Subteste abandonado/parado recebe 'ABDN_' antes da sigla (ex. 'Sel_ABDN_Sust_').
+// Subteste BYPASSADO (nem iniciado) nao entra.
 function _siglasSubtestesBAE(resultados) {
     var ordem = ['concentrada', 'seletiva', 'dividida', 'alternada', 'sustentada'];
     var siglas = { concentrada: 'Conc', seletiva: 'Sel', dividida: 'Div', alternada: 'Alt', sustentada: 'Sust' };
-    var feitos = ordem.filter(function (t) {
+    var partes = [];
+    var algumAbandonado = false;
+    ordem.forEach(function (t) {
         var x = resultados && resultados[t];
-        return !!x && x.statusTeste !== 'BYPASSADO';
+        if (!x || x.statusTeste === 'BYPASSADO') return;
+        var abandonado = x.abandonado === true || (!!x.statusTeste && String(x.statusTeste).indexOf('CONCLU') !== 0);
+        if (abandonado) algumAbandonado = true;
+        partes.push((abandonado ? 'ABDN_' : '') + siglas[t]);
     });
-    if (feitos.length === 0 || feitos.length === ordem.length) return '';
-    return feitos.map(function (t) { return siglas[t]; }).join('_') + '_';
+    if (partes.length === 0) return '';
+    if (partes.length === ordem.length && !algumAbandonado) return '';
+    return partes.join('_') + '_';
 }
 
 // ===== FUNÇÃO PARA SALVAR RESULTADO DE TESTE =====
