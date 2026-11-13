@@ -81,9 +81,9 @@
                     <strong>Estrutura:</strong> 22 itens (18 pontuados + 4 neutros), escala Likert 5 pontos<br>
                     <strong>Subescalas:</strong> FNE (Medo de Avalia&#231;&#227;o Negativa, 8 itens), SAD-N (Desconforto em Situa&#231;&#245;es Novas, 6 itens), SAD-G (Desconforto Social Geral, 4 itens)<br>
                     <strong>Itens neutros:</strong> 2, 7, 11, 16 (n&#227;o pontuam)<br>
-                    <strong>Ponto de corte:</strong> z &#8805; 1,5 (acima de 1,5 DP da m&#233;dia normativa)<br>
+                    <strong>Refer&#234;ncia:</strong> escore z em rela&#231;&#227;o a normas de Portugal (sem ponto de corte definido)<br>
                     <strong>Popula&#231;&#227;o:</strong> Crian&#231;as 9-15 anos<br>
-                    <strong>Dom&#237;nio p&#250;blico:</strong> Sim
+                    <strong>Direitos:</strong> escala de La Greca e Stone (1993); n&#227;o confirmei que seja de dom&#237;nio p&#250;blico
                 </p>
             </div>
             <div class="dados-pessoais">
@@ -124,45 +124,12 @@
         </div>
     </div>
     <script src="../id-paciente.js"></script>
+    <script src="sascr-visual.js"></script>
     <script>
-var ITENS=[
-{n:1, texto:"Me preocupo em ter que fazer coisas novas na frente dos outros colegas", sub:"SADN"},
-{n:2, texto:"Gosto de brincar com meus colegas", sub:"NEUTRO"},
-{n:3, texto:"Me preocupo com a possibilidade de ser zoado(a)", sub:"FNE"},
-{n:4, texto:"Me sinto t\u00edmido(a) quando estou com meninos/meninas que n\u00e3o conhe\u00e7o", sub:"SADN"},
-{n:5, texto:"S\u00f3 converso com colegas que eu conhe\u00e7o muito bem", sub:"SADG"},
-{n:6, texto:"Acho que meus colegas falam de mim pelas costas", sub:"FNE"},
-{n:7, texto:"Eu gosto de ler", sub:"NEUTRO"},
-{n:8, texto:"Me preocupo com o que os outros colegas pensam de mim", sub:"FNE"},
-{n:9, texto:"Tenho medo de que os outros possam n\u00e3o gostar de mim", sub:"FNE"},
-{n:10, texto:"Fico nervoso(a) quando converso com colegas que n\u00e3o conhe\u00e7o muito bem", sub:"SADN"},
-{n:11, texto:"Gosto de praticar esportes", sub:"NEUTRO"},
-{n:12, texto:"Me preocupo com o que os outros dizem sobre mim", sub:"FNE"},
-{n:13, texto:"Fico nervoso(a) quando conhe\u00e7o colegas novos", sub:"SADN"},
-{n:14, texto:"Me preocupo que os outros colegas n\u00e3o gostem de mim", sub:"FNE"},
-{n:15, texto:"Fico calado(a) quando estou em um grupo de meninos/meninas", sub:"SADG"},
-{n:16, texto:"Gosto de fazer as coisas sozinho(a)", sub:"NEUTRO"},
-{n:17, texto:"Acho que os outros colegas zombam de mim", sub:"FNE"},
-{n:18, texto:"Se discuto com outro colega, me preocupo que ele/a possa n\u00e3o gostar de mim", sub:"FNE"},
-{n:19, texto:"Tenho medo de convidar outros colegas para fazer alguma coisa comigo, porque podem dizer que n\u00e3o", sub:"SADN"},
-{n:20, texto:"Me sinto nervoso(a) quando estou perto de alguns/algumas colegas", sub:"SADG"},
-{n:21, texto:"Me sinto t\u00edmido(a) at\u00e9 com colegas que conhe\u00e7o bem", sub:"SADG"},
-{n:22, texto:"Para mim \u00e9 dif\u00edcil pedir para outros colegas fazerem coisas comigo", sub:"SADN"}
-];
-
-var OPCOES=[
-{valor:1, texto:"Nunca"},
-{valor:2, texto:"Quase<br>nunca"},
-{valor:3, texto:"\u00c0s<br>vezes"},
-{valor:4, texto:"Quase<br>sempre"},
-{valor:5, texto:"Sempre"}
-];
-
-var NORMAS={
-    M: {total:{m:45.66,dp:12.40}, fne:{m:20.98,dp:6.99}, sadn:{m:14.48,dp:4.49}, sadg:{m:8.01,dp:3.12}},
-    F: {total:{m:51.49,dp:12.92}, fne:{m:23.68,dp:7.10}, sadn:{m:16.32,dp:4.46}, sadg:{m:8.84,dp:3.39}},
-    G: {total:{m:48.52,dp:12.89}, fne:{m:22.30,dp:7.14}, sadn:{m:15.38,dp:4.56}, sadg:{m:8.42,dp:3.27}}
-};
+// Itens, normas, calculo, tela e PDF vivem em sascr-visual.js (SASC-R)
+var ITENS = window.SYM_SASCR ? window.SYM_SASCR.ITENS : [];
+var OPCOES = window.SYM_SASCR ? window.SYM_SASCR.OPCOES : [];
+var NORMAS = window.SYM_SASCR ? window.SYM_SASCR.NORMAS : {};
 
 function gerarQuestionario() {
     var c = document.getElementById('questionario');
@@ -202,161 +169,35 @@ function obterRespostas() {
 
 function calcularResultados() {
     var nome = document.getElementById('nome').value;
+    if (!nome) { alert('Preencha o nome do paciente.'); return; }
+
     var idade = document.getElementById('idadeCalculada').value;
+    if (!idade) { alert('Preencha a data de nascimento.'); return; }
     var sexo = document.getElementById('sexo').value;
-    if (!nome || !idade || !sexo) { alert('Preencha nome, data de nascimento e sexo.'); return; }
-
+    if (!sexo) { alert('Selecione o sexo (Masculino ou Feminino).'); return; }
     var r = obterRespostas();
-    if (!r) { alert('Responda todos os 22 itens.'); return; }
+    if (!r) { alert('Responda todos os itens antes de calcular.'); return; }
+    if (!window.SYM_SASCR) { alert('N\u00e3o foi poss\u00edvel carregar o m\u00f3dulo de resultados. Recarregue a p\u00e1gina e tente novamente.'); return; }
 
-    // Calcular subescalas
-    var fneItens = [3,6,8,9,12,14,17,18];
-    var sadnItens = [1,4,10,13,19,22];
-    var sadgItens = [5,15,20,21];
-
-    var fne = 0, sadn = 0, sadg = 0;
-    fneItens.forEach(function(i) { fne += r[i]; });
-    sadnItens.forEach(function(i) { sadn += r[i]; });
-    sadgItens.forEach(function(i) { sadg += r[i]; });
-    var total = fne + sadn + sadg;
-
-    // Z-scores
-    var ref = (sexo === 'M' || sexo === 'F') ? NORMAS[sexo] : NORMAS.G;
-    var zTotal = ((total - ref.total.m) / ref.total.dp).toFixed(2);
-    var zFne = ((fne - ref.fne.m) / ref.fne.dp).toFixed(2);
-    var zSadn = ((sadn - ref.sadn.m) / ref.sadn.dp).toFixed(2);
-    var zSadg = ((sadg - ref.sadg.m) / ref.sadg.dp).toFixed(2);
-
-    // Classificacao
-    var z = parseFloat(zTotal);
-    var classif, css;
-    if (z < -0.5) { classif = 'Baixa Ansiedade Social'; css = 'classif-baixa'; }
-    else if (z < 1.0) { classif = 'Ansiedade Social Dentro da Media'; css = 'classif-baixa'; }
-    else if (z < 1.5) { classif = 'Tracos de Ansiedade Social'; css = 'classif-tracos'; }
-    else if (z < 2.0) { classif = 'Ansiedade Social Moderada'; css = 'classif-moderada'; }
-    else { classif = 'Ansiedade Social Elevada'; css = 'classif-elevada'; }
-
-    function interp(zv) {
-        zv = parseFloat(zv);
-        if (zv < -0.5) return 'Abaixo da media';
-        if (zv < 1.0) return 'Dentro da media';
-        if (zv < 1.5) return 'Tracos elevados';
-        if (zv < 2.0) return 'Moderadamente elevado';
-        return 'Significativamente elevado';
-    }
-
+    // Calculo, tela e PDF vem do mesmo desenho (sascr-visual.js)
+    var res = window.SYM_SASCR.calcular(r, document.getElementById('sexo').value);
     var el = document.getElementById('resultados');
-    var h = '<h2>Resultados SASC-R</h2>';
-    h += '<div class="classificacao ' + css + '">' + classif + '</div>';
-
-    h += '<div class="dominio-card"><h4>FNE - Medo de Avaliacao Negativa</h4><p>Pontuacao: <strong>' + fne + '</strong> (min: 8, max: 40) | z = ' + zFne + ' | ' + interp(zFne) + '</p></div>';
-    h += '<div class="dominio-card"><h4>SAD-N - Desconforto em Situacoes Novas</h4><p>Pontuacao: <strong>' + sadn + '</strong> (min: 6, max: 30) | z = ' + zSadn + ' | ' + interp(zSadn) + '</p></div>';
-    h += '<div class="dominio-card"><h4>SAD-G - Desconforto Social Geral</h4><p>Pontuacao: <strong>' + sadg + '</strong> (min: 4, max: 20) | z = ' + zSadg + ' | ' + interp(zSadg) + '</p></div>';
-    h += '<div class="dominio-card" style="border-left-color:#2e7d32;"><h4>SASC-R Total</h4><p>Pontuacao: <strong>' + total + '</strong> (min: 18, max: 90) | z = ' + zTotal + ' | ' + interp(zTotal) + '</p></div>';
-
-    // Tabela normativa
-    h += '<table class="normas-table"><thead><tr><th>Dados Normativos</th><th>SASC-R Total</th><th>FNE</th><th>SAD-N</th><th>SAD-G</th></tr></thead><tbody>';
-    h += '<tr><td><strong>Masculino</strong></td><td>45,66 (\u00b112,40)</td><td>20,98 (\u00b16,99)</td><td>14,48 (\u00b14,49)</td><td>8,01 (\u00b13,12)</td></tr>';
-    h += '<tr><td><strong>Feminino</strong></td><td>51,49 (\u00b112,92)</td><td>23,68 (\u00b17,10)</td><td>16,32 (\u00b14,46)</td><td>8,84 (\u00b13,39)</td></tr>';
-    h += '</tbody></table>';
-
-    h += '<div class="disclaimer"><strong>IMPORTANTE:</strong> A SASC-R e um instrumento de rastreio. Nao substitui avaliacao clinica profissional. Normas baseadas em Martins, Almeida e Viana (2014). Itens 2, 7, 11 e 16 sao neutros e nao pontuam.</div>';
-
-    el.innerHTML = h;
+    el.innerHTML = window.SYM_SASCR.htmlTela(res);
     el.style.display = 'block';
-    el.scrollIntoView({behavior:'smooth'});
-
-    window._escalaDados = {escala:'SASC-R', paciente:nome, escore:total, classificacao:classif, dominios:{FNE:{pontuacao:fne,max:40,classificacao:interp(zFne)},SADN:{pontuacao:sadn,max:30,classificacao:interp(zSadn)},SADG:{pontuacao:sadg,max:20,classificacao:interp(zSadg)}}, respostas:r, sexo:sexo, idPaciente:(document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''), idade:idade, data:new Date().toISOString()};
+    el.scrollIntoView({behavior: 'smooth'});
+    window._escalaDados = {escala:'SASC-R', paciente:nome, escore:window.SYM_SASCR.escore(res), classificacao:window.SYM_SASCR.classifGeral(res), dominios:window.SYM_SASCR.dadosPainel(res), respostas:window.SYM_SASCR.respostasObj(res), idPaciente:(document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''), idade:idade, sexo:sexo, data:new Date().toISOString()};
     if (window.injetarBotaoSalvar) injetarBotaoSalvar('resultados');
 }
 
 function gerarRelatorioPDF() {
+    // PDF igual a tela de resultados (sascr-visual.js; o painel usa o mesmo desenho)
     var nome = document.getElementById('nome').value;
-    if (!nome) { alert('Preencha o nome.'); return; }
+    if (!nome) { alert('Preencha o nome do paciente.'); return; }
     var r = obterRespostas();
-    if (!r) { alert('Responda todos os itens.'); return; }
-    var fneItens=[3,6,8,9,12,14,17,18], sadnItens=[1,4,10,13,19,22], sadgItens=[5,15,20,21];
-    var fne=0,sadn=0,sadg=0;
-    fneItens.forEach(function(i){fne+=r[i];}); sadnItens.forEach(function(i){sadn+=r[i];}); sadgItens.forEach(function(i){sadg+=r[i];});
-    var total=fne+sadn+sadg;
-    var sexo=document.getElementById('sexo').value;
-    var ref=(sexo==='M'||sexo==='F')?NORMAS[sexo]:NORMAS.G;
-    var zTotal=((total-ref.total.m)/ref.total.dp).toFixed(2);
-    var idade=document.getElementById('idadeCalculada').value;
-    var dataAval=document.getElementById('data').value||new Date().toLocaleDateString('pt-BR');
-    var idPac=document.getElementById('idPaciente')?document.getElementById('idPaciente').value:'';
+    if (!r) { alert('Responda todos os itens antes de gerar o PDF.'); return; }
+    if (!window.SYM_SASCR) { alert('N\u00e3o foi poss\u00edvel carregar o gerador de PDF. Recarregue a p\u00e1gina e tente novamente.'); return; }
 
-    // Gerar grafico em canvas
-    var canvasG = document.createElement('canvas'); canvasG.width = 700; canvasG.height = 160;
-    var cx = canvasG.getContext('2d');
-    cx.fillStyle = '#fff'; cx.fillRect(0, 0, 700, 160);
-    cx.fillStyle = '#333'; cx.font = 'bold 12px Segoe UI'; cx.textAlign = 'left';
-    cx.fillText('Perfil SASC-R por Subscala (percentual do maximo)', 10, 15);
-    var nomesG = ['FNE - Medo Avaliacao Negativa', 'SAD-N - Desconforto Sit. Novas', 'SAD-G - Desconforto Social Geral'];
-    var valoresG = [fne, sadn, sadg];
-    var maxG = [40, 30, 20];
-    var bh = 26; var gap = 10; var startY = 30; var maxW = 280; var labelW = 280;
-    for (var gi = 0; gi < nomesG.length; gi++) {
-        var by = startY + gi * (bh + gap);
-        var pct = valoresG[gi] / maxG[gi];
-        var bw = pct * maxW;
-        var cor = pct < 0.4 ? '#4caf50' : pct < 0.6 ? '#8bc34a' : pct < 0.75 ? '#ff9800' : '#f44336';
-        cx.fillStyle = '#555'; cx.font = '11px Segoe UI'; cx.textAlign = 'right';
-        cx.fillText(nomesG[gi], labelW - 5, by + 17);
-        cx.fillStyle = cor; cx.fillRect(labelW, by, bw, bh);
-        cx.fillStyle = '#333'; cx.font = 'bold 11px Segoe UI'; cx.textAlign = 'left';
-        cx.fillText(valoresG[gi] + '/' + maxG[gi] + ' (' + Math.round(pct*100) + '%)', labelW + bw + 5, by + 17);
-    }
-    var ly = startY + nomesG.length*(bh+gap) + 8;
-    var cores = [['#4caf50','Normal (<40%)'],['#8bc34a','Medio (40-60%)'],['#ff9800','Elevado (60-75%)'],['#f44336','Muito elevado (>=75%)']];
-    cx.font = '10px Segoe UI'; cx.textAlign = 'left';
-    for (var li = 0; li < cores.length; li++) { cx.fillStyle = cores[li][0]; cx.fillRect(labelW + li*110, ly, 12, 12); cx.fillStyle = '#555'; cx.fillText(cores[li][1], labelW + li*110 + 15, ly + 10); }
-    var imgGrafico = canvasG.toDataURL('image/png');
-
-    var jsPDF=window.jspdf.jsPDF; var doc=new jsPDF();
-    doc.setFillColor(26,60,110); doc.rect(0,0,210,35,'F');
-    doc.setTextColor(255,255,255); doc.setFontSize(14); doc.setFont(undefined,'bold');
-    doc.text('SASC-R - RESULTADO', 105, 15, {align:'center'});
-    doc.setFontSize(9); doc.setFont(undefined,'normal');
-    doc.text('Escala de Ansiedade Social para Criancas - Forma Revista', 105, 23, {align:'center'});
-
-    var y=42;
-    doc.setFillColor(248,249,250); doc.rect(15,y,180,18,'F');
-    doc.setTextColor(26,60,110); doc.setFontSize(10); doc.setFont(undefined,'bold');
-    doc.text('DADOS', 20, y+6);
-    doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont(undefined,'normal');
-    doc.text('Nome: '+nome+'   |   Sexo: '+(sexo==='M'?'Masculino':'Feminino'), 20, y+12);
-    doc.text('Idade: '+idade+'   |   Data: '+dataAval+(idPac?'   |   ID: '+idPac:''), 20, y+17);
-
-    // Grafico
-    y=66;
-    doc.setTextColor(26,60,110); doc.setFontSize(10); doc.setFont(undefined,'bold');
-    doc.text('PERFIL GRAFICO DAS SUBSCALAS', 20, y); y += 3;
-    doc.addImage(imgGrafico, 'PNG', 15, y, 180, 42); y += 46;
-
-    // Resultados
-    doc.setTextColor(26,60,110); doc.setFontSize(11); doc.setFont(undefined,'bold');
-    doc.text('RESULTADOS', 20, y); y+=8;
-    doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont(undefined,'normal');
-    doc.text('FNE (Medo Avaliacao Negativa): '+fne+' pts (z='+((fne-ref.fne.m)/ref.fne.dp).toFixed(2)+')', 20, y); y+=6;
-    doc.text('SAD-N (Desconforto Situacoes Novas): '+sadn+' pts (z='+((sadn-ref.sadn.m)/ref.sadn.dp).toFixed(2)+')', 20, y); y+=6;
-    doc.text('SAD-G (Desconforto Social Geral): '+sadg+' pts (z='+((sadg-ref.sadg.m)/ref.sadg.dp).toFixed(2)+')', 20, y); y+=6;
-    doc.text('TOTAL: '+total+' pts | z = '+zTotal, 20, y); y+=10;
-
-    doc.setFont(undefined,'bold');
-    doc.text('Classificacao: '+window._escalaDados.classificacao, 20, y); y+=12;
-
-    doc.setFillColor(255,248,235); doc.rect(15,y,180,12,'F');
-    doc.setTextColor(180,90,0); doc.setFontSize(7); doc.setFont(undefined,'normal');
-    doc.text('IMPORTANTE: Instrumento de rastreio. Nao substitui avaliacao clinica.', 20, y+5);
-    doc.text('Normas: Martins, Almeida e Viana (2014). Populacao: 9-15 anos.', 20, y+9);
-
-    doc.setFillColor(80,80,80); doc.rect(0,285,210,12,'F');
-    doc.setTextColor(200,200,200); doc.setFontSize(7);
-    doc.text('Relatorio gerado em: '+new Date().toLocaleString('pt-BR'), 105, 291, {align:'center'});
-
-    var ts=new Date(); var tsStr=ts.getFullYear()+String(ts.getMonth()+1).padStart(2,'0')+String(ts.getDate()).padStart(2,'0')+String(ts.getHours()).padStart(2,'0')+String(ts.getMinutes()).padStart(2,'0');
-    doc.save('SASC-R_'+nome.replace(/\s+/g,'_')+'_'+tsStr+'.pdf');
+    window.SYM_SASCR.pdf(window.SYM_SASCR.calcular(r, document.getElementById('sexo').value), {nome:nome, sexo:document.getElementById('sexo').value, idade:document.getElementById('idadeCalculada').value, dataAval:document.getElementById('data').value, idPaciente:document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''});
 }
 
 function limparDados() {
