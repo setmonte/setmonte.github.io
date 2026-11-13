@@ -42,96 +42,95 @@
 <body>
 <div style="padding:10px 20px;background:#2e7d32;"><a href="../" style="display:inline-block;background:#fff;color:#2e7d32;text-decoration:none;font-size:14px;font-weight:bold;padding:8px 20px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.15);">&#11013; Voltar ao In&#237;cio</a></div>
 <div class="container">
-    <div class="header"><h1>TEA-AH</h1><p>Triagem de Espectro Autista em Altas Habilidades</p></div>
+    <div class="header"><h1>TEA-AH</h1><p>Roteiro de observa&#231;&#227;o de sinais associados a TEA e a Altas Habilidades (instrumento experimental)</p></div>
     <div class="content">
-        <div class="dados-pessoais info-tecnica" style="position:relative"><button onclick="window.print()" style="position:absolute;top:15px;right:15px;padding:8px 16px;background:#4a148c;color:white;border:none;border-radius:15px;cursor:pointer;font-size:13px">Imprimir</button><h2>Informa&#231;&#245;es T&#233;cnicas</h2><p style="color:#555;line-height:1.6;font-size:0.9em"><strong>Instrumento:</strong> TEA-AH<br><strong>Escala:</strong> Likert 5 pontos</p></div>
+        <div class="dados-pessoais info-tecnica" style="position:relative"><button onclick="window.print()" style="position:absolute;top:15px;right:15px;padding:8px 16px;background:#4a148c;color:white;border:none;border-radius:15px;cursor:pointer;font-size:13px">Imprimir</button><h2>Informa&#231;&#245;es T&#233;cnicas</h2><p style="color:#555;line-height:1.6;font-size:0.9em"><strong>Instrumento:</strong> TEA-AH &#8212; roteiro de observa&#231;&#227;o (instrumento experimental, sem fonte publicada e sem valida&#231;&#227;o)<br><strong>Estrutura:</strong> 29 observa&#231;&#245;es em 6 &#225;reas (processamento sensorial, comunica&#231;&#227;o e linguagem, intera&#231;&#227;o social, cogni&#231;&#227;o e interesses, regula&#231;&#227;o emocional, desempenho global)<br><strong>Respostas:</strong> Nunca, Raramente, &#192;s vezes, Frequentemente, Sempre<br><strong>Resultado:</strong> registro descritivo das observa&#231;&#245;es marcadas como frequentes ou sempre; sem pontua&#231;&#227;o total, sem pontos de corte e sem classifica&#231;&#227;o. As &#225;reas misturam itens de dire&#231;&#245;es diferentes (dificuldades e potencialidades)</p></div>
         <div class="dados-pessoais"><h2>Dados Pessoais</h2>
             <div class="form-row"><div class="form-group"><label>Nome:</label><input type="text" id="nome"></div><div class="form-group"><label>Data de Nascimento:</label><input type="date" id="dataNascimento" onchange="calcularIdade()"></div></div>
             <div class="form-row"><div class="form-group"><label>Idade:</label><input type="text" id="idade" readonly style="background:#f0f0f0"></div><div class="form-group"><label>Sexo:</label><select id="sexo"><option value="">Selecione</option><option value="Masculino">Masculino</option><option value="Feminino">Feminino</option></select></div><div class="form-group"><label>Escolaridade:</label><select id="escolaridade"><option value="">Selecione</option><option value="Fundamental incompleto">Fundamental incompleto</option><option value="Fundamental completo">Fundamental completo</option><option value="Medio incompleto">M&#233;dio incompleto</option><option value="Medio completo">M&#233;dio completo</option><option value="Superior incompleto">Superior incompleto</option><option value="Superior completo">Superior completo</option><option value="Pos-graduacao">P&#243;s-gradua&#231;&#227;o</option></select></div><div class="form-group"><label>Data:</label><input type="date" id="data"></div></div>
         </div>
-        <div id="questionario"></div>
+        <div id="blocoRespondente" style="background:#f4f6fb;padding:18px 20px;border-radius:10px;margin-bottom:20px;border-left:5px solid #4a148c;">
+                <h3 style="color:#4a148c;margin-bottom:10px;">&#128221; Quem est&#225; respondendo?</h3>
+                <div class="form-row">
+                    <div class="form-group"><label for="respondente">Respondente (nome e rela&#231;&#227;o com a crian&#231;a):</label><input type="text" id="respondente" placeholder="Ex.: Ana, m&#227;e / Jo&#227;o, professor"></div>
+                </div>
+            </div>
+            <div id="questionario"></div>
         <div class="botoes"><button class="btn btn-primary" onclick="calcularResultados()">Calcular Resultados</button><button class="btn btn-secondary" onclick="gerarRelatorioPDF()">Gerar PDF</button><button class="btn btn-danger" onclick="limparDados()">Limpar Dados</button></div>
         <div id="resultados" class="resultados"></div>
     </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="teaah-visual.js"></script>
 <script>
-var BLOCOS = {
-"1. Processamento Sensorial":[
-"Demonstra inc\u00f4modo com etiquetas, tecidos ou sapatos",
-"Reage de forma intensa a sons (barulho, vozes, aspirador, m\u00fasica alta)",
-"Evita lugares com muitas pessoas ou muito est\u00edmulo visual",
-"\u00c9 muito seletiva com alimentos por textura, cor ou cheiro",
-"Procura movimentos repetitivos (balan\u00e7ar, girar, pular)"
-],
-"2. Comunica\u00e7\u00e3o e Linguagem":[
-"Usou frases completas cedo (antes dos 2 anos e meio)",
-"Usa linguagem literal (entende tudo ao p\u00e9 da letra)",
-"Fala de seus interesses de forma intensa e repetitiva",
-"Entende piadas, met\u00e1foras ou ironias",
-"Corrige adultos ou se frustra quando algo \u00e9 'injusto' ou 'errado'"
-],
-"3. Intera\u00e7\u00e3o Social":[
-"Prefere brincar sozinha",
-"Se aproxima de outras crian\u00e7as com facilidade",
-"Demonstra empatia (percebe quando algu\u00e9m est\u00e1 triste ou bravo)",
-"Tem amigos ou v\u00ednculos sociais est\u00e1veis",
-"Se desregula em ambientes sociais (escola, festas, recreio)"
-],
-"4. Cogni\u00e7\u00e3o e Interesses":[
-"Aprende r\u00e1pido e faz perguntas complexas para a idade",
-"Se interessa intensamente por um tema espec\u00edfico",
-"Demonstra criatividade ou ideias originais",
-"Se irrita quando erra ou quando algo \u00e9 'f\u00e1cil demais'",
-"Transfere o que aprende para novas situa\u00e7\u00f5es"
-],
-"5. Regula\u00e7\u00e3o Emocional":[
-"Se desorganiza quando h\u00e1 mudan\u00e7as inesperadas",
-"Chora ou se isola ap\u00f3s frustra\u00e7\u00f5es",
-"Consegue nomear o que sente",
-"Mostra necessidade de rotina e previsibilidade",
-"Reage mal \u00e0 cr\u00edtica ou quando \u00e9 contrariado"
-],
-"6. Desempenho Global":[
-"Demonstra curiosidade intensa e pensamento avan\u00e7ado",
-"Mostra sensibilidade emocional e/ou art\u00edstica elevada",
-"Apresenta descompasso entre desempenho intelectual e social",
-"Mostra habilidades not\u00e1veis em uma \u00e1rea e dificuldades em outra"
-]
-};
-var OPCOES = ["Nunca","Raramente","\u00c0s vezes","Frequentemente","Sempre"];
+// Itens, tela e PDF vivem em teaah-visual.js (TEA-AH)
+var ITENS = window.SYM_TEAAH ? window.SYM_TEAAH.ITENS : [];
+var AREAS = window.SYM_TEAAH ? window.SYM_TEAAH.AREAS : [];
+var OPCOES = window.SYM_TEAAH ? window.SYM_TEAAH.OPCOES : [];
 
-function gerarQuestionario(){var c=document.getElementById("questionario");var html="";var idx=0;var blocos=Object.keys(BLOCOS);for(var b=0;b<blocos.length;b++){html+='<div class="bloco"><div class="bloco-header">'+blocos[b]+'</div>';for(var i=0;i<BLOCOS[blocos[b]].length;i++){html+='<div class="item"><div class="item-texto"><span class="item-numero">'+(idx+1)+'.</span> '+BLOCOS[blocos[b]][i]+'</div>';html+='<div class="opcoes">';for(var v=0;v<OPCOES.length;v++){html+='<div class="opcao"><input type="radio" id="it'+idx+'_'+(v+1)+'" name="it'+idx+'" value="'+(v+1)+'"><label for="it'+idx+'_'+(v+1)+'">'+OPCOES[v]+'</label></div>';}html+='</div></div>';idx++;}html+='</div>';}c.innerHTML=html;}
+function gerarQuestionario() {
+    var container = document.getElementById('questionario');
+    var html = '<div class="bloco"><div class="bloco-header" style="background:#4a148c">Como responder</div><div style="padding:10px 15px;font-size:0.9em;color:#555;line-height:1.6">Para cada observa\u00e7\u00e3o, marque com que frequ\u00eancia ela ocorre com a crian\u00e7a: <strong>Nunca</strong>, <strong>Raramente</strong>, <strong>\u00c0s vezes</strong>, <strong>Frequentemente</strong> ou <strong>Sempre</strong>. N\u00e3o existem respostas certas ou erradas.</div></div>';
+    for (var a = 0; a < AREAS.length; a++) {
+        html += '<div class="bloco"><div class="bloco-header" style="background:#4a148c">' + (a + 1) + '. ' + AREAS[a].nome + '</div>';
+        for (var j = 0; j < AREAS[a].n; j++) {
+            var idx = AREAS[a].ini + j;
+            html += '<div class="item"><div class="item-texto"><span class="item-numero">' + (j + 1) + '.</span> ' + ITENS[idx].texto + '</div><div class="opcoes">';
+            for (var v = 0; v < OPCOES.length; v++) {
+                html += '<div class="opcao"><input type="radio" id="it' + idx + '_' + OPCOES[v].valor + '" name="it' + idx + '" value="' + OPCOES[v].valor + '"><label for="it' + idx + '_' + OPCOES[v].valor + '">' + OPCOES[v].texto + '</label></div>';
+            }
+            html += '</div></div>';
+        }
+        html += '</div>';
+    }
+    container.innerHTML = html;
+}
+
+// devolve {n\u00ba do item (1-29): resposta 1-5} ou null se faltar algum item
+function obterRespostas() {
+    var r = {};
+    for (var i = 0; i < ITENS.length; i++) {
+        var s = document.querySelector('input[name="it' + i + '"]:checked');
+        if (!s) return null;
+        r[i + 1] = parseInt(s.value, 10);
+    }
+    return r;
+}
 
 function calcularIdade(){var dn=document.getElementById("dataNascimento").value;if(!dn)return;var nasc=new Date(dn+"T00:00:00");var hoje=new Date();var anos=hoje.getFullYear()-nasc.getFullYear();var meses=hoje.getMonth()-nasc.getMonth();if(hoje.getDate()<nasc.getDate())meses--;if(meses<0){anos--;meses+=12;}document.getElementById("idade").value=anos+" anos, "+meses+" meses";}
 
-function calcularResultados(){var nome=document.getElementById("nome").value.trim();if(!nome){alert("Preencha o nome.");return;}var _idade=document.getElementById("idade").value;if(!_idade){alert("Preencha a data de nascimento.");return;}var resultados={};var totalGeral=0;var idx=0;var itensResp=0;var totalItens=0;var blocos=Object.keys(BLOCOS);for(var b=0;b<blocos.length;b++){var pont=0;var itens=0;for(var i=0;i<BLOCOS[blocos[b]].length;i++){var resp=document.querySelector('input[name="it'+idx+'"]:checked');if(resp){pont+=parseInt(resp.value);itens++;itensResp++;}idx++;totalItens++;}var media=itens>0?parseFloat((pont/itens).toFixed(2)):0;resultados[blocos[b]]={pontuacao:pont,media:media,itens:itens,max:BLOCOS[blocos[b]].length*OPCOES.length};totalGeral+=pont;}if(itensResp<totalItens){alert("Responda todos os itens. Faltam "+(totalItens-itensResp)+".");return;}var mediaGeral=parseFloat((totalGeral/totalItens).toFixed(2));var container=document.getElementById("resultados");var html='<h2 style="color:#4a148c;text-align:center;margin-bottom:15px">Resultados - '+document.title+'</h2>';for(var b=0;b<blocos.length;b++){var d=resultados[blocos[b]];var pct=Math.round((d.pontuacao/d.max)*100);html+='<div style="margin:8px 0;padding:10px;background:white;border-radius:6px;border-left:4px solid #4a148c"><strong>'+blocos[b]+':</strong> '+d.pontuacao+'/'+d.max+' (Media: '+d.media+')<div style="background:#e0e0e0;height:8px;border-radius:4px;margin-top:5px"><div style="background:#4a148c;height:8px;border-radius:4px;width:'+pct+'%"></div></div></div>';}html+='<div style="background:#f0f0f0;padding:15px;border-radius:8px;text-align:center;margin:15px 0"><h3>Total: '+totalGeral+' | Media Geral: '+mediaGeral+'</h3></div>';html+='<p style="font-size:0.85em;color:#666;text-align:center"><em>Instrumento de triagem. Nao substitui avaliacao profissional.</em></p>';container.innerHTML=html;container.style.display="block";container.scrollIntoView({behavior:"smooth"});window._escalaDados={escala:document.title,paciente:nome,escore:totalGeral,media:mediaGeral,classificacao:mediaGeral<2?"Baixa":mediaGeral<3?"Media":mediaGeral<4?"Alta":"Muito Alta",dominios:resultados,respostas:(function(){var o={};var _idx2=0;for(var _b2=0;_b2<blocos.length;_b2++){for(var _j2=0;_j2<BLOCOS[blocos[_b2]].length;_j2++){var _r2=document.querySelector('input[name="it'+_idx2+'"]:checked');if(_r2)o[_idx2+1]=parseInt(_r2.value);_idx2++;}}return o;})(),idPaciente:(document.getElementById("idPaciente")?document.getElementById("idPaciente").value:""),data:new Date().toISOString()};if(window.injetarBotaoSalvar)injetarBotaoSalvar("resultados");}
+function calcularResultados() {
+    var nome = document.getElementById('nome').value;
+    if (!nome) { alert('Preencha o nome da crian\u00e7a.'); return; }
 
-function gerarRelatorioPDF(){if(!window._escalaDados){calcularResultados();if(!window._escalaDados)return;}var dados=window._escalaDados;var blocos=Object.keys(dados.dominios);
-// Gerar grafico em canvas
-var canvasG=document.createElement('canvas');canvasG.width=700;canvasG.height=230;
-var cx=canvasG.getContext('2d');cx.fillStyle='#fff';cx.fillRect(0,0,700,230);
-cx.fillStyle='#333';cx.font='bold 12px Segoe UI';cx.textAlign='left';
-cx.fillText('Perfil TEA-AH por Dominio (media 1-5)',10,15);
-var bh=22;var gap=6;var startY=28;var maxW=280;var labelW=270;
-for(var gi=0;gi<blocos.length;gi++){var by=startY+gi*(bh+gap);var d=dados.dominios[blocos[gi]];var pct=d.media/5;var bw=pct*maxW;var cor=d.media<2?'#4caf50':d.media<3?'#8bc34a':d.media<4?'#ff9800':'#f44336';cx.fillStyle='#555';cx.font='10px Segoe UI';cx.textAlign='right';var lbl=blocos[gi];if(lbl.length>38)lbl=lbl.substring(0,35)+'...';cx.fillText(lbl,labelW-5,by+15);cx.fillStyle=cor;cx.fillRect(labelW,by,bw,bh);cx.fillStyle='#333';cx.font='bold 11px Segoe UI';cx.textAlign='left';cx.fillText(d.media.toFixed(1)+'/5',labelW+bw+5,by+15);}
-var ly=startY+blocos.length*(bh+gap)+8;
-var cores=[['#4caf50','Baixa (<2)'],['#8bc34a','Media (2-3)'],['#ff9800','Alta (3-4)'],['#f44336','Muito Alta (>=4)']];
-cx.font='10px Segoe UI';cx.textAlign='left';
-for(var li=0;li<cores.length;li++){cx.fillStyle=cores[li][0];cx.fillRect(labelW+li*115,ly,12,12);cx.fillStyle='#555';cx.fillText(cores[li][1],labelW+li*115+15,ly+10);}
-var imgGrafico=canvasG.toDataURL('image/png');
+    var idade = document.getElementById('idade').value;
+    if (!idade) { alert('Preencha a data de nascimento.'); return; }
+    var sexo = document.getElementById('sexo').value;
+    if (!sexo) { alert('Selecione o sexo (Masculino ou Feminino).'); return; }
+    var r = obterRespostas();
+    if (!r) { alert('Responda todos os itens antes de calcular.'); return; }
+    if (!window.SYM_TEAAH) { alert('N\u00e3o foi poss\u00edvel carregar o m\u00f3dulo de resultados. Recarregue a p\u00e1gina e tente novamente.'); return; }
 
-var jsPDF=window.jspdf.jsPDF;var doc=new jsPDF();doc.setFillColor(74,20,140);doc.rect(0,0,210,30,"F");doc.setTextColor(255,255,255);doc.setFontSize(16);doc.setFont(undefined,"bold");doc.text("TEA-AH - RELATORIO",105,15,{align:"center"});doc.setFontSize(9);doc.setFont(undefined,"normal");doc.text("Triagem de Espectro Autista em Altas Habilidades",105,24,{align:"center"});
-doc.setTextColor(0,0,0);doc.setFont(undefined,"normal");doc.setFontSize(10);var y=38;doc.text("Nome: "+document.getElementById("nome").value,20,y);var idEl=document.getElementById("idPaciente");if(idEl&&idEl.value)doc.text("ID: "+idEl.value,140,y);y+=6;doc.text("Idade: "+(document.getElementById("idade").value||""),20,y);y+=6;doc.text("Data: "+(document.getElementById("data").value||""),20,y);y+=10;
+    // Calculo, tela e PDF vem do mesmo desenho (teaah-visual.js)
+    var res = window.SYM_TEAAH.calcular(r, {respondente:(document.getElementById('respondente')?document.getElementById('respondente').value:'')});
+    var el = document.getElementById('resultados');
+    el.innerHTML = window.SYM_TEAAH.htmlTela(res);
+    el.style.display = 'block';
+    el.scrollIntoView({behavior: 'smooth'});
+    window._escalaDados = {escala:'TEA-AH', paciente:nome, escore:window.SYM_TEAAH.escore(res), classificacao:window.SYM_TEAAH.classifGeral(res), dominios:window.SYM_TEAAH.dadosPainel(res), respostas:window.SYM_TEAAH.respostasObj(res), versaoEscala:2, respondente:(document.getElementById('respondente')?document.getElementById('respondente').value:''), idPaciente:(document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''), idade:idade, sexo:sexo, data:new Date().toISOString()};
+    if (window.injetarBotaoSalvar) injetarBotaoSalvar('resultados');
+}
 
-// Grafico
-doc.setTextColor(74,20,140);doc.setFontSize(10);doc.setFont(undefined,'bold');
-doc.text('PERFIL GRAFICO DOS DOMINIOS',20,y);y+=3;
-doc.addImage(imgGrafico,'PNG',15,y,180,58);y+=62;
+function gerarRelatorioPDF() {
+    // PDF igual a tela de resultados (teaah-visual.js; o painel usa o mesmo desenho)
+    var nome = document.getElementById('nome').value;
+    if (!nome) { alert('Preencha o nome da crian\u00e7a.'); return; }
+    var r = obterRespostas();
+    if (!r) { alert('Responda todos os itens antes de gerar o PDF.'); return; }
+    if (!window.SYM_TEAAH) { alert('N\u00e3o foi poss\u00edvel carregar o gerador de PDF. Recarregue a p\u00e1gina e tente novamente.'); return; }
 
-doc.setFont(undefined,"bold");doc.setFontSize(9);doc.setTextColor(0,0,0);doc.text("RESULTADOS POR DOMINIO:",20,y);y+=7;doc.setFont(undefined,"normal");for(var b=0;b<blocos.length;b++){var d=dados.dominios[blocos[b]];doc.text(blocos[b]+": "+d.pontuacao+"/"+d.max+" (Media: "+d.media+")",25,y);y+=6;if(y>270){doc.addPage();y=20;}}y+=5;doc.setFont(undefined,"bold");doc.text("TOTAL: "+dados.escore+" | MEDIA GERAL: "+dados.media,20,y);
-doc.setFillColor(80,80,80);doc.rect(0,285,210,12,'F');doc.setTextColor(200,200,200);doc.setFontSize(7);doc.text("Relatorio gerado em: "+new Date().toLocaleString('pt-BR'),105,291,{align:"center"});
-var ts=new Date();doc.save("TEA-AH_"+(document.getElementById("nome").value||"Paciente").replace(/\s+/g,'_')+"_"+ts.getFullYear()+String(ts.getMonth()+1).padStart(2,"0")+String(ts.getDate()).padStart(2,"0")+".pdf");}
+    window.SYM_TEAAH.pdf(window.SYM_TEAAH.calcular(r, {respondente:(document.getElementById('respondente')?document.getElementById('respondente').value:'')}), {nome:nome, sexo:document.getElementById('sexo').value, idade:document.getElementById('idade').value, dataAval:document.getElementById('data').value, idPaciente:document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''});
+}
 
 function limparDados(){if(!confirm("Limpar todos os dados?"))return;document.querySelectorAll("input[type=radio]").forEach(function(el){el.checked=false;});document.querySelectorAll("input[type=text],input[type=date]").forEach(function(el){if(el.id!=="data")el.value="";});document.getElementById("sexo").value="";document.getElementById("resultados").style.display="none";window._escalaDados=null;}
 

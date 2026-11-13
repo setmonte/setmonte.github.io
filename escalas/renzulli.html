@@ -65,9 +65,10 @@
             <p style="color:#555;line-height:1.6;font-size:0.9em">
                 <strong>Instrumento:</strong> SRBCSS-R (Escala de Renzulli)<br>
                 <strong>Autor:</strong> Joseph S. Renzulli et al.<br>
-                <strong>Estrutura:</strong> 40 itens, 4 dom&#237;nios, escala Likert 1-5<br>
+                <strong>Estrutura:</strong> 126 itens em 14 escalas independentes (Aprendizagem, Criatividade, Motiva&#231;&#227;o, Lideran&#231;a, Art&#237;stica, Musical, Dram&#225;tica, Comunica&#231;&#227;o-Precis&#227;o, Comunica&#231;&#227;o-Expressividade, Planejamento, Matem&#225;tica, Leitura, Tecnologia, Ci&#234;ncias); 6 op&#231;&#245;es (Nunca a Sempre), pesos de 1 a 6<br>
                 <strong>Popula&#231;&#227;o:</strong> Crian&#231;as e adolescentes em idade escolar<br>
-                <strong>Objetivo:</strong> Identificar caracter&#237;sticas de Altas Habilidades/Superdota&#231;&#227;o
+                <strong>Objetivo:</strong> estimativa do professor sobre caracter&#237;sticas comportamentais de alunos com habilidades superiores. As escalas n&#227;o s&#227;o somadas em um total e n&#227;o existem normas nacionais (indica&#231;&#227;o dos autores). N&#227;o identifica, sozinha, Altas Habilidades/Superdota&#231;&#227;o<br>
+                <strong>Itens:</strong> tradu&#231;&#227;o de Virgolim (2005)
             </p>
         </div>
         <div class="dados-pessoais">
@@ -82,93 +83,76 @@
                 <div class="form-group"><label>Escolaridade:</label><select id="escolaridade"><option value="">Selecione</option><option value="Fundamental incompleto">Fundamental incompleto</option><option value="Fundamental completo">Fundamental completo</option><option value="Medio incompleto">M&#233;dio incompleto</option><option value="Medio completo">M&#233;dio completo</option><option value="Superior incompleto">Superior incompleto</option><option value="Superior completo">Superior completo</option><option value="Pos-graduacao">P&#243;s-gradua&#231;&#227;o</option></select></div>
                 <div class="form-group"><label>Data:</label><input type="date" id="data"></div>
             </div>
-            <div class="form-row">
-                <div class="form-group"><label>Respondente:</label><input type="text" id="respondente" placeholder="Professor(a) / Pai / M&#227;e"></div>
-            </div>
         </div>
-        <div id="questionario"></div>
+        <div id="blocoRespondente" style="background:#f4f6fb;padding:18px 20px;border-radius:10px;margin-bottom:20px;border-left:5px solid #ff6b35;">
+                <h3 style="color:#ff6b35;margin-bottom:10px;">&#128221; Quem est&#225; respondendo?</h3>
+                <div class="form-row">
+                    <div class="form-group"><label for="respondente">Respondente (nome e rela&#231;&#227;o com o aluno):</label><input type="text" id="respondente" placeholder="Ex.: Maria, professora de Matem&#225;tica"></div>
+                </div>
+            </div>
+            <div id="questionario"></div>
         <div class="botoes">
             <button class="btn btn-primary" onclick="calcularResultados()">Calcular Resultados</button>
-            <button class="btn" style="background:linear-gradient(135deg,#1565c0,#42a5f5);color:white" onclick="calcularComIA()">Resultados + An&#225;lise IA</button>
             <button class="btn btn-secondary" onclick="gerarRelatorioPDF()">Gerar PDF</button>
             <button class="btn btn-danger" onclick="limparDados()">Limpar Dados</button>
         </div>
         <div id="resultados" class="resultados"></div>
+        <div class="info-tecnica" id="referencias" style="margin-top:30px;background:#f8f9fa;border-left-color:#ff6b35;">
+            <h2 style="color:#ff6b35;">Refer&#234;ncias</h2>
+            <p style="color:#555;line-height:1.9;font-size:0.88em;">
+                <strong>RENZULLI, J. S. et al.</strong> <em>Scales for Rating the Behavioral Characteristics of Superior Students</em> (Renzulli Scales): revised edition (SRBCSS-R). Waco, TX: Prufrock Press, 2013.<br><br>
+                <strong>RENZULLI, J. S. et al.</strong> <em>Scales for Rating the Behavioral Characteristics of Superior Students</em>: revised edition (SRBCSS-R). Mansfield Center, CT: Creative Learning Press, 2002. Traduzida por Virgolim, 2005.
+            </p>
+        </div>
     </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="renzulli-visual.js"></script>
 <script>
-var BLOCOS = {
-"Habilidade Geral":[
-"Tem vocabul\u00e1rio avan\u00e7ado para sua idade ou s\u00e9rie; usa termos de forma apropriada",
-"Possui informa\u00e7\u00f5es sobre uma variedade de t\u00f3picos al\u00e9m daqueles de sua idade",
-"\u00c9 r\u00e1pido para compreender os princ\u00edpios subjacentes e pode fazer generaliza\u00e7\u00f5es v\u00e1lidas",
-"\u00c9 um observador atento; geralmente v\u00ea mais ou obt\u00e9m mais de uma hist\u00f3ria, filme, etc.",
-"L\u00ea muito por conta pr\u00f3pria; geralmente prefere livros para adultos; n\u00e3o evita material desafiador",
-"Tenta compreender coisas complicadas analisando-as em partes componentes",
-"\u00c9 um pensador l\u00f3gico; v\u00ea rela\u00e7\u00f5es de causa e efeito",
-"Pega rapidamente e lembra de informa\u00e7\u00f5es factuais",
-"Quer saber como e por que as coisas acontecem como acontecem",
-"Torna-se absorto e verdadeiramente envolvido em certos t\u00f3picos ou problemas"
-],
-"Habilidade Espec\u00edfica":[
-"Mostra habilidade superior em algumas \u00e1reas de desempenho",
-"Mostra senso de como fazer em arte, drama, m\u00fasica, etc.",
-"Exibe habilidade criativa ou imagina\u00e7\u00e3o em arte, m\u00fasica, drama, etc.",
-"Tem habilidade mec\u00e2nica; facilmente compreende como as coisas funcionam",
-"Tem habilidade excepcional em matem\u00e1tica ou ci\u00eancias",
-"Tem habilidade excepcional em uma ou mais \u00e1reas acad\u00eamicas",
-"Tem habilidades de lideran\u00e7a excepcionais",
-"Tem habilidade atl\u00e9tica superior",
-"Trabalha facilmente com n\u00fameros, v\u00ea rela\u00e7\u00f5es num\u00e9ricas",
-"Lembra de coisas que ouviu ou leu sem muito esfor\u00e7o de memoriza\u00e7\u00e3o"
-],
-"Criatividade":[
-"Exibe pensamento original em trabalhos orais e escritos",
-"Chega a solu\u00e7\u00f5es que s\u00e3o incomuns, \u00fanicas, inteligentes",
-"\u00c9 aventureiro e especulativo; brinca com ideias que podem parecer selvagens",
-"Tende a ser inconformista; aceita desordem; n\u00e3o se preocupa com detalhes",
-"\u00c9 sens\u00edvel \u00e0 beleza; presta aten\u00e7\u00e3o \u00e0 est\u00e9tica das coisas",
-"\u00c9 autocr\u00edtico; n\u00e3o se satisfaz facilmente com seu pr\u00f3prio trabalho",
-"Pensa fora da caixa e sugere muitas respostas incomuns",
-"\u00c9 um tomador de riscos; aventureiro em pensamento e a\u00e7\u00e3o",
-"Prefere trabalhar independentemente; requer pouca dire\u00e7\u00e3o dos professores",
-"Est\u00e1 interessado em muitas coisas de adultos; preocupado com problemas maiores"
-],
-"Comprometimento com a Tarefa":[
-"Torna-se absorto e verdadeiramente envolvido em certos t\u00f3picos ou problemas",
-"\u00c9 facilmente entediado com tarefas de rotina",
-"Precisa de pouco est\u00edmulo externo para seguir um trabalho que inicialmente o excitou",
-"Luta para alcan\u00e7ar perfei\u00e7\u00e3o; \u00e9 autocr\u00edtico",
-"Prefere trabalhar independentemente; requer pouca dire\u00e7\u00e3o dos professores",
-"Est\u00e1 interessado em muitos assuntos de adultos como religi\u00e3o, pol\u00edtica, etc.",
-"Frequentemente se preocupa com problemas do mundo - guerra, pobreza, etc.",
-"Frequentemente perde a no\u00e7\u00e3o do tempo quando trabalha em algo que o interessa",
-"Demonstra responsabilidade; pode ser contado para fazer o que prometeu",
-"Estabelece padr\u00f5es altos para si mesmo; pode ficar frustrado se n\u00e3o atender"
-]
-};
-var OPCOES = ["Nunca","Raramente","Ocasionalmente","Frequentemente","Sempre"];
+// Itens, escalas, calculo, tela e PDF vivem em renzulli-visual.js (SRBCSS-R)
+var ITENS = window.SYM_RENZULLI ? window.SYM_RENZULLI.ITENS : [];
+var ESC = window.SYM_RENZULLI ? window.SYM_RENZULLI.ESC : [];
+var OPCOES = window.SYM_RENZULLI ? window.SYM_RENZULLI.OPCOES : [];
 
 function gerarQuestionario() {
     var container = document.getElementById('questionario');
-    var html = '';
-    var idx = 0;
-    var blocos = Object.keys(BLOCOS);
-    for (var b = 0; b < blocos.length; b++) {
-        html += '<div class="bloco"><div class="bloco-header">' + blocos[b] + '</div>';
-        for (var i = 0; i < BLOCOS[blocos[b]].length; i++) {
-            html += '<div class="item"><div class="item-texto"><span class="item-numero">' + (i+1) + '.</span> ' + BLOCOS[blocos[b]][i] + '</div>';
-            html += '<div class="opcoes">';
+    var html = '<div class="bloco"><div class="bloco-header" style="background:#ff6b35">Como responder</div><div style="padding:10px 15px;font-size:0.9em;color:#555;line-height:1.6">Leia cada item com a frase inicial <strong>"O aluno demonstra..."</strong> e marque a frequ\u00eancia com que voc\u00ea observou esse comportamento. As 14 escalas s\u00e3o independentes: preencha as que voc\u00ea tem condi\u00e7\u00f5es de avaliar. <strong>Cada escala que voc\u00ea iniciar precisa ser preenchida at\u00e9 o fim</strong>; as que voc\u00ea n\u00e3o iniciar ficam fora do relat\u00f3rio.</div></div>';
+    for (var e = 0; e < ESC.length; e++) {
+        html += '<div class="bloco"><div class="bloco-header" style="background:' + ESC[e].cor + '">' + (e + 1) + '. ' + ESC[e].nome + ' (' + ESC[e].n + ' itens)</div>';
+        for (var j = 0; j < ESC[e].n; j++) {
+            var idx = ESC[e].ini + j;
+            html += '<div class="item"><div class="item-texto"><span class="item-numero">' + (j + 1) + '.</span> ' + ITENS[idx].texto + '</div><div class="opcoes">';
             for (var v = 0; v < OPCOES.length; v++) {
-                html += '<div class="opcao"><input type="radio" id="it' + idx + '_' + (v+1) + '" name="it' + idx + '" value="' + (v+1) + '"><label for="it' + idx + '_' + (v+1) + '">' + (v+1) + '<br>' + OPCOES[v] + '</label></div>';
+                html += '<div class="opcao"><input type="radio" id="q' + idx + '_' + OPCOES[v].valor + '" name="q' + idx + '" value="' + OPCOES[v].valor + '"><label for="q' + idx + '_' + OPCOES[v].valor + '">' + OPCOES[v].texto + '</label></div>';
             }
             html += '</div></div>';
-            idx++;
         }
         html += '</div>';
     }
     container.innerHTML = html;
+}
+
+// devolve {n\u00ba do item (1-126): resposta 1-6} s\u00f3 dos itens respondidos
+function obterRespostas() {
+    var r = {};
+    for (var i = 0; i < ITENS.length; i++) {
+        var s = document.querySelector('input[name="q' + i + '"]:checked');
+        if (s) r[i + 1] = parseInt(s.value, 10);
+    }
+    return r;
+}
+
+// confere escalas: nenhuma iniciada = erro; escala pela metade = erro. Devolve texto do aviso ou ''
+function _validarEscalas() {
+    var r = obterRespostas(), completas = 0, parciais = [];
+    for (var e = 0; e < ESC.length; e++) {
+        var c = 0;
+        for (var j = 0; j < ESC[e].n; j++) { if (r[ESC[e].ini + j + 1]) c++; }
+        if (c === ESC[e].n) completas++; else if (c > 0) parciais.push((e + 1) + '. ' + ESC[e].nome + ' (' + c + ' de ' + ESC[e].n + ')');
+    }
+    if (parciais.length) return 'Complete as escalas iniciadas (ou limpe as respostas delas):\n' + parciais.join('\n');
+    if (completas === 0) return 'Preencha pelo menos uma escala completa.';
+    return '';
 }
 
 function calcularIdade() {
@@ -184,142 +168,36 @@ function calcularIdade() {
 }
 
 function calcularResultados() {
-    var nome = document.getElementById('nome').value.trim();
-    if (!nome) { alert('Preencha o nome.'); return; }
+    var nome = document.getElementById('nome').value;
+    if (!nome) { alert('Preencha o nome do aluno.'); return; }
+
     var idade = document.getElementById('idade').value;
     if (!idade) { alert('Preencha a data de nascimento.'); return; }
-    var resultados = {};
-    var totalGeral = 0;
-    var idx = 0;
-    var itensResp = 0;
-    var blocos = Object.keys(BLOCOS);
-    for (var b = 0; b < blocos.length; b++) {
-        var pont = 0; var itens = 0;
-        for (var i = 0; i < BLOCOS[blocos[b]].length; i++) {
-            var resp = document.querySelector('input[name="it' + idx + '"]:checked');
-            if (resp) { pont += parseInt(resp.value); itens++; itensResp++; }
-            idx++;
-        }
-        var media = itens > 0 ? parseFloat((pont / itens).toFixed(2)) : 0;
-        resultados[blocos[b]] = {pontuacao: pont, media: media, itens: itens};
-        totalGeral += pont;
-    }
-    if (itensResp < 40) { alert('Responda todos os 40 itens. Faltam ' + (40 - itensResp) + '.'); return; }
-    var mediaGeral = parseFloat((totalGeral / 40).toFixed(2));
-    // Mostrar resultados
-    var container = document.getElementById('resultados');
-    var html = '<h2 style="color:#ff6b35;text-align:center;margin-bottom:15px">Resultados - Escala de Renzulli</h2>';
-    for (var b = 0; b < blocos.length; b++) {
-        var d = resultados[blocos[b]];
-        var cor = d.media >= 4.5 ? '#4caf50' : d.media >= 4.0 ? '#8bc34a' : d.media >= 3.5 ? '#ff9800' : d.media >= 3.0 ? '#ff5722' : '#f44336';
-        var classif = d.media >= 4.5 ? 'Muito Alto' : d.media >= 4.0 ? 'Alto' : d.media >= 3.5 ? 'Moderado' : d.media >= 3.0 ? 'Baixo Moderado' : 'Baixo';
-        html += '<div class="resultado-bloco"><div><span class="resultado-nome">' + blocos[b] + '</span><div style="font-size:0.9em;color:#666;margin-top:4px">Pont: ' + d.pontuacao + '/50 | ' + classif + '</div></div>';
-        html += '<span class="resultado-pontos" style="background:' + cor + '">M\u00e9dia: ' + d.media + '</span></div>';
-    }
-    html += '<div class="total-geral"><h3>Total: ' + totalGeral + '/200 | M\u00e9dia Geral: ' + mediaGeral + '</h3></div>';
-    var interp = '';
-    if (mediaGeral >= 4.5) interp = 'Indicativo MUITO FORTE de Altas Habilidades/Superdota\u00e7\u00e3o. Recomenda-se avalia\u00e7\u00e3o especializada e programas de enriquecimento.';
-    else if (mediaGeral >= 4.0) interp = 'Indicativo FORTE de Altas Habilidades. Sugere-se avalia\u00e7\u00e3o aprofundada e programas de desenvolvimento de talentos.';
-    else if (mediaGeral >= 3.5) interp = 'Indicativo MODERADO de Altas Habilidades. Recomenda-se acompanhamento e atividades de enriquecimento.';
-    else if (mediaGeral >= 3.0) interp = 'Algumas caracter\u00edsticas de potencial superior. Sugere-se monitoramento e est\u00edmulo.';
-    else interp = 'Perfil dentro da m\u00e9dia esperada. Continuar acompanhamento regular.';
-    html += '<div class="interpretacao"><h3>Interpreta\u00e7\u00e3o</h3><p>' + interp + '</p>';
-    html += '<p style="font-size:0.85em;color:#666;margin-top:10px"><em>Instrumento de triagem. N\u00e3o substitui avalia\u00e7\u00e3o profissional.</em></p></div>';
-    container.innerHTML = html;
-    container.style.display = 'block';
-    container.scrollIntoView({behavior:'smooth'});
-    var _respostasObj=(function(){var o={};var _idx=0;var _bl=Object.keys(BLOCOS);for(var _b=0;_b<_bl.length;_b++){for(var _j=0;_j<BLOCOS[_bl[_b]].length;_j++){var _r=document.querySelector('input[name="it'+_idx+'"]:checked');if(_r)o[_idx+1]=parseInt(_r.value);_idx++;}}return o;})();
-    window._escalaDados = {escala:'Renzulli', paciente:nome, escore:totalGeral, media:mediaGeral, classificacao:interp.substring(0,60), dominios:resultados, respostas:_respostasObj, idPaciente:(document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''), data:new Date().toISOString()};
+    var sexo = document.getElementById('sexo').value;
+    if (!sexo) { alert('Selecione o sexo (Masculino ou Feminino).'); return; }
+    var r = obterRespostas();
+    if (!r) { alert('Responda todos os itens antes de calcular.'); return; }
+    if (!window.SYM_RENZULLI) { alert('N\u00e3o foi poss\u00edvel carregar o m\u00f3dulo de resultados. Recarregue a p\u00e1gina e tente novamente.'); return; }
+    var _vr = _validarEscalas(); if (_vr) { alert(_vr); return; }
+    // Calculo, tela e PDF vem do mesmo desenho (renzulli-visual.js)
+    var res = window.SYM_RENZULLI.calcular(r, {respondente:(document.getElementById('respondente')?document.getElementById('respondente').value:'')});
+    var el = document.getElementById('resultados');
+    el.innerHTML = window.SYM_RENZULLI.htmlTela(res);
+    el.style.display = 'block';
+    el.scrollIntoView({behavior: 'smooth'});
+    window._escalaDados = {escala:'Renzulli', paciente:nome, escore:window.SYM_RENZULLI.escore(res), classificacao:window.SYM_RENZULLI.classifGeral(res), dominios:window.SYM_RENZULLI.dadosPainel(res), respostas:window.SYM_RENZULLI.respostasObj(res), versaoEscala:2, respondente:(document.getElementById('respondente')?document.getElementById('respondente').value:''), idPaciente:(document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''), idade:idade, sexo:sexo, data:new Date().toISOString()};
     if (window.injetarBotaoSalvar) injetarBotaoSalvar('resultados');
 }
 
 function gerarRelatorioPDF() {
-    if (!window._escalaDados) { calcularResultados(); if (!window._escalaDados) return; }
-    var dados = window._escalaDados;
-    var blocos = Object.keys(dados.dominios);
-    // Gerar grafico em canvas
-    var canvasG = document.createElement('canvas'); canvasG.width = 700; canvasG.height = 180;
-    var cx = canvasG.getContext('2d');
-    cx.fillStyle = '#fff'; cx.fillRect(0, 0, 700, 180);
-    cx.fillStyle = '#333'; cx.font = 'bold 12px Segoe UI'; cx.textAlign = 'left';
-    cx.fillText('Perfil por Dominio Renzulli (media 1-5)', 10, 15);
-    var bh = 26; var gap = 8; var startY = 30; var maxW = 300; var labelW = 230;
-    for (var gi = 0; gi < blocos.length; gi++) {
-        var d = dados.dominios[blocos[gi]];
-        var by = startY + gi * (bh + gap);
-        var pct = d.media / 5;
-        var bw = pct * maxW;
-        var cor = d.media >= 4.5 ? '#4caf50' : d.media >= 4.0 ? '#8bc34a' : d.media >= 3.5 ? '#ff9800' : d.media >= 3.0 ? '#ff5722' : '#f44336';
-        cx.fillStyle = '#555'; cx.font = '11px Segoe UI'; cx.textAlign = 'right';
-        cx.fillText(blocos[gi], labelW - 5, by + 17);
-        cx.fillStyle = cor; cx.fillRect(labelW, by, bw, bh);
-        cx.fillStyle = '#333'; cx.font = 'bold 11px Segoe UI'; cx.textAlign = 'left';
-        cx.fillText(d.media.toFixed(1) + '/5', labelW + bw + 5, by + 17);
-    }
-    var ly = startY + blocos.length*(bh+gap) + 8;
-    var cores = [['#4caf50','Muito Alto (>=4.5)'],['#8bc34a','Alto (4.0-4.5)'],['#ff9800','Moderado (3.5-4.0)'],['#ff5722','Baixo Mod. (3.0-3.5)'],['#f44336','Baixo (<3.0)']];
-    cx.font = '9px Segoe UI'; cx.textAlign = 'left';
-    for (var li = 0; li < cores.length; li++) { cx.fillStyle = cores[li][0]; cx.fillRect(10 + li*130, ly, 10, 10); cx.fillStyle = '#555'; cx.fillText(cores[li][1], 10 + li*130 + 13, ly + 9); }
-    var imgGrafico = canvasG.toDataURL('image/png');
-
-    var jsPDF = window.jspdf.jsPDF; var doc = new jsPDF();
-    doc.setFillColor(255,107,53); doc.rect(0,0,210,30,'F');
-    doc.setTextColor(255,255,255); doc.setFontSize(16); doc.setFont(undefined,'bold');
-    doc.text('ESCALA DE RENZULLI (SRBCSS-R)', 105, 15, {align:'center'});
-    doc.setFontSize(10); doc.text('Altas Habilidades / Superdotacao', 105, 23, {align:'center'});
-    doc.setTextColor(0,0,0); doc.setFont(undefined,'normal'); doc.setFontSize(10);
-    var y = 38;
-    doc.text('Nome: ' + document.getElementById('nome').value, 20, y);
-    var idEl = document.getElementById('idPaciente');
-    if (idEl && idEl.value) doc.text('ID: ' + idEl.value, 140, y);
-    y += 6; doc.text('Idade: ' + (document.getElementById('idade').value || ''), 20, y);
-    doc.text('Sexo: ' + (document.getElementById('sexo').value || ''), 120, y);
-    y += 6; doc.text('Respondente: ' + (document.getElementById('respondente').value || ''), 20, y);
-    y += 10;
-    // Grafico
-    doc.setTextColor(255,107,53); doc.setFontSize(10); doc.setFont(undefined,'bold');
-    doc.text('PERFIL GRAFICO DOS DOMINIOS', 20, y); y += 3;
-    doc.addImage(imgGrafico, 'PNG', 15, y, 180, 48); y += 52;
-    // Dominios texto
-    doc.setTextColor(0,0,0); doc.setFont(undefined,'bold'); doc.text('RESULTADOS POR DOMINIO:', 20, y); y += 8;
-    doc.setFont(undefined,'normal');
-    for (var b = 0; b < blocos.length; b++) {
-        var d = dados.dominios[blocos[b]];
-        doc.text(blocos[b] + ': ' + d.pontuacao + '/50 (Media: ' + d.media + ')', 25, y); y += 6;
-    }
-    y += 5;
-    doc.setFillColor(255,243,224); doc.rect(15,y-4,180,12,'F');
-    doc.setFont(undefined,'bold');
-    doc.text('TOTAL: ' + dados.escore + '/200 | MEDIA GERAL: ' + dados.media, 20, y+4); y += 18;
-    doc.setFont(undefined,'normal'); doc.setFontSize(9);
-    var linhas = doc.splitTextToSize(dados.classificacao, 170);
-    for (var l = 0; l < linhas.length; l++) { doc.text(linhas[l], 20, y); y += 5; }
-    doc.setFillColor(80,80,80); doc.rect(0,285,210,12,'F');
-    doc.setTextColor(200,200,200); doc.setFontSize(7);
-    doc.text('Relatorio gerado em: ' + new Date().toLocaleString('pt-BR'), 105, 291, {align:'center'});
-    // Pagina 2: Analise IA (se disponivel)
-    if (_analiseIATexto) {
-        doc.addPage();
-        doc.setFillColor(21,101,192); doc.rect(0,0,210,20,'F');
-        doc.setTextColor(255,255,255); doc.setFontSize(12); doc.setFont(undefined,'bold');
-        doc.text('ANALISE CLINICA (IA) \u2014 Escala de Renzulli', 105, 13, {align:'center'});
-        doc.setTextColor(0,0,0); doc.setFont(undefined,'normal'); doc.setFontSize(9);
-        var yIA = 30;
-        var linhasIA = doc.splitTextToSize(_analiseIATexto, 170);
-        for (var li = 0; li < linhasIA.length; li++) {
-            if (yIA > 270) { doc.addPage(); yIA = 20; }
-            doc.text(linhasIA[li], 20, yIA); yIA += 5;
-        }
-        yIA += 10;
-        if (yIA > 275) { doc.addPage(); yIA = 20; }
-        doc.setFontSize(7.5); doc.setTextColor(120,120,120);
-        doc.text('Nota: Analise auxiliar gerada por IA. Nao substitui julgamento clinico profissional.', 20, yIA);
-        doc.setFillColor(80,80,80); doc.rect(0,285,210,12,'F');
-        doc.setTextColor(200,200,200); doc.setFontSize(7);
-        doc.text('Relatorio gerado em: ' + new Date().toLocaleString('pt-BR'), 105, 291, {align:'center'});
-    }
-    var ts = new Date();
-    doc.save('Renzulli_' + (document.getElementById('nome').value||'Paciente').replace(/\s+/g,'_') + '_' + ts.getFullYear() + String(ts.getMonth()+1).padStart(2,'0') + String(ts.getDate()).padStart(2,'0') + '.pdf');
+    // PDF igual a tela de resultados (renzulli-visual.js; o painel usa o mesmo desenho)
+    var nome = document.getElementById('nome').value;
+    if (!nome) { alert('Preencha o nome do aluno.'); return; }
+    var r = obterRespostas();
+    if (!r) { alert('Responda todos os itens antes de gerar o PDF.'); return; }
+    if (!window.SYM_RENZULLI) { alert('N\u00e3o foi poss\u00edvel carregar o gerador de PDF. Recarregue a p\u00e1gina e tente novamente.'); return; }
+    var _vr = _validarEscalas(); if (_vr) { alert(_vr); return; }
+    window.SYM_RENZULLI.pdf(window.SYM_RENZULLI.calcular(r, {respondente:(document.getElementById('respondente')?document.getElementById('respondente').value:'')}), {nome:nome, sexo:document.getElementById('sexo').value, idade:document.getElementById('idade').value, dataAval:document.getElementById('data').value, idPaciente:document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''});
 }
 
 function limparDados() {
@@ -329,73 +207,6 @@ function limparDados() {
     document.getElementById('sexo').value = '';
     document.getElementById('resultados').style.display = 'none';
     window._escalaDados = null;
-    _analiseIATexto = null;
-}
-
-// ===== ANALISE IA =====
-var _analiseIATexto = null;
-
-async function calcularComIA() {
-    // Primeiro calcula os resultados normalmente
-    calcularResultados();
-    if (!window._escalaDados) return;
-    var dados = window._escalaDados;
-    // Mostrar loading abaixo dos resultados
-    var container = document.getElementById('resultados');
-    var loadingHtml = '<div id="ia-loading" style="background:#e3f2fd;border:2px solid #1565c0;border-radius:10px;padding:20px;margin-top:15px;text-align:center;">';
-    loadingHtml += '<p style="font-size:14px;color:#1565c0;font-weight:bold;">Analisando resultados com IA...</p>';
-    loadingHtml += '<p style="font-size:12px;color:#777;margin-top:5px;">Aguarde, a IA esta interpretando o perfil.</p></div>';
-    container.innerHTML += loadingHtml;
-    // Montar prompt
-    var prompt = 'Voce e um neuropsicologo experiente em avaliacao de Altas Habilidades/Superdotacao.\n';
-    prompt += 'Analise os resultados abaixo da Escala de Renzulli (SRBCSS-R) e forneca uma interpretacao clinica breve (max 15 linhas).\n\n';
-    prompt += 'DADOS DEMOGRAFICOS:\n';
-    prompt += '- Idade: ' + (document.getElementById('idade').value || 'N/I') + '\n';
-    prompt += '- Sexo: ' + (document.getElementById('sexo').value || 'N/I') + '\n';
-    prompt += '- Escolaridade: ' + (document.getElementById('escolaridade').value || 'N/I') + '\n';
-    prompt += '- Respondente: ' + (document.getElementById('respondente').value || 'N/I') + '\n\n';
-    prompt += 'ESCALA: Renzulli SRBCSS-R (40 itens, 4 dominios, Likert 1-5)\n';
-    prompt += 'TOTAL: ' + dados.escore + '/200 | MEDIA GERAL: ' + dados.media + '\n\n';
-    prompt += 'DOMINIOS:\n';
-    var blocos = Object.keys(dados.dominios);
-    for (var i = 0; i < blocos.length; i++) {
-        var d = dados.dominios[blocos[i]];
-        prompt += '- ' + blocos[i] + ': ' + d.pontuacao + '/50 (media=' + d.media + ')\n';
-    }
-    prompt += '\nCLASSIFICACAO: ' + dados.classificacao + '\n\n';
-    prompt += 'INSTRUCOES:\n';
-    prompt += '- Escreva em portugues brasileiro, linguagem tecnica mas acessivel\n';
-    prompt += '- Interprete o perfil considerando indicadores de AH/SD\n';
-    prompt += '- Analise quais dominios se destacam e o que isso sugere\n';
-    prompt += '- Considere a perspectiva do respondente (professor, pai, etc.)\n';
-    prompt += '- NAO repita os numeros brutos, interprete-os clinicamente\n';
-    prompt += '- NAO faca diagnostico, apenas levante hipoteses\n';
-    prompt += '- Termine com sugestoes de proximos passos avaliativos';
-    try {
-        var resp = await fetch(_API_URL + '/generate-ai', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({prompt: prompt})
-        });
-        var aiData = await resp.json();
-        var texto = (aiData.text || '').trim();
-        _analiseIATexto = texto;
-        // Remover loading e exibir resultado
-        var loadEl = document.getElementById('ia-loading');
-        if (loadEl) loadEl.remove();
-        var iaHtml = '<div id="ia-resultado" style="background:#f1f8e9;border:2px solid #66bb6a;border-radius:10px;padding:20px;margin-top:15px;">';
-        iaHtml += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">';
-        iaHtml += '<span style="font-size:14px;font-weight:bold;color:#2e7d32;">Analise Clinica (IA)</span>';
-        iaHtml += '<button onclick="document.getElementById(\'ia-resultado\').remove()" style="background:none;border:none;font-size:18px;cursor:pointer;color:#999;">&#10005;</button></div>';
-        iaHtml += '<div style="font-size:13px;line-height:1.7;color:#333;white-space:pre-wrap;">' + texto + '</div>';
-        iaHtml += '<div style="margin-top:12px;font-size:11px;color:#999;border-top:1px solid #ddd;padding-top:8px;">Nota: Analise auxiliar gerada por IA. Nao substitui julgamento clinico profissional.</div>';
-        iaHtml += '</div>';
-        container.innerHTML += iaHtml;
-    } catch(e) {
-        var loadEl2 = document.getElementById('ia-loading');
-        if (loadEl2) loadEl2.remove();
-        container.innerHTML += '<div style="background:#ffebee;border:1px solid #ef5350;border-radius:8px;padding:12px;margin-top:15px;font-size:13px;color:#c62828;">Erro ao gerar analise IA: ' + e.message + '</div>';
-    }
 }
 
 // ===== MODO PAINEL =====
@@ -427,9 +238,7 @@ function _decodificarURL() {
 async function _enviarResultadosPainel() {
     var nomeEl = document.getElementById('nome');
     if (nomeEl && !nomeEl.value.trim()) { alert('Preencha o nome antes de enviar.'); return; }
-    var totalItens = document.querySelectorAll('.item').length;
-    var respondidos = document.querySelectorAll('input[type="radio"]:checked').length;
-    if (respondidos < totalItens) { alert('Responda todos os ' + totalItens + ' itens antes de enviar. Faltam ' + (totalItens - respondidos) + '.'); return; }
+    var _vr = _validarEscalas(); if (_vr) { alert(_vr); return; }
     var sexoEl = document.getElementById('sexo');
     if(sexoEl&&!sexoEl.value){alert('O sexo (Masculino ou Feminino) \u00e9 obrigat\u00f3rio e n\u00e3o foi informado no cadastro. Pe\u00e7a ao profissional para completar o cadastro do paciente e gerar um novo link.');return;}
     var idadeEl = document.getElementById('idadeCalculada');
