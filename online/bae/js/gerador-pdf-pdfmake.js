@@ -5,6 +5,21 @@
 window.resultadosBAE = window.resultadosBAE || {};
 window.dadosPaciente = window.dadosPaciente || {};
 
+// ===== SIGLAS DOS SUBTESTES NO NOME DO PDF =====
+// Bateria completa (5 subtestes): retorna '' (nome continua como antes).
+// Bateria parcial: retorna ex. 'Sel_Sust_' com as siglas dos subtestes feitos,
+// sempre na ordem da bateria. Subteste BYPASSADO (nem iniciado) nao entra.
+function _siglasSubtestesBAE(resultados) {
+    var ordem = ['concentrada', 'seletiva', 'dividida', 'alternada', 'sustentada'];
+    var siglas = { concentrada: 'Conc', seletiva: 'Sel', dividida: 'Div', alternada: 'Alt', sustentada: 'Sust' };
+    var feitos = ordem.filter(function (t) {
+        var x = resultados && resultados[t];
+        return !!x && x.statusTeste !== 'BYPASSADO';
+    });
+    if (feitos.length === 0 || feitos.length === ordem.length) return '';
+    return feitos.map(function (t) { return siglas[t]; }).join('_') + '_';
+}
+
 // ===== FUNÇÃO PARA SALVAR RESULTADO DE TESTE =====
 function salvarResultadoTeste(nomeTeste, dados) {
     // Não sobrescrever se já foi salvo como ABANDONADO
@@ -237,7 +252,7 @@ async function gerarRelatorioPDF() {
         const hora = String(agora.getHours()).padStart(2, '0');
         const minuto = String(agora.getMinutes()).padStart(2, '0');
         
-        const nomeArquivo = `BAE2.4_${(paciente.nome || 'PACIENTE').replace(/\\s+/g, '_').toUpperCase()}_${ano}${mes}${dia}${hora}${minuto}.pdf`;
+        const nomeArquivo = `BAE2.4_${_siglasSubtestesBAE(resultados)}${(paciente.nome || 'PACIENTE').replace(/\s+/g, '_').toUpperCase()}_${ano}${mes}${dia}${hora}${minuto}.pdf`;
     
     // Tenta gerar laudo com IA (com aviso visual)
     var laudoIA = null;
@@ -814,7 +829,7 @@ function gerarPDFEmergencia() {
     }
     
     const agora = new Date();
-    const nomeArquivo = `BAE2.4_${(paciente.nome || 'PACIENTE').replace(/\s+/g, '_').toUpperCase()}_${agora.getFullYear()}${String(agora.getMonth() + 1).padStart(2, '0')}${String(agora.getDate()).padStart(2, '0')}${String(agora.getHours()).padStart(2, '0')}${String(agora.getMinutes()).padStart(2, '0')}.pdf`;
+    const nomeArquivo = `BAE2.4_${_siglasSubtestesBAE(resultados)}${(paciente.nome || 'PACIENTE').replace(/\s+/g, '_').toUpperCase()}_${agora.getFullYear()}${String(agora.getMonth() + 1).padStart(2, '0')}${String(agora.getDate()).padStart(2, '0')}${String(agora.getHours()).padStart(2, '0')}${String(agora.getMinutes()).padStart(2, '0')}.pdf`;
     
     const docDefinition = {
         pageSize: 'A4',
