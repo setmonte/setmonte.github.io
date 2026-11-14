@@ -51,7 +51,7 @@
 <div class="container">
     <div class="header"><h1>SMI</h1><p>Invent&#225;rio de Modos Esquem&#225;ticos (Schema Mode Inventory) - 124 itens</p></div>
     <div class="content">
-        <div class="dados-pessoais info-tecnica" style="position:relative"><button onclick="window.print()" style="position:absolute;top:15px;right:15px;padding:8px 16px;background:#6a1b9a;color:white;border:none;border-radius:15px;cursor:pointer;font-size:13px">Imprimir</button><h2>Informa&#231;&#245;es T&#233;cnicas</h2><p style="color:#555;line-height:1.6;font-size:0.9em"><strong>Instrumento:</strong> SMI (Schema Mode Inventory)<br><strong>Autores:</strong> Young, Klosko, Weishaar &amp; Lobbestael<br><strong>Estrutura:</strong> 124 itens, 14 modos, escala Likert 1-6<br><strong>Popula&#231;&#227;o:</strong> Adultos</p></div>
+        <div class="dados-pessoais info-tecnica" style="position:relative"><button onclick="window.print()" style="position:absolute;top:15px;right:15px;padding:8px 16px;background:#6a1b9a;color:white;border:none;border-radius:15px;cursor:pointer;font-size:13px">Imprimir</button><h2>Informa&#231;&#245;es T&#233;cnicas</h2><p style="color:#555;line-height:1.6;font-size:0.9em"><strong>Instrumento:</strong> SMI (Schema Mode Inventory)<br><strong>Autores:</strong> Young, Arntz, Atkinson, Lobbestael, Weishaar, van Vreeswijk &amp; Klokman (2007); vers&#227;o curta validada por Lobbestael et al. (2010)<br><strong>Estrutura:</strong> 118 itens, 14 modos, frequ&#234;ncia de 1 (nunca ou quase nunca) a 6 (sempre); a pontua&#231;&#227;o de cada modo &#233; a m&#233;dia dos seus itens<br><strong>Itens em portugu&#234;s:</strong> tradu&#231;&#227;o pr&#243;pria a partir do ingl&#234;s do artigo de valida&#231;&#227;o; n&#227;o &#233; a vers&#227;o oficial brasileira. N&#227;o h&#225; pontos de corte<br><strong>Popula&#231;&#227;o:</strong> Adultos</p></div>
         <div class="dados-pessoais"><h2>Dados Pessoais</h2>
             <div class="form-row"><div class="form-group"><label>Nome:</label><input type="text" id="nome"></div><div class="form-group"><label>Data de Nascimento:</label><input type="date" id="dataNascimento" onchange="calcularIdade()"></div></div>
             <div class="form-row"><div class="form-group"><label>Idade:</label><input type="text" id="idadeCalculada" readonly style="background:#f0f0f0"></div><div class="form-group"><label>Sexo:</label><select id="sexo"><option value="">Selecione</option><option value="Masculino">Masculino</option><option value="Feminino">Feminino</option></select></div><div class="form-group"><label>Escolaridade:</label><select id="escolaridade"><option value="">Selecione</option><option value="Fundamental incompleto">Fundamental incompleto</option><option value="Fundamental completo">Fundamental completo</option><option value="Medio incompleto">M&#233;dio incompleto</option><option value="Medio completo">M&#233;dio completo</option><option value="Superior incompleto">Superior incompleto</option><option value="Superior completo">Superior completo</option><option value="Pos-graduacao">P&#243;s-gradua&#231;&#227;o</option></select></div><div class="form-group"><label>Data:</label><input type="date" id="data"></div></div>
@@ -59,162 +59,81 @@
         <div id="questionario"></div>
         <div class="botoes"><button class="btn btn-primary" onclick="calcularResultados()">Calcular Resultados</button><button class="btn btn-secondary" onclick="gerarRelatorioPDF()">Gerar PDF</button><button class="btn btn-danger" onclick="limparDados()">Limpar Dados</button></div>
         <div id="resultados" class="resultados"></div>
+<div class="info-tecnica" id="referencias" style="margin-top:30px;background:#f8f9fa;border-left-color:#6a1b9a;">
+<h2 style="color:#6a1b9a;">Refer&#234;ncias</h2>
+<p style="color:#555;line-height:1.9;font-size:0.88em;">
+<strong>LOBBESTAEL, J.; VAN VREESWIJK, M.; SPINHOVEN, P.; SCHOUTEN, E.; ARNTZ, A.</strong> Reliability and validity of the short Schema Mode Inventory (SMI). <em>Behavioural and Cognitive Psychotherapy</em>, v. 38, n. 4, p. 437-458, 2010.<br><br>
+<strong>YOUNG, J. E.; ARNTZ, A.; ATKINSON, T.; LOBBESTAEL, J.; WEISHAAR, M. E.; VAN VREESWIJK, M. F.; KLOKMAN, J.</strong> <em>The Schema Mode Inventory</em>. New York: Schema Therapy Institute, 2007.<br><br>
+<strong>YOUNG, J.; FIRST, M.</strong> <em>Lista de modos esquem&#225;ticos</em>. Tradu&#231;&#227;o e adapta&#231;&#227;o oficial para uso no Brasil: Elisa Steinhorst Damasceno, Lauren Heineck de Souza e Margareth da Silva Oliveira. &#169; 2014. Autoriza&#231;&#227;o exclusiva do Schema Therapy Institute.<br><br>
+<strong>YOUNG, J. E.; KLOSKO, J. S.; WEISHAAR, M. E.</strong> <em>Terapia do esquema</em>: guia de t&#233;cnicas cognitivo-comportamentais inovadoras. Porto Alegre: Artmed, 2008.
+</p>
+</div>
     </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="../smi-visual.js"></script>
 <script>
-var ITENS = [
-{n:1,t:"Eu me sinto sozinho(a) e sem apoio."},
-{n:2,t:"Eu me sinto desamparado(a) e indefeso(a)."},
-{n:3,t:"Eu me sinto perdido(a) e sem dire\u00e7\u00e3o."},
-{n:4,t:"Eu me sinto indigno(a) de amor."},
-{n:5,t:"Eu me sinto abandonado(a) pelas pessoas."},
-{n:6,t:"Eu me sinto ansioso(a) e com medo de que coisas ruins aconte\u00e7am."},
-{n:7,t:"Eu sinto uma tristeza profunda que parece n\u00e3o ter fim."},
-{n:8,t:"Eu me sinto como uma crian\u00e7a assustada que precisa de prote\u00e7\u00e3o."},
-{n:9,t:"Eu sinto que ningu\u00e9m me entende de verdade."},
-{n:10,t:"Eu me sinto fr\u00e1gil e facilmente magoado(a)."},
-{n:11,t:"Eu sinto uma raiva intensa quando minhas necessidades n\u00e3o s\u00e3o atendidas."},
-{n:12,t:"Eu fico furioso(a) quando me sinto tratado(a) de forma injusta."},
-{n:13,t:"Eu tenho explos\u00f5es de raiva que parecem desproporcionais \u00e0 situa\u00e7\u00e3o."},
-{n:14,t:"Eu sinto vontade de gritar ou bater em alguma coisa quando estou frustrado(a)."},
-{n:15,t:"Eu fico com muita raiva quando as pessoas n\u00e3o me d\u00e3o o que eu preciso."},
-{n:16,t:"Eu me sinto enraivecido(a) por ter sido maltratado(a) na vida."},
-{n:17,t:"Eu sinto uma raiva que parece vir do fundo da minha alma."},
-{n:18,t:"Eu fico irritado(a) e impaciente com as pessoas ao meu redor."},
-{n:19,t:"Eu sinto que tenho direito de expressar minha raiva de forma intensa."},
-{n:20,t:"Eu me sinto t\u00e3o zangado(a) que tenho vontade de destruir coisas."},
-{n:21,t:"Eu ajo por impulso sem pensar nas consequ\u00eancias."},
-{n:22,t:"Eu tenho dificuldade em controlar meus desejos e impulsos."},
-{n:23,t:"Eu fa\u00e7o coisas para me sentir bem no momento, mesmo sabendo que vou me arrepender depois."},
-{n:24,t:"Eu tenho dificuldade em seguir regras e limites."},
-{n:25,t:"Eu quero as coisas imediatamente e n\u00e3o consigo esperar."},
-{n:26,t:"Eu me comporto de forma ego\u00edsta, sem considerar os outros."},
-{n:27,t:"Eu tenho dificuldade em completar tarefas que considero chatas ou dif\u00edceis."},
-{n:28,t:"Eu perco o controle facilmente quando estou frustrado(a)."},
-{n:29,t:"Eu gasto dinheiro ou como em excesso sem conseguir me controlar."},
-{n:30,t:"Eu fa\u00e7o birra ou fico emburrado(a) quando n\u00e3o consigo o que quero."},
-{n:31,t:"Eu me sinto amado(a) e aceito(a) pelas pessoas importantes na minha vida."},
-{n:32,t:"Eu me sinto seguro(a) e protegido(a)."},
-{n:33,t:"Eu me sinto otimista em rela\u00e7\u00e3o ao futuro."},
-{n:34,t:"Eu me sinto livre para expressar minhas emo\u00e7\u00f5es."},
-{n:35,t:"Eu me sinto confiante e capaz."},
-{n:36,t:"Eu me divirto e aproveito a vida."},
-{n:37,t:"Eu me sinto conectado(a) com as pessoas ao meu redor."},
-{n:38,t:"Eu me sinto espont\u00e2neo(a) e criativo(a)."},
-{n:39,t:"Eu me sinto satisfeito(a) com quem eu sou."},
-{n:40,t:"Eu me sinto alegre e cheio(a) de energia."},
-{n:41,t:"Eu fa\u00e7o o que os outros querem para evitar conflitos."},
-{n:42,t:"Eu me submeto aos desejos dos outros, mesmo quando discordo."},
-{n:43,t:"Eu coloco as necessidades dos outros sempre antes das minhas."},
-{n:44,t:"Eu tenho medo de expressar minhas opini\u00f5es por receio de rejei\u00e7\u00e3o."},
-{n:45,t:"Eu me esfor\u00e7o para agradar as pessoas, mesmo \u00e0s custas do meu bem-estar."},
-{n:46,t:"Eu aceito ser maltratado(a) porque acho que mere\u00e7o."},
-{n:47,t:"Eu pe\u00e7o desculpas excessivamente, mesmo quando n\u00e3o fiz nada de errado."},
-{n:48,t:"Eu permito que os outros me controlem porque tenho medo de ficar sozinho(a)."},
-{n:49,t:"Eu evito confrontos a todo custo."},
-{n:50,t:"Eu me sinto incapaz de dizer 'n\u00e3o' para as pessoas."},
-{n:51,t:"Eu me desligo emocionalmente das situa\u00e7\u00f5es para n\u00e3o sentir dor."},
-{n:52,t:"Eu evito pensar em coisas que me perturbam."},
-{n:53,t:"Eu me sinto entorpecido(a) e vazio(a) por dentro."},
-{n:54,t:"Eu me afasto das pessoas quando come\u00e7o a me sentir pr\u00f3ximo(a) demais."},
-{n:55,t:"Eu uso atividades (trabalho, TV, internet) para evitar sentir emo\u00e7\u00f5es."},
-{n:56,t:"Eu me sinto desconectado(a) dos meus pr\u00f3prios sentimentos."},
-{n:57,t:"Eu evito situa\u00e7\u00f5es que possam despertar emo\u00e7\u00f5es fortes."},
-{n:58,t:"Eu me fecho e fico distante quando as pessoas tentam se aproximar."},
-{n:59,t:"Eu me sinto como se estivesse no 'piloto autom\u00e1tico', apenas passando pela vida."},
-{n:60,t:"Eu prefiro ficar sozinho(a) a lidar com as emo\u00e7\u00f5es que surgem nos relacionamentos."},
-{n:61,t:"Eu preciso estar no controle de tudo e de todos."},
-{n:62,t:"Eu me comporto de forma dominante e autorit\u00e1ria."},
-{n:63,t:"Eu ataco os outros antes que eles possam me machucar."},
-{n:64,t:"Eu me esfor\u00e7o para parecer perfeito(a) e sem falhas."},
-{n:65,t:"Eu me sinto superior \u00e0s outras pessoas."},
-{n:66,t:"Eu manipulo situa\u00e7\u00f5es para conseguir o que quero."},
-{n:67,t:"Eu busco status e reconhecimento para me sentir importante."},
-{n:68,t:"Eu critico os outros para me sentir melhor comigo mesmo(a)."},
-{n:69,t:"Eu trabalho excessivamente para provar meu valor."},
-{n:70,t:"Eu me recuso a mostrar qualquer vulnerabilidade."},
-{n:71,t:"Eu me critico severamente quando cometo erros."},
-{n:72,t:"Eu sinto que mere\u00e7o ser punido(a) quando fa\u00e7o algo errado."},
-{n:73,t:"Eu tenho uma voz interior que me diz que sou mau/m\u00e1 ou sem valor."},
-{n:74,t:"Eu me castigo (privando-me de coisas boas) quando falho."},
-{n:75,t:"Eu sinto raiva de mim mesmo(a) e me trato com crueldade."},
-{n:76,t:"Eu acredito que n\u00e3o mere\u00e7o coisas boas na vida."},
-{n:77,t:"Eu me sinto culpado(a) quando fa\u00e7o algo para mim mesmo(a)."},
-{n:78,t:"Eu tenho pensamentos de que sou uma pessoa terr\u00edvel."},
-{n:79,t:"Eu me envergonho profundamente de quem eu sou."},
-{n:80,t:"Eu sinto que devo sofrer pelas coisas ruins que fiz."},
-{n:81,t:"Eu sinto que preciso ser perfeito(a) em tudo que fa\u00e7o."},
-{n:82,t:"Eu me pressiono constantemente para alcan\u00e7ar padr\u00f5es muito altos."},
-{n:83,t:"Eu sinto que nunca \u00e9 bom o suficiente, n\u00e3o importa o quanto eu me esforce."},
-{n:84,t:"Eu me cobro excessivamente para cumprir todas as minhas obriga\u00e7\u00f5es."},
-{n:85,t:"Eu sinto que devo colocar o dever acima do prazer."},
-{n:86,t:"Eu me sinto pressionado(a) a ser eficiente e produtivo(a) o tempo todo."},
-{n:87,t:"Eu me critico por n\u00e3o ser organizado(a) ou disciplinado(a) o suficiente."},
-{n:88,t:"Eu sinto que expressar emo\u00e7\u00f5es \u00e9 sinal de fraqueza."},
-{n:89,t:"Eu acredito que descansar \u00e9 perda de tempo."},
-{n:90,t:"Eu me sinto culpado(a) quando n\u00e3o estou sendo produtivo(a)."},
-{n:91,t:"Eu consigo cuidar de mim mesmo(a) e atender \u00e0s minhas necessidades."},
-{n:92,t:"Eu consigo estabelecer limites saud\u00e1veis com as pessoas."},
-{n:93,t:"Eu aceito minhas imperfei\u00e7\u00f5es sem me criticar excessivamente."},
-{n:94,t:"Eu consigo lidar com situa\u00e7\u00f5es dif\u00edceis de forma equilibrada."},
-{n:95,t:"Eu me sinto respons\u00e1vel pelas minhas escolhas e a\u00e7\u00f5es."},
-{n:96,t:"Eu consigo expressar minhas emo\u00e7\u00f5es de forma adequada."},
-{n:97,t:"Eu busco atividades que me d\u00e3o prazer e satisfa\u00e7\u00e3o."},
-{n:98,t:"Eu consigo manter relacionamentos saud\u00e1veis e rec\u00edprocos."},
-{n:99,t:"Eu me trato com compaix\u00e3o e gentileza."},
-{n:100,t:"Eu consigo tomar decis\u00f5es considerando tanto minhas necessidades quanto as dos outros."},
-{n:101,t:"Eu me sinto completamente sozinho(a) no mundo."},
-{n:102,t:"Eu sinto um vazio enorme dentro de mim que nada preenche."},
-{n:103,t:"Eu me sinto invis\u00edvel, como se ningu\u00e9m me notasse."},
-{n:104,t:"Eu anseio desesperadamente por conex\u00e3o, mas me sinto incapaz de alcan\u00e7\u00e1-la."},
-{n:105,t:"Eu me sinto como se estivesse do lado de fora, olhando para dentro."},
-{n:106,t:"Eu me sinto profundamente triste e isolado(a)."},
-{n:107,t:"Eu me sinto especial e com direito a tratamento diferenciado."},
-{n:108,t:"Eu acredito que as regras n\u00e3o se aplicam a mim."},
-{n:109,t:"Eu me sinto superior e mais importante que os outros."},
-{n:110,t:"Eu espero que os outros fa\u00e7am o que eu quero sem questionar."},
-{n:111,t:"Eu me sinto no direito de ter tudo o que desejo."},
-{n:112,t:"Eu desprezo pessoas que considero inferiores a mim."},
-{n:113,t:"Eu provoco as pessoas para testar seus limites."},
-{n:114,t:"Eu uso sarcasmo e ironia para machucar os outros."},
-{n:115,t:"Eu humilho as pessoas quando me sinto amea\u00e7ado(a)."},
-{n:116,t:"Eu intimido os outros para conseguir o que quero."},
-{n:117,t:"Eu sinto prazer em ver os outros desconfort\u00e1veis."},
-{n:118,t:"Eu ataco verbalmente as pessoas quando me sinto contrariado(a)."},
-{n:119,t:"Eu elimino friamente qualquer obst\u00e1culo que esteja no meu caminho."},
-{n:120,t:"Eu n\u00e3o sinto remorso quando prejudico algu\u00e9m para atingir meus objetivos."},
-{n:121,t:"Eu manipulo as pessoas de forma calculada para obter vantagem."},
-{n:122,t:"Eu vejo as pessoas como pe\u00e7as que posso usar para meus fins."},
-{n:123,t:"Eu sou capaz de ser cruel se isso me beneficiar."},
-{n:124,t:"Eu planejo cuidadosamente como dominar e controlar os outros."}
-];
-var MODOS = [
-{nome:"Crian\u00e7a Vulner\u00e1vel",code:"cv",items:[1,2,3,4,5,6,7,8,9,10],max:60},
-{nome:"Crian\u00e7a Zangada",code:"cz",items:[11,12,13,14,15,16,17,18,19,20],max:60},
-{nome:"Crian\u00e7a Impulsiva/Indisciplinada",code:"ci",items:[21,22,23,24,25,26,27,28,29,30],max:60},
-{nome:"Crian\u00e7a Feliz",code:"cf",items:[31,32,33,34,35,36,37,38,39,40],max:60},
-{nome:"Capitulador Complacente",code:"cc",items:[41,42,43,44,45,46,47,48,49,50],max:60},
-{nome:"Protetor Desligado",code:"pd",items:[51,52,53,54,55,56,57,58,59,60],max:60},
-{nome:"Hipercompensador",code:"hc",items:[61,62,63,64,65,66,67,68,69,70],max:60},
-{nome:"Pai/M\u00e3e Punitivo",code:"pp",items:[71,72,73,74,75,76,77,78,79,80],max:60},
-{nome:"Pai/M\u00e3e Exigente",code:"pe",items:[81,82,83,84,85,86,87,88,89,90],max:60},
-{nome:"Adulto Saud\u00e1vel",code:"as",items:[91,92,93,94,95,96,97,98,99,100],max:60},
-{nome:"Crian\u00e7a Solit\u00e1ria",code:"cs",items:[101,102,103,104,105,106],max:36},
-{nome:"Autoengrandecedor",code:"ae",items:[107,108,109,110,111,112],max:36},
-{nome:"Provocador e Atacante",code:"pa",items:[113,114,115,116,117,118],max:36},
-{nome:"Predador",code:"pr",items:[119,120,121,122,123,124],max:36}
-];
+// Itens, modos, calculo, tela e PDF vivem em ../smi-visual.js (SMI)
+var ITENS = window.SYM_SMI ? window.SYM_SMI.ITENS : [];
 
-var OPCOES_LABELS = ["Nunca/Quase nunca","Raramente","Ocasionalmente","Frequentemente","Na maioria das vezes","Sempre"];
+function gerarQuestionario() {
+    var container = document.getElementById('questionario');
+    var html = '<div class="bloco" style="margin:10px 0"><div style="padding:12px 15px;font-size:0.9em;color:#444;line-height:1.6;background:#f6f0fa;border-left:4px solid #6a1b9a;border-radius:6px"><strong>Instru\u00e7\u00f5es:</strong> leia cada afirma\u00e7\u00e3o e marque com que frequ\u00eancia ela descreve como voc\u00ea se sente ou age. Responda pensando em como voc\u00ea tem sido, de modo geral.<ul style="margin:8px 0 0 18px"><li>1 \u2013 Nunca ou quase nunca</li><li>2 \u2013 Raramente</li><li>3 \u2013 Ocasionalmente</li><li>4 \u2013 Frequentemente</li><li>5 \u2013 Na maioria das vezes</li><li>6 \u2013 Sempre</li></ul></div></div>';
+    for (var i = 0; i < ITENS.length; i++) {
+        html += '<div class="item"><div class="item-texto"><span class="item-numero">' + (i + 1) + '.</span> ' + ITENS[i].t + '</div><div class="opcoes">';
+        for (var v = 1; v <= 6; v++) {
+            html += '<div class="opcao"><input type="radio" id="q' + (i + 1) + '_' + v + '" name="q' + (i + 1) + '" value="' + v + '"><label for="q' + (i + 1) + '_' + v + '">' + v + '</label></div>';
+        }
+        html += '</div></div>';
+    }
+    container.innerHTML = html;
+}
 
-function gerarQuestionario(){var c=document.getElementById("questionario");var h="";for(var i=0;i<ITENS.length;i++){h+='<div class="item"><div class="item-texto"><span class="item-numero">'+ITENS[i].n+'.</span> '+ITENS[i].t+'</div><div class="opcoes">';for(var v=1;v<=6;v++){h+='<div class="opcao"><input type="radio" id="q'+ITENS[i].n+'_'+v+'" name="q'+ITENS[i].n+'" value="'+v+'"><label for="q'+ITENS[i].n+'_'+v+'">'+v+'</label></div>';}h+='</div></div>';}c.innerHTML=h;}
+// devolve {n\u00ba do item (1-118): resposta 1-6} ou null se faltar algum item
+function obterRespostas() {
+    var r = {};
+    for (var i = 1; i <= ITENS.length; i++) {
+        var s = document.querySelector('input[name="q' + i + '"]:checked');
+        if (!s) return null;
+        r[i] = parseInt(s.value, 10);
+    }
+    return r;
+}
 
 function calcularIdade(){var dn=document.getElementById("dataNascimento").value;if(!dn)return;var nasc=new Date(dn+"T00:00:00");var hoje=new Date();var anos=hoje.getFullYear()-nasc.getFullYear();var meses=hoje.getMonth()-nasc.getMonth();if(hoje.getDate()<nasc.getDate())meses--;if(meses<0){anos--;meses+=12;}document.getElementById("idadeCalculada").value=anos+" anos, "+meses+" meses";}
 
-function calcularResultados(){var nome=document.getElementById("nome").value.trim();if(!nome){alert("Preencha o nome.");return;}var _idade=document.getElementById("idadeCalculada").value;if(!_idade){alert("Preencha a data de nascimento.");return;}var naoResp=0;for(var i=1;i<=124;i++){if(!document.querySelector('input[name="q'+i+'"]:checked'))naoResp++;}if(naoResp>0){alert("Responda todos os 124 itens. Faltam "+naoResp+".");return;}var container=document.getElementById("resultados");var html='<h2 style="color:#6a1b9a;text-align:center;margin-bottom:15px">Resultados SMI</h2>';var resultados=[];for(var m=0;m<MODOS.length;m++){var modo=MODOS[m];var total=0;for(var j=0;j<modo.items.length;j++){var resp=document.querySelector('input[name="q'+modo.items[j]+'"]:checked');if(resp)total+=parseInt(resp.value);}var pct=Math.round((total/modo.max)*100);var nivel=pct<40?"Baixa":pct<70?"M\u00e9dia":"Alta";var nivelClass=pct<40?"baixa":pct<70?"media":"alta";resultados.push({nome:modo.nome,total:total,max:modo.max,pct:pct,nivel:nivel});html+='<div class="modo-result"><div class="modo-name">'+modo.nome+'</div><div class="modo-bar"><div class="modo-bar-fill" style="width:'+pct+'%"></div></div><div class="modo-score">'+total+'/'+modo.max+'</div><div class="modo-level level-'+nivelClass+'">'+nivel+'</div></div>';}html+='<p style="font-size:0.85em;color:#666;text-align:center;margin-top:15px"><em>Instrumento cl\u00ednico. N\u00e3o substitui avalia\u00e7\u00e3o profissional.</em></p>';container.innerHTML=html;container.style.display="block";container.scrollIntoView({behavior:"smooth"});var escoreTotal=0;for(var ri=0;ri<resultados.length;ri++)escoreTotal+=resultados[ri].total;var mediaGeral=escoreTotal/resultados.length;var classGeral=mediaGeral<12?"Baixa":mediaGeral<21?"Media":"Alta";var modosMaisAltos=resultados.filter(function(r){return r.nivel==="Alta";}).map(function(r){return r.nome;});window._escalaDados={escala:"SMI",paciente:nome,escore:escoreTotal,media:Math.round(mediaGeral*10)/10,classificacao:classGeral,modosMaisAltos:modosMaisAltos,dominios:resultados,idPaciente:(document.getElementById("idPaciente")?document.getElementById("idPaciente").value:""),data:new Date().toISOString()};if(window.injetarBotaoSalvar)injetarBotaoSalvar("resultados");}
+function calcularResultados() {
+    var nome = document.getElementById('nome').value;
+    if (!nome) { alert('Preencha o nome do paciente.'); return; }
 
-function gerarRelatorioPDF(){if(!window._escalaDados){calcularResultados();if(!window._escalaDados)return;}var jsPDF=window.jspdf.jsPDF;var doc=new jsPDF();doc.setFillColor(106,27,154);doc.rect(0,0,210,30,"F");doc.setTextColor(255,255,255);doc.setFontSize(16);doc.setFont(undefined,"bold");doc.text("SMI - RELATORIO",105,15,{align:"center"});doc.setFontSize(10);doc.text("Inventario de Modos Esquematicos",105,23,{align:"center"});doc.setTextColor(0,0,0);doc.setFont(undefined,"normal");doc.setFontSize(10);var y=40;doc.text("Nome: "+document.getElementById("nome").value,20,y);var idEl=document.getElementById("idPaciente");if(idEl&&idEl.value)doc.text("ID: "+idEl.value,140,y);y+=6;doc.text("Idade: "+(document.getElementById("idadeCalculada").value||""),20,y);y+=12;var dados=window._escalaDados;doc.setFont(undefined,"bold");doc.text("MODOS ESQUEMATICOS:",20,y);y+=8;doc.setFont(undefined,"normal");doc.setFontSize(9);for(var i=0;i<dados.dominios.length;i++){var d=dados.dominios[i];doc.text(d.nome+": "+d.total+"/"+d.max+" ("+d.pct+"%) - "+d.nivel,25,y);y+=5;if(y>270){doc.addPage();y=20;}}doc.setTextColor(150,150,150);doc.setFontSize(8);doc.setFont(undefined,"italic");doc.text("Documento gerado em "+new Date().toLocaleString(),105,285,{align:"center"});var ts=new Date();doc.save("SMI_"+(document.getElementById("nome").value||"Paciente")+"_"+ts.getFullYear()+String(ts.getMonth()+1).padStart(2,"0")+String(ts.getDate()).padStart(2,"0")+".pdf");}
+    var idade = document.getElementById('idadeCalculada').value;
+    if (!idade) { alert('Preencha a data de nascimento.'); return; }
+    var sexo = document.getElementById('sexo').value;
+    if (!sexo) { alert('Selecione o sexo (Masculino ou Feminino).'); return; }
+    var r = obterRespostas();
+    if (!r) { alert('Responda todos os itens antes de calcular.'); return; }
+    if (!window.SYM_SMI) { alert('N\u00e3o foi poss\u00edvel carregar o m\u00f3dulo de resultados. Recarregue a p\u00e1gina e tente novamente.'); return; }
+
+    // Calculo, tela e PDF vem do mesmo desenho (smi-visual.js)
+    var res = window.SYM_SMI.calcular(r);
+    var el = document.getElementById('resultados');
+    el.innerHTML = window.SYM_SMI.htmlTela(res);
+    el.style.display = 'block';
+    el.scrollIntoView({behavior: 'smooth'});
+    window._escalaDados = {escala:'SMI', paciente:nome, escore:window.SYM_SMI.escore(res), classificacao:window.SYM_SMI.classifGeral(res), dominios:window.SYM_SMI.dadosPainel(res), respostas:window.SYM_SMI.respostasObj(res), versaoEscala:2, idPaciente:(document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''), idade:idade, sexo:sexo, data:new Date().toISOString()};
+    if (window.injetarBotaoSalvar) injetarBotaoSalvar('resultados');
+}
+
+function gerarRelatorioPDF() {
+    // PDF igual a tela de resultados (smi-visual.js; o painel usa o mesmo desenho)
+    var nome = document.getElementById('nome').value;
+    if (!nome) { alert('Preencha o nome do paciente.'); return; }
+    var r = obterRespostas();
+    if (!r) { alert('Responda todos os itens antes de gerar o PDF.'); return; }
+    if (!window.SYM_SMI) { alert('N\u00e3o foi poss\u00edvel carregar o gerador de PDF. Recarregue a p\u00e1gina e tente novamente.'); return; }
+
+    window.SYM_SMI.pdf(window.SYM_SMI.calcular(r), {nome:nome, sexo:document.getElementById('sexo').value, idade:document.getElementById('idadeCalculada').value, dataAval:document.getElementById('data').value, idPaciente:document.getElementById('idPaciente')?document.getElementById('idPaciente').value:''});
+}
 
 function limparDados(){if(!confirm("Limpar todos os dados?"))return;document.querySelectorAll("input[type=radio]").forEach(function(el){el.checked=false;});document.querySelectorAll("input[type=text],input[type=date]").forEach(function(el){if(el.id!=="data")el.value="";});document.getElementById("sexo").value="";document.getElementById("resultados").style.display="none";window._escalaDados=null;}
 

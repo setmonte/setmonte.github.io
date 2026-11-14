@@ -18396,6 +18396,26 @@
         return;
       }
 
+      // SMI: desenho sob medida (escalas/smi-visual.js), refeito pelas respostas salvas (d.respostas). Tela e PDF vem dos mesmos blocos.
+      if (String(d.escala || '').toUpperCase() === 'SMI' && d.respostas && !r._semPdfNovo) {
+        var _gerSM = function () {
+          var _okSM = false;
+          try { _okSM = window.SYM_SMI.pdfPainel(d, r); } catch (eSM) {
+            if (typeof window._registrarFalhaPDF === 'function') { try { window._registrarFalhaPDF('gerarPDFEscala(SMI)', (eSM && eSM.message) || String(eSM), d.paciente || ''); } catch (xSM) {} }
+          }
+          if (!_okSM) { r._semPdfNovo = true; gerarPDFEscala(idx); }
+        };
+        if (window.SYM_SMI && window.SYM_SMI.pdfPainel) { _gerSM(); }
+        else {
+          var _sSM = document.createElement('script');
+          _sSM.src = '../escalas/smi-visual.js?v=' + Date.now();
+          _sSM.onload = _gerSM;
+          _sSM.onerror = function () { r._semPdfNovo = true; gerarPDFEscala(idx); };
+          document.body.appendChild(_sSM);
+        }
+        return;
+      }
+
       // ERTs de criterios (PA, PB, PD, PEs, PEt, PEv, PH, PN, POC, PP, TB): PDF visual igual a tela
       // de resultados, pela mascara unica escalas/ert-visual.js (a mesma usada na pagina da escala).
       // ERT-VT fica de fora (escala propria). Resultados antigos sem respostasDetalhadas (ex.: ERT-TB
