@@ -6917,7 +6917,9 @@
       h += '<b>O que aconteceu (14/11/2026):</b> o botao Iniciar Teste do TECFE descontava credito em dois lugares ao mesmo tempo. ';
       h += 'Com saldo 1 o saldo ia a <b>-1</b>; com saldo maior, o usuario pagava <b>2 creditos por 1 teste</b>.<br>';
       h += '<b>Protecao ativa desde 15/11/2026:</b> (1) o banco so desconta se o saldo for maior que zero; (2) desconto duplicado removido do teste; (3) trava de 1 cobranca por carregamento da pagina.<br>';
-      h += '<b>Regra para testes novos:</b> descontar em um unico lugar, uma unica vez, e sempre com trava no servidor.';
+      h += '<b>Regra para testes novos:</b> descontar em um unico lugar, uma unica vez, e sempre com trava no servidor.<br>';
+      h += '<b>Creditos devolvidos em 15/11/2026:</b> neidegnoronha +3, kelcireneuropsicologa +1, carof_uftm +1 (os dois saldos -1 voltaram a 0).<br>';
+      h += '<b>Aviso automatico:</b> se a trava barrar um desconto ou o sistema detectar 2 descontos do mesmo saldo em menos de 3s, voce recebe um aviso no painel e um e-mail, e a ocorrencia aparece abaixo.';
       h += '</div>';
       h += '<p style="font-weight:bold;color:#c62828;margin:6px 0 4px;">Historico documentado (5 cobrancas em dobro, 3 usuarios, 5 creditos a mais)</p>';
       h += '<table style="width:100%;border-collapse:collapse;font-size:11px;"><tr style="background:#c62828;color:#fff;"><th style="padding:4px;text-align:left;">Quando (MS)</th><th style="padding:4px;text-align:left;">Usuario</th><th style="padding:4px;text-align:left;">O que ocorreu</th></tr>';
@@ -6970,6 +6972,21 @@
         } else {
           vivo += '<p style="color:#c62828;font-weight:bold;margin:8px 0 2px;">&#9888; Usuarios com saldo NEGATIVO (precisam de ajuste manual):</p>';
           negs.forEach(function(n) { vivo += '<div style="color:#c62828;font-size:11px;">' + _protEsc(n.e) + ' - ' + _protEsc(n.c) + ' = ' + _protEsc(n.v) + '</div>'; });
+        }
+        // 2c0) Possiveis cobrancas em dobro detectadas pelo sistema (saldo > 1, a trava nao barra, mas o alerta dispara)
+        var rs = await fetch(API_URL + '/get-results?email=admin-log@sistema&tipo=log-credito-suspeito');
+        var ds = await rs.json();
+        var sus = ds.results || [];
+        if (sus.length === 0) {
+          vivo += '<p style="color:#2e7d32;font-weight:bold;margin:8px 0 2px;">&#10003; Nenhuma possivel cobranca em dobro detectada pelo alerta automatico.</p>';
+        } else {
+          vivo += '<p style="color:#c62828;font-weight:bold;margin:8px 0 2px;">&#9888; ' + sus.length + ' possivel(is) cobranca(s) em dobro detectada(s) (confira e devolva o credito se for o caso):</p>';
+          sus.sort(function(a, b3) { return new Date(b3.date || 0) - new Date(a.date || 0); });
+          sus.slice(0, 10).forEach(function(r) {
+            var d = {};
+            try { d = JSON.parse(r.data || '{}'); } catch (e) { d = {}; }
+            vivo += '<div style="color:#c62828;font-size:11px;">' + new Date(d.timestamp || r.date).toLocaleString('pt-BR') + ' - ' + _protEsc(d.usuario || '?') + ' - ' + _protEsc(d.campo || '?') + ' - ' + _protEsc(d.motivo || '') + '</div>';
+          });
         }
         // 2c) Quantas vezes a trava agiu
         var rb = await fetch(API_URL + '/get-results?email=admin-log@sistema&tipo=log-credito-bloqueado');
