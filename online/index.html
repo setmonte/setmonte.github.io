@@ -1698,6 +1698,11 @@
             <div id="adminAlertasContent" style="font-size:12px;color:#555;line-height:1.8;">Carregando...</div>
           </div>
 
+          <!-- Protecao de Creditos (1 credito = 1 teste) - memoria do incidente de 14/11/2026 -->
+          <div id="adminProtecaoCreditosCard" style="background:#fff;border:2px solid #c62828;border-radius:10px;padding:15px;margin:10px 0;">
+            <p style="font-size:13px;font-weight:bold;color:#c62828;margin-bottom:8px;">&#128737; Protecao de Creditos (1 credito = 1 teste)</p>
+            <div id="adminProtecaoCreditosContent" style="font-size:12px;color:#555;line-height:1.6;">Carregando...</div>
+          </div>
           <!-- Ultimas Vendas -->
           <div style="background:#e8f5e9;border:2px solid #2e7d32;border-radius:10px;padding:15px;margin:10px 0;">
             <p style="font-size:13px;font-weight:bold;color:#2e7d32;margin-bottom:8px;">&#128176; Ultimas Vendas de Creditos</p>
@@ -4247,6 +4252,7 @@
         carregarSaldoApi();
         carregarVendas();
         carregarAlertasAdmin();
+        if (typeof carregarProtecaoCreditos === 'function') carregarProtecaoCreditos();
         carregarRankingUso();
         verificarVendasNovas();
       }
@@ -6879,6 +6885,107 @@
         document.getElementById('adminVendasList').innerHTML = '<p style="color:#2e7d32;">Vendas marcadas como lidas (preservadas no historico).</p>';
         window._vendasIds = [];
       } catch(e) { alert('Erro ao marcar como lidas.'); }
+    }
+
+    // ===== PROTECAO DE CREDITOS (1 credito = 1 teste) =====
+    // MEMORIA DO INCIDENTE (descoberto em 14/11/2026, usuario carof_uftm@yahoo.com.br com saldo TECFE -1):
+    // ao clicar em "Iniciar Teste" do TECFE por link, DUAS rotinas descontavam credito ao mesmo tempo
+    // (teste.html tipo "tecfe" + tecfe-v7-main.js tipo "credits"; os dois sao o mesmo saldo "credits").
+    // A Lambda lia o saldo e so depois descontava, sem trava no banco: com saldo 1, as duas passavam
+    // e o saldo ia a -1. Com saldo maior, o usuario pagava 2 creditos por 1 teste sem perceber.
+    // Correcao (15/11/2026), em 3 camadas:
+    //   1) Lambda /use-credit: o banco so desconta se saldo > 0 (ConditionExpression). Segunda tentativa = "Sem creditos".
+    //   2) tecfe-v7-main.js: removido o desconto duplicado (so teste.html desconta).
+    //   3) teste.html: trava de 1 cobranca por carregamento da pagina (clique duplo / reclique nao cobra de novo).
+    // LICAO PARA TESTES NOVOS: cada teste deve descontar credito em UM unico lugar, uma unica vez,
+    // e o servidor nunca pode confiar so no "ler saldo e depois descontar".
+    var _PROT_CRED_DEPLOY_TS = Date.parse('2026-11-15T14:15:49Z');
+    var _PROT_CRED_HIST = [
+      { q: '03/09/2026 15:34:53', u: 'neidegnoronha@gmail.com', n: '2 creditos descontados em 1 teste (saldo 89 -> 87)' },
+      { q: '03/09/2026 20:30:20', u: 'neidegnoronha@gmail.com', n: '2 descontos simultaneos em 1 teste' },
+      { q: '22/09/2026 15:27:57', u: 'kelcireneuropsicologa@gmail.com', n: '2 descontos simultaneos com saldo 1: saldo foi a -1 (continua -1)' },
+      { q: '22/09/2026 15:35:39', u: 'neidegnoronha@gmail.com', n: '2 descontos simultaneos em 1 teste' },
+      { q: '14/11/2026 17:13:44', u: 'carof_uftm@yahoo.com.br', n: '2 descontos simultaneos com saldo 1: saldo foi a -1 (continua -1)' }
+    ];
+    function _protEsc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+    async function carregarProtecaoCreditos() {
+      var el = document.getElementById('adminProtecaoCreditosContent');
+      if (!el) return;
+      var h = '';
+      // --- 1) Memoria do incidente (fixa, nao depende do servidor) ---
+      h += '<div style="background:#fdecea;border-left:4px solid #c62828;padding:8px 10px;border-radius:6px;margin-bottom:10px;">';
+      h += '<b>O que aconteceu (14/11/2026):</b> o botao Iniciar Teste do TECFE descontava credito em dois lugares ao mesmo tempo. ';
+      h += 'Com saldo 1 o saldo ia a <b>-1</b>; com saldo maior, o usuario pagava <b>2 creditos por 1 teste</b>.<br>';
+      h += '<b>Protecao ativa desde 15/11/2026:</b> (1) o banco so desconta se o saldo for maior que zero; (2) desconto duplicado removido do teste; (3) trava de 1 cobranca por carregamento da pagina.<br>';
+      h += '<b>Regra para testes novos:</b> descontar em um unico lugar, uma unica vez, e sempre com trava no servidor.';
+      h += '</div>';
+      h += '<p style="font-weight:bold;color:#c62828;margin:6px 0 4px;">Historico documentado (5 cobrancas em dobro, 3 usuarios, 5 creditos a mais)</p>';
+      h += '<table style="width:100%;border-collapse:collapse;font-size:11px;"><tr style="background:#c62828;color:#fff;"><th style="padding:4px;text-align:left;">Quando (MS)</th><th style="padding:4px;text-align:left;">Usuario</th><th style="padding:4px;text-align:left;">O que ocorreu</th></tr>';
+      for (var i = 0; i < _PROT_CRED_HIST.length; i++) {
+        var x = _PROT_CRED_HIST[i];
+        h += '<tr style="border-bottom:1px solid #eee;"><td style="padding:3px 4px;white-space:nowrap;">' + x.q + '</td><td style="padding:3px 4px;word-break:break-all;">' + _protEsc(x.u) + '</td><td style="padding:3px 4px;">' + _protEsc(x.n) + '</td></tr>';
+      }
+      h += '</table>';
+      el.innerHTML = h + '<p style="color:#777;margin-top:8px;">Verificando situacao atual...</p>';
+      // --- 2) Verificacao ao vivo ---
+      var vivo = '';
+      try {
+        // 2a) Consumos em duplicidade (mesmo usuario e mesmo saldo em ate 2s) feitos DEPOIS da correcao
+        var rc = await fetch(API_URL + '/get-results?email=admin-log@sistema&tipo=log-creditos');
+        var dc = await rc.json();
+        var cons = [];
+        (dc.results || []).forEach(function(r) {
+          var d = {};
+          try { d = JSON.parse(r.data || '{}'); } catch (e) { d = r.data || {}; }
+          if (d.acao === 'consumir' && d.usuario && d.timestamp) {
+            cons.push({ u: String(d.usuario).toLowerCase(), c: d.campo || '', t: Date.parse(d.timestamp), tipo: d.tipo || '' });
+          }
+        });
+        cons.sort(function(a, b) { if (a.u !== b.u) return a.u < b.u ? -1 : 1; if (a.c !== b.c) return a.c < b.c ? -1 : 1; return a.t - b.t; });
+        var novas = [];
+        var antigas = 0;
+        for (var k = 1; k < cons.length; k++) {
+          var a = cons[k - 1], b = cons[k];
+          if (a.u === b.u && a.c === b.c && (b.t - a.t) <= 2000) {
+            if (a.t >= _PROT_CRED_DEPLOY_TS) novas.push({ u: a.u, c: a.c, t: a.t, tipos: a.tipo + '+' + b.tipo }); else antigas++;
+          }
+        }
+        if (novas.length === 0) {
+          vivo += '<p style="color:#2e7d32;font-weight:bold;margin:8px 0 2px;">&#10003; Nenhum consumo em duplicidade depois da correcao.</p>';
+        } else {
+          vivo += '<p style="color:#c62828;font-weight:bold;margin:8px 0 2px;">&#9888; ' + novas.length + ' NOVO(S) consumo(s) em duplicidade depois da correcao:</p>';
+          novas.forEach(function(n) { vivo += '<div style="color:#c62828;font-size:11px;">' + new Date(n.t).toLocaleString('pt-BR') + ' - ' + _protEsc(n.u) + ' - ' + _protEsc(n.c) + ' (' + _protEsc(n.tipos) + ')</div>'; });
+        }
+        vivo += '<p style="color:#777;font-size:10px;margin:2px 0;">Pares encontrados no log antes da correcao (inclui o historico acima e consumos de BAE de ago/set a verificar): ' + antigas + '.</p>';
+        // 2b) Saldos negativos hoje
+        var ru = await fetch(API_URL + '/admin-list-users-full?email=' + encodeURIComponent(currentUser));
+        var du = await ru.json();
+        var campos = ['credits', 'baeCredits', 'trmvCredits', 'trefCredits', 'taavCredits', 'tflodCredits', 'ideiaCredits', 'prontuarioCredits', 'brpiCredits'];
+        var negs = [];
+        (du.users || []).forEach(function(u) {
+          campos.forEach(function(c) { if (u[c] != null && Number(u[c]) < 0) negs.push({ e: u.email, c: c, v: u[c] }); });
+        });
+        if (negs.length === 0) {
+          vivo += '<p style="color:#2e7d32;font-weight:bold;margin:8px 0 2px;">&#10003; Nenhum usuario com saldo negativo.</p>';
+        } else {
+          vivo += '<p style="color:#c62828;font-weight:bold;margin:8px 0 2px;">&#9888; Usuarios com saldo NEGATIVO (precisam de ajuste manual):</p>';
+          negs.forEach(function(n) { vivo += '<div style="color:#c62828;font-size:11px;">' + _protEsc(n.e) + ' - ' + _protEsc(n.c) + ' = ' + _protEsc(n.v) + '</div>'; });
+        }
+        // 2c) Quantas vezes a trava agiu
+        var rb = await fetch(API_URL + '/get-results?email=admin-log@sistema&tipo=log-credito-bloqueado');
+        var db2 = await rb.json();
+        var bl = db2.results || [];
+        vivo += '<p style="margin:8px 0 2px;"><b>Trava acionada:</b> ' + bl.length + ' vez(es) desde 15/11/2026 (cada uma e um desconto duplicado que foi barrado).</p>';
+        bl.sort(function(a, b2) { return new Date(b2.date || 0) - new Date(a.date || 0); });
+        bl.slice(0, 5).forEach(function(r) {
+          var d = {};
+          try { d = JSON.parse(r.data || '{}'); } catch (e) { d = {}; }
+          vivo += '<div style="font-size:11px;color:#555;">' + new Date(d.timestamp || r.date).toLocaleString('pt-BR') + ' - ' + _protEsc(d.usuario || '?') + ' - ' + _protEsc(d.campo || '?') + '</div>';
+        });
+      } catch (e) {
+        vivo += '<p style="color:#c62828;">Nao foi possivel verificar a situacao atual: ' + _protEsc(e.message) + '</p>';
+      }
+      el.innerHTML = h + vivo;
     }
 
     // ===== MONITOR DE ATIVIDADE (ALERTAS ADMIN) =====
