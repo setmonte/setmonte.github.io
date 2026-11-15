@@ -179,20 +179,8 @@
 
   // -- Iniciar teste --
   window.startTest = async function () {
-    // Verificar credito antes de iniciar
-    if (window._onlineSession && window._onlineSession.email && window._onlineSession.email !== 'setmonte@gmail.com') {
-      try {
-        var _cr = await fetch('https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws/use-credit', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({email: window._onlineSession.email, tipo: 'credits'})
-        });
-        if (_cr.status === 403) {
-          alert('Creditos insuficientes. Consulte seu avaliador.');
-          return;
-        }
-      } catch(e) {}
-    }
+    // O desconto de credito do modo online e feito UMA UNICA vez, no listener do botao Iniciar em teste.html.
+    // (Removido aqui em 2026-11-14: antes descontava aqui E la, cobrando 2 creditos por teste.)
     if (!WCSTUI.validateForm()) return;
 
     WCSTEngine.reset();
