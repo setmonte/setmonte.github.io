@@ -16822,6 +16822,100 @@
     }
 
     var _tteResultCache = [];
+
+    // ===== CLASSIFICACAO DO TTE (normas brasileiras por idade e escolaridade) =====
+    // Fonte: CAMPANHOLO et al., Dementia & Neuropsychologia, v. 8, n. 1, p. 26-31, 2014 (Tabela 3,
+    // n=1025 adultos saudaveis, tempos em segundos). Cada par e [media, desvio-padrao].
+    // Faixas de idade (linhas): 18-29, 30-39, 40-49, 50-59, 60-69, 70+.
+    // Escolaridade (colunas): 0-4, 5-8, 9-12, 13+ anos de estudo.
+    // ATENCAO: a norma vem do teste de papel; o TTE digital e provisorio (rastreio).
+    var _TTE_NORMA_A = [
+      [[38.06,20.9],[37.73,15.2],[34.57,9.1],[29.63,9.1]],
+      [[49.96,12.0],[40.25,16.1],[35.36,10.7],[30.92,11.6]],
+      [[62.65,20.4],[54.16,23.9],[34.71,11.8],[30.81,9.6]],
+      [[52.40,36.8],[43.54,19.0],[37.00,10.1],[37.46,11.0]],
+      [[63.42,26.9],[54.84,16.1],[44.20,13.9],[40.59,11.8]],
+      [[75.66,30.9],[55.78,9.2],[59.09,16.8],[44.75,12.8]]
+    ];
+    var _TTE_NORMA_B = [
+      [[98.06,50.8],[83.44,39.3],[70.90,27.5],[56.97,20.8]],
+      [[125.68,45.9],[113.57,37.3],[69.58,26.3],[55.49,18.1]],
+      [[149.30,66.2],[105.48,52.3],[73.76,32.5],[64.42,21.6]],
+      [[88.67,48.4],[86.35,34.9],[79.69,26.2],[76.58,24.0]],
+      [[173.03,67.3],[138.14,51.2],[100.84,43.7],[91.14,30.0]],
+      [[191.65,57.0],[143.18,53.0],[130.30,41.3],[94.50,18.1]]
+    ];
+    var _TTE_FAIXAS_IDADE = ['18-29','30-39','40-49','50-59','60-69','70+'];
+    var _TTE_FAIXAS_ESC = ['0-4','5-8','9-12','13+'];
+    // Razao B/A: referencia internacional (DRANE et al., Cogn Behav Neurol, 2002): media 2,81, DP 1,13.
+    // Nao e ajustada por idade/escolaridade nem e brasileira; serve so como apoio.
+    var _TTE_RAZAO_M = 2.81, _TTE_RAZAO_DP = 1.13;
+
+    function _tteIdadeEm(birth, dataISO) {
+      if (!birth) return null;
+      var n = new Date(birth), h = dataISO ? new Date(dataISO) : new Date();
+      if (isNaN(n.getTime()) || isNaN(h.getTime())) return null;
+      var i = h.getFullYear() - n.getFullYear();
+      if (h.getMonth() < n.getMonth() || (h.getMonth() === n.getMonth() && h.getDate() < n.getDate())) i--;
+      return i;
+    }
+    function _tteIdxIdade(a) { if (a === null || a < 18) return -1; if (a < 30) return 0; if (a < 40) return 1; if (a < 50) return 2; if (a < 60) return 3; if (a < 70) return 4; return 5; }
+    function _tteIdxEsc(txt) {
+      if (!txt) return -1;
+      var s = String(txt).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      var m = s.match(/^(\d+)/);
+      if (m) { var n = parseInt(m[1], 10); if (n <= 4) return 0; if (n <= 8) return 1; return 2; }
+      if (s.indexOf('medio') >= 0) return 2;
+      if (s.indexOf('superior') >= 0 || s.indexOf('pos') >= 0 || s.indexOf('mestrado') >= 0 || s.indexOf('doutorado') >= 0) return 3;
+      return -1;
+    }
+    // z positivo = mais rapido que a media (melhor). Cortes: >=+1 Superior; >-1 Media; >-1,5 Media inferior;
+    // >-2 Rebaixamento leve; abaixo disso, Rebaixamento significativo.
+    function _tteRotuloZ(z) {
+      if (z >= 1) return { txt: 'Superior', cor: '#1565c0' };
+      if (z > -1) return { txt: 'M\u00e9dia', cor: '#2e7d32' };
+      if (z > -1.5) return { txt: 'M\u00e9dia inferior', cor: '#f9a825' };
+      if (z > -2) return { txt: 'Rebaixamento leve', cor: '#ef6c00' };
+      return { txt: 'Rebaixamento significativo', cor: '#c62828' };
+    }
+    // Recebe o registro (d = r.data) e devolve a classificacao completa, ou {ok:false, motivo}.
+    function _tteClassificar(d) {
+      var fd = d.formData || {}, pA = d.parteA || {}, pB = d.parteB || {};
+      var tA = pA.tempoSegundos ? parseFloat(pA.tempoSegundos) : 0;
+      var tB = pB.tempoSegundos ? parseFloat(pB.tempoSegundos) : 0;
+      if (!(tA > 0) || !(tB > 0)) return { ok: false, motivo: 'Tempos n\u00e3o dispon\u00edveis.' };
+      var idade = _tteIdadeEm(fd.birthDate, d.date);
+      var ia = _tteIdxIdade(idade);
+      var ie = _tteIdxEsc(fd.education || fd.escolaridade);
+      var razao = tB / tA;
+      var zR = (_TTE_RAZAO_M - razao) / _TTE_RAZAO_DP;
+      var res = { ok: true, idade: idade, tA: tA, tB: tB, razao: razao, rotR: _tteRotuloZ(zR), zR: zR, norma: false };
+      if (ia < 0 || ie < 0) {
+        res.ok = false;
+        res.motivo = (ia < 0) ? 'Sem norma brasileira para esta idade (a tabela cobre 18 anos ou mais).' : 'Escolaridade n\u00e3o informada ou n\u00e3o reconhecida.';
+        res.razao = razao;
+        return res;
+      }
+      var nA = _TTE_NORMA_A[ia][ie], nB = _TTE_NORMA_B[ia][ie];
+      res.norma = true;
+      res.faixaIdade = _TTE_FAIXAS_IDADE[ia]; res.faixaEsc = _TTE_FAIXAS_ESC[ie];
+      res.mA = nA[0]; res.dpA = nA[1]; res.mB = nB[0]; res.dpB = nB[1];
+      res.zA = (nA[0] - tA) / nA[1]; res.zB = (nB[0] - tB) / nB[1];
+      res.rotA = _tteRotuloZ(res.zA); res.rotB = _tteRotuloZ(res.zB);
+      return res;
+    }
+    // Texto explicativo em linguagem simples (usado no PDF e no tooltip do painel).
+    function _tteInterpretacao(c, errosA, errosB) {
+      if (!c.ok) return [c.motivo];
+      var L = [];
+      L.push('Parte A (velocidade de processamento e busca visual): ' + c.rotA.txt.toLowerCase() + ' para a faixa de ' + c.faixaIdade + ' anos com ' + c.faixaEsc + ' anos de estudo.');
+      L.push('Parte B (planejamento e flexibilidade mental, alternando n\u00fameros e letras): ' + c.rotB.txt.toLowerCase() + ' para a mesma faixa.');
+      if (c.razao < 1.23) L.push('A raz\u00e3o B/A (' + c.razao.toFixed(2) + ') ficou abaixo de tudo o que a refer\u00eancia internacional observou (m\u00ednimo 1,23). Isso pode indicar desempenho muito bom na Parte B, mas tamb\u00e9m pode refletir diferen\u00e7as da vers\u00e3o digital. Confira os erros e o comportamento durante a aplica\u00e7\u00e3o.');
+      else L.push('A raz\u00e3o B/A (' + c.razao.toFixed(2) + ') indica o custo extra de alternar entre n\u00fameros e letras: ' + c.rotR.txt.toLowerCase() + ' em rela\u00e7\u00e3o \u00e0 refer\u00eancia internacional (m\u00e9dia 2,81).');
+      if ((errosA + errosB) > 0) L.push('Houve ' + (errosA + errosB) + ' erro(s) de sequ\u00eancia (A: ' + errosA + '; B: ' + errosB + '), que podem indicar desaten\u00e7\u00e3o ou dificuldade de monitoramento.');
+      return L;
+    }
+
     async function loadTteResults() {
       var el = document.getElementById('tteResultsSection');
       if (!el) return;
@@ -16833,7 +16927,7 @@
         if (data.results && data.results.length > 0) {
           var html = '<h3>Resultados TTE</h3><div style="margin-bottom:10px;"><button class="btn btn-red" style="padding:5px 12px;font-size:12px;" onclick="deleteTteSelected()">Apagar Selecionados</button></div>';
           html += '<div id="ttePendentesList"></div>';
-          html += '<table class="results-table"><tr><th><input type="checkbox" id="tteSelectAll" onclick="toggleTteSelectAll(this)"></th><th>Data</th><th>Paciente</th><th>ID</th><th>Tempo A</th><th>Tempo B</th><th>B/A</th><th>Erros</th><th>PDF</th></tr>';
+          html += '<table class="results-table"><tr><th><input type="checkbox" id="tteSelectAll" onclick="toggleTteSelectAll(this)"></th><th>Data</th><th>Paciente</th><th>ID</th><th>Tempo A</th><th>Tempo B</th><th>B/A</th><th>Erros</th><th>Classifica&#231;&#227;o (norma brasileira)</th><th>PDF</th></tr>';
           data.results.forEach(function(r) {
             var d = r.data || {};
             if (d.status === 'aguardando') return;
@@ -16856,6 +16950,15 @@
             html += '<td style="text-align:center;font-weight:bold;">' + tempoB + '</td>';
             html += '<td style="text-align:center;">' + razao + '</td>';
             html += '<td style="text-align:center;">' + errosTotal + '</td>';
+            // Classificacao por idade e escolaridade (normas brasileiras de adultos)
+            var _c = _tteClassificar(d);
+            var _celC = '';
+            if (_c.ok) {
+              var _tip = 'A: ' + _c.tA.toFixed(1) + 's (ref. ' + _c.mA.toFixed(1) + ' \u00b1 ' + _c.dpA.toFixed(1) + ', z=' + _c.zA.toFixed(2) + ')\nB: ' + _c.tB.toFixed(1) + 's (ref. ' + _c.mB.toFixed(1) + ' \u00b1 ' + _c.dpB.toFixed(1) + ', z=' + _c.zB.toFixed(2) + ')\nFaixa: ' + _c.faixaIdade + ' anos, ' + _c.faixaEsc + ' anos de estudo\nNorma de papel; TTE digital provis\u00f3rio.';
+              _celC = '<span title="' + _tip.replace(/"/g, '&quot;') + '" style="cursor:help;font-size:11px;line-height:1.5;">'
+                + 'A: <b style="color:' + _c.rotA.cor + ';">' + _c.rotA.txt + '</b><br>B: <b style="color:' + _c.rotB.cor + ';">' + _c.rotB.txt + '</b></span>';
+            } else { _celC = '<span style="font-size:11px;color:#888;">' + (_c.motivo || '-') + '</span>'; }
+            html += '<td style="text-align:left;">' + _celC + '</td>';
             html += '<td><button class="btn btn-green" style="padding:5px 12px;font-size:12px;" data-idx="' + _tteResultCache.length + '" onclick="this.textContent=\'Gerando...\';this.disabled=true;var btn=this;generateTtePDF(this.dataset.idx).finally(function(){btn.textContent=\'PDF\';btn.disabled=false;});">PDF</button></td>';
             html += '</tr>';
             _tteResultCache.push(r);
@@ -16912,14 +17015,12 @@
       var errosB = pB.erros || 0;
       var razao = d.razaoBsobreA || (tempoA > 0 ? (tempoB / tempoA).toFixed(2) : '-');
       var diferenca = (tempoB - tempoA).toFixed(1);
-      function classificarTempo(t, parte) {
-        if (parte === 'A') { if (t <= 30) return 'Superior'; if (t <= 42) return 'Media-alta'; if (t <= 55) return 'Media'; if (t <= 78) return 'Media-baixa'; return 'Prejuizo significativo'; }
-        else { if (t <= 58) return 'Superior'; if (t <= 85) return 'Media-alta'; if (t <= 120) return 'Media'; if (t <= 180) return 'Media-baixa'; return 'Prejuizo significativo'; }
-      }
-      function classificarRazao(r) { if (r <= 2.0) return 'Adequada'; if (r <= 2.5) return 'Limiar'; if (r <= 3.0) return 'Elevada'; return 'Muito elevada'; }
-      var classA = classificarTempo(tempoA, 'A');
-      var classB = classificarTempo(tempoB, 'B');
-      var classRazao = classificarRazao(parseFloat(razao) || 0);
+      // Classificacao pela norma brasileira (idade x escolaridade) - ver _tteClassificar
+      var cls = _tteClassificar(d);
+      var classA = cls.ok ? cls.rotA.txt : 'Sem norma';
+      var classB = cls.ok ? cls.rotB.txt : 'Sem norma';
+      var classRazao = cls.razao ? cls.rotR.txt : '-';
+      var interpTTE = _tteInterpretacao(cls, errosA, errosB);
       // Tempos inter-segmentos
       var temposSegA = []; var temposSegB = [];
       var tsA = pA.timestamps || []; var tsB = pB.timestamps || [];
@@ -16928,7 +17029,7 @@
       // === CHAMAR IA ===
       var laudoIA = null;
       try {
-        var aiPrompt = 'Voce e um neuropsicologo experiente em funcoes executivas.\nGere um LAUDO CLINICO breve (max 10 linhas) do TTE (Trail Making Test digital).\n\nPACIENTE: Idade: ' + idade + ' | Sexo: ' + sexo + ' | Escolaridade: ' + escolaridade + '\n\nRESULTADOS:\nParte A: ' + tempoA.toFixed(1) + 's, ' + errosA + ' erros (' + classA + ')\nParte B: ' + tempoB.toFixed(1) + 's, ' + errosB + ' erros (' + classB + ')\nRazao B/A: ' + razao + ' (' + classRazao + ')\nDiferenca B-A: ' + diferenca + 's\n\nNORMAS (Tombaugh 2004, adultos):\nA: Superior<=30s, Media<=55s, Baixa<=78s, Prejuizo>78s\nB: Superior<=58s, Media<=120s, Baixa<=180s, Prejuizo>180s\nB/A normal: 1.5-2.5\n\nINTERPRETE: velocidade de processamento (A), flexibilidade cognitiva (B e razao), atencao visual, erros. Considere idade/escolaridade.\nPortugues brasileiro. Linguagem tecnica acessivel. NAO repita numeros brutos.';
+        var aiPrompt = 'Voce e um neuropsicologo experiente em funcoes executivas.\nGere um LAUDO CLINICO breve (max 10 linhas) do TTE (Trail Making Test digital).\n\nPACIENTE: Idade: ' + idade + ' | Sexo: ' + sexo + ' | Escolaridade: ' + escolaridade + '\n\nRESULTADOS:\nParte A: ' + tempoA.toFixed(1) + 's, ' + errosA + ' erros (' + classA + ')\nParte B: ' + tempoB.toFixed(1) + 's, ' + errosB + ' erros (' + classB + ')\nRazao B/A: ' + razao + ' (' + classRazao + ')\nDiferenca B-A: ' + diferenca + 's\n\nCLASSIFICACAO (normas brasileiras de Campanholo et al. 2014, por idade e escolaridade; teste de papel, TTE digital e provisorio):\n' + (cls.ok ? ('Parte A: ' + cls.rotA.txt + ' (z=' + cls.zA.toFixed(2) + ', ref. ' + cls.mA.toFixed(1) + ' +- ' + cls.dpA.toFixed(1) + 's)\nParte B: ' + cls.rotB.txt + ' (z=' + cls.zB.toFixed(2) + ', ref. ' + cls.mB.toFixed(1) + ' +- ' + cls.dpB.toFixed(1) + 's)\nRazao B/A: referencia internacional media 2,81 DP 1,13 (nao ajustada por idade)') : 'Sem norma aplicavel: ' + cls.motivo) + '\n\nUse a classificacao acima sem contradize-la.\n\nINTERPRETE: velocidade de processamento (A), flexibilidade cognitiva (B e razao), atencao visual, erros. Considere idade/escolaridade.\nPortugues brasileiro. Linguagem tecnica acessivel. NAO repita numeros brutos.';
         // === ANONIMIZACAO INVISIVEL ===
         var anonTTE = (typeof Anonimizador !== 'undefined') ? Anonimizador.mascararPrompt(aiPrompt, {}) : { textoLimpo: aiPrompt, mapa: {} };
         var promptSeguroTTE = anonTTE.textoLimpo;
@@ -16990,6 +17091,16 @@
       // Indices
       doc.setFont(undefined,'bold'); doc.text('INDICES DERIVADOS', ml, y); y += 5;
       doc.setFont(undefined,'normal'); doc.text('Razao B/A: ' + razao + ' (' + classRazao + ')    |    Diferenca B-A: ' + diferenca + 's', ml, y); y += 8;
+      // Referencia normativa usada e interpretacao em linguagem simples
+      doc.setFontSize(8); doc.setTextColor(80,80,80);
+      if (cls.ok) {
+        doc.text('Referencia (Campanholo et al., 2014; ' + cls.faixaIdade + ' anos, ' + cls.faixaEsc + ' anos de estudo): A = ' + cls.mA.toFixed(1) + ' +- ' + cls.dpA.toFixed(1) + 's (z = ' + cls.zA.toFixed(2) + ')  |  B = ' + cls.mB.toFixed(1) + ' +- ' + cls.dpB.toFixed(1) + 's (z = ' + cls.zB.toFixed(2) + ')', ml, y); y += 4;
+      }
+      doc.text('z positivo = mais rapido que a media da faixa. Razao B/A: referencia internacional (Drane et al., 2002), nao ajustada por idade.', ml, y); y += 6;
+      doc.setTextColor(0,0,0); doc.setFontSize(9); doc.setFont(undefined,'bold'); doc.text('INTERPRETACAO', ml, y); y += 5;
+      doc.setFont(undefined,'normal'); doc.setFontSize(8.5);
+      for (var it = 0; it < interpTTE.length; it++) { var lnI = doc.splitTextToSize('- ' + interpTTE[it], lu); for (var lj = 0; lj < lnI.length; lj++) { doc.text(lnI[lj], ml, y); y += 4; } }
+      y += 4; doc.setFontSize(9);
       // Grafico
       doc.setFont(undefined,'bold'); doc.text('PERFIL GRAFICO', ml, y); y += 3;
       doc.addImage(imgGrafico, 'PNG', ml, y, lu, 66); y += 70;
@@ -17082,9 +17193,9 @@
       // Disclaimer + referencias
       if (y > 255) { doc.addPage(); y = 15; }
       doc.setFontSize(7.5); doc.setTextColor(100,100,100);
-      doc.text('NOTA: Normas provisorias (Tombaugh 2004; Hamdan & Hamdan 2009). Analise IA auxiliar, nao substitui julgamento profissional.', ml, y); y += 6;
+      doc.text('NOTA: Classificacao por normas brasileiras de papel (Campanholo et al., 2014); o TTE digital e provisorio e serve como rastreio. Analise IA auxiliar, nao substitui julgamento profissional.', ml, y); y += 6;
       doc.setFontSize(7.5); doc.setTextColor(80,80,80); doc.setFont(undefined,'bold'); doc.text('REFERENCIAS:', ml, y); y += 4; doc.setFont(undefined,'normal');
-      var refs = ['REITAN, R. M. Validity of the Trail Making Test as an indicator of organic brain damage. Perceptual and Motor Skills, v. 8, p. 271-276, 1958.','TOMBAUGH, T. N. Trail Making Test A and B: normative data. Archives of Clinical Neuropsychology, v. 19, n. 2, p. 203-214, 2004.','HAMDAN, A. C.; HAMDAN, E. M. L. R. Teste de Trilhas: normas para amostra brasileira. Psicologia: Teoria e Pesquisa, v. 25, p. 399-405, 2009.','STRAUSS, E.; SHERMAN, E. M. S.; SPREEN, O. A compendium of neuropsychological tests. 3. ed. New York: Oxford, 2006.'];
+      var refs = ['REITAN, R. M. Validity of the Trail Making Test as an indicator of organic brain damage. Perceptual and Motor Skills, v. 8, p. 271-276, 1958.','CAMPANHOLO, K. R. et al. Performance of an adult Brazilian sample on the Trail Making Test and Stroop Test. Dementia & Neuropsychologia, v. 8, n. 1, p. 26-31, 2014.','DRANE, D. L. et al. Demographic characteristics and normative observations for derived-Trail Making Test indices. Cognitive and Behavioral Neurology, v. 15, n. 1, p. 39-43, 2002.','TOMBAUGH, T. N. Trail Making Test A and B: normative data stratified by age and education. Archives of Clinical Neuropsychology, v. 19, n. 2, p. 203-214, 2004.','HAMDAN, A. C.; HAMDAN, E. M. L. R. Effects of age and education level on the Trail Making Test in a healthy Brazilian sample. Psychology & Neuroscience, v. 2, n. 2, p. 199-203, 2009.','STRAUSS, E.; SHERMAN, E. M. S.; SPREEN, O. A compendium of neuropsychological tests. 3. ed. New York: Oxford, 2006.'];
       for (var ri=0;ri<refs.length;ri++){if(y>282){doc.addPage();y=15;}var rl=doc.splitTextToSize(refs[ri],lu);for(var rr=0;rr<rl.length;rr++){doc.text(rl[rr],ml,y);y+=3.5;}y+=1;}
       doc.setFontSize(7);doc.setTextColor(150,150,150);doc.text('Relatorio gerado em: '+new Date().toLocaleString('pt-BR')+' | S\u03A8M Online - TTE v1.0',ml,287);
       var ts=new Date();doc.save('TTE_'+nome.replace(/\s+/g,'_')+'_'+ts.getFullYear()+String(ts.getMonth()+1).padStart(2,'0')+String(ts.getDate()).padStart(2,'0')+'.pdf');
