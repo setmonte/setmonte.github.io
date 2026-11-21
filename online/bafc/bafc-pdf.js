@@ -651,20 +651,27 @@
         });
         c.y = y + 2 * (s + g) + 14.5; legendaMapa(doc, c.y); c.y += 9;
     }
+    function buscaMedia(B) {
+        var v = (B.etapas || []).filter(function (e) { return e.varredura && e.varredura.indice != null; });
+        if (!v.length) { return '-'; }
+        var s = 0; v.forEach(function (e) { s += e.varredura.indice; }); return vn(Math.round(s / v.length * 100) / 100);
+    }
     function tabelaVelocidade(c, d) {
         var B = d.B; if (!B) { return; } var doc = c.doc; need(c, 46);
-        secao(c, 'Velocidade - por etapa'); var y = c.y, cols = [['Etapa', 0, 'l'], ['Alvos', 52, 'c'], ['Acertos', 74, 'c'], ['Toques errados', 100, 'c'], ['N\u00e3o tocou', 128, 'c'], ['Tempo (s)', 154, 'c']];
+        secao(c, 'Velocidade - por etapa'); var y = c.y, cols = [['Etapa', 0, 'l'], ['Alvos', 46, 'c'], ['Acertos', 66, 'c'], ['Toques errados', 90, 'c'], ['N\u00e3o tocou', 118, 'c'], ['Tempo (s)', 142, 'c'], ['Busca*', 164, 'c']];
         F(doc, COR.prim); doc.rect(ML, y, CW, 6.2, 'F'); fonte(doc, 7, true); T(doc, '#ffffff');
         cols.forEach(function (col) { doc.text(pt(col[0]), ML + 2 + col[1] + (col[2] === 'c' ? 8 : 0), y + 4.3, { align: col[2] === 'c' ? 'center' : 'left' }); }); y += 6.2;
         var nomes = { par: 'N\u00fameros pares', impar: 'N\u00fameros \u00edmpares', figura: 'Estrela de 5 pontas', cor: 'Figuras vermelhas' };
         B.etapas.forEach(function (e, idx) {
             F(doc, idx % 2 ? '#f8f3fd' : '#ffffff'); doc.rect(ML, y, CW, 6.2, 'F'); fonte(doc, 7.2, false); T(doc, COR.texto); tx(doc, nomes[e.etapa], ML + 2, y + 4.3);
-            [e.alvos, e.acertos, e.comissoes, e.omissoes, vn(seg(e.tempoMs))].forEach(function (v, j) { doc.text(String(v), ML + 2 + cols[j + 1][1] + 8, y + 4.3, { align: 'center' }); }); y += 6.2;
+            [e.alvos, e.acertos, e.comissoes, e.omissoes, vn(seg(e.tempoMs)), (e.varredura && e.varredura.indice != null) ? vn(e.varredura.indice) : '-'].forEach(function (v, j) { doc.text(String(v), ML + 2 + cols[j + 1][1] + 8, y + 4.3, { align: 'center' }); }); y += 6.2;
         });
         F(doc, '#eef7f0'); doc.rect(ML, y, CW, 6.6, 'F'); fonte(doc, 7.4, true); T(doc, COR.texto); tx(doc, 'Total', ML + 2, y + 4.5);
-        [B.totais.alvos, B.totais.acertos, B.totais.comissoes, B.totais.omissoes, vn(B.totais.tempoSeg)].forEach(function (v, j) { doc.text(String(v), ML + 2 + cols[j + 1][1] + 8, y + 4.5, { align: 'center' }); });
+        [B.totais.alvos, B.totais.acertos, B.totais.comissoes, B.totais.omissoes, vn(B.totais.tempoSeg), buscaMedia(B)].forEach(function (v, j) { doc.text(String(v), ML + 2 + cols[j + 1][1] + 8, y + 4.5, { align: 'center' }); });
         y += 9.4; c.y = y;
         paragrafo(c, 'IEP (efici\u00eancia) = acertos por segundo x (1 - taxa de erros) = ' + vn(B.iep) + '. A taxa de erros soma toques errados e alvos n\u00e3o tocados e divide pelo total de alvos (' + vn(B.totais.taxaErros) + ').', ML, CW, 6.8, COR.suave, 3.2);
+        c.y += 1;
+        paragrafo(c, '*Busca: organiza\u00e7\u00e3o da procura entre os acertos (1 = percurso curto e ordenado pela tela; perto de 0 = saltos de um lado a outro). As figuras ficam espalhadas, em posi\u00e7\u00f5es fixas e diferentes a cada etapa. \u00c9 s\u00f3 uma observa\u00e7\u00e3o, sem norma, e n\u00e3o entra nos \u00edndices.', ML, CW, 6.8, COR.suave, 3.2);
     }
 
     /* ---------- rodape em todas as paginas ---------- */
