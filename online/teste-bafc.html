@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BAFC - Bateria de Avaliacao do Funcionamento Cognitivo</title>
+<style>
+/* ===== APARENCIA INSPIRADA NA IDEIA (verde-agua, cards, gradientes) ===== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', Arial, sans-serif; background: #f5f5f5; min-height: 100vh; font-size: 150%; /* fonte 1.5x (ajustavel) */ }
+
+/* Sistema de telas: so uma aparece por vez (igual IDEIA) */
+.tela { display: none; width: 100%; min-height: 100vh; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+.tela.ativa { display: flex; }
+
+/* Tela inicial */
+#tela-inicio { background: linear-gradient(135deg, #26a69a 0%, #80cbc4 100%); }
+#tela-inicio h1 { color: #fff; font-size: 2.2em; margin-bottom: 5px; }
+#tela-inicio .subtitulo { color: #e0f2f1; font-size: 0.95em; margin-bottom: 20px; text-align: center; }
+
+.form-container { background: #fff; border-radius: 12px; padding: 25px; width: 100%; max-width: 560px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); max-height: 90vh; overflow-y: auto; }
+.info-tecnica { background: #e0f2f1; border-left: 4px solid #00695c; padding: 12px; border-radius: 0 8px 8px 0; margin-bottom: 18px; font-size: 0.8em; color: #555; line-height: 1.5; }
+
+/* Campos do formulario do paciente (padrao aba Pacientes do site) */
+.campo-bafc { margin-bottom: 10px; }
+.campo-bafc label { display: block; font-size: 0.72em; color: #555; margin-bottom: 3px; font-weight: 600; }
+.campo-bafc input, .campo-bafc select { width: 100%; padding: 8px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.82em; }
+.campo-bafc input:focus, .campo-bafc select:focus { outline: none; border-color: #00695c; }
+.campo-bafc input[readonly] { background: #e0f2f1; font-weight: 700; color: #00695c; }
+.linha-campos { display: flex; gap: 10px; }
+.linha-campos .campo-bafc { flex: 1; }
+.secao-titulo { font-size: 0.8em; font-weight: 700; color: #00695c; margin: 16px 0 8px; border-bottom: 1px solid #e0f2f1; padding-bottom: 4px; }
+
+/* Lista de modulos para escolher */
+.modulos-lista { margin: 10px 0 18px; }
+.modulo-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 2px solid #e0e0e0; border-radius: 10px; margin-bottom: 10px; cursor: pointer; transition: all 0.15s; }
+.modulo-item:hover { border-color: #26a69a; background: #f1fbfa; }
+.modulo-item.marcado { border-color: #00695c; background: #e0f2f1; }
+.modulo-item input[type="checkbox"] { width: 20px; height: 20px; accent-color: #00695c; cursor: pointer; }
+.modulo-item .mod-letra { font-weight: 800; color: #00695c; font-size: 1.1em; min-width: 22px; }
+.modulo-item .mod-nome { font-size: 0.9em; color: #333; }
+.modulo-item .mod-desc { font-size: 0.72em; color: #888; }
+
+.btn { padding: 12px 30px; border: none; border-radius: 8px; font-size: 1em; font-weight: 700; cursor: pointer; margin: 5px; }
+.btn-primary { background: #00695c; color: #fff; }
+.btn-primary:hover { background: #004d40; }
+.btn-secondary { background: #2e7d32; color: #fff; }
+.btn-secondary:hover { background: #1b5e20; }
+.btn:disabled { background: #bdbdbd; cursor: not-allowed; }
+
+/* Tela do teste: o iframe ocupa tudo (a "janelinha invisivel") */
+#tela-teste { background: #1a1a2e; padding: 0; align-items: stretch; justify-content: flex-start; }
+#moduloFrame { border: none; width: 100vw; height: 100vh; display: block; background: #fff; }
+
+/* Tela final */
+#tela-fim { background: linear-gradient(135deg, #e8f5e9, #c8e6c9); }
+#tela-fim h1 { color: #1b5e20; font-size: 2em; margin-bottom: 10px; }
+#tela-fim .caixa-final { background: #fff; border-radius: 12px; padding: 28px; max-width: 560px; width: 100%; box-shadow: 0 4px 20px rgba(0,0,0,0.2); text-align: center; }
+#listaConcluidos { list-style: none; text-align: left; margin: 16px 0; }
+#listaConcluidos li { padding: 8px 12px; background: #f1f8e9; border-radius: 8px; margin-bottom: 6px; color: #33691e; font-weight: 600; }
+
+.rel-local { text-align: left; margin-top: 16px; font-size: 0.75em; color: #37474f; }
+.rel-local h3 { color: #00695c; margin-bottom: 6px; }
+.rel-local table { width: 100%; border-collapse: collapse; margin: 8px 0; }
+.rel-local th, .rel-local td { border: 1px solid #cfd8dc; padding: 5px 6px; }
+.rel-local th { background: #e0f2f1; }
+.rel-local .linha-global td { font-weight: 800; background: #f1f8e9; }
+.aviso-rel { color: #c62828; font-weight: 700; }
+.rodape-info { color: #fff; opacity: 0.75; font-size: 0.75em; margin-top: 16px; text-align: center; }
+
+/* Botao SAIR: retangulo deitado (~2x1cm) no canto inferior esquerdo, fundo branco, borda vermelha */
+#btnSair { position: fixed; bottom: 12px; left: 12px; z-index: 9998; width: 76px; height: 38px; background: #fff; border: 2px solid #c62828; color: #c62828; font-weight: 800; font-size: 0.85em; border-radius: 6px; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.25); display: none; }
+#btnSair:hover { background: #ffebee; }
+
+/* Aviso customizado ao sair (centralizado, fonte grande, caixa alta, negrito) */
+#overlaySair { display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.55); align-items: center; justify-content: center; padding: 20px; }
+#overlaySair.aberto { display: flex; }
+#overlaySair .caixa-aviso { background: #fff; border-radius: 14px; border-top: 6px solid #c62828; padding: 32px 28px; max-width: 460px; width: 100%; text-align: center; box-shadow: 0 8px 30px rgba(0,0,0,0.4); }
+#overlaySair .titulo-aviso { color: #c62828; font-size: 1.6em; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px; }
+#overlaySair .texto-aviso { color: #333; font-size: 1.1em; font-weight: 700; text-transform: uppercase; line-height: 1.5; margin-bottom: 24px; }
+#overlaySair .botoes-aviso { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+#overlaySair button { padding: 14px 24px; border: none; border-radius: 8px; font-size: 1em; font-weight: 800; cursor: pointer; text-transform: uppercase; }
+#overlaySair .btn-continuar { background: #2e7d32; color: #fff; }
+#overlaySair .btn-pular { background: #ef6c00; color: #fff; }
+#overlaySair .btn-sair-mesmo { background: #c62828; color: #fff; }
+</style>
+</head>
+<body>
+
+<!-- ===== TELA 1: SELECAO DE MODULOS ===== -->
+<div id="tela-inicio" class="tela ativa">
+    <h1>&#129504; BAFC</h1>
+    <p class="subtitulo">Bateria de Avalia&#231;&#227;o do Funcionamento Cognitivo</p>
+    <div class="form-container">
+        <div class="info-tecnica">
+            <strong>Como funciona:</strong> preencha os dados do avaliando uma &#250;nica vez e escolha
+            quais m&#243;dulos aplicar. Os m&#243;dulos selecionados ser&#227;o executados em sequ&#234;ncia (de A para D),
+            como um programa &#250;nico. Ao final, cada m&#243;dulo gera seu relat&#243;rio e uma an&#225;lise integrada.
+        </div>
+
+        <!-- ===== DADOS DO PACIENTE (padrao aba Pacientes do site) ===== -->
+        <div class="secao-titulo">Dados do avaliando</div>
+
+        <div class="campo-bafc">
+            <label for="patientName">Nome</label>
+            <input type="text" id="patientName" placeholder="Nome completo" oninput="atualizarIdPaciente()">
+        </div>
+        <div class="linha-campos">
+            <div class="campo-bafc">
+                <label for="birthDate">Data de Nascimento</label>
+                <input type="date" id="birthDate" onchange="calcularIdadeMenu()">
+            </div>
+            <div class="campo-bafc">
+                <label for="idadeCalculada">Idade</label>
+                <input type="text" id="idadeCalculada" readonly placeholder="Autom&#225;tica">
+            </div>
+        </div>
+        <div class="campo-bafc">
+            <label for="idPaciente">ID do Paciente</label>
+            <input type="text" id="idPaciente" readonly placeholder="Gerado automaticamente (nome + nascimento)">
+        </div>
+        <div class="linha-campos">
+            <div class="campo-bafc">
+                <label for="sex">Sexo</label>
+                <select id="sex">
+                    <option value="">Selecione</option>
+                    <option value="Masculino">Masculino</option>
+                    <option value="Feminino">Feminino</option>
+                </select>
+            </div>
+            <div class="campo-bafc">
+                <label for="cpf">CPF (opcional)</label>
+                <input type="text" id="cpf" placeholder="000.000.000-00">
+            </div>
+        </div>
+        <div class="linha-campos">
+            <div class="campo-bafc">
+                <label for="education">Escolaridade</label>
+                <select id="education">
+                    <option value="">Selecione</option>
+                    <option value="1o ano">1&#186; ano</option>
+                    <option value="2o ano">2&#186; ano</option>
+                    <option value="3o ano">3&#186; ano</option>
+                    <option value="4o ano">4&#186; ano</option>
+                    <option value="5o ano">5&#186; ano</option>
+                    <option value="6o ano">6&#186; ano</option>
+                    <option value="7o ano">7&#186; ano</option>
+                    <option value="8o ano">8&#186; ano</option>
+                    <option value="9o ano">9&#186; ano</option>
+                    <option value="Ensino Medio">Ensino M&#233;dio</option>
+                    <option value="Superior Incompleto">Superior Incompleto</option>
+                    <option value="Superior Completo">Superior Completo</option>
+                    <option value="Pos-graduacao">P&#243;s-gradua&#231;&#227;o</option>
+                </select>
+            </div>
+            <div class="campo-bafc">
+                <label for="laterality">Lateralidade</label>
+                <select id="laterality">
+                    <option value="">Selecione</option>
+                    <option value="Destro">Destro</option>
+                    <option value="Canhoto">Canhoto</option>
+                    <option value="Ambidestro">Ambidestro</option>
+                </select>
+            </div>
+        </div>
+        <div class="linha-campos">
+            <div class="campo-bafc">
+                <label for="correcaoVisual">Corre&#231;&#227;o Visual</label>
+                <select id="correcaoVisual">
+                    <option value="">Selecione</option>
+                    <option value="Nenhuma">Nenhuma</option>
+                    <option value="Oculos">&#211;culos</option>
+                    <option value="Lente de contato">Lente de contato</option>
+                </select>
+            </div>
+            <div class="campo-bafc">
+                <label for="dataAval">Data da Avalia&#231;&#227;o</label>
+                <input type="date" id="dataAval">
+            </div>
+        </div>
+
+        <div class="secao-titulo">Dados do avaliador</div>
+        <div class="linha-campos">
+            <div class="campo-bafc">
+                <label for="evaluator">Avaliador</label>
+                <input type="text" id="evaluator" placeholder="Seu nome">
+            </div>
+            <div class="campo-bafc">
+                <label for="crp">CRP</label>
+                <input type="text" id="crp" placeholder="00/00000">
+            </div>
+        </div>
+        <div class="campo-bafc">
+            <label for="email">E-mail do avaliador</label>
+            <input type="text" id="email" placeholder="seu@email.com">
+        </div>
+
+        <div class="secao-titulo">M&#243;dulos a aplicar</div>
+        <div class="modulos-lista" id="modulosLista">
+            <!-- preenchido pelo script -->
+        </div>
+
+        <div style="text-align:center;">
+            <button class="btn btn-primary" id="btnIniciar" onclick="iniciarBateria()">Iniciar Bateria</button>
+        </div>
+    </div>
+    <p class="rodape-info">Instrumento em desenvolvimento. Uso por profissional qualificado.</p>
+</div>
+
+<!-- ===== TELA 2: TESTE (a janelinha que roda os modulos) ===== -->
+<div id="tela-teste" class="tela">
+    <iframe id="moduloFrame" title="Modulo em execucao" allow="autoplay"></iframe>
+</div>
+
+<!-- Botao SAIR (aparece so durante a bateria) -->
+<button id="btnSair" onclick="abrirAvisoSair()">SAIR</button>
+
+<!-- Aviso customizado ao clicar em SAIR -->
+<div id="overlaySair">
+    <div class="caixa-aviso">
+        <div class="titulo-aviso">Deseja mesmo sair?</div>
+        <div class="texto-aviso">Se sair agora, a aplica&#231;&#227;o ser&#225; encerrada e este link n&#227;o poder&#225; ser usado de novo.</div>
+        <div class="botoes-aviso">
+            <button class="btn-continuar" onclick="fecharAvisoSair()">Continuar o teste</button>
+            <button class="btn-pular" onclick="pularModuloAtual()">Pular este m&#243;dulo</button>
+            <button class="btn-sair-mesmo" onclick="confirmarSair()">Sair de tudo</button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== TELA 3: FIM (programa encerrado, pode fechar a aba) - estilo BAE ===== -->
+<div id="tela-fim" class="tela">
+    <div class="caixa-final">
+        <div style="font-size:2.2em;">&#127881;</div>
+        <h1>Aplica&#231;&#227;o conclu&#237;da!</h1>
+        <p style="color:#555;">Obrigado pela sua participa&#231;&#227;o.</p>
+        <p style="color:#555;">Os resultados foram enviados ao avaliador.</p>
+        <ul id="listaConcluidos" style="display:none;"></ul>
+        <div id="relatorioLocal"></div>
+        <p style="margin-top:24px;color:#888;font-size:0.85em;">Voc&#234; j&#225; pode fechar esta janela.</p>
+    </div>
+</div>
+
+<!-- ===== TELA 4: ENCERRADO POR SAIDA (pode fechar a aba) ===== -->
+<div id="tela-encerrado" class="tela">
+    <div class="caixa-final">
+        <h1 style="color:#c62828;">Aplica&#231;&#227;o encerrada</h1>
+        <p style="color:#555;">A aplica&#231;&#227;o foi encerrada.</p>
+        <p style="margin-top:24px;color:#888;font-size:0.85em;">Voc&#234; j&#225; pode fechar esta janela.</p>
+    </div>
+</div>
+
+<script>
+/* ============================================================
+   BAFC - CONTROLADOR (o "tronco" da arvore)
+   Roda cada modulo (raiz) dentro de um iframe em tela cheia.
+   Quando o modulo termina, ele avisa por postMessage ("o sino").
+   O controlador guarda o resultado e troca o iframe pelo proximo.
+
+   NOTA: sem acentos diretos dentro do <script> (padrao do projeto).
+   Usamos \u escapes onde necessario em textos exibidos.
+   ============================================================ */
+
+/* ===== CONFIG: endpoint do servidor (mesmo dos outros testes do site) ===== */
+var BAFC_API_URL = 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
+
+/* Modo online (link do painel) ou local (abrir o arquivo direto)?
+   modoOnline fica true quando a URL tem ?s= (link curto) ou ?d= (fallback). */
+var modoOnline = false;
+
+/* Controle da rede de seguranca ao fechar a aba.
+   bateriaEmAndamento = true entre o inicio e o fim da bateria (ativa o aviso).
+   bafcJaEnviado = true quando a bateria terminou normalmente (nao sobrescreve). */
+var bateriaEmAndamento = false;
+var bafcJaEnviado = false;
+
+/* ===== BAFC - ID DO PACIENTE =====
+   Mesma regra do site (id-paciente.js, BAE e TFLOD): hash djb2 de "nascimento + 3 primeiras letras do nome".
+   Mesmo paciente = mesmo ID em qualquer instrumento do site. ASCII puro. */
+function gerarIdPaciente(nome, nascimento) {
+    if (!nascimento || !nome || nome.trim().length < 1) { return null; }
+    var n = nome.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z]/g, '').toLowerCase();
+    var prefixo = n.substring(0, 3);
+    var raw = nascimento + '+' + prefixo;
+    var hash = 5381;
+    for (var i = 0; i < raw.length; i++) { hash = ((hash << 5) + hash) + raw.charCodeAt(i); }
+    return 'P' + Math.abs(hash).toString(36).toUpperCase();
+}
+/* Atualiza o campo "ID do Paciente" do formulario (modo local) */
+function atualizarIdPaciente() {
+    var n = document.getElementById('patientName'); var d = document.getElementById('birthDate'); var el = document.getElementById('idPaciente');
+    if (!n || !d || !el) { return; }
+    el.value = gerarIdPaciente(n.value, d.value) || '';
+}
+
+/* ===== BAFC - CORTES DA MEMORIA (Digitos do WISC-IV e do WAIS-III). Gerado por extrair_cortes_memoria.py. =====
+   c = menor escore bruto (direta+inversa) que alcanca os pontos ponderados 4, 6, 8, 12, 14 e 16.
+   Faixa: [anos, meses] inclusive. Parametros de comparacao (equivalencia de construto). */
+var CORTES_MEMORIA = [
+    { de: [8, 0], ate: [8, 3], c: [6,8,10,14,17,19], fonte: 'WISC-IV' },
+    { de: [8, 4], ate: [8, 7], c: [7,8,10,15,17,20], fonte: 'WISC-IV' },
+    { de: [8, 8], ate: [8, 11], c: [7,9,11,15,18,20], fonte: 'WISC-IV' },
+    { de: [9, 0], ate: [9, 3], c: [7,9,11,15,18,21], fonte: 'WISC-IV' },
+    { de: [9, 4], ate: [9, 7], c: [8,9,11,16,18,21], fonte: 'WISC-IV' },
+    { de: [9, 8], ate: [9, 11], c: [8,10,11,16,19,21], fonte: 'WISC-IV' },
+    { de: [10, 0], ate: [10, 3], c: [8,10,12,16,19,22], fonte: 'WISC-IV' },
+    { de: [10, 4], ate: [10, 7], c: [9,10,12,17,19,22], fonte: 'WISC-IV' },
+    { de: [10, 8], ate: [10, 11], c: [9,10,12,17,20,22], fonte: 'WISC-IV' },
+    { de: [11, 0], ate: [11, 3], c: [9,10,12,17,20,23], fonte: 'WISC-IV' },
+    { de: [11, 4], ate: [11, 7], c: [9,11,13,17,20,23], fonte: 'WISC-IV' },
+    { de: [11, 8], ate: [11, 11], c: [9,11,13,17,20,23], fonte: 'WISC-IV' },
+    { de: [12, 0], ate: [12, 3], c: [10,11,13,18,20,23], fonte: 'WISC-IV' },
+    { de: [12, 4], ate: [12, 7], c: [10,11,13,18,21,24], fonte: 'WISC-IV' },
+    { de: [12, 8], ate: [12, 11], c: [10,11,13,18,21,24], fonte: 'WISC-IV' },
+    { de: [13, 0], ate: [13, 3], c: [10,12,13,18,21,24], fonte: 'WISC-IV' },
+    { de: [13, 4], ate: [13, 7], c: [10,12,13,18,21,24], fonte: 'WISC-IV' },
+    { de: [13, 8], ate: [13, 11], c: [11,12,14,18,21,24], fonte: 'WISC-IV' },
+    { de: [14, 0], ate: [14, 3], c: [11,12,14,19,22,25], fonte: 'WISC-IV' },
+    { de: [14, 4], ate: [14, 7], c: [11,12,14,19,22,25], fonte: 'WISC-IV' },
+    { de: [14, 8], ate: [14, 11], c: [11,12,14,19,22,25], fonte: 'WISC-IV' },
+    { de: [15, 0], ate: [15, 3], c: [11,12,14,19,22,25], fonte: 'WISC-IV' },
+    { de: [15, 4], ate: [15, 7], c: [11,12,14,19,22,25], fonte: 'WISC-IV' },
+    { de: [15, 8], ate: [15, 11], c: [11,13,14,19,23,26], fonte: 'WISC-IV' },
+    { de: [16, 0], ate: [17, 11], c: [5,8,11,15,18,22], fonte: 'WAIS-III' },
+    { de: [18, 0], ate: [19, 11], c: [5,8,11,16,19,23], fonte: 'WAIS-III' },
+    { de: [20, 0], ate: [29, 11], c: [6,8,11,17,19,23], fonte: 'WAIS-III' },
+    { de: [30, 0], ate: [39, 11], c: [6,8,11,17,19,23], fonte: 'WAIS-III' },
+    { de: [40, 0], ate: [49, 11], c: [6,8,11,16,19,22], fonte: 'WAIS-III' },
+    { de: [50, 0], ate: [59, 11], c: [5,7,10,16,19,21], fonte: 'WAIS-III' },
+    { de: [60, 0], ate: [64, 11], c: [4,6,9,14,18,20], fonte: 'WAIS-III' },
+    { de: [65, 0], ate: [89, 11], c: [2,6,8,13,16,20], fonte: 'WAIS-III' }
+];
+
+/* ============================================================
+   BAFC - CLASSIFICACAO AUTOMATICA POR FAIXAS DE DESEMPENHO + INDICES (Manual Tecnico, secao 4)
+   Ideia: cada dominio tem uma tabela de CORTES (escore minimo de cada classe) por faixa etaria.
+   A pessoa recebe a classe mais alta cujo corte ela alcancou. Os cortes sao os mesmos limites de
+   desempenho do laudo do WAIS/WISC (ponderado 4, 6, 8, 12, 14, 16 = percentis 2, 9, 25, 75, 91, 98).
+   - Memoria Operacional: cortes REAIS do subteste Digitos (WISC-IV ate 15 anos; WAIS-III dos 16 aos 89),
+     porque e o mesmo construto e a mesma estrutura de tarefa (CORTES_MEMORIA, acima).
+   - Velocidade, Verbal, Nao-Verbal: cortes PROVISORIOS (curva normal com media/desvio supostos)
+     ate o piloto fornecer a distribuicao e a convergencia com os subtestes equivalentes.
+   O escore Z de cada dominio vem da posicao do escore entre os cortes (interpolacao).
+   Indice Global = media ponderada dos Z; ICG = 100 + 15 Z. ASCII puro (acentos via \u).
+   ============================================================ */
+var PESOS = { MO: 0.25, VP: 0.25, IV: 0.25, NV: 0.25 };   /* soma = 1,00 */
+var NOMES_DOM = { MO: 'Mem\u00f3ria Operacional', VP: 'Velocidade de Processamento', IV: 'Intelig\u00eancia Verbal', NV: 'Intelig\u00eancia N\u00e3o-Verbal' };
+var CLASSES = ['Deficit\u00e1rio', 'Lim\u00edtrofe', 'M\u00e9dia Inferior', 'M\u00e9dia', 'M\u00e9dia Superior', 'Superior', 'Muito Superior'];
+var Z_CORTES = [-2.054, -1.341, -0.674, 0.674, 1.341, 2.054];   /* percentis 2, 9, 25, 75, 91, 98 */
+
+/* Cortes PROVISORIOS: [idadeMin, idadeMax, VP mu, VP dp, IV mu, IV dp, NV mu, NV dp] (valores supostos!) */
+var PROVISORIOS = [
+    [8, 9,    0.20, 0.07,  9, 4,  9, 4],
+    [10, 11,  0.25, 0.08, 13, 5, 12, 5],
+    [12, 14,  0.30, 0.09, 17, 5, 15, 5],
+    [15, 17,  0.34, 0.10, 20, 5, 17, 5],
+    [18, 39,  0.38, 0.10, 22, 5, 18, 5],
+    [40, 59,  0.33, 0.10, 22, 5, 16, 5],
+    [60, 120, 0.26, 0.10, 21, 5, 13, 5]
+];
+
+/* ---- idade ---- */
+function idadeEmMeses(nasc, ref) {
+    if (!nasc) { return null; }
+    var n = new Date(nasc + 'T00:00:00'); var h = ref ? new Date(ref + 'T00:00:00') : new Date();
+    var m = (h.getFullYear() - n.getFullYear()) * 12 + (h.getMonth() - n.getMonth());
+    if (h.getDate() < n.getDate()) { m--; }
+    return m;
+}
+/* ---- cortes de cada dominio ---- */
+function cortesMemoria(meses) {
+    if (meses === null) { return null; }
+    var i, de, ate;
+    for (i = 0; i < CORTES_MEMORIA.length; i++) {
+        de = CORTES_MEMORIA[i].de[0] * 12 + CORTES_MEMORIA[i].de[1];
+        ate = CORTES_MEMORIA[i].ate[0] * 12 + CORTES_MEMORIA[i].ate[1];
+        if (meses >= de && meses <= ate) { return CORTES_MEMORIA[i]; }
+    }
+    if (meses > 89 * 12 + 11) { return CORTES_MEMORIA[CORTES_MEMORIA.length - 1]; }
+    return null;
+}
+function cortesProvisorios(dom, anos) {
+    var col = (dom === 'VP') ? 2 : (dom === 'IV' ? 4 : 6);
+    for (var i = 0; i < PROVISORIOS.length; i++) {
+        if (anos >= PROVISORIOS[i][0] && anos <= PROVISORIOS[i][1]) {
+            var mu = PROVISORIOS[i][col], dp = PROVISORIOS[i][col + 1]; var c = [];
+            for (var k = 0; k < Z_CORTES.length; k++) { c.push(mu + Z_CORTES[k] * dp); }
+            return c;
+        }
+    }
+    return null;
+}
+/* ---- classe e escore Z a partir dos cortes ---- */
+function classeDe(bruto, cortes) {
+    var n = 0;
+    for (var i = 0; i < cortes.length; i++) { if (bruto >= cortes[i]) { n++; } }
+    return n;   /* 0 a 6 */
+}
+function zDe(bruto, cortes) {
+    var i, a, b, za, zb, z;
+    if (bruto <= cortes[0]) { a = 0; b = 1; }
+    else if (bruto >= cortes[cortes.length - 1]) { a = cortes.length - 2; b = cortes.length - 1; }
+    else { for (i = 0; i < cortes.length - 1; i++) { if (bruto >= cortes[i] && bruto <= cortes[i + 1]) { a = i; b = i + 1; break; } } }
+    var dist = cortes[b] - cortes[a]; if (dist <= 0) { dist = 1; }
+    za = Z_CORTES[a]; zb = Z_CORTES[b];
+    z = za + (bruto - cortes[a]) * (zb - za) / dist;
+    if (z > 3.5) { z = 3.5; } if (z < -3.5) { z = -3.5; }
+    return z;
+}
+function cdfNormal(z) {
+    var t = 1 / (1 + 0.2316419 * Math.abs(z)); var d = 0.3989423 * Math.exp(-z * z / 2);
+    var p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
+    return z > 0 ? 1 - p : p;
+}
+function r1(x) { return Math.round(x * 10) / 10; }
+function limitarPerc(p) { return Math.min(99.9, Math.max(0.1, r1(p))); }
+
+function brutosDosModulos(res) {
+    var b = { MO: null, VP: null, IV: null, NV: null };
+    if (res.A && typeof res.A.total === 'number') { b.MO = res.A.total; }
+    if (res.B && typeof res.B.iep === 'number') { b.VP = res.B.iep; }
+    if (res.C && typeof res.C.acertos === 'number') { b.IV = res.C.acertos; }
+    if (res.D && typeof res.D.acertos === 'number') { b.NV = res.D.acertos; }
+    return b;
+}
+function res_temParada() {
+    return !!((resultados.C && resultados.C.parouPorErros) || (resultados.D && resultados.D.parouPorErros));
+}
+
+/* ---- calculo principal (tudo automatico) ---- */
+function calcularIndices() {
+    var meses = idadeEmMeses(sessionData.birthDate, sessionData.dataAval);
+    var anos = (meses === null) ? null : Math.floor(meses / 12);
+    var b = brutosDosModulos(resultados);
+    var out = { idadeAnos: anos, idadeMeses: meses, brutos: b, dominios: {}, global: null, discrepancias: [], avisos: [], provisorios: [] };
+    if (anos === null || anos < 8) { out.avisos.push('Idade n\u00e3o informada ou abaixo de 8 anos (m\u00ednimo da bateria): sem classifica\u00e7\u00e3o.'); return out; }
+    var ordem = ['MO', 'VP', 'IV', 'NV']; var somaPeso = 0, somaZ = 0, i;
+    for (i = 0; i < ordem.length; i++) {
+        var k = ordem[i]; if (b[k] === null) { continue; }
+        var cortes = null, fonte = '', provisorio = false;
+        if (k === 'MO') {
+            var cm = cortesMemoria(meses);
+            if (cm) { cortes = cm.c; fonte = 'D\u00edgitos ' + cm.fonte + ' (' + cm.de[0] + ':' + cm.de[1] + ' a ' + cm.ate[0] + ':' + cm.ate[1] + ')'; }
+        }
+        if (!cortes) { cortes = cortesProvisorios(k, anos); fonte = 'provis\u00f3rio'; provisorio = true; }
+        if (!cortes) { continue; }
+        var z = zDe(b[k], cortes); var cl = classeDe(b[k], cortes);
+        out.dominios[k] = { nome: NOMES_DOM[k], bruto: b[k], classe: cl, classificacao: CLASSES[cl], pp: Math.round(10 + 3 * z), z: Math.round(z * 100) / 100, t: r1(50 + 10 * z), qi: Math.round(100 + 15 * z), percentil: limitarPerc(cdfNormal(z) * 100), cortes: cortes, fonte: fonte, provisorio: provisorio };
+        if (provisorio) { out.provisorios.push(k); }
+        somaPeso += PESOS[k]; somaZ += PESOS[k] * z;
+    }
+    var nDom = Object.keys(out.dominios).length;
+    if (nDom < 2) { out.avisos.push('ICG n\u00e3o calculado: aplique pelo menos 2 \u00e1reas.'); }
+    if (somaPeso > 0 && nDom >= 2) {
+        var zg = somaZ / somaPeso; var cg = 0;
+        for (i = 0; i < Z_CORTES.length; i++) { if (zg >= Z_CORTES[i]) { cg++; } }
+        out.global = { z: Math.round(zg * 100) / 100, t: r1(50 + 10 * zg), icg: Math.round(100 + 15 * zg), percentil: limitarPerc(cdfNormal(zg) * 100), classe: cg, classificacao: CLASSES[cg], dominiosUsados: Object.keys(out.dominios), nDominios: nDom, parcial: nDom < 4 };
+        if (nDom < 4) { out.avisos.push('ICG parcial: calculado com ' + nDom + ' de 4 \u00e1reas (pesos iguais reponderados).'); }
+    }
+    var ks = Object.keys(out.dominios);
+    for (i = 0; i < ks.length; i++) { for (var j = i + 1; j < ks.length; j++) {
+        var d = out.dominios[ks[i]].qi - out.dominios[ks[j]].qi;
+        if (Math.abs(d) >= 15) { out.discrepancias.push({ de: ks[i], para: ks[j], diferenca: d }); }
+    } }
+    if (res_temParada()) { out.avisos.push('Algum teste foi interrompido pela regra de erros seguidos.'); }
+    if (out.provisorios.length) { out.avisos.push('CORTES PROVIS\u00d3RIOS em: ' + out.provisorios.map(function (x) { return NOMES_DOM[x]; }).join(', ') + '. Valem s\u00f3 para teste do sistema at\u00e9 a calibra\u00e7\u00e3o com o piloto.'); }
+    return out;
+}
+
+/* ---- Relatorio local (so no modo sem link; o avaliando nao ve isto no modo online) ---- */
+function renderRelatorioLocal() {
+    var box = document.getElementById('relatorioLocal'); if (!box) { return; }
+    if (modoOnline) { box.innerHTML = ''; return; }
+    var ix = calcularIndices(); var h = '<div class="rel-local"><h3>&#193;rea do avaliador (modo local)</h3>';
+    h += '<p>Idade: ' + (ix.idadeAnos === null ? '-' : ix.idadeAnos + ' anos') + ' &nbsp;|&nbsp; ID do paciente: ' + (sessionData.idPaciente || '-') + '</p>';
+    h += '<div style="overflow-x:auto;"><table><tr><th>Dom\u00ednio</th><th>Bruto</th><th>Pond. equiv.</th><th>QI equiv.</th><th>Percentil</th><th>Classifica\u00e7\u00e3o</th><th>Fonte do corte</th></tr>';
+    var ordem = ['MO', 'VP', 'IV', 'NV'];
+    for (var i = 0; i < ordem.length; i++) {
+        var d = ix.dominios[ordem[i]];
+        if (d) { h += '<tr><td>' + d.nome + '</td><td>' + d.bruto + '</td><td>' + d.pp + '</td><td>' + d.qi + '</td><td>' + d.percentil + '</td><td>' + d.classificacao + '</td><td>' + d.fonte + '</td></tr>'; }
+        else { h += '<tr><td>' + NOMES_DOM[ordem[i]] + '</td><td colspan="6">(n\u00e3o aplicado)</td></tr>'; }
+    }
+    if (ix.global) { h += '<tr class="linha-global"><td>\u00cdndice Cognitivo Global (ICG)</td><td>-</td><td>-</td><td>' + ix.global.icg + '</td><td>' + ix.global.percentil + '</td><td>' + ix.global.classificacao + '</td><td>m\u00e9dia dos Z</td></tr>'; }
+    h += '</table></div>';
+    if (ix.discrepancias.length) {
+        h += '<p><strong>Discrep\u00e2ncias (\u2265 15 pontos de QI):</strong> ';
+        var l = []; for (var j = 0; j < ix.discrepancias.length; j++) { var x = ix.discrepancias[j]; l.push(NOMES_DOM[x.de] + ' x ' + NOMES_DOM[x.para] + ' (' + (x.diferenca > 0 ? '+' : '') + x.diferenca + ')'); }
+        h += l.join('; ') + '</p>';
+    }
+    for (var a = 0; a < ix.avisos.length; a++) { h += '<p class="aviso-rel">' + ix.avisos[a] + '</p>'; }
+    h += '</div>';
+    box.innerHTML = h;
+}
+
+/* ===== CATALOGO DE MODULOS (a ordem A -> D e os arquivos) ===== */
+var MODULOS = [
+    { id: 'A', arquivo: 'bafc/modulos/modulo-a-memoria.html', nome: 'Mem\u00f3ria Operacional', desc: 'D\u00edgitos em ordem direta e inversa (por \u00e1udio)' },
+    { id: 'B', arquivo: 'bafc/modulos/modulo-b-velocidade.html', nome: 'Velocidade de Processamento e Aten\u00e7\u00e3o', desc: 'Matriz 5x7: pares, \u00edmpares, figura e cor' },
+    { id: 'C', arquivo: 'bafc/modulos/modulo-c-verbal.html', nome: 'Intelig\u00eancia Verbal', desc: 'Palavras e rela\u00e7\u00f5es (30 itens; \u00e1udio nos primeiros, depois leitura)' },
+    { id: 'D', arquivo: 'bafc/modulos/modulo-d-naoverbal.html', nome: 'Intelig\u00eancia N\u00e3o-Verbal', desc: 'Figuras abertas e s\u00f3lidos (24 itens)' }
+];
+
+/* ===== ESTADO DO CONTROLADOR ===== */
+var fila = [];              // ids dos modulos escolhidos, na ordem (ex.: ['A','C'])
+var indiceAtual = 0;        // "o dedo" apontando para o modulo da vez
+var resultados = {};        // "quadro de avisos": resultados[id] = dados do modulo
+var modulosCobrados = {};   // anti-cobranca-dupla: modulosCobrados[id]=true quando ja debitou 1 credito daquele modulo nesta sessao
+
+/* sessionData: os dados do paciente/avaliador, com as MESMAS chaves do site
+   (patientName, birthDate, sex, education, laterality, correcaoVisual, cpf,
+   evaluator, crp, email, pacienteId). No modo local vem do formulario; no modo
+   online (fase futura) vem do link ?s=/?d=. O resto do controlador nao muda. */
+var sessionData = {};
+
+/* Calcula idade (anos, meses, dias) a partir da data de nascimento do menu */
+function calcularIdadeMenu() {
+    atualizarIdPaciente();
+    var nascEl = document.getElementById('birthDate');
+    var idadeEl = document.getElementById('idadeCalculada');
+    if (!nascEl.value) { idadeEl.value = ''; return; }
+    var nasc = new Date(nascEl.value + 'T00:00:00');
+    var hoje = new Date();
+    var anos = hoje.getFullYear() - nasc.getFullYear();
+    var meses = hoje.getMonth() - nasc.getMonth();
+    var dias = hoje.getDate() - nasc.getDate();
+    if (dias < 0) { meses--; var ud = new Date(hoje.getFullYear(), hoje.getMonth(), 0).getDate(); dias += ud; }
+    if (meses < 0) { anos--; meses += 12; }
+    idadeEl.value = anos + ' anos, ' + meses + ' meses e ' + dias + ' dias';
+}
+
+/* Le os campos do formulario e monta o sessionData (chaves iguais ao site) */
+function coletarDadosPaciente() {
+    function v(id) { var el = document.getElementById(id); return el ? el.value : ''; }
+    sessionData = {
+        patientName: v('patientName').trim(),
+        birthDate: v('birthDate'),
+        sex: v('sex'),
+        cpf: v('cpf'),
+        education: v('education'),
+        laterality: v('laterality'),
+        correcaoVisual: v('correcaoVisual'),
+        evaluator: v('evaluator'),
+        crp: v('crp'),
+        email: v('email').trim(),
+        dataAval: v('dataAval'),
+        idade: v('idadeCalculada'),
+        idPaciente: gerarIdPaciente(v('patientName'), v('birthDate')) || '',
+        pacienteId: sessionData.pacienteId || '',
+        sessionId: sessionData.sessionId || ''
+    };
+    return sessionData;
+}
+
+/* ============================================================
+   MONTAGEM DA TELA INICIAL (lista de modulos para escolher)
+   ============================================================ */
+function montarListaModulos() {
+    var lista = document.getElementById('modulosLista');
+    var html = '';
+    MODULOS.forEach(function(m) {
+        html +=
+            '<label class="modulo-item marcado" id="item-' + m.id + '">' +
+                '<input type="checkbox" value="' + m.id + '" checked onchange="atualizarMarcacao()">' +
+                '<span class="mod-letra">' + m.id + '</span>' +
+                '<span>' +
+                    '<span class="mod-nome">' + m.nome + '</span><br>' +
+                    '<span class="mod-desc">' + m.desc + '</span>' +
+                '</span>' +
+            '</label>';
+    });
+    lista.innerHTML = html;
+}
+
+/* Atualiza o destaque visual (marcado/desmarcado) e habilita/desabilita o botao */
+function atualizarMarcacao() {
+    var algum = false;
+    MODULOS.forEach(function(m) {
+        var cb = document.querySelector('#item-' + m.id + ' input');
+        var item = document.getElementById('item-' + m.id);
+        if (cb.checked) { item.classList.add('marcado'); algum = true; }
+        else { item.classList.remove('marcado'); }
+    });
+    document.getElementById('btnIniciar').disabled = !algum;
+}
+
+/* ============================================================
+   TROCA DE TELAS
+   ============================================================ */
+function mostrarTela(id) {
+    var telas = document.querySelectorAll('.tela');
+    for (var i = 0; i < telas.length; i++) { telas[i].classList.remove('ativa'); }
+    document.getElementById(id).classList.add('ativa');
+}
+
+/* ============================================================
+   BOTAO SAIR + AVISO CUSTOMIZADO (centralizado, caixa alta, negrito)
+   ============================================================ */
+function mostrarBotaoSair(mostrar) {
+    var b = document.getElementById('btnSair');
+    if (b) { b.style.display = mostrar ? 'block' : 'none'; }
+}
+function abrirAvisoSair() {
+    var o = document.getElementById('overlaySair');
+    if (o) { o.classList.add('aberto'); }
+}
+function fecharAvisoSair() {
+    var o = document.getElementById('overlaySair');
+    if (o) { o.classList.remove('aberto'); }
+}
+/* Confirmou sair: salva o que ja foi feito (abandonado) e mostra a tela de encerrado. */
+function confirmarSair() {
+    fecharAvisoSair();
+    bateriaEmAndamento = false;   // desliga o aviso de fechar aba
+    mostrarBotaoSair(false);
+    if (modoOnline && !bafcJaEnviado && sessionData.sessionId) {
+        enviarAbandonoBAFC();
+    }
+    mostrarTela('tela-encerrado');
+}
+
+/* Pular este modulo: fecha o aviso e avanca para o proximo modulo da fila
+   SEM registrar resultado do modulo atual. O modulo pulado nao gera dados;
+   o proximo passa normalmente pela cobranca em abrirModuloAtual (so paga o
+   que for efetivamente iniciado). Se era o ultimo, a bateria finaliza. */
+function pularModuloAtual() {
+    fecharAvisoSair();
+    indiceAtual++;              // move o dedo para o proximo (nao guarda resultado do pulado)
+    abrirModuloAtual();         // abre o proximo (cobra 1 credito) ou finaliza a bateria
+}
+
+/* Envia os modulos ja feitos com status 'abandonado' (usa fetch normal aqui,
+   pois nao estamos no momento de fechar a aba). */
+function enviarAbandonoBAFC() {
+    var feitos = [];
+    ['A', 'B', 'C', 'D'].forEach(function(id) { if (resultados[id]) { feitos.push(id); } });
+    var pacote = {
+        sessionId: sessionData.sessionId,
+        email: sessionData.email || '',
+        tipo: 'bafc',
+        data: {
+            formData: sessionData,
+            idPaciente: sessionData.idPaciente || '',
+            status: 'abandonado',
+            modulosAplicados: feitos,
+            A: resultados.A || null,
+            B: resultados.B || null,
+            C: resultados.C || null,
+            D: resultados.D || null,
+            indices: calcularIndices(),
+            dataAplicacao: new Date().toISOString()
+        }
+    };
+    bafcJaEnviado = true;
+    try {
+        fetch(BAFC_API_URL + '/save-result', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(pacote)
+        }).catch(function(){});
+    } catch (e) {}
+}
+
+/* ============================================================
+   INICIO DA BATERIA
+   ============================================================ */
+function iniciarBateria() {
+    // Coleta os dados do paciente e valida o minimo (nome + nascimento)
+    coletarDadosPaciente();
+    if (!sessionData.patientName) { alert('Preencha o nome do avaliando antes de iniciar.'); return; }
+    if (!sessionData.birthDate) { alert('Preencha a data de nascimento antes de iniciar.'); return; }
+
+    // Monta a fila com os modulos marcados, na ordem do catalogo (A -> D)
+    fila = [];
+    MODULOS.forEach(function(m) {
+        var cb = document.querySelector('#item-' + m.id + ' input');
+        if (cb && cb.checked) { fila.push(m.id); }
+    });
+    if (fila.length === 0) { alert('Selecione ao menos um m\u00f3dulo.'); return; }
+
+    indiceAtual = 0;
+    resultados = {};
+    bateriaEmAndamento = true; // ativa o aviso ao fechar a aba
+    mostrarBotaoSair(true);
+
+    mostrarTela('tela-teste');
+    abrirModuloAtual();
+}
+
+/* Encontra o objeto do modulo pelo id */
+function moduloPorId(id) {
+    for (var i = 0; i < MODULOS.length; i++) { if (MODULOS[i].id === id) { return MODULOS[i]; } }
+    return null;
+}
+
+/* ============================================================
+   COBRANCA DE CREDITO POR MODULO (modelo BAE/TFLOD)
+   Debita 1 credito no momento em que o modulo vai iniciar.
+   - Admin (setmonte@gmail.com) e modo local NAO consomem credito.
+   - Anti-cobranca-dupla: se o modulo ja foi cobrado nesta sessao
+     (modulosCobrados[id]), nao cobra de novo (ex.: reload).
+   - Fail-closed: so retorna true (libera o modulo) se o servidor
+     respondeu OK. Sem credito / erro de rede => retorna false.
+   Retorna uma Promise que resolve para true (pode abrir) ou false (bloquear). */
+function cobrarModulo(id) {
+    // BAFC: SEM COBRANCA de creditos por enquanto (fase de testes). Para ligar a cobranca no futuro, apague a linha abaixo.
+    return Promise.resolve(true);
+    // Modo local (arquivo aberto direto, sem link do painel): nao cobra.
+    if (!modoOnline) { return Promise.resolve(true); }
+    var email = (sessionData && sessionData.email) ? sessionData.email : '';
+    // Admin nao consome credito.
+    if (email === 'setmonte@gmail.com') { return Promise.resolve(true); }
+    // Sem identificacao nao da para cobrar: bloqueia (fail-closed).
+    if (!email) { return Promise.resolve(false); }
+    // Ja cobrado antes nesta sessao (ex.: reload do mesmo modulo): nao cobra 2x.
+    if (modulosCobrados[id]) { return Promise.resolve(true); }
+    return fetch(BAFC_API_URL + '/use-credit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email, tipo: 'bafc' })
+    }).then(function(r) {
+        // Fail-closed: 403 (sem credito) ou qualquer erro nao libera.
+        if (!r.ok) { return false; }
+        modulosCobrados[id] = true;   // marca como pago para nao cobrar de novo
+        return true;
+    }).catch(function() {
+        // Falha de rede/servidor: NAO liberar o modulo.
+        return false;
+    });
+}
+
+/* Abre o modulo da vez dentro do iframe. Passa ?bateria=1 para o modulo
+   saber que esta rodando dentro do controlador (e deve "tocar o sino"), e
+   inclui os dados do paciente em ?p= (JSON em base64) para o modulo preencher
+   o formulario sozinho e comecar direto (sem pedir dados de novo).
+   Antes de abrir, cobra 1 credito daquele modulo (ver cobrarModulo). */
+function abrirModuloAtual() {
+    if (indiceAtual >= fila.length) { finalizarBateria(); return; }
+    var id = fila[indiceAtual];
+    var mod = moduloPorId(id);
+    var frame = document.getElementById('moduloFrame');
+
+    // COBRANCA POR MODULO: so abre se o credito foi debitado com sucesso.
+    cobrarModulo(id).then(function(liberado) {
+        if (!liberado) {
+            // Sem credito (ou erro): nao abre este modulo. Avisa e encerra a bateria,
+            // preservando os modulos ja feitos (o fim/abandono cuida de salvar).
+            alert('Cr\u00e9ditos insuficientes para iniciar o m\u00f3dulo ' + id + '.\n\nOs m\u00f3dulos j\u00e1 realizados foram preservados. Solicite mais cr\u00e9ditos ao seu avaliador.');
+            // Encerra: se online e ainda nao enviou o completo, salva o que ha como abandonado.
+            bateriaEmAndamento = false;
+            mostrarBotaoSair(false);
+            if (modoOnline && !bafcJaEnviado && sessionData.sessionId) { enviarAbandonoBAFC(); }
+            mostrarTela('tela-encerrado');
+            return;
+        }
+        // Liberado: empacota os dados do paciente e abre o modulo no iframe.
+        var pacote = '';
+        try { pacote = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(sessionData))))); } catch (e) { pacote = ''; }
+        frame.src = mod.arquivo + '?bateria=1&modulo=' + id + (pacote ? '&p=' + pacote : '');
+    });
+}
+
+/* ============================================================
+   O "OUVIDO": escuta o sino (postMessage) dos modulos
+   ============================================================ */
+window.addEventListener('message', function(evento) {
+    // Seguranca: so aceita mensagens da propria origem (mesmo site/pasta).
+    // No modo local (file://), a origem vem como 'null' string; aceitamos tambem.
+    if (evento.origin !== window.location.origin && evento.origin !== 'null') { return; }
+
+    var msg = evento.data || {};
+    if (!msg || msg.tipo !== 'bafc-modulo-fim') { return; }
+
+    // Guarda o resultado deste modulo no "quadro de avisos"
+    var id = msg.modulo || fila[indiceAtual];
+    resultados[id] = msg.dados || {};
+
+    // Move o dedo e abre o proximo (ou finaliza)
+    indiceAtual++;
+    abrirModuloAtual();
+});
+
+/* ============================================================
+   FIM DA BATERIA
+   ============================================================ */
+function finalizarBateria() {
+    // A bateria terminou normalmente: desliga o aviso de fechar aba.
+    bateriaEmAndamento = false;
+    mostrarBotaoSair(false);
+
+    // Lista o que foi aplicado (por enquanto so exibe; IA e PDF vem depois)
+    var ul = document.getElementById('listaConcluidos');
+    var html = '';
+    fila.forEach(function(id) {
+        var mod = moduloPorId(id);
+        var temResultado = resultados[id] ? '' : ' (sem dados recebidos)';
+        html += '<li>M\u00f3dulo ' + id + ' \u2014 ' + mod.nome + temResultado + '</li>';
+    });
+    ul.innerHTML = html;
+
+    // Deixa os dados acessiveis no console para conferencia nesta fase
+    window._resultadosBAFC = resultados;
+    console.log('BAFC - resultados coletados:', resultados);
+    renderRelatorioLocal();
+
+    mostrarTela('tela-fim');
+
+    // No modo online, envia o pacote completo ao servidor (aba Resultados do painel).
+    // No modo local nao envia nada (fica so na tela/console).
+    if (modoOnline) { enviarResultadosBAFC(); }
+}
+
+/* ============================================================
+   ENVIO DOS RESULTADOS AO SERVIDOR (modo online)
+   Grava UM registro por aplicacao (mesmo sessionId), com os modulos
+   como chaves irmas (resultados.A, resultados.B, ...), igual o BAE.
+   ============================================================ */
+function enviarResultadosBAFC() {
+    if (!sessionData.sessionId) { return; }
+    var pacote = {
+        sessionId: sessionData.sessionId,
+        email: sessionData.email || '',
+        tipo: 'bafc',
+        data: {
+            formData: sessionData,
+            idPaciente: sessionData.idPaciente || '',
+            status: 'completo',
+            modulosAplicados: fila.slice(),
+            A: resultados.A || null,
+            B: resultados.B || null,
+            C: resultados.C || null,
+            D: resultados.D || null,
+            indices: calcularIndices(),
+            dataAplicacao: new Date().toISOString()
+        }
+    };
+    bafcJaEnviado = true; // resultado completo enviado: o beforeunload nao deve sobrescrever
+    try {
+        fetch(BAFC_API_URL + '/save-result', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(pacote)
+        }).catch(function(){});
+    } catch (e) {}
+}
+
+/* ============================================================
+   MODO ONLINE: le a sessao do link (?s= ou ?d=) e comeca sozinho
+   ============================================================ */
+function aplicarSessaoOnline(data) {
+    // Preenche o sessionData com o que veio do servidor (chaves iguais ao site)
+    sessionData = {
+        sessionId: data.sessionId || '',
+        email: data.email || '',
+        patientName: data.patientName || '',
+        birthDate: data.birthDate || '',
+        sex: data.sex || '',
+        cpf: data.cpf || '',
+        education: data.education || '',
+        laterality: data.laterality || data.lateralidade || '',
+        correcaoVisual: data.correcaoVisual || '',
+        evaluator: data.evaluator || '',
+        crp: data.crp || '',
+        email: data.email || '',
+        idPaciente: gerarIdPaciente(data.patientName || '', data.birthDate || '') || data.idPaciente || '',
+        pacienteId: data.pacienteId || '',
+        obs: data.obs || '',
+        idade: '',
+        dataAval: new Date().toISOString().split('T')[0]
+    };
+
+    // Monta a fila SO com os modulos escolhidos no painel (data.testes = ['A','C',...]).
+    // Se por algum motivo nao vier, aplica todos (fallback seguro).
+    var escolhidos = data.testes && data.testes.length ? data.testes : ['A', 'B', 'C', 'D'];
+    fila = [];
+    MODULOS.forEach(function(m) {
+        if (escolhidos.indexOf(m.id) !== -1) { fila.push(m.id); }
+    });
+    if (fila.length === 0) { fila = ['A', 'B', 'C', 'D']; }
+
+    indiceAtual = 0;
+    resultados = {};
+    bateriaEmAndamento = true; // ativa o aviso ao fechar a aba
+    mostrarBotaoSair(true);
+
+    // Marca a sessao como 'em andamento' no servidor (trava de reuso do link).
+    marcarSessaoIniciada();
+
+    // Pula o formulario: vai direto para a tela do teste e abre o primeiro modulo
+    mostrarTela('tela-teste');
+    abrirModuloAtual();
+}
+
+/* Mostra uma mensagem de tela cheia (link usado / invalido) e para tudo */
+function telaMensagemBAFC(titulo, texto) {
+    document.body.innerHTML =
+        '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;' +
+        'min-height:100vh;background:linear-gradient(135deg,#e0f2f1,#80cbc4);text-align:center;padding:20px;">' +
+        '<h1 style="color:#c62828;font-size:1.6em;margin-bottom:10px;">' + titulo + '</h1>' +
+        '<p style="font-size:1em;color:#555;">' + texto + '</p></div>';
+}
+
+/* Marca a sessao como 'em_andamento' no servidor assim que a bateria comeca.
+   Isso faz o /session-status parar de retornar 'aguardando', bloqueando o
+   reuso do mesmo link em outra aba (mesma logica do BAE). */
+function marcarSessaoIniciada() {
+    if (!sessionData.sessionId) { return; }
+    var pacote = {
+        sessionId: sessionData.sessionId,
+        email: sessionData.email || '',
+        tipo: 'bafc',
+        data: {
+            formData: sessionData,
+            idPaciente: sessionData.idPaciente || '',
+            status: 'em_andamento',
+            modulosAplicados: fila.slice(),
+            dataInicio: new Date().toISOString()
+        }
+    };
+    try {
+        fetch(BAFC_API_URL + '/save-result', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(pacote)
+        }).catch(function(){});
+    } catch (e) {}
+}
+
+/* Ponto de entrada do modo online: decide entre ?s= (servidor) e ?d= (base64) */
+function iniciarModoOnline(params) {
+    modoOnline = true;
+    var s = params.get('s');
+    var d = params.get('d');
+
+    if (s) {
+        // Primeiro checa se o link ja foi usado (status != aguardando). Igual ao BAE.
+        fetch(BAFC_API_URL + '/session-status?sessionId=' + encodeURIComponent(s)).then(function(r) {
+            return r.json();
+        }).then(function(st) {
+            var status = st && st.status ? st.status : 'not_found';
+            if (status !== 'aguardando' && status !== 'not_found') {
+                telaMensagemBAFC('Este link j\u00e1 foi utilizado.', 'Solicite um novo link ao seu avaliador.');
+                throw new Error('link_usado');
+            }
+            // Link valido: busca os dados da sessao e comeca.
+            return fetch(BAFC_API_URL + '/get-session?id=' + encodeURIComponent(s));
+        }).then(function(r) {
+            if (!r) { return null; }
+            if (r.status === 410) {
+                telaMensagemBAFC('Este link j\u00e1 foi utilizado.', 'Solicite um novo link ao seu avaliador.');
+                throw new Error('link_usado');
+            }
+            return r.json();
+        }).then(function(data) {
+            if (data && data.sessionId) { aplicarSessaoOnline(data); }
+            else if (data !== null) { telaMensagemBAFC('Link inv\u00e1lido ou expirado.', 'Solicite um novo link ao seu avaliador.'); }
+        }).catch(function(){});
+    } else if (d) {
+        try {
+            var obj = JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(d)))));
+            if (obj && obj.sessionId) { aplicarSessaoOnline(obj); }
+            else { telaMensagemBAFC('Link inv\u00e1lido ou expirado.', 'Solicite um novo link ao seu avaliador.'); }
+        } catch (e) {
+            telaMensagemBAFC('Link inv\u00e1lido ou expirado.', 'Solicite um novo link ao seu avaliador.');
+        }
+    }
+}
+
+/* ============================================================
+   REDE DE SEGURANCA AO FECHAR A ABA (padrao do BAE, reforcado)
+   Camada 1: aviso nativo do navegador ("tem certeza que quer sair?").
+             So aparece se a bateria estiver em andamento.
+   Camada 2: sendBeacon de emergencia - salva os modulos ja feitos
+             como status 'abandonado' (so no modo online e se ainda
+             nao enviou o resultado completo).
+   ============================================================ */
+window.addEventListener('beforeunload', function(e) {
+    // Se a bateria nao esta rolando (tela inicial ou ja terminou), nao interfere.
+    if (!bateriaEmAndamento) { return; }
+
+    // Camada 2: salva o que ja foi feito, se estiver online e ainda nao enviou tudo.
+    if (modoOnline && !bafcJaEnviado && sessionData.sessionId) {
+        var feitos = [];
+        ['A', 'B', 'C', 'D'].forEach(function(id) { if (resultados[id]) { feitos.push(id); } });
+        if (feitos.length > 0) {
+            var pacote = {
+                sessionId: sessionData.sessionId,
+                email: sessionData.email || '',
+                tipo: 'bafc',
+                data: {
+                    formData: sessionData,
+            idPaciente: sessionData.idPaciente || '',
+                    status: 'abandonado',
+                    modulosAplicados: feitos,
+                    A: resultados.A || null,
+                    B: resultados.B || null,
+                    C: resultados.C || null,
+                    D: resultados.D || null,
+            indices: calcularIndices(),
+                    dataAplicacao: new Date().toISOString()
+                }
+            };
+            try { navigator.sendBeacon(BAFC_API_URL + '/save-result', JSON.stringify(pacote)); } catch (err) {}
+        }
+    }
+
+    // Camada 1: pede confirmacao ao navegador (texto e generico, controlado pelo navegador).
+    e.preventDefault();
+    e.returnValue = '';
+    return '';
+});
+
+/* ===== INICIALIZACAO (direta, no fim do script) ===== */
+var _bafcParams = new URLSearchParams(window.location.search);
+if (_bafcParams.get('s') || _bafcParams.get('d')) {
+    // MODO ONLINE: veio do link do painel. Nao mostra o formulario;
+    // busca a sessao no servidor e comeca a bateria sozinho.
+    iniciarModoOnline(_bafcParams);
+} else {
+    // MODO LOCAL: abrir o arquivo direto. Mostra o formulario normal.
+    montarListaModulos();
+    atualizarMarcacao();
+    document.getElementById('dataAval').value = new Date().toISOString().split('T')[0];
+}
+</script>
+</body>
+</html>

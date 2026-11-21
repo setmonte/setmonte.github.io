@@ -2135,6 +2135,8 @@
             <button class="sub-tab-btn active" id="subTabIdeia" onclick="switchSubTab('inteligencia','ideia')">IDEIA</button>
             <!-- BRPI: oculta por enquanto (apenas admin). Remover 'hidden' quando publicar. -->
             <button class="sub-tab-btn" id="subTabBrpi" onclick="switchSubTab('inteligencia','brpi')">BRPI</button>
+            <!-- BAFC: oculta (so admin). O login do admin tira o display:none. -->
+            <button class="sub-tab-btn" id="subTabBafc" style="display:none;" onclick="switchSubTab('inteligencia','bafc')">BAFC</button>
           </div>
           <!-- Sub-aba IDEIA -->
           <div id="subIdeiaContent" class="sub-tab-content active">
@@ -2245,6 +2247,32 @@
               <a href="manual-brpi.html" target="_blank" class="btn" style="background:#607d8b;color:#fff;">&#128212; Manual T&#233;cnico</a>
             </div>
           </div>
+          <!-- ============================================================ -->
+          <!-- Sub-aba BAFC (OCULTA: so o admin ve; sem creditos por enquanto) -->
+          <!-- ============================================================ -->
+          <div id="subBafcContent" class="sub-tab-content">
+            <div style="background:#f3e8ff;border:1px solid #c77dff;border-radius:8px;padding:12px;margin:10px 0;font-size:0.82em;color:#4a1a7a;line-height:1.6;">
+              <strong>&#129504; BAFC &#8212; Bateria de Avalia&#231;&#227;o do Funcionamento Cognitivo</strong><br>
+              Bateria modular com quatro &#225;reas que podem ser aplicadas juntas ou separadamente. Os resultados s&#227;o comparados com pessoas da mesma idade e viram um &#205;ndice Cognitivo Global (a partir de 2 &#225;reas) e um perfil por &#225;rea.<br>
+              <strong>Mem&#243;ria Operacional</strong> &#8212; d&#237;gitos falados, ordem direta e inversa<br>
+              <strong>Velocidade de Processamento e Aten&#231;&#227;o</strong> &#8212; matriz de figuras e n&#250;meros (pares, &#237;mpares, figura e cor)<br>
+              <strong>Intelig&#234;ncia Verbal</strong> &#8212; 30 itens de palavras e rela&#231;&#245;es (&#225;udio nos primeiros, depois leitura)<br>
+              <strong>Intelig&#234;ncia N&#227;o-Verbal</strong> &#8212; molde dobrado e s&#243;lidos (24 itens)<br>
+              <strong>Faixa et&#225;ria:</strong> a partir de 8 anos | <strong>Cr&#233;ditos:</strong> sem cobran&#231;a nesta fase de testes<br>
+              <strong>Sa&#237;da:</strong> relat&#243;rio em PDF com perfil por &#225;rea, an&#225;lise dos resultados e gloss&#225;rio<br>
+              <strong>Aten&#231;&#227;o:</strong> normas de Velocidade, Verbal e N&#227;o-Verbal ainda provis&#243;rias (uso experimental)
+            </div>
+            <div style="background:#f3e5f5;border:1px solid #ce93d8;border-radius:8px;padding:12px;margin:10px 0;font-size:0.82em;color:#4a148c;line-height:1.6;">
+              <strong>&#128214; Como referenciar este instrumento (ABNT)</strong><br>
+              <span style="display:block;margin:8px 0;font-family:Georgia,serif;color:#333;background:#fff;border-radius:6px;padding:10px;">MONTE, Sergio Teixeira. <strong>BAFC: Bateria de Avalia&#231;&#227;o do Funcionamento Cognitivo</strong>. S&#936;M Online &#8212; Centro de Testagem em Neuropsicologia Online, 2026. Dispon&#237;vel em: https://setmonte.github.io/online/teste-bafc.html. Acesso em: <span class="ref-data-acesso"></span>.</span>
+              <button class="btn btn-blue" style="padding:6px 14px;font-size:12px;" data-ref="MONTE, Sergio Teixeira. BAFC: Bateria de Avalia&#231;&#227;o do Funcionamento Cognitivo. S&#936;M Online &#8212; Centro de Testagem em Neuropsicologia Online, 2026. Dispon&#237;vel em: https://setmonte.github.io/online/teste-bafc.html. Acesso em: {DATA}." onclick="copiarReferencia(this)">Copiar refer&#234;ncia</button>
+            </div>
+            <div class="btn-row">
+              <button class="btn btn-green" id="btnNewBafc" onclick="showNewBafc()">Nova Aplicacao</button>
+              <button class="btn btn-blue" onclick="showBafcResults()">Resultados</button>
+            </div>
+          </div>
+
         </div>
 
         <!-- === ABA CORRECAO DE TESTES === -->
@@ -2827,6 +2855,104 @@
 
       <!-- RESULTADOS BRPI (multi-modulo) -->
       <div id="brpiResultsSection" class="card hidden"></div>
+
+      <!-- ============================================================ -->
+      <!-- NOVA APLICACAO BAFC (modal, mesmo desenho do BRPI; sem creditos) -->
+      <!-- ============================================================ -->
+      <div id="newBafcSection" class="ideia-modal-overlay" onclick="fecharModalBafc(event)">
+       <div class="ideia-modal-box" onclick="event.stopPropagation()">
+        <div class="ideia-modal-header" style="background:#7b2cbf;">
+          <h2 style="color:#fff;">Nova Aplicacao BAFC</h2>
+          <button class="ideia-modal-fechar" onclick="fecharModalBafc()" title="Fechar" style="color:#fff;">&#10005;</button>
+        </div>
+        <div class="ideia-modal-body">
+        <p style="margin-bottom:10px;color:#555;font-size:0.9em;">Bateria de Avaliacao do Funcionamento Cognitivo. Sem cobranca de creditos nesta fase de testes.</p>
+        <label style="font-size:0.85em;color:#555;">Paciente cadastrado:</label>
+        <select id="bafcSelPac" onchange="preencherPaciente('bafc')" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:10px;">
+          <option value="">-- Selecione ou preencha abaixo --</option>
+        </select>
+        <label style="font-size:0.85em;color:#555;">Nome:</label>
+        <input type="text" id="bafcNome" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+        <label style="font-size:0.85em;color:#555;">Data de Nascimento:</label>
+        <input type="date" id="bafcDn" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+        <label style="font-size:0.85em;color:#555;">Sexo:</label>
+        <select id="bafcSexo" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+          <option value="">Selecione...</option>
+          <option value="Masculino">Masculino</option>
+          <option value="Feminino">Feminino</option>
+        </select>
+        <label style="font-size:0.85em;color:#555;">CPF (opcional):</label>
+        <input type="text" id="bafcCpf" placeholder="XXX.XXX.XXX-XX" maxlength="14" oninput="maskCPF(this)" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+        <label style="font-size:0.85em;color:#555;">Correcao Visual:</label>
+        <select id="bafcCorrecaoVisual" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+          <option value="">Selecione...</option>
+          <option value="Nenhuma">Nenhuma</option>
+          <option value="Oculos">Oculos</option>
+          <option value="Lente de contato">Lente de contato</option>
+        </select>
+        <label style="font-size:0.85em;color:#555;">Escolaridade:</label>
+        <select id="bafcEscolaridade" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+          <option value="">Selecione...</option>
+          <option value="1o ano">1o ano</option>
+          <option value="2o ano">2o ano</option>
+          <option value="3o ano">3o ano</option>
+          <option value="4o ano">4o ano</option>
+          <option value="5o ano">5o ano</option>
+          <option value="6o ano">6o ano</option>
+          <option value="7o ano">7o ano</option>
+          <option value="8o ano">8o ano</option>
+          <option value="9o ano">9o ano</option>
+          <option value="Ensino Medio">Ensino Medio</option>
+          <option value="Superior Incompleto">Superior Incompleto</option>
+          <option value="Superior Completo">Superior Completo</option>
+          <option value="Pos-graduacao">Pos-graduacao</option>
+        </select>
+        <label style="font-size:0.85em;color:#555;">Lateralidade:</label>
+        <select id="bafcLaterality" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+          <option value="">Selecione...</option>
+          <option value="Destro">Destro</option>
+          <option value="Canhoto">Canhoto</option>
+          <option value="Ambidestro">Ambidestro</option>
+        </select>
+        <label style="font-size:0.85em;color:#555;">Avaliador:</label>
+        <input type="text" id="bafcEvaluator" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+        <label style="font-size:0.85em;color:#555;">CRP:</label>
+        <input type="text" id="bafcCrp" placeholder="XX/XXXXXX-X" maxlength="11" oninput="maskCRP(this)" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+        <label style="font-size:0.85em;color:#555;">Observacoes:</label>
+        <input type="text" id="bafcObs" placeholder="Opcional" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:12px;">
+
+        <div style="background:#f3e8ff;border:1px solid #c77dff;border-radius:8px;padding:12px;margin-bottom:12px;">
+          <p style="font-size:0.85em;color:#4a1a7a;font-weight:700;margin-bottom:8px;">Areas a aplicar (o indice global precisa de pelo menos 2):</p>
+          <label style="display:block;font-size:0.85em;color:#333;margin-bottom:6px;cursor:pointer;">
+            <input type="checkbox" class="bafcChkModulo" value="A" checked> <strong>A</strong> &#8212; Memoria Operacional
+          </label>
+          <label style="display:block;font-size:0.85em;color:#333;margin-bottom:6px;cursor:pointer;">
+            <input type="checkbox" class="bafcChkModulo" value="B" checked> <strong>B</strong> &#8212; Velocidade de Processamento e Atencao
+          </label>
+          <label style="display:block;font-size:0.85em;color:#333;margin-bottom:6px;cursor:pointer;">
+            <input type="checkbox" class="bafcChkModulo" value="C" checked> <strong>C</strong> &#8212; Inteligencia Verbal
+          </label>
+          <label style="display:block;font-size:0.85em;color:#333;margin-bottom:6px;cursor:pointer;">
+            <input type="checkbox" class="bafcChkModulo" value="D" checked> <strong>D</strong> &#8212; Inteligencia Nao-Verbal
+          </label>
+        </div>
+
+        <button onclick="startBafcOnlineTest()" class="btn btn-green" style="width:48%;">Gerar Link do Paciente</button>
+        <button onclick="startBafcOnlineTest(true)" class="btn btn-blue" style="width:48%;">Aplicar Localmente</button>
+        <div id="bafcLinkResult" class="hidden" style="margin-top:15px;padding:12px;background:#e8f5e9;border-radius:8px;">
+          <p style="font-size:0.8em;color:#555;margin-bottom:5px;">Link gerado:</p>
+          <p id="bafcSessionLink" style="word-break:break-all;font-size:0.75em;color:#1565c0;"></p>
+          <div style="margin-top:10px;display:flex;gap:8px;">
+            <button onclick="copyBafcLink()" class="btn btn-blue" style="font-size:0.85em;">Copiar</button>
+            <button onclick="whatsappBafcLink()" class="btn btn-green" style="font-size:0.85em;">WhatsApp</button>
+          </div>
+        </div>
+        </div><!-- fim .ideia-modal-body -->
+       </div><!-- fim .ideia-modal-box -->
+      </div><!-- fim #newBafcSection (modal) -->
+
+      <!-- RESULTADOS BAFC -->
+      <div id="bafcResultsSection" class="card hidden"></div>
 
       <!-- MODAL DE PLANOS/CREDITOS BRPI -->
       <div id="brpiPlansSection" class="ideia-modal-overlay" onclick="fecharModalBrpiPlanos(event)">
@@ -3662,6 +3788,8 @@
       if (currentUser !== 'setmonte@gmail.com') {
         document.querySelectorAll('option[data-admin-only]').forEach(function (o) { if (o.parentNode) o.parentNode.removeChild(o); });
       }
+      // BAFC (sub-aba da Inteligencia): oculta para todos, so o admin ve por enquanto.
+      if (currentUser === 'setmonte@gmail.com') { var _sbBafc = document.getElementById('subTabBafc'); if (_sbBafc) { _sbBafc.style.display = ''; } }
       // Aplicar modo gratuito para qualquer usuario (o toggle so aparece para admin, mas o efeito e global)
       if (isFreeModeActive()) { aplicarFreeMode(true); }
       // Verificar respostas do suporte para o usuario
@@ -8730,7 +8858,7 @@
       listaOrdenada.forEach(function(p) {
         opcoesHtml += '<option value="' + p.id + '" data-nome="' + (p.nome||'').replace(/"/g,'') + '" data-dn="' + (p.dataNascimento||'') + '" data-cpf="' + (p.cpf||'') + '" data-sexo="' + (p.sexo||'') + '" data-esc="' + (p.escolaridade||'') + '" data-lat="' + (p.lateralidade||'') + '" data-cv="' + (p.correcaoVisual||'') + '">' + (p.nome||'') + ' (' + (p.dataNascimento||'?') + ')</option>';
       });
-      ['baeSelPac','trmvSelPac','taavSelPac','tecfeSelPac','trefSelPac','tflodSelPac','corsiSelPac','tpvsetSelPac','tteSelPac','tetaylorSelPac','tetaylorsimpSelPac','escalaSelPac','anamneseSelPac','reocupaSelPac','pfisterSelPac','neoSelPac','agendaSelPac','prontuarioSelPac','srs2SelPac','srs2aaSelPac','srs2ahSelPac','lermaisSelPac','pratSelPac','etdahSelPac','criadSelPac','bvrtSelPac','vineland3SelPac','ideiaSelPac','brpiSelPac'].forEach(function(id) {
+      ['baeSelPac','trmvSelPac','taavSelPac','tecfeSelPac','trefSelPac','tflodSelPac','corsiSelPac','tpvsetSelPac','tteSelPac','tetaylorSelPac','tetaylorsimpSelPac','escalaSelPac','anamneseSelPac','reocupaSelPac','pfisterSelPac','neoSelPac','agendaSelPac','prontuarioSelPac','srs2SelPac','srs2aaSelPac','srs2ahSelPac','lermaisSelPac','pratSelPac','etdahSelPac','criadSelPac','bvrtSelPac','vineland3SelPac','ideiaSelPac','bafcSelPac','brpiSelPac'].forEach(function(id) {
         var sel = document.getElementById(id);
         if (!sel) return;
         var val = sel.value;
@@ -8871,6 +8999,7 @@
       else if (tipo === 'vineland3') { campoNome = document.getElementById('vineland3Nome'); campoDN = document.getElementById('vineland3Dn'); }
       else if (tipo === 'ideia') { campoNome = document.getElementById('ideiaNome'); campoDN = document.getElementById('ideiaDn'); }
       else if (tipo === 'brpi') { campoNome = document.getElementById('brpiNome'); campoDN = document.getElementById('brpiDn'); campoCPF = document.getElementById('brpiCpf'); }
+      else if (tipo === 'bafc') { campoNome = document.getElementById('bafcNome'); campoDN = document.getElementById('bafcDn'); campoCPF = document.getElementById('bafcCpf'); }
       else if (tipo === 'bvrt') { campoNome = document.getElementById('bvrtNome'); }
       else if (tipo === 'etdah') { campoNome = document.getElementById('etdahNome'); }
       else if (tipo === 'criad') { campoNome = document.getElementById('criadNome'); }
@@ -13579,6 +13708,7 @@
         ['trmvEvaluator', 'trmvCrp'],
         ['taavEvaluator', 'taavCrp'],
         ['brpiEvaluator', 'brpiCrp'],
+        ['bafcEvaluator', 'bafcCrp'],
         ['onEvaluator', 'onCrp']
       ];
       pares.forEach(function(par) {
@@ -14084,6 +14214,197 @@
         else { alert('Erro ao gerar link de pagamento'); }
       } catch(e) { alert('Erro: ' + e.message); }
       finally { if (btn) { btn.textContent = 'Comprar'; btn.disabled = false; } }
+    }
+
+    // ===== BAFC - Bateria de Avaliacao do Funcionamento Cognitivo =====
+    // Sub-aba oculta (so admin). Sem creditos nesta fase. Mesma mecanica do BRPI:
+    // link de sessao unica (?s=), resultados em /get-results?tipo=bafc e PDF gerado aqui no painel
+    // por bafc/bafc-pdf.js (carregado so quando o PDF e pedido).
+    var _generatedBafcLink = '';
+    var _bafcResultCache = [];
+    function showNewBafc() {
+      var m = document.getElementById('newBafcSection');
+      if (!m) return;
+      m.classList.add('aberto');
+      if (document.getElementById('bafcResultsSection')) document.getElementById('bafcResultsSection').classList.add('hidden');
+      if (typeof _preencherProfissionalNosFormularios === 'function') _preencherProfissionalNosFormularios();
+    }
+    function fecharModalBafc(e) {
+      if (e && e.target !== document.getElementById('newBafcSection')) return;
+      document.getElementById('newBafcSection').classList.remove('aberto');
+    }
+    async function startBafcOnlineTest(abrirLocal) {
+      var nome = document.getElementById('bafcNome').value.trim();
+      var dn = document.getElementById('bafcDn').value;
+      if (!nome || !dn) { alert('Preencha pelo menos o nome e a data de nascimento.'); return; }
+      if (typeof _validarDataNascimento === 'function') {
+        var _dnErr = _validarDataNascimento(dn);
+        if (_dnErr) { alert(_dnErr); return; }
+      }
+      var modulos = [];
+      document.querySelectorAll('.bafcChkModulo:checked').forEach(function(c) { modulos.push(c.value); });
+      if (modulos.length === 0) { alert('Selecione pelo menos uma area.'); return; }
+      if (modulos.length === 1) {
+        if (!confirm('Com uma unica area nao ha indice global (ICG). Continuar mesmo assim?')) return;
+      }
+      var btn = event && event.target ? event.target : null;
+      if (typeof btnLoading === 'function') btnLoading(btn);
+      try {
+        var sessionId = 'bafc-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+        var sessionData = {
+          sessionId: sessionId,
+          tipo: 'bafc',
+          patientName: nome,
+          birthDate: dn,
+          cpf: document.getElementById('bafcCpf').value,
+          sex: document.getElementById('bafcSexo').value,
+          laterality: document.getElementById('bafcLaterality').value,
+          education: document.getElementById('bafcEscolaridade').value,
+          correcaoVisual: document.getElementById('bafcCorrecaoVisual').value,
+          evaluator: document.getElementById('bafcEvaluator').value,
+          crp: document.getElementById('bafcCrp').value,
+          obs: document.getElementById('bafcObs').value,
+          email: currentUser,
+          pacienteId: document.getElementById('bafcSelPac').value || '',
+          testes: modulos
+        };
+        // Registro "aguardando" (sera preenchido quando as areas terminarem)
+        await fetch(API_URL + '/save-result', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId: sessionId, email: currentUser, tipo: 'bafc', data: { formData: sessionData, status: 'aguardando' } })
+        });
+        // Link curto (?s=); se falhar, cai no ?d= (base64)
+        _generatedBafcLink = '';
+        try {
+          var _rsB = await fetch(API_URL + '/save-session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(sessionData)
+          });
+          var _rjB = await _rsB.json();
+          if (_rjB.id) { _generatedBafcLink = 'https://setmonte.github.io/online/teste-bafc.html?s=' + _rjB.id; }
+        } catch (e) {}
+        if (!_generatedBafcLink) {
+          var params = (typeof safeBtoa === 'function') ? safeBtoa(JSON.stringify(sessionData)) : btoa(unescape(encodeURIComponent(JSON.stringify(sessionData))));
+          _generatedBafcLink = 'https://setmonte.github.io/online/teste-bafc.html?d=' + encodeURIComponent(params);
+        }
+        if (abrirLocal) {
+          window.open(_generatedBafcLink, '_blank');
+        } else {
+          document.getElementById('bafcSessionLink').textContent = _generatedBafcLink;
+          document.getElementById('bafcLinkResult').classList.remove('hidden');
+        }
+      } catch (e) {
+        if (typeof mostrarErro === 'function') mostrarErro('Erro ao gerar link BAFC: ' + e.message);
+        else alert('Erro ao gerar link BAFC: ' + e.message);
+      }
+      if (typeof btnReset === 'function') btnReset(btn);
+    }
+    function copyBafcLink() {
+      navigator.clipboard.writeText(_generatedBafcLink).then(function() { alert('Link copiado!'); });
+    }
+    function whatsappBafcLink() {
+      var text = 'Ola! Acesse o link abaixo para realizar a BAFC (Bateria de Avaliacao do Funcionamento Cognitivo): ' + _generatedBafcLink;
+      window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+    }
+    function showBafcResults() {
+      var sec = document.getElementById('bafcResultsSection');
+      sec.classList.toggle('hidden');
+      if (!sec.classList.contains('hidden')) { loadBafcResults(); }
+    }
+    async function loadBafcResults() {
+      var sec = document.getElementById('bafcResultsSection');
+      sec.innerHTML = '<h2>Resultados BAFC</h2><p style="color:#777;">Carregando...</p>';
+      try {
+        var resp = await fetch(API_URL + '/get-results?email=' + encodeURIComponent(currentUser) + '&tipo=bafc');
+        var data = await resp.json();
+        _bafcResultCache = [];
+        var html = '<h2>Resultados BAFC</h2>';
+        html += '<div class="btn-row" style="margin-bottom:10px;">';
+        html += '<button class="btn btn-red" onclick="eliminarResultadosBafc()">Eliminar selecionados</button></div>';
+        html += '<div id="bafcPendentesList"></div>';
+        if (data.results && data.results.length > 0) {
+          html += '<table class="results-table"><tr>';
+          html += '<th><input type="checkbox" id="bafcSelectAll" onclick="toggleAllBafc(this)"></th>';
+          html += '<th>Data</th><th>Paciente</th><th>Areas</th><th>ICG</th><th>PDF</th></tr>';
+          data.results.forEach(function(r) {
+            var d = r.data || {};
+            if (d.status === 'aguardando') return;
+            var p = d.formData || {};
+            var nome = p.patientName || '-';
+            var dataStr = d.dataAplicacao ? new Date(d.dataAplicacao).toLocaleString('pt-BR') : (r.date ? new Date(r.date).toLocaleString('pt-BR') : '-');
+            var mods = (d.modulosAplicados && d.modulosAplicados.join(', ')) || '-';
+            var g = d.indices && d.indices.global;
+            var icg = g ? (g.icg + ' (' + g.classificacao + (g.parcial ? ', parcial' : '') + ')') : '-';
+            html += '<tr>';
+            html += '<td><input type="checkbox" class="bafc-result-check" data-idx="' + _bafcResultCache.length + '"></td>';
+            html += '<td>' + dataStr + '</td>';
+            html += '<td>' + nome + '</td>';
+            html += '<td style="font-size:11px;">' + mods + '</td>';
+            html += '<td>' + icg + '</td>';
+            html += '<td><button class="btn btn-green" style="padding:5px 12px;font-size:12px;" onclick="gerarPdfBafc(' + _bafcResultCache.length + ')">PDF</button></td>';
+            html += '</tr>';
+            _bafcResultCache.push(r);
+          });
+          html += '</table>';
+        } else {
+          html += '<p style="color:#777;">Nenhum resultado BAFC encontrado.</p>';
+        }
+        sec.innerHTML = html;
+        _carregarPendentesTeste('bafc', 'bafcPendentesList');
+      } catch (e) {
+        sec.innerHTML = '<h2>Resultados BAFC</h2><p style="color:#c62828;">Erro ao carregar resultados: ' + e.message + '</p>';
+      }
+    }
+    function toggleAllBafc(master) {
+      document.querySelectorAll('.bafc-result-check').forEach(function(c) { c.checked = master.checked; });
+    }
+    async function eliminarResultadosBafc() {
+      var marcados = [];
+      document.querySelectorAll('.bafc-result-check:checked').forEach(function(c) {
+        var idx = parseInt(c.getAttribute('data-idx'), 10);
+        if (_bafcResultCache[idx]) marcados.push(_bafcResultCache[idx]);
+      });
+      if (marcados.length === 0) { alert('Selecione ao menos um resultado para eliminar.'); return; }
+      if (!confirm('Eliminar ' + marcados.length + ' resultado(s) da BAFC? Esta acao nao pode ser desfeita.')) return;
+      for (var i = 0; i < marcados.length; i++) {
+        var r = marcados[i];
+        var sid = (r.data && r.data.sessionId) || r.sessionId || '';
+        try {
+          await fetch(API_URL + '/delete-result', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId: sid, email: currentUser, tipo: 'bafc' })
+          });
+        } catch (e) {}
+      }
+      loadBafcResults();
+    }
+    // Carrega o gerador de PDF da BAFC so quando precisa (cache do navegador cuida do resto).
+    function _carregarBafcPdf() {
+      return new Promise(function(resolve, reject) {
+        if (window.BAFC_PDF) { resolve(window.BAFC_PDF); return; }
+        var s = document.createElement('script');
+        s.src = 'bafc/bafc-pdf.js?v=' + Date.now();
+        s.onload = function() { if (window.BAFC_PDF) resolve(window.BAFC_PDF); else reject(new Error('gerador indisponivel')); };
+        s.onerror = function() { reject(new Error('nao foi possivel carregar o gerador de PDF')); };
+        document.head.appendChild(s);
+      });
+    }
+    async function gerarPdfBafc(idx) {
+      var r = _bafcResultCache[idx];
+      if (!r) { alert('Resultado nao encontrado.'); return; }
+      var d = r.data || {};
+      if (!d.indices) { alert('Este registro nao tem indices calculados (aplicacao incompleta).'); return; }
+      try {
+        var G = await _carregarBafcPdf();
+        var doc = G.gerar(window.jspdf.jsPDF, r, {});
+        doc.save(G.nomeArquivo(r));
+      } catch (e) {
+        console.log('[BAFC PDF] erro ao gerar:', e && e.message);
+        alert('Ocorreu um erro ao gerar o PDF. Tente novamente.');
+      }
     }
 
     // ===== BRPI (em desenvolvimento) - placeholders =====

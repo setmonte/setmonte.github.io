@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BAFC - M&#243;dulo B: Velocidade de Processamento e Aten&#231;&#227;o</title>
+<style>
+/* ===== BAFC - estilos comuns dos modulos (verde-agua, cards, telas) ===== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', Arial, sans-serif; background: #f5f5f5; min-height: 100vh; font-size: 120%; -webkit-user-select: none; user-select: none; }
+.tela { display: none; width: 100%; min-height: 100vh; flex-direction: column; align-items: center; padding: 16px; }
+.tela.ativa { display: flex; }
+.tela-cor { background: linear-gradient(135deg, #26a69a 0%, #80cbc4 100%); justify-content: center; }
+.tela-cor h1 { color: #fff; font-size: 2em; margin-bottom: 4px; text-align: center; }
+.tela-cor .subtitulo { color: #e0f2f1; font-size: 0.95em; margin-bottom: 16px; text-align: center; }
+.form-container { background: #fff; border-radius: 12px; padding: 22px; width: 100%; max-width: 640px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); text-align: center; }
+.form-container h2 { color: #00695c; font-size: 1.1em; margin-bottom: 10px; }
+.info-tecnica { background: #e0f2f1; border-left: 4px solid #00695c; padding: 12px; border-radius: 0 8px 8px 0; margin-bottom: 14px; font-size: 0.85em; color: #455a64; line-height: 1.5; text-align: left; }
+.btn { padding: 12px 30px; border: none; border-radius: 8px; font-size: 1em; font-weight: 700; cursor: pointer; margin: 5px; font-family: inherit; }
+.btn-primary { background: #00695c; color: #fff; }
+.btn-primary:hover { background: #004d40; }
+.btn-sec { background: #fff; color: #00695c; border: 2px solid #00695c; }
+.btn-sec:hover { background: #e0f2f1; }
+.btn:disabled { background: #bdbdbd; color: #fff; border-color: #bdbdbd; cursor: not-allowed; }
+.topo-item { width: 100%; background: linear-gradient(135deg, #00695c, #26a69a); color: #fff; padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; }
+.topo-item .t1 { font-weight: 800; font-size: 1em; }
+.topo-item .t2 { font-size: 0.8em; opacity: 0.9; }
+.barra-prog { width: 100%; height: 6px; background: #b2dfdb; }
+.barra-prog div { height: 100%; width: 0; background: #ffd54f; transition: width 0.3s; }
+.tela-teste { background: #f5f5f5; padding: 0 0 64px 0; }
+.cartao { background: #fff; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.12); width: 100%; max-width: 760px; margin: 12px auto 0; padding: 16px; }
+.rotulo { font-size: 0.7em; font-weight: 700; color: #00695c; text-transform: uppercase; letter-spacing: 0.5px; text-align: center; margin-bottom: 8px; }
+.feedback { display: none; margin: 12px auto 0; max-width: 700px; padding: 10px 14px; border-radius: 8px; font-size: 0.85em; font-weight: 600; text-align: center; }
+.feedback.ok { display: block; background: #c8e6c9; color: #1b5e20; }
+.feedback.erro { display: block; background: #ffe0b2; color: #e65100; }
+.barra-conf { position: sticky; bottom: 0; width: 100%; background: rgba(245,245,245,0.96); padding: 8px; text-align: center; border-top: 1px solid #cfd8dc; margin-top: 12px; }
+.instr-texto { font-size: 1.05em; color: #263238; line-height: 1.55; margin: 8px 0 14px; }
+.caixa-final { background: #fff; border-radius: 12px; padding: 24px; max-width: 700px; width: 100%; box-shadow: 0 4px 20px rgba(0,0,0,0.2); text-align: center; }
+.caixa-final h1 { color: #1b5e20; font-size: 1.5em; margin-bottom: 8px; }
+.caixa-final table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 0.75em; }
+.caixa-final th, .caixa-final td { border: 1px solid #cfd8dc; padding: 6px 8px; }
+.caixa-final th { background: #e0f2f1; color: #00695c; }
+.ac { color: #2e7d32; font-weight: 700; }
+.er { color: #c62828; font-weight: 700; }
+.status-audio { display: block; font-size: 0.75em; color: #607d8b; min-height: 1.2em; margin-top: 2px; }
+/* O botao SAIR do controlador fica fixo no canto inferior esquerdo (76 x 38 px): deixa espaco para ele nao cobrir o conteudo */
+@media (max-width: 520px) { body { font-size: 105%; } .barra-conf { padding-left: 96px; } }
+
+/* ---- especifico da Velocidade ---- */
+.pedido { text-align: center; font-weight: 800; font-size: 1.1em; color: #00695c; margin: 4px 0 10px; line-height: 1.35; }
+.pedido .dica { display: inline-block; vertical-align: middle; width: 34px; height: 34px; margin-left: 6px; }
+.grade { display: grid; gap: 6px; margin: 0 auto; max-width: 560px; }
+.cel { position: relative; aspect-ratio: 1 / 1; padding: 0; border: 3px solid transparent; border-radius: 10px; background: #fafafa; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.cel svg { width: 100%; height: 100%; display: block; pointer-events: none; }
+.cel.certa { border-color: #2e7d32; background: #e8f5e9; }
+.cel.certa::after { content: '\2713'; position: absolute; right: 2px; top: -2px; font-size: 1.1em; font-weight: 900; color: #2e7d32; }
+.cel.errada { border-color: #c62828; background: #ffebee; }
+.cel.errada::after { content: '\2717'; position: absolute; right: 2px; top: -2px; font-size: 1.1em; font-weight: 900; color: #c62828; }
+.cel:disabled { cursor: default; }
+.contagem { font-size: 7em; font-weight: 900; color: #fff; text-align: center; }
+</style>
+</head>
+<body>
+
+<!-- ===== TELA 1: INICIO ===== -->
+<div id="tela-inicio" class="tela tela-cor ativa">
+    <h1>&#129504; BAFC</h1>
+    <p class="subtitulo">M&#243;dulo B &#8212; Velocidade e Aten&#231;&#227;o</p>
+    <div class="form-container">
+        <h2>Jogo de rapidez</h2>
+        <div class="info-tecnica">Voc&#234; vai tocar nas figuras certas <strong>o mais r&#225;pido que conseguir</strong>, sem errar. Use o som do aparelho.</div>
+        <button class="btn btn-primary" id="btnComecar">Come&#231;ar</button>
+    </div>
+</div>
+
+<!-- ===== TELA DE INSTRUCAO (comum a todos os modulos) ===== -->
+<div id="tela-instr" class="tela tela-cor">
+    <div class="form-container">
+        <h2 id="instrTitulo">Instru&#231;&#227;o</h2>
+        <div class="instr-texto" id="instrTexto"></div>
+        <div>
+            <button class="btn btn-sec" id="btnInstrOuvir">&#128266; Ouvir de novo</button>
+            <button class="btn btn-primary" id="btnInstrOk">Continuar</button>
+        </div>
+    </div>
+</div>
+<!-- ===== TELA FINAL DO MODULO (aviso curto; o controlador troca de modulo sozinho) ===== -->
+<div id="tela-fim" class="tela tela-cor">
+    <div class="caixa-final">
+        <h1 id="fimTitulo">Muito bem!</h1>
+        <p id="fimTexto" style="color:#455a64;"></p>
+        <div id="fimTabela"></div>
+    </div>
+</div>
+
+
+<!-- ===== TELA DE CONTAGEM ===== -->
+<div id="tela-contagem" class="tela tela-cor"><div class="contagem" id="numContagem">3</div></div>
+
+<!-- ===== TELA DO TESTE ===== -->
+<div id="tela-teste" class="tela tela-teste">
+    <div class="topo-item"><span class="t1" id="tituloVP">Etapa 1 de 4</span><span class="t2">Velocidade e Aten&#231;&#227;o</span></div>
+    <div class="barra-prog"><div id="barraProg"></div></div>
+    <div class="cartao">
+        <div class="pedido" id="pedido"></div>
+        <div class="grade" id="grade"></div>
+        <div class="feedback" id="feedback"></div>
+    </div>
+    <div class="barra-conf"><button class="btn btn-primary" id="btnTerminei">Terminei</button></div>
+</div>
+
+<script>
+/* ============================================================
+   BAFC - MODULO B: VELOCIDADE DE PROCESSAMENTO E ATENCAO
+   Matriz fixa 5x7 (35 estimulos) em 4 etapas: pares, impares, estrela de 5 pontas, vermelho.
+   Dificuldade: numeros de 2 algarismos (a paridade depende so do ultimo), estrelas de 4 pontas como
+   isca da figura-alvo e laranja/rosa como iscas da cor-alvo (discriminacao fina e controle inibitorio).
+   Mede por etapa: tempo, acertos, erros de comissao (cliques errados) e omissao (alvos nao tocados).
+   IEP = (acertos / segundos) x (1 - taxa de erros), somando as 4 etapas (Manual, Etapa 1).
+   ============================================================ */
+/* ===== BAFC - codigo comum dos modulos (ASCII puro; textos acentuados via \u escapes) ===== */
+/* --- Integracao com o controlador (o "sino") --- */
+var BAFC_MOD = { bateria: false, id: '', paciente: {} };
+(function () {
+    var p = new URLSearchParams(window.location.search);
+    if (p.get('bateria') === '1') {
+        BAFC_MOD.bateria = true; BAFC_MOD.id = p.get('modulo') || '';
+        try { BAFC_MOD.paciente = JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(p.get('p')))))); } catch (e) { BAFC_MOD.paciente = {}; }
+    }
+})();
+function bafcFim(dados) {
+    if (!BAFC_MOD.bateria) { return; }
+    try { window.parent.postMessage({ tipo: 'bafc-modulo-fim', modulo: BAFC_MOD.id, dados: dados }, '*'); } catch (e) {}
+}
+/* --- Telas --- */
+function mostrarTela(id) {
+    var ts = document.querySelectorAll('.tela');
+    for (var i = 0; i < ts.length; i++) { ts[i].classList.remove('ativa'); }
+    document.getElementById(id).classList.add('ativa');
+    window.scrollTo(0, 0);
+}
+/* --- Audio (arquivos em ../audio/) --- */
+var _aud = null;
+function pararAudio() { if (_aud) { try { _aud.onended = null; _aud.onerror = null; _aud.pause(); } catch (e) {} _aud = null; } }
+function tocarAudio(nome, aoTerminar) {
+    pararAudio();
+    var a = new Audio('../audio/' + nome + '.mp3');
+    _aud = a;
+    var fim = function () { if (_aud === a) { _aud = null; } if (aoTerminar) { var f = aoTerminar; aoTerminar = null; f(); } };
+    a.onended = fim; a.onerror = fim;
+    var p = a.play();
+    if (p && p.catch) { p.catch(function () { fim(); }); }
+    return a;
+}
+/* --- Tela de instrucao (texto + audio + botao) --- */
+var _instrCb = null; var _instrFala = '';
+function mostrarInstrucao(idFala, texto, rotulo, aoContinuar) {
+    _instrCb = aoContinuar; _instrFala = idFala;
+    document.getElementById('instrTexto').textContent = texto;
+    document.getElementById('btnInstrOk').textContent = rotulo;
+    mostrarTela('tela-instr');
+    tocarAudio(idFala, null);
+}
+function instrOuvir() { tocarAudio(_instrFala, null); }
+function instrContinuar() { pararAudio(); var f = _instrCb; _instrCb = null; if (f) { f(); } }
+function fmtSeg(ms) { return (Math.round(ms / 100) / 10).toString().replace('.', ','); }
+
+
+/* ---------- 1. DADOS ---------- */
+/* 0 = vermelho (alvo); 5 = laranja e 6 = rosa sao as iscas parecidas */
+var CORES = ['#e53935', '#1e88e5', '#43a047', '#fdd835', '#8e24aa', '#fb8c00', '#ec407a'];
+/* 0 = estrela de 5 pontas (alvo); 5 = estrela de 4 pontas (isca parecida) */
+var FORMAS = ['estrela', 'circulo', 'quadrado', 'triangulo', 'losango', 'estrela4'];
+var LINHAS = 5, COLUNAS = 7;
+var ETAPAS = [
+    { id: 'par', rotulo: 'Etapa 1 de 4', fala: 'vp-par', pedido: 'Toque nos n\u00fameros PARES (terminam em 0, 2, 4, 6 ou 8)', teste: function (c) { return c.num % 2 === 0; }, dica: null },
+    { id: 'impar', rotulo: 'Etapa 2 de 4', fala: 'vp-impar', pedido: 'Toque nos n\u00fameros \u00cdMPARES (terminam em 1, 3, 5, 7 ou 9)', teste: function (c) { return c.num % 2 === 1; }, dica: null },
+    { id: 'figura', rotulo: 'Etapa 3 de 4', fala: 'vp-estrela', pedido: 'Toque nas ESTRELAS DE CINCO PONTAS (as de quatro pontas n\u00e3o valem)', teste: function (c) { return c.forma === 0; }, dica: 'estrela' },
+    { id: 'cor', rotulo: 'Etapa 4 de 4', fala: 'vp-vermelho', pedido: 'Toque s\u00f3 nas figuras VERMELHAS (laranja e rosa n\u00e3o valem)', teste: function (c) { return c.cor === 0; }, dica: 'vermelho' }
+];
+/* Treino: matriz pequena (2x4), so pares */
+var TREINO_CELULAS = [
+    { num: 37, forma: 1, cor: 1 }, { num: 24, forma: 2, cor: 2 }, { num: 51, forma: 3, cor: 3 }, { num: 62, forma: 4, cor: 4 },
+    { num: 19, forma: 2, cor: 1 }, { num: 40, forma: 1, cor: 2 }, { num: 83, forma: 4, cor: 3 }, { num: 78, forma: 3, cor: 4 }
+];
+
+/* ---------- 2. UTILITARIOS ---------- */
+function mulberry32(a) {
+    return function () {
+        a = (a + 0x6D2B79F5) | 0;
+        var t = Math.imul(a ^ (a >>> 15), 1 | a);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+}
+function embaralhar(arr, rnd) {
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(rnd() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; }
+    return a;
+}
+/* Matriz fixa (mesma semente = mesma matriz para todo avaliando):
+   17 pares, 18 impares (numeros de 10 a 99), 7 estrelas de 5 pontas, 5 de 4 pontas, 7 vermelhas, 5 laranjas e 5 rosas. */
+function gerarMatriz() {
+    var rnd = mulberry32(31415);
+    var n = LINHAS * COLUNAS; var idx = []; var i;
+    for (i = 0; i < n; i++) { idx.push(i); }
+    var pares = {}; var o1 = embaralhar(idx, rnd); for (i = 0; i < 17; i++) { pares[o1[i]] = true; }
+    var estrelas = {}; var o2 = embaralhar(idx, rnd); for (i = 0; i < 7; i++) { estrelas[o2[i]] = true; }
+    var estrelas4 = {}; var o3 = embaralhar(idx, rnd); var c4 = 0;
+    for (i = 0; i < n && c4 < 5; i++) { if (!estrelas[o3[i]]) { estrelas4[o3[i]] = true; c4++; } }
+    var verm = {}; var o4 = embaralhar(idx, rnd); var cv = 0;
+    for (i = 0; i < n && cv < 7; i++) { if (!estrelas[o4[i]] || cv < 1) { verm[o4[i]] = true; cv++; } }
+    var laranja = {}, rosa = {}; var o5 = embaralhar(idx, rnd); var cl = 0, cr = 0;
+    for (i = 0; i < n; i++) {
+        var q = o5[i];
+        if (verm[q]) { continue; }
+        if (cl < 5) { laranja[q] = true; cl++; } else if (cr < 5) { rosa[q] = true; cr++; }
+    }
+    var m = [];
+    for (i = 0; i < n; i++) {
+        var dezena = 1 + Math.floor(rnd() * 9);
+        var unidade = pares[i] ? [0, 2, 4, 6, 8][Math.floor(rnd() * 5)] : [1, 3, 5, 7, 9][Math.floor(rnd() * 5)];
+        var forma = estrelas[i] ? 0 : (estrelas4[i] ? 5 : 1 + Math.floor(rnd() * 4));
+        var cor = verm[i] ? 0 : (laranja[i] ? 5 : (rosa[i] ? 6 : 1 + Math.floor(rnd() * 4)));   /* 5 laranjas e 5 rosas (iscas); o resto azul, verde, amarelo ou roxo */
+        m.push({ num: dezena * 10 + unidade, forma: forma, cor: cor });
+    }
+    return m;
+}
+var MATRIZ = gerarMatriz();
+
+/* ---------- 3. DESENHO DAS CELULAS ---------- */
+function estrelaPts(cx, cy, R, r, pontas) {
+    var p = []; var passo = 180 / pontas;
+    for (var q = 0; q < pontas * 2; q++) { var a = (-90 + q * passo) * Math.PI / 180; var rr = (q % 2 === 0) ? R : r; p.push((cx + rr * Math.cos(a)).toFixed(1) + ',' + (cy + rr * Math.sin(a)).toFixed(1)); }
+    return p.join(' ');
+}
+function svgCelula(c) {
+    var fill = CORES[c.cor]; var f = FORMAS[c.forma]; var s = '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">'; var ty = 62;
+    if (f === 'estrela') { s += '<polygon points="' + estrelaPts(50, 54, 47, 21, 5) + '" fill="' + fill + '"/>'; ty = 65; }
+    else if (f === 'estrela4') { s += '<polygon points="' + estrelaPts(50, 50, 47, 19, 4) + '" fill="' + fill + '"/>'; }
+    else if (f === 'circulo') { s += '<circle cx="50" cy="50" r="44" fill="' + fill + '"/>'; }
+    else if (f === 'quadrado') { s += '<rect x="9" y="9" width="82" height="82" rx="8" fill="' + fill + '"/>'; }
+    else if (f === 'triangulo') { s += '<polygon points="50,8 95,90 5,90" fill="' + fill + '"/>'; ty = 76; }
+    else { s += '<polygon points="50,4 96,50 50,96 4,50" fill="' + fill + '"/>'; }
+    var tx = (c.cor === 3) ? '#3e2723' : '#ffffff';
+    s += '<text x="50" y="' + ty + '" text-anchor="middle" font-family="Arial, sans-serif" font-weight="800" font-size="34" fill="' + tx + '">' + c.num + '</text></svg>';
+    return s;
+}
+function iconeDica(tipo) {
+    if (tipo === 'estrela') { return '<svg class="dica" viewBox="0 0 100 100"><polygon points="' + estrelaPts(50, 54, 47, 21, 5) + '" fill="#8e24aa"/></svg>'; }
+    if (tipo === 'vermelho') { return '<svg class="dica" viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" fill="#e53935"/></svg>'; }
+    return '';
+}
+
+/* ---------- 4. ESTADO ---------- */
+var etapaIdx = 0;
+var celulasAtuais = [];
+var acertosEt = 0, comissEt = 0, alvosEt = 0, t0Et = 0, rodando = false, emTreino = false;
+var cliques = [];
+var resultadosEt = [];
+
+/* ---------- 5. GRADE ---------- */
+function montarGrade(celulas, colunas, testeAlvo) {
+    celulasAtuais = celulas; var g = document.getElementById('grade'); var h = ''; alvosEt = 0;
+    g.style.gridTemplateColumns = 'repeat(' + colunas + ', 1fr)';
+    for (var i = 0; i < celulas.length; i++) {
+        celulas[i].alvo = testeAlvo(celulas[i]); if (celulas[i].alvo) { alvosEt++; }
+        h += '<button type="button" class="cel" data-i="' + i + '">' + svgCelula(celulas[i]) + '</button>';
+    }
+    g.innerHTML = h;
+}
+function clicouCelula(e) {
+    if (!rodando) { return; }
+    var el = e.target; while (el && !(el.classList && el.classList.contains('cel'))) { el = el.parentNode; }
+    if (!el || el.disabled) { return; }
+    var i = parseInt(el.getAttribute('data-i'), 10); var c = celulasAtuais[i];
+    el.disabled = true;
+    var t = Date.now() - t0Et;
+    if (c.alvo) { el.classList.add('certa'); acertosEt++; } else { el.classList.add('errada'); comissEt++; }
+    cliques.push({ celula: i, ok: !!c.alvo, tMs: t });
+    if (acertosEt >= alvosEt) { terminarEtapa(); }
+}
+
+/* ---------- 6. FLUXO ---------- */
+function contagem(aoFim) {
+    mostrarTela('tela-contagem'); var el = document.getElementById('numContagem'); var n = 3; el.textContent = n;
+    var iv = setInterval(function () {
+        n--;
+        if (n > 0) { el.textContent = n; } else { clearInterval(iv); aoFim(); }
+    }, 900);
+}
+function iniciarTreino() {
+    emTreino = true; mostrarTela('tela-teste');
+    document.getElementById('tituloVP').textContent = 'Treino';
+    document.getElementById('barraProg').style.width = '0%';
+    document.getElementById('pedido').innerHTML = 'Toque nos n\u00fameros PARES (terminam em 0, 2, 4, 6 ou 8)';
+    document.getElementById('feedback').className = 'feedback';
+    montarGrade(TREINO_CELULAS.map(function (c) { return { num: c.num, forma: c.forma, cor: c.cor }; }), 4, ETAPAS[0].teste);
+    acertosEt = 0; comissEt = 0; cliques = []; t0Et = Date.now(); rodando = true;
+    document.getElementById('btnTerminei').style.display = 'none';
+}
+function iniciarEtapa(i) {
+    etapaIdx = i; emTreino = false; var et = ETAPAS[i];
+    mostrarTela('tela-teste');
+    document.getElementById('tituloVP').textContent = et.rotulo;
+    document.getElementById('barraProg').style.width = Math.round(100 * i / ETAPAS.length) + '%';
+    document.getElementById('pedido').innerHTML = et.pedido + (et.dica ? iconeDica(et.dica) : '');
+    document.getElementById('feedback').className = 'feedback';
+    montarGrade(MATRIZ.map(function (c) { return { num: c.num, forma: c.forma, cor: c.cor }; }), COLUNAS, et.teste);
+    acertosEt = 0; comissEt = 0; cliques = []; t0Et = Date.now(); rodando = true;
+    document.getElementById('btnTerminei').style.display = 'inline-block';
+}
+function terminarEtapa() {
+    if (!rodando) { return; }
+    rodando = false; var tempo = Date.now() - t0Et;
+    var grade = document.querySelectorAll('.cel'); for (var k = 0; k < grade.length; k++) { grade[k].disabled = true; }
+    if (emTreino) {
+        var fb = document.getElementById('feedback'); fb.className = 'feedback ok'; fb.textContent = 'Muito bem!';
+        setTimeout(function () {
+            mostrarInstrucao('vp-valer', 'Agora vai valer o tempo! Quando aparecer 3, 2, 1, comece.', 'Come\u00e7ar', function () { contagem(function () { iniciarEtapa(0); }); });
+        }, 1300);
+        return;
+    }
+    var omis = alvosEt - acertosEt;
+    resultadosEt.push({ etapa: ETAPAS[etapaIdx].id, alvos: alvosEt, acertos: acertosEt, comissoes: comissEt, omissoes: omis, tempoMs: tempo, cliques: cliques.slice() });
+    var prox = etapaIdx + 1;
+    if (prox >= ETAPAS.length) { finalizarModulo(); return; }
+    var e2 = ETAPAS[prox];
+    setTimeout(function () {
+        mostrarInstrucao(e2.fala, e2.pedido + '. Toque o mais r\u00e1pido que puder, sem errar.', 'Come\u00e7ar', function () { contagem(function () { iniciarEtapa(prox); }); });
+    }, 500);
+}
+function calcularIEP() {
+    var A = 0, T = 0, C = 0, O = 0, L = 0;
+    for (var i = 0; i < resultadosEt.length; i++) { var r = resultadosEt[i]; A += r.acertos; T += r.tempoMs; C += r.comissoes; O += r.omissoes; L += r.alvos; }
+    var seg = T / 1000; var taxa = L > 0 ? (C + O) / L : 0;
+    var iep = seg > 0 ? (A / seg) * Math.max(0, 1 - taxa) : 0;
+    return { acertos: A, tempoSeg: Math.round(seg * 10) / 10, comissoes: C, omissoes: O, alvos: L, taxaErros: Math.round(taxa * 1000) / 1000, iep: Math.round(iep * 1000) / 1000 };
+}
+function finalizarModulo() {
+    var tot = calcularIEP();
+    var dados = { modulo: 'B', etapas: resultadosEt, totais: tot, iep: tot.iep };
+    window._bafcVelocidade = dados;
+    document.getElementById('fimTitulo').textContent = 'Muito bem!';
+    if (BAFC_MOD.bateria) {
+        document.getElementById('fimTexto').textContent = 'Vamos para o pr\u00f3ximo jogo...';
+        mostrarTela('tela-fim'); bafcFim(dados);
+    } else {
+        var h = '<table><tr><th>Etapa</th><th>Alvos</th><th>Acertos</th><th>Cliques errados</th><th>N\u00e3o tocou</th><th>Tempo</th></tr>';
+        for (var i = 0; i < resultadosEt.length; i++) { var r = resultadosEt[i]; h += '<tr><td>' + r.etapa + '</td><td>' + r.alvos + '</td><td>' + r.acertos + '</td><td>' + r.comissoes + '</td><td>' + r.omissoes + '</td><td>' + fmtSeg(r.tempoMs) + ' s</td></tr>'; }
+        h += '</table>';
+        document.getElementById('fimTabela').innerHTML = h;
+        document.getElementById('fimTexto').textContent = 'IEP (efici\u00eancia): ' + tot.iep + '  |  tempo total: ' + tot.tempoSeg + ' s  |  taxa de erros: ' + tot.taxaErros;
+        mostrarTela('tela-fim');
+    }
+}
+function comecar() {
+    resultadosEt = [];
+    mostrarInstrucao('vp-intro', 'Voc\u00ea vai ver v\u00e1rias figuras com n\u00fameros. Toque s\u00f3 nas que eu pedir, o mais r\u00e1pido que puder, sem errar. Vamos treinar primeiro.', 'Continuar', function () {
+        mostrarInstrucao('vp-par', 'Toque nos n\u00fameros PARES (terminam em 0, 2, 4, 6 ou 8). Toque o mais r\u00e1pido que puder, sem errar.', 'Treinar', iniciarTreino);
+    });
+}
+
+/* ---------- 7. INICIALIZACAO DIRETA ---------- */
+document.getElementById('btnComecar').addEventListener('click', comecar);
+document.getElementById('btnInstrOuvir').addEventListener('click', instrOuvir);
+document.getElementById('btnInstrOk').addEventListener('click', instrContinuar);
+document.getElementById('grade').addEventListener('click', clicouCelula);
+document.getElementById('btnTerminei').addEventListener('click', terminarEtapa);
+</script>
+</body>
+</html>

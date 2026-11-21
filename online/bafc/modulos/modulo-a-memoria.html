@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BAFC - M&#243;dulo A: Mem&#243;ria Operacional</title>
+<style>
+/* ===== BAFC - estilos comuns dos modulos (verde-agua, cards, telas) ===== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', Arial, sans-serif; background: #f5f5f5; min-height: 100vh; font-size: 120%; -webkit-user-select: none; user-select: none; }
+.tela { display: none; width: 100%; min-height: 100vh; flex-direction: column; align-items: center; padding: 16px; }
+.tela.ativa { display: flex; }
+.tela-cor { background: linear-gradient(135deg, #26a69a 0%, #80cbc4 100%); justify-content: center; }
+.tela-cor h1 { color: #fff; font-size: 2em; margin-bottom: 4px; text-align: center; }
+.tela-cor .subtitulo { color: #e0f2f1; font-size: 0.95em; margin-bottom: 16px; text-align: center; }
+.form-container { background: #fff; border-radius: 12px; padding: 22px; width: 100%; max-width: 640px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); text-align: center; }
+.form-container h2 { color: #00695c; font-size: 1.1em; margin-bottom: 10px; }
+.info-tecnica { background: #e0f2f1; border-left: 4px solid #00695c; padding: 12px; border-radius: 0 8px 8px 0; margin-bottom: 14px; font-size: 0.85em; color: #455a64; line-height: 1.5; text-align: left; }
+.btn { padding: 12px 30px; border: none; border-radius: 8px; font-size: 1em; font-weight: 700; cursor: pointer; margin: 5px; font-family: inherit; }
+.btn-primary { background: #00695c; color: #fff; }
+.btn-primary:hover { background: #004d40; }
+.btn-sec { background: #fff; color: #00695c; border: 2px solid #00695c; }
+.btn-sec:hover { background: #e0f2f1; }
+.btn:disabled { background: #bdbdbd; color: #fff; border-color: #bdbdbd; cursor: not-allowed; }
+.topo-item { width: 100%; background: linear-gradient(135deg, #00695c, #26a69a); color: #fff; padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; }
+.topo-item .t1 { font-weight: 800; font-size: 1em; }
+.topo-item .t2 { font-size: 0.8em; opacity: 0.9; }
+.barra-prog { width: 100%; height: 6px; background: #b2dfdb; }
+.barra-prog div { height: 100%; width: 0; background: #ffd54f; transition: width 0.3s; }
+.tela-teste { background: #f5f5f5; padding: 0 0 64px 0; }
+.cartao { background: #fff; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.12); width: 100%; max-width: 760px; margin: 12px auto 0; padding: 16px; }
+.rotulo { font-size: 0.7em; font-weight: 700; color: #00695c; text-transform: uppercase; letter-spacing: 0.5px; text-align: center; margin-bottom: 8px; }
+.feedback { display: none; margin: 12px auto 0; max-width: 700px; padding: 10px 14px; border-radius: 8px; font-size: 0.85em; font-weight: 600; text-align: center; }
+.feedback.ok { display: block; background: #c8e6c9; color: #1b5e20; }
+.feedback.erro { display: block; background: #ffe0b2; color: #e65100; }
+.barra-conf { position: sticky; bottom: 0; width: 100%; background: rgba(245,245,245,0.96); padding: 8px; text-align: center; border-top: 1px solid #cfd8dc; margin-top: 12px; }
+.instr-texto { font-size: 1.05em; color: #263238; line-height: 1.55; margin: 8px 0 14px; }
+.caixa-final { background: #fff; border-radius: 12px; padding: 24px; max-width: 700px; width: 100%; box-shadow: 0 4px 20px rgba(0,0,0,0.2); text-align: center; }
+.caixa-final h1 { color: #1b5e20; font-size: 1.5em; margin-bottom: 8px; }
+.caixa-final table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 0.75em; }
+.caixa-final th, .caixa-final td { border: 1px solid #cfd8dc; padding: 6px 8px; }
+.caixa-final th { background: #e0f2f1; color: #00695c; }
+.ac { color: #2e7d32; font-weight: 700; }
+.er { color: #c62828; font-weight: 700; }
+.status-audio { display: block; font-size: 0.75em; color: #607d8b; min-height: 1.2em; margin-top: 2px; }
+/* O botao SAIR do controlador fica fixo no canto inferior esquerdo (76 x 38 px): deixa espaco para ele nao cobrir o conteudo */
+@media (max-width: 520px) { body { font-size: 105%; } .barra-conf { padding-left: 96px; } }
+
+/* ---- especifico da Memoria ---- */
+.palco { text-align: center; padding: 18px 8px; }
+.palco .alto-falante { font-size: 4.5em; animation: pulsar 1s infinite; }
+@keyframes pulsar { 0% { transform: scale(1); } 50% { transform: scale(1.12); } 100% { transform: scale(1); } }
+.palco .msg { font-size: 1.3em; font-weight: 700; color: #00695c; margin-top: 6px; }
+.caixas { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; min-height: 62px; margin: 10px 0 14px; }
+.caixas .cx { width: 52px; height: 58px; border: 3px solid #26a69a; border-radius: 10px; background: #fff; font-size: 1.8em; font-weight: 800; color: #00695c; display: flex; align-items: center; justify-content: center; }
+.teclado { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 360px; margin: 0 auto; }
+.teclado button { padding: 16px 0; font-size: 1.6em; font-weight: 800; border: 3px solid #cfd8dc; border-radius: 12px; background: #fafafa; color: #263238; cursor: pointer; font-family: inherit; }
+.teclado button:active { background: #e0f2f1; border-color: #00695c; }
+.teclado .acao { font-size: 1em; }
+.teclado .apagar { background: #fff3e0; border-color: #ffb74d; }
+.teclado .ok { background: #00695c; color: #fff; border-color: #00695c; }
+.teclado .ok:disabled { background: #bdbdbd; border-color: #bdbdbd; }
+</style>
+</head>
+<body>
+
+<!-- ===== TELA 1: INICIO ===== -->
+<div id="tela-inicio" class="tela tela-cor ativa">
+    <h1>&#129504; BAFC</h1>
+    <p class="subtitulo">M&#243;dulo A &#8212; Mem&#243;ria Operacional</p>
+    <div class="form-container">
+        <h2>Jogo de ouvir n&#250;meros</h2>
+        <div class="info-tecnica">Voc&#234; vai <strong>ouvir</strong> uns n&#250;meros e depois tocar na tela. Use o som do aparelho.</div>
+        <button class="btn btn-primary" id="btnComecar">Come&#231;ar</button>
+    </div>
+</div>
+
+<!-- ===== TELA DE INSTRUCAO (comum a todos os modulos) ===== -->
+<div id="tela-instr" class="tela tela-cor">
+    <div class="form-container">
+        <h2 id="instrTitulo">Instru&#231;&#227;o</h2>
+        <div class="instr-texto" id="instrTexto"></div>
+        <div>
+            <button class="btn btn-sec" id="btnInstrOuvir">&#128266; Ouvir de novo</button>
+            <button class="btn btn-primary" id="btnInstrOk">Continuar</button>
+        </div>
+    </div>
+</div>
+<!-- ===== TELA FINAL DO MODULO (aviso curto; o controlador troca de modulo sozinho) ===== -->
+<div id="tela-fim" class="tela tela-cor">
+    <div class="caixa-final">
+        <h1 id="fimTitulo">Muito bem!</h1>
+        <p id="fimTexto" style="color:#455a64;"></p>
+        <div id="fimTabela"></div>
+    </div>
+</div>
+
+
+<!-- ===== TELA DO TESTE ===== -->
+<div id="tela-teste" class="tela tela-teste">
+    <div class="topo-item"><span class="t1" id="tituloMO">N&#250;meros</span><span class="t2" id="subMO"></span></div>
+    <div class="barra-prog"><div id="barraProg"></div></div>
+    <div class="cartao">
+        <div id="palco" class="palco">
+            <div class="alto-falante">&#128266;</div>
+            <div class="msg">Escute com aten&#231;&#227;o...</div>
+        </div>
+        <div id="areaResp" style="display:none;">
+            <div class="rotulo" id="rotuloResp">Sua vez! Toque os n&#250;meros</div>
+            <div class="caixas" id="caixas"></div>
+            <div class="teclado" id="teclado">
+                <button type="button" data-d="1">1</button><button type="button" data-d="2">2</button><button type="button" data-d="3">3</button>
+                <button type="button" data-d="4">4</button><button type="button" data-d="5">5</button><button type="button" data-d="6">6</button>
+                <button type="button" data-d="7">7</button><button type="button" data-d="8">8</button><button type="button" data-d="9">9</button>
+                <button type="button" class="acao apagar" id="btnApagar">Apagar</button>
+                <button type="button" data-d="0" style="visibility:hidden;">0</button>
+                <button type="button" class="acao ok" id="btnOkResp" disabled>Pronto</button>
+            </div>
+            <div class="feedback" id="feedback"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+/* ============================================================
+   BAFC - MODULO A: MEMORIA OPERACIONAL (digitos em ordem direta e inversa)
+   - Digitos falados pela voz aprovada, 1 por segundo, SEM repeticao do audio.
+   - Pontuacao: 1 ponto por sequencia correta (0 a 26) + span maximo de cada parte.
+   - Parada: 2 erros no mesmo nivel (as duas tentativas erradas).
+   Ordem do script (padrao do site): dados, funcoes, inicializacao direta no final.
+   ============================================================ */
+/* ===== BAFC - codigo comum dos modulos (ASCII puro; textos acentuados via \u escapes) ===== */
+/* --- Integracao com o controlador (o "sino") --- */
+var BAFC_MOD = { bateria: false, id: '', paciente: {} };
+(function () {
+    var p = new URLSearchParams(window.location.search);
+    if (p.get('bateria') === '1') {
+        BAFC_MOD.bateria = true; BAFC_MOD.id = p.get('modulo') || '';
+        try { BAFC_MOD.paciente = JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(p.get('p')))))); } catch (e) { BAFC_MOD.paciente = {}; }
+    }
+})();
+function bafcFim(dados) {
+    if (!BAFC_MOD.bateria) { return; }
+    try { window.parent.postMessage({ tipo: 'bafc-modulo-fim', modulo: BAFC_MOD.id, dados: dados }, '*'); } catch (e) {}
+}
+/* --- Telas --- */
+function mostrarTela(id) {
+    var ts = document.querySelectorAll('.tela');
+    for (var i = 0; i < ts.length; i++) { ts[i].classList.remove('ativa'); }
+    document.getElementById(id).classList.add('ativa');
+    window.scrollTo(0, 0);
+}
+/* --- Audio (arquivos em ../audio/) --- */
+var _aud = null;
+function pararAudio() { if (_aud) { try { _aud.onended = null; _aud.onerror = null; _aud.pause(); } catch (e) {} _aud = null; } }
+function tocarAudio(nome, aoTerminar) {
+    pararAudio();
+    var a = new Audio('../audio/' + nome + '.mp3');
+    _aud = a;
+    var fim = function () { if (_aud === a) { _aud = null; } if (aoTerminar) { var f = aoTerminar; aoTerminar = null; f(); } };
+    a.onended = fim; a.onerror = fim;
+    var p = a.play();
+    if (p && p.catch) { p.catch(function () { fim(); }); }
+    return a;
+}
+/* --- Tela de instrucao (texto + audio + botao) --- */
+var _instrCb = null; var _instrFala = '';
+function mostrarInstrucao(idFala, texto, rotulo, aoContinuar) {
+    _instrCb = aoContinuar; _instrFala = idFala;
+    document.getElementById('instrTexto').textContent = texto;
+    document.getElementById('btnInstrOk').textContent = rotulo;
+    mostrarTela('tela-instr');
+    tocarAudio(idFala, null);
+}
+function instrOuvir() { tocarAudio(_instrFala, null); }
+function instrContinuar() { pararAudio(); var f = _instrCb; _instrCb = null; if (f) { f(); } }
+function fmtSeg(ms) { return (Math.round(ms / 100) / 10).toString().replace('.', ','); }
+
+
+/* ---------- 1. DADOS (sequencias fixas: o teste e padronizado) ---------- */
+var DIRETA = [
+    [[5, 8], [6, 2]], [[6, 9, 4], [7, 2, 8]], [[3, 8, 1, 6], [5, 2, 9, 4]],
+    [[7, 1, 6, 3, 8], [4, 9, 2, 7, 5]], [[2, 8, 5, 1, 9, 3], [6, 3, 9, 4, 1, 7]],
+    [[8, 3, 6, 1, 9, 4, 2], [5, 9, 2, 7, 4, 1, 6]], [[4, 7, 1, 9, 3, 6, 2, 8], [9, 5, 2, 8, 1, 6, 3, 7]]
+];
+var INVERSA = [
+    [[4, 7], [8, 3]], [[5, 1, 9], [2, 6, 4]], [[7, 3, 8, 2], [1, 9, 5, 6]],
+    [[6, 2, 9, 4, 1], [3, 8, 5, 7, 2]], [[9, 4, 1, 7, 3, 6], [2, 6, 8, 3, 5, 9]],
+    [[5, 8, 2, 6, 1, 9, 4], [7, 1, 6, 3, 9, 2, 8]]
+];
+var TREINO_D = [3, 7];
+var TREINO_I = [2, 5];
+var INTERVALO_MS = 1000;      /* um digito por segundo */
+var ATRASO_INICIAL_MS = 700;
+
+/* ---------- 2. ESTADO ---------- */
+var parte = 'D';          /* 'D' direta, 'I' inversa */
+var nivel = 0;            /* indice do nivel dentro da parte */
+var tent = 0;             /* 0 ou 1 (duas tentativas por nivel) */
+var errosNivel = 0;
+var seqAtual = [];
+var digitado = [];
+var emTreino = false;
+var tentTreino = 0;
+var t0Resp = 0;
+var timers = [];
+var registro = { D: [], I: [] };
+var acertosParte = { D: 0, I: 0 };
+var spanParte = { D: 0, I: 0 };
+var dig = {};
+var d;
+for (d = 1; d <= 9; d++) { dig[d] = new Audio('../audio/dig-' + d + '.mp3'); dig[d].preload = 'auto'; }
+
+/* ---------- 3. SEQUENCIA FALADA ---------- */
+function limparTimers() { for (var i = 0; i < timers.length; i++) { clearTimeout(timers[i]); } timers = []; }
+function falarSequencia(seq, aoFim) {
+    limparTimers();
+    for (var k = 0; k < seq.length; k++) {
+        (function (dd, quando) {
+            timers.push(setTimeout(function () { try { dig[dd].currentTime = 0; dig[dd].play(); } catch (e) {} }, quando));
+        })(seq[k], ATRASO_INICIAL_MS + k * INTERVALO_MS);
+    }
+    timers.push(setTimeout(aoFim, ATRASO_INICIAL_MS + (seq.length - 1) * INTERVALO_MS + 1100));
+}
+
+/* ---------- 4. TELA DE RESPOSTA ---------- */
+function desenharCaixas() {
+    var h = '';
+    for (var i = 0; i < digitado.length; i++) { h += '<div class="cx">' + digitado[i] + '</div>'; }
+    document.getElementById('caixas').innerHTML = h;
+    document.getElementById('btnOkResp').disabled = digitado.length === 0;
+}
+function mostrarOuvindo() {
+    document.getElementById('palco').style.display = 'block';
+    document.getElementById('areaResp').style.display = 'none';
+}
+function mostrarResposta() {
+    digitado = []; desenharCaixas();
+    document.getElementById('palco').style.display = 'none';
+    var ar = document.getElementById('areaResp'); ar.style.display = 'block';
+    document.getElementById('feedback').className = 'feedback';
+    document.getElementById('rotuloResp').textContent = (parte === 'D') ? 'Sua vez! Toque os n\u00fameros na mesma ordem' : 'Sua vez! Toque os n\u00fameros de tr\u00e1s para frente';
+    t0Resp = Date.now();
+}
+function tocarDigito(e) {
+    var b = e.target; if (!b || !b.getAttribute) { return; }
+    var v = b.getAttribute('data-d'); if (v === null || v === '0') { return; }
+    if (digitado.length < 9) { digitado.push(parseInt(v, 10)); desenharCaixas(); }
+}
+function apagar() { digitado.pop(); desenharCaixas(); }
+
+/* ---------- 5. FLUXO ---------- */
+function esperado() {
+    if (parte === 'D') { return seqAtual.slice(); }
+    return seqAtual.slice().reverse();
+}
+function igual(a, b) { if (a.length !== b.length) { return false; } for (var i = 0; i < a.length; i++) { if (a[i] !== b[i]) { return false; } } return true; }
+function apresentar(seq) {
+    seqAtual = seq; mostrarOuvindo();
+    document.getElementById('subMO').textContent = (parte === 'D') ? 'Na mesma ordem' : 'De tr\u00e1s para frente';
+    falarSequencia(seq, mostrarResposta);
+}
+function iniciarTreino(p) {
+    parte = p; emTreino = true; tentTreino = 0;
+    mostrarTela('tela-teste'); document.getElementById('tituloMO').textContent = 'Treino';
+    document.getElementById('barraProg').style.width = '0%';
+    apresentar(p === 'D' ? TREINO_D : TREINO_I);
+}
+function iniciarParte(p) {
+    parte = p; emTreino = false; nivel = 0; tent = 0; errosNivel = 0;
+    mostrarTela('tela-teste');
+    document.getElementById('tituloMO').textContent = (p === 'D') ? 'N\u00fameros (ida)' : 'N\u00fameros (volta)';
+    proximaSequencia();
+}
+function sequenciaDoNivel() { return (parte === 'D' ? DIRETA : INVERSA)[nivel][tent]; }
+function proximaSequencia() {
+    var lista = (parte === 'D') ? DIRETA : INVERSA;
+    document.getElementById('barraProg').style.width = Math.round(100 * nivel / lista.length) + '%';
+    apresentar(sequenciaDoNivel());
+}
+function confirmarResposta() {
+    if (digitado.length === 0) { return; }
+    limparTimers();
+    var ok = igual(digitado, esperado());
+    var fb = document.getElementById('feedback');
+    if (emTreino) {
+        fb.className = 'feedback ' + (ok ? 'ok' : 'erro');
+        fb.textContent = ok ? 'Muito bem!' : 'Quase! Os n\u00fameros eram: ' + esperado().join(' ');
+        document.getElementById('btnOkResp').disabled = true;
+        setTimeout(function () {
+            tentTreino++;
+            if (!ok && tentTreino < 2) { apresentar(parte === 'D' ? TREINO_D : TREINO_I); return; }
+            if (parte === 'D') { mostrarInstrucao('mo-direta', 'Agora vai valer! Os n\u00fameros v\u00e3o ficando mais longos. Escute com aten\u00e7\u00e3o e toque na mesma ordem.', 'Come\u00e7ar', function () { iniciarParte('D'); }); }
+            else { mostrarInstrucao('mo-inversa', 'Agora vai valer! Lembre de tocar os n\u00fameros de tr\u00e1s para frente.', 'Come\u00e7ar', function () { iniciarParte('I'); }); }
+        }, 1600);
+        return;
+    }
+    registro[parte].push({ nivel: seqAtual.length, tentativa: tent + 1, sequencia: seqAtual.slice(), resposta: digitado.slice(), acertou: ok, tempoMs: Date.now() - t0Resp });
+    if (ok) { acertosParte[parte]++; if (seqAtual.length > spanParte[parte]) { spanParte[parte] = seqAtual.length; } }
+    else { errosNivel++; }
+    var lista = (parte === 'D') ? DIRETA : INVERSA;
+    var parar = false;
+    if (tent === 0) { tent = 1; }
+    else {
+        /* terminou as 2 tentativas do nivel: se as duas erraram, para */
+        if (errosNivel >= 2) { parar = true; }
+        tent = 0; errosNivel = 0; nivel++;
+        if (nivel >= lista.length) { parar = true; }
+    }
+    if (parar) { fimDaParte(); return; }
+    proximaSequencia();
+}
+function fimDaParte() {
+    if (parte === 'D') {
+        mostrarInstrucao('mo-inversa-intro', 'Agora vai ser diferente. Quando os n\u00fameros terminarem, toque neles na ordem contr\u00e1ria, de tr\u00e1s para frente. Por exemplo: se ouvir 2, 5, toque 5, 2. Vamos treinar.', 'Treinar', function () { iniciarTreino('I'); });
+    } else { finalizarModulo(); }
+}
+function finalizarModulo() {
+    var dados = {
+        modulo: 'A',
+        direta: { acertos: acertosParte.D, spanMaximo: spanParte.D, tentativas: registro.D },
+        inversa: { acertos: acertosParte.I, spanMaximo: spanParte.I, tentativas: registro.I },
+        total: acertosParte.D + acertosParte.I,
+        totalMaximo: 26
+    };
+    window._bafcMemoria = dados;
+    document.getElementById('fimTitulo').textContent = 'Muito bem!';
+    if (BAFC_MOD.bateria) {
+        document.getElementById('fimTexto').textContent = 'Vamos para o pr\u00f3ximo jogo...';
+        mostrarTela('tela-fim'); bafcFim(dados);
+    } else {
+        document.getElementById('fimTexto').textContent = 'Pontos: ' + dados.total + ' de ' + dados.totalMaximo + '  |  Ida: ' + dados.direta.acertos + ' (maior: ' + dados.direta.spanMaximo + ' n\u00fameros)  |  Volta: ' + dados.inversa.acertos + ' (maior: ' + dados.inversa.spanMaximo + ' n\u00fameros)';
+        mostrarTela('tela-fim');
+    }
+}
+function comecar() {
+    mostrarInstrucao('mo-intro', 'Voc\u00ea vai ouvir alguns n\u00fameros. Escute com aten\u00e7\u00e3o. Quando terminar, toque na tela os mesmos n\u00fameros, na mesma ordem. Vamos treinar.', 'Treinar', function () { iniciarTreino('D'); });
+}
+
+/* ---------- 6. INICIALIZACAO DIRETA ---------- */
+document.getElementById('btnComecar').addEventListener('click', comecar);
+document.getElementById('btnInstrOuvir').addEventListener('click', instrOuvir);
+document.getElementById('btnInstrOk').addEventListener('click', instrContinuar);
+document.getElementById('teclado').addEventListener('click', tocarDigito);
+document.getElementById('btnApagar').addEventListener('click', apagar);
+document.getElementById('btnOkResp').addEventListener('click', confirmarResposta);
+</script>
+</body>
+</html>

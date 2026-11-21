@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BAFC - M&#243;dulo C: Intelig&#234;ncia Verbal</title>
+<style>
+/* ===== BAFC - estilos comuns dos modulos (verde-agua, cards, telas) ===== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', Arial, sans-serif; background: #f5f5f5; min-height: 100vh; font-size: 120%; -webkit-user-select: none; user-select: none; }
+.tela { display: none; width: 100%; min-height: 100vh; flex-direction: column; align-items: center; padding: 16px; }
+.tela.ativa { display: flex; }
+.tela-cor { background: linear-gradient(135deg, #26a69a 0%, #80cbc4 100%); justify-content: center; }
+.tela-cor h1 { color: #fff; font-size: 2em; margin-bottom: 4px; text-align: center; }
+.tela-cor .subtitulo { color: #e0f2f1; font-size: 0.95em; margin-bottom: 16px; text-align: center; }
+.form-container { background: #fff; border-radius: 12px; padding: 22px; width: 100%; max-width: 640px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); text-align: center; }
+.form-container h2 { color: #00695c; font-size: 1.1em; margin-bottom: 10px; }
+.info-tecnica { background: #e0f2f1; border-left: 4px solid #00695c; padding: 12px; border-radius: 0 8px 8px 0; margin-bottom: 14px; font-size: 0.85em; color: #455a64; line-height: 1.5; text-align: left; }
+.btn { padding: 12px 30px; border: none; border-radius: 8px; font-size: 1em; font-weight: 700; cursor: pointer; margin: 5px; font-family: inherit; }
+.btn-primary { background: #00695c; color: #fff; }
+.btn-primary:hover { background: #004d40; }
+.btn-sec { background: #fff; color: #00695c; border: 2px solid #00695c; }
+.btn-sec:hover { background: #e0f2f1; }
+.btn:disabled { background: #bdbdbd; color: #fff; border-color: #bdbdbd; cursor: not-allowed; }
+.topo-item { width: 100%; background: linear-gradient(135deg, #00695c, #26a69a); color: #fff; padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; }
+.topo-item .t1 { font-weight: 800; font-size: 1em; }
+.topo-item .t2 { font-size: 0.8em; opacity: 0.9; }
+.barra-prog { width: 100%; height: 6px; background: #b2dfdb; }
+.barra-prog div { height: 100%; width: 0; background: #ffd54f; transition: width 0.3s; }
+.tela-teste { background: #f5f5f5; padding: 0 0 64px 0; }
+.cartao { background: #fff; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.12); width: 100%; max-width: 760px; margin: 12px auto 0; padding: 16px; }
+.rotulo { font-size: 0.7em; font-weight: 700; color: #00695c; text-transform: uppercase; letter-spacing: 0.5px; text-align: center; margin-bottom: 8px; }
+.feedback { display: none; margin: 12px auto 0; max-width: 700px; padding: 10px 14px; border-radius: 8px; font-size: 0.85em; font-weight: 600; text-align: center; }
+.feedback.ok { display: block; background: #c8e6c9; color: #1b5e20; }
+.feedback.erro { display: block; background: #ffe0b2; color: #e65100; }
+.barra-conf { position: sticky; bottom: 0; width: 100%; background: rgba(245,245,245,0.96); padding: 8px; text-align: center; border-top: 1px solid #cfd8dc; margin-top: 12px; }
+.instr-texto { font-size: 1.05em; color: #263238; line-height: 1.55; margin: 8px 0 14px; }
+.caixa-final { background: #fff; border-radius: 12px; padding: 24px; max-width: 700px; width: 100%; box-shadow: 0 4px 20px rgba(0,0,0,0.2); text-align: center; }
+.caixa-final h1 { color: #1b5e20; font-size: 1.5em; margin-bottom: 8px; }
+.caixa-final table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 0.75em; }
+.caixa-final th, .caixa-final td { border: 1px solid #cfd8dc; padding: 6px 8px; }
+.caixa-final th { background: #e0f2f1; color: #00695c; }
+.ac { color: #2e7d32; font-weight: 700; }
+.er { color: #c62828; font-weight: 700; }
+.status-audio { display: block; font-size: 0.75em; color: #607d8b; min-height: 1.2em; margin-top: 2px; }
+/* O botao SAIR do controlador fica fixo no canto inferior esquerdo (76 x 38 px): deixa espaco para ele nao cobrir o conteudo */
+@media (max-width: 520px) { body { font-size: 105%; } .barra-conf { padding-left: 96px; } }
+
+/* ---- especifico do Verbal ---- */
+#enunciado { text-align: center; font-weight: 700; color: #263238; font-size: 1.15em; line-height: 1.45; margin: 6px 0 12px; }
+.audio-box { text-align: center; margin-bottom: 12px; }
+#alternativas { display: flex; flex-direction: column; gap: 10px; max-width: 560px; margin: 0 auto; }
+#alternativas.travado { opacity: 0.45; pointer-events: none; }
+.alt { display: flex; align-items: center; gap: 12px; width: 100%; background: #fafafa; border: 3px solid #cfd8dc; border-radius: 12px; padding: 12px 14px; cursor: pointer; text-align: left; font-size: 1em; font-family: inherit; color: #263238; transition: all 0.12s; }
+.alt:hover { border-color: #26a69a; background: #f1fbfa; }
+.alt .letra { flex: 0 0 auto; width: 34px; height: 34px; border-radius: 50%; background: #e0f2f1; color: #00695c; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+.alt.sel { border-color: #00695c; background: #e0f2f1; box-shadow: 0 0 0 2px #26a69a; }
+.alt.sel .letra { background: #00695c; color: #fff; }
+.alt.certa { border-color: #2e7d32; background: #e8f5e9; }
+.alt.errada { border-color: #c62828; background: #ffebee; }
+</style>
+</head>
+<body>
+
+<!-- ===== TELA 1: INICIO ===== -->
+<div id="tela-inicio" class="tela tela-cor ativa">
+    <h1>&#129504; BAFC</h1>
+    <p class="subtitulo">M&#243;dulo C &#8212; Intelig&#234;ncia Verbal</p>
+    <div class="form-container">
+        <h2>Jogo de palavras</h2>
+        <div class="info-tecnica">Voc&#234; vai <strong>ouvir</strong> uma pergunta e ver as respostas na tela. Use o som do aparelho.</div>
+        <button class="btn btn-primary" id="btnComecar">Come&#231;ar</button>
+    </div>
+</div>
+
+<!-- ===== TELA DE INSTRUCAO (comum a todos os modulos) ===== -->
+<div id="tela-instr" class="tela tela-cor">
+    <div class="form-container">
+        <h2 id="instrTitulo">Instru&#231;&#227;o</h2>
+        <div class="instr-texto" id="instrTexto"></div>
+        <div>
+            <button class="btn btn-sec" id="btnInstrOuvir">&#128266; Ouvir de novo</button>
+            <button class="btn btn-primary" id="btnInstrOk">Continuar</button>
+        </div>
+    </div>
+</div>
+<!-- ===== TELA FINAL DO MODULO (aviso curto; o controlador troca de modulo sozinho) ===== -->
+<div id="tela-fim" class="tela tela-cor">
+    <div class="caixa-final">
+        <h1 id="fimTitulo">Muito bem!</h1>
+        <p id="fimTexto" style="color:#455a64;"></p>
+        <div id="fimTabela"></div>
+    </div>
+</div>
+
+
+<!-- ===== TELA DO ITEM ===== -->
+<div id="tela-teste" class="tela tela-teste">
+    <div class="topo-item"><span class="t1" id="tituloItem">Treino</span><span class="t2">Intelig&#234;ncia Verbal</span></div>
+    <div class="barra-prog"><div id="barraProg"></div></div>
+    <div class="cartao">
+        <div class="rotulo">Pergunta</div>
+        <div id="enunciado"></div>
+        <div class="audio-box" id="audioBox">
+            <button class="btn btn-sec" id="btnOuvir">&#128266; <span id="txtOuvir">Ouvir a pergunta</span></button>
+            <span class="status-audio" id="statusAudio"></span>
+        </div>
+        <div id="alternativas"></div>
+        <div class="feedback" id="feedback"></div>
+    </div>
+    <div class="barra-conf"><button class="btn btn-primary" id="btnConfirmar" disabled>Confirmar resposta</button></div>
+</div>
+
+<script>
+/* ============================================================
+   BAFC - MODULO C: INTELIGENCIA VERBAL (modelo TIV, itens originais)
+   - Pergunta e alternativas lidas por audio (voz aprovada). Ate 3 repeticoes por item.
+   - 1 ponto por acerto (0 a 30). Para apos 5 erros seguidos.
+   Ordem do script (padrao do site): dados, funcoes, inicializacao direta no final.
+   ============================================================ */
+/* ===== BAFC - codigo comum dos modulos (ASCII puro; textos acentuados via \u escapes) ===== */
+/* --- Integracao com o controlador (o "sino") --- */
+var BAFC_MOD = { bateria: false, id: '', paciente: {} };
+(function () {
+    var p = new URLSearchParams(window.location.search);
+    if (p.get('bateria') === '1') {
+        BAFC_MOD.bateria = true; BAFC_MOD.id = p.get('modulo') || '';
+        try { BAFC_MOD.paciente = JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(p.get('p')))))); } catch (e) { BAFC_MOD.paciente = {}; }
+    }
+})();
+function bafcFim(dados) {
+    if (!BAFC_MOD.bateria) { return; }
+    try { window.parent.postMessage({ tipo: 'bafc-modulo-fim', modulo: BAFC_MOD.id, dados: dados }, '*'); } catch (e) {}
+}
+/* --- Telas --- */
+function mostrarTela(id) {
+    var ts = document.querySelectorAll('.tela');
+    for (var i = 0; i < ts.length; i++) { ts[i].classList.remove('ativa'); }
+    document.getElementById(id).classList.add('ativa');
+    window.scrollTo(0, 0);
+}
+/* --- Audio (arquivos em ../audio/) --- */
+var _aud = null;
+function pararAudio() { if (_aud) { try { _aud.onended = null; _aud.onerror = null; _aud.pause(); } catch (e) {} _aud = null; } }
+function tocarAudio(nome, aoTerminar) {
+    pararAudio();
+    var a = new Audio('../audio/' + nome + '.mp3');
+    _aud = a;
+    var fim = function () { if (_aud === a) { _aud = null; } if (aoTerminar) { var f = aoTerminar; aoTerminar = null; f(); } };
+    a.onended = fim; a.onerror = fim;
+    var p = a.play();
+    if (p && p.catch) { p.catch(function () { fim(); }); }
+    return a;
+}
+/* --- Tela de instrucao (texto + audio + botao) --- */
+var _instrCb = null; var _instrFala = '';
+function mostrarInstrucao(idFala, texto, rotulo, aoContinuar) {
+    _instrCb = aoContinuar; _instrFala = idFala;
+    document.getElementById('instrTexto').textContent = texto;
+    document.getElementById('btnInstrOk').textContent = rotulo;
+    mostrarTela('tela-instr');
+    tocarAudio(idFala, null);
+}
+function instrOuvir() { tocarAudio(_instrFala, null); }
+function instrContinuar() { pararAudio(); var f = _instrCb; _instrCb = null; if (f) { f(); } }
+function fmtSeg(ms) { return (Math.round(ms / 100) / 10).toString().replace('.', ','); }
+
+
+/* ---------- 1. DADOS ---------- */
+var LETRAS = ['A', 'B', 'C', 'D'];
+var MAX_REPETICOES = 3;
+var PARAR_APOS_ERROS = 5;
+var TOTAL_ITENS = 30;
+var ITENS = [{"id": 0, "treino": true, "nivel": 0, "tipo": "sinonimo", "enunciado": "Qual palavra significa o mesmo que \u201cbonito\u201d?", "alternativas": ["feio", "belo", "velho", "grande"], "correta": 1}, {"id": 1, "nivel": 1, "tipo": "sinonimo", "enunciado": "Qual palavra significa o mesmo que \u201cfeliz\u201d?", "alternativas": ["sonolento", "assustado", "contente", "curioso"], "correta": 2}, {"id": 2, "nivel": 1, "tipo": "antonimo", "enunciado": "Qual palavra tem o significado contr\u00e1rio de \u201cgrande\u201d?", "alternativas": ["pequeno", "fino", "curto", "leve"], "correta": 0}, {"id": 3, "nivel": 1, "tipo": "sinonimo", "enunciado": "Qual palavra significa o mesmo que \u201cr\u00e1pido\u201d?", "alternativas": ["forte", "barulhento", "brilhante", "veloz"], "correta": 3}, {"id": 4, "nivel": 1, "tipo": "antonimo", "enunciado": "Qual palavra tem o significado contr\u00e1rio de \u201cclaro\u201d?", "alternativas": ["sujo", "escuro", "p\u00e1lido", "grosso"], "correta": 1}, {"id": 5, "nivel": 1, "tipo": "intruso", "enunciado": "Qual palavra n\u00e3o combina com as outras?", "alternativas": ["pato", "galinha", "vaca", "coruja"], "correta": 2}, {"id": 6, "nivel": 1, "tipo": "analogia", "enunciado": "P\u00e1ssaro est\u00e1 para ninho, assim como abelha est\u00e1 para qu\u00ea?", "alternativas": ["colmeia", "mel", "flor", "zumbido"], "correta": 0}, {"id": 7, "nivel": 1, "tipo": "sinonimo", "enunciado": "Qual palavra significa o mesmo que \u201ccome\u00e7ar\u201d?", "alternativas": ["continuar", "iniciar", "interromper", "repetir"], "correta": 1}, {"id": 8, "nivel": 1, "tipo": "definicao", "enunciado": "Qual objeto serve para medir comprimento?", "alternativas": ["balan\u00e7a", "rel\u00f3gio", "term\u00f4metro", "r\u00e9gua"], "correta": 3}, {"id": 9, "nivel": 2, "tipo": "analogia", "enunciado": "L\u00e1pis est\u00e1 para escrever, assim como tesoura est\u00e1 para qu\u00ea?", "alternativas": ["colar", "desenhar", "pintar", "cortar"], "correta": 3}, {"id": 10, "nivel": 2, "tipo": "intruso", "enunciado": "Qual palavra n\u00e3o combina com as outras?", "alternativas": ["tri\u00e2ngulo", "cubo", "c\u00edrculo", "quadrado"], "correta": 1}, {"id": 11, "nivel": 2, "tipo": "antonimo", "enunciado": "Qual palavra tem o significado contr\u00e1rio de \u201caumentar\u201d?", "alternativas": ["diminuir", "crescer", "somar", "espalhar"], "correta": 0}, {"id": 12, "nivel": 2, "tipo": "sinonimo", "enunciado": "Qual palavra significa o mesmo que \u201cenorme\u201d?", "alternativas": ["alto", "largo", "gigante", "comprido"], "correta": 2}, {"id": 13, "nivel": 2, "tipo": "analogia", "enunciado": "Semente est\u00e1 para planta, assim como ovo est\u00e1 para qu\u00ea?", "alternativas": ["casca", "p\u00e1ssaro", "gema", "ninho"], "correta": 1}, {"id": 14, "nivel": 2, "tipo": "completar", "enunciado": "Qual palavra completa melhor a frase: \u201cO gelo ______ quando fica muito tempo no sol.\u201d?", "fala": "Qual palavra completa melhor a frase: O gelo... quando fica muito tempo no sol.", "alternativas": ["endurece", "esfria", "quebra", "derrete"], "correta": 3}, {"id": 15, "nivel": 2, "tipo": "intruso", "enunciado": "Qual palavra n\u00e3o combina com as outras?", "alternativas": ["rio", "lago", "montanha", "mar"], "correta": 2}, {"id": 16, "nivel": 2, "tipo": "analogia", "enunciado": "Folha est\u00e1 para \u00e1rvore, assim como p\u00e9tala est\u00e1 para qu\u00ea?", "alternativas": ["flor", "jardim", "perfume", "abelha"], "correta": 0}, {"nivel": 3, "tipo": "sinonimo", "enunciado": "Qual palavra significa o mesmo que \u201ct\u00e1cito\u201d?", "alternativas": ["silencioso", "secreto", "subentendido", "proibido"], "correta": 2, "id": 17}, {"nivel": 3, "tipo": "analogia", "enunciado": "Cirurgi\u00e3o est\u00e1 para bisturi, assim como astr\u00f4nomo est\u00e1 para qu\u00ea?", "alternativas": ["telesc\u00f3pio", "estrela", "observat\u00f3rio", "universo"], "correta": 0, "id": 18}, {"nivel": 3, "tipo": "antonimo", "enunciado": "Qual palavra tem o significado contr\u00e1rio de \u201ccomplacente\u201d?", "alternativas": ["indiferente", "ansioso", "ing\u00eanuo", "intransigente"], "correta": 3, "id": 19}, {"nivel": 3, "tipo": "sinonimo", "enunciado": "Qual palavra significa o mesmo que \u201cmitigar\u201d?", "alternativas": ["agravar", "atenuar", "eliminar", "disfar\u00e7ar"], "correta": 1, "id": 20}, {"nivel": 3, "tipo": "analogia", "enunciado": "Diagn\u00f3stico est\u00e1 para m\u00e9dico, assim como senten\u00e7a est\u00e1 para qu\u00ea?", "alternativas": ["juiz", "r\u00e9u", "tribunal", "advogado"], "correta": 0, "id": 21}, {"nivel": 3, "tipo": "intruso", "enunciado": "Qual palavra n\u00e3o combina com as outras?", "alternativas": ["admirar", "respeitar", "venerar", "invejar"], "correta": 3, "id": 22}, {"nivel": 3, "tipo": "completar", "enunciado": "Qual palavra completa melhor a frase: \u201cO gerente foi ______ ao ser perguntado sobre a demiss\u00e3o: falou muito, mas n\u00e3o respondeu nada.\u201d?", "fala": "Qual palavra completa melhor a frase: O gerente foi... ao ser perguntado sobre a demiss\u00e3o: falou muito, mas n\u00e3o respondeu nada.", "alternativas": ["franco", "cordial", "evasivo", "enf\u00e1tico"], "correta": 2, "id": 23}, {"nivel": 3, "tipo": "sinonimo", "enunciado": "Qual palavra significa o mesmo que \u201cratificar\u201d?", "alternativas": ["corrigir", "confirmar", "anular", "adiar"], "correta": 1, "id": 24}, {"nivel": 4, "tipo": "antonimo", "enunciado": "Qual palavra tem o significado contr\u00e1rio de \u201cprolixo\u201d?", "alternativas": ["conciso", "superficial", "confuso", "t\u00edmido"], "correta": 0, "id": 25}, {"nivel": 4, "tipo": "sinonimo", "enunciado": "Qual palavra significa o mesmo que \u201cdissimular\u201d?", "alternativas": ["simular", "dissipar", "dissuadir", "ocultar"], "correta": 3, "id": 26}, {"nivel": 4, "tipo": "analogia", "enunciado": "Cart\u00f3grafo est\u00e1 para mapa, assim como lexic\u00f3grafo est\u00e1 para qu\u00ea?", "alternativas": ["gram\u00e1tica", "dicion\u00e1rio", "enciclop\u00e9dia", "tradu\u00e7\u00e3o"], "correta": 1, "id": 27}, {"nivel": 4, "tipo": "completar", "enunciado": "Qual palavra completa melhor a frase: \u201cEmbora a proposta parecesse ______ \u00e0 primeira vista, uma an\u00e1lise cuidadosa revelou falhas graves.\u201d?", "fala": "Qual palavra completa melhor a frase: Embora a proposta parecesse... \u00e0 primeira vista, uma an\u00e1lise cuidadosa revelou falhas graves.", "alternativas": ["arriscada", "complexa", "vantajosa", "invi\u00e1vel"], "correta": 2, "id": 28}, {"nivel": 4, "tipo": "sinonimo", "enunciado": "Qual palavra significa o mesmo que \u201cperempt\u00f3rio\u201d?", "alternativas": ["categ\u00f3rico", "provis\u00f3rio", "hesitante", "rigoroso"], "correta": 0, "id": 29}, {"nivel": 4, "tipo": "analogia", "enunciado": "Hip\u00f3tese est\u00e1 para teoria, assim como rascunho est\u00e1 para qu\u00ea?", "alternativas": ["caderno", "corre\u00e7\u00e3o", "ideia", "vers\u00e3o final"], "correta": 3, "id": 30}];
+/* Tres fases de audio: itens 1-8 automatico | 9-22 so com o botao Ouvir | 23-30 so leitura (sem audio) */
+var ULTIMO_ITEM_AUTO = 8;
+var ULTIMO_ITEM_BOTAO = 22;
+function modoDoItem(id) {
+    if (id <= ULTIMO_ITEM_AUTO) { return 'auto'; }
+    if (id <= ULTIMO_ITEM_BOTAO) { return 'botao'; }
+    return 'leitura';
+}
+
+/* ---------- 2. ESTADO ---------- */
+var estado = { i: 0, resp: [], erros: 0, sel: -1, t0: 0, confirmado: false, reps: 0, jaTocou: false, tocando: false, t0Resp: 0, modo: 'auto',
+    inicio: 1, fase: 'frente', nInicio: 0, falhouInicio: false, reversaFeita: false, consecRev: 0, ultimoFrente: 0, creditados: [] };
+/* Ponto de partida por idade (como no WISC): 8 a 12 anos comecam no item 1; a partir de 13 anos comecam no item 13
+   e os itens 1 a 12 contam como acertos (se acertar o 13 e o 14). Para teste manual: abra o modulo com ?idade=13 */
+var IDADE_INICIO_AVANCADO = 13;
+var ITEM_INICIO_AVANCADO = 13;
+var player = null;
+
+/* ---------- 3. AUDIO DO ITEM ---------- */
+function nomeFala(item) { return 'vb-' + (item.id < 10 ? '0' + item.id : '' + item.id); }
+function status(txt) { document.getElementById('statusAudio').textContent = txt; }
+function travar(sim) {
+    var el = document.getElementById('alternativas');
+    if (sim) { el.classList.add('travado'); } else { el.classList.remove('travado'); }
+}
+function atualizarBotaoOuvir() {
+    var b = document.getElementById('btnOuvir'); var t = document.getElementById('txtOuvir');
+    if (!estado.jaTocou) { t.textContent = 'Ouvir a pergunta'; b.disabled = estado.tocando; return; }
+    var rest = MAX_REPETICOES - estado.reps;
+    t.textContent = 'Ouvir outra vez (' + rest + (rest === 1 ? ' restante)' : ' restantes)');
+    b.disabled = estado.tocando || rest <= 0;
+}
+function tocarItem() {
+    var it = ITENS[estado.i];
+    estado.tocando = true; atualizarBotaoOuvir(); status('Ouvindo...');
+    tocarAudio(nomeFala(it), function () {
+        estado.tocando = false; status(''); travar(false); atualizarBotaoOuvir();
+        if (!estado.t0Resp) { estado.t0Resp = Date.now(); }
+    });
+}
+function ouvir() {
+    if (estado.modo === 'leitura') { return; }   /* itens 23-30: sem audio */
+    if (!estado.jaTocou) { estado.jaTocou = true; tocarItem(); return; }
+    if (estado.reps < MAX_REPETICOES) { estado.reps++; tocarItem(); }
+}
+
+/* ---------- 4. FLUXO ---------- */
+function carregarItem(i) {
+    var it = ITENS[i];
+    estado.i = i; estado.sel = -1; estado.confirmado = false; estado.t0 = Date.now(); estado.t0Resp = 0;
+    estado.reps = 0; estado.jaTocou = false; estado.tocando = false;
+    document.getElementById('tituloItem').textContent = (i === 0) ? 'Treino' : ('Item ' + it.id + ' de ' + TOTAL_ITENS);
+    document.getElementById('barraProg').style.width = Math.round(100 * i / ITENS.length) + '%';
+    document.getElementById('enunciado').textContent = it.enunciado;
+    var h = '';
+    for (var k = 0; k < it.alternativas.length; k++) {
+        h += '<button type="button" class="alt" data-i="' + k + '"><span class="letra">' + LETRAS[k] + '</span><span>' + it.alternativas[k] + '</span></button>';
+    }
+    document.getElementById('alternativas').innerHTML = h;
+    var fb = document.getElementById('feedback'); fb.className = 'feedback'; fb.textContent = '';
+    var bt = document.getElementById('btnConfirmar'); bt.disabled = true; bt.textContent = 'Confirmar resposta';
+    status(''); atualizarBotaoOuvir();
+    estado.modo = modoDoItem(it.id);
+    document.getElementById('audioBox').style.display = (estado.modo === 'leitura') ? 'none' : 'block';
+    mostrarTela('tela-teste');
+    if (estado.modo === 'auto') { travar(true); ouvir(); }
+    else { travar(false); estado.t0Resp = Date.now(); }
+}
+function clicarAlt(e) {
+    if (estado.confirmado) { return; }
+    var el = e.target; while (el && !(el.classList && el.classList.contains('alt'))) { el = el.parentNode; }
+    if (!el) { return; }
+    estado.sel = parseInt(el.getAttribute('data-i'), 10);
+    var todos = document.querySelectorAll('.alt');
+    for (var i = 0; i < todos.length; i++) { todos[i].classList.remove('sel'); }
+    el.classList.add('sel');
+    document.getElementById('btnConfirmar').disabled = false;
+}
+function aoConfirmar() {
+    var it = ITENS[estado.i];
+    if (estado.confirmado) { avancar(); return; }
+    if (estado.sel < 0) { return; }
+    estado.confirmado = true; pararAudio();
+    var ok = (estado.sel === it.correta); var tempo = Date.now() - estado.t0;
+    var tResp = estado.t0Resp ? (Date.now() - estado.t0Resp) : tempo;
+    var todos = document.querySelectorAll('.alt');
+    if (it.treino) {
+        for (var i = 0; i < todos.length; i++) { todos[i].classList.remove('sel'); }
+        todos[it.correta].classList.add('certa');
+        if (!ok) { todos[estado.sel].classList.add('errada'); }
+        var fb = document.getElementById('feedback');
+        fb.className = 'feedback ' + (ok ? 'ok' : 'erro');
+        fb.textContent = ok ? 'Muito bem! Era essa mesma.' : ('N\u00e3o foi essa. A resposta certa \u00e9 a ' + LETRAS[it.correta] + '.');
+        document.getElementById('btnConfirmar').textContent = 'Continuar';
+        return;
+    }
+    estado.resp.push({ item: it.id, nivel: it.nivel, marcada: LETRAS[estado.sel], correta: LETRAS[it.correta], acertou: ok, fase: estado.fase, modo: estado.modo, repeticoes: estado.reps, tempoMs: tempo, tempoAposAudioMs: tResp });
+    if (estado.fase === 'reverso') { seguirReverso(it.id, ok); return; }
+    estado.ultimoFrente = it.id;
+    estado.erros = ok ? 0 : estado.erros + 1;
+    if (estado.erros >= PARAR_APOS_ERROS) { finalizar(true); return; }
+    if (estado.inicio > 1 && estado.nInicio < 2 && !estado.reversaFeita) {
+        estado.nInicio++;
+        if (!ok) {
+            /* errou um dos dois primeiros itens (13 ou 14): volta NA HORA ao item anterior, descendo ate 2 acertos seguidos */
+            estado.fase = 'reverso'; estado.reversaFeita = true; estado.consecRev = 0;
+            carregarItem(estado.inicio - 1);
+            return;
+        }
+        if (estado.nInicio === 2) { creditarAte(estado.inicio - 1); }   /* acertou os dois primeiros: credita 1 a 12 */
+    }
+    avancar();
+}
+function avancar() {
+    if (estado.i === 0) {
+        mostrarInstrucao('vb-valer', 'Agora vai valer! As perguntas v\u00e3o ficando mais dif\u00edceis.', 'Come\u00e7ar', function () {
+            if (estado.inicio > ULTIMO_ITEM_AUTO) {
+                /* quem comeca no item 13 nao passa pelo item 8: avisa agora que o audio e so pelo botao */
+                mostrarInstrucao('vb-aviso-botao', 'A partir da pr\u00f3xima pergunta, o \u00e1udio n\u00e3o toca mais sozinho. Quando quiser ouvir, toque no bot\u00e3o "Ouvir a pergunta". Voc\u00ea pode ouvir mais de uma vez.', 'Continuar', function () { carregarItem(estado.inicio); });
+            } else { carregarItem(estado.inicio); }
+        });
+        return;
+    }
+    if (estado.i + 1 >= ITENS.length) { finalizar(false); return; }
+    var prox = estado.i + 1;
+    if (ITENS[estado.i].id === ULTIMO_ITEM_AUTO) {
+        mostrarInstrucao('vb-aviso-botao', 'A partir da pr\u00f3xima pergunta, o \u00e1udio n\u00e3o toca mais sozinho. Quando quiser ouvir, toque no bot\u00e3o "Ouvir a pergunta". Voc\u00ea pode ouvir mais de uma vez.', 'Continuar', function () { carregarItem(prox); });
+        return;
+    }
+    if (ITENS[estado.i].id === ULTIMO_ITEM_BOTAO) {
+        mostrarInstrucao('vb-aviso-leitura', 'A partir da pr\u00f3xima pergunta, n\u00e3o ter\u00e1 mais \u00e1udio. Leia a pergunta e as respostas na tela e toque na resposta certa.', 'Continuar', function () { carregarItem(prox); });
+        return;
+    }
+    carregarItem(prox);
+}
+function finalizar(parou) {
+    pararAudio();
+    var acertos = 0, reps = 0, tempo = 0;
+    for (var i = 0; i < estado.resp.length; i++) { var r = estado.resp[i]; if (r.acertou) { acertos++; } reps += r.repeticoes; tempo += r.tempoMs; }
+    var acertosApresentados = acertos;
+    acertos += estado.creditados.length;   /* itens abaixo do ponto de partida contam como acertos */
+    var dados = { modulo: 'C', acertos: acertos, acertosApresentados: acertosApresentados, itensApresentados: estado.resp.length, totalItens: TOTAL_ITENS, parouPorErros: !!parou,
+        inicio: estado.inicio, reversao: estado.reversaFeita, creditados: estado.creditados.slice(), repeticoesTotal: reps, tempoTotalMs: tempo, respostas: estado.resp };
+    window._bafcVerbal = dados;
+    document.getElementById('fimTitulo').textContent = 'Muito bem!';
+    if (BAFC_MOD.bateria) {
+        document.getElementById('fimTexto').textContent = 'Vamos para o pr\u00f3ximo jogo...';
+        mostrarTela('tela-fim'); bafcFim(dados);
+    } else {
+        var h = '<table><tr><th>Item</th><th>N\u00edvel</th><th>Marcou</th><th>Certa</th><th>Resultado</th><th>Ouviu de novo</th></tr>';
+        for (var j = 0; j < estado.resp.length; j++) { var q = estado.resp[j]; h += '<tr><td>' + q.item + '</td><td>' + q.nivel + '</td><td>' + q.marcada + '</td><td>' + q.correta + '</td><td class="' + (q.acertou ? 'ac' : 'er') + '">' + (q.acertou ? 'Acertou' : 'Errou') + '</td><td>' + q.repeticoes + 'x</td></tr>'; }
+        h += '</table>';
+        document.getElementById('fimTabela').innerHTML = h;
+        document.getElementById('fimTexto').textContent = 'Acertos: ' + acertos + ' de ' + TOTAL_ITENS + (estado.creditados.length ? ' (inclui ' + estado.creditados.length + ' itens creditados pelo ponto de partida: item ' + estado.inicio + ')' : '') + (parou ? ' (teste interrompido por erros seguidos)' : '');
+        mostrarTela('tela-fim');
+    }
+}
+function comecar() {
+    estado.resp = []; estado.erros = 0; estado.inicio = itemInicial(); estado.fase = 'frente'; estado.nInicio = 0; estado.falhouInicio = false;
+    estado.reversaFeita = false; estado.consecRev = 0; estado.ultimoFrente = estado.inicio - 1; estado.creditados = [];
+    mostrarInstrucao('vb-intro', 'Voc\u00ea vai ouvir uma pergunta e ver quatro respostas na tela. Escute com aten\u00e7\u00e3o e toque na resposta certa. Se quiser, pode ouvir de novo. Vamos treinar.', 'Treinar', function () { carregarItem(0); });
+}
+
+/* ---------- PONTO DE PARTIDA E VOLTA (como no WISC) ---------- */
+function idadeDoAvaliando() {
+    var p = new URLSearchParams(window.location.search);
+    if (p.get('idade')) { var v = parseInt(p.get('idade'), 10); return isNaN(v) ? null : v; }
+    var pac = BAFC_MOD.paciente || {};
+    if (!pac.birthDate) { return null; }
+    var n = new Date(pac.birthDate + 'T00:00:00'); var h = pac.dataAval ? new Date(pac.dataAval + 'T00:00:00') : new Date();
+    var a = h.getFullYear() - n.getFullYear(); var m = h.getMonth() - n.getMonth();
+    if (m < 0 || (m === 0 && h.getDate() < n.getDate())) { a--; }
+    return a;
+}
+function itemInicial() {
+    var a = idadeDoAvaliando();
+    return (a !== null && a >= IDADE_INICIO_AVANCADO) ? ITEM_INICIO_AVANCADO : 1;
+}
+/* credita como acerto os itens 1..maxId que nao foram apresentados */
+function creditarAte(maxId) {
+    var ja = {}; var i;
+    for (i = 0; i < estado.resp.length; i++) { ja[estado.resp[i].item] = true; }
+    for (i = 0; i < estado.creditados.length; i++) { ja[estado.creditados[i]] = true; }
+    for (i = 1; i <= maxId; i++) { if (!ja[i]) { estado.creditados.push(i); } }
+}
+/* volta: aplica 12, 11, ... ate 2 acertos seguidos; o restante abaixo e creditado. Chegou ao item 1: nada a creditar. */
+function seguirReverso(id, ok) {
+    estado.consecRev = ok ? estado.consecRev + 1 : 0;
+    if (estado.consecRev >= 2) { creditarAte(id - 1); voltarParaFrente(); return; }
+    if (id <= 1) { voltarParaFrente(); return; }
+    carregarItem(id - 1);
+}
+function voltarParaFrente() {
+    estado.fase = 'frente'; estado.erros = 0;   /* a volta quebra a sequencia de erros */
+    var prox = estado.ultimoFrente + 1;
+    if (prox >= ITENS.length) { finalizar(false); return; }
+    carregarItem(prox);
+}
+
+/* ---------- 5. INICIALIZACAO DIRETA ---------- */
+document.getElementById('btnComecar').addEventListener('click', comecar);
+document.getElementById('btnInstrOuvir').addEventListener('click', instrOuvir);
+document.getElementById('btnInstrOk').addEventListener('click', instrContinuar);
+document.getElementById('btnOuvir').addEventListener('click', ouvir);
+document.getElementById('alternativas').addEventListener('click', clicarAlt);
+document.getElementById('btnConfirmar').addEventListener('click', aoConfirmar);
+</script>
+</body>
+</html>

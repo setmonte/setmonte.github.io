@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BAFC - M&#243;dulo D: Intelig&#234;ncia N&#227;o-Verbal</title>
+<style>
+/* ===== BAFC - estilos comuns dos modulos (verde-agua, cards, telas) ===== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', Arial, sans-serif; background: #f5f5f5; min-height: 100vh; font-size: 120%; -webkit-user-select: none; user-select: none; }
+.tela { display: none; width: 100%; min-height: 100vh; flex-direction: column; align-items: center; padding: 16px; }
+.tela.ativa { display: flex; }
+.tela-cor { background: linear-gradient(135deg, #26a69a 0%, #80cbc4 100%); justify-content: center; }
+.tela-cor h1 { color: #fff; font-size: 2em; margin-bottom: 4px; text-align: center; }
+.tela-cor .subtitulo { color: #e0f2f1; font-size: 0.95em; margin-bottom: 16px; text-align: center; }
+.form-container { background: #fff; border-radius: 12px; padding: 22px; width: 100%; max-width: 640px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); text-align: center; }
+.form-container h2 { color: #00695c; font-size: 1.1em; margin-bottom: 10px; }
+.info-tecnica { background: #e0f2f1; border-left: 4px solid #00695c; padding: 12px; border-radius: 0 8px 8px 0; margin-bottom: 14px; font-size: 0.85em; color: #455a64; line-height: 1.5; text-align: left; }
+.btn { padding: 12px 30px; border: none; border-radius: 8px; font-size: 1em; font-weight: 700; cursor: pointer; margin: 5px; font-family: inherit; }
+.btn-primary { background: #00695c; color: #fff; }
+.btn-primary:hover { background: #004d40; }
+.btn-sec { background: #fff; color: #00695c; border: 2px solid #00695c; }
+.btn-sec:hover { background: #e0f2f1; }
+.btn:disabled { background: #bdbdbd; color: #fff; border-color: #bdbdbd; cursor: not-allowed; }
+.topo-item { width: 100%; background: linear-gradient(135deg, #00695c, #26a69a); color: #fff; padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; }
+.topo-item .t1 { font-weight: 800; font-size: 1em; }
+.topo-item .t2 { font-size: 0.8em; opacity: 0.9; }
+.barra-prog { width: 100%; height: 6px; background: #b2dfdb; }
+.barra-prog div { height: 100%; width: 0; background: #ffd54f; transition: width 0.3s; }
+.tela-teste { background: #f5f5f5; padding: 0 0 64px 0; }
+.cartao { background: #fff; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.12); width: 100%; max-width: 760px; margin: 12px auto 0; padding: 16px; }
+.rotulo { font-size: 0.7em; font-weight: 700; color: #00695c; text-transform: uppercase; letter-spacing: 0.5px; text-align: center; margin-bottom: 8px; }
+.feedback { display: none; margin: 12px auto 0; max-width: 700px; padding: 10px 14px; border-radius: 8px; font-size: 0.85em; font-weight: 600; text-align: center; }
+.feedback.ok { display: block; background: #c8e6c9; color: #1b5e20; }
+.feedback.erro { display: block; background: #ffe0b2; color: #e65100; }
+.barra-conf { position: sticky; bottom: 0; width: 100%; background: rgba(245,245,245,0.96); padding: 8px; text-align: center; border-top: 1px solid #cfd8dc; margin-top: 12px; }
+.instr-texto { font-size: 1.05em; color: #263238; line-height: 1.55; margin: 8px 0 14px; }
+.caixa-final { background: #fff; border-radius: 12px; padding: 24px; max-width: 700px; width: 100%; box-shadow: 0 4px 20px rgba(0,0,0,0.2); text-align: center; }
+.caixa-final h1 { color: #1b5e20; font-size: 1.5em; margin-bottom: 8px; }
+.caixa-final table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 0.75em; }
+.caixa-final th, .caixa-final td { border: 1px solid #cfd8dc; padding: 6px 8px; }
+.caixa-final th { background: #e0f2f1; color: #00695c; }
+.ac { color: #2e7d32; font-weight: 700; }
+.er { color: #c62828; font-weight: 700; }
+.status-audio { display: block; font-size: 0.75em; color: #607d8b; min-height: 1.2em; margin-top: 2px; }
+/* O botao SAIR do controlador fica fixo no canto inferior esquerdo (76 x 38 px): deixa espaco para ele nao cobrir o conteudo */
+@media (max-width: 520px) { body { font-size: 105%; } .barra-conf { padding-left: 96px; } }
+
+/* ---- especifico do Nao-Verbal ---- */
+#redeBox { width: 100%; max-width: 440px; margin: 0 auto; }
+#redeBox svg { width: 100%; height: auto; max-height: 36vh; display: block; margin: 0 auto; }
+.pergunta { text-align: center; font-weight: 700; color: #263238; font-size: 0.95em; margin: 10px 0 6px; }
+#alternativas { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.alt { position: relative; width: calc(33.3% - 10px); min-width: 140px; max-width: 220px; background: #fafafa; border: 3px solid #cfd8dc; border-radius: 12px; padding: 6px; cursor: pointer; transition: all 0.12s; font-family: inherit; }
+.alt:hover { border-color: #26a69a; background: #f1fbfa; }
+.alt svg { width: 100%; height: auto; display: block; pointer-events: none; }
+.alt .letra { position: absolute; top: 4px; left: 8px; font-weight: 800; color: #00695c; font-size: 1em; pointer-events: none; }
+.alt.sel { border-color: #00695c; background: #e0f2f1; box-shadow: 0 0 0 2px #26a69a; }
+.alt.certa { border-color: #2e7d32; background: #e8f5e9; }
+.alt.errada { border-color: #c62828; background: #ffebee; }
+.alt.gab::after { content: 'gabarito'; position: absolute; right: 6px; top: 4px; font-size: 0.55em; font-weight: 700; color: #fff; background: #6a1b9a; border-radius: 6px; padding: 1px 6px; }
+@media (max-width: 520px) { .alt { width: calc(50% - 10px); min-width: 120px; } }
+</style>
+</head>
+<body>
+
+<!-- ===== TELA 1: INICIO ===== -->
+<div id="tela-inicio" class="tela tela-cor ativa">
+    <h1>&#129504; BAFC</h1>
+    <p class="subtitulo">M&#243;dulo D &#8212; Intelig&#234;ncia N&#227;o-Verbal</p>
+    <div class="form-container">
+        <h2>Jogo de formas</h2>
+        <div class="info-tecnica">Voc&#234; vai ver o <strong>molde de uma caixa</strong> e escolher qual caixa se forma. Use o som do aparelho.</div>
+        <button class="btn btn-primary" id="btnComecar">Come&#231;ar</button>
+    </div>
+</div>
+
+<!-- ===== TELA DE INSTRUCAO (comum a todos os modulos) ===== -->
+<div id="tela-instr" class="tela tela-cor">
+    <div class="form-container">
+        <h2 id="instrTitulo">Instru&#231;&#227;o</h2>
+        <div class="instr-texto" id="instrTexto"></div>
+        <div>
+            <button class="btn btn-sec" id="btnInstrOuvir">&#128266; Ouvir de novo</button>
+            <button class="btn btn-primary" id="btnInstrOk">Continuar</button>
+        </div>
+    </div>
+</div>
+<!-- ===== TELA FINAL DO MODULO (aviso curto; o controlador troca de modulo sozinho) ===== -->
+<div id="tela-fim" class="tela tela-cor">
+    <div class="caixa-final">
+        <h1 id="fimTitulo">Muito bem!</h1>
+        <p id="fimTexto" style="color:#455a64;"></p>
+        <div id="fimTabela"></div>
+    </div>
+</div>
+
+
+<!-- ===== TELA DO ITEM ===== -->
+<div id="tela-teste" class="tela tela-teste">
+    <div class="topo-item"><span class="t1" id="tituloItem">Treino</span><span class="t2">Intelig&#234;ncia N&#227;o-Verbal</span></div>
+    <div class="barra-prog"><div id="barraProg"></div></div>
+    <div class="cartao">
+        <div class="rotulo">Figura aberta</div>
+        <div id="redeBox"></div>
+        <div class="pergunta" id="pergunta"></div>
+        <div id="alternativas"></div>
+        <div class="feedback" id="feedback"></div>
+    </div>
+    <div class="barra-conf"><button class="btn btn-primary" id="btnConfirmar" disabled>Confirmar resposta</button></div>
+</div>
+
+<script>
+/* ============================================================
+   BAFC - MODULO D: INTELIGENCIA NAO-VERBAL (figuras abertas / solidos)
+   24 itens fixos. 1 ponto por acerto (0 a 24). Para apos 4 erros seguidos.
+   Ordem do script (padrao do site): dados, funcoes, inicializacao direta no final.
+   Obs.: para o avaliador conferir o gabarito, abra o modulo com ?gab=1 no endereco.
+   ============================================================ */
+/* ===== BAFC - codigo comum dos modulos (ASCII puro; textos acentuados via \u escapes) ===== */
+/* --- Integracao com o controlador (o "sino") --- */
+var BAFC_MOD = { bateria: false, id: '', paciente: {} };
+(function () {
+    var p = new URLSearchParams(window.location.search);
+    if (p.get('bateria') === '1') {
+        BAFC_MOD.bateria = true; BAFC_MOD.id = p.get('modulo') || '';
+        try { BAFC_MOD.paciente = JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(p.get('p')))))); } catch (e) { BAFC_MOD.paciente = {}; }
+    }
+})();
+function bafcFim(dados) {
+    if (!BAFC_MOD.bateria) { return; }
+    try { window.parent.postMessage({ tipo: 'bafc-modulo-fim', modulo: BAFC_MOD.id, dados: dados }, '*'); } catch (e) {}
+}
+/* --- Telas --- */
+function mostrarTela(id) {
+    var ts = document.querySelectorAll('.tela');
+    for (var i = 0; i < ts.length; i++) { ts[i].classList.remove('ativa'); }
+    document.getElementById(id).classList.add('ativa');
+    window.scrollTo(0, 0);
+}
+/* --- Audio (arquivos em ../audio/) --- */
+var _aud = null;
+function pararAudio() { if (_aud) { try { _aud.onended = null; _aud.onerror = null; _aud.pause(); } catch (e) {} _aud = null; } }
+function tocarAudio(nome, aoTerminar) {
+    pararAudio();
+    var a = new Audio('../audio/' + nome + '.mp3');
+    _aud = a;
+    var fim = function () { if (_aud === a) { _aud = null; } if (aoTerminar) { var f = aoTerminar; aoTerminar = null; f(); } };
+    a.onended = fim; a.onerror = fim;
+    var p = a.play();
+    if (p && p.catch) { p.catch(function () { fim(); }); }
+    return a;
+}
+/* --- Tela de instrucao (texto + audio + botao) --- */
+var _instrCb = null; var _instrFala = '';
+function mostrarInstrucao(idFala, texto, rotulo, aoContinuar) {
+    _instrCb = aoContinuar; _instrFala = idFala;
+    document.getElementById('instrTexto').textContent = texto;
+    document.getElementById('btnInstrOk').textContent = rotulo;
+    mostrarTela('tela-instr');
+    tocarAudio(idFala, null);
+}
+function instrOuvir() { tocarAudio(_instrFala, null); }
+function instrContinuar() { pararAudio(); var f = _instrCb; _instrCb = null; if (f) { f(); } }
+function fmtSeg(ms) { return (Math.round(ms / 100) / 10).toString().replace('.', ','); }
+
+
+/* ===== BAFC - MOTOR DO NAO-VERBAL (gerado por extrair_motor_nv.py; ASCII puro) ===== */
+var COS30 = 0.8660254037844386;
+var LETRAS = ['A', 'B', 'C', 'D', 'E'];
+
+/* Glifos (desenhos nas faces). inv = igual girando 90 graus. quir = muda ao espelhar. */
+var GLIFOS = {
+    circulo: { inv: true, quir: false },
+    quadrado: { inv: true, quir: false },
+    mais: { inv: true, quir: false },
+    moldura: { inv: true, quir: false },
+    anel: { inv: true, quir: false },
+    pontos: { inv: true, quir: false },
+    seta: { inv: false, quir: false },
+    ele: { inv: false, quir: true },
+    meia: { inv: false, quir: false },
+    triret: { inv: false, quir: false },
+    te: { inv: false, quir: false },
+    bandeira: { inv: false, quir: true },
+    estrela: { inv: false, quir: false },
+    losango: { inv: true, quir: false },
+    triangulo: { inv: false, quir: false }
+};
+
+/* Desenhos de face: cor de fundo + glifo + cor do glifo */
+var DESENHOS = {
+    verm: { id: 'verm', fill: '#e53935', glifo: 'circulo', ink: '#ffffff' },
+    azul: { id: 'azul', fill: '#1e88e5', glifo: 'quadrado', ink: '#ffffff' },
+    verd: { id: 'verd', fill: '#43a047', glifo: 'mais', ink: '#ffffff' },
+    amar: { id: 'amar', fill: '#fdd835', glifo: 'moldura', ink: '#4e342e' },
+    roxo: { id: 'roxo', fill: '#8e24aa', glifo: 'anel', ink: '#ffffff' },
+    lara: { id: 'lara', fill: '#fb8c00', glifo: 'pontos', ink: '#ffffff' },
+    c_verm: { id: 'c_verm', fill: '#e53935', glifo: null, ink: '#ffffff' },
+    c_azul: { id: 'c_azul', fill: '#1e88e5', glifo: null, ink: '#ffffff' },
+    c_verd: { id: 'c_verd', fill: '#43a047', glifo: null, ink: '#ffffff' },
+    c_amar: { id: 'c_amar', fill: '#fdd835', glifo: null, ink: '#ffffff' },
+    c_roxo: { id: 'c_roxo', fill: '#8e24aa', glifo: null, ink: '#ffffff' },
+    c_lara: { id: 'c_lara', fill: '#fb8c00', glifo: null, ink: '#ffffff' },
+    m_seta: { id: 'm_seta', fill: '#e0f2f1', glifo: 'seta', ink: '#004d40' },
+    m_ele: { id: 'm_ele', fill: '#e0f2f1', glifo: 'ele', ink: '#004d40' },
+    m_meia: { id: 'm_meia', fill: '#e0f2f1', glifo: 'meia', ink: '#004d40' },
+    m_triret: { id: 'm_triret', fill: '#e0f2f1', glifo: 'triret', ink: '#004d40' },
+    m_te: { id: 'm_te', fill: '#e0f2f1', glifo: 'te', ink: '#004d40' },
+    m_bandeira: { id: 'm_bandeira', fill: '#e0f2f1', glifo: 'bandeira', ink: '#004d40' }
+};
+
+/* Faces "estranhas": nao existem em nenhuma figura aberta. Servem de erro bem visivel nos itens iniciais. */
+var ESTRANHOS_COR = [
+    { id: 'ec_cinza', fill: '#90a4ae', glifo: null, ink: '#ffffff' },
+    { id: 'ec_cian', fill: '#00acc1', glifo: null, ink: '#ffffff' },
+    { id: 'ec_marrom', fill: '#6d4c41', glifo: null, ink: '#ffffff' }
+];
+var ESTRANHOS = [
+    { id: 'e_cinza', fill: '#90a4ae', glifo: 'estrela', ink: '#ffffff' },
+    { id: 'e_cian', fill: '#00acc1', glifo: 'losango', ink: '#ffffff' },
+    { id: 'e_marrom', fill: '#6d4c41', glifo: 'triangulo', ink: '#ffffff' }
+];
+
+/* Faces "estranhas": nao existem em nenhuma figura aberta. Servem de erro bem visivel nos itens iniciais. */
+var ESTRANHOS_COR = [
+    { id: 'ec_cinza', fill: '#90a4ae', glifo: null, ink: '#ffffff' },
+    { id: 'ec_cian', fill: '#00acc1', glifo: null, ink: '#ffffff' },
+    { id: 'ec_marrom', fill: '#6d4c41', glifo: null, ink: '#ffffff' }
+];
+var ESTRANHOS = [
+    { id: 'e_cinza', fill: '#90a4ae', glifo: 'estrela', ink: '#ffffff' },
+    { id: 'e_cian', fill: '#00acc1', glifo: 'losango', ink: '#ffffff' },
+    { id: 'e_marrom', fill: '#6d4c41', glifo: 'triangulo', ink: '#ffffff' }
+];
+
+
+/* ---------- 2. UTILITARIOS (vetores, matrizes, sorteio fixo) ---------- */
+function mulberry32(a) {
+    return function () {
+        a = (a + 0x6D2B79F5) | 0;
+        var t = Math.imul(a ^ (a >>> 15), 1 | a);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+}
+function neg(v) { return [-v[0] || 0, -v[1] || 0, -v[2] || 0]; }
+function cross(a, b) { return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]; }
+function dot(a, b) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; }
+function sub(a, b) { return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]; }
+function norm(a) { var l = Math.sqrt(dot(a, a)); return [a[0] / l, a[1] / l, a[2] / l]; }
+function mv(M, v) { return [M[0][0] * v[0] + M[0][1] * v[1] + M[0][2] * v[2], M[1][0] * v[0] + M[1][1] * v[1] + M[1][2] * v[2], M[2][0] * v[0] + M[2][1] * v[1] + M[2][2] * v[2]]; }
+function mulMat(A, B) {
+    var R = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
+    for (var i = 0; i < 3; i++) { for (var j = 0; j < 3; j++) { for (var k = 0; k < 3; k++) { R[i][j] += A[i][k] * B[k][j]; } } }
+    return R;
+}
+function chaveMat(M) { return M[0].join(',') + ';' + M[1].join(',') + ';' + M[2].join(','); }
+function r2(x) { return Math.round(x * 1000) / 1000; }
+function sorteio(rnd, n) { return Math.floor(rnd() * n); }
+function embaralhar(arr, rnd) {
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(rnd() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; }
+    return a;
+}
+/* Projecao isometrica (camera olhando da direcao (1,1,1)); mantem a lateralidade correta */
+function proj(p) { return [(p[1] - p[0]) * COS30, -p[2] + (p[0] + p[1]) * 0.5]; }
+
+/* As 24 rotacoes possiveis de um cubo (o indice 0 e a identidade) */
+function gerarRotacoes() {
+    var I = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
+    var gx = [[1, 0, 0], [0, 0, -1], [0, 1, 0]];
+    var gy = [[0, 0, 1], [0, 1, 0], [-1, 0, 0]];
+    var vistos = {}; var lista = [I]; var fila = [I]; var gs = [gx, gy];
+    vistos[chaveMat(I)] = true;
+    while (fila.length) {
+        var m = fila.shift();
+        for (var i = 0; i < 2; i++) {
+            var n = mulMat(gs[i], m); var k = chaveMat(n);
+            if (!vistos[k]) { vistos[k] = true; lista.push(n); fila.push(n); }
+        }
+    }
+    return lista;
+}
+var ROT = gerarRotacoes();
+
+/* ---------- 3. DESENHO DOS GLIFOS (coordenadas com o "cima" do glifo em +y) ---------- */
+function ptsStr(a) { var s = []; for (var i = 0; i < a.length; i++) { s.push(r2(a[i][0]) + ',' + r2(a[i][1])); } return s.join(' '); }
+function arcoPts(r, a0, a1, n) {
+    var p = [];
+    for (var i = 0; i <= n; i++) { var a = (a0 + (a1 - a0) * i / n) * Math.PI / 180; p.push([r * Math.cos(a), r * Math.sin(a)]); }
+    return p;
+}
+function glifoSvg(id, ink) {
+    var f = 'fill="' + ink + '"';
+    var mais = '<rect x="-0.17" y="-0.6" width="0.34" height="1.2" ' + f + '/><rect x="-0.6" y="-0.17" width="1.2" height="0.34" ' + f + '/>';
+    if (id === 'circulo') { return '<circle r="0.5" ' + f + '/>'; }
+    if (id === 'quadrado') { return '<rect x="-0.45" y="-0.45" width="0.9" height="0.9" ' + f + '/>'; }
+    if (id === 'mais') { return mais; }
+    if (id === 'moldura') { return '<rect x="-0.4" y="-0.4" width="0.8" height="0.8" fill="none" stroke="' + ink + '" stroke-width="0.16"/>'; }
+    if (id === 'anel') { return '<circle r="0.42" fill="none" stroke="' + ink + '" stroke-width="0.17"/>'; }
+    if (id === 'pontos') {
+        return '<circle cx="0.42" cy="0.42" r="0.2" ' + f + '/><circle cx="-0.42" cy="0.42" r="0.2" ' + f + '/><circle cx="0.42" cy="-0.42" r="0.2" ' + f + '/><circle cx="-0.42" cy="-0.42" r="0.2" ' + f + '/>';
+    }
+    if (id === 'estrela') { var ep = []; for (var q = 0; q < 10; q++) { var ang = (90 + q * 36) * Math.PI / 180; var rr = (q % 2 === 0) ? 0.66 : 0.28; ep.push([rr * Math.cos(ang), rr * Math.sin(ang)]); } return '<polygon points="' + ptsStr(ep) + '" ' + f + '/>'; }
+    if (id === 'losango') { return '<polygon points="' + ptsStr([[0, 0.65], [0.65, 0], [0, -0.65], [-0.65, 0]]) + '" ' + f + '/>'; }
+    if (id === 'triangulo') { return '<polygon points="' + ptsStr([[0, 0.65], [0.6, -0.45], [-0.6, -0.45]]) + '" ' + f + '/>'; }
+    if (id === 'estrela') { var ep = []; for (var q = 0; q < 10; q++) { var ang = (90 + q * 36) * Math.PI / 180; var rr = (q % 2 === 0) ? 0.66 : 0.28; ep.push([rr * Math.cos(ang), rr * Math.sin(ang)]); } return '<polygon points="' + ptsStr(ep) + '" ' + f + '/>'; }
+    if (id === 'losango') { return '<polygon points="' + ptsStr([[0, 0.65], [0.65, 0], [0, -0.65], [-0.65, 0]]) + '" ' + f + '/>'; }
+    if (id === 'triangulo') { return '<polygon points="' + ptsStr([[0, 0.65], [0.6, -0.45], [-0.6, -0.45]]) + '" ' + f + '/>'; }
+    if (id === 'seta') { return '<polygon points="' + ptsStr([[0, 0.7], [0.45, 0.1], [0.17, 0.1], [0.17, -0.65], [-0.17, -0.65], [-0.17, 0.1], [-0.45, 0.1]]) + '" ' + f + '/>'; }
+    if (id === 'ele') { return '<polygon points="' + ptsStr([[-0.45, 0.65], [-0.15, 0.65], [-0.15, -0.2], [0.5, -0.2], [0.5, -0.5], [-0.45, -0.5]]) + '" ' + f + '/>'; }
+    if (id === 'meia') { return '<polygon points="' + ptsStr(arcoPts(0.58, 90, 270, 28)) + '" ' + f + '/>'; }
+    if (id === 'triret') { return '<polygon points="' + ptsStr([[-0.5, -0.5], [0.5, -0.5], [-0.5, 0.5]]) + '" ' + f + '/>'; }
+    if (id === 'te') { return '<polygon points="' + ptsStr([[-0.5, 0.6], [0.5, 0.6], [0.5, 0.3], [0.15, 0.3], [0.15, -0.6], [-0.15, -0.6], [-0.15, 0.3], [-0.5, 0.3]]) + '" ' + f + '/>'; }
+    if (id === 'bandeira') { return '<rect x="-0.5" y="-0.6" width="0.15" height="1.25" ' + f + '/><polygon points="' + ptsStr([[-0.35, 0.65], [0.5, 0.35], [-0.35, 0.05]]) + '" ' + f + '/>'; }
+    return '';
+}
+
+/* ---------- 4. CALCULO: DOBRAR A FIGURA ABERTA ---------- */
+/* Estado de uma casinha dobrada: n = direcao da frente, u = direita, v = cima (vistos de fora) */
+function passoDobra(est, dir) {
+    var n = est.n, u = est.u, v = est.v;
+    if (dir === 'L') { return { n: u, u: neg(n), v: v }; }
+    if (dir === 'O') { return { n: neg(u), u: n, v: v }; }
+    if (dir === 'N') { return { n: v, u: u, v: neg(n) }; }
+    return { n: neg(v), u: u, v: n };
+}
+function criarFace(verts, n, v, des) {
+    var c = [0, 0, 0];
+    for (var i = 0; i < verts.length; i++) { c = [c[0] + verts[i][0] / verts.length, c[1] + verts[i][1] / verts.length, c[2] + verts[i][2] / verts.length]; }
+    return { verts: verts, n: n, c: c, v: v, des: des.id, fill: des.fill, glifo: des.glifo || null, ink: des.ink || '#000',
+             inv: des.glifo ? GLIFOS[des.glifo].inv : true, flip: false, base: !!des.base };
+}
+function dobrarCubo(rede) {
+    var cel = rede.celulas; var mapa = {}; var i;
+    for (i = 0; i < cel.length; i++) { mapa[cel[i].r + ',' + cel[i].c] = cel[i]; }
+    var estado = {}; var fila = [cel[0]];
+    estado[cel[0].r + ',' + cel[0].c] = { n: [0, 0, 1], u: [1, 0, 0], v: [0, 1, 0] };
+    var vizinhos = [[0, 1, 'L'], [0, -1, 'O'], [-1, 0, 'N'], [1, 0, 'S']];
+    while (fila.length) {
+        var a = fila.shift(); var ea = estado[a.r + ',' + a.c];
+        for (i = 0; i < 4; i++) {
+            var k = (a.r + vizinhos[i][0]) + ',' + (a.c + vizinhos[i][1]);
+            if (mapa[k] && !estado[k]) { estado[k] = passoDobra(ea, vizinhos[i][2]); fila.push(mapa[k]); }
+        }
+    }
+    var faces = [];
+    for (i = 0; i < cel.length; i++) {
+        var s = estado[cel[i].r + ',' + cel[i].c]; var rot = cel[i].rot || 0;
+        var vs = rot === 0 ? s.v : (rot === 1 ? neg(s.u) : (rot === 2 ? neg(s.v) : s.u));
+        var us = cross(vs, s.n);
+        var n = s.n;
+        var verts = [
+            [n[0] - us[0] - vs[0], n[1] - us[1] - vs[1], n[2] - us[2] - vs[2]],
+            [n[0] + us[0] - vs[0], n[1] + us[1] - vs[1], n[2] + us[2] - vs[2]],
+            [n[0] + us[0] + vs[0], n[1] + us[1] + vs[1], n[2] + us[2] + vs[2]],
+            [n[0] - us[0] + vs[0], n[1] - us[1] + vs[1], n[2] - us[2] + vs[2]]
+        ];
+        faces.push(criarFace(verts, n, vs, DESENHOS[cel[i].d]));
+    }
+    return faces;
+}
+function dobrarPiramide(rede) {
+    var A = [-1, -1, -0.5], B = [1, -1, -0.5], C = [1, 1, -0.5], D = [-1, 1, -0.5], T = [0, 0, 1.5];
+    var defs = [[[A, B, C, D], rede.base, true], [[B, C, T], rede.leste, false], [[A, B, T], rede.norte, false],
+                [[D, A, T], rede.oeste, false], [[C, D, T], rede.sul, false]];
+    var faces = [];
+    for (var i = 0; i < defs.length; i++) {
+        var vs = defs[i][0];
+        var n = norm(cross(sub(vs[1], vs[0]), sub(vs[2], vs[0])));
+        var cx = (vs[0][0] + vs[1][0] + vs[2][0]) / 3, cy = (vs[0][1] + vs[1][1] + vs[2][1]) / 3, cz = (vs[0][2] + vs[1][2] + vs[2][2]) / 3;
+        if (dot(n, [cx, cy, cz]) < 0) { n = neg(n); }
+        faces.push(criarFace(vs, n, null, { id: 'cor' + defs[i][1], fill: defs[i][1], glifo: null, base: defs[i][2] }));
+    }
+    return faces;
+}
+
+/* Quais faces aparecem para a camera (olhando de (1,1,1)) apos girar o solido por R */
+function visiveis(faces, R) {
+    var out = [];
+    for (var i = 0; i < faces.length; i++) {
+        var f = faces[i]; var n2 = mv(R, f.n);
+        if (n2[0] + n2[1] + n2[2] > 0.001) {
+            var c2 = mv(R, f.c); var p = proj(c2);
+            out.push({ f: f, n2: n2, c2: c2, px: p[0], py: p[1], idx: i });
+        }
+    }
+    out.sort(function (a, b) { if (Math.abs(a.px - b.px) > 0.001) { return a.px - b.px; } return a.py - b.py; });
+    return out;
+}
+/* "Impressao digital" do que se ve: serve para garantir que erradas nunca coincidem com a certa */
+function chaveVista(faces, R) {
+    var vs = visiveis(faces, R); var s = [];
+    for (var i = 0; i < vs.length; i++) {
+        var f = vs[i].f; var t = f.des;
+        if (!f.inv) { var v2 = mv(R, f.v); t += '@' + Math.round(v2[0]) + ',' + Math.round(v2[1]) + ',' + Math.round(v2[2]); }
+        if (f.flip) { t += 'm'; }
+        s.push(t);
+    }
+    return s.join('|');
+}
+
+/* Fabrica de alternativas erradas */
+function clonarFaces(fs) {
+    var o = [];
+    for (var i = 0; i < fs.length; i++) {
+        var f = fs[i];
+        o.push({ verts: f.verts, n: f.n, c: f.c, v: f.v, des: f.des, fill: f.fill, glifo: f.glifo, ink: f.ink, inv: f.inv, flip: f.flip, base: f.base });
+    }
+    return o;
+}
+function trocarCampos(d, i, j) {
+    var campos = ['des', 'fill', 'glifo', 'ink', 'inv'];
+    for (var q2 = 0; q2 < campos.length; q2++) { var t = d[i][campos[q2]]; d[i][campos[q2]] = d[j][campos[q2]]; d[j][campos[q2]] = t; }
+}
+function modificar(fs, est, rnd, R) {
+    var d = clonarFaces(fs); var i, j, cand = [];
+    var visIdx = [], ocIdx = [];
+    if (R) {
+        var vv = visiveis(fs, R); var ehVis = {};
+        for (i = 0; i < vv.length; i++) { visIdx.push(vv[i].idx); ehVis[vv[i].idx] = true; }
+        for (i = 0; i < fs.length; i++) { if (!ehVis[i]) { ocIdx.push(i); } }
+    }
+    if (est === 'estranha') {
+        var lista = (fs[0].glifo === null) ? ESTRANHOS_COR : ESTRANHOS;
+        var ex = lista[sorteio(rnd, lista.length)];
+        i = R ? visIdx[sorteio(rnd, visIdx.length)] : sorteio(rnd, d.length);
+        d[i].des = ex.id; d[i].fill = ex.fill; d[i].glifo = ex.glifo; d[i].ink = ex.ink; d[i].inv = ex.glifo ? GLIFOS[ex.glifo].inv : true;
+        return d;
+    }
+    if (est === 'trocaUma' && R && ocIdx.length) {
+        i = visIdx[sorteio(rnd, visIdx.length)]; j = ocIdx[sorteio(rnd, ocIdx.length)];
+        trocarCampos(d, i, j);
+        return d;
+    }
+    if (est === 'gira') {
+        for (i = 0; i < d.length; i++) { if (!d[i].inv) { cand.push(i); } }
+        if (cand.length) {
+            i = cand[sorteio(rnd, cand.length)];
+            var k = 1 + sorteio(rnd, 3); var v = d[i].v;
+            for (var q = 0; q < k; q++) { v = cross(d[i].n, v); }
+            d[i].v = v; return d;
+        }
+        est = 'troca';
+    }
+    if (est === 'espelha') {
+        for (i = 0; i < d.length; i++) { if (d[i].glifo && GLIFOS[d[i].glifo].quir) { cand.push(i); } }
+        if (cand.length) { i = cand[sorteio(rnd, cand.length)]; d[i].flip = !d[i].flip; return d; }
+    }
+    i = sorteio(rnd, d.length);
+    do { j = sorteio(rnd, d.length); } while (j === i);
+    trocarCampos(d, i, j);
+    return d;
+}
+
+/* Monta um item completo: correta + 4 erradas verificadas, ja embaralhadas na posicao fixa */
+function montarItem(item) {
+    var rnd = mulberry32(item.seed);
+    var correto = (item.tipo === 'cubo') ? dobrarCubo(item.rede) : (item.tipo === 'prisma' ? dobrarPrisma(item.rede) : dobrarPiramide(item.rede));
+    var permit = []; var i;
+    for (i = 0; i < ROT.length; i++) {
+        var vis = visiveis(correto, ROT[i]);
+        var temBase = false;
+        for (var q = 0; q < vis.length; q++) { if (vis[q].f.base) { temBase = true; } }
+        if (item.tipo === 'cubo' || (item.tipo === 'piramide' && vis.length === 3 && temBase) || (item.tipo === 'prisma' && vis.length === 3)) { permit.push(i); }
+    }
+    var S = {};
+    for (i = 0; i < permit.length; i++) { S[chaveVista(correto, ROT[permit[i]])] = true; }
+    /* enquadramento fixo para todas as alternativas do item */
+    var m = 0;
+    for (i = 0; i < permit.length; i++) {
+        for (var a = 0; a < correto.length; a++) {
+            for (var b = 0; b < correto[a].verts.length; b++) {
+                var p = proj(mv(ROT[permit[i]], correto[a].verts[b]));
+                m = Math.max(m, Math.abs(p[0]), Math.abs(p[1]));
+            }
+        }
+    }
+    m = r2(m + 0.2);
+    var vb = (-m) + ' ' + (-m) + ' ' + (2 * m) + ' ' + (2 * m);
+    var usadas = {}; var alts = [];
+    var idxRC = item.rotFixa ? 0 : permit[sorteio(rnd, permit.length)];
+    usadas[chaveVista(correto, ROT[idxRC])] = true;
+    var corretaAlt = { faces: correto, R: ROT[idxRC] };
+    for (var e = 0; e < item.estrat.length; e++) {
+        var ok = false; var tent = 0;
+        while (!ok && tent < 120) {
+            tent++;
+            var d = modificar(correto, item.estrat[e], rnd, item.rotFixa ? ROT[0] : null);
+            var ordem = item.rotFixa ? [0] : embaralhar(permit, rnd);
+            for (var o = 0; o < ordem.length && !ok; o++) {
+                var key = chaveVista(d, ROT[ordem[o]]);
+                if (!S[key] && !usadas[key]) { usadas[key] = true; alts.push({ faces: d, R: ROT[ordem[o]] }); ok = true; }
+            }
+        }
+        if (!ok) { throw new Error('nao foi possivel gerar alternativa errada'); }
+    }
+    alts.splice(item.posCorreta, 0, corretaAlt);
+    return { correto: correto, alts: alts, idxCorreta: item.posCorreta, vb: vb };
+}
+
+/* ---------- 5. DESENHO: figura aberta e solidos em perspectiva ---------- */
+function sombra(n2) {
+    var L = norm([0.35, 0.55, 0.75]); var d = Math.max(0, dot(norm(n2), L));
+    return r2(0.02 + 0.2 * (1 - d));
+}
+function svgVista(faces, R, vb) {
+    var vs = visiveis(faces, R);
+    var s = '<svg viewBox="' + vb + '" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">';
+    for (var k = 0; k < vs.length; k++) {
+        var f = vs[k].f; var pts = [];
+        for (var j = 0; j < f.verts.length; j++) { var p = proj(mv(R, f.verts[j])); pts.push(r2(p[0]) + ',' + r2(p[1])); }
+        var poly = pts.join(' ');
+        s += '<polygon points="' + poly + '" fill="' + f.fill + '"/>';
+        if (f.glifo) {
+            var v2 = mv(R, f.v); var u2 = cross(v2, vs[k].n2);
+            var U = proj(u2), V = proj(v2), P = proj(vs[k].c2);
+            /* proj() inclui deslocamento nulo (linear), entao serve tambem para vetores */
+            s += '<g transform="matrix(' + r2(U[0]) + ',' + r2(U[1]) + ',' + r2(V[0]) + ',' + r2(V[1]) + ',' + r2(P[0]) + ',' + r2(P[1]) + ')' + (f.flip ? ' scale(-1,1)' : '') + '">' + glifoSvg(f.glifo, f.ink) + '</g>';
+        }
+        s += '<polygon points="' + poly + '" fill="#000" fill-opacity="' + sombra(vs[k].n2) + '"/>';
+        s += '<polygon points="' + poly + '" fill="none" stroke="#263238" stroke-width="0.07" stroke-linejoin="round"/>';
+    }
+    return s + '</svg>';
+}
+var ROT_NET = [[[1, 0], [0, -1]], [[0, -1], [-1, 0]], [[-1, 0], [0, 1]], [[0, 1], [1, 0]]];
+function svgRedeCubo(rede) {
+    var cs = rede.celulas; var minr = 99, minc = 99, maxr = -1, maxc = -1; var i;
+    for (i = 0; i < cs.length; i++) { minr = Math.min(minr, cs[i].r); minc = Math.min(minc, cs[i].c); maxr = Math.max(maxr, cs[i].r); maxc = Math.max(maxc, cs[i].c); }
+    var w = 2 * (maxc - minc + 1), h = 2 * (maxr - minr + 1);
+    var s = '<svg viewBox="-0.15 -0.15 ' + (w + 0.3) + ' ' + (h + 0.3) + '" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">';
+    for (i = 0; i < cs.length; i++) {
+        var d = DESENHOS[cs[i].d]; var x = 2 * (cs[i].c - minc), y = 2 * (cs[i].r - minr);
+        s += '<rect x="' + x + '" y="' + y + '" width="2" height="2" fill="' + d.fill + '" stroke="#263238" stroke-width="0.07" stroke-linejoin="round"/>';
+        var g = ROT_NET[cs[i].rot || 0];
+        s += '<g transform="matrix(' + g[0][0] + ',' + g[0][1] + ',' + g[1][0] + ',' + g[1][1] + ',' + (x + 1) + ',' + (y + 1) + ')">' + glifoSvg(d.glifo, d.ink) + '</g>';
+    }
+    return s + '</svg>';
+}
+function svgRedePiramide(rede) {
+    var st = 'stroke="#263238" stroke-width="0.07" stroke-linejoin="round"';
+    var s = '<svg viewBox="-2.9 -2.9 5.8 5.8" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">';
+    s += '<rect x="-1" y="-1" width="2" height="2" fill="' + rede.base + '" ' + st + '/>';
+    s += '<polygon points="1,-1 1,1 2.7,0" fill="' + rede.leste + '" ' + st + '/>';
+    s += '<polygon points="-1,-1 1,-1 0,-2.7" fill="' + rede.norte + '" ' + st + '/>';
+    s += '<polygon points="-1,-1 -1,1 -2.7,0" fill="' + rede.oeste + '" ' + st + '/>';
+    s += '<polygon points="-1,1 1,1 0,2.7" fill="' + rede.sul + '" ' + st + '/>';
+    return s + '</svg>';
+}
+
+
+/* ---------- PRISMA TRIANGULAR (outro solido) ---------- */
+/* Secao: triangulo A,B,C com centro na origem; altura do prisma = 2 (z de -1 a 1).
+   Na figura aberta, o triangulo de baixo fica no meio, com um retangulo em cada lado,
+   e o triangulo de cima preso ao retangulo do lado AB. O desenho segue as mesmas
+   coordenadas (x,y) do solido, vistas de fora (mesma logica da piramide). */
+var PRISMA_A = [-1, -0.5667], PRISMA_B = [1, -0.5667], PRISMA_C = [0, 1.1333], PRISMA_H = 2;
+function normalLado(P, Q) {
+    var d = [Q[0] - P[0], Q[1] - P[1]]; var n = [d[1], -d[0]]; var l = Math.sqrt(n[0] * n[0] + n[1] * n[1]);
+    n = [n[0] / l, n[1] / l];
+    var mx = (P[0] + Q[0]) / 2, my = (P[1] + Q[1]) / 2;
+    if (n[0] * mx + n[1] * my < 0) { n = [-n[0], -n[1]]; }   /* aponta para fora (centro em 0,0) */
+    return n;
+}
+function dobrarPrisma(rede) {
+    var A = PRISMA_A, B = PRISMA_B, C = PRISMA_C;
+    function v3(p, z) { return [p[0], p[1], z]; }
+    var defs = [
+        [[v3(A, -1), v3(B, -1), v3(C, -1)], rede.base, true],
+        [[v3(A, 1), v3(B, 1), v3(C, 1)], rede.topo, false],
+        [[v3(A, -1), v3(B, -1), v3(B, 1), v3(A, 1)], rede.ab, false],
+        [[v3(B, -1), v3(C, -1), v3(C, 1), v3(B, 1)], rede.bc, false],
+        [[v3(C, -1), v3(A, -1), v3(A, 1), v3(C, 1)], rede.ca, false]
+    ];
+    var faces = [];
+    for (var i = 0; i < defs.length; i++) {
+        var vs = defs[i][0];
+        var n = norm(cross(sub(vs[1], vs[0]), sub(vs[2], vs[0])));
+        var cx = 0, cy = 0, cz = 0;
+        for (var k = 0; k < vs.length; k++) { cx += vs[k][0] / vs.length; cy += vs[k][1] / vs.length; cz += vs[k][2] / vs.length; }
+        if (dot(n, [cx, cy, cz]) < 0) { n = neg(n); }
+        faces.push(criarFace(vs, n, null, { id: 'cor' + defs[i][1], fill: defs[i][1], glifo: null, base: defs[i][2] }));
+    }
+    return faces;
+}
+function svgRedePrisma(rede) {
+    var A = PRISMA_A, B = PRISMA_B, C = PRISMA_C, h = PRISMA_H;
+    var nAB = normalLado(A, B), nBC = normalLado(B, C), nCA = normalLado(C, A);
+    function mais(P, n, k) { return [P[0] + n[0] * k, P[1] + n[1] * k]; }
+    var A2 = mais(A, nAB, h), B2 = mais(B, nAB, h);
+    var C2 = [C[0], 2 * A[1] - C[1] + nAB[1] * h];            /* C refletido por AB + altura */
+    var polis = [
+        [[A, B, C], rede.base],
+        [[A, B, B2, A2], rede.ab],
+        [[B, C, mais(C, nBC, h), mais(B, nBC, h)], rede.bc],
+        [[C, A, mais(A, nCA, h), mais(C, nCA, h)], rede.ca],
+        [[A2, B2, C2], rede.topo]
+    ];
+    var minx = 99, miny = 99, maxx = -99, maxy = -99, i, j;
+    for (i = 0; i < polis.length; i++) { for (j = 0; j < polis[i][0].length; j++) { var p = polis[i][0][j]; minx = Math.min(minx, p[0]); maxx = Math.max(maxx, p[0]); miny = Math.min(miny, p[1]); maxy = Math.max(maxy, p[1]); } }
+    var w = maxx - minx + 0.6, hh = maxy - miny + 0.6;
+    var s = '<svg viewBox="' + r2(minx - 0.3) + ' ' + r2(miny - 0.3) + ' ' + r2(w) + ' ' + r2(hh) + '" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">';
+    for (i = 0; i < polis.length; i++) {
+        var pts = []; for (j = 0; j < polis[i][0].length; j++) { pts.push(r2(polis[i][0][j][0]) + ',' + r2(polis[i][0][j][1])); }
+        s += '<polygon points="' + pts.join(' ') + '" fill="' + polis[i][1] + '" stroke="#263238" stroke-width="0.07" stroke-linejoin="round"/>';
+    }
+    return s + '</svg>';
+}
+
+
+/* ---------- ITENS ---------- */
+/* ===== BAFC - ITENS DO NAO-VERBAL (24 + treino). ASCII puro. =====
+   Cada item e FIXO (seed): todo avaliando ve exatamente o mesmo item.
+   estrat: estranha = face que nao existe na figura aberta; trocaUma = uma face visivel trocada
+   por outra do cubo; troca = duas faces trocadas; gira/espelha = so com simbolos que tem direcao.
+   rotFixa: true = todas as alternativas aparecem com a mesma vista do cubo (itens iniciais).
+   Faixas: 1-2 so cores | 3-8 figuras | 9-16 simbolos com direcao (e giro) | 17-20 piramide | 21-24 prisma. */
+var NETS = {
+    cruz:   [[0, 1], [1, 0], [1, 1], [1, 2], [1, 3], [2, 1]],
+    n141a:  [[0, 0], [1, 0], [1, 1], [1, 2], [1, 3], [2, 3]],
+    n141b:  [[0, 2], [1, 0], [1, 1], [1, 2], [1, 3], [2, 0]],
+    n141c:  [[0, 3], [1, 0], [1, 1], [1, 2], [1, 3], [2, 1]],
+    n231a:  [[0, 0], [0, 1], [1, 1], [1, 2], [1, 3], [2, 3]],
+    n231b:  [[0, 0], [0, 1], [1, 1], [1, 2], [1, 3], [2, 1]],
+    escada: [[0, 0], [0, 1], [1, 1], [1, 2], [2, 2], [2, 3]],
+    tres3:  [[0, 0], [0, 1], [0, 2], [1, 2], [1, 3], [1, 4]]
+};
+function cel(rede, designs, rots) {
+    var c = [];
+    for (var i = 0; i < rede.length; i++) { c.push({ r: rede[i][0], c: rede[i][1], d: designs[i], rot: rots ? rots[i] : 0 }); }
+    return { celulas: c };
+}
+var COR = ['c_verm', 'c_azul', 'c_verd', 'c_amar', 'c_roxo', 'c_lara'];
+var E_ = ['estranha', 'estranha', 'estranha', 'estranha'];
+var U_ = ['trocaUma', 'trocaUma', 'trocaUma', 'trocaUma'];
+var T_ = ['troca', 'troca', 'troca', 'troca'];
+var V = { verm: '#e53935', azul: '#1e88e5', verd: '#43a047', amar: '#fdd835', roxo: '#8e24aa', lara: '#fb8c00' };
+
+var ITENS = [
+    /* treino */
+    { id: 0, treino: true, tipo: 'cubo', seed: 101, posCorreta: 1, rotFixa: true, estrat: E_,
+      rede: cel(NETS.cruz, ['c_verm', 'c_azul', 'c_verd', 'c_amar', 'c_roxo', 'c_lara']) },
+    /* 1-2: so cores */
+    { id: 1, tipo: 'cubo', seed: 211, posCorreta: 2, rotFixa: true, estrat: E_,
+      rede: cel(NETS.cruz, ['c_azul', 'c_verm', 'c_amar', 'c_verd', 'c_lara', 'c_roxo']) },
+    { id: 2, tipo: 'cubo', seed: 222, posCorreta: 0, rotFixa: true, estrat: ['estranha', 'estranha', 'trocaUma', 'trocaUma'],
+      rede: cel(NETS.n141a, ['c_lara', 'c_roxo', 'c_verd', 'c_verm', 'c_azul', 'c_amar']) },
+    /* 3-8: figuras */
+    { id: 3, tipo: 'cubo', seed: 233, posCorreta: 4, rotFixa: true, estrat: ['estranha', 'trocaUma', 'trocaUma', 'trocaUma'],
+      rede: cel(NETS.n141b, ['amar', 'verd', 'lara', 'azul', 'verm', 'roxo']) },
+    { id: 4, tipo: 'cubo', seed: 244, posCorreta: 1, rotFixa: true, estrat: U_,
+      rede: cel(NETS.n231a, ['verm', 'verd', 'azul', 'amar', 'roxo', 'lara']) },
+    { id: 5, tipo: 'cubo', seed: 255, posCorreta: 3, rotFixa: true, estrat: ['trocaUma', 'trocaUma', 'troca', 'troca'],
+      rede: cel(NETS.escada, ['azul', 'lara', 'verm', 'roxo', 'amar', 'verd']) },
+    { id: 6, tipo: 'cubo', seed: 266, posCorreta: 0, rotFixa: true, estrat: ['trocaUma', 'troca', 'troca', 'troca'],
+      rede: cel(NETS.tres3, ['roxo', 'verm', 'verd', 'lara', 'azul', 'amar']) },
+    { id: 7, tipo: 'cubo', seed: 277, posCorreta: 2, rotFixa: true, estrat: T_,
+      rede: cel(NETS.n141c, ['lara', 'azul', 'amar', 'verd', 'verm', 'roxo']) },
+    { id: 8, tipo: 'cubo', seed: 288, posCorreta: 4, rotFixa: true, estrat: T_,
+      rede: cel(NETS.n231b, ['verd', 'amar', 'roxo', 'azul', 'lara', 'verm']) },
+    /* 9-10: simbolos com direcao, mesma vista */
+    { id: 9, tipo: 'cubo', seed: 309, posCorreta: 1, rotFixa: true, estrat: ['gira', 'troca', 'gira', 'troca'],
+      rede: cel(NETS.n141a, ['m_seta', 'm_ele', 'm_meia', 'm_triret', 'm_te', 'm_bandeira'], [0, 0, 1, 0, 2, 0]) },
+    { id: 10, tipo: 'cubo', seed: 310, posCorreta: 3, rotFixa: true, estrat: ['gira', 'espelha', 'gira', 'troca'],
+      rede: cel(NETS.cruz, ['m_te', 'm_seta', 'm_bandeira', 'm_meia', 'm_ele', 'm_triret'], [0, 1, 0, 3, 0, 2]) },
+    /* 11-16: simbolos com direcao e cubo girado */
+    { id: 11, tipo: 'cubo', seed: 311, posCorreta: 4, rotFixa: false, estrat: ['gira', 'espelha', 'gira', 'troca'],
+      rede: cel(NETS.escada, ['m_seta', 'm_ele', 'm_meia', 'm_triret', 'm_te', 'm_bandeira'], [0, 1, 2, 0, 3, 1]) },
+    { id: 12, tipo: 'cubo', seed: 312, posCorreta: 0, rotFixa: false, estrat: ['gira', 'gira', 'espelha', 'troca'],
+      rede: cel(NETS.n141b, ['m_bandeira', 'm_triret', 'm_seta', 'm_te', 'm_ele', 'm_meia'], [2, 1, 0, 3, 1, 0]) },
+    { id: 13, tipo: 'cubo', seed: 313, posCorreta: 2, rotFixa: false, estrat: ['espelha', 'gira', 'gira', 'espelha'],
+      rede: cel(NETS.n231a, ['m_ele', 'm_te', 'm_meia', 'm_seta', 'm_triret', 'm_bandeira'], [1, 0, 2, 2, 1, 3]) },
+    { id: 14, tipo: 'cubo', seed: 314, posCorreta: 1, rotFixa: false, estrat: ['gira', 'espelha', 'troca', 'gira'],
+      rede: cel(NETS.tres3, ['m_meia', 'm_bandeira', 'm_te', 'm_ele', 'm_seta', 'm_triret'], [3, 0, 1, 2, 0, 1]) },
+    { id: 15, tipo: 'cubo', seed: 315, posCorreta: 3, rotFixa: false, estrat: ['espelha', 'gira', 'espelha', 'gira'],
+      rede: cel(NETS.n141c, ['m_triret', 'm_seta', 'm_ele', 'm_bandeira', 'm_meia', 'm_te'], [0, 3, 2, 1, 1, 0]) },
+    { id: 16, tipo: 'cubo', seed: 316, posCorreta: 1, rotFixa: false, estrat: ['espelha', 'espelha', 'gira', 'gira'],
+      rede: cel(NETS.n231b, ['m_te', 'm_ele', 'm_triret', 'm_meia', 'm_bandeira', 'm_seta'], [2, 2, 1, 0, 3, 1]) },
+    /* 17-20: piramide de base quadrada */
+    { id: 17, tipo: 'piramide', seed: 417, posCorreta: 4, rotFixa: false, estrat: T_,
+      rede: { base: V.amar, leste: V.verm, norte: V.azul, oeste: V.verd, sul: V.roxo } },
+    { id: 18, tipo: 'piramide', seed: 418, posCorreta: 0, rotFixa: false, estrat: T_,
+      rede: { base: V.verd, leste: V.roxo, norte: V.amar, oeste: V.verm, sul: V.azul } },
+    { id: 19, tipo: 'piramide', seed: 419, posCorreta: 2, rotFixa: false, estrat: T_,
+      rede: { base: V.azul, leste: V.lara, norte: V.verd, oeste: V.amar, sul: V.verm } },
+    { id: 20, tipo: 'piramide', seed: 420, posCorreta: 3, rotFixa: false, estrat: T_,
+      rede: { base: V.roxo, leste: V.azul, norte: V.lara, oeste: V.verm, sul: V.verd } },
+    /* 21-24: prisma de base triangular */
+    { id: 21, tipo: 'prisma', seed: 521, posCorreta: 2, rotFixa: false, estrat: T_,
+      rede: { base: V.verm, topo: V.azul, ab: V.amar, bc: V.verd, ca: V.roxo } },
+    { id: 22, tipo: 'prisma', seed: 522, posCorreta: 4, rotFixa: false, estrat: T_,
+      rede: { base: V.verd, topo: V.lara, ab: V.azul, bc: V.roxo, ca: V.amar } },
+    { id: 23, tipo: 'prisma', seed: 523, posCorreta: 1, rotFixa: false, estrat: T_,
+      rede: { base: V.amar, topo: V.roxo, ab: V.verm, bc: V.lara, ca: V.verd } },
+    { id: 24, tipo: 'prisma', seed: 524, posCorreta: 0, rotFixa: false, estrat: T_,
+      rede: { base: V.azul, topo: V.verm, ab: V.verd, bc: V.amar, ca: V.lara } }
+];
+
+
+/* ---------- FLUXO DO TESTE ---------- */
+var TOTAL_ITENS = 24;
+var PARAR_APOS_ERROS = 4;
+var estado = { i: 0, resp: [], erros: 0, sel: -1, t0: 0, gab: false, m: null, confirmado: false };
+estado.gab = (new URLSearchParams(window.location.search).get('gab') === '1');
+
+function carregarItem(i) {
+    var it = ITENS[i]; var m = montarItem(it);
+    estado.i = i; estado.m = m; estado.sel = -1; estado.confirmado = false; estado.t0 = Date.now();
+    document.getElementById('tituloItem').textContent = (i === 0) ? 'Treino' : ('Item ' + it.id + ' de ' + TOTAL_ITENS);
+    document.getElementById('barraProg').style.width = Math.round(100 * i / ITENS.length) + '%';
+    var rede = (it.tipo === 'cubo') ? svgRedeCubo(it.rede) : (it.tipo === 'prisma' ? svgRedePrisma(it.rede) : svgRedePiramide(it.rede));
+    document.getElementById('redeBox').innerHTML = rede;
+    document.getElementById('pergunta').textContent = (it.tipo === 'cubo')
+        ? 'Se voc\u00ea dobrar esta figura, qual caixa (cubo) se forma?'
+        : 'Se voc\u00ea dobrar esta figura, qual s\u00f3lido se forma?';
+    var h = '';
+    for (var k = 0; k < m.alts.length; k++) {
+        h += '<button type="button" class="alt' + ((estado.gab && k === m.idxCorreta) ? ' gab' : '') + '" data-i="' + k + '"><span class="letra">' + LETRAS[k] + '</span>' + svgVista(m.alts[k].faces, m.alts[k].R, m.vb) + '</button>';
+    }
+    document.getElementById('alternativas').innerHTML = h;
+    var fb = document.getElementById('feedback'); fb.className = 'feedback'; fb.textContent = '';
+    var bt = document.getElementById('btnConfirmar'); bt.disabled = true; bt.textContent = 'Confirmar resposta';
+    mostrarTela('tela-teste');
+}
+function clicarAlt(e) {
+    if (estado.confirmado) { return; }
+    var el = e.target; while (el && !(el.classList && el.classList.contains('alt'))) { el = el.parentNode; }
+    if (!el) { return; }
+    estado.sel = parseInt(el.getAttribute('data-i'), 10);
+    var todos = document.querySelectorAll('.alt');
+    for (var i = 0; i < todos.length; i++) { todos[i].classList.remove('sel'); }
+    el.classList.add('sel');
+    document.getElementById('btnConfirmar').disabled = false;
+}
+function aoConfirmar() {
+    var it = ITENS[estado.i];
+    if (estado.confirmado) { avancar(); return; }
+    if (estado.sel < 0) { return; }
+    estado.confirmado = true;
+    var m = estado.m; var ok = (estado.sel === m.idxCorreta); var tempo = Date.now() - estado.t0;
+    var todos = document.querySelectorAll('.alt');
+    if (it.treino) {
+        for (var i = 0; i < todos.length; i++) { todos[i].classList.remove('sel'); }
+        todos[m.idxCorreta].classList.add('certa');
+        if (!ok) { todos[estado.sel].classList.add('errada'); }
+        var fb = document.getElementById('feedback');
+        fb.className = 'feedback ' + (ok ? 'ok' : 'erro');
+        fb.textContent = ok ? 'Muito bem! Era essa mesma.' : ('N\u00e3o foi essa. A figura certa \u00e9 a ' + LETRAS[m.idxCorreta] + '.');
+        document.getElementById('btnConfirmar').textContent = 'Continuar';
+        return;
+    }
+    estado.resp.push({ item: it.id, tipo: it.tipo, marcada: LETRAS[estado.sel], correta: LETRAS[m.idxCorreta], acertou: ok, tempoMs: tempo });
+    estado.erros = ok ? 0 : estado.erros + 1;
+    if (estado.erros >= PARAR_APOS_ERROS) { finalizar(true); return; }
+    avancar();
+}
+function avancar() {
+    if (estado.i === 0) {
+        mostrarInstrucao('nv-valer', 'Agora vai valer! Os itens v\u00e3o ficando mais dif\u00edceis.', 'Come\u00e7ar', function () { carregarItem(1); });
+        return;
+    }
+    if (estado.i + 1 >= ITENS.length) { finalizar(false); return; }
+    carregarItem(estado.i + 1);
+}
+function finalizar(parou) {
+    var acertos = 0, tempo = 0;
+    for (var i = 0; i < estado.resp.length; i++) { if (estado.resp[i].acertou) { acertos++; } tempo += estado.resp[i].tempoMs; }
+    var dados = { modulo: 'D', acertos: acertos, itensApresentados: estado.resp.length, totalItens: TOTAL_ITENS, parouPorErros: !!parou, tempoTotalMs: tempo, respostas: estado.resp };
+    window._bafcNaoVerbal = dados;
+    document.getElementById('fimTitulo').textContent = 'Muito bem!';
+    if (BAFC_MOD.bateria) {
+        document.getElementById('fimTexto').textContent = 'Terminamos este jogo.';
+        mostrarTela('tela-fim'); bafcFim(dados);
+    } else {
+        var h = '<table><tr><th>Item</th><th>S\u00f3lido</th><th>Marcou</th><th>Certa</th><th>Resultado</th><th>Tempo</th></tr>';
+        for (var j = 0; j < estado.resp.length; j++) { var q = estado.resp[j]; h += '<tr><td>' + q.item + '</td><td>' + q.tipo + '</td><td>' + q.marcada + '</td><td>' + q.correta + '</td><td class="' + (q.acertou ? 'ac' : 'er') + '">' + (q.acertou ? 'Acertou' : 'Errou') + '</td><td>' + fmtSeg(q.tempoMs) + ' s</td></tr>'; }
+        h += '</table>';
+        document.getElementById('fimTabela').innerHTML = h;
+        document.getElementById('fimTexto').textContent = 'Acertos: ' + acertos + ' de ' + TOTAL_ITENS + (parou ? ' (teste interrompido por erros seguidos)' : '');
+        mostrarTela('tela-fim');
+    }
+}
+function comecar() {
+    estado.resp = []; estado.erros = 0;
+    mostrarInstrucao('nv-intro', 'Voc\u00ea vai ver o molde de uma caixa. Imagine dobrar o molde. Escolha qual caixa se forma, entre as cinco op\u00e7\u00f5es. Vamos treinar.', 'Treinar', function () { carregarItem(0); });
+}
+
+/* ---------- INICIALIZACAO DIRETA ---------- */
+document.getElementById('btnComecar').addEventListener('click', comecar);
+document.getElementById('btnInstrOuvir').addEventListener('click', instrOuvir);
+document.getElementById('btnInstrOk').addEventListener('click', instrContinuar);
+document.getElementById('alternativas').addEventListener('click', clicarAlt);
+document.getElementById('btnConfirmar').addEventListener('click', aoConfirmar);
+</script>
+</body>
+</html>
