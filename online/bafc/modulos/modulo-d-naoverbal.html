@@ -152,16 +152,17 @@ function tocarAudio(nome, aoTerminar) {
     return a;
 }
 /* --- Tela de instrucao (texto + audio + botao) --- */
-var _instrCb = null; var _instrFala = '';
+var _instrCb = null; var _instrFala = ''; var _instrT = 0;
 function mostrarInstrucao(idFala, texto, rotulo, aoContinuar) {
-    _instrCb = aoContinuar; _instrFala = idFala;
+    _instrCb = aoContinuar; _instrFala = idFala; _instrT = Date.now();
     document.getElementById('instrTexto').textContent = texto;
     document.getElementById('btnInstrOk').textContent = rotulo;
     mostrarTela('tela-instr');
     tocarAudio(idFala, null);
 }
 function instrOuvir() { tocarAudio(_instrFala, null); }
-function instrContinuar() { pararAudio(); var f = _instrCb; _instrCb = null; if (f) { f(); } }
+function instrContinuar() { if (Date.now() - _instrT < 900) { return; }   /* duplo toque nao pula a explicacao */
+    pararAudio(); var f = _instrCb; _instrCb = null; if (f) { f(); } }
 function fmtSeg(ms) { return (Math.round(ms / 100) / 10).toString().replace('.', ','); }
 
 

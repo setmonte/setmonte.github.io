@@ -153,16 +153,17 @@ function tocarAudio(nome, aoTerminar) {
     return a;
 }
 /* --- Tela de instrucao (texto + audio + botao) --- */
-var _instrCb = null; var _instrFala = '';
+var _instrCb = null; var _instrFala = ''; var _instrT = 0;
 function mostrarInstrucao(idFala, texto, rotulo, aoContinuar) {
-    _instrCb = aoContinuar; _instrFala = idFala;
+    _instrCb = aoContinuar; _instrFala = idFala; _instrT = Date.now();
     document.getElementById('instrTexto').textContent = texto;
     document.getElementById('btnInstrOk').textContent = rotulo;
     mostrarTela('tela-instr');
     tocarAudio(idFala, null);
 }
 function instrOuvir() { tocarAudio(_instrFala, null); }
-function instrContinuar() { pararAudio(); var f = _instrCb; _instrCb = null; if (f) { f(); } }
+function instrContinuar() { if (Date.now() - _instrT < 900) { return; }   /* duplo toque nao pula a explicacao */
+    pararAudio(); var f = _instrCb; _instrCb = null; if (f) { f(); } }
 function fmtSeg(ms) { return (Math.round(ms / 100) / 10).toString().replace('.', ','); }
 
 
@@ -238,10 +239,15 @@ function carregarItem(i) {
     document.getElementById('audioBox').style.display = (estado.modo === 'leitura') ? 'none' : 'block';
     mostrarTela('tela-teste');
     if (estado.modo === 'auto') { travar(true); ouvir(); }
+    else if (estado.modo === 'botao') {
+        /* itens 9-22: o audio so toca pelo botao, mas as respostas ficam TRAVADAS ate a pergunta ser ouvida uma vez ate o fim */
+        travar(true); status('Toque em Ouvir a pergunta para liberar as respostas.');
+    }
     else { travar(false); estado.t0Resp = Date.now(); }
 }
 function clicarAlt(e) {
     if (estado.confirmado) { return; }
+    if (document.getElementById('alternativas').classList.contains('travado')) { return; }   /* tambem barra o teclado */
     var el = e.target; while (el && !(el.classList && el.classList.contains('alt'))) { el = el.parentNode; }
     if (!el) { return; }
     estado.sel = parseInt(el.getAttribute('data-i'), 10);
