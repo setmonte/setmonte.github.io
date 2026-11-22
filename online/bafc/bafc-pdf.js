@@ -137,7 +137,7 @@
             var cred = (r.creditados || []).length;
             return 'Acertou ' + r.acertos + ' das ' + r.totalItens + ' perguntas' + (cred ? ' (' + cred + ' contadas pelo ponto de partida da idade e ' + r.acertosApresentados + ' de ' + r.itensApresentados + ' apresentadas)' : '') + (r.parouPorErros ? '. O teste foi interrompido por erros seguidos.' : '.');
         }
-        return 'Acertou ' + r.acertos + ' dos ' + r.totalItens + ' problemas' + (r.parouPorErros ? '. O teste foi interrompido ap\u00f3s 4 erros seguidos, o que \u00e9 esperado quando os problemas passam do limite da pessoa.' : '.');
+        return 'Acertou ' + r.acertos + ' dos ' + r.totalItens + ' problemas' + (r.parouPorErros ? '. O teste foi interrompido ap\u00f3s 3 erros seguidos, o que \u00e9 esperado quando os problemas passam do limite da pessoa.' : '.');
     }
 
     /* ---------- grafico: curva normal com as 7 faixas ---------- */
@@ -503,13 +503,13 @@
         }
         if (C) {
             var ap = C.itensApresentados || 0, rp = C.repeticoesTotal || 0;
-            if (C.parouPorErros) { obs.push('Verbal: o teste foi interrompido ap\u00f3s 5 erros seguidos, o que \u00e9 esperado quando as palavras passam do vocabul\u00e1rio da pessoa.'); }
+            if (C.parouPorErros) { obs.push('Verbal: o teste foi interrompido ap\u00f3s 4 erros seguidos, o que \u00e9 esperado quando as palavras passam do vocabul\u00e1rio da pessoa.'); }
             if (ap > 0 && rp / ap >= 0.5) { obs.push('Verbal: a pessoa pediu para ouvir a pergunta de novo com frequ\u00eancia (' + pl(rp, 'vez', 'vezes') + ' em ' + pl(ap, 'item', 'itens') + '). Vale observar se h\u00e1 dificuldade em reter o que ouve.'); }
             if (C.reversao) { obs.push('Verbal: no in\u00edcio houve erros e o teste voltou a itens mais f\u00e1ceis antes de seguir.'); }
         }
         if (N) {
             var rs = N.respostas || [], ult = rs.length ? rs[rs.length - 1] : null;
-            if (N.parouPorErros && ult) { obs.push('N\u00e3o-Verbal: o teste foi interrompido ap\u00f3s 4 erros seguidos, nos problemas ' + NOME_TIPO[tipoDoItem(ult.item)] + '. Os problemas anteriores foram resolvidos at\u00e9 ali.'); }
+            if (N.parouPorErros && ult) { obs.push('N\u00e3o-Verbal: o teste foi interrompido ap\u00f3s 3 erros seguidos, nos problemas ' + NOME_TIPO[tipoDoItem(ult.item)] + '. Os problemas anteriores foram resolvidos at\u00e9 ali.'); }
             else if (N.acertos === N.totalItens) { obs.push('N\u00e3o-Verbal: todos os problemas foram resolvidos.'); }
         }
         if (obs.length) { out.push(['Como a pessoa respondeu', obs.join(' ')]); }
@@ -573,9 +573,9 @@
         if (B) { L.push(['VP', 'Velocidade', 'As 4 etapas foram feitas por inteiro, em ' + vn(B.totais.tempoSeg) + ' s no total (sem interrup\u00e7\u00e3o por regra).']); }
         if (C) {
             var t = (C.inicio > 1) ? 'Come\u00e7ou no item ' + C.inicio + ' pela idade (itens 1 a ' + (C.inicio - 1) + ' contados como acertos). ' : 'Come\u00e7ou no item 1. ';
-            L.push(['IV', 'Verbal', t + C.itensApresentados + ' itens apresentados; ouviu de novo ' + pl(C.repeticoesTotal || 0, 'vez', 'vezes') + '. ' + (C.reversao ? 'Houve volta a itens anteriores. ' : '') + (C.parouPorErros ? 'Interrompido por 5 erros seguidos.' : 'Chegou ao fim.')]);
+            L.push(['IV', 'Verbal', t + C.itensApresentados + ' itens apresentados; ouviu de novo ' + pl(C.repeticoesTotal || 0, 'vez', 'vezes') + '. ' + (C.reversao ? 'Houve volta a itens anteriores. ' : '') + (C.parouPorErros ? 'Interrompido por 4 erros seguidos.' : 'Chegou ao fim.')]);
         }
-        if (N) { L.push(['NV', 'N\u00e3o-Verbal', N.itensApresentados + ' problemas apresentados. ' + (N.parouPorErros ? 'Interrompido ap\u00f3s 4 erros seguidos (regra do teste).' : 'Chegou ao fim.')]); }
+        if (N) { L.push(['NV', 'N\u00e3o-Verbal', N.itensApresentados + ' problemas apresentados. ' + (N.parouPorErros ? 'Interrompido ap\u00f3s 3 erros seguidos (regra do teste).' : 'Chegou ao fim.')]); }
         return L;
     }
 
