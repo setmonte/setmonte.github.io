@@ -123,6 +123,13 @@
     };
     function seg(ms) { return Math.round(ms / 100) / 10; }
     function vn(v) { return String(v).replace('.', ','); }
+    /* duracao em texto: '31 min 12 s', '1 h 05 min' */
+    function fmtDuracao(ms) {
+        var s = Math.round(ms / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60;
+        if (h > 0) { return h + ' h ' + (m < 10 ? '0' : '') + m + ' min'; }
+        if (m > 0) { return m + ' min ' + (ss < 10 ? '0' : '') + ss + ' s'; }
+        return ss + ' s';
+    }
     function resultadoTexto(k, d) {
         var r = d[CHAVE_RES[k]]; if (!r) { return 'Esta \u00e1rea n\u00e3o foi aplicada.'; }
         if (k === 'MO') {
@@ -201,14 +208,16 @@
             y += 15.5;
         }
         /* dados */
-        caixa(doc, ML, y, CW, 25, '#f8f3fd', null); F(doc, COR.prim); doc.rect(ML, y, 1.6, 25, 'F');
+        var temT = (typeof d.tempoTotalMs === 'number' && d.tempoTotalMs > 0), hD = temT ? 30 : 25;
+        caixa(doc, ML, y, CW, hD, '#f8f3fd', null); F(doc, COR.prim); doc.rect(ML, y, 1.6, hD, 'F');
         fonte(doc, 9, true); T(doc, COR.prim); tx(doc, 'DADOS DA PESSOA', ML + 5, y + 5.5);
         fonte(doc, 8.5, false); T(doc, COR.texto);
         var id = d.idPaciente || fd.idPaciente || '-';
         tx(doc, 'Nome: ' + (fd.patientName || '-'), ML + 5, y + 11.5); tx(doc, 'ID: ' + id, ML + 108, y + 11.5);
         tx(doc, 'Idade: ' + (fd.idade || (ix && ix.idadeAnos != null ? ix.idadeAnos + ' anos' : '-')), ML + 5, y + 16.5); tx(doc, 'Sexo: ' + (fd.sex || '-'), ML + 108, y + 16.5);
         tx(doc, 'Escolaridade: ' + (fd.education || '-'), ML + 5, y + 21.5); tx(doc, 'Data da aplica\u00e7\u00e3o: ' + dataBR(fd.dataAval || d.dataAplicacao), ML + 108, y + 21.5);
-        y += 29;
+        if (temT) { tx(doc, 'Tempo total da aplica\u00e7\u00e3o (a partir da 1\u00aa fala): ' + fmtDuracao(d.tempoTotalMs), ML + 5, y + 26.6); }
+        y += hD + 4;
         /* cartao do ICG */
         var g = ix && ix.global;
         caixa(doc, ML, y, CW, 33, '#faf6fe', '#e0c3fc');
@@ -569,6 +578,7 @@
     }
     function aplicacao(d, ix) {
         var L = [], A = d.A, B = d.B, C = d.C, N = d.D;
+        if (typeof d.tempoTotalMs === 'number' && d.tempoTotalMs > 0) { L.push(['', 'Tempo total', fmtDuracao(d.tempoTotalMs) + ', contados a partir da primeira fala at\u00e9 o fim da \u00faltima tarefa. Inclui pausas e a troca entre as \u00e1reas.']); }
         if (A) { L.push(['MO', 'Mem\u00f3ria', 'D\u00edgitos falados por \u00e1udio, um por segundo e sem repetir. Ida e volta, parando quando as duas tentativas erram no mesmo tamanho.']); }
         if (B) { L.push(['VP', 'Velocidade', 'As 4 etapas foram feitas por inteiro, em ' + vn(B.totais.tempoSeg) + ' s no total (sem interrup\u00e7\u00e3o por regra).']); }
         if (C) {

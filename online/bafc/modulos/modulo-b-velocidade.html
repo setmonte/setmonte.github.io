@@ -143,7 +143,15 @@ function mostrarTela(id) {
 /* --- Audio (arquivos em ../audio/) --- */
 var _aud = null;
 function pararAudio() { if (_aud) { try { _aud.onended = null; _aud.onerror = null; _aud.pause(); } catch (e) {} _aud = null; } }
+var _falaAvisada = false;
+/* avisa o controlador na PRIMEIRA fala da bateria (marca o inicio do tempo total) */
+function avisarPrimeiraFala() {
+    if (_falaAvisada) { return; } _falaAvisada = true;
+    if (!BAFC_MOD.bateria) { return; }
+    try { window.parent.postMessage({ tipo: 'bafc-primeira-fala', modulo: BAFC_MOD.id, t: Date.now() }, '*'); } catch (e) {}
+}
 function tocarAudio(nome, aoTerminar) {
+    avisarPrimeiraFala();
     pararAudio();
     var a = new Audio('../audio/' + nome + '.mp3');
     _aud = a;
@@ -166,6 +174,13 @@ function instrOuvir() { tocarAudio(_instrFala, null); }
 function instrContinuar() { if (Date.now() - _instrT < 900) { return; }   /* duplo toque nao pula a explicacao */
     pararAudio(); var f = _instrCb; _instrCb = null; if (f) { f(); } }
 function fmtSeg(ms) { return (Math.round(ms / 100) / 10).toString().replace('.', ','); }
+/* Aviso discreto de coleta anonima na tela inicial de cada modulo (padrao do site) */
+(function () {
+    var t = document.getElementById('tela-inicio'); if (!t) { return; }
+    var p = document.createElement('p'); p.className = 'rodape-info';
+    p.textContent = 'Dados an\u00f4nimos e n\u00e3o-identific\u00e1veis podem ser utilizados para fins de pesquisa e normatiza\u00e7\u00e3o.';
+    t.appendChild(p);
+})();
 
 
 /* ---------- 1. DADOS ---------- */
