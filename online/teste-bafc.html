@@ -433,24 +433,61 @@ function tempoTotalBateriaMs() {
     var fim = (typeof tFimBateria !== 'undefined' && tFimBateria) ? tFimBateria : Date.now();
     return fim > tFalaInicio ? (fim - tFalaInicio) : null;
 }
+/* ---- STATUS DE CADA AREA (como na BAE) ----
+   concluido: terminou e mandou resultado | abandonado: comecou e foi pulada ou a pessoa saiu no meio |
+   nao_realizado: estava na fila, mas a aplicacao acabou antes | nao_selecionado: nao foi escolhida no painel */
+var abandonadosBAFC = {};
+function marcarAbandonadoBAFC(id) { if (id && typeof resultados !== 'undefined' && !resultados[id]) { abandonadosBAFC[id] = true; } }
+function statusModulosBAFC() {
+    var st = {}, ids = ['A', 'B', 'C', 'D'], f = (typeof fila !== 'undefined' && fila) ? fila : [], i, id;
+    var atual = (typeof bateriaEmAndamento !== 'undefined' && bateriaEmAndamento && typeof indiceAtual === 'number') ? f[indiceAtual] : null;
+    for (i = 0; i < ids.length; i++) {
+        id = ids[i];
+        if (f.indexOf(id) < 0) { st[id] = 'nao_selecionado'; }
+        else if (resultados[id]) { st[id] = 'concluido'; }
+        else if (abandonadosBAFC[id] || id === atual) { st[id] = 'abandonado'; }
+        else { st[id] = 'nao_realizado'; }
+    }
+    return st;
+}
 /* ---- dados para a COLETA ANONIMA (coleta-anonima.js le window._escalaDados) ----
-   So numeros e classes, nunca nome. Guarda os BRUTOS de cada area (a base para montar normas) e o ICG. */
+   So numeros e classes, nunca nome. Guarda os BRUTOS de cada area concluida (a base para montar normas) e o ICG.
+   Area abandonada vai como ABD e area nao realizada como NR (as concluidas saem normalmente).
+   Sem nenhuma area concluida: nao envia nada (retorna null). */
 function montarEscalaDadosBAFC() {
-    var ix = calcularIndices(), r = resultados, dom = {};
+    var ix = calcularIndices(), r = resultados, dom = {}, st = statusModulosBAFC(), marcas = [], nConcl = 0;
+    var NOME = { A: 'Memoria', B: 'Velocidade', C: 'Verbal', D: 'NaoVerbal' };
     function num(v) { return (typeof v === 'number' && isFinite(v)) ? v : ''; }
     function ponto(v) { return { pontuacao: num(v) }; }
-    if (r.A) { dom['Memoria'] = ponto(r.A.total); dom['Memoria_ida'] = ponto(r.A.direta && r.A.direta.acertos); dom['Memoria_volta'] = ponto(r.A.inversa && r.A.inversa.acertos); }
-    if (r.B) { dom['Velocidade_IEP'] = ponto(r.B.iep); dom['Velocidade_tempo_s'] = ponto(r.B.totais && r.B.totais.tempoSeg); dom['Velocidade_erros'] = ponto(r.B.totais ? (r.B.totais.comissoes + r.B.totais.omissoes) : ''); }
-    if (r.C) { dom['Verbal'] = ponto(r.C.acertos); dom['Verbal_inicio'] = ponto(r.C.inicio); dom['Verbal_apresentados'] = ponto(r.C.itensApresentados); }
-    if (r.D) { dom['NaoVerbal'] = ponto(r.D.acertos); dom['NaoVerbal_apresentados'] = ponto(r.D.itensApresentados); }
+    ['A', 'B', 'C', 'D'].forEach(function (id) {
+        if (st[id] === 'abandonado') { dom[NOME[id]] = { pontuacao: 'ABD' }; marcas.push(NOME[id] + ':ABANDONADO'); return; }
+        if (st[id] === 'nao_realizado') { dom[NOME[id]] = { pontuacao: 'NR' }; marcas.push(NOME[id] + ':NAO_REALIZADO'); return; }
+        if (st[id] !== 'concluido') { return; }
+        nConcl++;
+        if (id === 'A') { dom['Memoria'] = ponto(r.A.total); dom['Memoria_ida'] = ponto(r.A.direta && r.A.direta.acertos); dom['Memoria_volta'] = ponto(r.A.inversa && r.A.inversa.acertos); }
+        if (id === 'B') { dom['Velocidade_IEP'] = ponto(r.B.iep); dom['Velocidade_tempo_s'] = ponto(r.B.totais && r.B.totais.tempoSeg); dom['Velocidade_erros'] = ponto(r.B.totais ? (r.B.totais.comissoes + r.B.totais.omissoes) : ''); }
+        if (id === 'C') { dom['Verbal'] = ponto(r.C.acertos); dom['Verbal_inicio'] = ponto(r.C.inicio); dom['Verbal_apresentados'] = ponto(r.C.itensApresentados); }
+        if (id === 'D') { dom['NaoVerbal'] = ponto(r.D.acertos); dom['NaoVerbal_apresentados'] = ponto(r.D.itensApresentados); }
+    });
+    if (!nConcl) { return null; }
     var tt = tempoTotalBateriaMs(); if (tt) { dom['Tempo_total_s'] = ponto(Math.round(tt / 1000)); }
     var g = ix.global;
     return {
         escala: 'BAFC',
         escore: g ? g.icg : '',
         classificacao: g ? (g.classificacao + (g.parcial ? ' (ICG parcial)' : '')) : 'ICG n\u00e3o calculado',
-        dominios: dom
+        dominios: dom,
+        statusAbandono: marcas.join('; '),
+        abandonado: marcas.length > 0
     };
+}
+/* Prepara a coleta anonima e, se pedido, envia JA (fim da bateria, SAIR ou fechar a aba). Envio unico (trava no coleta-anonima.js). */
+function prepararColetaBAFC(enviarJa) {
+    try {
+        var e = montarEscalaDadosBAFC(); if (!e) { return; }
+        window._escalaDados = e;
+        if (enviarJa && typeof window._coletaAnonimaEnviar === 'function') { window._coletaAnonimaEnviar(); }
+    } catch (x) {}
 }
 /* ---- calculo principal (tudo automatico) ---- */
 function calcularIndices() {
@@ -636,13 +673,21 @@ function fecharAvisoSair() {
 /* Confirmou sair: salva o que ja foi feito (abandonado) e mostra a tela de encerrado. */
 function confirmarSair() {
     fecharAvisoSair();
+    marcarAbandonadoBAFC(fila[indiceAtual]);   /* a area em andamento fica ABANDONADA; as seguintes, NAO REALIZADAS */
     bateriaEmAndamento = false;   // desliga o aviso de fechar aba
     mostrarBotaoSair(false);
     if (modoOnline && !bafcJaEnviado && sessionData.sessionId) {
         enviarAbandonoBAFC();
     }
+    prepararColetaBAFC(true);   /* planilha: areas concluidas saem normalmente */
     mostrarTela('tela-encerrado');
 }
+/* Fechou a aba no meio da bateria: a area em andamento fica ABANDONADA e a coleta envia as concluidas. */
+window.addEventListener('pagehide', function () {
+    if (!bateriaEmAndamento) { return; }
+    marcarAbandonadoBAFC(fila[indiceAtual]);
+    prepararColetaBAFC(true);
+});
 
 /* Pular este modulo: fecha o aviso e avanca para o proximo modulo da fila
    SEM registrar resultado do modulo atual. O modulo pulado nao gera dados;
@@ -650,6 +695,7 @@ function confirmarSair() {
    que for efetivamente iniciado). Se era o ultimo, a bateria finaliza. */
 function pularModuloAtual() {
     fecharAvisoSair();
+    marcarAbandonadoBAFC(fila[indiceAtual]);   /* pulado = ABANDONADO (aparece no PDF e na planilha) */
     indiceAtual++;              // move o dedo para o proximo (nao guarda resultado do pulado)
     abrirModuloAtual();         // abre o proximo (cobra 1 credito) ou finaliza a bateria
 }
@@ -674,6 +720,8 @@ function enviarAbandonoBAFC() {
             D: resultados.D || null,
             indices: calcularIndices(),
             tempoTotalMs: tempoTotalBateriaMs(),
+            statusModulos: statusModulosBAFC(),
+            modulosSelecionados: fila.slice(),
             dataAplicacao: new Date().toISOString()
         }
     };
@@ -830,7 +878,7 @@ function finalizarBateria() {
     window._resultadosBAFC = resultados;
     console.log('BAFC - resultados coletados:', resultados);
     renderRelatorioLocal();
-    try { window._escalaDados = montarEscalaDadosBAFC(); } catch (eCol) {}   /* coleta anonima (so numeros) */
+    prepararColetaBAFC(true);   /* coleta anonima: areas concluidas + ABD/NR */
 
     mostrarTela('tela-fim');
 
@@ -861,6 +909,8 @@ function enviarResultadosBAFC() {
             D: resultados.D || null,
             indices: calcularIndices(),
             tempoTotalMs: tempoTotalBateriaMs(),
+            statusModulos: statusModulosBAFC(),
+            modulosSelecionados: fila.slice(),
             dataAplicacao: new Date().toISOString()
         }
     };
@@ -1028,6 +1078,8 @@ window.addEventListener('beforeunload', function(e) {
                     D: resultados.D || null,
             indices: calcularIndices(),
                     tempoTotalMs: tempoTotalBateriaMs(),
+            statusModulos: statusModulosBAFC(),
+            modulosSelecionados: fila.slice(),
             dataAplicacao: new Date().toISOString()
                 }
             };

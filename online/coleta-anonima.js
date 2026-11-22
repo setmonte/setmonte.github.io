@@ -224,6 +224,8 @@
                 pontuacao = (window._escalaDados.escore !== undefined && window._escalaDados.escore !== null) ? parseFloat(window._escalaDados.escore).toFixed(2) : '';
                 dominios = _formatarDominios(window._escalaDados.dominios);
                 classificacao = window._escalaDados.classificacao || '';
+                // Baterias modulares (ex.: BAFC) podem informar areas abandonadas: vao nas colunas de abandono.
+                if (window._escalaDados.statusAbandono) { _abandonoBAE = { detalhe: String(window._escalaDados.statusAbandono), teveAbandono: window._escalaDados.abandonado !== false }; }
             } else if (window.resultadosBAE && (window.resultadosBAE.concentrada || window.resultadosBAE.seletiva || window.resultadosBAE.dividida || window.resultadosBAE.alternada || window.resultadosBAE.sustentada)) {
                 dominios = _formatarResultadosBAE();
                 classificacao = _classificarBAE();
@@ -273,6 +275,8 @@
         } catch(e) {}
     }
 
+    // Envio imediato sob demanda (ex.: BAFC ao terminar, ao SAIR ou ao fechar a aba). Mesma trava de envio unico.
+    window._coletaAnonimaEnviar = _enviarDadosAnonimos;
     // ============================================================
     // ESTRATEGIAS DE DETECCAO
     // ============================================================

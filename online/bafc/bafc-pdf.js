@@ -28,6 +28,24 @@
     };
     var ORDEM = ['MO', 'VP', 'IV', 'NV'];
     var CHAVE_RES = { MO: 'A', VP: 'B', IV: 'C', NV: 'D' };
+    /* ---------- status de cada area (como na BAE): concluido | abandonado | nao_realizado | nao_selecionado ---------- */
+    var STATUS = {
+        concluido: ['CONCLU\u00cdDO', '#2e7d32'], abandonado: ['ABANDONADO', '#c62828'],
+        nao_realizado: ['N\u00c3O REALIZADO', '#90a4ae'], nao_selecionado: ['N\u00c3O SELECIONADO', '#90a4ae']
+    };
+    function statusArea(d, k) {
+        var id = CHAVE_RES[k], st = d._status || d.statusModulos || {};
+        if (st[id]) { return st[id]; }
+        if (d[id]) { return 'concluido'; }
+        var sel = d.modulosSelecionados || d.modulosAplicados || (d.formData && d.formData.testes) || [];
+        return sel.indexOf(id) >= 0 ? 'nao_realizado' : 'nao_selecionado';
+    }
+    function textoStatus(st) {
+        if (st === 'abandonado') { return 'Esta \u00e1rea foi abandonada: come\u00e7ou, mas n\u00e3o foi terminada (a pessoa pulou ou saiu). N\u00e3o entra nos \u00edndices.'; }
+        if (st === 'nao_realizado') { return 'Esta \u00e1rea estava prevista, mas a aplica\u00e7\u00e3o foi encerrada antes de chegar a ela.'; }
+        return 'Esta \u00e1rea n\u00e3o foi selecionada para esta aplica\u00e7\u00e3o.';
+    }
+    function rotuloCurto(st) { return st === 'abandonado' ? 'Abandonado' : (st === 'nao_realizado' ? 'N\u00e3o realizado' : 'N\u00e3o aplicado'); }
 
     var MESES = ['jan.', 'fev.', 'mar.', 'abr.', 'maio', 'jun.', 'jul.', 'ago.', 'set.', 'out.', 'nov.', 'dez.'];
     function hoje() { var d = new Date(); return d.getDate() + ' ' + MESES[d.getMonth()] + ' ' + d.getFullYear(); }
@@ -131,7 +149,7 @@
         return ss + ' s';
     }
     function resultadoTexto(k, d) {
-        var r = d[CHAVE_RES[k]]; if (!r) { return 'Esta \u00e1rea n\u00e3o foi aplicada.'; }
+        var r = d[CHAVE_RES[k]]; if (!r) { return textoStatus(statusArea(d, k)); }
         if (k === 'MO') {
             return 'Repetiu corretamente ' + r.total + ' das ' + r.totalMaximo + ' ' + (r.totalMaximo === 1 ? 'sequ\u00eancia' : 'sequ\u00eancias') + '. Na ordem direta chegou a ' + pl(r.direta.spanMaximo, 'n\u00famero', 'n\u00fameros') + ' e, de tr\u00e1s para frente, a ' + pl(r.inversa.spanMaximo, 'n\u00famero', 'n\u00fameros') + '.';
         }
@@ -255,8 +273,8 @@
                 regua(doc, rx, y + 3, rw, 5.2, dm.qi);
                 chipClasse(doc, XR, y + 3.3, dm.classe, 6.6, true);
             } else {
-                tx(doc, 'N\u00e3o aplicado', ML + 6, y + 8.6); regua(doc, rx, y + 3, rw, 5.2, null);
-                F(doc, '#ffffff'); doc.rect(rx + 1, y + 3.6, rw - 2, 4, 'F'); fonte(doc, 6.6, false); T(doc, COR.suave); doc.text('n\u00e3o aplicado', rx + rw / 2, y + 6.4, { align: 'center' });
+                var stP = statusArea(d, key); T(doc, stP === 'abandonado' ? STATUS.abandonado[1] : COR.suave); tx(doc, rotuloCurto(stP), ML + 6, y + 8.6); regua(doc, rx, y + 3, rw, 5.2, null);
+                F(doc, '#ffffff'); doc.rect(rx + 1, y + 3.6, rw - 2, 4, 'F'); fonte(doc, 6.6, false); T(doc, stP === 'abandonado' ? STATUS.abandonado[1] : COR.suave); doc.text(pt(stP === 'abandonado' ? 'ABANDONADO' : rotuloCurto(stP).toLowerCase()), rx + rw / 2, y + 6.4, { align: 'center' });
             }
             y += 12;
         });
@@ -315,7 +333,7 @@
         caixa(doc, ML, y, CW, 61.5, '#ffffff', COR.borda); F(doc, info.cor); doc.rect(ML, y, 2.4, 61.5, 'F');
         fonte(doc, 11, true); T(doc, info.cor); tx(doc, numero + '. ' + info.nome, ML + 6, y + 7);
         if (dm) { var wch = chipClasse(doc, XR - 3, y + 3, dm.classe, 7.5, true); fonte(doc, 7, false); T(doc, COR.suave); tx(doc, 'QI ' + dm.qi + '  |  percentil ' + Math.round(dm.percentil), XR - 3 - wch - 3, y + 6.8, { align: 'right' }); }
-        else { fonte(doc, 8, true); T(doc, COR.suave); tx(doc, 'N\u00e3o aplicado', XR - 3, y + 7, { align: 'right' }); }
+        else { var stB = statusArea(d, key); fonte(doc, 8, true); T(doc, stB === 'abandonado' ? STATUS.abandonado[1] : COR.suave); tx(doc, STATUS[stB][0], XR - 3, y + 7, { align: 'right' }); }
         /* texto da esquerda */
         c.y = y + 12.5; fonte(doc, 7, true); T(doc, COR.suave); tx(doc, 'O QUE MEDE', ML + 6, c.y); c.y += 3.4;
         paragrafo(c, O_QUE_MEDE[key], ML + 6, 90, 7.3, COR.texto, 3.35);
@@ -483,6 +501,8 @@
         var t = 'Foram aplicadas ' + pl(ds.length, '\u00e1rea', '\u00e1reas') + ' (' + listaE(nomes) + '). ';
         if (g) { t += (g.parcial ? 'O \u00edndice global parcial (ICG ' + g.icg + ', m\u00e9dia de ' + ds.length + ' das 4 \u00e1reas)' : 'O \u00edndice global (ICG ' + g.icg + ')') + ' ficou na faixa ' + NIVEIS[g.classe][0] + '. '; }
         else { t += 'Com uma \u00fanica \u00e1rea n\u00e3o h\u00e1 \u00edndice global; leia o resultado dela isoladamente. '; }
+        var abdP = ORDEM.filter(function (k2) { return statusArea(d, k2) === 'abandonado'; });
+        if (abdP.length) { t += (abdP.length === 1 ? 'A \u00e1rea ' : 'As \u00e1reas ') + listaE(abdP.map(function (x) { return DOM[x].curto; })) + (abdP.length === 1 ? ' foi abandonada e n\u00e3o entra' : ' foram abandonadas e n\u00e3o entram') + ' nos \u00edndices; vale perguntar o que aconteceu naquele momento. '; }
         out.push(['Vis\u00e3o geral', t.replace(/\s+$/, '')]);
         var fortes = ds.filter(function (x) { return ix.dominios[x].classe >= 4; }), atenc = ds.filter(function (x) { return ix.dominios[x].classe <= 2; });
         var baixos = ds.filter(function (x) { return ix.dominios[x].classe <= 1; });
@@ -585,6 +605,7 @@
             var t = (C.inicio > 1) ? 'Come\u00e7ou no item ' + C.inicio + ' pela idade (itens 1 a ' + (C.inicio - 1) + ' contados como acertos). ' : 'Come\u00e7ou no item 1. ';
             L.push(['IV', 'Verbal', t + C.itensApresentados + ' itens apresentados; ouviu de novo ' + pl(C.repeticoesTotal || 0, 'vez', 'vezes') + '. ' + (C.reversao ? 'Houve volta a itens anteriores. ' : '') + (C.parouPorErros ? 'Interrompido por 4 erros seguidos.' : 'Chegou ao fim.')]);
         }
+        ORDEM.forEach(function (k) { var st = statusArea(d, k); if (st === 'abandonado' || st === 'nao_realizado') { L.push([k, DOM[k].curto, STATUS[st][0] + '. ' + textoStatus(st)]); } });
         if (N) { L.push(['NV', 'N\u00e3o-Verbal', N.itensApresentados + ' problemas apresentados. ' + (N.parouPorErros ? 'Interrompido ap\u00f3s 3 erros seguidos (regra do teste).' : 'Chegou ao fim.')]); }
         return L;
     }
@@ -595,20 +616,21 @@
     function pagina5(c, d, ix) {
         var doc = c.doc; doc.addPage(); faixaFina(doc, 'Anexo para o profissional'); c.titulo2 = 'Anexo para o profissional'; c.y = 19;
         secao(c, 'Resultados em n\u00fameros');
-        var cols = [['\u00c1rea', 0, 'l'], ['Bruto', 52, 'c'], ['Pond. equiv.', 70, 'c'], ['QI equiv.', 92, 'c'], ['Percentil', 110, 'c'], ['Classifica\u00e7\u00e3o', 126, 'l'], ['Fonte do corte', 152, 'l']], y = c.y, i;
+        var cols = [['\u00c1rea', 0, 'l'], ['Status', 22, 'l'], ['Bruto', 48, 'c'], ['Pond. equiv.', 66, 'c'], ['QI equiv.', 86, 'c'], ['Percentil', 104, 'c'], ['Classifica\u00e7\u00e3o', 124, 'l'], ['Fonte do corte', 152, 'l']], y = c.y, i;
         F(doc, COR.prim); doc.rect(ML, y, CW, 6.2, 'F'); fonte(doc, 7, true); T(doc, '#ffffff');
         cols.forEach(function (col) { doc.text(pt(col[0]), ML + 2 + col[1] + (col[2] === 'c' ? 8 : 0), y + 4.3, { align: col[2] === 'c' ? 'center' : 'left' }); });
         y += 6.2;
         ORDEM.forEach(function (k, idx) {
             var dm = ix && ix.dominios && ix.dominios[k]; F(doc, idx % 2 ? '#f8f3fd' : '#ffffff'); doc.rect(ML, y, CW, 7, 'F');
             fonte(doc, 7.3, true); T(doc, DOM[k].cor); tx(doc, DOM[k].curto, ML + 2, y + 4.7);
+            var stA = statusArea(d, k); fonte(doc, 6.4, true); T(doc, STATUS[stA][1]); tx(doc, STATUS[stA][0], ML + 2 + 22, y + 4.7);
             fonte(doc, 7.2, false); T(doc, COR.texto);
             if (dm) {
                 var bruto = (k === 'VP') ? vn(Math.round(dm.bruto * 1000) / 1000) : String(dm.bruto);
-                doc.text(bruto, ML + 2 + 60, y + 4.7, { align: 'center' }); doc.text(String(dm.pp), ML + 2 + 78, y + 4.7, { align: 'center' }); doc.text(String(dm.qi), ML + 2 + 100, y + 4.7, { align: 'center' });
-                doc.text(String(Math.round(dm.percentil)), ML + 2 + 118, y + 4.7, { align: 'center' }); chipClasse(doc, ML + 2 + 126, y + 1.2, dm.classe, 6);
+                doc.text(bruto, ML + 2 + 56, y + 4.7, { align: 'center' }); doc.text(String(dm.pp), ML + 2 + 74, y + 4.7, { align: 'center' }); doc.text(String(dm.qi), ML + 2 + 94, y + 4.7, { align: 'center' });
+                doc.text(String(Math.round(dm.percentil)), ML + 2 + 112, y + 4.7, { align: 'center' }); chipClasse(doc, ML + 2 + 124, y + 1.2, dm.classe, 6);
                 fonte(doc, 6.2, false); T(doc, dm.provisorio ? COR.laranja : COR.suave); doc.text(pt(dm.provisorio ? 'provis\u00f3rio' : (dm.fonte || '').replace(/\s*\(.*$/, '')), ML + 2 + 152, y + 4.7);
-            } else { tx(doc, 'n\u00e3o aplicado', ML + 2 + 52, y + 4.7); }
+            } else { T(doc, COR.suave); tx(doc, stA === 'concluido' ? 'sem classifica\u00e7\u00e3o (idade)' : '-', ML + 2 + 48, y + 4.7); }
             y += 7;
         });
         var g = ix && ix.global;
@@ -712,7 +734,9 @@
     }
 
     function gerar(JsPDF, registro, opcoes) {
-        var d = (registro && registro.data) ? registro.data : registro, ix = d.indices || null;
+        var d0 = (registro && registro.data) ? registro.data : registro, d = {}, kk, ix = d0.indices || null;
+        for (kk in d0) { if (Object.prototype.hasOwnProperty.call(d0, kk)) { d[kk] = d0[kk]; } }
+        d._status = {}; ORDEM.forEach(function (k) { var id = CHAVE_RES[k]; d._status[id] = statusArea(d0, k); if (d._status[id] !== 'concluido') { d[id] = null; } });
         var doc = new JsPDF({ unit: 'mm', format: 'a4' }), c = { doc: doc, y: 0, titulo2: 'Resultados' };
         pagina1(c, d, ix); pagina2(c, d, ix); pagina3(c, d, ix, opcoes || {}); pagina4(c, d, ix); pagina5(c, d, ix);
         rodape(doc);
@@ -722,7 +746,10 @@
         var d = (registro && registro.data) ? registro.data : registro, fd = d.formData || {}, t = new Date();
         function p2(n) { return (n < 10 ? '0' : '') + n; }
         var nome = pt(fd.patientName || 'Paciente').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
-        return 'BAFC_' + nome + '_' + t.getFullYear() + p2(t.getMonth() + 1) + p2(t.getDate()) + '.pdf';
+        var SIG = { MO: 'Mem', VP: 'Vel', IV: 'Verb', NV: 'NV' }, partes = [], todos = true;
+        ORDEM.forEach(function (k) { var st = statusArea(d, k); if (st !== 'concluido') { todos = false; } if (st === 'concluido') { partes.push(SIG[k]); } else if (st === 'abandonado') { partes.push('ABDN_' + SIG[k]); } });
+        var tag = todos ? '' : (partes.join('_') + '_');
+        return 'BAFC_' + nome + '_' + tag + t.getFullYear() + p2(t.getMonth() + 1) + p2(t.getDate()) + '.pdf';
     }
     root.BAFC_PDF = { gerar: gerar, nomeArquivo: nomeArquivo, referencias: referencias };
     if (typeof module !== 'undefined' && module.exports) { module.exports = root.BAFC_PDF; }
