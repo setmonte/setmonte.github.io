@@ -607,7 +607,7 @@
         y += 11; c.y = y;
         paragrafo(c, 'Pond. equiv. e QI equiv. v\u00eam da posi\u00e7\u00e3o do escore bruto entre os cortes da faixa et\u00e1ria (ponderado: m\u00e9dia 10, desvio 3; QI: m\u00e9dia 100, desvio 15). Mem\u00f3ria: D\u00edgitos do WISC-IV (at\u00e9 15 anos) e do WAIS-III (16 a 89 anos). "provis\u00f3rio" = corte suposto at\u00e9 o estudo piloto.', ML, CW, 6.8, COR.suave, 3.2);
         c.y += 3;
-        mapaVerbal(c, d); mapaNV(c, d); tabelaVelocidade(c, d);
+        mapaMemoria(c, d); mapaVerbal(c, d); mapaNV(c, d); need(c, 9); legendaMapa(c.doc, c.y); c.y += 8; tabelaVelocidade(c, d);
     }
     function quadradinho(doc, x, y, s, num, estado) {
         /* estado: 'c' certo, 'e' erro, 'k' creditado, 'n' nao apresentado */
@@ -621,7 +621,24 @@
         var itens = [['c', 'acertou'], ['e', 'errou'], ['k', 'creditado pela idade'], ['n', 'n\u00e3o apresentado']], x = ML, i;
         for (i = 0; i < itens.length; i++) { quadradinho(doc, x, y, 4, '', itens[i][0]); fonte(doc, 6.4, false); T(doc, COR.suave); tx(doc, itens[i][1], x + 5.2, y + 3); x += 8 + doc.getTextWidth(pt(itens[i][1])) + 6; }
     }
-    function mapaVerbal(c, d) {
+    function mapaMemoria(c, d) {
+        var A = d.A; if (!A) { return; } var doc = c.doc; need(c, 38);
+        secao(c, 'Mapa das respostas - Mem\u00f3ria'); var y = c.y, s = 6.2, g = 1.1, passo = 19, x0 = ML + 16, lv, k;
+        var partes = [['Ida', A.direta, 8, y + 4.6], ['Volta', A.inversa, 7, y + 4.6 + s + 5.4]];
+        for (lv = 2; lv <= 8; lv++) { fonte(doc, 5.8, false); T(doc, COR.suave); doc.text(pt(lv + ' n\u00fameros'), x0 + (lv - 2) * passo + s + g / 2, y + 2.6, { align: 'center' }); }
+        partes.forEach(function (pt2) {
+            var tent = (pt2[1] && pt2[1].tentativas) || [], yy = pt2[3];
+            fonte(doc, 7.6, true); T(doc, DOM.MO.cor); tx(doc, pt2[0], ML + 2, yy + s / 2 + 1.2);
+            for (lv = 2; lv <= pt2[2]; lv++) {
+                for (k = 1; k <= 2; k++) {
+                    var reg = null; tent.forEach(function (t) { if (t.nivel === lv && t.tentativa === k) { reg = t; } });
+                    quadradinho(doc, x0 + (lv - 2) * passo + (k - 1) * (s + g), yy, s, k, reg ? (reg.acertou ? 'c' : 'e') : 'n');
+                }
+            }
+            fonte(doc, 6.4, false); T(doc, COR.suave); tx(doc, 'maior: ' + (pt2[1] ? pt2[1].spanMaximo : 0), x0 + 7 * passo + 1, yy + s / 2 + 1.2);
+        });
+        c.y = y + 4.6 + 2 * s + 5.4 + 3;
+    }    function mapaVerbal(c, d) {
         var C = d.C; if (!C) { return; } var doc = c.doc; need(c, 52);
         secao(c, 'Mapa das respostas - Verbal'); var y = c.y, s = 10.2, g = 1.7, id, st, i;
         var porId = {}; (C.respostas || []).forEach(function (r) { porId[r.item] = r; });
@@ -637,7 +654,7 @@
         }
         faixa(1, 8, 0, '\u00e1udio autom\u00e1tico', '#90caf9'); faixa(9, 15, 0, 's\u00f3 com o bot\u00e3o ouvir', '#ffcc80');
         faixa(16, 22, 1, 's\u00f3 com o bot\u00e3o ouvir', '#ffcc80'); faixa(23, 30, 1, 's\u00f3 leitura (sem \u00e1udio)', '#b0bec5');
-        c.y = y + 2 * (s + g) + 14.5; legendaMapa(doc, c.y); c.y += 9;
+        c.y = y + 2 * (s + g) + 11;
     }
     function mapaNV(c, d) {
         var N = d.D; if (!N) { return; } var doc = c.doc; need(c, 48);
@@ -649,7 +666,7 @@
             var xa = ML + ((f[0] - 1) % 12) * (s + g), xb = ML + ((f[1] - 1) % 12) * (s + g) + s, yy = y + (f[2] ? s + g + 5 : 0) + s + 1.2;
             F(doc, cores[k]); doc.rect(xa, yy, xb - xa, 1.1, 'F'); fonte(doc, 5.6, false); T(doc, COR.suave); doc.text(pt(f[3]), (xa + xb) / 2, yy + 3.6, { align: 'center' });
         });
-        c.y = y + 2 * (s + g) + 14.5; legendaMapa(doc, c.y); c.y += 9;
+        c.y = y + 2 * (s + g) + 11;
     }
     function buscaMedia(B) {
         var v = (B.etapas || []).filter(function (e) { return e.varredura && e.varredura.indice != null; });
