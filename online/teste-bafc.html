@@ -427,6 +427,24 @@ function res_temParada() {
     return !!((resultados.C && resultados.C.parouPorErros) || (resultados.D && resultados.D.parouPorErros));
 }
 
+/* ---- dados para a COLETA ANONIMA (coleta-anonima.js le window._escalaDados) ----
+   So numeros e classes, nunca nome. Guarda os BRUTOS de cada area (a base para montar normas) e o ICG. */
+function montarEscalaDadosBAFC() {
+    var ix = calcularIndices(), r = resultados, dom = {};
+    function num(v) { return (typeof v === 'number' && isFinite(v)) ? v : ''; }
+    function ponto(v) { return { pontuacao: num(v) }; }
+    if (r.A) { dom['Memoria'] = ponto(r.A.total); dom['Memoria_ida'] = ponto(r.A.direta && r.A.direta.acertos); dom['Memoria_volta'] = ponto(r.A.inversa && r.A.inversa.acertos); }
+    if (r.B) { dom['Velocidade_IEP'] = ponto(r.B.iep); dom['Velocidade_tempo_s'] = ponto(r.B.totais && r.B.totais.tempoSeg); dom['Velocidade_erros'] = ponto(r.B.totais ? (r.B.totais.comissoes + r.B.totais.omissoes) : ''); }
+    if (r.C) { dom['Verbal'] = ponto(r.C.acertos); dom['Verbal_inicio'] = ponto(r.C.inicio); dom['Verbal_apresentados'] = ponto(r.C.itensApresentados); }
+    if (r.D) { dom['NaoVerbal'] = ponto(r.D.acertos); dom['NaoVerbal_apresentados'] = ponto(r.D.itensApresentados); }
+    var g = ix.global;
+    return {
+        escala: 'BAFC',
+        escore: g ? g.icg : '',
+        classificacao: g ? (g.classificacao + (g.parcial ? ' (ICG parcial)' : '')) : 'ICG n\u00e3o calculado',
+        dominios: dom
+    };
+}
 /* ---- calculo principal (tudo automatico) ---- */
 function calcularIndices() {
     var meses = idadeEmMeses(sessionData.birthDate, sessionData.dataAval);
@@ -801,6 +819,7 @@ function finalizarBateria() {
     window._resultadosBAFC = resultados;
     console.log('BAFC - resultados coletados:', resultados);
     renderRelatorioLocal();
+    try { window._escalaDados = montarEscalaDadosBAFC(); } catch (eCol) {}   /* coleta anonima (so numeros) */
 
     mostrarTela('tela-fim');
 
@@ -1022,5 +1041,6 @@ if (_bafcParams.get('s') || _bafcParams.get('d')) {
     document.getElementById('dataAval').value = new Date().toISOString().split('T')[0];
 }
 </script>
+<script src="coleta-anonima.js"></script>
 </body>
 </html>

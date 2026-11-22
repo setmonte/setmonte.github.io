@@ -448,7 +448,7 @@
     // ============================================================
     var _pollingCount = 0;
     var _isBAE = window.location.pathname.indexOf('teste-bae') !== -1 || document.getElementById('endPage');
-    var _isTesteLongo = _isBAE || window.location.pathname.indexOf('teste.html') !== -1 || window.location.pathname.indexOf('teste-taav') !== -1 || window.location.pathname.indexOf('teste-trmv') !== -1 || window.location.pathname.indexOf('teste-tref') !== -1 || window.location.pathname.indexOf('teste-tflod') !== -1 || window.location.pathname.indexOf('teste-tte') !== -1 || window.location.pathname.indexOf('teste-tpvset') !== -1;
+    var _isTesteLongo = _isBAE || window.location.pathname.indexOf('teste.html') !== -1 || window.location.pathname.indexOf('teste-taav') !== -1 || window.location.pathname.indexOf('teste-trmv') !== -1 || window.location.pathname.indexOf('teste-tref') !== -1 || window.location.pathname.indexOf('teste-tflod') !== -1 || window.location.pathname.indexOf('teste-tte') !== -1 || window.location.pathname.indexOf('teste-tpvset') !== -1 || window.location.pathname.indexOf('teste-bafc') !== -1;
     var _pollingMax = _isTesteLongo ? 600 : 40; // Testes: 600 x 5s = 50min | Escalas: 40 x 3s = 120s
     var _pollingInterval = _isTesteLongo ? 5000 : 3000; // Testes a cada 5s, escalas a cada 3s
     var _pollingTimer = setInterval(function() {
