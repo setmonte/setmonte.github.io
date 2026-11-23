@@ -3454,6 +3454,36 @@
     // Configuracao
     var API_URL = 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
 
+    // === LOGIN VERIFICADO NAS CHAMADAS AO SERVIDOR (23/11/2026) ===
+    // Toda chamada ao API_URL leva o ID token do Cognito (Authorization: Bearer ...).
+    // O servidor confere a assinatura antes de liberar as rotas de administrador.
+    // Se o servidor avisar que o token VENCEU (authExpirado), renova uma vez e repete a chamada.
+    (function() {
+      var _fetchOriginal = window.fetch.bind(window);
+      var _renovando = null;
+      function _comToken(opcoes) {
+        var o = Object.assign({}, opcoes || {});
+        var h = new Headers(o.headers || {});
+        var tk = sessionStorage.getItem('tecfe_id_token');
+        if (tk && !h.has('Authorization')) h.set('Authorization', 'Bearer ' + tk);
+        o.headers = h;
+        return o;
+      }
+      window.fetch = async function(url, opcoes) {
+        var alvo = (typeof url === 'string') ? url : ((url && url.url) || '');
+        if (alvo.indexOf(API_URL) !== 0) return _fetchOriginal(url, opcoes);
+        var resp = await _fetchOriginal(url, _comToken(opcoes));
+        if (resp.status !== 401 || !sessionStorage.getItem('tecfe_refresh_token')) return resp;
+        var j = null;
+        try { j = await resp.clone().json(); } catch (e) { j = null; }
+        if (!j || j.authExpirado !== true || typeof refreshAccessToken !== 'function') return resp;
+        if (!_renovando) { _renovando = refreshAccessToken().finally(function() { _renovando = null; }); }
+        var ok = await _renovando;
+        if (!ok) return resp;
+        return _fetchOriginal(url, _comToken(opcoes));
+      };
+    })();
+
     function _sanitizeHTML(str) {
       if (!str) return '';
       return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
