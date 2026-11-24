@@ -57,6 +57,23 @@
       .botoes { flex-direction:column; align-items:center; }
       .btn-primary,.btn-danger { width:100%; max-width:300px; }
     }
+    /* Bolinhas com tamanho ajustado a area (definido pelo script _ajustarTamanhoTrilha) */
+    .canvas-container.tam-auto .circulo-trilha { width:var(--tam); height:var(--tam); font-size:calc(var(--tam) * 0.32); }
+    /* Telas baixas (notebooks 13-15"): compacta cabecalho, titulos e cronometro para sobrar altura para as bolinhas */
+    @media (max-height:1200px) and (min-width:769px) {
+      body { padding:8px; }
+      header { padding:10px 20px; }
+      header .logo { font-size:1.6em; margin-bottom:0; }
+      header h1 { font-size:1.1em; margin-bottom:0; }
+      header p { display:none; }
+      .progresso-container { padding:8px 20px; }
+      .secao { padding:15px 25px; }
+      .secao h2 { font-size:1.2em; margin-bottom:8px; padding-bottom:4px; }
+      .cronometro-container { margin-bottom:8px; }
+      .cronometro { padding:5px 16px; }
+      .cronometro-tempo { font-size:1.3em; }
+      .descricao-secao { margin-bottom:8px; }
+    }
     @media (max-width:400px) {
       .circulo-trilha { width:32px; height:32px; font-size:11px; border-width:2px; }
     }
@@ -437,8 +454,8 @@
         div.setAttribute('data-idx', i);
         div.setAttribute('data-label', sequencia[i]);
         div.textContent = sequencia[i];
-        div.style.left = 'calc(' + posicoes[i][0] + '% - 22px)';
-        div.style.top = 'calc(' + posicoes[i][1] + '% - 22px)';
+        div.style.left = 'calc(' + posicoes[i][0] + '% - var(--meio, 22px))';
+        div.style.top = 'calc(' + posicoes[i][1] + '% - var(--meio, 22px))';
         container.appendChild(div);
       }
 
@@ -446,8 +463,10 @@
       var primeiro = container.querySelector('[data-idx="0"]');
       if (primeiro) primeiro.classList.add('ativo');
 
-      // Ajustar canvas size
+      // Ajustar a area ao tamanho da tela do aparelho e depois o canvas
+      _ajustarTamanhoTrilha(container);
       ajustarCanvas(trilhaAtiva);
+      setTimeout(_reajustarTrilhaAtiva, 450); // remede apos a animacao de entrada da pagina
 
       // Event listeners para arraste
       container.addEventListener('pointerdown', onPointerDown, {passive:false});
@@ -459,6 +478,52 @@
       var ro = new ResizeObserver(function() { ajustarCanvas(trilhaAtiva); redesenharLinhas(trilhaAtiva); });
       ro.observe(container);
     }
+
+    // ===== AJUSTE AUTOMATICO AO TAMANHO DA TELA =====
+    // Mede a tela disponivel (notebook, monitor, tablet) e reduz a area das bolinhas
+    // ate a pagina caber inteira na altura, sem rolagem. Mantem a proporcao (4:3 ou 1:1 no celular).
+    // As posicoes das bolinhas sao em %, entao a disposicao relativa nao muda.
+    function _ajustarTamanhoTrilha(container) {
+      if (!container || !container.offsetParent) return;
+      var pai = container.parentElement;
+      var largPai = pai ? pai.clientWidth : window.innerWidth;
+      var cs = window.getComputedStyle(pai);
+      largPai = largPai - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0);
+      var noFull = !!(document.fullscreenElement || document.webkitFullscreenElement);
+      var largMax = Math.min(largPai, noFull ? 900 : 800);
+      var proporcao = window.innerWidth <= 768 ? 1 : 4 / 3; // largura / altura
+      container.style.maxWidth = 'none';
+      container.style.maxHeight = 'none';
+      container.style.width = largMax + 'px';
+      // Quanto a pagina passa da altura da tela? Reduz exatamente esse tanto (+ folga de 10px).
+      var sobra = document.documentElement.scrollHeight - window.innerHeight;
+      if (sobra > 0) {
+        var altAtual = container.getBoundingClientRect().height;
+        var altNova = altAtual - sobra - 20;
+        var largNova = Math.max(300, Math.min(largMax, altNova * proporcao));
+        container.style.width = largNova + 'px';
+      }
+      // Tamanho das bolinhas acompanha a area (so em computador/tablet; celular usa o CSS proprio).
+      // 44px na area cheia (650px ou mais de largura), minimo 32px para continuar facil de acertar.
+      if (window.innerWidth > 768) {
+        var largFinal = container.getBoundingClientRect().width;
+        var tam = Math.round(Math.max(32, Math.min(44, largFinal * 0.068)));
+        container.style.setProperty('--tam', tam + 'px');
+        container.style.setProperty('--meio', (tam / 2) + 'px');
+        container.classList.add('tam-auto');
+      }
+    }
+    function _reajustarTrilhaAtiva() {
+      if (!trilhaAtiva || !trilhaAtiva.container) return;
+      _ajustarTamanhoTrilha(trilhaAtiva.container);
+      ajustarCanvas(trilhaAtiva);
+      redesenharLinhas(trilhaAtiva);
+    }
+    var _tmrAjuste = null;
+    function _agendarReajuste() { clearTimeout(_tmrAjuste); _tmrAjuste = setTimeout(_reajustarTrilhaAtiva, 150); }
+    window.addEventListener('resize', _agendarReajuste);
+    document.addEventListener('fullscreenchange', _agendarReajuste);
+    document.addEventListener('webkitfullscreenchange', _agendarReajuste);
 
     function ajustarCanvas(t) {
       if (!t || !t.canvas || !t.container) return;
@@ -601,12 +666,12 @@
         estado.treinoA.completo = true;
         mostrarFeedback('Muito bem! Treino concluido!', 'sucesso');
         var btn = document.getElementById('botoes-treino-a');
-        if (btn) btn.style.display = 'flex';
+        if (btn) { btn.style.display = 'flex'; btn.scrollIntoView({behavior:'smooth', block:'end'}); }
       } else if (t.modo === 'treino-b') {
         estado.treinoB.completo = true;
         mostrarFeedback('Muito bem! Treino concluido!', 'sucesso');
         var btn = document.getElementById('botoes-treino-b');
-        if (btn) btn.style.display = 'flex';
+        if (btn) { btn.style.display = 'flex'; btn.scrollIntoView({behavior:'smooth', block:'end'}); }
       } else if (t.modo === 'teste-a') {
         pararCronometro();
         estado.parteA.tempo = Date.now() - estado.tempoInicio;
