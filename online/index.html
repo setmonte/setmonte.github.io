@@ -1308,6 +1308,7 @@
             <button id="subTabSrs2" onclick="switchProgOcultoSubTab('srs2')" style="flex:1;padding:12px 20px;font-size:13px;font-weight:bold;border:none;border-bottom:3px solid transparent;background:#f5f5f5;color:#777;cursor:pointer;border-radius:8px 8px 0 0;">SRS-2 Escolar</button>
             <button id="subTabSrs2aa" onclick="switchProgOcultoSubTab('srs2aa')" style="flex:1;padding:12px 20px;font-size:13px;font-weight:bold;border:none;border-bottom:3px solid transparent;background:#f5f5f5;color:#777;cursor:pointer;border-radius:8px 8px 0 0;">SRS-2 Adulto (Auto)</button>
             <button id="subTabSrs2ah" onclick="switchProgOcultoSubTab('srs2ah')" style="flex:1;padding:12px 20px;font-size:13px;font-weight:bold;border:none;border-bottom:3px solid transparent;background:#f5f5f5;color:#777;cursor:pointer;border-radius:8px 8px 0 0;">SRS-2 Adulto (Hetero)</button>
+            <button id="subTabEtdahp" onclick="switchProgOcultoSubTab('etdahp')" style="flex:1;padding:12px 20px;font-size:13px;font-weight:bold;border:none;border-bottom:3px solid transparent;background:#f5f5f5;color:#777;cursor:pointer;border-radius:8px 8px 0 0;">ETDAH-PAIS</button>
             <button id="subTabVineland3" onclick="switchProgOcultoSubTab('vineland3')" style="flex:1;padding:12px 20px;font-size:13px;font-weight:bold;border:none;border-bottom:3px solid transparent;background:#f5f5f5;color:#777;cursor:pointer;border-radius:8px 8px 0 0;">Vineland-3</button>
           </div>
 
@@ -1578,6 +1579,50 @@
             <div id="srs2AdultoCmpSectionAh" class="card hidden" style="margin-top:15px;"></div>
           </div>
 
+          <!-- CONTEUDO ETDAH-PAIS -->
+          <div id="subEtdahpContent" style="display:none;">
+            <div style="background:#e3f2fd;border:2px solid #1565c0;border-radius:10px;padding:20px;margin:10px 0;">
+              <p style="font-size:14px;font-weight:bold;color:#1565c0;margin-bottom:8px;">ETDAH-PAIS - Avaliacao de Comportamentos Infantojuvenis no TDAH (Versao para Pais)</p>
+              <p style="font-size:12px;color:#555;line-height:1.6;margin-bottom:12px;">58 itens, 4 fatores (Regulacao Emocional, Hiperatividade/Impulsividade, Comportamento Adaptativo, Atencao). Os pais ou responsaveis respondem pelo link. Resultado com escore bruto, percentil e classificacao por fator, usando as normas por sexo e faixa etaria (2 a 17 anos). O paciente cadastrado e a crianca/adolescente.</p>
+              <div class="btn-row">
+                <button class="btn btn-green" onclick="showNewEtdahp()">Nova Aplicacao</button>
+                <button class="btn btn-blue" onclick="showEtdahpResults()">Resultados</button>
+              </div>
+            </div>
+            <!-- NOVA APLICACAO ETDAH-PAIS -->
+            <div id="newEtdahpSection" class="card hidden" style="margin-top:15px;">
+              <h2 style="font-size:16px;color:#1565c0;">Nova Aplicacao ETDAH-PAIS</h2>
+              <p style="margin-bottom:10px;color:#555;font-size:0.9em;">Informe os dados da crianca/adolescente (2 a 17 anos). O link e enviado aos pais ou responsaveis.</p>
+              <label style="font-size:0.85em;color:#555;">Paciente cadastrado:</label>
+              <select id="etdahpSelPac" onchange="preencherPaciente('etdahp')" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:10px;">
+                <option value="">-- Selecione ou preencha abaixo --</option>
+              </select>
+              <label style="font-size:0.85em;color:#555;">Nome da crianca/adolescente:</label>
+              <input type="text" id="etdahpNome" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+              <label style="font-size:0.85em;color:#555;">Data de Nascimento:</label>
+              <input type="date" id="etdahpDn" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+              <label style="font-size:0.85em;color:#555;">Sexo:</label>
+              <select id="etdahpSexo" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+                <option value="">Selecione...</option>
+                <option value="Masculino">Masculino</option>
+                <option value="Feminino">Feminino</option>
+              </select>
+              <label style="font-size:0.85em;color:#555;">Observacoes:</label>
+              <input type="text" id="etdahpObs" placeholder="Opcional" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:12px;">
+              <button onclick="startEtdahpOnlineTest()" class="btn btn-green" style="width:48%;">Gerar Link</button>
+              <button onclick="startEtdahpOnlineTest(true)" class="btn btn-blue" style="width:48%;">Aplicar Aqui</button>
+              <div id="etdahpLinkResult" class="hidden" style="margin-top:15px;padding:12px;background:#e3f2fd;border-radius:8px;">
+                <p style="font-size:0.8em;color:#555;margin-bottom:5px;">Link gerado:</p>
+                <p id="etdahpSessionLink" style="word-break:break-all;font-size:0.75em;color:#1565c0;"></p>
+                <div style="margin-top:10px;display:flex;gap:8px;">
+                  <button onclick="copyEtdahpLink()" class="btn btn-blue" style="font-size:0.85em;">Copiar</button>
+                  <button onclick="whatsappEtdahpLink()" class="btn btn-green" style="font-size:0.85em;">WhatsApp</button>
+                </div>
+              </div>
+            </div>
+            <!-- RESULTADOS ETDAH-PAIS -->
+            <div id="etdahpResultsSection" class="card hidden" style="margin-top:15px;"></div>
+          </div>
           <!-- CONTEUDO VINELAND-3 -->
           <div id="subVineland3Content" style="display:none;">
             <div style="background:#e0f2f1;border:2px solid #00796b;border-radius:10px;padding:20px;margin:10px 0;">
@@ -8608,7 +8653,7 @@
 
     // Testes ocultos (uso pessoal / protegidos por direitos autorais / aba Programas Ocultos).
     // Ficam FORA do ranking de estatisticas.
-    var _TIPOS_OCULTOS = { 'neo-pi-r':1, 'neo':1, 'pfister':1, 'srs2':1, 'srs2aa':1, 'srs2ah':1, 'vineland3':1, 'bvrt':1 };
+    var _TIPOS_OCULTOS = { 'neo-pi-r':1, 'neo':1, 'pfister':1, 'srs2':1, 'srs2aa':1, 'srs2ah':1, 'etdah-pais':1, 'vineland3':1, 'bvrt':1 };
 
     function _renderRankingCategorias(porTipo) {
       // Agrupa os tipos por categoria, somando as quantidades e guardando o detalhe por instrumento.
@@ -8887,7 +8932,7 @@
       listaOrdenada.forEach(function(p) {
         opcoesHtml += '<option value="' + p.id + '" data-nome="' + (p.nome||'').replace(/"/g,'') + '" data-dn="' + (p.dataNascimento||'') + '" data-cpf="' + (p.cpf||'') + '" data-sexo="' + (p.sexo||'') + '" data-esc="' + (p.escolaridade||'') + '" data-lat="' + (p.lateralidade||'') + '" data-cv="' + (p.correcaoVisual||'') + '">' + (p.nome||'') + ' (' + (p.dataNascimento||'?') + ')</option>';
       });
-      ['baeSelPac','trmvSelPac','taavSelPac','tecfeSelPac','trefSelPac','tflodSelPac','corsiSelPac','tpvsetSelPac','tteSelPac','tetaylorSelPac','tetaylorsimpSelPac','escalaSelPac','anamneseSelPac','reocupaSelPac','pfisterSelPac','neoSelPac','agendaSelPac','prontuarioSelPac','srs2SelPac','srs2aaSelPac','srs2ahSelPac','lermaisSelPac','pratSelPac','etdahSelPac','criadSelPac','bvrtSelPac','vineland3SelPac','ideiaSelPac','bafcSelPac','brpiSelPac'].forEach(function(id) {
+      ['baeSelPac','trmvSelPac','taavSelPac','tecfeSelPac','trefSelPac','tflodSelPac','corsiSelPac','tpvsetSelPac','tteSelPac','tetaylorSelPac','tetaylorsimpSelPac','escalaSelPac','anamneseSelPac','reocupaSelPac','pfisterSelPac','neoSelPac','agendaSelPac','prontuarioSelPac','srs2SelPac','srs2aaSelPac','srs2ahSelPac','etdahpSelPac','lermaisSelPac','pratSelPac','etdahSelPac','criadSelPac','bvrtSelPac','vineland3SelPac','ideiaSelPac','bafcSelPac','brpiSelPac'].forEach(function(id) {
         var sel = document.getElementById(id);
         if (!sel) return;
         var val = sel.value;
@@ -9025,6 +9070,7 @@
       else if (tipo === 'srs2') { campoNome = document.getElementById('srs2Nome'); campoDN = document.getElementById('srs2Dn'); }
       else if (tipo === 'srs2aa') { campoNome = document.getElementById('srs2aaNome'); campoDN = document.getElementById('srs2aaDn'); }
       else if (tipo === 'srs2ah') { campoNome = document.getElementById('srs2ahNome'); campoDN = document.getElementById('srs2ahDn'); }
+      else if (tipo === 'etdahp') { campoNome = document.getElementById('etdahpNome'); campoDN = document.getElementById('etdahpDn'); }
       else if (tipo === 'vineland3') { campoNome = document.getElementById('vineland3Nome'); campoDN = document.getElementById('vineland3Dn'); }
       else if (tipo === 'ideia') { campoNome = document.getElementById('ideiaNome'); campoDN = document.getElementById('ideiaDn'); }
       else if (tipo === 'brpi') { campoNome = document.getElementById('brpiNome'); campoDN = document.getElementById('brpiDn'); campoCPF = document.getElementById('brpiCpf'); }
@@ -10613,12 +10659,14 @@
       var srs2Content = document.getElementById('subSrs2Content');
       var srs2aaContent = document.getElementById('subSrs2aaContent');
       var srs2ahContent = document.getElementById('subSrs2ahContent');
+      var etdahpContent = document.getElementById('subEtdahpContent');
       var vineland3Content = document.getElementById('subVineland3Content');
       var btnPfister = document.getElementById('subTabPfister');
       var btnNeo = document.getElementById('subTabNeo');
       var btnSrs2 = document.getElementById('subTabSrs2');
       var btnSrs2aa = document.getElementById('subTabSrs2aa');
       var btnSrs2ah = document.getElementById('subTabSrs2ah');
+      var btnEtdahp = document.getElementById('subTabEtdahp');
       var btnVineland3 = document.getElementById('subTabVineland3');
       // Reset all
       pfisterContent.style.display = 'none';
@@ -10626,6 +10674,7 @@
       if (srs2Content) srs2Content.style.display = 'none';
       if (srs2aaContent) srs2aaContent.style.display = 'none';
       if (srs2ahContent) srs2ahContent.style.display = 'none';
+      if (etdahpContent) etdahpContent.style.display = 'none';
       if (vineland3Content) vineland3Content.style.display = 'none';
       btnPfister.style.background = '#f5f5f5';
       btnPfister.style.color = '#777';
@@ -10636,6 +10685,7 @@
       if (btnSrs2) { btnSrs2.style.background = '#f5f5f5'; btnSrs2.style.color = '#777'; btnSrs2.style.borderBottom = '3px solid transparent'; }
       if (btnSrs2aa) { btnSrs2aa.style.background = '#f5f5f5'; btnSrs2aa.style.color = '#777'; btnSrs2aa.style.borderBottom = '3px solid transparent'; }
       if (btnSrs2ah) { btnSrs2ah.style.background = '#f5f5f5'; btnSrs2ah.style.color = '#777'; btnSrs2ah.style.borderBottom = '3px solid transparent'; }
+      if (btnEtdahp) { btnEtdahp.style.background = '#f5f5f5'; btnEtdahp.style.color = '#777'; btnEtdahp.style.borderBottom = '3px solid transparent'; }
       if (btnVineland3) { btnVineland3.style.background = '#f5f5f5'; btnVineland3.style.color = '#777'; btnVineland3.style.borderBottom = '3px solid transparent'; }
       if (sub === 'pfister') {
         pfisterContent.style.display = 'block';
@@ -10658,6 +10708,10 @@
       } else if (sub === 'srs2ah') {
         if (srs2ahContent) srs2ahContent.style.display = 'block';
         if (btnSrs2ah) { btnSrs2ah.style.background = '#e3f2fd'; btnSrs2ah.style.color = '#1565c0'; btnSrs2ah.style.borderBottom = '3px solid #1565c0'; }
+        if (typeof popularDropdownsPacientes === 'function') popularDropdownsPacientes();
+      } else if (sub === 'etdahp') {
+        if (etdahpContent) etdahpContent.style.display = 'block';
+        if (btnEtdahp) { btnEtdahp.style.background = '#e3f2fd'; btnEtdahp.style.color = '#1565c0'; btnEtdahp.style.borderBottom = '3px solid #1565c0'; }
         if (typeof popularDropdownsPacientes === 'function') popularDropdownsPacientes();
       } else if (sub === 'vineland3') {
         if (vineland3Content) vineland3Content.style.display = 'block';
@@ -12145,6 +12199,119 @@
       if (!r) return;
       _escalasResultCache[9200 + idx] = r;
       gerarPDFEscala(9200 + idx);
+    }
+
+    // ===== FUNCOES PROGRAMAS OCULTOS - ETDAH-PAIS =====
+    function showNewEtdahp() {
+      document.getElementById('newEtdahpSection').classList.toggle('hidden');
+      var res = document.getElementById('etdahpResultsSection');
+      if (res) res.classList.add('hidden');
+    }
+
+    function showEtdahpResults() {
+      var res = document.getElementById('etdahpResultsSection');
+      if (res) res.classList.toggle('hidden');
+      document.getElementById('newEtdahpSection').classList.add('hidden');
+      loadEtdahpResults();
+    }
+
+    var generatedEtdahpLink = '';
+
+    async function startEtdahpOnlineTest(abrirLocal) {
+      var nome = document.getElementById('etdahpNome').value.trim();
+      var dn = document.getElementById('etdahpDn').value;
+      var sexo = document.getElementById('etdahpSexo').value;
+      if (!nome || !dn) { alert('Preencha nome e data de nascimento.'); return; }
+      if (!sexo) { alert('Selecione o sexo.'); return; }
+      var btn = event && event.target ? event.target : null;
+      if (typeof btnLoading === 'function') btnLoading(btn);
+      try {
+        var sessionId = 'etdahp-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+        var sessionData = {
+          email: currentUser,
+          sessionId: sessionId,
+          tipo: 'etdahp',
+          patientName: nome,
+          birthDate: dn,
+          sex: sexo,
+          obs: document.getElementById('etdahpObs').value || '',
+          pacienteId: document.getElementById('etdahpSelPac').value || ''
+        };
+        var resp = await fetch(API_URL + '/save-session', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(sessionData)
+        });
+        var result = await resp.json();
+        var link = '';
+        if (result.id) {
+          link = 'https://setmonte.github.io/escalas/etdah-pais.html?s=' + result.id;
+        } else {
+          var params = safeBtoa(JSON.stringify(sessionData));
+          link = 'https://setmonte.github.io/escalas/etdah-pais.html?d=' + encodeURIComponent(params);
+        }
+        generatedEtdahpLink = link;
+        if (abrirLocal) { window.open(link, '_blank'); }
+        else { document.getElementById('etdahpSessionLink').textContent = link; document.getElementById('etdahpLinkResult').classList.remove('hidden'); }
+      } catch(e) { alert('Erro ao gerar link: ' + e.message); }
+      if (typeof btnReset === 'function') btnReset(btn);
+    }
+
+    function copyEtdahpLink() {
+      var link = document.getElementById('etdahpSessionLink').textContent || generatedEtdahpLink;
+      navigator.clipboard.writeText(link);
+      alert('Link copiado!');
+    }
+
+    function whatsappEtdahpLink() {
+      var link = document.getElementById('etdahpSessionLink').textContent || generatedEtdahpLink;
+      window.open('https://wa.me/?text=' + encodeURIComponent('Preencha a escala ETDAH-PAIS (comportamentos do seu filho ou filha): ' + link), '_blank');
+    }
+
+    var _etdahpResultCache = [];
+
+    async function loadEtdahpResults() {
+      var el = document.getElementById('etdahpResultsSection');
+      if (!el) return;
+      el.innerHTML = '<p>Carregando...</p>';
+      try {
+        var resp = await fetch(API_URL + '/get-results?email=' + encodeURIComponent(currentUser) + '&tipo=etdah-pais');
+        var data = await resp.json();
+        var results = data.results || [];
+        _etdahpResultCache = results;
+        if (results.length === 0) { el.innerHTML = '<p>Nenhum resultado ETDAH-PAIS encontrado.</p>'; return; }
+        var th = 'text-align:left;padding:6px;border-bottom:2px solid #1565c0;';
+        var html = '<h3 style="color:#1565c0;">Resultados ETDAH-PAIS</h3><table style="width:100%;border-collapse:collapse;font-size:0.85em;"><tr><th style="' + th + '">Data</th><th style="' + th + '">Paciente</th><th style="' + th + '">Geral (bruto / percentil)</th><th style="' + th + '">Fatores (percentil)</th><th style="' + th + '">Respondente</th><th style="' + th + '">PDF</th></tr>';
+        var abrev = ['RE', 'HI', 'CA', 'AT'];
+        for (var i = 0; i < results.length; i++) {
+          var r = results[i];
+          var d = r.data || {};
+          var doms = d.dominios || {};
+          var chaves = Object.keys(doms);
+          var fat = [];
+          for (var k = 0; k < chaves.length; k++) {
+            var dm = doms[chaves[k]] || {};
+            fat.push((abrev[k] || chaves[k]) + ' ' + (dm.percentil != null ? dm.percentil : '-') + ' (' + (dm.classificacao || '-') + ')');
+          }
+          html += '<tr>';
+          html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (d.data ? new Date(d.data).toLocaleDateString('pt-BR') : '') + '</td>';
+          html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + (d.paciente || '') + '</td>';
+          html += '<td style="padding:5px;border-bottom:1px solid #eee;font-weight:bold;">' + (d.escore != null ? d.escore : '-') + ' / P' + (d.percentil != null ? d.percentil : '-') + ' (' + (d.classificacao || '-') + ')</td>';
+          html += '<td style="padding:5px;border-bottom:1px solid #eee;font-size:0.9em;">' + fat.join('<br>') + '</td>';
+          html += '<td style="padding:5px;border-bottom:1px solid #eee;">' + ((d.nomeRespondente ? d.nomeRespondente + ' ' : '') + (d.respondente ? '(' + d.respondente + ')' : '') || '-') + '</td>';
+          html += '<td style="padding:5px;border-bottom:1px solid #eee;"><button class="btn btn-green" style="padding:3px 8px;font-size:11px;" onclick="gerarPDFEtdahp(' + i + ')">PDF</button></td>';
+          html += '</tr>';
+        }
+        html += '</table><p style="font-size:0.75em;color:#777;margin-top:6px;">RE = Regulacao Emocional, HI = Hiperatividade/Impulsividade, CA = Comportamento Adaptativo, AT = Atencao.</p>';
+        el.innerHTML = html;
+      } catch(e) { el.innerHTML = '<p>Erro ao carregar resultados.</p>'; }
+    }
+
+    function gerarPDFEtdahp(idx) {
+      var r = _etdahpResultCache[idx];
+      if (!r) return;
+      _escalasResultCache[9300 + idx] = r;
+      gerarPDFEscala(9300 + idx);
     }
 
     // ===== COMPARATIVO SRS-2 (Adulto Auto/Hetero) - 2 respondentes =====

@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-QY1N9587DG"></script>
+    <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-QY1N9587DG');</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>ETDAH-PAIS - Escala de Avaliação de Comportamentos Infantojuvenis no TDAH</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;line-height:1.6;color:#333;background:linear-gradient(135deg,#0d47a1 0%,#1976d2 100%);min-height:100vh;padding:20px;}
+        .container{max-width:1000px;margin:0 auto;background:white;border-radius:15px;box-shadow:0 20px 40px rgba(0,0,0,0.15);overflow:hidden;}
+        .header{background:linear-gradient(135deg,#0d47a1 0%,#1976d2 100%);color:white;padding:30px;text-align:center;}
+        .header h1{font-size:2.2em;margin-bottom:10px;text-shadow:2px 2px 4px rgba(0,0,0,0.3);}
+        .header p{font-size:1.05em;opacity:0.9;}
+        .content{padding:30px;}
+        .info-tecnica{background:#e3f2fd;padding:25px;border-radius:10px;margin-bottom:30px;border-left:5px solid #0d47a1;position:relative;}
+        .info-tecnica h2{color:#0d47a1;margin-bottom:15px;font-size:1.4em;}
+        .info-tecnica p{color:#555;line-height:1.7;font-size:0.95em;}
+        .dados-pessoais{background:#f8f9fa;padding:25px;border-radius:10px;margin-bottom:30px;border-left:5px solid #0d47a1;}
+        .dados-pessoais h2{color:#0d47a1;margin-bottom:20px;font-size:1.5em;}
+        .form-row{display:flex;gap:20px;margin-bottom:15px;flex-wrap:wrap;}
+        .form-group{flex:1;min-width:200px;}
+        .form-group label{display:block;margin-bottom:5px;font-weight:600;color:#555;}
+        .form-group input,.form-group select{width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:8px;font-size:16px;}
+        .form-group input:focus,.form-group select:focus{outline:none;border-color:#0d47a1;}
+        .instrucoes{background:#e8f5e9;padding:20px;border-radius:10px;margin-bottom:30px;border-left:5px solid #2e7d32;}
+        .instrucoes h3{color:#2e7d32;margin-bottom:10px;}
+        .instrucoes p{color:#555;font-size:0.95em;line-height:1.7;margin-bottom:6px;}
+        .item{padding:20px;border-bottom:1px solid #f0f0f0;transition:background-color 0.3s;}
+        .item:hover{background-color:#e3f2fd;}
+        .item-texto{font-size:1.05em;margin-bottom:12px;color:#444;line-height:1.5;}
+        .item-numero{font-weight:bold;color:#0d47a1;margin-right:8px;}
+        .opcoes{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
+        .opcao{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;padding:8px 6px;border-radius:8px;border:2px solid transparent;min-width:92px;font-size:0.82em;color:#555;text-align:center;line-height:1.2;}
+        .opcao:hover{background-color:#e3f2fd;border-color:#0d47a1;}
+        .opcao input[type="radio"]{width:18px;height:18px;cursor:pointer;accent-color:#0d47a1;}
+        .botoes{display:flex;gap:15px;justify-content:center;margin:30px 0;flex-wrap:wrap;}
+        .btn{padding:15px 30px;border:none;border-radius:25px;font-size:16px;font-weight:600;cursor:pointer;text-align:center;}
+        .btn-primary{background:linear-gradient(135deg,#0d47a1 0%,#1976d2 100%);color:white;}
+        .btn-danger{background:linear-gradient(135deg,#dc3545 0%,#fd7e14 100%);color:white;}
+        .resultados{background:#f8f9fa;padding:30px;border-radius:10px;margin-top:30px;border-left:5px solid #0d47a1;display:none;}
+        .resultados h2{color:#0d47a1;margin-bottom:20px;text-align:center;}
+        .dominio-card{background:white;padding:15px 20px;border-radius:10px;margin-bottom:12px;box-shadow:0 3px 10px rgba(0,0,0,0.08);border-left:4px solid #0d47a1;}
+        .badge{display:inline-block;padding:2px 10px;border-radius:12px;font-size:0.85em;font-weight:bold;color:white;}
+        .disclaimer{background:#fff3e0;padding:15px;border-radius:8px;margin-top:20px;border-left:4px solid #ff9800;font-size:0.85em;color:#e65100;line-height:1.6;}
+        .btn-imprimir{position:absolute;top:20px;right:20px;padding:10px 20px;background:linear-gradient(135deg,#0d47a1 0%,#1976d2 100%);color:white;border:none;border-radius:20px;font-size:14px;font-weight:600;cursor:pointer;}
+        #blocoRespondente{display:none;}
+        @media print{body{background:white!important;padding:0!important;}.botoes,.btn,.btn-imprimir{display:none!important;}.container{box-shadow:none!important;max-width:100%!important;}.info-tecnica{display:none!important;}.resultados{display:none!important;}.item{page-break-inside:avoid;padding:8px 10px;}.opcoes{flex-wrap:nowrap;}.opcao{min-width:0;flex:1;}}
+        @media(max-width:768px){.container{margin:10px;border-radius:10px;}.header{padding:20px;}.header h1{font-size:1.6em;}.content{padding:15px;}.form-row{flex-direction:column;}.opcoes{display:grid;grid-template-columns:repeat(3,1fr);}.botoes{flex-direction:column;}.btn{width:100%;}}
+    </style>
+    <script src="../id-paciente.js"></script>
+</head>
+<body>
+<div style="padding:10px 20px;background:#2e7d32;"><a href="../" style="display:inline-block;background:#fff;color:#2e7d32;text-decoration:none;font-family:Segoe UI,Arial,sans-serif;font-size:14px;font-weight:bold;padding:8px 20px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.15);">&#11013; Voltar ao In&#237;cio</a></div>
+<div class="container">
+<div class="header">
+<h1>&#129504; ETDAH-PAIS</h1>
+<p>Escala de Avalia&#231;&#227;o de Comportamentos Infantojuvenis no TDAH em Ambiente Familiar</p>
+<p style="font-size:0.85em;opacity:0.8;margin-top:5px;">Vers&#227;o para Pais &#8212; crian&#231;as e adolescentes de 2 a 17 anos</p>
+</div>
+<div class="content">
+<div class="info-tecnica">
+<button class="btn-imprimir" onclick="window.print()">&#128424; Imprimir Formul&#225;rio</button>
+<h2>&#128218; Informa&#231;&#245;es T&#233;cnicas</h2>
+<p>
+<strong>Instrumento:</strong> ETDAH-PAIS &#8212; Escala de Avalia&#231;&#227;o de Comportamentos Infantojuvenis no TDAH em Ambiente Familiar (Vers&#227;o para Pais)<br>
+<strong>Autora:</strong> Edyleine Bellini Peroni Benczik<br>
+<strong>Estrutura:</strong> 58 itens, 4 fatores, escala de frequ&#234;ncia de 1 a 6<br>
+<strong>Fatores:</strong> Regula&#231;&#227;o Emocional, Hiperatividade/Impulsividade, Comportamento Adaptativo, Aten&#231;&#227;o<br>
+<strong>Resultado:</strong> Escore bruto, percentil e classifica&#231;&#227;o por fator e geral (normas por sexo e faixa et&#225;ria)<br>
+<strong>Popula&#231;&#227;o:</strong> Crian&#231;as e adolescentes de 2 a 17 anos, respondido por pais ou respons&#225;veis
+</p>
+</div>
+<div class="dados-pessoais">
+<h2>&#128203; Dados Pessoais</h2>
+<div class="form-row">
+<div class="form-group"><label for="nome">Nome da crian&#231;a/adolescente:</label><input type="text" id="nome" placeholder="Nome completo"></div>
+<div class="form-group"><label for="dataNascimento">Data de Nascimento:</label><input type="date" id="dataNascimento" onchange="calcularIdade()"></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label for="idadeCalculada">Idade:</label><input type="text" id="idadeCalculada" readonly style="background-color:#f0f0f0;" placeholder="Calculada automaticamente"></div>
+<div class="form-group"><label for="sexo">Sexo:</label><select id="sexo"><option value="">Selecione</option><option value="Masculino">Masculino</option><option value="Feminino">Feminino</option></select></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label for="respondente">V&#237;nculo de quem responde:</label><select id="respondente"><option value="">Selecione</option><option value="Mae">M&#227;e</option><option value="Pai">Pai</option><option value="Avo">Av&#243;</option><option value="Avô">Av&#244;</option><option value="Outro responsavel">Outro respons&#225;vel</option></select></div>
+<div class="form-group"><label for="nomeRespondente">Nome de quem responde:</label><input type="text" id="nomeRespondente" placeholder="Nome completo de quem responde"></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label for="data">Data da Avalia&#231;&#227;o:</label><input type="date" id="data" onchange="calcularIdade()"></div>
+<div class="form-group"><label for="observacoes">Observa&#231;&#245;es (opcional):</label><input type="text" id="observacoes" placeholder="Informa&#231;&#245;es adicionais"></div>
+</div>
+</div>
+<div class="dados-pessoais" id="blocoRespondente">
+<h2>&#128203; Quem est&#225; respondendo</h2>
+<div class="form-row">
+<div class="form-group"><label for="respondente2">V&#237;nculo com a crian&#231;a/adolescente:</label><select id="respondente2" onchange="document.getElementById('respondente').value=this.value"><option value="">Selecione</option><option value="Mae">M&#227;e</option><option value="Pai">Pai</option><option value="Avo">Av&#243;</option><option value="Avô">Av&#244;</option><option value="Outro responsavel">Outro respons&#225;vel</option></select></div>
+<div class="form-group"><label for="nomeRespondente2">Seu nome (opcional):</label><input type="text" id="nomeRespondente2" oninput="document.getElementById('nomeRespondente').value=this.value"></div>
+</div>
+</div>
+<div class="instrucoes">
+<h3>&#128221; Instru&#231;&#245;es</h3>
+<p>Abaixo est&#227;o alguns itens que descrevem comportamentos que seu filho ou sua filha pode apresentar. Considere a <strong>frequ&#234;ncia</strong> desses comportamentos no momento atual, desde que eles ocorram <strong>nos &#250;ltimos seis meses</strong>.</p>
+<p>Leia cada item com aten&#231;&#227;o e marque a op&#231;&#227;o que mais se adequar &#224; sua opini&#227;o: <strong>(1) Nunca; (2) Muito pouco; (3) Pouco; (4) Geralmente; (5) Frequentemente; (6) Muito frequentemente.</strong></p>
+<p>N&#227;o deixe nenhum item em branco.</p>
+</div>
+<div id="questionario"></div>
+<div class="botoes">
+<button class="btn btn-primary" onclick="calcularResultados()">Calcular Resultados</button>
+<button class="btn btn-danger" onclick="limparDados()">Limpar Dados</button>
+</div>
+<div id="resultados" class="resultados"></div>
+<div class="info-tecnica" id="referencias" style="margin-top:30px;background:#f8f9fa;border-left-color:#0d47a1;">
+<h2 style="color:#0d47a1;">Refer&#234;ncias</h2>
+<p style="color:#555;line-height:1.9;font-size:0.88em;">
+<strong>BENCZIK, E. B. P.</strong> <em>ETDAH-PAIS: Escala de Avalia&#231;&#227;o de Comportamentos Infantojuvenis no Transtorno de D&#233;ficit de Aten&#231;&#227;o/Hiperatividade em Ambiente Familiar &#8212; Vers&#227;o para Pais</em>. S&#227;o Paulo: Memnon, 2018.<br><br>
+<strong>AMERICAN PSYCHIATRIC ASSOCIATION.</strong> <em>Diagnostic and Statistical Manual of Mental Disorders</em> (DSM-5-TR). 5th ed., text rev. Washington, DC: APA, 2022.
+</p>
+</div>
+</div>
+</div>
+<script>
+// === DADOS ===
+var OPCOES=[{valor:1,texto:'Nunca'},{valor:2,texto:'Muito pouco'},{valor:3,texto:'Pouco'},{valor:4,texto:'Geralmente'},{valor:5,texto:'Frequentemente'},{valor:6,texto:'Muito frequentemente'}];
+// i:1 = item invertido (pontuacao 7 - resposta), igual a correcao do painel
+var ETDAH_FATORES=[
+{id:'f1',nome:'Regula\u00e7\u00e3o Emocional',max:114,itens:[
+{t:'\u00c9 sens\u00edvel'},{t:'\u00c9 agressivo'},{t:'Muda facilmente de humor'},{t:'Tem dificuldades para se adaptar \u00e0s mudan\u00e7as'},{t:'Implica com tudo'},{t:'Tem fortes rea\u00e7\u00f5es emocionais (explos\u00f5es de raiva)'},{t:'Faz birra quando quer algo'},{t:'Sente-se infeliz'},{t:'D\u00e1 a impress\u00e3o de estar sempre insatisfeito (nada o agrada)'},{t:'Implica com os irm\u00e3os'},{t:'\u00c9 irritadi\u00e7o (tudo o incomoda)'},{t:'\u00c9 rebelde (n\u00e3o aceita nada)'},{t:'As atividades e reuni\u00f5es familiares s\u00e3o desagrad\u00e1veis'},{t:'Todos t\u00eam que fazer o que ele quer'},{t:'Mostra-se tenso e r\u00edgido'},{t:'Explode com facilidade (\u00e9 do tipo pavio curto)'},{t:'Exige mais tempo e aten\u00e7\u00e3o dos pais do que os outros filhos'},{t:'A hora de acordar e das refei\u00e7\u00f5es \u00e9 desagrad\u00e1vel'},{t:'Faz amizade, mas n\u00e3o consegue mant\u00ea-la'}]},
+{id:'f2',nome:'Hiperatividade/Impulsividade',max:78,itens:[
+{t:'Movimenta-se muito (parece estar ligado com um motor ou a todo vapor)'},{t:'\u00c9 inquieto e agitado'},{t:'Tem sempre muita pressa'},{t:'Mexe-se e contorce-se durante as refei\u00e7\u00f5es e para realizar as tarefas de casa'},{t:'Age sem pensar (\u00e9 impulsivo)'},{t:'Responde antes de ouvir a pergunta inteira'},{t:'\u00c9 imprudente'},{t:'\u00c9 persistente e insiste diante de uma ideia'},{t:'\u00c9 inconsequente (n\u00e3o considera os perigos da situa\u00e7\u00e3o)'},{t:'Intromete-se em assuntos que n\u00e3o lhe dizem respeito'},{t:'Irrita os outros com suas palha\u00e7adas'},{t:'Faz os deveres escolares r\u00e1pido demais'},{t:'Tende a discordar com as regras e normas de jogos'}]},
+{id:'f3',nome:'Comportamento Adaptativo',max:84,itens:[
+{t:'A crian\u00e7a permite que o ambiente familiar seja tranquilo e harmonioso',i:1},{t:'Obedece aos pais e \u00e0s normas da casa',i:1},{t:'Consegue expressar claramente os seus pensamentos',i:1},{t:'Sabe aguardar sua vez (\u00e9 paciente)',i:1},{t:'Aceita facilmente regras, normas e limites',i:1},{t:'Fala pouco',i:1},{t:'\u00c9 atento quando conversa com algu\u00e9m',i:1},{t:'Parece ser uma crian\u00e7a/adolescente tranquila e sossegada',i:1},{t:'\u00c9 tolerante, quando preciso',i:1},{t:'Faz as coisas com muito cuidado, prevendo todos os riscos de suas a\u00e7\u00f5es',i:1},{t:'Faz suas tarefas e almo\u00e7a com bastante tranquilidade',i:1},{t:'Seu comportamento \u00e9 adequado socialmente',i:1},{t:'Respeita normas e regras',i:1},{t:'\u00c9 obediente',i:1}]},
+{id:'f4',nome:'Aten\u00e7\u00e3o',max:72,itens:[
+{t:'\u00c9 independente para realizar as suas tarefas de casa',i:1},{t:'\u00c9 distra\u00eddo com quase tudo'},{t:'Parece sonhar acordado (estar no mundo da lua)'},{t:'Inicia uma atividade com entusiasmo e dificilmente chega ao final (\u00e9 do tipo fogo de palha)'},{t:'Mostra-se concentrado apenas em atividades de seu interesse'},{t:'Tem dificuldade para realizar as coisas importantes (li\u00e7\u00e3o, por exemplo)'},{t:'D\u00e1 a impress\u00e3o de que n\u00e3o ouve bem (s\u00f3 escuta o que quer)'},{t:'Evita atividades que exigem esfor\u00e7o mental constante (deveres escolares, jogos)'},{t:'Esquece r\u00e1pido o que acabou de ser dito'},{t:'Dificilmente observa detalhes'},{t:'N\u00e3o termina o que come\u00e7a'},{t:'Ocorrem discuss\u00f5es entre os pais e a crian\u00e7a, em fun\u00e7\u00e3o da falta de responsabilidade e da falta de senso de dever'}]}
+];
+var TOTAL_ITENS=58;
+var _sessionInfo=null;
+var _API_URL='https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
+
+// === NORMAS (copiadas de online/etdah-correcao.js - manter sincronizadas) ===
+// === TABELAS NORMATIVAS ===
+var _etdahNormaGeral = [
+  {p:1,g:72,f1:20,f2:15,f3:18,f4:12},{p:5,g:101,f1:25,f2:18,f3:25,f4:15},
+  {p:10,g:107,f1:28,f2:21,f3:32,f4:17},{p:15,g:115,f1:30,f2:23,f3:35,f4:19},
+  {p:20,g:121,f1:31,f2:25,f3:37,f4:21},{p:25,g:129,f1:33,f2:26,f3:40,f4:22},
+  {p:30,g:133,f1:35,f2:27,f3:42,f4:23},{p:35,g:139,f1:36,f2:28,f3:44,f4:24},
+  {p:40,g:144,f1:38,f2:29,f3:46,f4:26},{p:45,g:148,f1:40,f2:30,f3:48,f4:27},
+  {p:50,g:153,f1:42,f2:32,f3:49,f4:29},{p:55,g:159,f1:45,f2:34,f3:51,f4:30},
+  {p:60,g:166,f1:47,f2:35,f3:53,f4:32},{p:65,g:170,f1:49,f2:37,f3:54,f4:34},
+  {p:70,g:177,f1:51,f2:40,f3:55,f4:35},{p:75,g:187,f1:53,f2:42,f3:57,f4:36},
+  {p:80,g:193,f1:56,f2:44,f3:60,f4:39},{p:85,g:207,f1:61,f2:49,f3:61,f4:41},
+  {p:90,g:218,f1:68,f2:56,f3:65,f4:46},{p:95,g:238,f1:78,f2:66,f3:69,f4:51},
+  {p:99,g:266,f1:95,f2:74,f3:74,f4:64}
+];
+
+var _etdahNormaFem2a5 = [
+  {p:1,g:106,f1:23,f2:21,f3:20,f4:13},{p:5,g:107,f1:24,f2:21,f3:21,f4:13},
+  {p:10,g:116,f1:33,f2:22,f3:29,f4:13},{p:15,g:119,f1:35,f2:24,f3:37,f4:16},
+  {p:20,g:127,f1:36,f2:25,f3:37,f4:19},{p:25,g:131,f1:37,f2:28,f3:38,f4:20},
+  {p:30,g:134,f1:39,f2:29,f3:40,f4:21},{p:35,g:137,f1:41,f2:30,f3:45,f4:21},
+  {p:40,g:140,f1:42,f2:31,f3:46,f4:23},{p:45,g:152,f1:45,f2:33,f3:46,f4:24},
+  {p:50,g:155,f1:47,f2:34,f3:47,f4:25},{p:55,g:160,f1:49,f2:34,f3:48,f4:26},
+  {p:60,g:174,f1:53,f2:35,f3:51,f4:28},{p:65,g:180,f1:53,f2:38,f3:59,f4:29},
+  {p:70,g:191,f1:53,f2:42,f3:60,f4:30},{p:75,g:197,f1:54,f2:54,f3:61,f4:31},
+  {p:80,g:209,f1:58,f2:67,f3:63,f4:36},{p:85,g:217,f1:62,f2:73,f3:66,f4:49},
+  {p:90,g:244,f1:65,f2:74,f3:72,f4:53},{p:95,g:253,f1:77,f2:74,f3:78,f4:53},
+  {p:99,g:253,f1:77,f2:74,f3:78,f4:53}
+];
+var _etdahNormaFem6a9 = [
+  {p:1,g:88,f1:23,f2:18,f3:21,f4:15},{p:5,g:96,f1:25,f2:18,f3:22,f4:16},
+  {p:10,g:108,f1:30,f2:20,f3:27,f4:18},{p:15,g:113,f1:32,f2:24,f3:28,f4:22},
+  {p:20,g:124,f1:35,f2:25,f3:29,f4:23},{p:25,g:128,f1:37,f2:27,f3:35,f4:24},
+  {p:30,g:135,f1:43,f2:27,f3:40,f4:24},{p:35,g:137,f1:44,f2:27,f3:44,f4:26},
+  {p:40,g:144,f1:45,f2:29,f3:47,f4:26},{p:45,g:146,f1:45,f2:30,f3:49,f4:26},
+  {p:50,g:162,f1:46,f2:31,f3:51,f4:27},{p:55,g:170,f1:47,f2:33,f3:55,f4:27},
+  {p:60,g:176,f1:49,f2:34,f3:56,f4:30},{p:65,g:185,f1:55,f2:34,f3:57,f4:32},
+  {p:70,g:187,f1:55,f2:43,f3:57,f4:32},{p:75,g:191,f1:57,f2:47,f3:59,f4:33},
+  {p:80,g:193,f1:61,f2:51,f3:60,f4:35},{p:85,g:196,f1:65,f2:53,f3:61,f4:35},
+  {p:90,g:211,f1:66,f2:53,f3:65,f4:37},{p:95,g:228,f1:77,f2:59,f3:71,f4:43},
+  {p:99,g:228,f1:77,f2:59,f3:71,f4:43}
+];
+var _etdahNormaFem10a13 = [
+  {p:1,g:80,f1:20,f2:14,f3:15,f4:12},{p:5,g:87,f1:22,f2:16,f3:17,f4:12},
+  {p:10,g:97,f1:27,f2:18,f3:26,f4:13},{p:15,g:101,f1:29,f2:20,f3:30,f4:17},
+  {p:20,g:106,f1:30,f2:20,f3:33,f4:19},{p:25,g:117,f1:30,f2:22,f3:36,f4:21},
+  {p:30,g:123,f1:36,f2:23,f3:39,f4:21},{p:35,g:129,f1:39,f2:25,f3:43,f4:22},
+  {p:40,g:135,f1:39,f2:25,f3:43,f4:23},{p:45,g:139,f1:41,f2:25,f3:44,f4:25},
+  {p:50,g:143,f1:41,f2:26,f3:47,f4:25},{p:55,g:145,f1:43,f2:27,f3:49,f4:26},
+  {p:60,g:156,f1:48,f2:29,f3:50,f4:32},{p:65,g:159,f1:49,f2:29,f3:53,f4:34},
+  {p:70,g:176,f1:51,f2:30,f3:54,f4:35},{p:75,g:190,f1:53,f2:32,f3:56,f4:37},
+  {p:80,g:195,f1:56,f2:38,f3:57,f4:39},{p:85,g:199,f1:66,f2:44,f3:59,f4:46},
+  {p:90,g:208,f1:77,f2:47,f3:60,f4:53},{p:95,g:239,f1:84,f2:58,f3:70,f4:60},
+  {p:99,g:239,f1:84,f2:58,f3:70,f4:60}
+];
+var _etdahNormaFem14a17 = [
+  {p:1,g:72,f1:25,f2:16,f3:18,f4:12},{p:5,g:72,f1:25,f2:16,f3:18,f4:12},
+  {p:10,g:78,f1:25,f2:16,f3:19,f4:12},{p:15,g:87,f1:26,f2:17,f3:22,f4:13},
+  {p:20,g:95,f1:26,f2:19,f3:24,f4:14},{p:25,g:102,f1:28,f2:21,f3:28,f4:15},
+  {p:30,g:109,f1:29,f2:21,f3:35,f4:17},{p:35,g:111,f1:33,f2:22,f3:36,f4:17},
+  {p:40,g:112,f1:33,f2:24,f3:36,f4:21},{p:45,g:115,f1:34,f2:24,f3:37,f4:22},
+  {p:50,g:117,f1:35,f2:24,f3:38,f4:23},{p:55,g:118,f1:36,f2:26,f3:39,f4:24},
+  {p:60,g:122,f1:36,f2:29,f3:40,f4:24},{p:65,g:131,f1:37,f2:29,f3:41,f4:26},
+  {p:70,g:144,f1:37,f2:31,f3:42,f4:29},{p:75,g:148,f1:38,f2:33,f3:45,f4:31},
+  {p:80,g:149,f1:39,f2:34,f3:47,f4:33},{p:85,g:157,f1:40,f2:35,f3:49,f4:36},
+  {p:90,g:170,f1:46,f2:38,f3:55,f4:38},{p:95,g:170,f1:46,f2:38,f3:55,f4:38},
+  {p:99,g:170,f1:46,f2:38,f3:55,f4:38}
+];
+
+var _etdahNormaMasc2a5 = [
+  {p:1,g:115,f1:30,f2:23,f3:38,f4:19},{p:5,g:115,f1:30,f2:23,f3:38,f4:19},
+  {p:10,g:115,f1:31,f2:25,f3:38,f4:21},{p:15,g:137,f1:31,f2:25,f3:44,f4:21},
+  {p:20,g:151,f1:33,f2:26,f3:47,f4:21},{p:25,g:157,f1:37,f2:26,f3:48,f4:23},
+  {p:30,g:159,f1:39,f2:28,f3:49,f4:24},{p:35,g:161,f1:39,f2:33,f3:51,f4:25},
+  {p:40,g:163,f1:40,f2:37,f3:52,f4:25},{p:45,g:165,f1:40,f2:39,f3:54,f4:26},
+  {p:50,g:166,f1:43,f2:40,f3:55,f4:27},{p:55,g:168,f1:47,f2:41,f3:55,f4:30},
+  {p:60,g:168,f1:47,f2:45,f3:56,f4:32},{p:65,g:169,f1:48,f2:47,f3:57,f4:33},
+  {p:70,g:171,f1:50,f2:48,f3:58,f4:34},{p:75,g:175,f1:51,f2:50,f3:59,f4:35},
+  {p:80,g:183,f1:53,f2:53,f3:62,f4:35},{p:85,g:197,f1:56,f2:55,f3:65,f4:36},
+  {p:90,g:211,f1:57,f2:59,f3:67,f4:37},{p:95,g:211,f1:57,f2:59,f3:67,f4:37},
+  {p:99,g:211,f1:57,f2:59,f3:67,f4:37}
+];
+var _etdahNormaMasc6a9 = [
+  {p:1,g:102,f1:22,f2:21,f3:34,f4:15},{p:5,g:106,f1:24,f2:22,f3:34,f4:16},
+  {p:10,g:115,f1:28,f2:23,f3:35,f4:17},{p:15,g:118,f1:30,f2:24,f3:37,f4:18},
+  {p:20,g:129,f1:30,f2:26,f3:39,f4:20},{p:25,g:133,f1:31,f2:28,f3:42,f4:22},
+  {p:30,g:137,f1:33,f2:29,f3:44,f4:24},{p:35,g:143,f1:36,f2:30,f3:46,f4:25},
+  {p:40,g:145,f1:37,f2:30,f3:48,f4:31},{p:45,g:151,f1:37,f2:32,f3:48,f4:31},
+  {p:50,g:153,f1:41,f2:34,f3:49,f4:34},{p:55,g:154,f1:45,f2:34,f3:49,f4:34},
+  {p:60,g:165,f1:45,f2:35,f3:51,f4:34},{p:65,g:172,f1:48,f2:38,f3:53,f4:38},
+  {p:70,g:179,f1:51,f2:43,f3:54,f4:40},{p:75,g:203,f1:54,f2:44,f3:57,f4:41},
+  {p:80,g:215,f1:62,f2:47,f3:60,f4:44},{p:85,g:219,f1:65,f2:51,f3:67,f4:46},
+  {p:90,g:220,f1:69,f2:61,f3:67,f4:47},{p:95,g:254,f1:86,f2:63,f3:71,f4:48},
+  {p:99,g:254,f1:86,f2:63,f3:71,f4:48}
+];
+var _etdahNormaMasc10a13 = [
+  {p:1,g:104,f1:25,f2:15,f3:27,f4:15},{p:5,g:105,f1:25,f2:21,f3:32,f4:16},
+  {p:10,g:121,f1:26,f2:25,f3:38,f4:20},{p:15,g:127,f1:29,f2:27,f3:41,f4:21},
+  {p:20,g:134,f1:31,f2:28,f3:44,f4:23},{p:25,g:148,f1:32,f2:29,f3:46,f4:28},
+  {p:30,g:150,f1:34,f2:30,f3:49,f4:28},{p:35,g:153,f1:35,f2:32,f3:51,f4:29},
+  {p:40,g:156,f1:36,f2:35,f3:51,f4:30},{p:45,g:163,f1:39,f2:35,f3:53,f4:31},
+  {p:50,g:165,f1:42,f2:36,f3:53,f4:36},{p:55,g:169,f1:43,f2:39,f3:54,f4:36},
+  {p:60,g:176,f1:48,f2:40,f3:55,f4:37},{p:65,g:186,f1:50,f2:41,f3:58,f4:40},
+  {p:70,g:195,f1:51,f2:41,f3:59,f4:42},{p:75,g:207,f1:55,f2:44,f3:60,f4:43},
+  {p:80,g:223,f1:60,f2:51,f3:60,f4:43},{p:85,g:235,f1:61,f2:56,f3:64,f4:49},
+  {p:90,g:248,f1:69,f2:66,f3:65,f4:50},{p:95,g:258,f1:78,f2:68,f3:70,f4:62},
+  {p:99,g:258,f1:86,f2:68,f3:70,f4:62}
+];
+var _etdahNormaMasc14a17 = [
+  {p:1,g:84,f1:20,f2:16,f3:20,f4:15},{p:5,g:84,f1:20,f2:16,f3:21,f4:15},
+  {p:10,g:95,f1:21,f2:18,f3:32,f4:16},{p:15,g:109,f1:25,f2:20,f3:34,f4:17},
+  {p:20,g:112,f1:26,f2:21,f3:34,f4:17},{p:25,g:124,f1:29,f2:23,f3:35,f4:20},
+  {p:30,g:130,f1:30,f2:26,f3:39,f4:22},{p:35,g:131,f1:31,f2:27,f3:41,f4:23},
+  {p:40,g:132,f1:32,f2:28,f3:43,f4:26},{p:45,g:137,f1:33,f2:28,f3:43,f4:26},
+  {p:50,g:142,f1:33,f2:30,f3:47,f4:27},{p:55,g:143,f1:36,f2:33,f3:51,f4:29},
+  {p:60,g:143,f1:40,f2:35,f3:53,f4:32},{p:65,g:146,f1:45,f2:36,f3:53,f4:34},
+  {p:70,g:162,f1:50,f2:37,f3:53,f4:34},{p:75,g:174,f1:53,f2:37,f3:53,f4:34},
+  {p:80,g:189,f1:55,f2:39,f3:54,f4:36},{p:85,g:192,f1:56,f2:40,f3:59,f4:39},
+  {p:90,g:192,f1:71,f2:42,f3:61,f4:41},{p:95,g:236,f1:108,f2:42,f3:66,f4:41},
+  {p:99,g:236,f1:108,f2:42,f3:66,f4:41}
+];
+
+// === FUNCOES AUXILIARES ===
+function _etdahSelecionarTabela(sexo, idade) {
+  if (!sexo || !idade) return _etdahNormaGeral;
+  var s = sexo.toLowerCase();
+  var i = parseInt(idade);
+  if (isNaN(i)) return _etdahNormaGeral;
+  if (s === 'masculino' || s === 'm') {
+    if (i >= 2 && i <= 5) return _etdahNormaMasc2a5;
+    if (i >= 6 && i <= 9) return _etdahNormaMasc6a9;
+    if (i >= 10 && i <= 13) return _etdahNormaMasc10a13;
+    if (i >= 14 && i <= 17) return _etdahNormaMasc14a17;
+  } else if (s === 'feminino' || s === 'f') {
+    if (i >= 2 && i <= 5) return _etdahNormaFem2a5;
+    if (i >= 6 && i <= 9) return _etdahNormaFem6a9;
+    if (i >= 10 && i <= 13) return _etdahNormaFem10a13;
+    if (i >= 14 && i <= 17) return _etdahNormaFem14a17;
+  }
+  return _etdahNormaGeral;
+}
+
+function _etdahBuscarPercentil(escoreBruto, tabela, campo) {
+  if (!tabela || tabela.length === 0 || escoreBruto == null) return null;
+  if (escoreBruto <= tabela[0][campo]) return tabela[0].p;
+  if (escoreBruto >= tabela[tabela.length - 1][campo]) return tabela[tabela.length - 1].p;
+  for (var i = 0; i < tabela.length - 1; i++) {
+    var v1 = tabela[i][campo];
+    var v2 = tabela[i + 1][campo];
+    if (escoreBruto >= v1 && escoreBruto <= v2) {
+      if (v2 === v1) return tabela[i].p;
+      var prop = (escoreBruto - v1) / (v2 - v1);
+      return Math.round((tabela[i].p + prop * (tabela[i + 1].p - tabela[i].p)) * 10) / 10;
+    }
+  }
+  return 50;
+}
+
+function _etdahClassificar(percentil) {
+  if (percentil == null) return {texto: 'N/A', classe: 'na'};
+  if (percentil <= 20) return {texto: 'Inferior', classe: 'inferior'};
+  if (percentil <= 40) return {texto: 'Media Inferior', classe: 'media-inferior'};
+  if (percentil <= 60) return {texto: 'Media', classe: 'media'};
+  if (percentil <= 80) return {texto: 'Media Superior', classe: 'media-superior'};
+  return {texto: 'Superior', classe: 'superior'};
+}
+
+function _etdahCorClassif(classe) {
+  if (classe === 'inferior') return '#4caf50';
+  if (classe === 'media-inferior') return '#8bc34a';
+  if (classe === 'media') return '#ffc107';
+  if (classe === 'media-superior') return '#ff9800';
+  if (classe === 'superior') return '#f44336';
+  return '#999';
+}
+
+function _etdahInverter(valor) {
+  return 7 - valor; // 1->6, 2->5, 3->4, 4->3, 5->2, 6->1
+}
+
+
+
+// === FUNCOES UTILITARIAS ===
+function calcularIdade(){
+var d=document.getElementById('dataNascimento').value;
+var out=document.getElementById('idadeCalculada');
+if(!d){out.value='';return;}
+var ref=document.getElementById('data').value;
+var h=ref?new Date(ref+'T00:00:00'):new Date();
+var n=new Date(d+'T00:00:00');
+var a=h.getFullYear()-n.getFullYear(),m=h.getMonth()-n.getMonth(),di=h.getDate()-n.getDate();
+if(di<0){m--;di+=new Date(h.getFullYear(),h.getMonth(),0).getDate();}
+if(m<0){a--;m+=12;}
+if(a<0){out.value='';return;}
+out.value=a+' anos, '+m+' meses e '+di+' dias';
+}
+function _idadeEmAnos(){
+var v=document.getElementById('idadeCalculada').value;
+var mm=/^(\d+) anos/.exec(v);
+return mm?parseInt(mm[1],10):null;
+}
+function gerarQuestionario(){
+var html='',n=0,f,i,o;
+for(f=0;f<ETDAH_FATORES.length;f++){
+var it=ETDAH_FATORES[f].itens;
+for(i=0;i<it.length;i++){
+n++;
+html+='<div class="item"><div class="item-texto"><span class="item-numero">'+n+'.</span>'+it[i].t+'</div><div class="opcoes">';
+for(o=0;o<OPCOES.length;o++){
+html+='<label class="opcao"><input type="radio" name="q'+n+'" value="'+OPCOES[o].valor+'"><span>'+OPCOES[o].valor+' - '+OPCOES[o].texto+'</span></label>';
+}
+html+='</div></div>';
+}
+}
+document.getElementById('questionario').innerHTML=html;
+}
+function _lerRespostas(){
+var resp=[],faltam=0,primeiro=-1,n;
+for(n=1;n<=TOTAL_ITENS;n++){
+var el=document.querySelector('input[name="q'+n+'"]:checked');
+if(el){resp.push(parseInt(el.value,10));}else{resp.push(null);faltam++;if(primeiro<0)primeiro=n;}
+}
+return {resp:resp,faltam:faltam,primeiro:primeiro};
+}
+function _txtClassif(classe){
+var m={'inferior':'Inferior','media-inferior':'M\u00e9dia Inferior','media':'M\u00e9dia','media-superior':'M\u00e9dia Superior','superior':'Superior'};
+return m[classe]||'N/A';
+}
+
+// === CALCULO ===
+function calcularResultados(){
+var nomeEl=document.getElementById('nome');
+if(!nomeEl.value.trim()){alert('Preencha o nome da crian\u00e7a/adolescente.');return;}
+var lr=_lerRespostas();
+if(lr.faltam>0){
+alert('Responda todos os '+TOTAL_ITENS+' itens. Faltam '+lr.faltam+'.');
+var alvo=document.querySelector('input[name="q'+lr.primeiro+'"]');
+if(alvo&&alvo.closest('.item'))alvo.closest('.item').scrollIntoView({behavior:'smooth',block:'center'});
+return;
+}
+var sexo=document.getElementById('sexo').value;
+var idade=_idadeEmAnos();
+var esc={f1:0,f2:0,f3:0,f4:0};
+var n=0,f,i;
+for(f=0;f<ETDAH_FATORES.length;f++){
+for(i=0;i<ETDAH_FATORES[f].itens.length;i++){
+var v=lr.resp[n];n++;
+if(ETDAH_FATORES[f].itens[i].i)v=_etdahInverter(v);
+esc[ETDAH_FATORES[f].id]+=v;
+}
+}
+esc.geral=esc.f1+esc.f2+esc.f3+esc.f4;
+var tabela=_etdahSelecionarTabela(sexo,idade);
+var usouGeral=(tabela===_etdahNormaGeral);
+var normaTxt=usouGeral?'Norma geral (sem divis\u00e3o por sexo/idade)':(sexo+', '+idade+' anos');
+var aviso='';
+if(usouGeral)aviso='Sexo ou idade fora da faixa normativa (2 a 17 anos): foi usada a tabela geral.';
+var pct={},cls={},ids=['f1','f2','f3','f4'],k;
+for(k=0;k<ids.length;k++){pct[ids[k]]=_etdahBuscarPercentil(esc[ids[k]],tabela,ids[k]);}
+pct.geral=_etdahBuscarPercentil(esc.geral,tabela,'g');
+var chaves=['f1','f2','f3','f4','geral'];
+var classeObj={};
+for(k=0;k<chaves.length;k++){classeObj[chaves[k]]=_etdahClassificar(pct[chaves[k]]);cls[chaves[k]]=_txtClassif(classeObj[chaves[k]].classe);}
+var dom={},html='',resp={};
+for(f=0;f<ETDAH_FATORES.length;f++){
+var F=ETDAH_FATORES[f];
+dom[F.nome]={pontuacao:esc[F.id],max:F.max,classificacao:cls[F.id],percentil:pct[F.id],itens:F.itens.length};
+html+='<div class="dominio-card"><strong>'+F.nome+'</strong><br>Escore bruto: '+esc[F.id]+' de '+F.max+' &nbsp;|&nbsp; Percentil: '+pct[F.id]+' &nbsp;<span class="badge" style="background:'+_etdahCorClassif(classeObj[F.id].classe)+';">'+cls[F.id]+'</span></div>';
+}
+html='<h2>Resultados ETDAH-PAIS</h2>'+html+'<div class="dominio-card" style="border-left-color:#1a237e;"><strong>Escore Geral</strong><br>Escore bruto: '+esc.geral+' de 348 &nbsp;|&nbsp; Percentil: '+pct.geral+' &nbsp;<span class="badge" style="background:'+_etdahCorClassif(classeObj.geral.classe)+';">'+cls.geral+'</span></div><p style="font-size:0.85em;color:#555;">Norma utilizada: '+normaTxt+'</p>';
+if(aviso)html+='<p style="font-size:0.85em;color:#e65100;">'+aviso+'</p>';
+html+='<div class="disclaimer">Este resultado &#233; um instrumento de apoio &#224; avalia&#231;&#227;o e n&#227;o constitui diagn&#243;stico. A interpreta&#231;&#227;o deve ser feita por profissional habilitado, integrando outras fontes de informa&#231;&#227;o.</div>';
+for(n=0;n<TOTAL_ITENS;n++){resp[n+1]=lr.resp[n];}
+var respEl=document.getElementById('respondente');
+window._escalaDados={
+escala:'ETDAH-PAIS',
+escalaNome:'ETDAH-PAIS - Escala de Avalia\u00e7\u00e3o de Comportamentos Infantojuvenis no TDAH (Vers\u00e3o para Pais)',
+formulario:'Pais/Respons\u00e1veis',
+paciente:nomeEl.value.trim(),
+escore:esc.geral,
+classificacao:cls.geral,
+percentil:pct.geral,
+dominios:dom,
+respondente:respEl?respEl.value:'',
+nomeRespondente:document.getElementById('nomeRespondente').value.trim(),
+normaUsada:normaTxt,
+aviso:aviso,
+respostas:resp,
+idPaciente:document.getElementById('idPaciente')?document.getElementById('idPaciente').value:'',
+idade:document.getElementById('idadeCalculada').value,
+sexo:sexo,
+data:new Date().toISOString()
+};
+var r=document.getElementById('resultados');
+r.innerHTML=html;
+r.style.display='block';
+r.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function limparDados(){
+if(!confirm('Tem certeza que deseja limpar todas as respostas?'))return;
+var rs=document.querySelectorAll('input[type="radio"]');
+var i;
+for(i=0;i<rs.length;i++)rs[i].checked=false;
+var its=document.querySelectorAll('.item');
+for(i=0;i<its.length;i++){its[i].style.backgroundColor='';its[i].style.borderLeft='';}
+document.getElementById('resultados').style.display='none';
+window._escalaDados=null;
+}
+
+// === MODO PAINEL ===
+function _prepararModoPaciente(data){
+_sessionInfo=data;
+var nomeEl=document.getElementById('nome');
+var nascEl=document.getElementById('dataNascimento');
+var sexoEl=document.getElementById('sexo');
+if(nomeEl&&data.patientName)nomeEl.value=data.patientName;
+if(nascEl&&data.birthDate)nascEl.value=data.birthDate;
+if(sexoEl&&data.sex)sexoEl.value=data.sex;
+var respEl=document.getElementById('respondente');
+var resp2=document.getElementById('respondente2');
+if(respEl&&data.respondente){
+var ok=false,i;
+for(i=0;i<respEl.options.length;i++){if(respEl.options[i].value===data.respondente){ok=true;break;}}
+if(ok){respEl.value=data.respondente;if(resp2)resp2.value=data.respondente;}
+}
+if(typeof calcularIdade==='function')calcularIdade();
+if(nomeEl)nomeEl.dispatchEvent(new Event('input'));
+if(nascEl)nascEl.dispatchEvent(new Event('change'));
+var botoes=document.querySelector('.botoes');
+if(botoes){botoes.innerHTML='<button class="btn btn-primary" style="padding:15px 30px;border:none;border-radius:25px;font-size:16px;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#2e7d32,#43a047);color:white;" onclick="_enviarResultadosPainel()">Enviar Resultados ao Profissional</button>';}
+var els=document.querySelectorAll('.info-tecnica');
+els.forEach(function(el){el.style.display='none';});
+var dp=document.querySelector('.dados-pessoais');
+if(dp)dp.style.display='none';
+var br=document.getElementById('blocoRespondente');
+if(br)br.style.display='block';
+}
+function _decodificarURL(){
+var params=new URLSearchParams(window.location.search);
+var d=params.get('d');
+if(!d)return false;
+var info=null;
+try{info=JSON.parse(atob(decodeURIComponent(d)));}catch(e){return false;}
+_prepararModoPaciente(info);
+return true;
+}
+async function _enviarResultadosPainel(){
+var nomeEl=document.getElementById('nome');
+if(!nomeEl||!nomeEl.value.trim()){alert('Preencha o nome antes de enviar.');return;}
+var lr=_lerRespostas();
+if(lr.faltam>0){
+alert('Responda todos os '+TOTAL_ITENS+' itens antes de enviar. Faltam '+lr.faltam+'.');
+var alvo=document.querySelector('input[name="q'+lr.primeiro+'"]');
+if(alvo&&alvo.closest('.item'))alvo.closest('.item').scrollIntoView({behavior:'smooth',block:'center'});
+return;
+}
+var sexoEl=document.getElementById('sexo');
+if(sexoEl&&!sexoEl.value){alert('O sexo n\u00e3o foi informado no cadastro. Pe\u00e7a ao profissional para completar o cadastro e gerar um novo link.');return;}
+var idadeEl=document.getElementById('idadeCalculada');
+if(idadeEl&&!idadeEl.value){idadeEl.value='Nao informado';}
+var respEl=document.getElementById('respondente');
+if(respEl&&!respEl.value){respEl.value='Outro responsavel';}
+window._escalaDados=null;
+try{calcularResultados();}catch(e){}
+var dados=window._escalaDados||{};
+if(!dados.escala)dados.escala='ETDAH-PAIS';
+dados.idPaciente=document.getElementById('idPaciente')?document.getElementById('idPaciente').value:'';
+dados.pacienteId=_sessionInfo?(_sessionInfo.pacienteId||''):'';
+dados.data=new Date().toISOString();
+var btn=document.querySelector('.botoes button');
+if(btn){btn.disabled=true;btn.textContent='Enviando...';}
+var corpo=JSON.stringify({sessionId:_sessionInfo.sessionId,email:_sessionInfo.email,data:dados,originalSessionId:_sessionInfo.sessionId,tipo:'etdah-pais'});
+var result=null,resp=null,tentativas=0;
+while(tentativas<3&&!result){
+tentativas++;
+try{
+resp=await fetch(_API_URL+'/save-escala',{method:'POST',headers:{'Content-Type':'application/json'},body:corpo});
+result=await resp.json();
+}catch(e){
+result=null;
+if(tentativas<3){await new Promise(function(r){setTimeout(r,800*tentativas);});}
+}
+}
+if(result&&(result.ok||(resp&&resp.ok))){
+document.body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#e8f5e9,#c8e6c9);text-align:center;padding:20px;"><h1 style="color:#2e7d32;font-size:24px;margin-bottom:12px;">Respostas enviadas com sucesso!</h1><p style="font-size:16px;color:#555;margin-bottom:6px;">O profissional j\u00e1 pode visualizar os resultados no painel.</p><p style="font-size:14px;color:#777;">Voc\u00ea pode fechar esta aba.</p></div>';
+}else{
+if(btn){btn.disabled=false;btn.textContent='Enviar Resultados ao Profissional';}
+alert(result?'Erro ao enviar. Tente novamente.':'Erro de conex\u00e3o. Verifique sua internet e tente novamente.');
+}
+}
+
+// === INICIALIZACAO (direta, sem wrapper) ===
+gerarQuestionario();
+document.getElementById('questionario').addEventListener('change',function(e){if(e.target.type==='radio'){var item=e.target.closest('.item');if(item){item.style.backgroundColor='#f1f8e9';item.style.borderLeft='4px solid #4caf50';}if(item&&item.nextElementSibling){item.nextElementSibling.scrollIntoView({behavior:'smooth',block:'center'});}}});
+document.getElementById('data').value=new Date().toISOString().split('T')[0];
+var params=new URLSearchParams(window.location.search);
+if(params.get('s')){
+fetch(_API_URL+'/get-session?id='+params.get('s')).then(function(r){if(r.status===410){document.body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#e8f5e9,#c8e6c9);text-align:center;padding:20px;"><h1 style="color:#c62828;font-size:24px;margin-bottom:10px;">Este link j\u00e1 foi utilizado.</h1><p style="font-size:16px;color:#555;">Solicite um novo link ao seu avaliador.</p></div>';throw new Error('link_usado');}return r.json();}).then(function(data){if(data.sessionId){_prepararModoPaciente(data);}}).catch(function(){});
+}else if(params.get('d')){
+_decodificarURL();
+}else if(params.get('print')){
+var els=document.querySelectorAll('.info-tecnica');els.forEach(function(el){el.style.display='none';});
+var botoes=document.querySelector('.botoes');if(botoes)botoes.style.display='none';
+setTimeout(function(){window.print();},500);
+}else{
+if(!window.location.protocol.startsWith('file'))window.location.href='https://setmonte.github.io/online/';
+}
+</script>
+<script>
+// Carregar scripts auxiliares (apenas fora do modo painel)
+if(!new URLSearchParams(window.location.search).get('d')){
+var s1=document.createElement('script');s1.src='pdf-escalas.js';document.body.appendChild(s1);
+var s2=document.createElement('script');s2.src='salvar-escala.js';document.body.appendChild(s2);
+}
+var _sc=document.createElement('script');_sc.src='coleta-anonima.js';document.body.appendChild(_sc);
+</script>
+<div style="text-align:center;padding:15px;color:#999;font-size:0.75em;margin-top:20px;">Dados an&#244;nimos e n&#227;o-identific&#225;veis podem ser utilizados para fins de pesquisa e normatiza&#231;&#227;o.</div>
+</body>
+</html>
