@@ -129,6 +129,16 @@
     var sessionData = {};
     var _sessaoFalhaRede = false;
 
+    // ID do paciente (mesmo algoritmo do id-paciente.js): hash de nascimento + 3 primeiras letras do nome
+    function _calcIdPacienteBAE(nome, nasc) {
+      if (!nome || !nasc) return '';
+      var n = String(nome).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z]/g, '').toLowerCase();
+      var raw = nasc + '+' + n.substring(0, 3);
+      var hh = 5381;
+      for (var k = 0; k < raw.length; k++) hh = ((hh << 5) + hh) + raw.charCodeAt(k);
+      return 'P' + Math.abs(hh).toString(36).toUpperCase();
+    }
+
     // Preenche campos ocultos para os scripts do desktop (comum a ?s= e ?d=)
     function _preencherCamposBAE() {
       document.getElementById('nome').value = sessionData.patientName || '';
@@ -249,7 +259,7 @@
       // Captura dados do paciente para o sistema BAE
       window.resultadosBAE = window.resultadosBAE || {};
       window.resultadosBAE.paciente = {
-        idTeste: sessionData.idPaciente || '',
+        idTeste: sessionData.idPaciente || _calcIdPacienteBAE(sessionData.patientName, sessionData.birthDate),
         nome: sessionData.patientName || '',
         dataNascimento: sessionData.birthDate || '',
         sexo: sessionData.sex || '',
@@ -452,7 +462,8 @@
         // Resposta do paciente sobre qual dispositivo usa
         var dispRadio = document.querySelector('input[name="dispositivo"]:checked');
         var dispPaciente = dispRadio ? dispRadio.value : 'nao informado';
-        var _idPac = '';
+        var _idPac = _calcIdPacienteBAE(sessionData.patientName, sessionData.birthDate);
+        if (r.paciente && !r.paciente.idTeste) r.paciente.idTeste = _idPac;
         if (sessionData.patientName && sessionData.birthDate) {
           var _n = sessionData.patientName.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z]/g,'').toLowerCase();
           var _pref = _n.substring(0, 3);

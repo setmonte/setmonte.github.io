@@ -27,6 +27,26 @@ function _siglasSubtestesBAE(resultados) {
     return partes.join('_') + '_';
 }
 
+// ===== AJUSTES DO LAUDO: tempo em segundos, ID do paciente, cores do grafico =====
+// Tempo medio sempre em segundos com 2 casas (ex.: 593 ms -> 0,59 s).
+function _fmtSeg(ms) {
+    var v = parseFloat(ms);
+    if (!isFinite(v)) v = 0;
+    return (v / 1000).toFixed(2).replace('.', ',') + ' s';
+}
+// ID do paciente: mesmo algoritmo do id-paciente.js (hash djb2 de nascimento + 3 primeiras letras do nome).
+function _idPacienteBAE(nome, nascimento) {
+    if (!nascimento || !nome || String(nome).trim().length < 1) return '';
+    var n = String(nome).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z]/g, '').toLowerCase();
+    var raw = nascimento + '+' + n.substring(0, 3);
+    var h = 5381;
+    for (var i = 0; i < raw.length; i++) h = ((h << 5) + h) + raw.charCodeAt(i);
+    return 'P' + Math.abs(h).toString(36).toUpperCase();
+}
+// Cor da barra do grafico pela mesma classificacao da tabela (<60 Baixo, >85 Superior, senao Normal).
+function _corBarraBAE(taxa) { return taxa < 60 ? '#dc3545' : (taxa > 85 ? '#3498db' : '#28a745'); }
+function _corBordaBAE(taxa) { return taxa < 60 ? '#c82333' : (taxa > 85 ? '#2980b9' : '#218838'); }
+
 // ===== FUNÇÃO PARA SALVAR RESULTADO DE TESTE =====
 function salvarResultadoTeste(nomeTeste, dados) {
     // Não sobrescrever se já foi salvo como ABANDONADO
@@ -181,13 +201,14 @@ function gerarGraficoPerformance(testesRealizados, resultados) {
                 datasets: [{
                     label: 'Taxa de Acerto (%)',
                     data: taxas,
-                    backgroundColor: ['#dc3545', '#3498db', '#28a745', '#ffc107', '#6c757d'],
-                    borderColor: ['#c82333', '#2980b9', '#218838', '#e0a800', '#5a6268'],
+                    backgroundColor: taxas.map(_corBarraBAE),
+                    borderColor: taxas.map(_corBordaBAE),
                     borderWidth: 1
                 }]
             },
             options: {
                 responsive: false,
+                animation: false,
                 plugins: {
                     legend: { display: false },
                     title: {
@@ -234,6 +255,9 @@ async function gerarRelatorioPDF() {
         
         // Captura dados do paciente
         const paciente = window.resultadosBAE.paciente || {};
+        // ID do paciente: se nao veio salvo, gera por nome + data de nascimento (mesmo ID do painel e das escalas)
+        if (!paciente.idTeste) { paciente.idTeste = _idPacienteBAE(paciente.nome, paciente.dataNascimento); }
+        window._idTeste = paciente.idTeste || window._idTeste || '';
         const resultados = window.resultadosBAE || {};
         
         // Filtra apenas os testes (exclui 'paciente', 'testesCompletos' e '_dispositivo')
@@ -454,7 +478,7 @@ async function gerarRelatorioPDF() {
                             return [
                                 nomes[teste] || teste,
                                 `${taxa.toFixed(1)}%`,
-                                `${tempo.toFixed(0)}ms`,
+                                `${_fmtSeg(tempo)}`,
                                 classificacao,
                                 { text: status, color: statusColor, bold: true }
                             ];
@@ -483,13 +507,13 @@ async function gerarRelatorioPDF() {
                 if (teste === 'concentrada') {
                     detalhes = [
                         `Acertos: ${dados.acertos || 0} | Erros: ${dados.erros || 0} | Omissões: ${dados.omissoes || 0}`,
-                        `Taxa de Acerto: ${(dados.taxaAcerto || 0).toFixed(1)}% | Tempo Médio: ${(dados.tempoMedio || 0).toFixed(0)}ms`,
+                        `Taxa de Acerto: ${(dados.taxaAcerto || 0).toFixed(1)}% | Tempo Médio: ${_fmtSeg(dados.tempoMedio)}`,
                         `Total de Tentativas: ${dados.totalTentativas || 0}`
                     ];
                 } else if (teste === 'seletiva') {
                     detalhes = [
                         `Acertos: ${dados.acertos || 0} | Erros: ${dados.erros || 0} | Omissões: ${dados.omissoes || 0}`,
-                        `Taxa de Acerto: ${(dados.taxaAcerto || 0).toFixed(1)}% | Tempo Médio: ${dados.tempoMedio || 0}ms`,
+                        `Taxa de Acerto: ${(dados.taxaAcerto || 0).toFixed(1)}% | Tempo Médio: ${_fmtSeg(dados.tempoMedio)}`,
                         `Total de Leões: ${dados.totalLeoes || 0} | Duração: ${dados.duracaoTeste || 0}s`,
                         `Preferência Quadrante: ${dados.quadrantePreferido || 'Equilibrada'} | Vigilância: ${dados.vigilancia || 'Normal'}`
                     ];
@@ -501,18 +525,18 @@ async function gerarRelatorioPDF() {
                         `Acertos Visuais: ${dados.acertosVisuais || 0} | Erros Visuais: ${dados.errosVisuais || 0} | Omissões Visuais: ${dados.omissoesVisuais || 0}`,
                         `Acertos Auditivos: ${dados.acertosAuditivos || 0} | Erros Auditivos: ${dados.errosAuditivos || 0} | Omissões Auditivas: ${dados.omissoesAuditivas || 0}`,
                         `Total: ${totalAcDiv} acertos | ${totalErrDiv} erros | ${totalOmDiv} omissões`,
-                        `Taxa de Acerto: ${(dados.taxaAcerto || 0).toFixed(1)}% | Tempo Médio: ${(dados.tempoMedio || 0).toFixed(0)}ms`
+                        `Taxa de Acerto: ${(dados.taxaAcerto || 0).toFixed(1)}% | Tempo Médio: ${_fmtSeg(dados.tempoMedio)}`
                     ];
                 } else if (teste === 'alternada') {
                     detalhes = [
                         `Acertos: ${dados.acertos || 0} | Erros: ${dados.erros || 0} | Omissões: ${dados.omissoes || 0}`,
-                        `Taxa de Acerto: ${(dados.taxaAcerto || 0).toFixed(1)}% | Tempo Médio: ${(dados.tempoMedio || 0).toFixed(0)}ms`,
+                        `Taxa de Acerto: ${(dados.taxaAcerto || 0).toFixed(1)}% | Tempo Médio: ${_fmtSeg(dados.tempoMedio)}`,
                         `Preferência: ${dados.preferencia || 'Não detectada'} | Flexibilidade: ${dados.flexibilidade || 'Normal'}`
                     ];
                 } else if (teste === 'sustentada') {
                     detalhes = [
                         `Acertos: ${dados.acertos || 0} | Erros: ${dados.erros || 0} | Omissões: ${dados.omissoes || 0}`,
-                        `Taxa de Acerto: ${(dados.taxaAcerto || 0).toFixed(1)}% | Tempo Médio: ${(dados.tempoMedio || 0).toFixed(0)}ms`,
+                        `Taxa de Acerto: ${(dados.taxaAcerto || 0).toFixed(1)}% | Tempo Médio: ${_fmtSeg(dados.tempoMedio)}`,
                         `Total de Alvos: ${dados.totalAlvos || 0} | Duração: ${dados.duracaoTeste || 0}s`,
                         `Negligências: ${dados.negligencias || 0} | Impulsividade: ${dados.impulsividade || 0}`
                     ];
@@ -668,36 +692,29 @@ async function gerarRelatorioPDF() {
             },
             {
                 text: [
-                    'AMERICAN PSYCHIATRIC ASSOCIATION. Manual diagnóstico e estatístico de transtornos mentais: DSM-5. 5. ed. Porto Alegre: Artmed, 2014.\n\n',
+                    'AMERICAN PSYCHIATRIC ASSOCIATION. Manual diagnóstico e estatístico de transtornos mentais: DSM-5-TR. 5. ed., texto revisado. Porto Alegre: Artmed, 2023.\n\n',
+                    'ANDERSON, P. Assessment and development of executive function (EF) during childhood. Child Neuropsychology, v. 8, n. 2, p. 71-82, 2002.\n\n',
                     'BANICH, M. T. The missing link: the role of interhemispheric interaction in attentional processing. Brain and Cognition, v. 36, n. 2, p. 128-157, 1998.\n\n',
                     'BARKLEY, R. A. Behavioral inhibition, sustained attention, and executive functions: constructing a unifying theory of ADHD. Psychological Bulletin, v. 121, n. 1, p. 65-94, 1997.\n\n',
-                    'BARKLEY, R. A. Attention-deficit hyperactivity disorder: a handbook for diagnosis and treatment. 4. ed. New York: Guilford Press, 2019.\n\n',
+                    'BARKLEY, R. A. (ed.). Attention-deficit hyperactivity disorder: a handbook for diagnosis and treatment. 4. ed. New York: Guilford Press, 2015.\n\n',
                     'CASTELLANOS, F. X. et al. Varieties of attention-deficit/hyperactivity disorder-related intra-individual variability. Biological Psychiatry, v. 57, n. 11, p. 1416-1423, 2005.\n\n',
                     'CORBETTA, M.; SHULMAN, G. L. Control of goal-directed and stimulus-driven attention in the brain. Nature Reviews Neuroscience, v. 3, n. 3, p. 201-215, 2002.\n\n',
-                    'FINKELMAN, M. D. et al. Computerized adaptive testing for measuring development and improvement of ability. Journal of Applied Psychology, v. 95, n. 6, p. 1076-1084, 2010.\n\n',
-                    'HEATON, R. K. et al. Reliability and validity of composite scores from the NIH Toolbox Cognition Battery in adults. Journal of the International Neuropsychological Society, v. 20, n. 6, p. 588-598, 2014.\n\n',
-                    'HOMMEL, B. The Simon effect as tool and heuristic. Acta Psychologica, v. 136, n. 2, p. 189-202, 2011.\n\n',
-                    'ISHIHARA, S. Tests for colour-blindness. Tokyo: Handaya Hongo Harukicho, 1917.\n\n',
-                    'KAIL, R. Developmental change in speed of processing during childhood and adolescence. Psychological Bulletin, v. 109, n. 3, p. 490-501, 1991.\n\n',
                     'KAHNEMAN, D. Attention and effort. Englewood Cliffs: Prentice-Hall, 1973.\n\n',
-                    'KORNBLUM, S. et al. Dimensional overlap: cognitive basis for stimulus-response compatibility effects - a model and taxonomy. Psychological Review, v. 97, n. 2, p. 253-270, 1990.\n\n',
+                    'KAIL, R. Developmental change in speed of processing during childhood and adolescence. Psychological Bulletin, v. 109, n. 3, p. 490-501, 1991.\n\n',
+                    'KORNBLUM, S. et al. Dimensional overlap: cognitive basis for stimulus-response compatibility - a model and taxonomy. Psychological Review, v. 97, n. 2, p. 253-270, 1990.\n\n',
                     'LEZAK, M. D. et al. Neuropsychological assessment. 5. ed. New York: Oxford University Press, 2012.\n\n',
                     'LUCE, R. D. Response times: their role in inferring elementary mental organization. New York: Oxford University Press, 1986.\n\n',
-                    'MALLOY-DINIZ, L. F. et al. Avaliação neuropsicológica. 2. ed. Porto Alegre: Artmed, 2018.\n\n',
+                    'MALLOY-DINIZ, L. F. et al. (org.). Avaliação neuropsicológica. 2. ed. Porto Alegre: Artmed, 2018.\n\n',
                     'MIYAKE, A. et al. The unity and diversity of executive functions and their contributions to complex frontal lobe tasks: a latent variable analysis. Cognitive Psychology, v. 41, n. 1, p. 49-100, 2000.\n\n',
-                    'PARASURAMAN, R. The attentive brain. Cambridge: MIT Press, 1998.\n\n',
+                    'PARASURAMAN, R. (ed.). The attentive brain. Cambridge: MIT Press, 1998.\n\n',
                     'POSNER, M. I.; PETERSEN, S. E. The attention system of the human brain. Annual Review of Neuroscience, v. 13, p. 25-42, 1990.\n\n',
                     'RATCLIFF, R. A theory of memory retrieval. Psychological Review, v. 85, n. 2, p. 59-108, 1978.\n\n',
-                    'RICCIO, C. A.; REYNOLDS, C. R. Continuous performance tests are sensitive to ADHD in adults but lack specificity: a review and critique for differential diagnosis. Archives of Clinical Neuropsychology, v. 16, n. 5, p. 445-463, 2001.\n\n',
+                    'RICCIO, C. A.; REYNOLDS, C. R. Continuous performance tests are sensitive to ADHD in adults but lack specificity: a review and critique for differential diagnosis. Annals of the New York Academy of Sciences, v. 931, n. 1, p. 113-139, 2001.\n\n',
                     'RICCIO, C. A. et al. The continuous performance test: a window on the neural substrates for attention? Archives of Clinical Neuropsychology, v. 17, n. 3, p. 235-272, 2002.\n\n',
                     'RIDDERINKHOF, K. R. et al. The role of the medial frontal cortex in cognitive control. Science, v. 306, n. 5695, p. 443-447, 2004.\n\n',
                     'SARTER, M.; GIVENS, B.; BRUNO, J. P. The cognitive neuroscience of sustained attention: where top-down meets bottom-up. Brain Research Reviews, v. 35, n. 2, p. 146-160, 2001.\n\n',
-                    'SALTHOUSE, T. A. The processing-speed theory of adult age differences in cognition. Psychological Review, v. 103, n. 3, p. 403-428, 1996.\n\n',
                     'STRAUSS, E.; SHERMAN, E. M. S.; SPREEN, O. A compendium of neuropsychological tests: administration, norms, and commentary. 3. ed. New York: Oxford University Press, 2006.\n\n',
-                    'TOPLAK, M. E. et al. Practitioner review: do performance-based measures and ratings of executive function assess the same construct? Journal of Child Psychology and Psychiatry, v. 54, n. 2, p. 131-143, 2013.\n\n',
-                    'WEISS, D. J.; KINGSBURY, G. G. Application of computerized adaptive testing to educational problems. Journal of Educational Measurement, v. 21, n. 4, p. 361-375, 1984.\n\n',
-                    'WEB CONTENT ACCESSIBILITY GUIDELINES (WCAG) 2.1. W3C Recommendation. World Wide Web Consortium, 2018. Disponível em: https://www.w3.org/WAI/WCAG21/Understanding/. Acesso em: 15 jan. 2025.',
-                    '\n\nANDERSON, P. Assessment and development of executive function (EF) during childhood. Child Neuropsychology, v. 8, n. 2, p. 71-82, 2002.'
+                    'TOPLAK, M. E.; WEST, R. F.; STANOVICH, K. E. Practitioner review: do performance-based measures and ratings of executive function assess the same construct? Journal of Child Psychology and Psychiatry, v. 54, n. 2, p. 131-143, 2013.'
                 ],
                 fontSize: 8,
                 alignment: 'justify'
@@ -860,7 +877,7 @@ function gerarPDFEmergencia() {
                             return [
                                 nomes[teste] || teste,
                                 `${(dados.taxaAcerto || 0).toFixed(1)}%`,
-                                `${(dados.tempoMedio || 0).toFixed(0)}ms`
+                                `${_fmtSeg(dados.tempoMedio)}`
                             ];
                         })
                     ]
