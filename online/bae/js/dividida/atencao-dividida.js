@@ -78,7 +78,16 @@ async function iniciarTesteDividida() {
         alert(_msg409);
         return;
       }
-    } catch(e) {}
+      // Fail-closed: qualquer resposta que nao seja sucesso (500, 404 etc.) bloqueia o inicio.
+      if (!_cr.ok) {
+        alert('N\u00e3o foi poss\u00edvel confirmar o cr\u00e9dito agora. Aguarde alguns segundos e clique em Iniciar novamente. Se persistir, avise seu avaliador.');
+        return;
+      }
+    } catch(e) {
+      // Fail-closed: sem confirmacao do credito (queda de rede) o teste nao inicia.
+      alert('Sem conex\u00e3o para confirmar o cr\u00e9dito. Verifique sua internet e clique em Iniciar novamente.');
+      return;
+    }
   }
   if (typeof marcarBypassados === 'function') marcarBypassados();
     if (window.dispositivoBAE) window.dispositivoBAE.iniciarTeste('dividida');

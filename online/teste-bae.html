@@ -127,6 +127,7 @@
     // ===== BAE ONLINE — LÓGICA DO TESTE =====
     var API_URL = 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
     var sessionData = {};
+    var _sessaoFalhaRede = false;
 
     // Preenche campos ocultos para os scripts do desktop (comum a ?s= e ?d=)
     function _preencherCamposBAE() {
@@ -160,7 +161,7 @@
         } else {
           document.body.innerHTML = '<div style="text-align:center;padding:50px;font-size:18px;color:#c62828;">Link inv\u00e1lido ou expirado.<br>Solicite um novo link ao seu avaliador.</div>';
         }
-      }).catch(function(){});
+      }).catch(function(e){ if (e && e.message === 'link_usado') return; _sessaoFalhaRede = true; });
     } else {
       try {
         var d = _params.get('d');
@@ -176,8 +177,14 @@
     (async function() {
       // No modo ?s= os dados chegam via fetch. Espera o sessionData ficar pronto.
       var _tent = 0;
-      while (!sessionData.sessionId && _tent < 50) { await new Promise(function(res){ setTimeout(res, 100); }); _tent++; }
-      if (!sessionData.sessionId) return;
+      while (!sessionData.sessionId && !_sessaoFalhaRede && _tent < 200 && document.getElementById('coverPage')) { await new Promise(function(res){ setTimeout(res, 100); }); _tent++; }
+      if (!sessionData.sessionId) {
+        // Pagina ainda intacta = nenhuma mensagem de link usado/invalido foi mostrada: avisa a falha de carregamento.
+        if (document.getElementById('coverPage')) {
+          document.body.innerHTML = '<div style="text-align:center;padding:50px;font-size:18px;color:#c62828;">N\u00e3o foi poss\u00edvel carregar o teste.<br>Verifique sua internet e tente novamente.<br><br><button style="padding:12px 26px;font-size:16px;border:none;border-radius:8px;background:#2e7d32;color:#fff;cursor:pointer;" onclick="location.reload()">Tentar novamente</button></div>';
+        }
+        return;
+      }
       try {
         var resp = await fetch(API_URL + '/session-status?sessionId=' + encodeURIComponent(sessionData.sessionId));
         var data = await resp.json();
@@ -301,7 +308,7 @@
       // Função para iniciar próximo teste da fila
       window.iniciarProximoTesteDaFila = function() {
         if (window.testeAtualIndex >= window.filaTestes.length) {
-          enviarResultados('completo').then(function() { mostrarTelaFinal(); });
+          _finalizarBateria();
           return;
         }
         var teste = window.filaTestes[window.testeAtualIndex];
@@ -348,9 +355,7 @@
       _origGerarPDF = window.gerarRelatorioPDF;
       window.gerarRelatorioPDF = async function() {
         // Envia resultados ao servidor
-        await enviarResultados('completo');
-        // Mostra tela final
-        mostrarTelaFinal();
+        await _finalizarBateria();
       };
     }, 3000);
 
@@ -370,13 +375,77 @@
       if (realizados.length >= testesEsperados.length) {
         clearInterval(testesObserver);
         setTimeout(async function() {
-          await enviarResultados('completo');
-          mostrarTelaFinal();
+          await _finalizarBateria();
         }, 5000);
       }
     }, 3000);
 
+    // Envio com nova tentativa (ate 3x) e verificacao real da resposta do servidor.
+    // fetch so da erro em queda de rede; resposta 500/403 precisa ser checada em resp.ok.
+    async function _fetchComRetry(url, opts) {
+      var _ultimo = null;
+      for (var _t = 1; _t <= 3; _t++) {
+        try {
+          var _r = await fetch(url, opts);
+          if (_r.ok) return _r;
+          _ultimo = new Error('HTTP ' + _r.status);
+          if (_r.status >= 400 && _r.status < 500) throw _ultimo; // erro do pedido: repetir nao adianta
+        } catch (e) {
+          _ultimo = e;
+          if (e && /^HTTP 4/.test(e.message || '')) break;
+        }
+        if (_t < 3) await new Promise(function(res){ setTimeout(res, 800 * _t); });
+      }
+      throw _ultimo || new Error('falha_envio');
+    }
+
+    // Envio final: so um 'completo' por vez e nunca repetido depois de confirmado.
+    var _envioCompletoPromise = null;
     async function enviarResultados(status) {
+      if (status === 'completo') {
+        if (_resultadosEnviados) return true;
+        if (_envioCompletoPromise) return _envioCompletoPromise;
+        _envioCompletoPromise = _enviarResultadosInterno(status).then(function(ok){ _envioCompletoPromise = null; return ok; });
+        return _envioCompletoPromise;
+      }
+      return _enviarResultadosInterno(status);
+    }
+
+    // Finaliza a bateria: so mostra a tela final se o servidor CONFIRMOU o recebimento.
+    var _telaFinalMostrada = false;
+    var _finalizandoBateria = false;
+    async function _finalizarBateria() {
+      if (_telaFinalMostrada || _finalizandoBateria) return;
+      _finalizandoBateria = true;
+      var ok = false;
+      try { ok = await enviarResultados('completo'); } finally { _finalizandoBateria = false; }
+      if (ok) {
+        _telaFinalMostrada = true;
+        var av = document.getElementById('avisoErroEnvioBAE');
+        if (av && av.parentNode) av.parentNode.removeChild(av);
+        mostrarTelaFinal();
+        return;
+      }
+      _mostrarErroEnvio();
+    }
+
+    function _mostrarErroEnvio() {
+      if (document.getElementById('avisoErroEnvioBAE')) return;
+      var d = document.createElement('div');
+      d.id = 'avisoErroEnvioBAE';
+      d.style.cssText = 'position:fixed;left:0;top:0;right:0;bottom:0;z-index:99999;background:rgba(0,0,0,0.75);display:flex;align-items:center;justify-content:center;padding:20px;';
+      d.innerHTML = '<div style="background:#fff;border-radius:12px;max-width:480px;padding:28px;text-align:center;font-family:Arial,sans-serif;">' +
+        '<h2 style="color:#c62828;margin:0 0 12px;">N\u00e3o foi poss\u00edvel enviar os resultados</h2>' +
+        '<p style="font-size:16px;color:#444;line-height:1.5;">Seus resultados est\u00e3o guardados nesta tela. Verifique a internet e clique em tentar novamente. <strong>N\u00e3o feche esta janela.</strong></p>' +
+        '<button id="btnReenviarBAE" style="margin-top:12px;padding:12px 28px;font-size:16px;border:none;border-radius:8px;background:#2e7d32;color:#fff;cursor:pointer;">Tentar novamente</button></div>';
+      document.body.appendChild(d);
+      document.getElementById('btnReenviarBAE').onclick = function() {
+        var b = this; b.disabled = true; b.textContent = 'Enviando...';
+        _finalizarBateria().then(function(){ b.disabled = false; b.textContent = 'Tentar novamente'; });
+      };
+    }
+
+    async function _enviarResultadosInterno(status) {
       try {
         var r = window.resultadosBAE || {};
         var dispInfo = window.dispositivoBAE ? window.dispositivoBAE.obterRelatorioCompleto() : null;
@@ -392,7 +461,7 @@
           for (var _i = 0; _i < _raw.length; _i++) _h = ((_h << 5) + _h) + _raw.charCodeAt(_i);
           _idPac = 'P' + Math.abs(_h).toString(36).toUpperCase();
         }
-        await fetch(API_URL + '/save-result', {
+        await _fetchComRetry(API_URL + '/save-result', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -419,8 +488,10 @@
         });
         if (status === 'completo') _resultadosEnviados = true;
         console.log('✅ Resultados BAE enviados ao servidor');
+        return true;
       } catch(e) {
         console.error('❌ Erro ao enviar resultados:', e);
+        return false;
       }
     }
 
@@ -505,7 +576,14 @@
       _enviarColetaAnonimaAbandono(); // coleta anonima dos subtestes concluidos (se houver)
       if (_resultadosEnviados) return; // já enviou como completo, não sobrescrever
       var r = window.resultadosBAE || {};
+      // Fechou a janela no meio de um subteste: registra ESSE subteste como ABANDONADO (mesmo formato do bypass/abandono manual).
+      var _ativo = window._baeSubtesteAtivo;
+      if (_ativo && !r[_ativo]) {
+        r[_ativo] = { statusTeste: 'ABANDONADO', abandonado: true, acertos: 0, erros: 0, omissoes: 0, taxaAcerto: 0, tempoMedio: 0 };
+        window.resultadosBAE = r;
+      }
       var realizados = ['concentrada','seletiva','dividida','alternada','sustentada'].filter(function(t) { return r[t]; });
+      var _espUnload = window.filaTestes || ['concentrada','seletiva','dividida','alternada','sustentada'];
       if (realizados.length > 0) {
         var dispInfo = window.dispositivoBAE ? window.dispositivoBAE.obterRelatorioCompleto() : null;
         navigator.sendBeacon(API_URL + '/save-result', JSON.stringify({
@@ -524,7 +602,7 @@
             dispositivo: dispInfo,
             dispositivoInformado: (document.querySelector('input[name="dispositivo"]:checked') || {}).value || 'nao informado',
             userAgent: navigator.userAgent,
-            status: 'abandonado',
+            status: (realizados.length >= _espUnload.length ? 'completo' : 'abandonado'),
             date: new Date().toISOString()
           }
         }));

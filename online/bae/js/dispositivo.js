@@ -36,6 +36,10 @@ window.dispositivoBAE = (function() {
 
     function iniciarTeste(nome) {
         testeAtual = nome;
+        // Marca que um subteste comecou (credito ja cobrado). Usado pelo teste-bae.html para
+        // avisar o servidor se a janela fechar antes de qualquer subteste terminar.
+        window._baeSubtesteIniciado = true;
+        window._baeSubtesteAtivo = nome;
         if (!interacoes[nome]) interacoes[nome] = { teclado: 0, touch: 0, temposTeclado: [], temposTouch: [] };
     }
 
