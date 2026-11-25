@@ -18739,6 +18739,26 @@
         return;
       }
 
+      // ETDAH-PAIS: desenho sob medida (escalas/etdah-pais-visual.js), a partir dos dominios salvos (percentil, bruto, classificacao).
+      if (String(d.escala || '').toUpperCase() === 'ETDAH-PAIS' && d.dominios && !r._semPdfNovo) {
+        var _gerEP = function () {
+          var _okEP = false;
+          try { _okEP = window.SYM_ETDAHP.pdfPainel(d, r); } catch (eEP) {
+            if (typeof window._registrarFalhaPDF === 'function') { try { window._registrarFalhaPDF('gerarPDFEscala(ETDAH-PAIS)', (eEP && eEP.message) || String(eEP), d.paciente || ''); } catch (xEP) {} }
+          }
+          if (!_okEP) { r._semPdfNovo = true; gerarPDFEscala(idx); }
+        };
+        if (window.SYM_ETDAHP && window.SYM_ETDAHP.pdfPainel) { _gerEP(); }
+        else {
+          var _sEP = document.createElement('script');
+          _sEP.src = '../escalas/etdah-pais-visual.js?v=' + Date.now();
+          _sEP.onload = _gerEP;
+          _sEP.onerror = function () { r._semPdfNovo = true; gerarPDFEscala(idx); };
+          document.body.appendChild(_sEP);
+        }
+        return;
+      }
+
       // ISI: desenho sob medida (escalas/isi-visual.js), refeito pelas respostas salvas (d.respostas). Tela e PDF vem dos mesmos blocos.
       if (String(d.escala || '').toUpperCase() === 'ISI' && d.respostas && !r._semPdfNovo) {
         var _gerISI = function () {
