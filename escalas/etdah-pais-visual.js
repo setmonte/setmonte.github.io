@@ -19,6 +19,9 @@
     {alto: 'Preju\u00edzos em fun\u00e7\u00f5es executivas como iniciativa, alerta, engajamento e persist\u00eancia em tarefas. Dificuldade em atividades que exijam aten\u00e7\u00e3o sustentada e em reter informa\u00e7\u00f5es importantes. Baixo desempenho na finaliza\u00e7\u00e3o de tarefas, com aparente falta de responsabilidade e procrastina\u00e7\u00e3o.',
      baixo: 'Boa capacidade atencional, persist\u00eancia do esfor\u00e7o, capacidade para engajar-se em tarefas mantendo a motiva\u00e7\u00e3o do in\u00edcio ao fim, com comprometimento e responsabilidade.'}
   ];
+  var ITENS = [[{"t":"\u00c9 sens\u00edvel"},{"t":"\u00c9 agressivo"},{"t":"Muda facilmente de humor"},{"t":"Tem dificuldades para se adaptar \u00e0s mudan\u00e7as"},{"t":"Implica com tudo"},{"t":"Tem fortes rea\u00e7\u00f5es emocionais (explos\u00f5es de raiva)"},{"t":"Faz birra quando quer algo"},{"t":"Sente-se infeliz"},{"t":"D\u00e1 a impress\u00e3o de estar sempre insatisfeito (nada o agrada)"},{"t":"Implica com os irm\u00e3os"},{"t":"\u00c9 irritadi\u00e7o (tudo o incomoda)"},{"t":"\u00c9 rebelde (n\u00e3o aceita nada)"},{"t":"As atividades e reuni\u00f5es familiares s\u00e3o desagrad\u00e1veis"},{"t":"Todos t\u00eam que fazer o que ele quer"},{"t":"Mostra-se tenso e r\u00edgido"},{"t":"Explode com facilidade (\u00e9 do tipo pavio curto)"},{"t":"Exige mais tempo e aten\u00e7\u00e3o dos pais do que os outros filhos"},{"t":"A hora de acordar e das refei\u00e7\u00f5es \u00e9 desagrad\u00e1vel"},{"t":"Faz amizade, mas n\u00e3o consegue mant\u00ea-la"}],[{"t":"Movimenta-se muito (parece estar ligado com um motor ou a todo vapor)"},{"t":"\u00c9 inquieto e agitado"},{"t":"Tem sempre muita pressa"},{"t":"Mexe-se e contorce-se durante as refei\u00e7\u00f5es e para realizar as tarefas de casa"},{"t":"Age sem pensar (\u00e9 impulsivo)"},{"t":"Responde antes de ouvir a pergunta inteira"},{"t":"\u00c9 imprudente"},{"t":"\u00c9 persistente e insiste diante de uma ideia"},{"t":"\u00c9 inconsequente (n\u00e3o considera os perigos da situa\u00e7\u00e3o)"},{"t":"Intromete-se em assuntos que n\u00e3o lhe dizem respeito"},{"t":"Irrita os outros com suas palha\u00e7adas"},{"t":"Faz os deveres escolares r\u00e1pido demais"},{"t":"Tende a discordar com as regras e normas de jogos"}],[{"t":"A crian\u00e7a permite que o ambiente familiar seja tranquilo e harmonioso","i":1},{"t":"Obedece aos pais e \u00e0s normas da casa","i":1},{"t":"Consegue expressar claramente os seus pensamentos","i":1},{"t":"Sabe aguardar sua vez (\u00e9 paciente)","i":1},{"t":"Aceita facilmente regras, normas e limites","i":1},{"t":"Fala pouco","i":1},{"t":"\u00c9 atento quando conversa com algu\u00e9m","i":1},{"t":"Parece ser uma crian\u00e7a/adolescente tranquila e sossegada","i":1},{"t":"\u00c9 tolerante, quando preciso","i":1},{"t":"Faz as coisas com muito cuidado, prevendo todos os riscos de suas a\u00e7\u00f5es","i":1},{"t":"Faz suas tarefas e almo\u00e7a com bastante tranquilidade","i":1},{"t":"Seu comportamento \u00e9 adequado socialmente","i":1},{"t":"Respeita normas e regras","i":1},{"t":"\u00c9 obediente","i":1}],[{"t":"\u00c9 independente para realizar as suas tarefas de casa","i":1},{"t":"\u00c9 distra\u00eddo com quase tudo"},{"t":"Parece sonhar acordado (estar no mundo da lua)"},{"t":"Inicia uma atividade com entusiasmo e dificilmente chega ao final (\u00e9 do tipo fogo de palha)"},{"t":"Mostra-se concentrado apenas em atividades de seu interesse"},{"t":"Tem dificuldade para realizar as coisas importantes (li\u00e7\u00e3o, por exemplo)"},{"t":"D\u00e1 a impress\u00e3o de que n\u00e3o ouve bem (s\u00f3 escuta o que quer)"},{"t":"Evita atividades que exigem esfor\u00e7o mental constante (deveres escolares, jogos)"},{"t":"Esquece r\u00e1pido o que acabou de ser dito"},{"t":"Dificilmente observa detalhes"},{"t":"N\u00e3o termina o que come\u00e7a"},{"t":"Ocorrem discuss\u00f5es entre os pais e a crian\u00e7a, em fun\u00e7\u00e3o da falta de responsabilidade e da falta de senso de dever"}]];
+  var OPC_ROT = ['Nunca', 'Muito pouco', 'Pouco', 'Geralmente', 'Frequentemente', 'Muito frequentemente'];
+  var COR_FATOR = ['#c62828', '#e65100', '#2e7d32', '#1565c0'];
   var ROTULOS_CURTOS = ['Regula\u00e7\u00e3o Emocional', 'Hiperatividade/Impulsividade', 'Comportamento Adaptativo', 'Aten\u00e7\u00e3o', 'ESCORE GERAL'];
 
   function rgb(hx) { hx = hx.replace('#', ''); return [parseInt(hx.substr(0, 2), 16), parseInt(hx.substr(2, 2), 16), parseInt(hx.substr(4, 2), 16)]; }
@@ -154,11 +157,11 @@
     var nota = doc.splitTextToSize('O percentil indica a posi\u00e7\u00e3o do escore em rela\u00e7\u00e3o ao grupo normativo de mesmo sexo e faixa et\u00e1ria. Percentis mais altos indicam maior intensidade de indicadores de dificuldade no fator.', W);
     doc.text(nota, ML, y + 10);
     // ---------- PAGINA 2+ : interpretacao ----------
-    function novaPagina() {
+    function novaPagina(tit) {
       doc.addPage();
       F(doc, AC); doc.rect(0, 0, 210, 16, 'F');
       T(doc, '#ffffff'); doc.setFont(undefined, 'bold'); doc.setFontSize(11);
-      doc.text('ETDAH-PAIS - Interpreta\u00e7\u00e3o dos resultados', ML, 10.5);
+      doc.text('ETDAH-PAIS - ' + (tit || 'Interpreta\u00e7\u00e3o dos resultados'), ML, 10.5);
       doc.setFont(undefined, 'normal'); doc.setFontSize(8.5);
       doc.text(curto(doc, d.paciente || '', 70), 195, 10.5, {align: 'right'});
       return 26;
@@ -179,6 +182,57 @@
       T(doc, '#33475b'); doc.setFontSize(8.5);
       for (k = 0; k < linhas.length; k++) { doc.text(linhas[k], ML + 6, y + 16.5 + k * 4.1); }
       y += h + 4;
+    }
+
+    // ---------- RESPOSTAS DO RESPONDENTE ----------
+    var rsp = d.respostas;
+    if (rsp && ITENS.length === 4) {
+      var TIT = 'Respostas do respondente';
+      var colHead = function (yy) {
+        F(doc, '#e3f2fd'); doc.rect(ML, yy, W, 6.5, 'F');
+        T(doc, '#33475b'); doc.setFont(undefined, 'bold'); doc.setFontSize(7.5);
+        doc.text('N\u00ba', ML + 3, yy + 4.4);
+        doc.text('ITEM', ML + 13, yy + 4.4);
+        doc.text('RESPOSTA MARCADA', 128, yy + 4.4);
+        doc.text('PONTOS', ML + W - 3, yy + 4.4, {align: 'right'});
+        return yy + 6.5;
+      };
+      y = novaPagina(TIT);
+      T(doc, '#6b7b8c'); doc.setFont(undefined, 'italic'); doc.setFontSize(7.5);
+      doc.text('Valores marcados pelo respondente (1 a 6). Nos itens invertidos (inv), a pontua\u00e7\u00e3o \u00e9 7 menos a resposta marcada.', ML, y - 2);
+      y = colHead(y + 2);
+      var nIt = 0;
+      for (var fx = 0; fx < 4; fx++) {
+        if (y + 14 > 278) { y = novaPagina(TIT); y = colHead(y); }
+        var dmf = doms[nomes[fx]] || {};
+        F(doc, COR_FATOR[fx]); doc.rect(ML, y, W, 6.5, 'F');
+        T(doc, '#ffffff'); doc.setFont(undefined, 'bold'); doc.setFontSize(8.5);
+        doc.text(nomes[fx], ML + 3, y + 4.5);
+        doc.text('Soma do fator: ' + (dmf.pontuacao != null ? dmf.pontuacao : '-'), ML + W - 3, y + 4.5, {align: 'right'});
+        y += 6.5;
+        for (var ix = 0; ix < ITENS[fx].length; ix++) {
+          nIt++;
+          var it = ITENS[fx][ix];
+          var vv = parseInt(rsp[nIt], 10);
+          var okv = vv >= 1 && vv <= 6;
+          var ls = doc.splitTextToSize(it.t, 100);
+          var hr = Math.max(6.2, ls.length * 3.8 + 2.6);
+          if (y + hr > 280) { y = novaPagina(TIT); y = colHead(y); }
+          if (ix % 2 === 1) { F(doc, '#f6f9fc'); doc.rect(ML, y, W, hr, 'F'); }
+          T(doc, '#6b7b8c'); doc.setFont(undefined, 'bold'); doc.setFontSize(8);
+          doc.text(String(nIt), ML + 3, y + 4.2);
+          T(doc, '#1f2d3a'); doc.setFont(undefined, 'normal'); doc.setFontSize(8);
+          for (var lk = 0; lk < ls.length; lk++) { doc.text(ls[lk], ML + 13, y + 4.2 + lk * 3.8); }
+          doc.setFont(undefined, 'bold');
+          doc.text(okv ? (vv + ' - ' + OPC_ROT[vv - 1]) : '-', 128, y + 4.2);
+          doc.setFont(undefined, 'normal');
+          var pts = okv ? (it.i ? 7 - vv : vv) : '-';
+          doc.text(pts + (it.i ? ' (inv)' : ''), ML + W - 3, y + 4.2, {align: 'right'});
+          y += hr;
+        }
+        y += 3;
+      }
+      y += 2;
     }
     if (d.aviso) {
       var la = doc.splitTextToSize('Observa\u00e7\u00e3o: ' + d.aviso, W - 8);
