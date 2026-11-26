@@ -3495,6 +3495,7 @@
   <script src="bae/js/bae-ai.js"></script>
   <script src="bae-pdf-online.js"></script>
   <script>
+function _trmvIR(d){var r1=(d.reconhecimento1||{}).acertos,r2=(d.reconhecimento2||{}).acertos,ir=null,g=0;if(d.irPercentual!=null){ir=d.irPercentual;g=d.ganhoPercentual||0;}else if(r1>0&&r2!=null){ir=Math.round(Math.min(r1,r2)/r1*100);g=r2>r1?Math.round((r2-r1)/r1*100):0;}var txt=ir!==null?(ir+'%'+(g>0?' (+'+g+'% ganho)':'')):(d.indiceRetencao!=null?((Math.round(d.indiceRetencao)>0?'+':'')+Math.round(d.indiceRetencao)):'-');return {ir:ir,ganho:g,txt:txt};}
     window._isOnlineTest = true;
     // Configuracao
     var API_URL = 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws';
@@ -6510,7 +6511,7 @@
           return 'BAE(' + dateStr + ':' + taxa + ')';
         }
         if (tipo === 'trmv') {
-          var ret = d.indiceRetencao != null ? (Math.round(d.indiceRetencao) > 0 ? '+' : '') + Math.round(d.indiceRetencao) : '-';
+          var ret = d.indiceRetencao != null ? _trmvIR(d).txt : '-';
           return 'TRMV(' + dateStr + ':' + ret + ')';
         }
         if (tipo === 'taav') {
@@ -9779,7 +9780,7 @@
             }
             else if (tipo === 'trmv') {
               var trmvP = [];
-              if (d.indiceRetencao != null) trmvP.push('Ret:' + (Math.round(d.indiceRetencao) > 0 ? '+' : '') + Math.round(d.indiceRetencao));
+              if (d.indiceRetencao != null) trmvP.push('Ret:' + _trmvIR(d).txt);
               if (d.acertos !== undefined) trmvP.push('Ac:' + d.acertos);
               if (d.erros !== undefined) trmvP.push('Err:' + d.erros);
               if (d.omissoes !== undefined) trmvP.push('Om:' + d.omissoes);
@@ -10078,7 +10079,7 @@
           } else { resultado = d.status || '-'; }
         }
         else if (r.tipo === 'trmv') {
-          resultado = d.indiceRetencao != null ? 'Retencao: ' + (Math.round(d.indiceRetencao) > 0 ? '+' : '') + Math.round(d.indiceRetencao) : (d.status||'-');
+          resultado = d.indiceRetencao != null ? 'Retencao: ' + _trmvIR(d).txt : (d.status||'-');
           var tp = [];
           if (d.acertos !== undefined) tp.push('Acertos: ' + d.acertos);
           if (d.erros !== undefined) tp.push('Erros: ' + d.erros);
@@ -13186,7 +13187,7 @@
       else if (tp === 'trmv' || tp === 'taav') {
         var mp = [];
         if (d.indiceRetencao != null) {
-          if (tp === 'trmv') mp.push('Retencao: ' + (Math.round(d.indiceRetencao) > 0 ? '+' : '') + Math.round(d.indiceRetencao));
+          if (tp === 'trmv') mp.push('Retencao: ' + _trmvIR(d).txt);
           else mp.push('Retencao: ' + Math.round(d.indiceRetencao) + '%');
         }
         if (d.acertos != null) mp.push('Acertos: ' + d.acertos);
@@ -20484,7 +20485,7 @@
             var rec2 = d.reconhecimento2 || {};
             var acertos1 = rec1.acertos != null ? rec1.acertos : '-';
             var acertos2 = rec2.acertos != null ? rec2.acertos : '-';
-            var retencao = d.indiceRetencao != null ? (Math.round(d.indiceRetencao) > 0 ? '+' : '') + Math.round(d.indiceRetencao) : '-';
+            var retencao = d.indiceRetencao != null ? _trmvIR(d).txt : '-';
             html += '<tr>';
             html += '<td><input type="checkbox" class="trmv-result-check" data-idx="' + _trmvResultCache.length + '"></td>';
             html += '<td>' + date + '</td>';
@@ -20548,7 +20549,7 @@
           'AF2': rec2.alarmesFalsos != null ? rec2.alarmesFalsos : '',
           'Omissoes2': rec2.omissoes != null ? rec2.omissoes : '',
           'Tempo2': rec2.tempoResposta ? (rec2.tempoResposta / 1000).toFixed(1) + 's' : '',
-          'IndiceRetencao(dif)': d.indiceRetencao != null ? (Math.round(d.indiceRetencao) > 0 ? '+' : '') + Math.round(d.indiceRetencao) : ''
+          'IndiceRetencao': d.indiceRetencao != null ? _trmvIR(d).txt : ''
         });
       });
       var ws = XLSX.utils.json_to_sheet(rows);
@@ -20576,8 +20577,8 @@
           'Estimulos: ' + totalAlvos + ' poligonos abstratos (contorno), Intervalo retencao: 60s\n' +
           '1o Reconhecimento: Acertos=' + (rec1.acertos||0) + '/' + totalAlvos + ', AF=' + (rec1.alarmesFalsos||0) + ', Omissoes=' + (rec1.omissoes||0) + ', Tempo=' + (rec1.tempoResposta ? (rec1.tempoResposta/1000).toFixed(1)+'s' : 'N/I') + '\n' +
           '2o Reconhecimento: Acertos=' + (rec2.acertos||0) + '/' + totalAlvos + ', AF=' + (rec2.alarmesFalsos||0) + ', Omissoes=' + (rec2.omissoes||0) + ', Tempo=' + (rec2.tempoResposta ? (rec2.tempoResposta/1000).toFixed(1)+'s' : 'N/I') + '\n' +
-          'Indice de Retencao (DIFERENCA = Acertos 2o - Acertos 1o): ' + (Math.round(indiceRetencao) > 0 ? '+' : '') + Math.round(indiceRetencao) + ' pontos\n\n' +
-          'INSTRUCOES: Portugues brasileiro. O Indice de Retencao e a DIFERENCA entre os acertos do 2o e do 1o reconhecimento (NAO e porcentagem). ' +
+          'Indice de Retencao (IR): ' + _trmvIR(d).txt + ' | Diferenca (Acertos 2o - Acertos 1o): ' + (Math.round(indiceRetencao) > 0 ? '+' : '') + Math.round(indiceRetencao) + ' pontos\n\n' +
+          'INSTRUCOES: Portugues brasileiro. O Indice de Retencao (IR) e a porcentagem dos acertos do 1o reconhecimento mantida no 2o (1o = 100%, limitado a 100%); o que excede e informado como ganho por reexposicao. Use a Diferenca para julgar perda. ' +
           'Valor positivo ou zero indica retencao preservada; em teste de reconhecimento, acertar mais no 2o e esperado (efeito de reexposicao ao painel) e NAO deve ser interpretado como sobrecarga ou piora. ' +
           'Valor negativo indica decaimento/esquecimento (perda de 1 ou 2 figuras e flutuacao esperada; perda de 3 ou mais e decaimento significativo). ' +
           'Interprete clinicamente os circuitos cerebrais envolvidos ' +
@@ -20659,7 +20660,7 @@
       // negativo = decaimento. -1 ou -2 = leve; <= -3 = significativo.
       var _dif = Math.round(indiceRetencao);
       var indTxt = (_dif > 0 ? '+' + _dif : String(_dif)) + (Math.abs(_dif) === 1 ? ' ponto' : ' pontos');
-      doc.text('Indice: ' + indTxt + '  (Acertos 2o - Acertos 1o = ' + (rec2.acertos != null ? rec2.acertos : 0) + ' - ' + (rec1.acertos != null ? rec1.acertos : 0) + ')', ml, y); y += 6;
+      doc.text('IR: ' + _trmvIR(d).txt + '  (1o reconhecimento = 100%; acertos 1o = ' + (rec1.acertos != null ? rec1.acertos : 0) + ', 2o = ' + (rec2.acertos != null ? rec2.acertos : 0) + '; diferenca ' + indTxt + ')', ml, y); y += 6;
       var classif = '';
       if ((rec1.acertos || 0) === 0 && (rec2.acertos || 0) === 0) classif = 'Sem reconhecimento em nenhum dos momentos - investigar codificacao';
       else if (_dif >= 1) classif = 'Retencao preservada - manteve ou ampliou o reconhecimento (possivel reexposicao)';
