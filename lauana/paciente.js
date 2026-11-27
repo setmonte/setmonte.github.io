@@ -16,7 +16,7 @@
     var base = eu ? eu.replace(/[^\/]*$/, '') : 'https://setmonte.github.io/lauana/';
     window.LAUANA_CONFIG = { modo: 'paciente', esconderAoComecar: 'input[type=radio],input[type=checkbox]' };
     var s = document.createElement('script');
-    s.src = base + 'lauana.js?v=7';
+    s.src = base + 'lauana.js?v=8';
     (document.body || document.documentElement).appendChild(s);
   } catch (e) {}
 })();

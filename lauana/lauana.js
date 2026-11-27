@@ -756,11 +756,11 @@
 
   // A pagina chama isto quando termina de gravar (ok = true/false)
   L.resultadoGravacao = function (E, ok, tipo, dados) {
-    if (E.idioma && E.idioma !== 'pt' && L.i18n && L.i18n[E.idioma]) {          // visitante estrangeiro: confirma no idioma dele
-      var t = L.i18n[E.idioma];
-      if (ok) { E.flow = null; E.gravados++; return resp(t.recado_ok.slice(), [], { id: 'gravou', neutro: true }); }
+    if (E.idioma && E.idioma !== 'pt' && L.i18n && L.i18n.en) {          // visitante estrangeiro: confirma no idioma dele (en/es direto; os outros: base em ingles + IA traduz)
+      var t = L.i18n[E.idioma] || L.i18n.en, ex = L.i18n[E.idioma] ? {} : { traduzir: E.idioma };
+      if (ok) { E.flow = null; E.gravados++; return resp(t.recado_ok.slice(), [], Object.assign({ id: 'gravou', neutro: true }, ex)); }
       E.flow = { tipo: 'reenviar', passo: 'r', dados: Object.assign({ tipoGravacao: tipo }, dados || {}) };
-      return resp(t.recado_falhou.slice(), [E.idioma === 'en' ? 'Try again' : 'Reintentar', E.idioma === 'en' ? 'Cancel' : 'Cancelar'], { id: 'falhou', neutro: true });
+      return resp(t.recado_falhou.slice(), [E.idioma === 'es' ? 'Reintentar' : 'Try again', E.idioma === 'es' ? 'Cancelar' : 'Cancel'], Object.assign({ id: 'falhou', neutro: true }, ex));
     }
     if (ok) {
       E.flow = null; E.gravados++;
@@ -1209,6 +1209,7 @@
 
   // ---- textos ESTAVEIS ja traduzidos (revisar antes de publicar) ----
   var T = L.i18n;
+  function TT(id) { return T[id] || T.en; }     // idiomas alem de en/es: base em ingles, traduzida pela IA (r.traduzir)
   T.en.saud = { dia: 'Good morning', tarde: 'Good afternoon', noite: 'Good evening' };
   T.es.saud = { dia: 'Buenos d\u00edas', tarde: 'Buenas tardes', noite: 'Buenas noches' };
   T.en.abertura = function (s) { return [s + '! \ud83d\ude0a I\'m Lauana, the virtual assistant of this site.']; };
@@ -1255,6 +1256,8 @@
   T.es.recado_ok = ['\u00a1Mensaje guardado! \ud83d\udc9a S\u00e9rgio lo leer\u00e1. Si es urgente, WhatsApp es m\u00e1s r\u00e1pido: ' + W + '.'];
   T.en.recado_falhou = ['Sorry, I could not send it right now, probably the connection. Your message is not lost: it is still here. Shall I try again? You can also use WhatsApp: ' + W + '.'];
   T.es.recado_falhou = ['Lo siento, no pude enviarlo ahora, probablemente la conexi\u00f3n. Tu mensaje no se perdi\u00f3: sigue aqu\u00ed. \u00bfLo intento de nuevo? Tambi\u00e9n puedes usar WhatsApp: ' + W + '.'];
+  T.en.trad_falhou = 'I could not translate this reply into your language right now. S\u00e9rgio can help on WhatsApp ' + W + '.';
+  T.es.trad_falhou = 'No pude traducir esta respuesta a tu idioma ahora. S\u00e9rgio puede ayudar por WhatsApp ' + W + '.';
   T.en.recado_pede = ['Sure! Please write your message for S\u00e9rgio (any language is fine).'];
   T.es.recado_pede = ['\u00a1Claro! Escribe tu mensaje para S\u00e9rgio (cualquier idioma sirve).'];
   T.en.recado_contato = ['Optional: leave an e-mail or WhatsApp so he can reply (or type "skip").']; T.es.recado_contato = ['Opcional: deja un correo o WhatsApp para que \u00e9l responda (o escribe "omitir").'];
@@ -1272,14 +1275,16 @@
     return null;
   }
   function chaveHora(h) { var s = L.saudacaoHora(h); return s === 'Bom dia' ? 'dia' : (s === 'Boa tarde' ? 'tarde' : 'noite'); }
-  function traduzChips(chips, id) { var m = T[id].chips; return (chips || []).map(function (c) { return m[c] || c; }); }
+  function traduzChips(chips, id) { var m = TT(id).chips; return (chips || []).map(function (c) { return m[c] || c; }); }
 
   // abertura quando o navegador esta em ingles/espanhol (home)
   L.aberturaIdioma = function (E, id, hora) {
-    E.idioma = id; E.gate = 'pendente';
-    return resp(T[id].abertura(T[id].saud[chaveHora(hora)]).concat(T[id].gate), T[id].chipsGate, { id: 'abertura-' + id, neutro: true });
+    var d0 = TT(id); E.idioma = id; E.gate = 'pendente'; E.gatePerguntado = true;
+    var ra = resp(d0.abertura(d0.saud[chaveHora(hora)]).concat(d0.gate), d0.chipsGate, { id: 'abertura-' + id, neutro: true });
+    if (!T[id]) { ra.traduzir = id; }
+    return ra;
   };
-  function perguntaGate(E) { return resp(T[E.idioma].gate, T[E.idioma].chipsGate, { id: 'gate', neutro: true }); }
+  function perguntaGate(E) { return resp(TT(E.idioma).gate, TT(E.idioma).chipsGate, { id: 'gate', neutro: true }); }
 
   // roda o motor normal (em portugues) e adapta a resposta para o idioma do visitante
   function responder(texto, E, modo) {
@@ -1287,7 +1292,7 @@
     return adaptar(r, E, texto);
   }
   function adaptar(r, E, texto) {
-    var id = E.idioma, d = T[id];
+    var id = E.idioma, d = TT(id);
     if (r.acao === 'fluxo' || (E.flow && E.flow.tipo === 'recado')) { E.flow = null; return iniciarRecadoEstrangeiro(E); }
     if (IDS_EMERGENCIA.indexOf(r.id) >= 0) { r.msgs = d.emergencia.slice(); r.chips = []; return r; }
     if (IDS_DINHEIRO.indexOf(r.id) >= 0) {
@@ -1302,15 +1307,15 @@
     return r;
   }
   function iniciarRecadoEstrangeiro(E) {
-    if (L.config.gravar === false) { return resp(T[E.idioma].id.contato_sergio.slice(), traduzChips(['Falar com o S\u00e9rgio'], E.idioma), { id: 'recado-sem-gravar', neutro: true }); }
+    if (L.config.gravar === false) { return resp(TT(E.idioma).id.contato_sergio.slice(), traduzChips(['Falar com o S\u00e9rgio'], E.idioma), { id: 'recado-sem-gravar', neutro: true }); }
     E.idFlow = { passo: 'texto', dados: { motivo: 'Visitante estrangeiro (' + E.idioma + ')' + (E.gate === 'nao' ? ' - interesse em outro idioma' : ''), idioma: E.idioma } };
-    return resp(T[E.idioma].recado_pede, [], { id: 'recado-' + E.idioma, neutro: true });
+    return resp(TT(E.idioma).recado_pede, [], { id: 'recado-' + E.idioma, neutro: true });
   }
   function fluxoRecado(texto, n, E) {
     var f = E.idFlow, d = f.dados, t = String(texto).replace(/[<>]/g, '').trim().slice(0, 500);
     if (f.passo === 'texto') {
-      if (t.length < 3) { return resp(T[E.idioma].recado_pede, [], { neutro: true }); }
-      d.texto = t; f.passo = 'contato'; return resp(T[E.idioma].recado_contato, [], { neutro: true });
+      if (t.length < 3) { return resp(TT(E.idioma).recado_pede, [], { neutro: true }); }
+      d.texto = t; f.passo = 'contato'; return resp(TT(E.idioma).recado_contato, [], { neutro: true });
     }
     d.contato = (['skip', 'omitir', 'pular', 'no', 'nao'].indexOf(n) >= 0) ? '' : t.slice(0, 60);
     if (E.nome && !d.nome) { d.nome = E.nome; }
@@ -1324,34 +1329,35 @@
   L.tratarIdioma = function (texto, n, E, modo) {
     if (E._interno) { return null; }
     if (E.idFlow) { return fluxoRecado(texto, n, E); }
-    var det = L.detectarIdioma(texto, E.idioma || 'pt');
+    var traduzida = !!E._traduzida; E._traduzida = false;      // o texto ja veio traduzido para portugues pela IA (idioma alem de en/es)
+    var det = traduzida ? E.idioma : L.detectarIdioma(texto, E.idioma || 'pt');
     // sofrimento: responde NA HORA no idioma da pessoa, sem passar pelo aviso de idioma
-    var idEmerg = EMERG_EN.test(n) ? 'en' : (EMERG_ES.test(n) ? 'es' : '');
+    var idEmerg = traduzida ? '' : (EMERG_EN.test(n) ? 'en' : (EMERG_ES.test(n) ? 'es' : ''));
     if (idEmerg) { E.idioma = idEmerg; return resp(T[idEmerg].emergencia.slice(), [], { id: 'emocional', neutro: true }); }
     if (det === 'pt') {
       if (E.idioma && E.idioma !== 'pt') { E.idioma = 'pt'; }     // voltou a escrever em portugues
       return null;
     }
-    var primeira = (E.idioma !== det);
-    E.idioma = det;
     if (!E.gate) { E.gate = (modo === 'paciente') ? 'ok' : 'pendente'; }
+    var primeira = (E.idioma !== det) || (E.gate === 'pendente' && !E.gatePerguntado);
+    E.idioma = det;
     if (E.gate === 'pendente') {
       var q = qual(n);
-      if (q === 'sim') { E.gate = 'ok'; return comResposta(E, modo, T[det].gate_sim); }
+      if (q === 'sim') { E.gate = 'ok'; return comResposta(E, modo, TT(det).gate_sim); }
       if (q === 'nao') {
-        E.gate = 'nao'; var rn = resp(T[det].gate_nao, T[det].chipsNao, { id: 'gate-nao', neutro: true });
+        E.gate = 'nao'; var rn = resp(TT(det).gate_nao, TT(det).chipsNao, { id: 'gate-nao', neutro: true });
         rn.registro = { tipo: 'idioma', idioma: det, gate: 'nao' }; return rn;
       }
       if (q === 'visita') {
-        E.gate = 'visita'; var rv = resp(T[det].gate_visita, traduzChips(['Como funciona o site?', 'Quanto custa?'], det), { id: 'gate-visita', neutro: true });
+        E.gate = 'visita'; var rv = resp(TT(det).gate_visita, traduzChips(['Como funciona o site?', 'Quanto custa?'], det), { id: 'gate-visita', neutro: true });
         rv.registro = { tipo: 'idioma', idioma: det, gate: 'visita' }; return rv;
       }
       if (primeira) {                                              // 1a mensagem estrangeira: guarda a pergunta e pergunta o idioma
-        E.perguntaPendente = texto;
-        return resp(T[det].abertura(T[det].saud[chaveHora()]).concat(T[det].gate), T[det].chipsGate, { id: 'gate', neutro: true });
+        E.perguntaPendente = texto; E.gatePerguntado = true;
+        return resp(TT(det).abertura(TT(det).saud[chaveHora()]).concat(TT(det).gate), TT(det).chipsGate, { id: 'gate', neutro: true });
       }
     }
-    if (E.gate === 'nao' && /ing|mensaje|message|leave|dejar/.test(n) && n.split(' ').length <= 6) { return iniciarRecadoEstrangeiro(E); }
+    if (E.gate === 'nao' && /ing|mensaje|message|leave|dejar|recado|mensagem|deixar/.test(n) && n.split(' ').length <= 6) { return iniciarRecadoEstrangeiro(E); }
     return responder(texto, E, modo);
   };
   // gate "sim": agradece e responde a pergunta que a pessoa tinha feito antes
@@ -1365,6 +1371,13 @@
     } else { r.chips = traduzChips(['Como comprar cr\u00e9ditos?', 'Como funciona o site?', 'Falar com o S\u00e9rgio'], E.idioma); }
     return r;
   }
+  // idiomas alem de en/es: o texto base e o ingles/portugues e a IA traduz na hora (o widget le r.traduzir)
+  var _tratarBase = L.tratarIdioma;
+  L.tratarIdioma = function (texto, n, E, modo) {
+    var r = _tratarBase(texto, n, E, modo);
+    if (r && E.idioma && E.idioma !== 'pt' && !T[E.idioma] && !r.traduzir) { r.traduzir = E.idioma; }
+    return r;
+  };
 })(typeof window !== 'undefined' ? window : global);
 
 /* lauana-rede.js */
@@ -1421,6 +1434,13 @@
   };
   R.generoIA = function (nome) {
     return R.postar('/lauana-ia', { tipo: 'genero', nome: String(nome || '').slice(0, 30), cid: R.cid, website: '' }, 1, R.tempoIA);
+  };
+  // ---------- Traducao (Etapa 3b): rota propria, limites proprios. Uma tentativa so; se falhar, a Lauana mostra o texto com um aviso ----------
+  R.traduzirSaida = function (itens, para) {
+    return R.postar('/lauana-traduzir', { modo: 'saida', para: para, itens: itens, cid: R.cid, website: '' }, 1, R.tempoIA);
+  };
+  R.traduzirEntrada = function (texto) {
+    return R.postar('/lauana-traduzir', { modo: 'entrada', itens: [String(texto || '').slice(0, 300)], cid: R.cid, website: '' }, 1, R.tempoIA);
   };
   // Pedido de gravacao vindo da conversa (r.acao === 'gravar'): recado ou avaliacao (depoimento)
   R.enviarGravacao = function (pedido, E, tela) {
@@ -1546,9 +1566,110 @@
       }
       if (typeof j.resposta !== 'string' || !j.resposta.trim() || j.nao_sei) { return r; }
       E.ofereceu = null; E.falhas = 0; E.ultimoTipo = 'ia';
-      return resp([j.resposta.trim().slice(0, 700)], L.chipsPadrao(modo), { id: 'ia', neutro: true });
+      var ria = resp([j.resposta.trim().slice(0, 700)], L.chipsPadrao(modo), { id: 'ia', neutro: true });
+      if (E.idioma && E.idioma !== 'pt') { ria.traduzir = E.idioma; }          // a resposta da IA vem em portugues: traduz para o idioma da pessoa
+      return ria;
     }, function () { return r; });
   };
+})(typeof window !== 'undefined' ? window : global);
+
+/* lauana-traducao.js */
+// ============================================================
+// LAUANA - TRADUCAO (Etapa 3b). Sem tela: testavel no Node.
+// Para visitantes de qualquer idioma (alem do portugues):
+//   ENTRADA: o que a pessoa escreve (fr, de, ja...) e traduzido para PORTUGUES; as regras respondem normalmente.
+//   SAIDA:   a resposta (portugues, ou o texto-base em ingles) e traduzida para o idioma da pessoa.
+// Regras de ouro (as mesmas do modulo de idiomas):
+//   - itens e instrucoes de testes NUNCA sao traduzidos (a Lauana nem mostra itens);
+//   - precos, telefones, links e numeros saem IDENTICOS (o servidor descarta a traducao se algo mudar);
+//   - se a traducao falhar ou o limite acabar, a Lauana NUNCA fica muda: mostra o texto com um aviso e o WhatsApp.
+// ============================================================
+(function (g) {
+  'use strict';
+  var L = g.LAU, resp = L.resp, norm = L.norm;
+  var cache = {};
+
+  // ---------- parece estar em outro idioma? (so alem de en/es, que ja tem tratamento proprio) ----------
+  var NAO_LATINO = /[\u0370-\u03FF\u0400-\u04FF\u0590-\u06FF\u0900-\u097F\u0E00-\u0E7F\u3040-\u30FF\u3400-\u9FFF\uAC00-\uD7AF]/;
+  var PAL = {
+    fr: 'bonjour bonsoir salut merci je vous nous est sont pas les des comment avec combien coute quel quelle peux puis veux voudrais svp dans votre vos cette',
+    de: 'hallo guten morgen abend danke bitte ich nicht und der ist ein eine wie kann wieviel kostet habe brauche mein ihre sie wir mit',
+    it: 'ciao grazie buongiorno buonasera sono non vorrei dove perche questo il gli ho'
+  };
+  var FORTES = ['bonjour', 'bonsoir', 'salut', 'merci', 'hallo', 'danke', 'ciao', 'grazie', 'buongiorno', 'buonasera'];
+  var DIC = {}; Object.keys(PAL).forEach(function (k) { DIC[k] = {}; PAL[k].split(' ').forEach(function (w) { DIC[k][w] = 1; }); });
+  L.pareceOutroIdioma = function (texto) {
+    var t = String(texto || '');
+    if (NAO_LATINO.test(t)) { return true; }
+    var ws = norm(t).split(' '), pts = 0, forte = false, i, k;
+    if (L.detectarIdioma && L.detectarIdioma(t, 'pt') !== 'pt') { return false; }        // en/es: ja tem tratamento proprio
+    for (i = 0; i < ws.length; i++) {
+      for (k in DIC) { if (DIC[k][ws[i]]) { pts++; if (FORTES.indexOf(ws[i]) >= 0) { forte = true; } } }
+    }
+    return pts >= 2 || (forte && ws.length <= 3);
+  };
+
+  function iaOn() { return !!(L.iaAtiva && L.iaAtiva() && L.rede && L.rede.traduzirEntrada); }
+  function idiomaDeFora(E) { return !!(E.idioma && E.idioma !== 'pt' && !L.i18n[E.idioma]); }
+
+  // ---------- ENTRADA ----------
+  // O widget pergunta antes de processar a mensagem
+  L.precisaEntrada = function (texto, E) {
+    if (!iaOn() || !String(texto || '').trim()) { return false; }
+    return idiomaDeFora(E) || L.pareceOutroIdioma(texto);
+  };
+  // Devolve Promise<{ texto?, crise?, falha? }>:
+  //   texto  = a mensagem em portugues (E.idioma ja ajustado e marcado para o motor)
+  //   crise  = resposta de emergencia pronta (pedido de socorro dito em outro idioma)
+  //   falha  = nao deu para traduzir e a conversa ja esta em outro idioma: aviso fixo (nunca fica muda)
+  L.traduzirEntrada = function (texto, E) {
+    function falhou() {
+      if (idiomaDeFora(E)) { var f = resp(L.i18n.en.id['nao-sei'].slice(), [], { id: 'traducao-falhou', neutro: true, traduzir: E.idioma }); return { falha: f }; }
+      return {};                                      // 1a mensagem estranha e nao deu para traduzir: segue o fluxo normal (portugues)
+    }
+    return L.rede.traduzirEntrada(texto).then(function (res) {
+      var j = (res && res.json) || {};
+      if (!res || !res.ok || j.falhou || j.limite || !j.itens || !j.itens.length) { return falhou(); }
+      var idi = String(j.idioma || '').toLowerCase();
+      if (j.crise && idi !== 'pt') {                       // pedido de socorro: o aviso NUNCA se perde, mesmo se o idioma nao for identificado (nesse caso, em ingles)
+        var conhecido = /^[a-z]{2,3}$/.test(idi) && idi !== 'und';
+        if (conhecido) { E.idioma = idi; E.gate = E.gate || 'ok'; }
+        var base = (conhecido && L.i18n[idi]) || L.i18n.en;
+        var rc = resp(base.emergencia.slice(), [], { id: 'emocional', neutro: true }); if (conhecido && !L.i18n[idi]) { rc.traduzir = idi; }
+        return { crise: rc, texto: j.itens[0] };
+      }
+      if (idi === 'pt') { if (E.idioma && E.idioma !== 'pt') { E.idioma = 'pt'; } return {}; }          // era portugues: segue normal
+      if (!/^[a-z]{2,3}$/.test(idi) || idi === 'und') { return falhou(); }                                          // idioma desconhecido ('und')
+      E.idioma = idi; E._traduzida = true;                                                          // o motor trata o texto como "ja traduzido"
+      return { texto: String(j.itens[0] || '').slice(0, 500) };
+    }, function () { return falhou(); });
+  };
+
+  // ---------- SAIDA ----------
+  function comAviso(r, alvo) {
+    var base = L.i18n[alvo] || L.i18n.en;
+    r.msgs = r.msgs.concat([base.trad_falhou]); r.traduzir = null;
+    return r;
+  }
+  // Traduz as mensagens e os botoes da resposta para o idioma em r.traduzir. Devolve Promise<r> (nunca rejeita).
+  L.traduzirSaida = function (r) {
+    var alvo = r && r.traduzir;
+    if (!alvo || alvo === 'pt' || !r.msgs || !r.msgs.length) { return Promise.resolve(r); }
+    if (!iaOn() || !L.rede.traduzirSaida) { return Promise.resolve(comAviso(r, alvo)); }
+    var nm = r.msgs.length, itens = r.msgs.concat(r.chips || []).slice(0, 10);
+    var chave = alvo + '|' + itens.join('\u0001');
+    if (cache[chave]) { r.msgs = cache[chave].slice(0, nm); r.chips = cache[chave].slice(nm); r.traduzir = null; return Promise.resolve(r); }
+    return L.rede.traduzirSaida(itens, alvo).then(function (res) {
+      var j = (res && res.json) || {};
+      if (res && res.ok && !j.falhou && !j.limite && j.itens && j.itens.length === itens.length) {
+        cache[chave] = j.itens.slice();
+        r.msgs = j.itens.slice(0, nm); r.chips = j.itens.slice(nm); r.traduzir = null;
+        return r;
+      }
+      return comAviso(r, alvo);
+    }, function () { return comAviso(r, alvo); });
+  };
+  L._limparCacheTraducao = function () { cache = {}; };
 })(typeof window !== 'undefined' ? window : global);
 
 /* kb-testes.js */
@@ -2409,7 +2530,12 @@
   function el(raiz, sel) { return raiz.querySelector(sel); }
   function criar(tag, cls, txt) { var d = document.createElement(tag); if (cls) { d.className = cls; } if (txt != null) { d.textContent = txt; } return d; }
   function hora() { return new Date().getHours(); }
-  function idiomaNavegador() { var n = String(g.navigator && (g.navigator.language || '') || '').toLowerCase(); return n.indexOf('en') === 0 ? 'en' : (n.indexOf('es') === 0 ? 'es' : ''); }
+  function idiomaNavegador() {
+    var n = String(g.navigator && (g.navigator.language || '') || '').toLowerCase();
+    if (n.indexOf('en') === 0) { return 'en'; } if (n.indexOf('es') === 0) { return 'es'; }
+    var c = n.slice(0, 2);                                       // outro idioma: so com a IA ligada (e ela quem traduz) e so na pagina inicial
+    return (IA && MODO === 'home' && /^[a-z]{2}$/.test(c) && c !== 'pt') ? c : '';
+  }
 
   // ---------- balao + janela de conversa ----------
   var host = document.createElement('div'); host.id = 'lauana-host';
@@ -2450,32 +2576,51 @@
       setTimeout(function () { dig.className = 'm bot'; dig.textContent = ''; preencher(dig, t); rolar(); i++; prox(); }, Math.min(1300, 320 + String(t).length * 8));
     })();
   }
+  function tirarDig(d) { if (d && d.parentNode) { d.parentNode.removeChild(d); } }
+  // Entrega a resposta. Se ela precisa de traducao (idioma de fora), traduz antes, com "digitando...". Nunca fica muda: se falhar, mostra com aviso.
+  function entregar(r) {
+    if (IA && r && r.traduzir && L.traduzirSaida) {
+      ocupado = true; var d1 = addMsg('Lauana est\u00e1 digitando...', 'bot dig');
+      L.traduzirSaida(r).then(function (r2) { ocupado = false; tirarDig(d1); mostrar(r2 || r); }, function () { ocupado = false; tirarDig(d1); mostrar(r); });
+      return;
+    }
+    mostrar(r);
+  }
   function enviar(texto) {
     texto = String(texto || '').slice(0, 500);
     if (ocupado || !texto.trim()) { return; }
     limparChips(); addMsg(texto, 'eu');
-    var r = L.processar(texto, E, MODO);
-    if (r.traduzir) { r.msgs = r.msgs.slice(); }               // (a traducao ao vivo pela IA entra na Etapa 3)
-    if (GRAVAR) { L.rede.registrarSilencioso(r, texto, E, MODO); }          // contadores: silencioso, nunca atrapalha
+    // Etapa 3b: mensagem em outro idioma (alem de en/es) -> traduz para portugues antes de o motor responder
+    if (IA && L.precisaEntrada && L.precisaEntrada(texto, E)) {
+      ocupado = true; var d0 = addMsg('Lauana est\u00e1 digitando...', 'bot dig');
+      L.traduzirEntrada(texto, E).then(function (ent) { ocupado = false; tirarDig(d0); responder(texto, ent || {}); },
+                                       function () { ocupado = false; tirarDig(d0); responder(texto, {}); });
+      return;
+    }
+    responder(texto, {});
+  }
+  // ent: { texto } (mensagem ja em portugues), { crise } ou { falha } (respostas prontas), ou {} (processa o texto como veio)
+  function responder(texto, ent) {
+    var r = ent.crise || ent.falha || L.processar(ent.texto != null ? ent.texto : texto, E, MODO);
+    var textoPt = ent.texto != null ? ent.texto : texto;
+    if (GRAVAR) { L.rede.registrarSilencioso(r, textoPt, E, MODO); }          // contadores: silencioso, nunca atrapalha
     if (GRAVAR && r.acao === 'gravar') { addMsg(r.msgs[0], 'bot'); ocupado = true; gravar(r.dados); return; }
     // Etapa 3: se as regras nao souberam (ou o genero do nome e desconhecido), a IA tenta uma vez.
     // Qualquer falha cai de volta na resposta das regras (r), sem avisar erro.
     if (IA && L.vaiConsultarIA(r, MODO)) {
       ocupado = true; var dig = addMsg('Lauana est\u00e1 digitando...', 'bot dig');
-      L.refinar(r, texto, E, MODO).then(function (r2) {
-        ocupado = false; if (dig.parentNode) { dig.parentNode.removeChild(dig); }
-        mostrar(r2 || r);
-      }, function () { ocupado = false; if (dig.parentNode) { dig.parentNode.removeChild(dig); } mostrar(r); });
+      L.refinar(r, textoPt, E, MODO).then(function (r2) { ocupado = false; tirarDig(dig); entregar(r2 || r); },
+                                          function () { ocupado = false; tirarDig(dig); entregar(r); });
       return;
     }
-    mostrar(r);
+    entregar(r);
   }
   // So diz "recebi" depois que o servidor confirmou (ate 3 tentativas). Se falhar, avisa e guarda o texto.
   function gravar(pedido) {
     L.rede.enviarGravacao(pedido, E, MODO).then(function (res) {
       ocupado = false;
       if (!res.ok && res.http === 200 && res.json && res.json.error && pedido.tipo === 'depoimento') { E.flow = null; mostrar({ msgs: [res.json.error], chips: [] }); return; }
-      mostrar(L.resultadoGravacao(E, res.ok, pedido.tipo, pedido.dados));
+      entregar(L.resultadoGravacao(E, res.ok, pedido.tipo, pedido.dados));
     });
   }
   function abrir(primeira) {
@@ -2485,7 +2630,7 @@
       var nav = (MODO === 'home') ? idiomaNavegador() : '';
       var ab = nav ? L.aberturaIdioma(E, nav, hora()) : L.abertura(E, MODO, { hora: hora(), email: emailAtual() });
       if (primeira && !nav) { L.definirPendente(E, primeira); }
-      mostrar(ab);
+      entregar(ab);
     } else if (primeira) { enviar(primeira); }
     setTimeout(function () { inp.focus(); }, 60);
   }
