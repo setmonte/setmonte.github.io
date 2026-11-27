@@ -2836,6 +2836,26 @@
     ['O site foi constru\u00eddo para facilitar a testagem, e por isso o painel, o cadastro de pacientes, a agenda e as escalas s\u00e3o gratuitos.',
      'S\u00f3 s\u00e3o cobrados os programas que o S\u00e9rgio construiu e que t\u00eam ou tiveram custo para ele. Os programas propriet\u00e1rios, como o TTE, o Corsi e o TETaylor, ficam dispon\u00edveis sem cobran\u00e7a.'],
     { p: 12, m: ['home', 'painel'], c: ['Quanto custa?', 'Falar com o S\u00e9rgio'] });
+
+  // ---------- 4) o site tem objetivo de lucro? (so responde se perguntarem; palavras do Sergio, 27/11/2026) ----------
+  I('lucro_site', ['objetivo lucro', 'objetivo lucrativo', 'site lucrativo', 'site e lucrativo', 'fins lucrativos', 'tem fins lucrativos', 'ganhar dinheiro', 'ganha dinheiro', 'lucrar', 'visa lucro', 'e para lucro', 'quer lucro', 'lucro do site', 'sergio ganha'],
+    ['O site n\u00e3o tem o objetivo de ser lucrativo. Ele foi feito para facilitar a testagem.',
+     'S\u00f3 s\u00e3o cobrados os programas que o S\u00e9rgio construiu e que t\u00eam ou tiveram custo para ele.'],
+    { p: 18, m: ['home', 'painel'], c: ['Quanto custa?', 'Falar com o S\u00e9rgio'] });
+
+  // ---------- 5) como surgiu o site (so responde se perguntarem; contado pelo Sergio, 27/11/2026) ----------
+  I('origem_site', ['como surgiu', 'como surgiu site', 'como surgiu ideia', 'como nasceu', 'como nasceu site', 'como comecou', 'como comecou site', 'origem site', 'origem do site', 'historia do site', 'historia site', 'como foi criado', 'como foi criado site', 'como veio ideia', 'de onde veio site', 'de onde surgiu', 'por que surgiu', 'como tudo comecou'],
+    ['O site come\u00e7ou quando o S\u00e9rgio quis transformar as escalas de papel em planilhas, para a corre\u00e7\u00e3o e o resultado sa\u00edrem de forma autom\u00e1tica e mais r\u00e1pida.',
+     'Depois veio a ideia de fazer avalia\u00e7\u00f5es online, em forma de rastreio. Um colega gostou da ideia e pediu para fazer o mesmo com as escalas dele. Da\u00ed surgiu a ideia de reunir v\u00e1rios testes num s\u00f3 lugar, e assim nasceu este centro de testagem.'],
+    { p: 14, m: ['home', 'painel'], c: ['Quem \u00e9 o S\u00e9rgio?', 'Qual o objetivo do site?'] });
+
+  // ---------- 6) quem e o Sergio (atualiza a resposta; dados da pagina inicial + o que ele disse) ----------
+  var qs = intent('quem_sergio');
+  if (qs) {
+    ['quem e sergio', 'quem e o sergio', 'quem administra', 'quem monitora', 'quem cuida site', 'quem cuida do site', 'quem mantem site', 'sobre sergio', 'sobre o sergio', 'quem e o dono'].forEach(function (k) { if (qs.k.indexOf(k) < 0) { qs.k.push(k); } });
+    qs.a = ['O S\u00e9rgio Teixeira Monte \u00e9 psic\u00f3logo e neuropsic\u00f3logo (CRP 14/05739-9), de Campo Grande (MS). Ele \u00e9 quem administra e monitora o site.',
+            'Ele gosta de Tecnologia da Informa\u00e7\u00e3o como hobby e desenvolve ferramentas digitais para tornar a pr\u00e1tica cl\u00ednica mais acess\u00edvel.'];
+  }
 })(typeof window !== 'undefined' ? window : global);
 
 // ============================================================
