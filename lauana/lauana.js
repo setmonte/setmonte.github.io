@@ -404,6 +404,7 @@
     }
     if (L.tratarIdioma) { r = L.tratarIdioma(texto, n, E, modo); if (r) { return r; } }   // visitante estrangeiro
     if (E.flow) { r = L.fluxo(texto, n, E, modo); if (r) { return r; } }
+    if (L.tratarPapel) { r = L.tratarPapel(texto, n, E, modo); if (r) { return r; } }   // profissao e tratamento Dr./Dra.
     if (E.aguardandoNome && L.tratarNome) { r = L.tratarNome(texto, n, E, modo); if (r) { return r; } }
     if (E.aguardandoCidade && L.tratarCidade) { r = L.tratarCidade(texto, n, E, modo); if (r) { return r; } }
     var toks = tokens(texto), set = mkSet(toks), cl = clima(texto, set);
@@ -978,6 +979,180 @@
     if (E.nomePendente && modo === 'home' && !r.neutro && !cl.raiva && !E.flow && r.acao !== 'gravar') {
       r.msgs.push('A prop\u00f3sito, como posso te chamar? \ud83d\ude0a');
       E.nomePendente = false; E.aguardandoNome = true; E.nomePerguntas = 2;
+    }
+    return r;
+  };
+})(typeof window !== 'undefined' ? window : global);
+
+/* lauana-tratamento.js */
+// ============================================================
+// LAUANA - TRATAMENTO (Dr. / Dra.) E PROFISSAO
+//  - "Sou profissional" NAO e nome: e a profissao da pessoa
+//  - depois que sabe o nome e a profissao, trata por Dr. ou Dra.
+//  - genero do nome: lista de nomes brasileiros (+ terminacao a/o). Nome desconhecido: ela diz com bom humor
+//    e pergunta como a pessoa prefere ser tratada (nada de chutar sem avisar)
+//  - se errar e a pessoa corrigir ("sou mulher"), ela pede desculpas com leveza e troca o tratamento
+//  - na Etapa 3 a IA pode palpitar o genero de nomes de fora (L.generoPorIA); aqui so regras
+// Tudo fica so na memoria da conversa (E.papel, E.genero): nada e gravado.
+// ============================================================
+(function (g) {
+  'use strict';
+  var L = g.LAU, norm = L.norm, resp = L.resp;
+
+  // ---------- lista de nomes (sem acento, minusculo) ----------
+  var MASC = ('joao jose antonio francisco carlos paulo pedro lucas luiz luis marcos marco luciano gabriel rafael daniel marcelo bruno eduardo felipe filipe rodrigo manoel manuel fernando fabio leandro gustavo guilherme leonardo matheus mateus thiago tiago diego andre alexandre ricardo roberto sergio jorge julio cesar renato vinicius vitor victor henrique anderson edson edgar edgard wellington wesley jefferson jeferson ronaldo reinaldo rogerio claudio claudemir cleber clayton cristiano cristovao davi arthur artur augusto bernardo caio cassio danilo douglas elton emerson everton fabricio flavio gilberto gilson heitor hugo igor ivan jonas joel jonathan jonatas juliano kleber leonel lourenco marcio mauricio mauro miguel murilo nelson nicolas otavio octavio osvaldo oswaldo patrick raul ruan samuel saulo silvio stefano tales tarcisio teodoro valter walter wagner washington william yuri adriano adilson alan alberto alex alexsandro aldo alfredo amauri ary ayrton benedito breno bryan celso cicero cleiton dario denis dener diogo domingos edmilson elias enzo erick erik ezequiel fabiano felix fred geraldo gilmar giovani giovanni glauber helio horacio humberto isaac jair jeremias joaquim juan junior kaique kevin lauro leo levi lincoln luan lucio magno marlon martin mario matias max maycon michel miro moises nathan neto nilton noel olavo omar orlando oscar pablo paulino plinio quintino rael ramon raimundo regis reginaldo renan rian rubens ruy salvador sandro santiago saul sebastiao severino sidney simao tadeu telmo thales theo thomas ulisses valdir vagner valdemar vando vicente vilmar vitorio wilson xavier zacarias vanderlei vander dalton dionisio emanuel enrico erasmo eliseu eder edu fausto gerson gil gregorio hamilton haroldo heron hilton ismael israel ivo jackson jairo janio jean jhonatan josue kayque kleiton laerte lazaro luca lucca bira zeca juca kaua joshua gael nikolas nicholas ian ivan davy dante romeu rui tomas tobias ubirajara vlademir zeno').split(' ');
+  var FEM = ('maria ana francisca antonia adriana juliana marcia fernanda patricia aline sandra camila amanda bruna jessica leticia julia luciana vanessa mariana beatriz carolina gabriela rafaela daniela renata tatiana simone viviane cristiane claudia cristina sonia monica paula paola paloma raquel rosa rosana rosangela rita regina rebeca priscila natalia nathalia natasha livia lara larissa laura lais isabel isabela isadora helena heloisa gisele giovana fabiana fatima flavia eliane elisa elisabete elizabeth ester eva erica emilia elaine eduarda debora denise diana dayane carla carmen carmem catarina celia clara cleide cecilia bianca barbara bernadete benedita aparecida angela angelica andreia andrea alice alessandra alexandra aurea aurora ariane beth bia cida dani dri duda gabi ju lu li mari nanda pri sol thais thaisa valeria vera veronica vitoria yasmin yasmim yara zilda zelia luzia luisa lucia lourdes lidia leila kelly kelen keila karina karen jaqueline joana joyce jussara janaina ingrid iara ines irene iris ivone ivete jade jane janete jenifer jennifer lilian liliane lorena luana lucimara magda manuela margarida marina marilia marli marta mayara melissa michele michelle miriam mirian monique nadia nair neusa nicole nilza noemi odete olivia pamela rute ruth sabrina samira sara sarah selma silvia silvana sheila shirley solange sophia sofia stella stephanie suelen suzana tais tainara talita tamires tania teresa terezinha thalita thamires ursula valentina valquiria vilma wanda wendy zaira conceicao assuncao socorro consuelo dolores mercedes carmo rosario gleice gleise ketlin kethlen eloa maite hellen helen').split(' ');
+  var MASC_SET = {}, FEM_SET = {}, i;
+  for (i = 0; i < MASC.length; i++) { MASC_SET[MASC[i]] = 1; }
+  for (i = 0; i < FEM.length; i++) { FEM_SET[FEM[i]] = 1; }
+
+  // devolve 'm', 'f' ou null (nao sabe). Nome composto: usa o primeiro.
+  L.generoDoNome = function (nome) {
+    var p = norm(String(nome || '')).split(' ')[0];
+    if (!p) { return null; }
+    if (FEM_SET[p]) { return 'f'; }
+    if (MASC_SET[p]) { return 'm'; }
+    if (p.length >= 4 && /a$/.test(p)) { return 'f'; }
+    if (p.length >= 4 && /o$/.test(p)) { return 'm'; }
+    return null;
+  };
+
+  // ---------- tratamento ----------
+  function generoDe(E) {
+    if (!E.genero && E.nome) { var gg = L.generoDoNome(E.nome); if (gg) { E.genero = gg; E.generoChute = true; } }
+    return E.genero || null;
+  }
+  L.tratamento = function (E) {
+    if (!E.nome) { return ''; }
+    if (E.papel !== 'prof') { return E.nome; }
+    var gn = generoDe(E);
+    return (gn === 'f' ? 'Dra. ' : gn === 'm' ? 'Dr. ' : 'Dr(a). ') + E.nome;
+  };
+  function saud(E) { return L.saudacaoHora(E.hora); }
+  var SORRISO = '\ud83d\ude0a', RISADA = '\ud83d\ude04';
+  function msgDesconhecido(E) {
+    E.aguardandoGenero = true; E.titulado = true;
+    return ['Que nome diferente, Dr(a). ' + E.nome + '! ' + RISADA, 'Daqui eu n\u00e3o consigo ver o seu g\u00eanero. Se quiser me contar, eu trato voc\u00ea do jeito que preferir, combinado?'];
+  }
+  var CHIPS_GENERO = ['Sou mulher', 'Sou homem', 'Pode ser Dr(a).'];
+
+  // ---------- reconhecer profissao e genero no texto ----------
+  var PROF = '(profissional|psicolog[oa]|neuropsicolog[oa]|terapeuta|psiquiatra|medic[oa]|fonoaudiolog[oa]|psicopedagog[oa]|pedagog[oa]|doutor|doutora|dr|dra|neurologista|neuropediatra|enfermeir[oa]|fisioterapeuta|assistente social)';
+  var RE_PROF = new RegExp('(^| )(sou|eu sou|trabalho como|atuo como|sou um|sou uma)( o| a| um| uma)? ' + PROF + '( |$)');
+  var RE_ESTUD = /(^| )sou (um |uma )?(estudante|aluno|aluna|graduando|graduanda)( |$)/;
+  function generoDaProfissao(n) {
+    var m = n.match(RE_PROF), w = m ? m[4] : (n === 'profissional' ? 'profissional' : '');
+    if (/^(dra|doutora)$/.test(w) || /(psicologa|medica|enfermeira|pedagoga|fonoaudiologa)$/.test(w)) { return 'f'; }
+    if (/^(dr|doutor)$/.test(w) || /(psicologo|medico|enfermeiro|pedagogo|fonoaudiologo)$/.test(w)) { return 'm'; }
+    return null;
+  }
+  function souProfissional(n) { return (n.split(' ').length <= 8) && (RE_PROF.test(n) || n === 'profissional'); }
+  // genero declarado: devolve 'f', 'm', 'neutro' ou null
+  function generoDeclarado(n, E) {
+    var k = n.split(' ');
+    if (k.length > 7) { return null; }
+    var explicito = /(^| )(sou|eu sou|me chame de|me chama de|pode me chamar de|pode ser|trate me|trate me como|na verdade sou|so que sou|e que sou)( |$)/.test(n);
+    var perguntado = !!E.aguardandoGenero;
+    if (perguntado && /(^| )(dr a|tanto faz|qualquer um|qualquer)( |$)/.test(n)) { return 'neutro'; }
+    // palavras claras: aceitas se for declaracao ("sou ..."), resposta a pergunta, ou frase curta logo depois de ser tratada(o) por titulo
+    var clara = explicito || perguntado || (E.titulado && k.length <= 3);
+    if (clara) {
+      if (/(^| )(mulher|menina|feminino|feminina)( |$)/.test(n)) { return 'f'; }
+      if (/(^| )(homem|menino|masculino)( |$)/.test(n)) { return 'm'; }
+    }
+    // palavras ambiguas (ele, ela, Dr, Dra): so em declaracao explicita ou resposta a pergunta
+    if (explicito || perguntado) {
+      if (/(^| )(ela|dra|doutora)( |$)/.test(n)) { return 'f'; }
+      if (/(^| )(ele|dr|doutor)( |$)/.test(n)) { return 'm'; }
+    }
+    return null;
+  }
+
+  // ---------- gancho principal (chamado pelo nucleo, antes de nome e cidade) ----------
+  L.tratarPapel = function (texto, n, E, modo) {
+    if (modo === 'paciente') { return null; }
+    var gdec, rr;
+    // 1) "Dr. Ana" / "Dra Ana" digitado como nome
+    if (E.aguardandoNome) {
+      var mt = n.match(/^(dr|dra|doutor|doutora) (.+)$/);
+      if (mt) {
+        E.papel = 'prof'; E.genero = (mt[1] === 'dra' || mt[1] === 'doutora') ? 'f' : 'm'; E.generoChute = false;
+        return L.tratarNome(String(texto).replace(/^\s*(dr|dra|doutor|doutora)\.?\s+/i, ''), mt[2], E, modo);
+      }
+    }
+    // 2) a pessoa estava respondendo "como prefere ser tratada(o)"
+    gdec = generoDeclarado(n, E);
+    // "sou psicologa" / "sou a Dra." depois de ter sido chamado por Dr.: e uma correcao
+    if (!gdec && E.titulado && E.genero && souProfissional(n)) {
+      var g2 = generoDaProfissao(n);
+      if (g2 && g2 !== E.genero) { gdec = g2; }
+    }
+    if (gdec && (!souProfissional(n) || E.titulado)) {
+      var jaTinha = E.genero, chutou = E.generoChute, perguntado = E.aguardandoGenero;
+      E.aguardandoGenero = false;
+      if (gdec === 'neutro') {
+        E.generoNeutro = true;
+        return resp(['Combinado! ' + SORRISO + ' ' + (E.nome ? L.tratamento(E) + ', c' : 'C') + 'omo posso ajudar?'], L.chipsPadrao(modo), { id: 'genero-neutro', neutro: true });
+      }
+      E.genero = gdec; E.generoChute = false; E.generoNeutro = false;
+      var t = L.tratamento(E), ms;
+      if (jaTinha && jaTinha !== gdec && E.titulado) {
+        ms = ['Ops! ' + RISADA + ' Me perdoe! Daqui eu n\u00e3o consigo te ver pessoalmente.', saud(E) + ', ' + t + '! Como posso ajudar?'];
+      } else if (jaTinha === gdec && chutou && E.titulado) {
+        ms = ['Ufa, ent\u00e3o eu acertei! ' + RISADA + ' Como posso ajudar, ' + t + '?'];
+      } else {
+        ms = ['Anotado! ' + SORRISO + (E.nome ? ' ' + (E.papel === 'prof' ? 'Ent\u00e3o, ' + saud(E).toLowerCase() + ', ' + t + '.' : 'Prazer, ' + t + '.') : '') + ' Como posso ajudar?'];
+      }
+      if (E.papel === 'prof') { E.titulado = true; }
+      if (E.aguardandoCidade) { ms.push('E de que cidade voc\u00ea fala? \ud83c\udf0e'); }
+      return resp(ms, L.chipsPadrao(modo), { id: 'genero-ok', neutro: true });
+    }
+    if (E.aguardandoGenero) { E.aguardandoGenero = false; }   // fez outra pergunta: segue o assunto
+    // 3) "sou estudante": nao e Dr./Dra. (deixa o fluxo normal responder)
+    if (RE_ESTUD.test(n)) { if (E.papel !== 'prof') { E.papel = 'est'; } return null; }
+    // 4) "sou profissional / psicologa / ..."
+    if (souProfissional(n)) {
+      var gp = generoDaProfissao(n);
+      E.papel = 'prof';
+      if (gp && !E.genero) { E.genero = gp; E.generoChute = false; }
+      if (!E.nome) {
+        if (E.aguardandoNome) {      // ainda nao sabe o nome: pede de novo, sem confundir profissao com nome
+          return resp(['Que bom ter voc\u00ea por aqui! ' + SORRISO, 'E como \u00e9 o seu nome?'], ['Prefiro n\u00e3o dizer'], { id: 'prof-pede-nome', neutro: true });
+        }
+        return null;
+      }
+      E.aguardandoCidade = false;     // "sou psicologa" nao e uma cidade: a pergunta da cidade fica para outra hora
+      if (generoDe(E)) { E._saudarTitulo = true; E.titulado = true; return null; }
+      rr = resp(msgDesconhecido(E), CHIPS_GENERO, { id: 'prof-genero-pergunta', neutro: true });
+      return rr;
+    }
+    return null;
+  };
+
+  // ---------- depois do nome: se ja sabemos que e profissional, ja trata por Dr./Dra. ----------
+  var tratarNomeOrig = L.tratarNome;
+  L.tratarNome = function (texto, n, E, modo) {
+    var antes = E.nome, r = tratarNomeOrig(texto, n, E, modo);
+    if (r && !antes && E.nome && E.papel === 'prof' && r.msgs && r.msgs.length) {
+      E.titulado = true;
+      if (generoDe(E)) { r.msgs[0] = 'Prazer, ' + L.tratamento(E) + '! ' + SORRISO; }
+      else {
+        var extra = msgDesconhecido(E);
+        r.msgs = [extra[0], extra[1]]; r.chips = CHIPS_GENERO; E.aguardandoCidade = false;
+      }
+    }
+    return r;
+  };
+
+  // ---------- cumprimento com titulo antes da resposta; despedidas usam o titulo ----------
+  var depoisOrig = L.depoisDaResposta;
+  L.depoisDaResposta = function (r, cl, E, modo) {
+    var nomeOrig = E.nome;
+    if (E.papel === 'prof' && E.nome) { E.nome = L.tratamento(E); }
+    try { r = depoisOrig(r, cl, E, modo); } finally { E.nome = nomeOrig; }
+    if (E._saudarTitulo) {
+      E._saudarTitulo = false;
+      if (r && r.msgs) { r.msgs.unshift(saud(E) + ', ' + L.tratamento(E) + '! ' + SORRISO); }
     }
     return r;
   };
