@@ -1,9 +1,12 @@
 // LAUANA - carregador para paginas de PACIENTE (so o rostinho: aparece no comeco e some quando a pessoa comeca a responder).
 // Quem decide se a Lauana aparece e este arquivo (uma lista so, facil de ampliar ou desligar):
 //   - so quando a pessoa esta respondendo por um link (?s= ou ?d=). Nunca na impressao (?print) nem com ?semlauana.
-//   - so nas familias de paginas listadas abaixo (escalas e testes online). O painel e as paginas de reabilitacao nao entram aqui.
+//     (quando o profissional abre a pagina direto, sem link, para aplicar ao lado do paciente, a Lauana nao aparece)
+//   - so nas familias de paginas listadas abaixo (escalas, testes online e reabilitacao). O painel nao entra aqui.
 // No modo paciente a Lauana NAO conversa com o servidor, NAO usa IA e NAO pergunta nome nem cidade: nada sai do aparelho.
-// Quando some: nas escalas, na 1a resposta marcada; nos testes, no 1o toque num botao "Iniciar..." / "Comecar...". Depois disso nao volta.
+// Quando some: nas escalas, na 1a resposta marcada; nos testes, no 1o toque num botao "Iniciar..." / "Comecar...";
+// na reabilitacao, no botao que comeca a leitura/atividade de verdade (nos de voz, DEPOIS do teste do microfone, que e onde mais precisa de ajuda).
+// Depois que some, nao volta.
 (function () {
   try {
     var q = window.location.search || '';
@@ -11,14 +14,20 @@
     if (!(p.get('s') || p.get('d')) || p.get('print') || /[?&]semlauana(\b|=)/.test(q)) { return; }
     if (window.__lauanaCarregada) { return; }
     var caminho = window.location.pathname || '';
-    var arquivo = caminho.slice(caminho.lastIndexOf('/') + 1);
+    var arquivo = caminho.slice(caminho.lastIndexOf('/') + 1).toLowerCase();
+    var TEXTO_INICIAR = '^\\W*(iniciar|come(c|\\u00e7)ar|start)';
     var cfg = null;
     if (caminho.indexOf('/escalas/') >= 0) {
       // escalas: some na 1a resposta (bolinhas, caixas ou os botoes Sim/Nao do TDI)
       cfg = { modo: 'paciente', esconderAoComecar: 'input[type=radio],input[type=checkbox]', esconderAoClicarSel: '.item-btns button' };
     } else if (/\/online\/teste-[^\/]*\.html$/i.test(caminho) && !/backup/i.test(arquivo)) {
       // testes online (alguns cronometrados): aparece na tela de preparacao e some ao tocar em "Iniciar..." / "Comecar..."
-      cfg = { modo: 'paciente', esconderAoClicarTexto: '^\\W*(iniciar|come(c|\\u00e7)ar|start)' };
+      cfg = { modo: 'paciente', esconderAoClicarTexto: TEXTO_INICIAR };
+    } else if (/\/online\/reabilitacao\/(lermais|prat|reocupa)\.html$/i.test(caminho)) {
+      cfg = { modo: 'paciente' };
+      if (arquivo === 'lermais.html') { cfg.esconderAoClicarSel = '#btnIniciarReal'; }                              // so depois do teste do microfone
+      else if (arquivo === 'reocupa.html') { cfg.esconderAoClicarSel = 'button[onclick*="iniciarLeituraCenario"]'; }   // na 1a leitura (quando o navegador pede o microfone)
+      else { cfg.esconderAoClicarTexto = TEXTO_INICIAR; }                                                           // prat: "Iniciar Atividade"
     }
     if (!cfg) { return; }
     var eu = document.currentScript && document.currentScript.src;

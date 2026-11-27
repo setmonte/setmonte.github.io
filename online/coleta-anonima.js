@@ -478,4 +478,4 @@
 })();
 
 // Lauana (atendente virtual): so o rostinho, nas paginas de paciente (testes). Quem decide se aparece e /lauana/paciente.js (nao grava nem envia nada).
-(function(){try{var s=document.createElement('script');s.src='/lauana/paciente.js?v=2';(document.body||document.documentElement).appendChild(s);}catch(e){}})();
+(function(){try{var s=document.createElement('script');s.src='/lauana/paciente.js?v=3';(document.body||document.documentElement).appendChild(s);}catch(e){}})();
