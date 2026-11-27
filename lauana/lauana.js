@@ -257,6 +257,11 @@
   }
   function respTema(t, modo, E) {
     E.ultimoTipo = 'tema'; E.falhas = 0; E.ultimo = { id: 'tema:' + t.id, s: t.lista };
+    // resposta "cruzada" (programas + escalas + preco + link do manual), montada em kb-assuntos.js
+    if (modo !== 'paciente' && L.montarTema && (t.progs || t.escs)) {
+      var rc = L.montarTema(t, modo);
+      if (rc && rc.msgs && rc.msgs.length) { return resp(rc.msgs, rc.chips || ['Como gerar o link?'], { id: 'tema:' + t.id }); }
+    }
     var m = ['Para ' + t.titulo + ' temos: ' + t.lista + '.'];
     m.push(t.nota || 'Quem escolhe o instrumento mais adequado \u00e9 o profissional, de acordo com o caso. Quer saber como aplicar?');
     return resp(m, modo === 'paciente' ? [] : ['Como gerar o link?'], { id: 'tema:' + t.id });
@@ -816,7 +821,10 @@
   var PREFIXOS = [['pode', 'me', 'chamar', 'de'], ['pode', 'chamar', 'de'], ['meu', 'nome', 'e'], ['me', 'chama', 'de'], ['aqui', 'e'], ['me', 'chamo'], ['eu', 'sou'], ['chamo', 'me'], ['sou']];
   // quem pergunta nao esta dizendo o nome: se a frase COMECA por uma destas palavras, nao e um nome (so vale para o nome, nao para a cidade)
   var PRIMEIRA_DE_PERGUNTA = ['tem', 'tinha', 'existe', 'existem', 'quantas', 'quantos', 'quanto', 'quantidade', 'qual', 'quais', 'quem', 'onde', 'quando', 'como', 'porque', 'pq', 'por', 'pra', 'para', 'vale', 'posso', 'pode', 'podem', 'funciona', 'serve', 'sera', 'sao', 'esta', 'estao', 'tambem', 'mas', 'entao', 'se', 'eh', 'isso', 'isto', 'esse', 'essa', 'aquele', 'aquela', 'algum', 'alguma', 'alguem', 'ninguem', 'tudo', 'nada', 'que', 'bem', 'beleza', 'blz', 'opa', 'eai', 'salve'];
-  var NAO_NOME = ['nao', 'sim', 'ok', 'oi', 'ola', 'tchau', 'obrigado', 'obrigada', 'ajuda', 'quero', 'preciso', 'problema', 'duvida', 'teste', 'escala', 'paciente'];
+  var NAO_NOME = ['nao', 'sim', 'ok', 'oi', 'ola', 'tchau', 'obrigado', 'obrigada', 'ajuda', 'quero', 'preciso', 'problema', 'duvida', 'teste', 'escala', 'paciente',
+    // frases como "o site tem relatorio" / "o painel faz laudo": palavras do proprio site e verbos de pergunta nunca sao nome
+    'site', 'painel', 'sistema', 'plataforma', 'aplicativo', 'app', 'programa', 'agenda', 'prontuario', 'anamnese', 'relatorio', 'laudo', 'credito', 'creditos',
+    'tem', 'temos', 'existe', 'existem', 'faz', 'fazem', 'possui', 'oferece', 'permite', 'aceita', 'cobra', 'custa', 'funciona', 'serve', 'envia', 'gera', 'grava'];
   L.extrairNome = function (texto) {
     var limpo = String(texto).replace(/[!.,;:()?]/g, ' ').replace(/\s+/g, ' ').trim();
     if (!limpo || /[?<>\d@\/]/.test(texto)) { return null; }
@@ -2856,6 +2864,143 @@
     qs.a = ['O S\u00e9rgio Teixeira Monte \u00e9 psic\u00f3logo e neuropsic\u00f3logo (CRP 14/05739-9), de Campo Grande (MS). Ele \u00e9 quem administra e monitora o site.',
             'Ele gosta de Tecnologia da Informa\u00e7\u00e3o como hobby e desenvolve ferramentas digitais para tornar a pr\u00e1tica cl\u00ednica mais acess\u00edvel.'];
   }
+})(typeof window !== 'undefined' ? window : global);
+
+/* kb-assuntos.js */
+// ============================================================
+// LAUANA - RESPOSTAS "CRUZADAS" POR ASSUNTO (carregado depois de kb-curiosidades.js)
+// Quando alguem pergunta por um assunto ("tem algo de funcoes executivas?"), ela cruza:
+//   programas (resumo + idade + preco/creditos + aba do painel + link do manual) e escalas relacionadas.
+// Os dados vem das fichas que ela ja tem (L.ents e L.escalas); nada e digitado de novo.
+// ABAS: confirmadas no painel (site/online/index.html), 27/11/2026.
+// ============================================================
+(function (g) {
+  'use strict';
+  var L = g.LAU, W = L.WHATS;
+  var BASE = 'https://setmonte.github.io/';
+  var CATALOGO = BASE + 'escalas/';
+  var ABA = { tecfe: 'Fun\u00e7\u00f5es Executivas', tte: 'Fun\u00e7\u00f5es Executivas', bae: 'Aten\u00e7\u00e3o', trmv: 'Mem\u00f3ria', taav: 'Mem\u00f3ria', corsi: 'Mem\u00f3ria',
+              tref: 'Percep\u00e7\u00e3o', tpvset: 'Percep\u00e7\u00e3o', tflod: 'Linguagem', tetaylor: 'Visuoconstrutivo', tetaylorsimp: 'Visuoconstrutivo',
+              ideia: 'Intelig\u00eancia e AH/SD', brpi: 'Intelig\u00eancia e AH/SD', bafc: 'Intelig\u00eancia e AH/SD' };
+  // manuais que existem de verdade em site/online/
+  var MANUAL = { bae: 1, bafc: 1, brpi: 1, corsi: 1, ideia: 1, tecfe: 1, tetaylor: 1, tetaylorsimp: 1, tflod: 1, tpvset: 1, tref: 1, trmv: 1, taav: 1, tte: 1 };
+
+  function ent(id) { for (var i = 0; i < L.ents.length; i++) { if (L.ents[i].id === id) { return L.ents[i]; } } return null; }
+  function esc(id) { for (var i = 0; i < L.escalas.length; i++) { if (L.escalas[i].id === id) { return L.escalas[i]; } } return null; }
+  // primeira frase de um texto (corta no primeiro ponto final seguido de espaco)
+  function primeira(t) { t = String(t || ''); var m = /^[\s\S]*?[.!?](?=\s|$)/.exec(t); return (m ? m[0] : t).trim(); }
+  function fim(t) { t = String(t || '').trim(); return t && !/[.!?]$/.test(t) ? t + '.' : t; }
+
+  function balaoPrograma(id) {
+    var e = ent(id); if (!e) { return null; }
+    var partes = [];
+    var resumo = fim(primeira(e.oque));
+    // se a 1a frase nao diz o que o programa mede/avalia, acrescenta a frase da ficha que diz ("Mede ...", "Avalia ...")
+    if (!/\b(mede|avalia|rastreio|observa)\b/i.test(resumo)) {
+      var fr = String(e.oque || '').match(/[^.!?]+[.!?]/g) || [], j;
+      for (j = 1; j < fr.length; j++) { if (/^\s*(Mede|Avalia|Observa)\b/.test(fr[j])) { resumo += ' ' + fr[j].trim(); break; } }
+    }
+    partes.push(e.nome + (ABA[id] ? ' (aba ' + ABA[id] + ' do painel)' : '') + ': ' + resumo);
+    if (e.idade) { partes.push(fim(e.idade)); }
+    if (e.preco) { partes.push(fim(e.preco)); }
+    if (MANUAL[id]) { partes.push('Mais informa\u00e7\u00f5es no manual: ' + BASE + 'online/manual-' + id + '.html'); }
+    return partes.join(' ');
+  }
+  function balaoEscalas(ids) {
+    var itens = [];
+    ids.forEach(function (id) { var s = esc(id); if (s) { itens.push(s.sigla + ' (' + s.quem + ')'); } });
+    if (!itens.length) { return null; }
+    return 'Na parte de Escalas do site, todas gratuitas, temos: ' + itens.join('; ') + '. Veja o cat\u00e1logo: ' + CATALOGO;
+  }
+
+  // monta a resposta de um assunto; devolve { msgs, chips } ou null (a resposta antiga continua valendo)
+  L.montarTema = function (t, modo) {
+    var msgs = [], i, b;
+    var progs = (t.progs || []).filter(function (id) { return !!ent(id); });
+    var nProg = progs.length;
+    if (nProg) {
+      msgs.push(t.intro || ('Temos sim! Para ' + t.titulo + ', ' + (nProg === 1 ? 'temos um programa' : 'temos ' + nProg + ' programas') + ':'));
+      for (i = 0; i < nProg; i++) { b = balaoPrograma(progs[i]); if (b) { msgs.push(b); } }
+    } else {
+      msgs.push(t.intro || ('Para ' + t.titulo + ' temos escalas de rastreio:'));
+    }
+    b = balaoEscalas(t.escs || []); if (b) { msgs.push(b); }
+    if (t.extra) { msgs.push(t.extra); }
+    msgs.push(t.nota || 'Quem escolhe o instrumento mais adequado \u00e9 o profissional, de acordo com o caso. Quer saber como aplicar?');
+    var chips = ['Como gerar o link?'];
+    if (nProg && progs[0]) { chips.push('Quanto custa o ' + ent(progs[0]).nome + '?'); }
+    return { msgs: msgs, chips: chips };
+  };
+
+  // liga cada assunto as suas fichas (programas e escalas)
+  function liga(id, dados) {
+    for (var i = 0; i < L.temas.length; i++) {
+      if (L.temas[i].id === id) { for (var k in dados) { if (dados.hasOwnProperty(k)) { L.temas[i][k] = dados[k]; } } return L.temas[i]; }
+    }
+    return null;
+  }
+  var NOTA_QI = 'Importante: n\u00e3o s\u00e3o testes de QI cl\u00e1ssicos (como as escalas Wechsler) e n\u00e3o os substituem. S\u00e3o instrumentos de rastreio, em fase de coleta de normas. Quem escolhe o instrumento \u00e9 o profissional.';
+
+  var te = liga('executivas', { progs: ['tecfe', 'tte'], escs: ['brief2'] });
+  if (te && te.nomes) { ['funcao executiva', 'flexibilidade mental', 'planejamento'].forEach(function (n) { if (te.nomes.indexOf(n) < 0) { te.nomes.push(n); } }); }
+  liga('atencao', { progs: ['bae', 'tte', 'tpvset'], escs: ['asrs18', 'snap4', 'conners'], extra: 'H\u00e1 tamb\u00e9m o programa de treino PRAt, para reabilita\u00e7\u00e3o da aten\u00e7\u00e3o. Para saber sobre ele, fale com o S\u00e9rgio: ' + W + '.' });
+  liga('memoria', { progs: ['trmv', 'taav', 'corsi', 'tetaylor'], extra: 'Tamb\u00e9m h\u00e1 a \u00e1rea de Mem\u00f3ria Operacional da BAFC, na aba Intelig\u00eancia e AH/SD.' });
+  liga('leitura', { progs: ['tflod'], escs: ['dislexia'], extra: 'H\u00e1 tamb\u00e9m o programa de treino LERMAIS, para leitura em voz alta. Para saber sobre ele, fale com o S\u00e9rgio: ' + W + '.' });
+  liga('criatividade', { progs: ['ideia'] });
+  liga('percepcao', { progs: ['tpvset', 'tref'] });
+  liga('superdotacao', { progs: ['ideia'], escs: ['qiiahsd', 'renzulli', 'sobre', 'teaah'] });
+  liga('aprendizagem', { progs: ['tflod'], escs: ['dislexia', 'dizcalc'] });
+  var tq = liga('qi', { progs: ['brpi', 'bafc', 'ideia'], escs: ['tdi'], nota: NOTA_QI,
+    intro: 'Temos sim! Na aba Intelig\u00eancia e AH/SD do painel h\u00e1 tr\u00eas programas de rastreio:' });
+  if (tq && tq.nomes) { ['inteligente', 'capacidade intelectual', 'deficiencia intelectual', 'desenvolvimento intelectual', 'tdi'].forEach(function (n) { if (tq.nomes.indexOf(n) < 0) { tq.nomes.push(n); } }); }
+  // temas que so tem escalas: continuam com a lista de antes, e ganham o link do catalogo
+  ['tdah', 'autismo', 'ansiedade', 'depressao', 'estresse', 'toc', 'bipolar', 'personalidade', 'sono', 'alcool', 'casais', 'sexual', 'infantil', 'trabalho'].forEach(function (id) {
+    for (var i = 0; i < L.temas.length; i++) {
+      if (L.temas[i].id === id && L.temas[i].lista.indexOf('cat\u00e1logo') < 0) { L.temas[i].lista += '. Todas s\u00e3o gratuitas e est\u00e3o no cat\u00e1logo de escalas: ' + CATALOGO; }
+    }
+  });
+
+  // ---------- recursos do site (nao sao testes): onde fica no painel, custo e link do manual ----------
+  var RECURSOS = { agenda: 'Agenda', anamnese: 'Anamnese', prontuario: 'Prontu\u00e1rio' };
+  Object.keys(RECURSOS).forEach(function (id) {
+    var e = ent(id); if (!e || (e.extra && e.extra.indexOf('/manual-' + id + '.html') >= 0)) { return; }
+    var extra = (e.extra ? fim(e.extra) + ' ' : '') + 'Fica na aba ' + RECURSOS[id] + ' do painel do profissional.';
+    if (e.preco) { extra += ' ' + fim(e.preco); }
+    extra += ' Mais informa\u00e7\u00f5es no manual: ' + BASE + 'online/manual-' + id + '.html';
+    e.extra = extra;
+  });
+  var ip = L.porId('pacientes');
+  if (ip && Array.isArray(ip.a) && ip.a.join(' ').indexOf('manual-pacientes') < 0) {
+    ip.a = ip.a.concat(['Fica na aba Pacientes do painel do profissional e n\u00e3o tem cobran\u00e7a por cr\u00e9dito. Mais informa\u00e7\u00f5es no manual: ' + BASE + 'online/manual-pacientes.html']);
+  }
+  // "prontuario eletronico" = Prontuario IA (apoio ao registro clinico; o texto e rascunho que o profissional revisa)
+  var pe = ent('prontuario');
+  if (pe && pe.nomes) { ['prontuario eletronico', 'prontuario digital', 'prontuario online', 'registro clinico'].forEach(function (n) { if (pe.nomes.indexOf(n) < 0) { pe.nomes.push(n); } }); }
+  var ae = ent('agenda');
+  if (ae && ae.nomes) { ['agenda eletronica', 'agenda online', 'agenda digital', 'agendamento'].forEach(function (n) { if (ae.nomes.indexOf(n) < 0) { ae.nomes.push(n); } }); }
+  // "o site tem painel para o profissional?" (antes caia em "procurar profissional", porque "tem" vale por "procura")
+  (function () {
+    var base = L.porId('painel_ferramentas'), ac = L.porId('painel_acessar');
+    var ferr = base && Array.isArray(base.a) ? base.a[0] : 'O painel tem: Pacientes, Escalas, os testes por \u00e1rea, Anamnese, Agenda e Prontu\u00e1rio IA.';
+    L.intents.push({ id: 'painel_profissional', k: ['painel profissional', 'painel para profissional', 'area profissional', 'area do profissional', 'sistema profissional', 'sistema para profissional', 'plataforma profissional', 'plataforma para profissional', 'area restrita', 'painel do profissional'],
+      a: { home: ['Sim! O site tem um painel gratuito para o profissional (neuropsic\u00f3logo, psic\u00f3logo e afins), onde ele cadastra pacientes, envia escalas e testes por link e recebe o relat\u00f3rio em PDF.', ferr,
+                  'Para entrar, clique em "Acessar meu painel gratuito" no topo da p\u00e1gina inicial. O cadastro \u00e9 feito automaticamente no primeiro acesso.'],
+           _: ['Voc\u00ea j\u00e1 est\u00e1 no painel do profissional. ' + ferr] },
+      p: 45, m: ['home', 'painel'], c: ['Como entro no painel?', 'Quanto custa?'] });
+  })();
+  // "tem exemplo de anamnese?": nao existe exemplo publico; ela nao inventa
+  (function () {
+    var it = { id: 'anamnese_exemplo', k: ['exemplo anamnese', 'exemplo de anamnese', 'modelo anamnese', 'modelo de anamnese', 'ver anamnese', 'anamnese de exemplo', 'amostra anamnese', 'anamnese pronta', 'como e a anamnese', 'como fica a anamnese'],
+      a: ['N\u00e3o tenho um exemplo pronto para mostrar aqui. O manual da Anamnese explica os dois tipos (Personalizada e Infantil), o que cada um traz e como o envio funciona: ' + BASE + 'online/manual-anamnese.html',
+          'No painel, na aba Anamnese, voc\u00ea escolhe o tipo e pode enviar por link, preencher na hora ou imprimir. Se quiser ver um modelo, o S\u00e9rgio pode te mostrar: ' + W + '.'],
+      p: 20, m: ['home', 'painel'], c: ['Como funciona a Anamnese?', 'Falar com o S\u00e9rgio'] };
+    L.intents.push(it);
+  })();
+
+  // ---------- curiosidade: o nome Lauana (so responde se perguntarem; palavras do Sergio, 27/11/2026) ----------
+  var I = function (id, k, a, o) { var it = { id: id, k: k, a: a, p: o.p || 0 }; if (o.m) { it.m = o.m; } if (o.c) { it.c = o.c; } L.intents.push(it); };
+  I('nome_lauana', ['por que lauana', 'por que seu nome lauana', 'por que se chama lauana', 'por que voce chama lauana', 'significado lauana', 'significado do nome lauana', 'origem do nome lauana', 'origem nome lauana', 'de onde vem o nome lauana', 'quem e lauana', 'por que esse nome', 'por que lauana nome', 'porque lauana'],
+    ['Meu nome \u00e9 uma homenagem que o S\u00e9rgio fez \u00e0 filha dele. \ud83d\udc9a'], { p: 16, m: ['home', 'painel'], c: ['Quem \u00e9 o S\u00e9rgio?', 'Como surgiu o site?'] });
 })(typeof window !== 'undefined' ? window : global);
 
 // ============================================================
