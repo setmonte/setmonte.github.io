@@ -2349,7 +2349,11 @@
   var IA = GRAVAR && !!cfg.ia && !!L.refinar;
   L.config.ia = IA;
   if (GRAVAR) { L.rede.api = cfg.api || 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws'; }
-  var MODO = 'home', E = L.novoEstado(), ocupado = false, saudou = false, pendente = null;
+  // Etapa 4: a mesma Lauana vale para 3 telas. modo: 'home' (padrao), 'painel' (profissional logado) ou 'paciente' (link do paciente)
+  var MODO = (cfg.modo === 'painel' || cfg.modo === 'paciente') ? cfg.modo : 'home';
+  var E = L.novoEstado(), ocupado = false, saudou = false, pendente = null;
+  function emailAtual() { try { return String((typeof cfg.email === 'function' ? cfg.email() : cfg.email) || ''); } catch (e) { return ''; } }
+  if (MODO === 'paciente') { GRAVAR = false; L.config.gravar = false; L.config.cidade = false; L.config.ia = false; IA = false; }   // paciente: nada sai do aparelho dele
   var FIG = "<g id=\"lauanaFig\"><ellipse cx=\"100\" cy=\"330\" rx=\"62\" ry=\"8\" fill=\"#00000026\"/><!-- cabelo atras --><path d=\"M58 70 Q56 20 100 18 Q144 20 142 70 Q152 100 142 120 Q128 104 126 82 L74 82 Q72 104 58 120 Q48 100 58 70 Z\" fill=\"#b0733a\"/><!-- pernas e sapatos --><rect x=\"84\" y=\"258\" width=\"12\" height=\"66\" fill=\"#eaa769\"/><rect x=\"104\" y=\"258\" width=\"12\" height=\"66\" fill=\"#eaa769\"/><ellipse cx=\"88\" cy=\"326\" rx=\"13\" ry=\"5\" fill=\"#222\"/><ellipse cx=\"112\" cy=\"326\" rx=\"13\" ry=\"5\" fill=\"#222\"/><!-- saia --><path d=\"M72 214 L128 214 L136 264 L64 264 Z\" fill=\"#2b2b2b\"/><!-- pescoco --><rect x=\"92\" y=\"108\" width=\"16\" height=\"26\" fill=\"#f0a96f\"/><!-- camisa --><path d=\"M68 134 Q100 122 132 134 L136 220 L64 220 Z\" fill=\"#a9dfe0\"/><path d=\"M68 134 L50 188 L64 196 L76 154 Z\" fill=\"#a9dfe0\"/><path d=\"M132 134 L150 188 L136 196 L124 154 Z\" fill=\"#a9dfe0\"/><path d=\"M50 188 L64 196 L62 214 L50 206 Z\" fill=\"#eaa769\"/><path d=\"M150 188 L136 196 L138 214 L150 206 Z\" fill=\"#eaa769\"/><!-- colete --><path d=\"M76 136 L96 154 L99 220 L68 220 Z\" fill=\"#6e6e74\"/><path d=\"M124 136 L104 154 L101 220 L132 220 Z\" fill=\"#6e6e74\"/><path d=\"M90 128 L100 146 L110 128 Z\" fill=\"#fff\"/><!-- cordao e cracha --><path d=\"M94 130 L106 160\" stroke=\"#333\" stroke-width=\"2\" fill=\"none\"/><rect x=\"100\" y=\"158\" width=\"16\" height=\"20\" rx=\"2\" fill=\"#fff\" stroke=\"#d09a2a\" stroke-width=\"2\"/><rect x=\"103\" y=\"162\" width=\"10\" height=\"3\" fill=\"#2e7d32\"/><rect x=\"103\" y=\"168\" width=\"10\" height=\"2\" fill=\"#999\"/><!-- rosto --><ellipse cx=\"100\" cy=\"74\" rx=\"32\" ry=\"37\" fill=\"#f6bb86\"/><ellipse cx=\"78\" cy=\"86\" rx=\"6\" ry=\"4\" fill=\"#f09a8a\" opacity=\".55\"/><ellipse cx=\"122\" cy=\"86\" rx=\"6\" ry=\"4\" fill=\"#f09a8a\" opacity=\".55\"/><!-- olhos --><ellipse cx=\"88\" cy=\"73\" rx=\"7\" ry=\"8\" fill=\"#fff\" stroke=\"#6b3b1b\" stroke-width=\"1.5\"/><ellipse cx=\"112\" cy=\"73\" rx=\"7\" ry=\"8\" fill=\"#fff\" stroke=\"#6b3b1b\" stroke-width=\"1.5\"/><circle cx=\"88\" cy=\"74\" r=\"4.6\" fill=\"#8a3b12\"/><circle cx=\"112\" cy=\"74\" r=\"4.6\" fill=\"#8a3b12\"/><circle cx=\"88\" cy=\"74\" r=\"2.2\" fill=\"#111\"/><circle cx=\"112\" cy=\"74\" r=\"2.2\" fill=\"#111\"/><circle cx=\"90\" cy=\"72\" r=\"1.3\" fill=\"#fff\"/><circle cx=\"114\" cy=\"72\" r=\"1.3\" fill=\"#fff\"/><path d=\"M80 62 Q88 57 96 62\" stroke=\"#7a4a20\" stroke-width=\"2.4\" fill=\"none\" stroke-linecap=\"round\"/><path d=\"M104 62 Q112 57 120 62\" stroke=\"#7a4a20\" stroke-width=\"2.4\" fill=\"none\" stroke-linecap=\"round\"/><path d=\"M100 78 Q98 86 102 86\" stroke=\"#c98a5c\" stroke-width=\"1.6\" fill=\"none\"/><path d=\"M89 94 Q100 104 111 94\" stroke=\"#8a3a2a\" stroke-width=\"2.4\" fill=\"#fff\" stroke-linecap=\"round\"/><!-- franja --><path d=\"M66 66 Q78 30 118 34 Q138 40 134 66 Q118 46 98 52 Q80 56 66 66 Z\" fill=\"#c88542\"/><!-- fone de ouvido --><path d=\"M64 74 Q62 26 100 24 Q138 26 136 74\" stroke=\"#262626\" stroke-width=\"5\" fill=\"none\"/><rect x=\"57\" y=\"62\" width=\"11\" height=\"26\" rx=\"5\" fill=\"#333\"/><rect x=\"132\" y=\"62\" width=\"11\" height=\"26\" rx=\"5\" fill=\"#333\"/><path d=\"M60 88 Q62 112 88 106\" stroke=\"#262626\" stroke-width=\"3\" fill=\"none\"/><circle cx=\"90\" cy=\"106\" r=\"4.5\" fill=\"#262626\"/></g>";                                           // desenho da Lauana (SVG), inserido na empacotagem
 
   var CSS = [
@@ -2473,8 +2477,8 @@
     chat.classList.add('on'); balao.style.display = 'none';
     if (!saudou) {
       saudou = true;
-      var nav = idiomaNavegador();
-      var ab = nav ? L.aberturaIdioma(E, nav, hora()) : L.abertura(E, MODO, { hora: hora() });
+      var nav = (MODO === 'home') ? idiomaNavegador() : '';
+      var ab = nav ? L.aberturaIdioma(E, nav, hora()) : L.abertura(E, MODO, { hora: hora(), email: emailAtual() });
       if (primeira && !nav) { L.definirPendente(E, primeira); }
       mostrar(ab);
     } else if (primeira) { enviar(primeira); }
@@ -2486,6 +2490,27 @@
   form.onsubmit = function (e) { e.preventDefault(); var v = inp.value; inp.value = ''; enviar(v); };
   chat.addEventListener('keydown', function (e) { if (e.key === 'Escape') { fechar(); } });
   setTimeout(function () { var d = el(sh, '#dica'); if (d && chat.className.indexOf('on') < 0) { d.style.display = 'none'; } }, 14000);   // a dica some sozinha
+  // so o rostinho, sem balao de fala: no paciente sempre; no painel o balao aparece so 1 vez por sessao (nao cansar quem usa todo dia)
+  (function () {
+    var d = el(sh, '#dica'), jaViu = false;
+    if (MODO === 'painel') { try { jaViu = !!g.sessionStorage.getItem('lauana_dica'); g.sessionStorage.setItem('lauana_dica', '1'); } catch (e) {} }
+    if (d && (MODO === 'paciente' || jaViu || cfg.semDica)) { d.style.display = 'none'; }
+  })();
+  // ---------- visibilidade ----------
+  //  esconderSe: seletor CSS. Enquanto existir na pagina (ex.: um teste em tela cheia), a Lauana se esconde e volta depois.
+  //  esconderAoComecar: seletor de campo (ex.: 'input[type=radio]'). Na 1a vez que a pessoa mexer nele, a Lauana some de vez (so ajuda no comeco).
+  var sumiuDeVez = false;
+  function aplicarVisibilidade() {
+    var some = sumiuDeVez; if (!some && cfg.esconderSe) { try { some = !!document.querySelector(cfg.esconderSe); } catch (e) {} }
+    host.style.display = some ? 'none' : '';
+  }
+  if (cfg.esconderSe) { setInterval(aplicarVisibilidade, 800); }
+  if (cfg.esconderAoComecar) {
+    document.addEventListener('change', function (e) {
+      var t = e.target; if (sumiuDeVez || !t || !t.matches) { return; }
+      try { if (t.matches(cfg.esconderAoComecar)) { sumiuDeVez = true; chat.classList.remove('on'); aplicarVisibilidade(); } } catch (x) {}
+    }, true);
+  }
 
   // ---------- "balcao" com a atendente (opcional, logo abaixo do topo da pagina) ----------
   function montarCena() {
