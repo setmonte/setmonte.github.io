@@ -405,6 +405,7 @@
     if (L.tratarIdioma) { r = L.tratarIdioma(texto, n, E, modo); if (r) { return r; } }   // visitante estrangeiro
     if (E.flow) { r = L.fluxo(texto, n, E, modo); if (r) { return r; } }
     if (L.tratarPapel) { r = L.tratarPapel(texto, n, E, modo); if (r) { return r; } }   // profissao e tratamento Dr./Dra.
+    if (L.tratarContexto) { r = L.tratarContexto(texto, n, E, modo); if (r) { return r; } }   // painel: aba e programa em que o profissional esta
     if (E.aguardandoNome && L.tratarNome) { r = L.tratarNome(texto, n, E, modo); if (r) { return r; } }
     if (E.aguardandoCidade && L.tratarCidade) { r = L.tratarCidade(texto, n, E, modo); if (r) { return r; } }
     var toks = tokens(texto), set = mkSet(toks), cl = clima(texto, set);
@@ -2375,6 +2376,328 @@
         'Aqui no site, os instrumentos s\u00e3o de rastreio: levantam pistas que o profissional interpreta junto com a hist\u00f3ria da pessoa.'], c: ['Como funciona o site?'] });
 })(typeof window !== 'undefined' ? window : global);
 
+/* kb-contexto.js */
+// ============================================================
+// LAUANA - CONTEXTO DO PAINEL (aba e programa em que o profissional esta)
+// A Lauana sabe em que aba/programa voce esta (o widget le do proprio painel) e responde ESPECIFICO:
+//   - abertura diz onde voce esta e oferece botoes daquela aba;
+//   - perguntas vagas ("como funciona isso?", "quanto custa?", "como uso?") valem para a aba/programa atual;
+//   - no painel, "agendar consulta" e a AGENDA do profissional (nunca manda para o Doctoralia do Sergio).
+// Todo o texto vem do proprio painel e dos Manuais Tecnicos. Onde o painel nao diz, ela nao inventa.
+// ============================================================
+(function (g) {
+  'use strict';
+  var L = g.LAU, resp = L.resp, norm = L.norm, W = L.WHATS;
+  function ent(id) { for (var i = 0; i < L.ents.length; i++) { if (L.ents[i].id === id) { return L.ents[i]; } } return null; }
+
+  // ---------- 1) CORRECOES DE CONTEUDO: o "como usar" destas entidades estava com o texto padrao dos testes ("Nova Aplicacao"), que nao existe nelas ----------
+  var COMO = {
+    agenda: 'Clique em "+ Nova Consulta", escolha um paciente cadastrado (ou use "+ Novo Paciente" para cadastrar na hora: nome, nascimento, sexo, WhatsApp e e-mail), defina data e hor\u00e1rio e salve. A consulta aparece no calend\u00e1rio e nas listas da semana e do dia.',
+    anamnese: 'Na aba Anamnese: 1) escolha o tipo (Personalizada ou Infantil); 2) preencha os dados do paciente e clique em "Copiar Link" ou "WhatsApp" (tamb\u00e9m h\u00e1 o bot\u00e3o "Preencher Aqui"); 3) o respons\u00e1vel responde pelo celular ou computador, sem instalar nada; 4) as respostas aparecem sozinhas na se\u00e7\u00e3o Resultados; 5) clique no resultado para ver ou gerar o PDF.',
+    prontuario: 'Na aba Prontu\u00e1rio: 1) crie ou escolha um perfil de t\u00f3picos para o tipo de atendimento; 2) selecione o paciente (ou digite o nome); 3) clique em "Abrir Gravador" (abre uma nova janela); 4) grave a sess\u00e3o, e o sistema transcreve o que \u00e9 falado; 5) ao terminar, clique em "Resumir com IA" (ou "Gerar Prontu\u00e1rio por T\u00f3picos"); 6) revise e edite o texto e salve em HTML ou copie para o seu prontu\u00e1rio.',
+    reocupa: 'Na aba Reabilita\u00e7\u00e3o, escolha o REOCUPA: 1) selecione ou preencha os dados do paciente; 2) se quiser, clique em "Configurar Perguntas" para personalizar as perguntas de cada situa\u00e7\u00e3o e salve; 3) clique em "Iniciar Sess\u00e3o" (o programa abre em nova aba); 4) compartilhe sua tela com o paciente na videochamada; 5) escolha a categoria de situa\u00e7\u00f5es-problema; 6) o paciente l\u00ea em voz alta e responde, e o programa registra o tempo e classifica sozinho; 7) confirme ou corrija a classifica\u00e7\u00e3o de cada resposta. No fim, os resultados s\u00e3o salvos e a evolu\u00e7\u00e3o fica registrada.',
+    lermais: 'Na aba Reabilita\u00e7\u00e3o, escolha o LERMAIS: 1) selecione ou preencha os dados do paciente (e o n\u00edvel de dificuldade, se quiser); 2) clique em "Iniciar Sess\u00e3o" (abre em nova aba), ou use "Gerar Link" (link de uso \u00fanico, com Copiar e WhatsApp) ou "Aplicar Aqui"; 3) o paciente preenche o formul\u00e1rio e clica em "Sortear Texto"; 4) clica em "Iniciar Leitura" e l\u00ea o texto em voz alta; 5) o gr\u00e1fico mostra precis\u00e3o x velocidade em tempo real. No fim, os resultados s\u00e3o salvos para compara\u00e7\u00e3o, e "Ver Evolu\u00e7\u00e3o do Paciente" mostra o hist\u00f3rico.',
+    prat: 'Na aba Reabilita\u00e7\u00e3o, escolha o PRAt: 1) clique em "Iniciar Sess\u00e3o" (o programa abre em nova aba); 2) preencha os dados do participante (nome, nascimento, sexo); 3) clique em "Iniciar Atividade" (entra em tela cheia com cron\u00f4metro); 4) o participante clica nos quadrados e escolhe a cor na paleta; 5) ao terminar, clica em "Finalizar" para ver os resultados; 6) gere o PDF ou exporte o Excel para o prontu\u00e1rio.',
+    smart: 'Na aba Reabilita\u00e7\u00e3o, escolha o SMART e selecione o paciente na lista de pacientes cadastrados. O programa re\u00fane os resultados dos testes dele e gera as metas SMART de reabilita\u00e7\u00e3o cognitiva com IA. O Manual T\u00e9cnico fica na pr\u00f3pria aba.'
+  };
+  Object.keys(COMO).forEach(function (id) { var e = ent(id); if (e) { e.como = COMO[id]; } });
+  // aparelho: a base ja afirma que quase tudo roda no celular, tablet ou computador (a BAE e a excecao); "Funciona no navegador." sozinho nao respondia "funciona no celular?"
+  var DISP_PADRAO = 'Funciona no navegador, no celular, tablet ou computador. A \u00fanica exce\u00e7\u00e3o entre os testes \u00e9 a BAE, que s\u00f3 roda em computador com teclado.';
+  ['trmv', 'taav', 'tref', 'corsi', 'tpvset', 'brpi', 'tecfe', 'tte'].forEach(function (id) { var e = ent(id); if (e) { e.disp = DISP_PADRAO + (id === 'tte' ? ' No TTE a pessoa arrasta a linha com o dedo ou o mouse.' : ''); } });
+  // TTE: o painel nao informa uma duracao fixa; so que cada parte tem 25 itens e que o tempo de cada parte e registrado
+  var tteE = ent('tte'); if (tteE) { tteE.dur = 'O painel n\u00e3o informa uma dura\u00e7\u00e3o fixa para o TTE. Cada parte (A e B) tem 25 itens, e o sistema registra o tempo de execu\u00e7\u00e3o e os erros de cada uma.'; }
+
+  // ---------- 2) TEXTOS DAS ABAS E PROGRAMAS QUE NAO SAO ENTIDADES DA BASE ----------
+  var ABAS = {
+    dadosUsuario: {
+      nome: 'Dados do Usu\u00e1rio',
+      intro: ['Aqui voc\u00ea preenche uma vez seus dados profissionais: nome, CRP, telefone, e-mail, endere\u00e7o e o logo (opcional). Depois \u00e9 s\u00f3 clicar em "Salvar Dados".'],
+      qa: [
+        { chip: 'Preciso preencher tudo?', g: ['preencher', 'obrigatorio', 'opcional', 'branco'], r: ['N\u00e3o. Preencher \u00e9 opcional: se voc\u00ea deixar em branco, informa seu nome e CRP manualmente em cada teste.'] },
+        { chip: 'Onde meus dados aparecem?', g: ['aparecer', 'crp', 'identificacao', 'resultado'], r: ['Se voc\u00ea preencher, seu nome e CRP entram automaticamente como identifica\u00e7\u00e3o nos resultados dos testes.'] },
+        { chip: 'Como coloco meu logo?', g: ['logo', 'cabecalho', 'pdf'], r: ['Em "Dados do Usu\u00e1rio" h\u00e1 o campo Logo (opcional), com bot\u00e3o para remover. Na aba Anamnese tamb\u00e9m d\u00e1 para personalizar o cabe\u00e7alho do PDF (logo, cores e telefones).'] }
+      ]
+    },
+    pacientes: {
+      nome: 'Pacientes',
+      intro: ['Aqui voc\u00ea cadastra cada paciente uma vez s\u00f3, e ele fica dispon\u00edvel em todos os testes, escalas, agenda e prontu\u00e1rio. Nome e data de nascimento s\u00e3o obrigat\u00f3rios, e o sistema avisa se j\u00e1 existe um cadastro parecido.'],
+      qa: [
+        { chip: 'Como cadastro um paciente?', g: ['cadastrar', 'novo', 'cadastro', 'adicionar'], r: ['Preencha nome completo e data de nascimento (obrigat\u00f3rios) e, se quiser, CPF, sexo e escolaridade, e salve. O sistema avisa se j\u00e1 existe um cadastro parecido. O paciente fica dispon\u00edvel em todos os testes, escalas, agenda e prontu\u00e1rio.'] },
+        { chip: 'Como importo por CSV?', g: ['importar', 'csv', 'lista', 'planilha'], r: ['Na pr\u00f3pria aba Pacientes h\u00e1 os bot\u00f5es "Importar CSV" e "Exportar CSV". Vale fazer um backup de vez em quando.'] },
+        { chip: 'O que \u00e9 Verificar Duplicatas?', g: ['duplicata', 'duplicado', 'repetido'], r: ['\u00c9 o bot\u00e3o que confere se h\u00e1 cadastros repetidos ou parecidos na sua lista de pacientes.'] },
+        { chip: 'Meus pacientes ficam seguros?', g: ['seguro', 'privacidade', 'sigilo', 'acessar'], r: ['Os dados dos seus pacientes s\u00e3o acess\u00edveis s\u00f3 por voc\u00ea, e o administrador do sistema n\u00e3o acessa informa\u00e7\u00f5es de pacientes.'] }
+      ]
+    },
+    escalas: {
+      nome: 'Escalas',
+      intro: ['Aqui voc\u00ea envia escalas ao paciente e recebe os resultados. S\u00e3o mais de 50 escalas, gratuitas, com relat\u00f3rio em PDF. Os bot\u00f5es principais s\u00e3o "Aplicar Escala", "Enviar Escala ao Paciente" (escolha a escala na lista), "Exportar Excel" e "Apagar Selecionados".'],
+      qa: [
+        { chip: 'Como envio uma escala?', g: ['enviar', 'link', 'aplicar', 'gerar'], intent: 'gerar_link' },
+        { chip: 'Quais escalas existem?', g: ['existir', 'lista', 'quais', 'disponivel'], intent: 'lista_escalas' },
+        { chip: 'As escalas s\u00e3o gratuitas?', g: ['gratis', 'gratuito', 'custa', 'preco', 'pagar'], r: ['Sim. As mais de 50 escalas s\u00e3o gratuitas, com relat\u00f3rio em PDF.'] },
+        { chip: 'Como exporto os resultados?', g: ['exportar', 'excel', 'planilha'], intent: 'excel_csv' },
+        { chip: 'Como apago resultados?', g: ['apagar', 'excluir', 'deletar', 'remover'], r: ['Marque os resultados que quer apagar (h\u00e1 a op\u00e7\u00e3o "Selecionar todos") e clique em "Apagar Selecionados".'] }
+      ]
+    },
+    anamnese: { nome: 'Anamnese', ent: 'anamnese', chips: ['O que \u00e9 a Anamnese?', 'Como uso a Anamnese?', 'Como personalizo a anamnese?', 'Quanto custa a Anamnese?'], extra: [
+      { chip: 'Como personalizo a anamnese?', g: ['personalizar', 'secao', 'pergunta', 'editar', 'cabecalho'], r: ['Na Anamnese Personalizada voc\u00ea escolhe quais se\u00e7\u00f5es incluir (role at\u00e9 o final da aba): marque ou desmarque temas, edite perguntas existentes ou adicione novas. Em "Configura\u00e7\u00f5es do PDF" d\u00e1 para personalizar o cabe\u00e7alho (logo, cores e telefones).'] }
+    ] },
+    agenda: { nome: 'Agenda', ent: 'agenda', chips: ['O que \u00e9 a Agenda?', 'Como marco uma consulta?', 'Como sincronizo com o Google Calendar?', 'Como compartilho minha agenda?'], extra: [
+      { chip: 'Como marco uma consulta?', g: ['marcar', 'agendar', 'consulta', 'horario', 'agendamento'], r: [COMO.agenda] },
+      { chip: 'Como sincronizo com o Google Calendar?', g: ['google', 'calendar', 'sincronizar', 'conectar'], r: ['Clique em "Conectar" e autorize a sincroniza\u00e7\u00e3o com o Google Calendar. Assim as consultas aparecem tamb\u00e9m na sua agenda do Google (celular e computador). A conex\u00e3o usa o login do Google: conceda o acesso s\u00f3 na sua pr\u00f3pria conta e, em computador compartilhado, saia da conta ao terminar.'] },
+      { chip: 'Como compartilho minha agenda?', g: ['compartilhar', 'colega', 'autorizar', 'compartilhada'], r: ['Em "Agenda Compartilhada" voc\u00ea autoriza outros profissionais a ver a sua agenda (informando o e-mail deles) e tamb\u00e9m v\u00ea a agenda de colegas que autorizaram voc\u00ea. Compartilhe com crit\u00e9rio: a agenda mostra hor\u00e1rios e nomes de pacientes. Autorize s\u00f3 colegas de confian\u00e7a e revise a lista de vez em quando.'] },
+      { chip: 'Como funcionam os lembretes?', g: ['lembrete', 'telegram', 'avisar', 'lembrar'], intent: 'agenda_lembrete' }
+    ] },
+    prontuario: { nome: 'Prontu\u00e1rio', ent: 'prontuario', chips: ['O que \u00e9 o Prontu\u00e1rio?', 'Como uso o Prontu\u00e1rio?', 'Quanto custa o Prontu\u00e1rio?', 'A transcri\u00e7\u00e3o saiu vazia'], extra: [
+      { chip: 'O que \u00e9 perfil de t\u00f3picos?', g: ['perfil', 'topico', 'secao'], r: ['Perfil de t\u00f3picos \u00e9 a lista de se\u00e7\u00f5es que a IA vai preencher a partir da transcri\u00e7\u00e3o. Voc\u00ea cria um perfil para cada tipo de atendimento (por exemplo "Anamnese Adulto", "Devolutiva" ou "Sess\u00e3o Terap\u00eautica"), e os t\u00f3picos s\u00e3o edit\u00e1veis: adicione, remova ou renomeie conforme a sua pr\u00e1tica.'] },
+      { chip: 'Posso colar um texto sem gravar?', g: ['colar', 'texto', 'gravar', 'anotacao'], r: ['Pode. Sem gravar tamb\u00e9m funciona: cole o texto direto na caixa de transcri\u00e7\u00e3o (anota\u00e7\u00f5es antigas, observa\u00e7\u00f5es) e use a IA s\u00f3 para organizar por t\u00f3picos.'] },
+      { chip: 'A transcri\u00e7\u00e3o saiu vazia', g: ['vazia', 'vazio', 'transcricao', 'microfone', 'audio', 'permissao'], r: ['A transcri\u00e7\u00e3o depende do \u00e1udio: use um ambiente silencioso, o microfone razoavelmente perto e fale em volume normal (com duas pessoas, ponha o microfone entre voc\u00eas). Se vier vazia, confira a permiss\u00e3o do microfone (\u00edcone de cadeado na barra de endere\u00e7o). O Chrome costuma funcionar melhor.'] },
+      { chip: 'E o sigilo das sess\u00f5es?', g: ['sigilo', 'seguro', 'lgpd', 'privacidade', 'anonimizacao', 'consentimento'], r: ['Antes de ir \u00e0 IA os dados passam por anonimiza\u00e7\u00e3o. Mesmo assim, grave s\u00f3 com o consentimento do paciente, guarde os arquivos com seguran\u00e7a e n\u00e3o compartilhe o conte\u00fado fora do contexto cl\u00ednico. A IA \u00e9 apoio: o texto \u00e9 um rascunho, e voc\u00ea revisa e assume o registro final.'] }
+    ] },
+    correcao: {
+      nome: 'Corre\u00e7\u00e3o',
+      intro: ['Aqui voc\u00ea corrige testes de papel com c\u00e1lculo autom\u00e1tico: BVRT, ETDAH-PAIS e ETDAH-CriAd. Escolha o teste, informe os dados e o programa calcula e monta a tabela para o laudo.'],
+      qa: []
+    },
+    reabilitacao: {
+      nome: 'Reabilita\u00e7\u00e3o',
+      intro: ['Aqui ficam os programas de acompanhamento: REOCUPA, SMART, LERMAIS e PRAt. Escolha o programa na barra do topo da aba.'],
+      qa: [
+        { chip: 'Quais programas existem?', g: ['existir', 'quais', 'programa', 'lista'], r: ['REOCUPA (reabilita\u00e7\u00e3o ocupacional, com reconhecimento de voz), SMART (metas de reabilita\u00e7\u00e3o cognitiva geradas por IA), LERMAIS (flu\u00eancia leitora com reconhecimento de voz) e PRAt (reabilita\u00e7\u00e3o da aten\u00e7\u00e3o).'] }
+      ]
+    },
+    depoimentos: {
+      nome: 'Depoimentos',
+      intro: ['Aqui voc\u00ea v\u00ea os depoimentos recebidos e responde. O link para as pessoas enviarem depoimento \u00e9 setmonte.github.io/depoimento/.'],
+      qa: [{ chip: 'Onde envio o link?', g: ['link', 'enviar', 'pedir'], r: ['O link para enviar depoimento \u00e9 https://setmonte.github.io/depoimento/ . Quem recebe preenche nome, nota e o texto.'] }]
+    },
+    programasOcultos: {
+      nome: 'Programas Ocultos',
+      intro: ['Aqui ficam os programas de uso profissional exclusivo: Pfister, NEO PI-R, SRS-2 (Escolar, Adulto Autorrelato e Adulto Heterorrelato), ETDAH-PAIS e Vineland-3.'],
+      qa: []
+    },
+    admin: {
+      nome: 'Admin',
+      intro: ['Painel administrativo, com as abas Mensagens, Enviados, Monitor, Usu\u00e1rios, Cr\u00e9ditos, Resultados e Ferramentas.'],
+      qa: [{ chip: 'O que \u00e9 o cart\u00e3o da Lauana?', g: ['cartao', 'lauana', 'recado', 'visitante'], r: ['\u00c9 onde aparecem os recados deixados para o S\u00e9rgio, as cidades e os idiomas dos visitantes e as perguntas que eu n\u00e3o soube responder (\u00fateis para ampliar o que eu sei).'] }]
+    }
+  };
+
+  // programas sem entidade na base: texto direto do painel
+  var PROGS = {
+    bvrt: { aba: 'correcao', nome: 'BVRT', oque: ['BVRT \u2014 Teste de Reten\u00e7\u00e3o Visual de Benton. C\u00e1lculo autom\u00e1tico de Z-Score e classifica\u00e7\u00e3o: voc\u00ea informa idade, escolaridade e os escores obtidos, o programa seleciona a norma correta e gera a tabela pronta para o laudo. H\u00e1 tamb\u00e9m a consulta de figuras e c\u00f3digos de erro.'],
+      como: ['Em "Dados do Paciente" escolha o paciente cadastrado (ou digite manualmente), informe idade e escolaridade e preencha os escores da administra\u00e7\u00e3o aplicada (por exemplo A \u2014 Mem\u00f3ria e C \u2014 C\u00f3pia): acertos e erros por tipo (omiss\u00f5es, distor\u00e7\u00f5es, persevera\u00e7\u00f5es, rota\u00e7\u00f5es, trocas de posi\u00e7\u00e3o e erros de tamanho). O programa calcula o Z-Score e a classifica\u00e7\u00e3o.'] },
+    etdah: { aba: 'correcao', nome: 'ETDAH-PAIS (corre\u00e7\u00e3o)', idade: ['O ETDAH-PAIS vale de 2 a 17 anos (normas por sexo e faixa et\u00e1ria, Benczik, 2018).'], oque: ['ETDAH-PAIS \u2014 Escala de Avalia\u00e7\u00e3o de Comportamentos Infantojuvenis no TDAH, respondida pelos pais ou respons\u00e1veis. Voc\u00ea marca a pontua\u00e7\u00e3o de cada item (1 a 6), o sistema aplica as invers\u00f5es automaticamente e calcula os percentis por sexo e faixa et\u00e1ria. P\u00fablico-alvo: 2 a 17 anos, 58 itens, 4 fatores, normas por sexo e faixa et\u00e1ria (Benczik, 2018).'],
+      como: ['Escolha o paciente cadastrado (ou digite manualmente) e marque a pontua\u00e7\u00e3o de cada item, de 1 (Nunca) a 6 (Muito Frequente). O sistema inverte os itens necess\u00e1rios sozinho e calcula os percentis. D\u00e1 para adicionar v\u00e1rios respondentes (m\u00e3e, pai, professor) e comparar os perfis lado a lado no resultado.'] },
+    criad: { aba: 'correcao', nome: 'ETDAH-CriAd', idade: ['O ETDAH-CriAd vale de 6 a 15 anos (normas por faixa et\u00e1ria, Benczik, 2018).'], oque: ['ETDAH-CriAd \u2014 Escala de Autoavalia\u00e7\u00e3o do TDAH (crian\u00e7as e adolescentes). \u00c9 de autorrelato: a pr\u00f3pria crian\u00e7a ou adolescente responde sobre si, e voc\u00ea registra aqui as respostas dadas na aplica\u00e7\u00e3o. Escala de 1 (Nunca) a 4 (Sempre). P\u00fablico-alvo: 6 a 15 anos, 22 itens, 2 fatores, normas por faixa et\u00e1ria (Benczik, 2018).'],
+      como: ['Escolha o paciente cadastrado (ou digite manualmente), informe a idade (6 a 15) e o sexo e registre as respostas de cada item (1 Nunca, 2 Um pouco, 3 \u00c0s vezes, 4 Sempre). Depois clique em "Calcular Resultados".'] },
+    pfister: { aba: 'programasOcultos', nome: 'Pfister', oque: ['Teste das Pir\u00e2mides Coloridas de Pfister: teste projetivo para avalia\u00e7\u00e3o da din\u00e2mica emocional e de indicadores cognitivos. O paciente preenche pir\u00e2mides com cores da sua prefer\u00eancia, e o programa analisa a frequ\u00eancia crom\u00e1tica, as s\u00edndromes e a f\u00f3rmula crom\u00e1tica.'] },
+    neo: { aba: 'programasOcultos', nome: 'NEO PI-R', oque: ['NEO PI-R \u2014 Invent\u00e1rio de Personalidade NEO Revisado. Avalia os 5 grandes fatores (Neuroticismo, Extrovers\u00e3o, Abertura, Amabilidade e Conscienciosidade), com 240 itens e 30 facetas. Normas brasileiras (N=160.671). \u00c9 ideal para enviar por link, para o paciente responder com conforto em casa.'] },
+    srs2: { aba: 'programasOcultos', nome: 'SRS-2 Escolar', idade: ['O SRS-2 Escolar vale de 4 a 18 anos.'], oque: ['SRS-2 Escolar \u2014 Escala de Responsividade Social (idade escolar, 4 a 18 anos). Avalia d\u00e9ficits na reciprocidade social associados ao TEA: 65 itens e 5 subescalas de interven\u00e7\u00e3o, respondida por pais ou professores, com normas brasileiras e Escore T por sexo.'] },
+    srs2aa: { aba: 'programasOcultos', nome: 'SRS-2 Adulto (Autorrelato)', idade: ['O SRS-2 Adulto Autorrelato vale a partir de 19 anos.'], oque: ['SRS-2 Adulto Autorrelato \u2014 Escala de Responsividade Social, a partir de 19 anos. Avalia d\u00e9ficits na reciprocidade social associados ao TEA: 65 itens e 5 subescalas de interven\u00e7\u00e3o. A pr\u00f3pria pessoa responde sobre si. Normas brasileiras (ambos os sexos), com Escore T e Percentil.'] },
+    srs2ah: { aba: 'programasOcultos', nome: 'SRS-2 Adulto (Heterorrelato)', idade: ['O SRS-2 Adulto Heterorrelato vale a partir de 19 anos.'], oque: ['SRS-2 Adulto Heterorrelato \u2014 Escala de Responsividade Social, a partir de 19 anos. Avalia d\u00e9ficits na reciprocidade social associados ao TEA: 65 itens e 5 subescalas de interven\u00e7\u00e3o. Um informante responde sobre a pessoa avaliada. Normas brasileiras (ambos os sexos), com Escore T e Percentil.'] },
+    etdahp: { aba: 'programasOcultos', nome: 'ETDAH-PAIS', idade: ['O ETDAH-PAIS vale de 2 a 17 anos (a crian\u00e7a ou o adolescente \u00e9 o paciente cadastrado).'], oque: ['ETDAH-PAIS \u2014 Avalia\u00e7\u00e3o de Comportamentos Infantojuvenis no TDAH (vers\u00e3o para pais): 58 itens e 4 fatores (Regula\u00e7\u00e3o Emocional, Hiperatividade/Impulsividade, Comportamento Adaptativo e Aten\u00e7\u00e3o). Os pais ou respons\u00e1veis respondem pelo link. O resultado traz escore bruto, percentil e classifica\u00e7\u00e3o por fator, com normas por sexo e faixa et\u00e1ria (2 a 17 anos). O paciente cadastrado \u00e9 a crian\u00e7a ou o adolescente.'] },
+    vineland3: { aba: 'programasOcultos', nome: 'Vineland-3', idade: ['O Vineland-3 vale de 0 a 90 anos.'], oque: ['Vineland-3 \u2014 Escala de Comportamento Adaptativo. Avalia 3 dom\u00ednios: Comunica\u00e7\u00e3o, Habilidades da Vida Di\u00e1ria e Socializa\u00e7\u00e3o. \u00c9 uma entrevista semiestruturada, de 0 a 90 anos, aplicada por profissional treinado.'] }
+  };
+  // programa que vale quando o painel nao informa qual sub-aba esta ativa
+  var PADRAO = { funcExec: 'tecfe', atencao: 'bae', memoria: 'trmv', percepcao: 'tref', linguagem: 'tflod', visuoconstrutivo: 'tetaylor', inteligencia: 'ideia', reabilitacao: 'reocupa', correcao: 'bvrt', programasOcultos: 'pfister' };
+  var NOME_ABA = { funcExec: 'Fun\u00e7\u00f5es Executivas', atencao: 'Aten\u00e7\u00e3o', memoria: 'Mem\u00f3ria', percepcao: 'Percep\u00e7\u00e3o', linguagem: 'Linguagem', visuoconstrutivo: 'Visuoconstrutivo', inteligencia: 'Intelig\u00eancia e AH/SD' };
+
+  // ---------- 3) montar o contexto atual: { nome, chips, qa, intro } ----------
+  function junta(a) { return (a || []).filter(Boolean); }
+  function G(frases) { return frases.map(function (f) { return L.tokens(f); }); }
+  // artigo e verbo certos em portugues: "o TFLOD", "a BAE", "a Agenda"; testes se APLICAM, programas e ferramentas se USAM
+  var ARTIGO = { bae: 'a', agenda: 'a', anamnese: 'a' };
+  var USA = { agenda: 1, anamnese: 1, prontuario: 1, reocupa: 1, lermais: 1, prat: 1, smart: 1 };
+  var COMO_COM_LINK = { anamnese: 1, lermais: 1 };      // so estas ferramentas enviam link ao paciente; nas outras, "como gero o link" e a resposta geral de gerar link
+  function qaDeEntidade(e) {
+    var n = e.nome, art = ARTIGO[e.id] || 'o', Art = art.toUpperCase(), qa = [];
+    qa.push({ aspecto: true, chip: 'O que \u00e9 ' + art + ' ' + n + '?', g: ['serve', 'funciona', 'explica', 'significa', 'resumo'], campos: ['oque', 'extra'] });
+    if (e.como) { qa.push({ aspecto: true, chip: (USA[e.id] ? 'Como uso ' : 'Como aplico ') + art + ' ' + n + '?', g: (USA[e.id] && !COMO_COM_LINK[e.id]) ? ['usar', 'uso', 'comecar', 'faco', 'passo'] : ['aplicar', 'usar', 'uso', 'comecar', 'faco', 'passo', 'link', 'enviar', 'mandar', 'gerar'], campos: ['como'] }); }
+    if (e.preco) { qa.push({ aspecto: true, chip: 'Quanto custa ' + art + ' ' + n + '?', g: ['custa', 'preco', 'valor', 'gratis', 'credito', 'cobranca'], campos: ['preco'] }); }
+    if (e.dur) { qa.push({ aspecto: true, chip: 'Quanto tempo leva ' + art + ' ' + n + '?', g: ['duracao', 'tempo', 'demora', 'minuto'], campos: ['dur'] }); }
+    if (e.idade) { qa.push({ aspecto: true, chip: 'Para que idade \u00e9 ' + art + ' ' + n + '?', g: ['idade', 'faixa', 'crianca', 'idoso', 'adulto'], campos: ['idade'] }); }
+    if (e.disp) { qa.push({ aspecto: true, chip: Art + ' ' + n + ' funciona no celular?', g: ['celular', 'tablet', 'computador', 'dispositivo', 'navegador'], campos: ['disp'] }); }
+    return qa;
+  }
+  function qaDePrograma(p) {
+    var qa = [{ chip: 'O que \u00e9 o ' + p.nome + '?', g: ['serve', 'funciona', 'explica', 'significa', 'resumo'], r: p.oque }];
+    if (p.como) { qa.push({ aspecto: true, chip: 'Como uso o ' + p.nome + '?', g: ['aplicar', 'usar', 'uso', 'comecar', 'faco', 'passo'], r: p.como }); }
+    if (p.idade) { qa.push({ aspecto: true, chip: 'Para que idade \u00e9 o ' + p.nome + '?', g: ['idade', 'faixa', 'crianca', 'idoso', 'adulto', 'ano'], r: p.idade }); }
+    return qa;
+  }
+  // devolve o contexto resolvido (ou null)
+  L.contextoDe = function (E) {
+    if (!E || !E.aba) { return null; }
+    var aba = E.aba, prog = String(E.programa || '').toLowerCase(), c = null, e = null, p = null;
+    var A = ABAS[aba];
+    if (!prog && PADRAO[aba]) { prog = PADRAO[aba]; }
+    if (aba === 'funcExec' || aba === 'atencao' || aba === 'memoria' || aba === 'percepcao' || aba === 'linguagem' || aba === 'visuoconstrutivo' || aba === 'inteligencia' || aba === 'reabilitacao' || aba === 'correcao' || aba === 'programasOcultos') {
+      e = ent(prog); p = PROGS[prog] || null;
+      if (e) { c = { nome: e.nome, ent: e, qa: qaDeEntidade(e), aba: aba }; if (aba === 'reabilitacao' && A) { c.qa = c.qa.concat(A.qa || []); } }
+      else if (p) { c = { nome: p.nome, qa: qaDePrograma(p), aba: aba }; }
+      else if (A) { c = { nome: A.nome, qa: A.qa || [], intro: A.intro, aba: aba }; }
+      if (c) { c.nomeAba = A ? A.nome : (NOME_ABA[aba] || aba); }
+    } else if (A) {
+      if (A.ent) { e = ent(A.ent); c = { nome: A.nome, ent: e, qa: (e ? qaDeEntidade(e) : []).concat(A.extra || []), aba: aba }; }
+      else { c = { nome: A.nome, qa: A.qa || [], intro: A.intro, aba: aba }; }
+      c.nomeAba = A.nome;
+    }
+    if (!c) { return null; }
+    // "O que e" primeiro, depois as perguntas mais uteis; so 4 botoes
+    c.chips = (A && A.chips) ? A.chips.slice() : c.qa.slice(0, 4).map(function (q) { return q.chip; });
+    return c;
+  };
+  L.rotuloContexto = function (E) {
+    var c = L.contextoDe(E); if (!c) { return ''; }
+    return (c.nomeAba && c.nomeAba !== c.nome) ? (c.nomeAba + ' > ' + c.nome) : c.nome;
+  };
+
+  // ---------- 4) o painel diz onde a pessoa esta ----------
+  L.definirContexto = function (E, ctx) {
+    if (!ctx || !ctx.aba) { E.aba = null; E.programa = ''; L._ctxE = null; return; }
+    E.aba = String(ctx.aba); E.programa = String(ctx.programa || ''); L._ctxE = E;
+  };
+  function chave(E) { return E.aba ? (E.aba + '|' + String(E.programa || '').toLowerCase()) : ''; }
+
+  // botoes padrao do painel passam a ser os da aba atual
+  var chipsBase = L.chipsPadrao;
+  L.chipsPadrao = function (modo) {
+    if (modo === 'painel' && L._ctxE) { var c = L.contextoDe(L._ctxE); if (c && c.chips.length) { return c.chips.slice(); } }
+    return chipsBase.apply(this, arguments);
+  };
+  // abertura: diz onde a pessoa esta
+  var aberturaBase = L.abertura;
+  L.abertura = function (E, modo, opcoes) {
+    var r = aberturaBase.apply(this, arguments);
+    if (modo === 'painel' && E.aba) {
+      var rot = L.rotuloContexto(E);
+      if (rot && r.msgs && r.msgs.length) {
+        r.msgs[0] = r.msgs[0].replace('Precisa de ajuda com o painel?', 'Vi que voc\u00ea est\u00e1 em ' + rot + '. Quer ajuda com isso?');
+        var c = L.contextoDe(E); if (c) { r.chips = c.chips.slice(); }
+        E._ctxAnunciado = chave(E);
+      }
+    }
+    return r;
+  };
+  // se a pessoa mudou de aba/programa com o conversa aberta: uma frase curta, com os botoes novos
+  L.avisoContexto = function (E, ctx) {
+    var antes = chave(E);
+    L.definirContexto(E, ctx);
+    var agora = chave(E);
+    if (!agora || agora === E._ctxAnunciado) { return null; }
+    E._ctxAnunciado = agora;
+    if (!antes && !E._ctxAnunciadoAlgumaVez) { E._ctxAnunciadoAlgumaVez = true; }
+    var c = L.contextoDe(E); if (!c) { return null; }
+    return resp(['Vi que voc\u00ea foi para ' + L.rotuloContexto(E) + '. Quer ajuda por aqui? ' + '\ud83d\ude0a'], c.chips.slice(), { id: 'ctx-mudou', neutro: true });
+  };
+
+  // ---------- 5) responder no contexto ----------
+  function dizer(c, q, E, set, modo) {
+    var msgs;
+    if (q.r) { msgs = q.r.slice(); }
+    else if (q.intent) {
+      var it = L.porId(q.intent), a = it && it.a;
+      if (typeof a === 'function') { try { a = a(E, modo); } catch (x) { a = null; } }
+      if (a && !Array.isArray(a)) { a = a[modo] || a._ || null; }
+      msgs = a ? a.slice() : null;
+    } else if (q.campos) {
+      msgs = q.campos.map(function (k) { return c.ent && c.ent[k]; }).filter(Boolean);
+    }
+    if (!msgs || !msgs.length) { return null; }
+    if (c.ent) { E.ent = c.ent; E.ultimoTipo = 'ent'; E.ultimo = { id: 'ent:' + c.ent.id, s: c.ent.simples || c.ent.oque }; }
+    E.falhas = 0; E.ofereceu = null;
+    var chips = c.chips.filter(function (x) { return x !== q.chip; });
+    return resp(msgs, chips.slice(0, 4), { id: 'ctx' });
+  }
+  function introDe(c) {
+    if (c.intro) { return c.intro; }
+    if (c.ent) { return [c.ent.oque, c.ent.extra].filter(Boolean); }
+    var q = c.qa[0]; return q && q.r ? q.r : null;
+  }
+  // palavras que NAO mudam o assunto de uma pergunta (no conceito canonico da base). Se a frase tiver outra palavra alem destas, nao e pergunta so de aspecto.
+  // quantos assuntos da base usam cada palavra (no conceito canonico): palavra RARA = quase so existe aqui, entao e seguro o contexto responder
+  var FREQ = null;
+  function freqChaves() {
+    if (!FREQ) {
+      FREQ = {};
+      L.intents.forEach(function (it) { var v = {}; (it.k || []).forEach(function (f) { L.tokens(f).forEach(function (tk) { v[tk] = 1; }); }); Object.keys(v).forEach(function (tk) { FREQ[tk] = (FREQ[tk] || 0) + 1; }); });
+    }
+    return FREQ;
+  }
+  var FILLER = null;
+  function fillerSet() {
+    if (!FILLER) {
+      FILLER = {};
+      ['como', 'o', 'a', 'os', 'as', 'um', 'uma', 'de', 'do', 'da', 'dos', 'das', 'no', 'na', 'para', 'pra', 'por', 'que', 'e', 'eu', 'me', 'meu', 'minha', 'posso', 'pode', 'podem', 'isso', 'isto', 'aqui', 'esse', 'essa', 'este', 'esta', 'nesse', 'nessa', 'neste', 'nesta', 'aba', 'tela', 'programa', 'teste', 'pagina', 'qual', 'quais', 'quanto', 'quantos', 'quanta', 'favor', 'voce', 'tem', 'ter', 'ser', 'sao', 'fica', 'ficar', 'ele', 'ela', 'funciona', 'roda', 'rodar', 'paciente', 'pacientes', 'responsavel']
+        .forEach(function (w) { L.tokens(w).forEach(function (tk) { FILLER[tk] = 1; }); });
+    }
+    return FILLER;
+  }
+  // problemas de cobranca/credito: sempre resposta do motor (alem dos assuntos delicados, que o proprio motor ja marca com prioridade >= 40)
+  var PROTEGIDOS = { credito_sumiu: 1, cobranca_dobro: 1, reembolso: 1, credito_demora: 1, credito_abandono: 1, nota_fiscal: 1, pagamento_formas: 1, credito_comprar: 1, bonus_bloqueado: 1, encerrar_conta: 1, direitos_titular: 1, privacidade: 1 };
+  var COMPRA = /\b(comprar|compro|compra|comprei|pagamento|pagar|pix|cartao|reembolso|nota fiscal|boleto|estorno)\b/;
+  var VAGO_INICIO = /^(como|o que|que|para que|pra que|qual|quais|me explica|explica|explique|ajuda|me ajuda|ajude|duvida|nao entendi|nao sei|por onde|isso|e isso)/;
+  var DEITICO = /(^| )(isso|isto|aqui|aba|tela|programa|teste|pagina|escala|essa|esse|esta|este|nessa|nesse|nesta|neste)( |$)/;
+  var AGENDA_PAINEL = /(^| )(agend\w*|marc\w*)( |$)/;
+
+  L.tratarContexto = function (texto, n, E, modo) {
+    if (modo !== 'painel' || !E.aba) { return null; }
+    var c = L.contextoDe(E); if (!c) { return null; }
+    var palavras = n.split(' ').length, i, q;
+    // 1) clicou num botao da aba (texto igual ao botao)
+    for (i = 0; i < c.qa.length; i++) { if (norm(c.qa[i].chip) === n) { var r1 = dizer(c, c.qa[i], E, null, modo); if (r1) { return r1; } } }
+    // 2) no painel, "agendar/marcar consulta" e a Agenda do profissional (nunca o Doctoralia do Sergio)
+    if (palavras <= 12 && AGENDA_PAINEL.test(n) && /consulta|paciente|horario|atendimento/.test(n) && !/sergio|doctoralia|voces|voce atende/.test(n)) {
+      var cAg = L.contextoDe({ aba: 'agenda', programa: '' });
+      if (cAg) { var qAg = cAg.qa.filter(function (x) { return /marco uma consulta/.test(norm(x.chip)); })[0]; var rAg = qAg && dizer(cAg, qAg, E, null, modo); if (rAg) { rAg.chips = cAg.chips.filter(function (x) { return x !== qAg.chip; }).slice(0, 4); return rAg; } }
+    }
+    if (palavras > 12) { return null; }
+    var toks = L.tokens(texto), set = L._f.mkSet(toks);
+    // conversa delicada (emocional, ameaca, clinico, raiva, ofensa) ou problema de cobranca/privacidade: SEMPRE o motor, nunca o contexto
+    var itD = L._f.melhorIntencao(set, 'painel', E), cl = L.clima(texto, set);
+    if ((itD && ((itD.p || 0) >= 40 || PROTEGIDOS[itD.id])) || cl.raiva || cl.insulto || cl.xingou) { return null; }
+    // 3) a pessoa citou OUTRO teste/escala/programa: o motor normal responde sobre ele
+    var outro = L._f.acharEntidade(set), esc = L._f.acharEscala(set);
+    if (esc || (outro && (!c.ent || outro.id !== c.ent.id))) { return null; }
+    if (COMPRA.test(n)) { return null; }                                   // comprar creditos/pagamento: respostas gerais do motor
+    // 4) pergunta especifica da aba/programa (pelas palavras-chave de cada pergunta)
+    var melhor = null, bs = 0, sEng = 0, fill = fillerSet(), nomeTok = {};
+    var itE = L._f.melhorIntencao(set, 'painel', E); if (itE && itE._k) { sEng = L.casa(set, itE._k) + (itE.p || 0); }
+    [c.nome, c.nomeAba].concat((c.ent && c.ent.nomes) || []).forEach(function (nm) { L.tokens(nm || '').forEach(function (tk) { nomeTok[tk] = 1; }); });
+    for (i = 0; i < c.qa.length; i++) {
+      q = c.qa[i]; if (!q._k) { q._k = G(q.g || []); }
+      var s = L.casa(set, q._k); if (!s) { continue; }
+      if (q.aspecto) {
+        // pergunta so de aspecto ("quanto custa?", "como uso?"): o contexto manda, mas so se NAO houver outra palavra de assunto ("como gerar o link" vai para o motor)
+        var gt = {}; q._k.forEach(function (f) { f.forEach(function (tk) { gt[tk] = 1; }); });
+        var puro = toks.every(function (tk) { return fill[tk] || gt[tk] || nomeTok[tk]; });
+        if (!puro) { continue; }
+        s += 100;
+      } else {
+        // pergunta especifica da aba: disputa com o motor e leva uma pequena vantagem (perde se o motor reconhece um assunto bem mais forte)
+        // vale se casar com 2 palavras da pergunta OU com 1 palavra rara na base (ex.: "lembrete", "csv", "logo"); uma palavra comum (ex.: "resultado") deixa o motor decidir
+        var fr = freqChaves(), casadas = 0, rara = false;
+        q._k.forEach(function (f) { if (L.casa(set, [f])) { casadas++; if ((fr[f[0]] || 0) <= 4) { rara = true; } } });
+        if (casadas < 2 && !rara) { continue; }
+        s += 30;
+      }
+      if (s > bs) { bs = s; melhor = q; }
+    }
+    if (melhor) { var r4 = dizer(c, melhor, E, set, modo); if (r4) { return r4; } }
+    // 5) pergunta vaga ("como funciona isso aqui?", "me ajuda", "nao entendi"): explica a aba/programa atual
+    if (VAGO_INICIO.test(n) && (DEITICO.test(n) || palavras <= 3)) {
+      var intro = introDe(c);
+      if (intro) {
+        if (c.ent) { E.ent = c.ent; E.ultimoTipo = 'ent'; E.ultimo = { id: 'ent:' + c.ent.id, s: c.ent.simples || c.ent.oque }; }
+        E.falhas = 0; E.ofereceu = null;
+        return resp(intro.slice(), c.chips.slice(), { id: 'ctx' });
+      }
+    }
+    return null;
+  };
+})(typeof window !== 'undefined' ? window : global);
+
 /* kb-auto-aplicar.js */
 // ============================================================
 // LAUANA - APLICA OS DADOS LIDOS DO SITE (arquivo kb-auto.js, gerado)
@@ -2473,6 +2796,9 @@
   // Etapa 4: a mesma Lauana vale para 3 telas. modo: 'home' (padrao), 'painel' (profissional logado) ou 'paciente' (link do paciente)
   var MODO = (cfg.modo === 'painel' || cfg.modo === 'paciente') ? cfg.modo : 'home';
   var E = L.novoEstado(), ocupado = false, saudou = false, pendente = null;
+  // Painel: a pagina informa em que aba/programa o profissional esta (cfg.contexto devolve { aba, programa }). A Lauana responde especifico.
+  function contextoAtual() { try { return (typeof cfg.contexto === 'function') ? (cfg.contexto() || null) : null; } catch (e) { return null; } }
+  function atualizarContexto() { if (MODO === 'painel' && L.definirContexto) { L.definirContexto(E, contextoAtual()); } }
   function emailAtual() { try { return String((typeof cfg.email === 'function' ? cfg.email() : cfg.email) || ''); } catch (e) { return ''; } }
   if (MODO === 'paciente') { GRAVAR = false; L.config.gravar = false; L.config.cidade = false; L.config.ia = false; IA = false; }   // paciente: nada sai do aparelho dele
   var FIG = "<g id=\"lauanaFig\"><ellipse cx=\"100\" cy=\"330\" rx=\"62\" ry=\"8\" fill=\"#00000026\"/><!-- cabelo atras --><path d=\"M58 70 Q56 20 100 18 Q144 20 142 70 Q152 100 142 120 Q128 104 126 82 L74 82 Q72 104 58 120 Q48 100 58 70 Z\" fill=\"#b0733a\"/><!-- pernas e sapatos --><rect x=\"84\" y=\"258\" width=\"12\" height=\"66\" fill=\"#eaa769\"/><rect x=\"104\" y=\"258\" width=\"12\" height=\"66\" fill=\"#eaa769\"/><ellipse cx=\"88\" cy=\"326\" rx=\"13\" ry=\"5\" fill=\"#222\"/><ellipse cx=\"112\" cy=\"326\" rx=\"13\" ry=\"5\" fill=\"#222\"/><!-- saia --><path d=\"M72 214 L128 214 L136 264 L64 264 Z\" fill=\"#2b2b2b\"/><!-- pescoco --><rect x=\"92\" y=\"108\" width=\"16\" height=\"26\" fill=\"#f0a96f\"/><!-- camisa --><path d=\"M68 134 Q100 122 132 134 L136 220 L64 220 Z\" fill=\"#a9dfe0\"/><path d=\"M68 134 L50 188 L64 196 L76 154 Z\" fill=\"#a9dfe0\"/><path d=\"M132 134 L150 188 L136 196 L124 154 Z\" fill=\"#a9dfe0\"/><path d=\"M50 188 L64 196 L62 214 L50 206 Z\" fill=\"#eaa769\"/><path d=\"M150 188 L136 196 L138 214 L150 206 Z\" fill=\"#eaa769\"/><!-- colete --><path d=\"M76 136 L96 154 L99 220 L68 220 Z\" fill=\"#6e6e74\"/><path d=\"M124 136 L104 154 L101 220 L132 220 Z\" fill=\"#6e6e74\"/><path d=\"M90 128 L100 146 L110 128 Z\" fill=\"#fff\"/><!-- cordao e cracha --><path d=\"M94 130 L106 160\" stroke=\"#333\" stroke-width=\"2\" fill=\"none\"/><rect x=\"100\" y=\"158\" width=\"16\" height=\"20\" rx=\"2\" fill=\"#fff\" stroke=\"#d09a2a\" stroke-width=\"2\"/><rect x=\"103\" y=\"162\" width=\"10\" height=\"3\" fill=\"#2e7d32\"/><rect x=\"103\" y=\"168\" width=\"10\" height=\"2\" fill=\"#999\"/><!-- rosto --><ellipse cx=\"100\" cy=\"74\" rx=\"32\" ry=\"37\" fill=\"#f6bb86\"/><ellipse cx=\"78\" cy=\"86\" rx=\"6\" ry=\"4\" fill=\"#f09a8a\" opacity=\".55\"/><ellipse cx=\"122\" cy=\"86\" rx=\"6\" ry=\"4\" fill=\"#f09a8a\" opacity=\".55\"/><!-- olhos --><ellipse cx=\"88\" cy=\"73\" rx=\"7\" ry=\"8\" fill=\"#fff\" stroke=\"#6b3b1b\" stroke-width=\"1.5\"/><ellipse cx=\"112\" cy=\"73\" rx=\"7\" ry=\"8\" fill=\"#fff\" stroke=\"#6b3b1b\" stroke-width=\"1.5\"/><circle cx=\"88\" cy=\"74\" r=\"4.6\" fill=\"#8a3b12\"/><circle cx=\"112\" cy=\"74\" r=\"4.6\" fill=\"#8a3b12\"/><circle cx=\"88\" cy=\"74\" r=\"2.2\" fill=\"#111\"/><circle cx=\"112\" cy=\"74\" r=\"2.2\" fill=\"#111\"/><circle cx=\"90\" cy=\"72\" r=\"1.3\" fill=\"#fff\"/><circle cx=\"114\" cy=\"72\" r=\"1.3\" fill=\"#fff\"/><path d=\"M80 62 Q88 57 96 62\" stroke=\"#7a4a20\" stroke-width=\"2.4\" fill=\"none\" stroke-linecap=\"round\"/><path d=\"M104 62 Q112 57 120 62\" stroke=\"#7a4a20\" stroke-width=\"2.4\" fill=\"none\" stroke-linecap=\"round\"/><path d=\"M100 78 Q98 86 102 86\" stroke=\"#c98a5c\" stroke-width=\"1.6\" fill=\"none\"/><path d=\"M89 94 Q100 104 111 94\" stroke=\"#8a3a2a\" stroke-width=\"2.4\" fill=\"#fff\" stroke-linecap=\"round\"/><!-- franja --><path d=\"M66 66 Q78 30 118 34 Q138 40 134 66 Q118 46 98 52 Q80 56 66 66 Z\" fill=\"#c88542\"/><!-- fone de ouvido --><path d=\"M64 74 Q62 26 100 24 Q138 26 136 74\" stroke=\"#262626\" stroke-width=\"5\" fill=\"none\"/><rect x=\"57\" y=\"62\" width=\"11\" height=\"26\" rx=\"5\" fill=\"#333\"/><rect x=\"132\" y=\"62\" width=\"11\" height=\"26\" rx=\"5\" fill=\"#333\"/><path d=\"M60 88 Q62 112 88 106\" stroke=\"#262626\" stroke-width=\"3\" fill=\"none\"/><circle cx=\"90\" cy=\"106\" r=\"4.5\" fill=\"#262626\"/></g>";                                           // desenho da Lauana (SVG), inserido na empacotagem
@@ -2601,6 +2927,7 @@
   }
   // ent: { texto } (mensagem ja em portugues), { crise } ou { falha } (respostas prontas), ou {} (processa o texto como veio)
   function responder(texto, ent) {
+    atualizarContexto();
     var r = ent.crise || ent.falha || L.processar(ent.texto != null ? ent.texto : texto, E, MODO);
     var textoPt = ent.texto != null ? ent.texto : texto;
     if (GRAVAR) { L.rede.registrarSilencioso(r, textoPt, E, MODO); }          // contadores: silencioso, nunca atrapalha
@@ -2625,13 +2952,17 @@
   }
   function abrir(primeira) {
     chat.classList.add('on'); balao.style.display = 'none';
+    atualizarContexto();
     if (!saudou) {
       saudou = true;
       var nav = (MODO === 'home') ? idiomaNavegador() : '';
       var ab = nav ? L.aberturaIdioma(E, nav, hora()) : L.abertura(E, MODO, { hora: hora(), email: emailAtual() });
       if (primeira && !nav) { L.definirPendente(E, primeira); }
       entregar(ab);
-    } else if (primeira) { enviar(primeira); }
+    } else {
+      var nota = (MODO === 'painel' && L.avisoContexto) ? L.avisoContexto(E, contextoAtual()) : null;
+      if (primeira) { enviar(primeira); } else if (nota) { entregar(nota); }
+    }
     setTimeout(function () { inp.focus(); }, 60);
   }
   function fechar() { chat.classList.remove('on'); balao.style.display = 'flex'; balao.focus(); }
@@ -2639,6 +2970,12 @@
   el(sh, '.fechar').onclick = fechar;
   form.onsubmit = function (e) { e.preventDefault(); var v = inp.value; inp.value = ''; enviar(v); };
   chat.addEventListener('keydown', function (e) { if (e.key === 'Escape') { fechar(); } });
+  if (MODO === 'painel' && cfg.contexto) {
+    setInterval(function () {
+      if (!saudou || ocupado || chat.className.indexOf('on') < 0 || !L.avisoContexto) { return; }
+      var nota = L.avisoContexto(E, contextoAtual()); if (nota) { entregar(nota); }
+    }, 1000);
+  }
   setTimeout(function () { var d = el(sh, '#dica'); if (d && chat.className.indexOf('on') < 0) { d.style.display = 'none'; } }, 14000);   // a dica some sozinha
   // so o rostinho, sem balao de fala: no paciente sempre; no painel o balao aparece so 1 vez por sessao (nao cansar quem usa todo dia)
   (function () {
