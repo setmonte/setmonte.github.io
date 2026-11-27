@@ -1721,6 +1721,17 @@
               <button onclick="marcarSuporteLido(true)" style="background:#777;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:bold;cursor:pointer;">Marcar Todas</button>
             </div>
           </div>
+          <!-- Lauana: recados e visitantes (so o admin ve) -->
+          <div id="adminLauanaCard" style="background:#e3f1fb;border:2px solid #1a5276;border-radius:10px;padding:15px;margin:10px 0;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px;">
+              <p style="font-size:13px;font-weight:bold;color:#1a5276;">&#128172; Lauana &#8212; recados e visitantes</p>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span id="adminLauanaCount" style="background:#9e9e9e;color:#fff;border-radius:12px;padding:3px 11px;font-size:13px;font-weight:bold;" title="Recados novos">0</span>
+                <button onclick="carregarLauana()" class="btn btn-blue" style="padding:6px 14px;font-size:12px;">Atualizar</button>
+              </div>
+            </div>
+            <div id="adminLauanaContent" style="font-size:12px;color:#444;line-height:1.6;max-height:520px;overflow-y:auto;">Abra a aba Admin para carregar.</div>
+          </div>
             </div><!-- /sub mensagens -->
 
             <!-- SUB-ABA: Enviados -->
@@ -4458,6 +4469,7 @@ function _trmvIR(d){var r1=(d.reconhecimento1||{}).acertos,r2=(d.reconhecimento2
         if (typeof carregarProtecaoCreditos === 'function') carregarProtecaoCreditos();
         carregarRankingUso();
         verificarVendasNovas();
+        if (typeof carregarLauana === 'function') carregarLauana();
       }
     }
 
@@ -7710,6 +7722,71 @@ function _trmvIR(d){var r1=(d.reconhecimento1||{}).acertos,r2=(d.reconhecimento2
     function toggleRankingDetalhe(id) {
       var el = document.getElementById(id);
       if (el) el.style.display = (el.style.display === 'none') ? 'block' : 'none';
+    }
+
+    // ===== LAUANA (atendente virtual do site): recados, cidades, idiomas e perguntas sem resposta =====
+    // Tudo que vem de visitantes e escrito com textContent (nunca innerHTML): texto de terceiros nao vira HTML.
+    function _lauEl(tag, txt, css) { var e = document.createElement(tag); if (txt != null) { e.textContent = txt; } if (css) { e.style.cssText = css; } return e; }
+    function _lauQuando(iso) { try { return new Date(iso).toLocaleString('pt-BR', { timeZone: 'America/Campo_Grande' }); } catch (e) { return iso || ''; } }
+    var _LAU_SEN_NOMES = { emocional: 'sofrimento emocional', ameaca: 'ameaca / reclamacao formal', golpe: 'desconfianca (golpe)', ofensa: 'ofensa', ansiedade_teste: 'mal-estar durante teste', busca_atendimento: 'pedido de atendimento' };
+    async function carregarLauana() {
+      var box = document.getElementById('adminLauanaContent');
+      if (!box) return;
+      box.textContent = 'Carregando...';
+      try {
+        var resp = await fetch(API_URL + '/admin-lauana?email=' + encodeURIComponent(currentUser));
+        var d = await resp.json();
+        if (!resp.ok) { box.textContent = 'N\u00e3o consegui carregar (c\u00f3digo ' + resp.status + '). Saia e entre de novo no painel.'; return; }
+        _renderLauana(box, d);
+      } catch (e) { box.textContent = 'Erro de conex\u00e3o ao carregar a Lauana. Tente "Atualizar".'; }
+    }
+    function _renderLauana(box, d) {
+      box.textContent = '';
+      var recados = (d.recados || []).slice().sort(function (a, b) { return (a.lido === b.lido) ? String(b.data).localeCompare(String(a.data)) : (a.lido ? 1 : -1); });
+      var novos = recados.filter(function (r) { return !r.lido; }).length;
+      var cont = document.getElementById('adminLauanaCount');
+      if (cont) { cont.textContent = String(novos); cont.style.background = novos ? '#c62828' : '#9e9e9e'; }
+      box.appendChild(_lauEl('p', 'Recados (' + novos + ' novos, ' + recados.length + ' no total)', 'font-weight:bold;margin:4px 0;'));
+      if (!recados.length) { box.appendChild(_lauEl('p', 'Nenhum recado ainda.', 'color:#777;')); }
+      recados.slice(0, 40).forEach(function (r) {
+        var it = _lauEl('div', null, 'background:' + (r.lido ? '#f5f5f5' : '#fff') + ';border:1px solid #cfd8dc;border-left:4px solid ' + (r.lido ? '#9e9e9e' : '#c62828') + ';border-radius:6px;padding:8px 10px;margin:6px 0;');
+        it.appendChild(_lauEl('div', '[' + (r.motivo || 'Recado') + '] ' + (r.nome ? r.nome + ' \u2022 ' : '') + _lauQuando(r.data) + ' \u2022 ' + (r.tela || 'home') + ' \u2022 ' + (r.idioma || 'pt'), 'font-size:11px;color:#607d8b;'));
+        it.appendChild(_lauEl('div', r.texto || '', 'white-space:pre-wrap;margin:4px 0;'));
+        if (r.contato) { it.appendChild(_lauEl('div', 'Contato: ' + r.contato, 'font-size:11px;color:#1a5276;')); }
+        if (!r.lido) { var b1 = _lauEl('button', 'Marcar como lido', 'margin-right:6px;padding:4px 10px;font-size:11px;border:none;border-radius:6px;background:#2e7d32;color:#fff;cursor:pointer;'); b1.onclick = function () { marcarLauana(r.id, 'lido'); }; it.appendChild(b1); }
+        var b2 = _lauEl('button', 'Apagar', 'padding:4px 10px;font-size:11px;border:none;border-radius:6px;background:#c62828;color:#fff;cursor:pointer;'); b2.onclick = function () { marcarLauana(r.id, 'apagar'); }; it.appendChild(b2);
+        box.appendChild(it);
+      });
+      box.appendChild(_lauEl('p', 'Conversas sens\u00edveis (s\u00f3 a contagem; o texto n\u00e3o \u00e9 guardado)', 'font-weight:bold;margin:12px 0 4px;'));
+      if (!(d.sensiveis || []).length) { box.appendChild(_lauEl('p', 'Nenhuma.', 'color:#777;')); }
+      (d.sensiveis || []).forEach(function (s) { box.appendChild(_lauEl('div', (_LAU_SEN_NOMES[s.categoria] || s.categoria) + ': ' + s.n + (s.ultimo ? ' (\u00faltima em ' + _lauQuando(s.ultimo) + ')' : ''), 'margin-left:8px;')); });
+      box.appendChild(_lauEl('p', 'De onde v\u00eam os visitantes (s\u00f3 cidade, sem nome nem endere\u00e7o)', 'font-weight:bold;margin:12px 0 4px;'));
+      if (!(d.cidades || []).length) { box.appendChild(_lauEl('p', 'Ningu\u00e9m contou a cidade ainda.', 'color:#777;')); }
+      (d.cidades || []).slice(0, 15).forEach(function (c) { box.appendChild(_lauEl('div', (c.cidade || '(s\u00f3 o estado)') + (c.uf ? '/' + c.uf : '') + ': ' + c.n + (c.n === 1 ? ' pessoa' : ' pessoas'), 'margin-left:8px;')); });
+      box.appendChild(_lauEl('p', 'Visitantes de outros idiomas (querem o site no idioma deles?)', 'font-weight:bold;margin:12px 0 4px;'));
+      var porIdioma = {};
+      (d.idiomas || []).forEach(function (x) { var k = String(x.idioma || '?').toUpperCase(); porIdioma[k] = porIdioma[k] || { sim: 0, nao: 0, visita: 0 }; porIdioma[k][x.gate] = (porIdioma[k][x.gate] || 0) + x.n; });
+      if (!Object.keys(porIdioma).length) { box.appendChild(_lauEl('p', 'Nenhum visitante estrangeiro ainda.', 'color:#777;')); }
+      Object.keys(porIdioma).forEach(function (k) { var v = porIdioma[k]; box.appendChild(_lauEl('div', k + ': ' + v.nao + ' n\u00e3o leem portugu\u00eas (interesse em traduzir) | ' + v.sim + ' leem portugu\u00eas | ' + v.visita + ' s\u00f3 visitando', 'margin-left:8px;')); });
+      var sem = (d.semResposta || []).slice(0, 30);
+      box.appendChild(_lauEl('p', 'Perguntas que a Lauana n\u00e3o soube responder (' + (d.semResposta || []).length + ') \u2014 ensine-a!', 'font-weight:bold;margin:12px 0 4px;'));
+      if (!sem.length) { box.appendChild(_lauEl('p', 'Nenhuma.', 'color:#777;')); }
+      sem.forEach(function (q) {
+        var it = _lauEl('div', null, 'border-bottom:1px solid #eceff1;padding:4px 0;margin-left:8px;');
+        it.appendChild(_lauEl('span', '"' + (q.texto || '') + '" ', null));
+        it.appendChild(_lauEl('span', _lauQuando(q.data) + ' ', 'font-size:11px;color:#90a4ae;'));
+        var b = _lauEl('button', 'Apagar', 'padding:2px 8px;font-size:11px;border:none;border-radius:6px;background:#9e9e9e;color:#fff;cursor:pointer;'); b.onclick = function () { marcarLauana(q.id, 'apagar'); };
+        it.appendChild(b); box.appendChild(it);
+      });
+    }
+    async function marcarLauana(id, acao) {
+      if (acao === 'apagar' && !confirm('Apagar este item da lista da Lauana?')) { return; }
+      try {
+        var resp = await fetch(API_URL + '/admin-lauana-marcar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id, acao: acao, email: currentUser }) });
+        var r = await resp.json();
+        if (!resp.ok || !r.ok) { alert('N\u00e3o consegui atualizar agora. Tente de novo.'); return; }
+      } catch (e) { alert('Erro de conex\u00e3o. Tente de novo.'); return; }
+      carregarLauana();
     }
 
     function adminSubTab(nome) {

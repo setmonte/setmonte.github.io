@@ -1192,6 +1192,73 @@
   }
 })(typeof window !== 'undefined' ? window : global);
 
+/* lauana-rede.js */
+// ============================================================
+// LAUANA - REDE (envio ao servidor, Etapa 2). Sem tela: testavel no Node.
+// Regras:
+//  - So diz "recebi" DEPOIS que o servidor confirmou (ok:true). Ate 3 tentativas com o MESMO "rid"
+//    (o servidor nao duplica) e tempo limite por tentativa.
+//  - Contadores (cidade, idioma, conversa sensivel) e "perguntas sem resposta" sao silenciosos:
+//    se falharem, a conversa NAO e afetada.
+//  - Nunca envia o nome junto com a cidade. Nunca envia o texto de conversas sensiveis.
+// ============================================================
+(function (g) {
+  'use strict';
+  var L = g.LAU;
+  var SENSIVEIS = ['emocional', 'ameaca', 'golpe', 'ofensa', 'ansiedade_teste', 'busca_atendimento'];
+  var R = L.rede = { api: '', fetch: null, tempo: 12000, espera: function (ms) { return new Promise(function (ok) { setTimeout(ok, ms); }); } };
+
+  function rid() { var s = '', i; for (i = 0; i < 4; i++) { s += Math.random().toString(36).slice(2, 8); } return s.slice(0, 24); }
+  R.novoRid = rid;
+
+  // 1 tentativa, com tempo limite. Resolve { http, json } ou rejeita.
+  function umaTentativa(rota, corpo) {
+    var f = R.fetch || g.fetch;
+    if (!f) { return Promise.reject(new Error('sem fetch')); }
+    var ctl = (typeof g.AbortController === 'function') ? new g.AbortController() : null;
+    var timer = ctl ? setTimeout(function () { ctl.abort(); }, R.tempo) : null;
+    return f(R.api + rota, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo), signal: ctl ? ctl.signal : undefined })
+      .then(function (resp) { if (timer) { clearTimeout(timer); } return resp.json().then(function (j) { return { http: resp.status, json: j || {} }; }, function () { return { http: resp.status, json: {} }; }); },
+            function (e) { if (timer) { clearTimeout(timer); } throw e; });
+  }
+  // ate "max" tentativas (espera 0,8s, 1,6s...). Erros 4xx (exceto 429) nao adiantam repetir.
+  R.postar = function (rota, corpo, max) {
+    max = max || 3; var n = 0;
+    function tentar() {
+      n++;
+      return umaTentativa(rota, corpo).then(function (r) {
+        if (r.http >= 200 && r.http < 300) { return { ok: r.json.ok !== false, json: r.json, http: r.http }; }
+        if (r.http >= 400 && r.http < 500 && r.http !== 429) { return { ok: false, json: r.json, http: r.http, definitivo: true }; }
+        throw new Error('http ' + r.http);
+      }).catch(function (e) {
+        if (n < max) { return R.espera(800 * n).then(tentar); }
+        return { ok: false, json: {}, http: 0, erro: String(e && e.message || e) };
+      });
+    }
+    return tentar();
+  };
+
+  // Pedido de gravacao vindo da conversa (r.acao === 'gravar'): recado ou avaliacao (depoimento)
+  R.enviarGravacao = function (pedido, E, tela) {
+    var d = pedido.dados || {}, id = d._rid = d._rid || rid();
+    if (pedido.tipo === 'depoimento') {
+      return R.postar('/save-depoimento', { nome: d.nome || 'An\u00f4nimo', nota: d.nota, texto: d.texto, servico: 'Outro' });
+    }
+    return R.postar('/lauana-registrar', { tipo: 'recado', rid: id, motivo: d.motivo || 'Recado', texto: d.texto, nome: d.nome || E.nome || '', contato: d.contato || '', idioma: d.idioma || E.idioma || 'pt', tela: tela || 'home', website: '' });
+  };
+
+  // Registros silenciosos (nunca atrapalham a conversa)
+  R.registrarSilencioso = function (r, texto, E, tela) {
+    var envios = [];
+    function e(corpo) { envios.push(R.postar('/lauana-registrar', corpo, 2).catch(function () { return { ok: false }; })); }
+    if (r.registro && r.registro.tipo === 'cidade') { e({ tipo: 'cidade', cidade: r.registro.cidade, uf: r.registro.uf, website: '' }); }
+    if (r.registro && r.registro.tipo === 'idioma') { e({ tipo: 'idioma', idioma: r.registro.idioma, gate: r.registro.gate, website: '' }); }
+    if (SENSIVEIS.indexOf(r.id) >= 0) { e({ tipo: 'sensivel', id: r.id, website: '' }); }          // so a categoria, nunca o texto
+    if (r.sem) { e({ tipo: 'semresposta', rid: rid(), texto: String(texto || '').slice(0, 200), tela: tela || 'home', idioma: E.idioma || 'pt', website: '' }); }
+    return Promise.all(envios);
+  };
+})(typeof window !== 'undefined' ? window : global);
+
 /* kb-testes.js */
 // ============================================================
 // LAUANA - TESTES, PROGRAMAS E FERRAMENTAS (um por um)
@@ -1966,7 +2033,7 @@
 })(typeof window !== 'undefined' ? window : global);
 
 /* kb-auto.js */
-// GERADO por sincronizar.js em 2026-11-27T00:27:52.919Z a partir de d:/Planilhas/site. NAO EDITE A MAO.
+// GERADO por sincronizar.js em 2026-11-27T00:43:57.682Z a partir de d:/Planilhas/site. NAO EDITE A MAO.
 (function (g) { g.LAU.aplicarAuto({"escalasNovas":[],"testesNovos":[],"precos":[{"sigla":"TECFE","gratis":1,"avulso":20,"pacotes":[{"qtd":10,"cada":15},{"qtd":50,"cada":10}],"texto":"Ao se cadastrar voc\u00ea ganha 1 cr\u00e9dito gr\u00e1tis. Depois: R$ 20 a aplica\u00e7\u00e3o avulsa, R$ 15 cada no pacote de 10 (R$ 150), R$ 10 cada no pacote de 50 (R$ 500)."},{"sigla":"BAE","gratis":5,"avulso":25,"pacotes":[{"qtd":2,"total":50},{"qtd":8,"total":200}],"texto":"Ao se cadastrar voc\u00ea ganha 5 cr\u00e9ditos gr\u00e1tis. Depois: R$ 25 a aplica\u00e7\u00e3o avulsa, 2 cr\u00e9ditos por R$ 50, 8 cr\u00e9ditos por R$ 200."},{"sigla":"Prontuario","gratis":1,"avulso":5,"pacotes":[{"qtd":10,"cada":4},{"qtd":50,"cada":3}],"texto":"Ao se cadastrar voc\u00ea ganha 1 cr\u00e9dito gr\u00e1tis. Depois: R$ 5 a aplica\u00e7\u00e3o avulsa, R$ 4 cada no pacote de 10 (R$ 40), R$ 3 cada no pacote de 50 (R$ 150)."},{"sigla":"TRMV","gratis":1,"avulso":5,"pacotes":[{"qtd":10,"cada":4},{"qtd":50,"cada":3}],"texto":"Ao se cadastrar voc\u00ea ganha 1 cr\u00e9dito gr\u00e1tis. Depois: R$ 5 a aplica\u00e7\u00e3o avulsa, R$ 4 cada no pacote de 10 (R$ 40), R$ 3 cada no pacote de 50 (R$ 150)."},{"sigla":"TAAV","gratis":1,"avulso":5,"pacotes":[{"qtd":10,"cada":4},{"qtd":50,"cada":3}],"texto":"Ao se cadastrar voc\u00ea ganha 1 cr\u00e9dito gr\u00e1tis. Depois: R$ 5 a aplica\u00e7\u00e3o avulsa, R$ 4 cada no pacote de 10 (R$ 40), R$ 3 cada no pacote de 50 (R$ 150)."},{"sigla":"TREF","gratis":1,"avulso":5,"pacotes":[{"qtd":10,"cada":4},{"qtd":50,"cada":3}],"texto":"Ao se cadastrar voc\u00ea ganha 1 cr\u00e9dito gr\u00e1tis. Depois: R$ 5 a aplica\u00e7\u00e3o avulsa, R$ 4 cada no pacote de 10 (R$ 40), R$ 3 cada no pacote de 50 (R$ 150)."},{"sigla":"TFLOD","gratis":1,"avulso":5,"pacotes":[{"qtd":10,"cada":4},{"qtd":50,"cada":3}],"texto":"Ao se cadastrar voc\u00ea ganha 1 cr\u00e9dito gr\u00e1tis. Depois: R$ 5 a aplica\u00e7\u00e3o avulsa, R$ 4 cada no pacote de 10 (R$ 40), R$ 3 cada no pacote de 50 (R$ 150)."},{"sigla":"IDEIA","gratis":1,"avulso":10,"pacotes":[{"qtd":10,"cada":8}],"texto":"Ao se cadastrar voc\u00ea ganha 1 cr\u00e9dito gr\u00e1tis. Depois: R$ 10 a aplica\u00e7\u00e3o avulsa, R$ 8 cada no pacote de 10 (R$ 80)."}],"novidades":[{"data":"22/11","titulo":"BAFC \u2014 Bateria de Avalia\u00e7\u00e3o do Funcionamento Cognitivo"},{"data":"25/10","titulo":"TPV-SET \u2014 Teste de Percep\u00e7\u00e3o Visual (adapta\u00e7\u00e3o do jogo SET)"},{"data":"23/10","titulo":"TREF 2.0 \u2014 Novo motor de escaneamento e laudo ampliado"},{"data":"30/09","titulo":"BRPI \u2014 Bateria de Rastreio do Processamento da Intelig\u00eancia"},{"data":"29/09","titulo":"TFLOD \u2014 Novo fluxo lProcessar no painelr (fim das falhas na tela do paciente)"},{"data":"18/09","titulo":"TFLOD e IDEIA \u2014 Capta\u00e7\u00e3o de \u00e1udio mais robusta"},{"data":"18/09","titulo":"Escalas \u2014 Gera\u00e7\u00e3o de PDF refor\u00e7ada"},{"data":"26/08","titulo":"IDEIA \u2014 Instrumento de Diverg\u00eancia e Elabora\u00e7\u00e3o de Ideias Alternativas"}]}); })(typeof window !== 'undefined' ? window : global);
 
 // ============================================================
@@ -1983,7 +2050,10 @@
   if (/[?&]semlauana(\b|=)/.test(g.location.search)) { return; }
   g.__lauanaCarregada = true;
   var L = g.LAU, cfg = g.LAUANA_CONFIG || {};
-  L.config.gravar = false; L.config.cidade = false;           // ETAPA 1: nada e gravado
+  // Etapa 1 (padrao): nada e gravado. Etapa 2: a pagina liga com LAUANA_CONFIG = { gravar: true }.
+  var GRAVAR = !!cfg.gravar && !!L.rede;
+  L.config.gravar = GRAVAR; L.config.cidade = GRAVAR;
+  if (GRAVAR) { L.rede.api = cfg.api || 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws'; }
   var MODO = 'home', E = L.novoEstado(), ocupado = false, saudou = false, pendente = null;
   var FIG = "<g id=\"lauanaFig\"><ellipse cx=\"100\" cy=\"330\" rx=\"62\" ry=\"8\" fill=\"#00000026\"/><!-- cabelo atras --><path d=\"M58 70 Q56 20 100 18 Q144 20 142 70 Q152 100 142 120 Q128 104 126 82 L74 82 Q72 104 58 120 Q48 100 58 70 Z\" fill=\"#b0733a\"/><!-- pernas e sapatos --><rect x=\"84\" y=\"258\" width=\"12\" height=\"66\" fill=\"#eaa769\"/><rect x=\"104\" y=\"258\" width=\"12\" height=\"66\" fill=\"#eaa769\"/><ellipse cx=\"88\" cy=\"326\" rx=\"13\" ry=\"5\" fill=\"#222\"/><ellipse cx=\"112\" cy=\"326\" rx=\"13\" ry=\"5\" fill=\"#222\"/><!-- saia --><path d=\"M72 214 L128 214 L136 264 L64 264 Z\" fill=\"#2b2b2b\"/><!-- pescoco --><rect x=\"92\" y=\"108\" width=\"16\" height=\"26\" fill=\"#f0a96f\"/><!-- camisa --><path d=\"M68 134 Q100 122 132 134 L136 220 L64 220 Z\" fill=\"#a9dfe0\"/><path d=\"M68 134 L50 188 L64 196 L76 154 Z\" fill=\"#a9dfe0\"/><path d=\"M132 134 L150 188 L136 196 L124 154 Z\" fill=\"#a9dfe0\"/><path d=\"M50 188 L64 196 L62 214 L50 206 Z\" fill=\"#eaa769\"/><path d=\"M150 188 L136 196 L138 214 L150 206 Z\" fill=\"#eaa769\"/><!-- colete --><path d=\"M76 136 L96 154 L99 220 L68 220 Z\" fill=\"#6e6e74\"/><path d=\"M124 136 L104 154 L101 220 L132 220 Z\" fill=\"#6e6e74\"/><path d=\"M90 128 L100 146 L110 128 Z\" fill=\"#fff\"/><!-- cordao e cracha --><path d=\"M94 130 L106 160\" stroke=\"#333\" stroke-width=\"2\" fill=\"none\"/><rect x=\"100\" y=\"158\" width=\"16\" height=\"20\" rx=\"2\" fill=\"#fff\" stroke=\"#d09a2a\" stroke-width=\"2\"/><rect x=\"103\" y=\"162\" width=\"10\" height=\"3\" fill=\"#2e7d32\"/><rect x=\"103\" y=\"168\" width=\"10\" height=\"2\" fill=\"#999\"/><!-- rosto --><ellipse cx=\"100\" cy=\"74\" rx=\"32\" ry=\"37\" fill=\"#f6bb86\"/><ellipse cx=\"78\" cy=\"86\" rx=\"6\" ry=\"4\" fill=\"#f09a8a\" opacity=\".55\"/><ellipse cx=\"122\" cy=\"86\" rx=\"6\" ry=\"4\" fill=\"#f09a8a\" opacity=\".55\"/><!-- olhos --><ellipse cx=\"88\" cy=\"73\" rx=\"7\" ry=\"8\" fill=\"#fff\" stroke=\"#6b3b1b\" stroke-width=\"1.5\"/><ellipse cx=\"112\" cy=\"73\" rx=\"7\" ry=\"8\" fill=\"#fff\" stroke=\"#6b3b1b\" stroke-width=\"1.5\"/><circle cx=\"88\" cy=\"74\" r=\"4.6\" fill=\"#8a3b12\"/><circle cx=\"112\" cy=\"74\" r=\"4.6\" fill=\"#8a3b12\"/><circle cx=\"88\" cy=\"74\" r=\"2.2\" fill=\"#111\"/><circle cx=\"112\" cy=\"74\" r=\"2.2\" fill=\"#111\"/><circle cx=\"90\" cy=\"72\" r=\"1.3\" fill=\"#fff\"/><circle cx=\"114\" cy=\"72\" r=\"1.3\" fill=\"#fff\"/><path d=\"M80 62 Q88 57 96 62\" stroke=\"#7a4a20\" stroke-width=\"2.4\" fill=\"none\" stroke-linecap=\"round\"/><path d=\"M104 62 Q112 57 120 62\" stroke=\"#7a4a20\" stroke-width=\"2.4\" fill=\"none\" stroke-linecap=\"round\"/><path d=\"M100 78 Q98 86 102 86\" stroke=\"#c98a5c\" stroke-width=\"1.6\" fill=\"none\"/><path d=\"M89 94 Q100 104 111 94\" stroke=\"#8a3a2a\" stroke-width=\"2.4\" fill=\"#fff\" stroke-linecap=\"round\"/><!-- franja --><path d=\"M66 66 Q78 30 118 34 Q138 40 134 66 Q118 46 98 52 Q80 56 66 66 Z\" fill=\"#c88542\"/><!-- fone de ouvido --><path d=\"M64 74 Q62 26 100 24 Q138 26 136 74\" stroke=\"#262626\" stroke-width=\"5\" fill=\"none\"/><rect x=\"57\" y=\"62\" width=\"11\" height=\"26\" rx=\"5\" fill=\"#333\"/><rect x=\"132\" y=\"62\" width=\"11\" height=\"26\" rx=\"5\" fill=\"#333\"/><path d=\"M60 88 Q62 112 88 106\" stroke=\"#262626\" stroke-width=\"3\" fill=\"none\"/><circle cx=\"90\" cy=\"106\" r=\"4.5\" fill=\"#262626\"/></g>";                                           // desenho da Lauana (SVG), inserido na empacotagem
 
@@ -2082,7 +2152,17 @@
     limparChips(); addMsg(texto, 'eu');
     var r = L.processar(texto, E, MODO);
     if (r.traduzir) { r.msgs = r.msgs.slice(); }               // (a traducao ao vivo pela IA entra na Etapa 3)
+    if (GRAVAR) { L.rede.registrarSilencioso(r, texto, E, MODO); }          // contadores: silencioso, nunca atrapalha
+    if (GRAVAR && r.acao === 'gravar') { addMsg(r.msgs[0], 'bot'); ocupado = true; gravar(r.dados); return; }
     mostrar(r);
+  }
+  // So diz "recebi" depois que o servidor confirmou (ate 3 tentativas). Se falhar, avisa e guarda o texto.
+  function gravar(pedido) {
+    L.rede.enviarGravacao(pedido, E, MODO).then(function (res) {
+      ocupado = false;
+      if (!res.ok && res.http === 200 && res.json && res.json.error && pedido.tipo === 'depoimento') { E.flow = null; mostrar({ msgs: [res.json.error], chips: [] }); return; }
+      mostrar(L.resultadoGravacao(E, res.ok, pedido.tipo, pedido.dados));
+    });
   }
   function abrir(primeira) {
     chat.classList.add('on'); balao.style.display = 'none';
