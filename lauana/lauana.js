@@ -2662,6 +2662,21 @@
     _rolando = setTimeout(function () { balao.style.opacity = ''; }, 700);
   }, { capture: true, passive: true });
   if (cfg.esconderSe) { setInterval(aplicarVisibilidade, 800); }
+  //  esconderAoClicarTexto: expressao regular. Na 1a vez que a pessoa tocar num botao/link cujo texto casar (ex.: "Iniciar teste"), a Lauana some de vez.
+  //  esconderAoClicarSel: seletor CSS do botao (ex.: '.item-btns button' = botoes de resposta). Mesmo efeito.
+  var _reTexto = null; if (cfg.esconderAoClicarTexto) { try { _reTexto = new RegExp(cfg.esconderAoClicarTexto, 'i'); } catch (e) {} }
+  if (_reTexto || cfg.esconderAoClicarSel) {
+    document.addEventListener('click', function (e) {
+      if (sumiuDeVez) { return; }
+      try {
+        if (e.composedPath && e.composedPath().indexOf(host) >= 0) { return; }          // clique dentro da propria Lauana nao conta
+        var c = e.target && e.target.closest ? e.target.closest('button,a,[onclick],input[type=button],input[type=submit]') : null;
+        if (!c) { return; }
+        var txt = String(c.textContent || c.value || '').replace(/\s+/g, ' ').trim();
+        if ((cfg.esconderAoClicarSel && c.matches(cfg.esconderAoClicarSel)) || (_reTexto && _reTexto.test(txt))) { sumiuDeVez = true; chat.classList.remove('on'); aplicarVisibilidade(); }
+      } catch (x) {}
+    }, true);
+  }
   if (cfg.esconderAoComecar) {
     document.addEventListener('change', function (e) {
       var t = e.target; if (sumiuDeVez || !t || !t.matches) { return; }
