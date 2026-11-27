@@ -323,6 +323,11 @@
 
     // dois testes citados ("diferenca entre BAE e TECFE"): descreve os dois
     var ents = acharEntidades(set);
+    // versao especializada (ex.: "TETaylor simplificado") citada junto com o teste-base: a pessoa quer a especializada, a menos que peca comparacao
+    if (ents.length >= 2 && !/(diferenc|compar|versus|\bvs\b|\bentre\b|\be a\b|\be o\b)/.test(n)) {
+      ents = ents.filter(function (e) { return !ents.some(function (o) { return o.especializa === e.id; }); });
+      if (ents.length === 1) { ent = ents[0]; }
+    }
     if (ents.length >= 2 && itS < 40) { return respCompara(ents.slice(0, 3), E); }
 
     // "que painel?", "o que e escore?" (se for um teste pelo nome, o teste tem prioridade)
@@ -2774,6 +2779,64 @@
 /* kb-auto.js */
 // GERADO por sincronizar.js em 2026-11-27T00:43:57.682Z a partir de d:/Planilhas/site. NAO EDITE A MAO.
 (function (g) { g.LAU.aplicarAuto({"escalasNovas":[],"testesNovos":[],"precos":[{"sigla":"TECFE","gratis":1,"avulso":20,"pacotes":[{"qtd":10,"cada":15},{"qtd":50,"cada":10}],"texto":"Ao se cadastrar voc\u00ea ganha 1 cr\u00e9dito gr\u00e1tis. Depois: R$ 20 a aplica\u00e7\u00e3o avulsa, R$ 15 cada no pacote de 10 (R$ 150), R$ 10 cada no pacote de 50 (R$ 500)."},{"sigla":"BAE","gratis":5,"avulso":25,"pacotes":[{"qtd":2,"total":50},{"qtd":8,"total":200}],"texto":"Ao se cadastrar voc\u00ea ganha 5 cr\u00e9ditos gr\u00e1tis. Depois: R$ 25 a aplica\u00e7\u00e3o avulsa, 2 cr\u00e9ditos por R$ 50, 8 cr\u00e9ditos por R$ 200."},{"sigla":"Prontuario","gratis":1,"avulso":5,"pacotes":[{"qtd":10,"cada":4},{"qtd":50,"cada":3}],"texto":"Ao se cadastrar voc\u00ea ganha 1 cr\u00e9dito gr\u00e1tis. Depois: R$ 5 a aplica\u00e7\u00e3o avulsa, R$ 4 cada no pacote de 10 (R$ 40), R$ 3 cada no pacote de 50 (R$ 150)."},{"sigla":"TRMV","gratis":1,"avulso":5,"pacotes":[{"qtd":10,"cada":4},{"qtd":50,"cada":3}],"texto":"Ao se cadastrar voc\u00ea ganha 1 cr\u00e9dito gr\u00e1tis. Depois: R$ 5 a aplica\u00e7\u00e3o avulsa, R$ 4 cada no pacote de 10 (R$ 40), R$ 3 cada no pacote de 50 (R$ 150)."},{"sigla":"TAAV","gratis":1,"avulso":5,"pacotes":[{"qtd":10,"cada":4},{"qtd":50,"cada":3}],"texto":"Ao se cadastrar voc\u00ea ganha 1 cr\u00e9dito gr\u00e1tis. Depois: R$ 5 a aplica\u00e7\u00e3o avulsa, R$ 4 cada no pacote de 10 (R$ 40), R$ 3 cada no pacote de 50 (R$ 150)."},{"sigla":"TREF","gratis":1,"avulso":5,"pacotes":[{"qtd":10,"cada":4},{"qtd":50,"cada":3}],"texto":"Ao se cadastrar voc\u00ea ganha 1 cr\u00e9dito gr\u00e1tis. Depois: R$ 5 a aplica\u00e7\u00e3o avulsa, R$ 4 cada no pacote de 10 (R$ 40), R$ 3 cada no pacote de 50 (R$ 150)."},{"sigla":"TFLOD","gratis":1,"avulso":5,"pacotes":[{"qtd":10,"cada":4},{"qtd":50,"cada":3}],"texto":"Ao se cadastrar voc\u00ea ganha 1 cr\u00e9dito gr\u00e1tis. Depois: R$ 5 a aplica\u00e7\u00e3o avulsa, R$ 4 cada no pacote de 10 (R$ 40), R$ 3 cada no pacote de 50 (R$ 150)."},{"sigla":"IDEIA","gratis":1,"avulso":10,"pacotes":[{"qtd":10,"cada":8}],"texto":"Ao se cadastrar voc\u00ea ganha 1 cr\u00e9dito gr\u00e1tis. Depois: R$ 10 a aplica\u00e7\u00e3o avulsa, R$ 8 cada no pacote de 10 (R$ 80)."}],"novidades":[{"data":"22/11","titulo":"BAFC \u2014 Bateria de Avalia\u00e7\u00e3o do Funcionamento Cognitivo"},{"data":"25/10","titulo":"TPV-SET \u2014 Teste de Percep\u00e7\u00e3o Visual (adapta\u00e7\u00e3o do jogo SET)"},{"data":"23/10","titulo":"TREF 2.0 \u2014 Novo motor de escaneamento e laudo ampliado"},{"data":"30/09","titulo":"BRPI \u2014 Bateria de Rastreio do Processamento da Intelig\u00eancia"},{"data":"29/09","titulo":"TFLOD \u2014 Novo fluxo lProcessar no painelr (fim das falhas na tela do paciente)"},{"data":"18/09","titulo":"TFLOD e IDEIA \u2014 Capta\u00e7\u00e3o de \u00e1udio mais robusta"},{"data":"18/09","titulo":"Escalas \u2014 Gera\u00e7\u00e3o de PDF refor\u00e7ada"},{"data":"26/08","titulo":"IDEIA \u2014 Instrumento de Diverg\u00eancia e Elabora\u00e7\u00e3o de Ideias Alternativas"}]}); })(typeof window !== 'undefined' ? window : global);
+
+/* kb-curiosidades.js */
+// ============================================================
+// LAUANA - CURIOSIDADES, PAGAMENTO E PRECOS (carregado POR ULTIMO, depois da sincronizacao automatica de precos)
+// Tudo aqui vem do que o proprio Sergio disse (27/11/2026). Onde ele nao disse, a Lauana nao inventa.
+//   - Pagamento: Mercado Pago; "acho que nao aceita cartoes internacionais" (por isso ela fala com cautela).
+//   - TTE, Corsi e TETaylor: sem preco porque sao programas proprietarios, disponiveis sem cobranca.
+//   - O site foi construido para facilitar a testagem; so sao cobrados os programas que o Sergio construiu
+//     e que tem ou tiveram custo para ele.
+// ============================================================
+(function (g) {
+  'use strict';
+  var L = g.LAU, W = L.WHATS;
+  function ent(id) { for (var i = 0; i < L.ents.length; i++) { if (L.ents[i].id === id) { return L.ents[i]; } } return null; }
+  function intent(id) { return L.porId(id); }
+  function I(id, k, a, o) {
+    o = o || {};
+    var it = { id: id, k: k, a: a, p: o.p || 0 };
+    if (o.m) { it.m = o.m; } if (o.c) { it.c = o.c; } if (o.s) { it.s = o.s; }
+    L.intents.push(it);
+  }
+
+  // ---------- 1) pagamento e cartao internacional ----------
+  var pf = intent('pagamento_formas');
+  if (pf) {
+    ['cartao internacional', 'cartao estrangeiro', 'cartao exterior', 'pagar exterior', 'pagar fora brasil', 'mercado pago'].forEach(function (k) { pf.k.push(k); });
+    pf.a = ['O pagamento \u00e9 feito pelo Mercado Pago, num link que abre quando voc\u00ea escolhe o plano e clica em "Comprar". As formas dispon\u00edveis aparecem l\u00e1.',
+            'Cart\u00e3o internacional: pelo que o S\u00e9rgio sabe, o Mercado Pago n\u00e3o aceita cart\u00f5es internacionais, ent\u00e3o para quem est\u00e1 fora do Brasil o pagamento pode n\u00e3o funcionar. Para confirmar, ou para saber de uma forma espec\u00edfica (como Pix ou parcelamento), pergunte ao S\u00e9rgio: ' + W + '.'];
+  }
+  // para visitantes de outros idiomas (en/es tem texto proprio; os demais sao traduzidos a partir do ingles)
+  if (L.i18n && L.i18n.en && L.i18n.en.moeda) {
+    L.i18n.en.moeda = L.i18n.en.moeda.replace(/\s*I also do not know[\s\S]*$/, '') + ' Payments are made through Mercado Pago, which, as far as S\u00e9rgio knows, does not accept international cards, so paying from abroad may not work. S\u00e9rgio can confirm on WhatsApp ' + W + '.';
+  }
+  if (L.i18n && L.i18n.es && L.i18n.es.moeda) {
+    L.i18n.es.moeda = L.i18n.es.moeda.replace(/\s*Tampoco s[\s\S]*$/, '') + ' Los pagos se hacen con Mercado Pago que, hasta donde S\u00e9rgio sabe, no acepta tarjetas internacionales, por lo que pagar desde el extranjero puede no funcionar. S\u00e9rgio puede confirmarlo por WhatsApp ' + W + '.';
+  }
+
+  // ---------- 2) programas sem cobranca ----------
+  var COBRA = 'O site foi feito para facilitar a testagem. S\u00f3 s\u00e3o cobrados os programas que o S\u00e9rgio construiu e que t\u00eam ou tiveram custo para ele.';
+  [['tte', 'TTE'], ['corsi', 'Corsi'], ['tetaylor', 'TETaylor']].forEach(function (p) {
+    var e = ent(p[0]); if (e) { e.preco = 'O ' + p[1] + ' est\u00e1 dispon\u00edvel sem cobran\u00e7a: \u00e9 um programa propriet\u00e1rio. ' + COBRA; }
+  });
+  var simp = ent('tetaylorsimp');
+  // jeitos naturais de dizer a versao simplificada (antes caiam no TETaylor normal)
+  if (simp && simp.nomes) { ['tetaylor simplificado', 'tetaylor simplificada', 'taylor simplificado', 'versao simplificada tetaylor', 'versao simplificada taylor', 'tetaylor simp'].forEach(function (n) { if (simp.nomes.indexOf(n) < 0) { simp.nomes.push(n); } }); }
+  if (simp) { simp.especializa = 'tetaylor'; simp.preco = 'A vers\u00e3o simplificada do TETaylor est\u00e1 dispon\u00edvel sem cobran\u00e7a. ' + COBRA; }
+  var pr = intent('precos');
+  if (pr && Array.isArray(pr.a) && pr.a.length) {
+    pr.a[0] = pr.a[0].replace('as mais de 50 escalas (com relat\u00f3rio em PDF).', 'as mais de 50 escalas (com relat\u00f3rio em PDF), al\u00e9m do TTE, do Corsi e do TETaylor (com a vers\u00e3o simplificada).');
+  }
+
+  // ---------- 3) por que cobra / por que e barato / qual o objetivo ----------
+  I('objetivo_preco', ['por que cobrar', 'por que cobra', 'por que pagar', 'por que barato', 'por que tao barato', 'por que gratis', 'por que credito', 'por que so credito', 'por que nao assinatura', 'por que nao mensalidade',
+      'por que voces cobrar', 'motivo cobrar', 'objetivo site', 'objetivo do site', 'qual objetivo', 'por que site existir', 'por que criar site', 'por que fazer site', 'por que sergio criar'],
+    ['O site foi constru\u00eddo para facilitar a testagem, e por isso o painel, o cadastro de pacientes, a agenda e as escalas s\u00e3o gratuitos.',
+     'S\u00f3 s\u00e3o cobrados os programas que o S\u00e9rgio construiu e que t\u00eam ou tiveram custo para ele. Os programas propriet\u00e1rios, como o TTE, o Corsi e o TETaylor, ficam dispon\u00edveis sem cobran\u00e7a.'],
+    { p: 12, m: ['home', 'painel'], c: ['Quanto custa?', 'Falar com o S\u00e9rgio'] });
+})(typeof window !== 'undefined' ? window : global);
 
 // ============================================================
 // LAUANA - WIDGET (a parte que aparece na pagina)
