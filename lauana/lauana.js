@@ -1123,7 +1123,7 @@
       }
       E.aguardandoCidade = false;     // "sou psicologa" nao e uma cidade: a pergunta da cidade fica para outra hora
       if (generoDe(E)) { E._saudarTitulo = true; E.titulado = true; return null; }
-      rr = resp(msgDesconhecido(E), CHIPS_GENERO, { id: 'prof-genero-pergunta', neutro: true });
+      rr = resp(msgDesconhecido(E), CHIPS_GENERO, { id: 'prof-genero-pergunta', neutro: true, precisaGenero: 'saudacao' });   // com IA ligada, o widget tenta chutar antes de perguntar
       return rr;
     }
     return null;
@@ -1138,7 +1138,7 @@
       if (generoDe(E)) { r.msgs[0] = 'Prazer, ' + L.tratamento(E) + '! ' + SORRISO; }
       else {
         var extra = msgDesconhecido(E);
-        r.msgs = [extra[0], extra[1]]; r.chips = CHIPS_GENERO; E.aguardandoCidade = false;
+        r.msgs = [extra[0], extra[1]]; r.chips = CHIPS_GENERO; E.aguardandoCidade = false; r.precisaGenero = 'prazer';
       }
     }
     return r;
@@ -1387,21 +1387,21 @@
   R.novoRid = rid;
 
   // 1 tentativa, com tempo limite. Resolve { http, json } ou rejeita.
-  function umaTentativa(rota, corpo) {
+  function umaTentativa(rota, corpo, tempo) {
     var f = R.fetch || g.fetch;
     if (!f) { return Promise.reject(new Error('sem fetch')); }
     var ctl = (typeof g.AbortController === 'function') ? new g.AbortController() : null;
-    var timer = ctl ? setTimeout(function () { ctl.abort(); }, R.tempo) : null;
+    var timer = ctl ? setTimeout(function () { ctl.abort(); }, tempo || R.tempo) : null;
     return f(R.api + rota, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo), signal: ctl ? ctl.signal : undefined })
       .then(function (resp) { if (timer) { clearTimeout(timer); } return resp.json().then(function (j) { return { http: resp.status, json: j || {} }; }, function () { return { http: resp.status, json: {} }; }); },
             function (e) { if (timer) { clearTimeout(timer); } throw e; });
   }
   // ate "max" tentativas (espera 0,8s, 1,6s...). Erros 4xx (exceto 429) nao adiantam repetir.
-  R.postar = function (rota, corpo, max) {
+  R.postar = function (rota, corpo, max, tempo) {
     max = max || 3; var n = 0;
     function tentar() {
       n++;
-      return umaTentativa(rota, corpo).then(function (r) {
+      return umaTentativa(rota, corpo, tempo).then(function (r) {
         if (r.http >= 200 && r.http < 300) { return { ok: r.json.ok !== false, json: r.json, http: r.http }; }
         if (r.http >= 400 && r.http < 500 && r.http !== 429) { return { ok: false, json: r.json, http: r.http, definitivo: true }; }
         throw new Error('http ' + r.http);
@@ -1413,6 +1413,15 @@
     return tentar();
   };
 
+  // ---------- IA (Etapa 3): segunda chance e palpite de genero. Uma tentativa so, tempo curto: se falhar, a Lauana segue pelas regras ----------
+  R.cid = rid();                 // identifica esta conversa (o servidor limita quantas respostas de IA cada conversa pode ter)
+  R.tempoIA = 11000;
+  R.perguntarIA = function (texto, fatos, tela) {
+    return R.postar('/lauana-ia', { tipo: 'resposta', texto: String(texto || '').slice(0, 300), fatos: fatos || [], tela: tela || 'home', cid: R.cid, website: '' }, 1, R.tempoIA);
+  };
+  R.generoIA = function (nome) {
+    return R.postar('/lauana-ia', { tipo: 'genero', nome: String(nome || '').slice(0, 30), cid: R.cid, website: '' }, 1, R.tempoIA);
+  };
   // Pedido de gravacao vindo da conversa (r.acao === 'gravar'): recado ou avaliacao (depoimento)
   R.enviarGravacao = function (pedido, E, tela) {
     var d = pedido.dados || {}, id = d._rid = d._rid || rid();
@@ -1431,6 +1440,114 @@
     if (SENSIVEIS.indexOf(r.id) >= 0) { e({ tipo: 'sensivel', id: r.id, website: '' }); }          // so a categoria, nunca o texto
     if (r.sem) { e({ tipo: 'semresposta', rid: rid(), texto: String(texto || '').slice(0, 200), tela: tela || 'home', idioma: E.idioma || 'pt', website: '' }); }
     return Promise.all(envios);
+  };
+})(typeof window !== 'undefined' ? window : global);
+
+/* lauana-ia.js */
+// ============================================================
+// LAUANA - IA (Etapa 3): SEGUNDA CHANCE + palpite de genero. Sem tela: testavel no Node.
+// Principios:
+//  - As REGRAS vem primeiro. A IA so e chamada quando as regras nao souberam (r.sem) ou para chutar genero.
+//  - Nunca chama a IA em link de paciente (privacidade) nem em assunto sensivel (esses nunca viram r.sem).
+//  - A IA so recebe uma BASE de fatos tirada do proprio motor (precos, prazos, passo a passo). Sem base, ela nao inventa.
+//  - Qualquer falha (internet, limite, IA fora do ar, resposta suspeita) = a Lauana segue com a resposta das regras.
+//  - Nada e gravado aqui. O servidor limita por conversa, por hora e por dia.
+// ============================================================
+(function (g) {
+  'use strict';
+  var L = g.LAU, resp = L.resp, semEmoji = L.semEmoji;
+  var CONTATO = 'Contato do S\u00e9rgio (respons\u00e1vel pelo site): WhatsApp (67) 98423-3444.';
+
+  function ks(item, campo) { if (!item._k) { item._k = (item[campo] || []).map(function (f) { return L.tokens(f); }); } return item._k; }
+  function lista(x) { return Array.isArray(x) ? x : (x == null ? [] : [x]); }
+  function porModo(a, modo) { if (!a) { return null; } if (Array.isArray(a)) { return a; } return a[modo] || a._ || null; }
+  function limpa(s, max) { return semEmoji(String(s || '')).replace(/\s+/g, ' ').trim().slice(0, max || 500); }
+
+  // pontua uma lista de "frases-chave" contra as palavras da pergunta: quanto mais palavras de uma chave aparecem, melhor
+  function pontos(set, chaves) {
+    var best = 0, i, j, achou, tot, s;
+    for (i = 0; i < chaves.length; i++) {
+      achou = 0; tot = chaves[i].length; s = 0;
+      for (j = 0; j < tot; j++) { if (set[chaves[i][j]] && chaves[i][j].length >= 3) { achou++; s += chaves[i][j].length; } }
+      if (achou && achou / tot >= 0.5 && s > best) { best = s * (achou === tot ? 2 : 1); }
+    }
+    return best;
+  }
+
+  // ---------- a BASE de fatos que acompanha a pergunta ----------
+  L.fatosPara = function (texto, modo, E) {
+    var set = L._f.mkSet(L.tokens(texto)), cand = [], i, it, txt;
+    for (i = 0; i < L.intents.length; i++) {
+      it = L.intents[i]; if (it.m && it.m.indexOf(modo) < 0) { continue; }
+      var s = pontos(set, ks(it, 'k'));
+      if (!s) { continue; }
+      try { txt = (typeof it.a === 'function') ? it.a(E || L.novoEstado(), modo) : it.a; } catch (e) { txt = null; }
+      txt = lista(porModo(txt, modo)).join(' ');
+      if (txt) { cand.push({ s: s, t: limpa(txt) }); }
+    }
+    for (i = 0; i < L.ents.length; i++) {
+      var e = L.ents[i], se = pontos(set, ks(e, 'nomes'));
+      if (!se) { continue; }
+      cand.push({ s: se + 8, t: limpa(e.nome + ': ' + [e.oque, e.preco && ('Pre\u00e7o: ' + e.preco), e.dur && ('Dura\u00e7\u00e3o: ' + e.dur), e.idade && ('Idade: ' + e.idade), e.disp && ('Dispositivo: ' + e.disp), e.como && ('Como: ' + e.como), e.extra].filter(Boolean).join(' '), 600) });
+    }
+    for (i = 0; i < L.escalas.length; i++) {
+      var c = L.escalas[i], sc = pontos(set, ks(c, 'nomes'));
+      if (sc) { cand.push({ s: sc + 6, t: limpa((c.sigla || '') + ' (' + (c.nome || '') + '): escala de rastreio ' + (c.quem || '') + '. ' + (c.desc || '') + ' Gratuita; \u00e9 rastreio, n\u00e3o diagn\u00f3stico.') }); }
+    }
+    for (i = 0; i < L.glos.length; i++) {
+      var gl = L.glos[i], sg = pontos(set, ks(gl, 'nomes'));
+      if (sg) { cand.push({ s: sg, t: limpa(lista(gl.t).join(' ')) }); }
+    }
+    for (i = 0; i < L.temas.length; i++) {
+      var tm = L.temas[i], st = pontos(set, ks(tm, 'nomes'));
+      if (st) { cand.push({ s: st, t: limpa('Para ' + tm.titulo + ' temos: ' + tm.lista + '.') }); }
+    }
+    cand.sort(function (a, b) { return b.s - a.s; });
+    var out = [], vistos = {};
+    for (i = 0; i < cand.length && out.length < 5; i++) { if (cand[i].t && !vistos[cand[i].t]) { vistos[cand[i].t] = 1; out.push(cand[i].t); } }
+    out.push(CONTATO);
+    return out;
+  };
+
+  // ---------- quando a IA entra ----------
+  L.iaAtiva = function () { return !!(L.config && L.config.ia && L.rede && L.rede.api); };
+  // o widget usa isto para mostrar "digitando..." enquanto espera
+  L.vaiConsultarIA = function (r, modo) {
+    if (!L.iaAtiva() || !r) { return false; }
+    if (r.precisaGenero) { return true; }
+    return !!(r.sem && modo !== 'paciente' && !r.acao);
+  };
+
+  // palpite de genero aceito: troca a pergunta "como prefere ser tratado?" pelo cumprimento
+  L.generoPorIA = function (E, gn, modo) {
+    E.genero = gn; E.generoChute = true; E.aguardandoGenero = false; E.titulado = true;
+    var t = L.tratamento(E);
+    return resp([(E._generoVia === 'prazer' ? 'Prazer, ' : L.saudacaoHora(E.hora) + ', ') + t + '! \ud83d\ude0a Como posso ajudar?'], L.chipsPadrao(modo), { id: 'genero-ia', neutro: true });
+  };
+
+  // Devolve SEMPRE uma Promise com a resposta final (a da IA ou, se nao der, a original das regras).
+  L.refinar = function (r, texto, E, modo) {
+    if (!L.vaiConsultarIA(r, modo)) { return Promise.resolve(r); }
+    var R = L.rede;
+    if (r.precisaGenero) {
+      E._generoVia = r.precisaGenero;
+      return R.generoIA(E.nome).then(function (res) {
+        var gn = res && res.ok && res.json && res.json.genero;
+        return (gn === 'm' || gn === 'f') ? L.generoPorIA(E, gn, modo) : r;
+      }, function () { return r; });
+    }
+    return R.perguntarIA(texto, L.fatosPara(texto, modo, E), modo).then(function (res) {
+      var j = (res && res.json) || {};
+      if (!res || !res.ok) { return r; }                        // limite, rede ou erro: segue com a resposta das regras
+      if (j.crise && typeof j.resposta === 'string') {           // risco: CVV na hora; so a categoria e avisada ao admin
+        R.postar('/lauana-registrar', { tipo: 'sensivel', id: 'emocional', website: '' }, 2).catch(function () {});
+        E.ofereceu = null;
+        return resp([j.resposta], ['Falar com o S\u00e9rgio'], { id: 'ia-crise', neutro: true });
+      }
+      if (typeof j.resposta !== 'string' || !j.resposta.trim() || j.nao_sei) { return r; }
+      E.ofereceu = null; E.falhas = 0; E.ultimoTipo = 'ia';
+      return resp([j.resposta.trim().slice(0, 700)], L.chipsPadrao(modo), { id: 'ia', neutro: true });
+    }, function () { return r; });
   };
 })(typeof window !== 'undefined' ? window : global);
 
@@ -2228,6 +2345,9 @@
   // Etapa 1 (padrao): nada e gravado. Etapa 2: a pagina liga com LAUANA_CONFIG = { gravar: true }.
   var GRAVAR = !!cfg.gravar && !!L.rede;
   L.config.gravar = GRAVAR; L.config.cidade = GRAVAR;
+  // Etapa 3: IA como segunda chance (so liga se a pagina pedir: LAUANA_CONFIG = { gravar: true, ia: true })
+  var IA = GRAVAR && !!cfg.ia && !!L.refinar;
+  L.config.ia = IA;
   if (GRAVAR) { L.rede.api = cfg.api || 'https://ccdzxqdclufzryxzgtvq7t5wsi0javug.lambda-url.sa-east-1.on.aws'; }
   var MODO = 'home', E = L.novoEstado(), ocupado = false, saudou = false, pendente = null;
   var FIG = "<g id=\"lauanaFig\"><ellipse cx=\"100\" cy=\"330\" rx=\"62\" ry=\"8\" fill=\"#00000026\"/><!-- cabelo atras --><path d=\"M58 70 Q56 20 100 18 Q144 20 142 70 Q152 100 142 120 Q128 104 126 82 L74 82 Q72 104 58 120 Q48 100 58 70 Z\" fill=\"#b0733a\"/><!-- pernas e sapatos --><rect x=\"84\" y=\"258\" width=\"12\" height=\"66\" fill=\"#eaa769\"/><rect x=\"104\" y=\"258\" width=\"12\" height=\"66\" fill=\"#eaa769\"/><ellipse cx=\"88\" cy=\"326\" rx=\"13\" ry=\"5\" fill=\"#222\"/><ellipse cx=\"112\" cy=\"326\" rx=\"13\" ry=\"5\" fill=\"#222\"/><!-- saia --><path d=\"M72 214 L128 214 L136 264 L64 264 Z\" fill=\"#2b2b2b\"/><!-- pescoco --><rect x=\"92\" y=\"108\" width=\"16\" height=\"26\" fill=\"#f0a96f\"/><!-- camisa --><path d=\"M68 134 Q100 122 132 134 L136 220 L64 220 Z\" fill=\"#a9dfe0\"/><path d=\"M68 134 L50 188 L64 196 L76 154 Z\" fill=\"#a9dfe0\"/><path d=\"M132 134 L150 188 L136 196 L124 154 Z\" fill=\"#a9dfe0\"/><path d=\"M50 188 L64 196 L62 214 L50 206 Z\" fill=\"#eaa769\"/><path d=\"M150 188 L136 196 L138 214 L150 206 Z\" fill=\"#eaa769\"/><!-- colete --><path d=\"M76 136 L96 154 L99 220 L68 220 Z\" fill=\"#6e6e74\"/><path d=\"M124 136 L104 154 L101 220 L132 220 Z\" fill=\"#6e6e74\"/><path d=\"M90 128 L100 146 L110 128 Z\" fill=\"#fff\"/><!-- cordao e cracha --><path d=\"M94 130 L106 160\" stroke=\"#333\" stroke-width=\"2\" fill=\"none\"/><rect x=\"100\" y=\"158\" width=\"16\" height=\"20\" rx=\"2\" fill=\"#fff\" stroke=\"#d09a2a\" stroke-width=\"2\"/><rect x=\"103\" y=\"162\" width=\"10\" height=\"3\" fill=\"#2e7d32\"/><rect x=\"103\" y=\"168\" width=\"10\" height=\"2\" fill=\"#999\"/><!-- rosto --><ellipse cx=\"100\" cy=\"74\" rx=\"32\" ry=\"37\" fill=\"#f6bb86\"/><ellipse cx=\"78\" cy=\"86\" rx=\"6\" ry=\"4\" fill=\"#f09a8a\" opacity=\".55\"/><ellipse cx=\"122\" cy=\"86\" rx=\"6\" ry=\"4\" fill=\"#f09a8a\" opacity=\".55\"/><!-- olhos --><ellipse cx=\"88\" cy=\"73\" rx=\"7\" ry=\"8\" fill=\"#fff\" stroke=\"#6b3b1b\" stroke-width=\"1.5\"/><ellipse cx=\"112\" cy=\"73\" rx=\"7\" ry=\"8\" fill=\"#fff\" stroke=\"#6b3b1b\" stroke-width=\"1.5\"/><circle cx=\"88\" cy=\"74\" r=\"4.6\" fill=\"#8a3b12\"/><circle cx=\"112\" cy=\"74\" r=\"4.6\" fill=\"#8a3b12\"/><circle cx=\"88\" cy=\"74\" r=\"2.2\" fill=\"#111\"/><circle cx=\"112\" cy=\"74\" r=\"2.2\" fill=\"#111\"/><circle cx=\"90\" cy=\"72\" r=\"1.3\" fill=\"#fff\"/><circle cx=\"114\" cy=\"72\" r=\"1.3\" fill=\"#fff\"/><path d=\"M80 62 Q88 57 96 62\" stroke=\"#7a4a20\" stroke-width=\"2.4\" fill=\"none\" stroke-linecap=\"round\"/><path d=\"M104 62 Q112 57 120 62\" stroke=\"#7a4a20\" stroke-width=\"2.4\" fill=\"none\" stroke-linecap=\"round\"/><path d=\"M100 78 Q98 86 102 86\" stroke=\"#c98a5c\" stroke-width=\"1.6\" fill=\"none\"/><path d=\"M89 94 Q100 104 111 94\" stroke=\"#8a3a2a\" stroke-width=\"2.4\" fill=\"#fff\" stroke-linecap=\"round\"/><!-- franja --><path d=\"M66 66 Q78 30 118 34 Q138 40 134 66 Q118 46 98 52 Q80 56 66 66 Z\" fill=\"#c88542\"/><!-- fone de ouvido --><path d=\"M64 74 Q62 26 100 24 Q138 26 136 74\" stroke=\"#262626\" stroke-width=\"5\" fill=\"none\"/><rect x=\"57\" y=\"62\" width=\"11\" height=\"26\" rx=\"5\" fill=\"#333\"/><rect x=\"132\" y=\"62\" width=\"11\" height=\"26\" rx=\"5\" fill=\"#333\"/><path d=\"M60 88 Q62 112 88 106\" stroke=\"#262626\" stroke-width=\"3\" fill=\"none\"/><circle cx=\"90\" cy=\"106\" r=\"4.5\" fill=\"#262626\"/></g>";                                           // desenho da Lauana (SVG), inserido na empacotagem
@@ -2329,6 +2449,16 @@
     if (r.traduzir) { r.msgs = r.msgs.slice(); }               // (a traducao ao vivo pela IA entra na Etapa 3)
     if (GRAVAR) { L.rede.registrarSilencioso(r, texto, E, MODO); }          // contadores: silencioso, nunca atrapalha
     if (GRAVAR && r.acao === 'gravar') { addMsg(r.msgs[0], 'bot'); ocupado = true; gravar(r.dados); return; }
+    // Etapa 3: se as regras nao souberam (ou o genero do nome e desconhecido), a IA tenta uma vez.
+    // Qualquer falha cai de volta na resposta das regras (r), sem avisar erro.
+    if (IA && L.vaiConsultarIA(r, MODO)) {
+      ocupado = true; var dig = addMsg('Lauana est\u00e1 digitando...', 'bot dig');
+      L.refinar(r, texto, E, MODO).then(function (r2) {
+        ocupado = false; if (dig.parentNode) { dig.parentNode.removeChild(dig); }
+        mostrar(r2 || r);
+      }, function () { ocupado = false; if (dig.parentNode) { dig.parentNode.removeChild(dig); } mostrar(r); });
+      return;
+    }
     mostrar(r);
   }
   // So diz "recebi" depois que o servidor confirmou (ate 3 tentativas). Se falhar, avisa e guarda o texto.
