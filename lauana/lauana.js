@@ -2396,6 +2396,10 @@
     '@keyframes sobe{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}',
     '@media (prefers-reduced-motion:reduce){.bob,.dica,.chat.on{animation:none}}',
     '@media (max-width:480px){.chat{right:8px;bottom:8px;width:calc(100vw - 16px);height:min(560px,88vh)}.dica{max-width:150px}}',
+    // celular: rostinho menor e mais colado no canto, respeitando a area segura do iPhone; chat pela altura REAL da tela (teclado aberto); 16px no campo evita o zoom do iPhone
+    '@media (max-width:600px){.balao{right:calc(10px + env(safe-area-inset-right,0px));bottom:calc(10px + env(safe-area-inset-bottom,0px));opacity:.94}.balao .rosto{width:54px;height:54px;border-width:2px}.entrada input{font-size:16px}}',
+    '@media (max-width:480px){.chat{right:calc(8px + env(safe-area-inset-right,0px));bottom:calc(8px + env(safe-area-inset-bottom,0px));height:min(560px,88dvh)}}',
+    '@media (max-height:480px){.chat{height:calc(100dvh - 16px);bottom:8px}}',
     '@media print{:host{display:none!important}}'
   ].join('\n');
 
