@@ -809,6 +809,8 @@
 
   // tira "me chamo", "sou a", "meu nome e"... e devolve o primeiro nome (ou null)
   var PREFIXOS = [['pode', 'me', 'chamar', 'de'], ['pode', 'chamar', 'de'], ['meu', 'nome', 'e'], ['me', 'chama', 'de'], ['aqui', 'e'], ['me', 'chamo'], ['eu', 'sou'], ['chamo', 'me'], ['sou']];
+  // quem pergunta nao esta dizendo o nome: se a frase COMECA por uma destas palavras, nao e um nome (so vale para o nome, nao para a cidade)
+  var PRIMEIRA_DE_PERGUNTA = ['tem', 'tinha', 'existe', 'existem', 'quantas', 'quantos', 'quanto', 'quantidade', 'qual', 'quais', 'quem', 'onde', 'quando', 'como', 'porque', 'pq', 'por', 'pra', 'para', 'vale', 'posso', 'pode', 'podem', 'funciona', 'serve', 'sera', 'sao', 'esta', 'estao', 'tambem', 'mas', 'entao', 'se', 'eh', 'isso', 'isto', 'esse', 'essa', 'aquele', 'aquela', 'algum', 'alguma', 'alguem', 'ninguem', 'tudo', 'nada', 'que', 'bem', 'beleza', 'blz', 'opa', 'eai', 'salve'];
   var NAO_NOME = ['nao', 'sim', 'ok', 'oi', 'ola', 'tchau', 'obrigado', 'obrigada', 'ajuda', 'quero', 'preciso', 'problema', 'duvida', 'teste', 'escala', 'paciente'];
   L.extrairNome = function (texto) {
     var limpo = String(texto).replace(/[!.,;:()?]/g, ' ').replace(/\s+/g, ' ').trim();
@@ -823,6 +825,7 @@
     }
     if (nw.length > 1 && (nw[0] === 'o' || nw[0] === 'a')) { nw.shift(); palavras.shift(); }
     if (nw.length < 1 || nw.length > 5) { return null; }
+    if (PRIMEIRA_DE_PERGUNTA.indexOf(nw[0]) >= 0) { return null; }
     for (j = 0; j < palavras.length; j++) {
       if (!/^[A-Za-z\u00C0-\u00FF'\-]{2,20}$/.test(palavras[j]) || NAO_NOME.indexOf(nw[j]) >= 0) { return null; }
     }
