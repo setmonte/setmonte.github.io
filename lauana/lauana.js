@@ -1700,7 +1700,7 @@
   T('bae', 'BAE', ['bae', 'bateria de atencao'],
     'A BAE (Bateria de Aten\u00e7\u00e3o Eletr\u00f4nica) avalia 5 tipos de aten\u00e7\u00e3o: concentrada, sustentada, alternada, dividida e seletiva. A pessoa responde a est\u00edmulos na tela e o sistema registra acertos, erros e tempo de rea\u00e7\u00e3o.',
     'O relat\u00f3rio sai em PDF com parecer cl\u00ednico por IA.',
-    'A faixa de idade da BAE n\u00e3o est\u00e1 descrita no painel, ent\u00e3o n\u00e3o quero chutar. O Manual T\u00e9cnico dela fica na aba Aten\u00e7\u00e3o, e o S\u00e9rgio confirma pelo WhatsApp (67) 98423-3444. O manual lembra que idade e escolaridade influenciam o desempenho.',
+    'A BAE vale a partir de 6 anos. O Manual T\u00e9cnico dela fica na aba Aten\u00e7\u00e3o e lembra que idade e escolaridade influenciam o desempenho.',
     'A bateria completa leva cerca de 20 a 30 minutos.',
     'A BAE s\u00f3 roda em computador (notebook ou desktop) com teclado. Celular e tablet s\u00e3o bloqueados: o paciente v\u00ea um aviso para abrir o link no computador e nenhum cr\u00e9dito \u00e9 gasto.',
     'A BAE d\u00e1 5 cr\u00e9ditos gr\u00e1tis no cadastro. Cada subteste custa 1 cr\u00e9dito e a bateria completa (5 testes) custa 5. Depois: R$ 25 por teste (2 cr\u00e9ditos por R$ 50 ou 8 por R$ 200).',
@@ -1708,12 +1708,12 @@
   T('trmv', 'TRMV', ['trmv'],
     'O TRMV (Teste de Reconhecimento de Mem\u00f3ria Visual) mede mem\u00f3ria visual de reconhecimento. A pessoa memoriza figuras abstratas por 30 segundos e depois aponta quais viu entre outras. Ap\u00f3s 60 segundos, repete o reconhecimento.',
     'O PDF traz an\u00e1lise cl\u00ednica por IA.',
-    'Crian\u00e7as at\u00e9 12 anos veem 5 figuras; adultos de 13 a 59 veem 10; idosos de 60+ veem 5 ou 10, conforme a escolaridade.',
+    'O TRMV vale a partir de 6 anos. Crian\u00e7as at\u00e9 12 anos veem 5 figuras; adultos de 13 a 59 veem 10; idosos de 60+ veem 5 ou 10, conforme a escolaridade.',
     'Dura cerca de 4 minutos.', 'Funciona no navegador.', GRAT1);
   T('taav', 'TAAV', ['taav'],
     'O TAAV (Teste de Aprendizagem e Armazenamento Visual) avalia como a pessoa aprende e guarda informa\u00e7\u00e3o visual. Ela memoriza 15 figuras em 5 tentativas seguidas, com uma lista de interfer\u00eancia, evoca\u00e7\u00e3o imediata, evoca\u00e7\u00e3o tardia (cerca de 20 minutos depois) e reconhecimento.',
     'O relat\u00f3rio mostra a curva de aprendizagem e traz an\u00e1lise por IA.',
-    'A faixa de idade do TAAV n\u00e3o est\u00e1 descrita no painel, ent\u00e3o n\u00e3o quero chutar. Veja o Manual T\u00e9cnico dele (aba Mem\u00f3ria) ou pergunte ao S\u00e9rgio pelo WhatsApp (67) 98423-3444.',
+    'O TAAV vale a partir de 6 anos.',
     'Tem etapas com intervalo de cerca de 20 minutos entre a aprendizagem e a evoca\u00e7\u00e3o tardia.', 'Funciona no navegador.', GRAT1);
   T('tref', 'TREF', ['tref'],
     'O TREF (Teste de Reconstru\u00e7\u00e3o e Escaneamento Facial) \u00e9 um rastreio experimental do processamento de rostos. A pessoa observa um rosto por 30 segundos e depois o reconstr\u00f3i de mem\u00f3ria, clicando nas regi\u00f5es. A ordem dos cliques mostra como ela "escaneia" o rosto.',
