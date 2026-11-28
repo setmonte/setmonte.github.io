@@ -1,4 +1,4 @@
-/* Lauana - atendente virtual do SPM Online. Gerado por empacotar.js em 2026-11-27. Nao edite a mao. Desligar: ?semlauana na URL. */
+/* Lauana - atendente virtual do SPM Online. Gerado por empacotar.js em 2026-11-28. Nao edite a mao. Desligar: ?semlauana na URL. */
 /* lauana-nucleo.js */
 // ============================================================
 // LAUANA - NUCLEO (motor de conversa). Nao tem conhecimento aqui,
@@ -1752,7 +1752,7 @@
   T('tpvset', 'TPV-SET', ['tpv set', 'tpvset'],
     'O TPV-SET (Teste de Percep\u00e7\u00e3o Visual, adapta\u00e7\u00e3o do jogo SET) avalia percep\u00e7\u00e3o visual r\u00e1pida, busca visual e controle inibit\u00f3rio. A pessoa procura combina\u00e7\u00f5es v\u00e1lidas (SETs) numa grade de cartas, em 3 n\u00edveis de dificuldade. O avaliador escolhe quais n\u00edveis aplicar.',
     '\u00c9 gratuito e explorat\u00f3rio, sem valida\u00e7\u00e3o formal. O resultado \u00e9 um percentual livre, por n\u00edvel.',
-    'O TPV-SET vale a partir de 6 anos.', 'Cada n\u00edvel tem 3 rodadas de 10 segundos.', 'Funciona no navegador.',
+    'O TPV-SET vale a partir de 6 anos.', 'Cada n\u00edvel aplicado tem 3 rodadas; o tempo por rodada \u00e9 de 25 segundos no N1, 40 no N2 e 60 no N3.', 'Funciona no navegador.',
     'O TPV-SET \u00e9 gratuito.');
 
   T('ideia', 'IDEIA', ['ideia'],
@@ -2668,7 +2668,8 @@
       var cAg = L.contextoDe({ aba: 'agenda', programa: '' });
       if (cAg) { var qAg = cAg.qa.filter(function (x) { return /marco uma consulta/.test(norm(x.chip)); })[0]; var rAg = qAg && dizer(cAg, qAg, E, null, modo); if (rAg) { rAg.chips = cAg.chips.filter(function (x) { return x !== qAg.chip; }).slice(0, 4); return rAg; } }
     }
-    if (palavras > 12) { return null; }
+    if (palavras > 18) { return null; }
+    var longa = palavras > 12;       // frases de 13 a 18 palavras: so contam as perguntas ESPECIFICAS do programa (nunca as de aspecto nem a vaga)
     var toks = L.tokens(texto), set = L._f.mkSet(toks);
     // conversa delicada (emocional, ameaca, clinico, raiva, ofensa) ou problema de cobranca/privacidade: SEMPRE o motor, nunca o contexto
     var itD = L._f.melhorIntencao(set, 'painel', E), cl = L.clima(texto, set);
@@ -2685,6 +2686,7 @@
       q = c.qa[i]; if (!q._k) { q._k = G(q.g || []); }
       var s = L.casa(set, q._k); if (!s) { continue; }
       if (q.aspecto) {
+        if (longa) { continue; }
         // pergunta so de aspecto ("quanto custa?", "como uso?"): o contexto manda, mas so se NAO houver outra palavra de assunto ("como gerar o link" vai para o motor)
         var gt = {}; q._k.forEach(function (f) { f.forEach(function (tk) { gt[tk] = 1; }); });
         var puro = toks.every(function (tk) { return fill[tk] || gt[tk] || nomeTok[tk]; });
@@ -2695,14 +2697,14 @@
         // vale se casar com 2 palavras da pergunta OU com 1 palavra rara na base (ex.: "lembrete", "csv", "logo"); uma palavra comum (ex.: "resultado") deixa o motor decidir
         var fr = freqChaves(), casadas = 0, rara = false;
         q._k.forEach(function (f) { if (L.casa(set, [f])) { casadas++; if ((fr[f[0]] || 0) <= 4) { rara = true; } } });
-        if (casadas < 2 && !rara) { continue; }
-        s += 30;
+        if (casadas < 2 && !rara && !q.forte) { continue; }       // forte: uma frase completa ja basta ("como funciona uma sessao")
+        s += q.forte ? 130 : 30;      // forte: pergunta sobre a tarefa do paciente, que vence a de aspecto ("como aplico")
       }
       if (s > bs) { bs = s; melhor = q; }
     }
     if (melhor) { var r4 = dizer(c, melhor, E, set, modo); if (r4) { return r4; } }
     // 5) pergunta vaga ("como funciona isso aqui?", "me ajuda", "nao entendi"): explica a aba/programa atual
-    if (VAGO_INICIO.test(n) && (DEITICO.test(n) || palavras <= 3)) {
+    if (!longa && VAGO_INICIO.test(n) && (DEITICO.test(n) || palavras <= 3)) {
       var intro = introDe(c);
       if (intro) {
         if (c.ent) { E.ent = c.ent; E.ultimoTipo = 'ent'; E.ultimo = { id: 'ent:' + c.ent.id, s: c.ent.simples || c.ent.oque }; }
@@ -2960,6 +2962,21 @@
     }
   });
 
+  // ---------- correcoes gerais do motor (achadas ao testar programa por programa, 27/11/2026) ----------
+  // 1) "evolucao" nao pode virar "devolucao" (chamava a resposta de reembolso): palavras parecidas demais so casam exatas
+  L.semFuzzy.devolucao = 1;
+  // 2) "das" e uma palavra comum ("nenhuma das respostas", "das letras"): a escala DAS so e reconhecida com mais contexto
+  (function () {
+    var d = esc('das');
+    if (d) { d.nomes = ['escala das', 'das casal', 'das casais', 'teste das', 'ajustamento de casais', 'ajustamento conjugal', 'das ajustamento']; delete d._k; }
+  })();
+  // 3) mais jeitos de conjugar verbos que aparecem nas perguntas sobre os programas
+  [['importar', ['importo', 'importa', 'importei', 'importando', 'importacao']], ['exportar', ['exporto', 'exporta', 'exportei', 'exportando', 'exportacao']],
+   ['salvar', ['salvo', 'salva', 'salvei', 'salvando']], ['autorizar', ['autorizo', 'autoriza', 'autorizei', 'autorizando']],
+   ['compartilhar', ['compartilho', 'compartilha', 'compartilhei', 'compartilhando']], ['gravar', ['gravo', 'grava', 'gravei', 'gravando', 'gravacao']],
+   ['repetir', ['repito', 'repete', 'repeti', 'repetindo']], ['buscar', ['busco', 'busca', 'busquei', 'buscando']], ['achar', ['acho', 'acha', 'achei', 'achando']],
+   ['cadastrar', ['cadastrei', 'cadastrando', 'cadastra']], ['preencher', ['preencho', 'preenche', 'preenchi', 'preenchendo', 'preenchimento']], ['pontuar', ['pontuo', 'pontua', 'pontuei', 'pontuando']], ['duplicata', ['duplicado', 'duplicados', 'duplicada', 'duplicadas', 'duplicar', 'duplicidade']]].forEach(function (p) { L.sin(p[0], p[1]); });
+
   // ---------- recursos do site (nao sao testes): onde fica no painel, custo e link do manual ----------
   var RECURSOS = { agenda: 'Agenda', anamnese: 'Anamnese', prontuario: 'Prontu\u00e1rio' };
   Object.keys(RECURSOS).forEach(function (id) {
@@ -3001,6 +3018,624 @@
   var I = function (id, k, a, o) { var it = { id: id, k: k, a: a, p: o.p || 0 }; if (o.m) { it.m = o.m; } if (o.c) { it.c = o.c; } L.intents.push(it); };
   I('nome_lauana', ['por que lauana', 'por que seu nome lauana', 'por que se chama lauana', 'por que voce chama lauana', 'significado lauana', 'significado do nome lauana', 'origem do nome lauana', 'origem nome lauana', 'de onde vem o nome lauana', 'quem e lauana', 'por que esse nome', 'por que lauana nome', 'porque lauana'],
     ['Meu nome \u00e9 uma homenagem que o S\u00e9rgio fez \u00e0 filha dele. \ud83d\udc9a'], { p: 16, m: ['home', 'painel'], c: ['Quem \u00e9 o S\u00e9rgio?', 'Como surgiu o site?'] });
+})(typeof window !== 'undefined' ? window : global);
+
+/* kb-programas.js */
+// ============================================================
+// LAUANA - APROFUNDAMENTO PROGRAMA POR PROGRAMA (carregado depois de kb-assuntos.js)
+// Cada programa ganha respostas sobre COMO ELE FUNCIONA DE VERDADE na tela (botoes, o que aparece, o que acontece em cada clique).
+// Fonte: o codigo do painel (site/online/index.html) e o manual do programa. Se a fonte nao diz, a Lauana NAO responde (nao inventa).
+// Como acrescentar um programa: DEEP.<id> = { chips: [...], qa: [ { chip, g: [palavras-gatilho], r: [baloes] } ] }
+//   - g: lista de palavras/frases; a pergunta casa se tiver 2 palavras de g, ou 1 palavra rara na base.
+//   - vale dentro do painel (com a aba aberta) e tambem logo depois de a pessoa ter perguntado daquele programa.
+// ============================================================
+(function (g) {
+  'use strict';
+  var L = g.LAU, W = L.WHATS;
+  var BASE = 'https://setmonte.github.io/';
+  function ent(id) { for (var i = 0; i < L.ents.length; i++) { if (L.ents[i].id === id) { return L.ents[i]; } } return null; }
+  // as respostas de cada programa ficam em L._deepDados (os arquivos kb-prog-*.js tambem escrevem la, em qualquer ordem)
+  var DEEP = L._deepDados = L._deepDados || {};
+  // aba do painel de cada programa (para o caso de a pergunta vir logo depois de falar do programa, sem o painel avisar a aba)
+  var ABA_DE = L._deepAba = L._deepAba || {};
+  ABA_DE.smart = ['reabilitacao', 'smart'];
+
+  // ---------- 0) "sugerir" so abre o fluxo de sugestoes quando a pessoa quer sugerir algo AO SITE ----------
+  var fb = L.porId('fb_sugestao');
+  if (fb) { fb.k = ['sugestao', 'quero sugerir', 'queria sugerir', 'gostaria de sugerir', 'posso sugerir', 'vou sugerir', 'deixar sugestao', 'tenho uma sugestao', 'melhorar site', 'melhoria', 'funcionalidade nova', 'pedir recurso', 'seria bom']; delete fb._k; }
+
+  // ---------- SMART ----------
+  var sm = ent('smart');
+  if (sm) {
+    sm.como = 'Na aba Reabilita\u00e7\u00e3o, abra o SMART: 1) clique na letra inicial do nome do paciente (se a barra de letras aparecer); 2) na linha do paciente, clique em "Ver"; 3) aguarde a IA analisar os resultados dele; 4) as metas SMART aparecem na tela; 5) depois disso o bot\u00e3o "PDF" da linha fica dispon\u00edvel.';
+  }
+  DEEP.smart = {
+    chips: ['O que \u00e9 o SMART?', 'Como gero as metas de um paciente?', 'O que acontece ao clicar numa letra?', 'Quais dados v\u00e3o para a IA?'],
+    qa: [
+      { chip: 'Como gero as metas de um paciente?', g: ['gerar metas', 'gerar meta', 'gerar plano', 'como funciona', 'passo a passo', 'botao ver', 'clicar ver', 'clico ver'],
+        r: ['Na aba SMART: 1) clique na letra inicial do nome do paciente (a barra de letras aparece no alto da lista); 2) na tabela, clique em "Ver" na linha dele; 3) aguarde enquanto a IA analisa os resultados; 4) as metas aparecem na tela.',
+            'O bot\u00e3o "PDF" da linha s\u00f3 fica dispon\u00edvel depois que as metas foram geradas.'] },
+      { chip: 'O que acontece ao clicar numa letra?', g: ['letra', 'letras', 'alfabeto', 'inicial', 'barra de letras', 'filtrar'],
+        r: ['As letras s\u00e3o s\u00f3 um filtro da lista de pacientes: cada uma \u00e9 a inicial do nome (A, B, C...) e mostra, entre par\u00eanteses, quantos pacientes t\u00eam aquela inicial. Ao clicar, aparece a tabela s\u00f3 com os pacientes dessa letra, com os bot\u00f5es "Ver" e "PDF". Clicar de novo na mesma letra fecha a tabela.',
+            'Clicar na letra n\u00e3o gera nada: as metas s\u00f3 aparecem quando voc\u00ea clica em "Ver" na linha do paciente. Se todos os pacientes tiverem a mesma inicial, a barra n\u00e3o aparece e a lista j\u00e1 vem direto.'] },
+      { chip: 'Ela sugere a reabilita\u00e7\u00e3o da pessoa?', g: ['sugerir', 'sugere', 'sugestao', 'reabilitacao', 'proposta', 'prescrever', 'plano de reabilitacao', 'metas de reabilitacao'],
+        r: ['Sim, mas n\u00e3o ao clicar na letra: a letra s\u00f3 filtra a lista de pacientes. A sugest\u00e3o aparece depois que voc\u00ea clica em "Ver" na linha do paciente. O SMART reune os resultados de testes e escalas dele (e a anamnese mais recente, se houver) e a IA prop\u00f5e de 2 a 4 metas de reabilita\u00e7\u00e3o cognitiva.',
+            'Cada meta traz t\u00edtulo, o instrumento relacionado e os cinco crit\u00e9rios (S, M, A, R e T). \u00c9 uma sugest\u00e3o: voc\u00ea revisa e decide o que adotar.'] },
+      { chip: 'O que cada meta traz?', g: ['meta', 'metas', 'o que traz', 'o que aparece', 'resultado do smart', 'como fica'],
+        r: ['Cada meta mostra: o n\u00famero e a situa\u00e7\u00e3o (reabilita\u00e7\u00e3o, manuten\u00e7\u00e3o ou monitoramento), o instrumento relacionado, um t\u00edtulo, a descri\u00e7\u00e3o completa e os cinco crit\u00e9rios SMART: Espec\u00edfica, Mensur\u00e1vel, Alcan\u00e7\u00e1vel, Relevante e Temporal (com prazo e frequ\u00eancia das sess\u00f5es).'] },
+      { chip: 'O que \u00e9 reabilita\u00e7\u00e3o, manuten\u00e7\u00e3o e monitoramento?', g: ['manutencao', 'monitoramento', 'status', 'situacao da meta', 'cores', 'azul', 'verde', 'amarelo'],
+        r: ['\u00c9 a situa\u00e7\u00e3o de cada meta: "Reabilita\u00e7\u00e3o" (azul) \u00e9 para uma fun\u00e7\u00e3o com d\u00e9ficit; "Manuten\u00e7\u00e3o" (verde) \u00e9 para uma fun\u00e7\u00e3o preservada, que vale manter; "Monitoramento" (amarelo) \u00e9 para acompanhar a evolu\u00e7\u00e3o.'] },
+      { chip: 'E se o paciente n\u00e3o fez nenhum teste?', g: ['nenhum teste', 'sem teste', 'sem resultado', 'nenhum resultado', 'paciente novo', 'nao fez teste', 'nao tem teste', 'vazio'],
+        r: ['Aparece o aviso "Nenhum resultado encontrado" e a orienta\u00e7\u00e3o de aplicar testes pelo painel primeiro. O SMART parte dos resultados que j\u00e1 existem: quanto mais testes e escalas o paciente tiver feito, mais bem fundamentadas ficam as metas.'] },
+      { chip: 'Quais dados v\u00e3o para a IA?', g: ['dados enviados', 'dados ia', 'enviados ia', 'anonimo', 'anonimizacao', 'privacidade', 'lgpd', 'seguro', 'nome do paciente', 'o que vai para a ia'],
+        r: ['Vai o resumo dos resultados dos testes e escalas do paciente e, se houver, o texto da anamnese mais recente. O nome \u00e9 trocado por uma etiqueta antes de ir \u00e0 IA e volta ao normal no resultado.',
+            'Depois de gerar as metas, o bot\u00e3o "Ver dados enviados \u00e0 IA" mostra o texto exato que foi enviado.'] },
+      { chip: 'Como gero o PDF do SMART?', g: ['pdf', 'relatorio', 'imprimir', 'baixar', 'salvar', 'exportar'],
+        r: ['Clique em "PDF" na linha do paciente. O bot\u00e3o s\u00f3 libera depois que as metas foram geradas com "Ver". O PDF tem o t\u00edtulo "Programa de Reabilita\u00e7\u00e3o Cognitiva", os seus dados profissionais, os dados do paciente, o hist\u00f3rico de avalia\u00e7\u00f5es e as metas SMART sugeridas.'] },
+      { chip: 'Deu erro ao gerar as metas', g: ['erro', 'falhou', 'nao gerou', 'nao funcionou', 'travou', 'demora', 'resposta vazia', 'tentar novamente'],
+        r: ['Se a IA ficar fora do ar, sem conex\u00e3o ou responder em formato inesperado, o SMART avisa na tela e mostra o bot\u00e3o "Tentar novamente". Nenhuma meta \u00e9 gerada nesses casos. Se continuar falhando, fale com o S\u00e9rgio: ' + W + '.'] }
+    ]
+  };
+
+  // ---------- cola: acrescenta as respostas detalhadas ao contexto de cada programa ----------
+  var ctxBase = L.contextoDe;
+  L.contextoDe = function (E) {
+    var c = ctxBase.apply(this, arguments);
+    // id do programa: a entidade da base, ou (programas sem ficha na base, como o BVRT) o que o painel informou
+    var id = c ? (c.ent ? c.ent.id : String((E && (E.programa || E.aba)) || '').toLowerCase()) : '';
+    if (c && id && DEEP[id] && !c._deep) {
+      c._deep = true;
+      // perguntas sobre "o que o paciente faz / como e o teste" ganham das de aspecto ("como aplico") e aceitam outras formas de dizer isso
+      DEEP[id].qa.forEach(function (q) {
+        if (!q._forte && q.g.indexOf('paciente faz') >= 0) {
+          // so frases completas: palavras soltas ("retencao", "rosto", "parte b") roubariam perguntas de outras respostas
+          q.g = q.g.filter(function (x) { return x.indexOf(' ') > 0; });
+          q._forte = true; q.forte = true; ['tem que fazer', 'precisa fazer', 'o que ele faz', 'o que ela faz', 'o que a pessoa faz', 'o que fazer no teste'].forEach(function (x) { if (q.g.indexOf(x) < 0) { q.g.push(x); } }); }
+      });
+      c.qa = c.qa.concat(DEEP[id].qa);
+      if (DEEP[id].chips) { c.chips = DEEP[id].chips.slice(); }
+    }
+    return c;
+  };
+  // logo depois de falar de um programa (sem o painel ter avisado a aba), as perguntas seguintes tambem valem para ele
+  var trBase = L.tratarContexto;
+  L.tratarContexto = function (texto, n, E, modo) {
+    if (modo === 'painel' && !E.aba && E.ent && ABA_DE[E.ent.id] && DEEP[E.ent.id]) {
+      var par = ABA_DE[E.ent.id];
+      E.aba = par[0]; E.programa = par[1];
+      try { return trBase.apply(this, arguments); } finally { E.aba = null; E.programa = ''; }
+    }
+    return trBase.apply(this, arguments);
+  };
+  L.deep = DEEP;
+})(typeof window !== 'undefined' ? window : global);
+
+/* kb-prog-a.js */
+// ============================================================
+// LAUANA - RESPOSTAS DETALHADAS: lote A (testes: funcoes executivas, atencao, memoria)
+// Fonte: painel (site/online/index.html) e manuais manual-*.html, lidos em 27/11/2026. Onde a fonte nao diz, nao se responde.
+// ============================================================
+(function (g) {
+  'use strict';
+  var L = g.LAU, W = L.WHATS;
+  var DEEP = L._deepDados = L._deepDados || {};
+  var ABA_DE = L._deepAba = L._deepAba || {};
+  function P(id, aba, prog, chips, qa) { DEEP[id] = { chips: chips, qa: qa }; ABA_DE[id] = [aba, prog]; }
+  function Q(chip, g, r) { return { chip: chip, g: g, r: r }; }
+  var RASTREIO = 'Lembrando: \u00e9 um instrumento de rastreio experimental, sem valida\u00e7\u00e3o normativa brasileira formal deste app. Use junto com o julgamento cl\u00ednico e outros instrumentos.';
+
+  // ---------- TECFE ----------
+  P('tecfe', 'funcExec', 'tecfe', ['O que \u00e9 o TECFE?', 'O que o TECFE mede?', 'Como interpreto o TECFE?', 'Quanto custa o TECFE?'], [
+    Q('O que o TECFE mede?', ['mede', 'medir', 'metricas', 'metrica', 'indicadores', 'categorias completas', 'o que avalia'],
+      ['O TECFE observa tr\u00eas componentes das fun\u00e7\u00f5es executivas: forma\u00e7\u00e3o de conceitos (descobrir a regra), flexibilidade cognitiva (mudar quando a regra muda) e controle inibit\u00f3rio (parar de usar a regra antiga).',
+       'As m\u00e9tricas s\u00e3o: categorias completadas (at\u00e9 6), erros perseverativos, falhas em manter o set e o total de tentativas e acertos.']),
+    Q('O que o paciente faz no TECFE?', ['paciente faz', 'o que faz', 'tarefa', 'cartas', 'baralho', 'como e o teste', 'descobrir regra', 'feedback'],
+      ['O paciente classifica cartas por cor, forma ou n\u00famero, sem saber a regra: ele descobre pelo retorno "certo" ou "errado" a cada tentativa. Depois de uma sequ\u00eancia de acertos, a regra muda sem aviso.',
+       'S\u00e3o 128 cartas (2 baralhos de 64). O teste termina ao completar 6 categorias ou quando as cartas acabam, em cerca de 8 a 15 minutos.']),
+    Q('O que \u00e9 erro perseverativo?', ['perseverativo', 'perseverativos', 'perseveracao', 'erro perseverativo'],
+      ['\u00c9 insistir na regra antiga depois que ela mudou. \u00c9 a m\u00e9trica-chave do TECFE: segundo o manual, a dificuldade de abandonar uma estrat\u00e9gia que deixou de funcionar \u00e9 um dos indicadores mais sens\u00edveis de comprometimento executivo (frontal).']),
+    Q('O que \u00e9 falha em manter o set?', ['manter set', 'falha set', 'falhas set', 'manter o set', 'perder a regra'],
+      ['\u00c9 perder a regra correta que j\u00e1 tinha sido descoberta. Segundo o manual, indica oscila\u00e7\u00e3o atencional.']),
+    Q('Como interpreto o TECFE?', ['interpretar', 'interpretacao', 'interpreto', 'rigidez', 'flexibilidade preservada', 'poucas categorias', 'resultado significa', 'resultado quer dizer'],
+      ['Poucas categorias completadas com muitos erros perseverativos sugerem rigidez cognitiva e pedem aprofundamento. Boas categorias com poucos erros perseverativos sugerem flexibilidade preservada. Idade e escolaridade influenciam o desempenho.',
+       RASTREIO]),
+    Q('Que estilos de resposta o TECFE descreve?', ['estilo', 'estilos', 'estrategia', 'sistematica', 'impulsiva', 'aleatoria', 'tentativa e erro'],
+      ['Al\u00e9m dos n\u00fameros, a an\u00e1lise descreve como a pessoa resolveu o problema: sistem\u00e1tica, sistem\u00e1tica por elimina\u00e7\u00e3o, parcialmente sistem\u00e1tica, tentativa e erro, perseverativa, aleat\u00f3ria ou impulsiva.']),
+    Q('Como funciona o laudo com IA do TECFE?', ['laudo', 'parecer', 'parecer clinico', 'relatorio', 'inteligencia artificial', 'anonimizado'],
+      ['Ao final, o sistema gera um parecer cl\u00ednico breve com apoio de IA, a partir das m\u00e9tricas do desempenho e da idade e escolaridade. Os dados do paciente s\u00e3o anonimizados antes de irem \u00e0 IA.',
+       'O parecer \u00e9 um apoio, n\u00e3o um laudo final: deve ser revisado e validado por voc\u00ea.']),
+    Q('O TECFE \u00e9 igual ao WCST?', ['wcst', 'wisconsin', 'inspirado', 'baseado em'],
+      ['O TECFE \u00e9 inspirado no Wisconsin Card Sorting Test (WCST), mas \u00e9 um instrumento pr\u00f3prio do site. ' + RASTREIO])
+  ]);
+
+  // ---------- TTE ----------
+  P('tte', 'funcExec', 'tte', ['O que \u00e9 o TTE?', 'O que o TTE mede?', 'Como interpreto o TTE?', 'Quanto custa o TTE?'], [
+    Q('O que o paciente faz no TTE?', ['paciente faz', 'o que faz', 'tarefa', 'circulos', 'arrastar', 'parte a', 'parte b', 'como e o teste'],
+      ['O paciente conecta c\u00edrculos arrastando linhas, em duas partes: na Parte A liga os n\u00fameros em ordem (1, 2, 3...); na Parte B alterna n\u00fameros e letras (1, A, 2, B...). Cada parte tem 25 itens.',
+       'O sistema registra o tempo e os erros de cada parte. O manual recomenda garantir que a pessoa entendeu a tarefa antes de come\u00e7ar.']),
+    Q('O que o TTE mede?', ['mede', 'medir', 'metricas', 'metrica', 'resultado', 'indicadores', 'tempo a', 'tempo b'],
+      ['O resultado traz: Tempo A (velocidade de processamento e busca visual), Tempo B (velocidade com altern\u00e2ncia entre n\u00fameros e letras), Erros, Raz\u00e3o B/A (\u00edndice de flexibilidade cognitiva) e Diferen\u00e7a B menos A (o custo extra da altern\u00e2ncia).']),
+    Q('Para que serve a raz\u00e3o B/A?', ['razao', 'razao b a', 'b a', 'diferenca b a', 'set shifting', 'alternancia'],
+      ['A raz\u00e3o B/A \u00e9 o Tempo B dividido pelo Tempo A. Ela separa o custo de alternar do custo da velocidade em si: uma raz\u00e3o alta sugere que a dificuldade est\u00e1 na flexibilidade cognitiva, e n\u00e3o s\u00f3 na lentid\u00e3o geral, algo que o Tempo B sozinho n\u00e3o distingue.']),
+    Q('Como interpreto o TTE?', ['interpretar', 'interpretacao', 'interpreto', 'lentificacao', 'resultado significa', 'tempos altos', 'normas'],
+      ['Tempos altos nas duas partes sugerem lentifica\u00e7\u00e3o global. Parte A preservada com Parte B muito mais lenta (raz\u00e3o B/A alta) aponta para custo de altern\u00e2ncia. Idade e escolaridade influenciam bastante.',
+       'As normas de tempo ainda s\u00e3o provis\u00f3rias (em constru\u00e7\u00e3o): interprete com cautela, junto com o julgamento cl\u00ednico.'])
+  ]);
+
+  // ---------- BAE ----------
+  P('bae', 'atencao', 'bae', ['O que \u00e9 a BAE?', 'Quais s\u00e3o os 5 subtestes?', 'O que significam omiss\u00f5es e comiss\u00f5es?', 'Como aplico a BAE?'], [
+    Q('Quais s\u00e3o os 5 subtestes?', ['subtestes', 'subteste', 'cinco', 'cinco testes', 'tipos de atencao', 'concentrada', 'sustentada', 'alternada', 'dividida', 'seletiva'],
+      ['S\u00e3o cinco: Concentrada (cancelamento: manter o foco numa busca visual), Sustentada (vigil\u00e2ncia de 5 minutos), Alternada (troca de regra, a flexibilidade atencional), Dividida (dupla tarefa) e Seletiva (focar no alvo ignorando distratores).',
+       'Cada subteste vale 1 cr\u00e9dito e a bateria completa usa 5. Voc\u00ea pode aplicar s\u00f3 os que a hip\u00f3tese cl\u00ednica pedir.']),
+    Q('O que significam omiss\u00f5es e comiss\u00f5es?', ['omissao', 'omissoes', 'comissao', 'comissoes', 'metricas', 'metrica', 'tr medio', 'variabilidade', 'o que mede'],
+      ['Acertos s\u00e3o as respostas corretas aos alvos. Omiss\u00f5es s\u00e3o alvos que passaram sem resposta e indicam desaten\u00e7\u00e3o. Comiss\u00f5es s\u00e3o respostas a n\u00e3o-alvos e indicam impulsividade ou falha inibit\u00f3ria.',
+       'O TR m\u00e9dio \u00e9 o tempo de rea\u00e7\u00e3o m\u00e9dio, e a variabilidade \u00e9 a oscila\u00e7\u00e3o desse tempo: segundo o manual, a inconsist\u00eancia costuma informar mais do que a velocidade m\u00e9dia sozinha, sobretudo na pesquisa de TDAH.']),
+    Q('Como aplico a BAE?', ['aplicar', 'aplicacao', 'computador', 'teclado', 'celular bloqueado', 'ambiente', 'duracao', 'recomendacoes'],
+      ['A BAE s\u00f3 roda em computador com teclado: celular e tablet s\u00e3o bloqueados (o paciente v\u00ea um aviso e nenhum cr\u00e9dito \u00e9 gasto).',
+       'A bateria completa leva cerca de 20 a 30 minutos. O manual recomenda ambiente silencioso e sem interrup\u00e7\u00f5es, principalmente na Sustentada (5 minutos), e garantir que a pessoa entendeu a tarefa de cada subteste antes de come\u00e7ar.']),
+    Q('Como interpreto a BAE?', ['interpretar', 'interpretacao', 'interpreto', 'perfil', 'queda progressiva', 'resultado significa', 'resultado quer dizer'],
+      ['Leia o perfil por subteste, porque um tipo de aten\u00e7\u00e3o pode estar preservado e outro n\u00e3o. Queda progressiva na Sustentada sugere dificuldade de vigil\u00e2ncia; muitos erros na Alternada, de flexibilidade; na Seletiva, de controle inibit\u00f3rio.',
+       'Idade e escolaridade influenciam o desempenho. ' + RASTREIO]),
+    Q('Como funciona o laudo com IA da BAE?', ['laudo', 'parecer', 'relatorio', 'inteligencia artificial', 'anonimizado', 'pdf'],
+      ['Ao final, o sistema gera um laudo em PDF com parecer cl\u00ednico apoiado por IA, com os dados anonimizados antes do envio. O parecer \u00e9 um apoio, n\u00e3o um laudo final: deve ser revisado e validado por voc\u00ea.'])
+  ]);
+
+  // ---------- TRMV ----------
+  P('trmv', 'memoria', 'trmv', ['O que \u00e9 o TRMV?', 'Como funciona o TRMV?', 'O que significam as m\u00e9tricas do TRMV?', 'Quanto custa o TRMV?'], [
+    Q('Como funciona o TRMV?', ['como funciona o teste', 'etapas', 'codificacao', 'retencao', '30 segundos', '60 segundos', 'o que faz', 'paciente faz', 'tarefa'],
+      ['Tem tr\u00eas momentos: 1) codifica\u00e7\u00e3o (30 segundos): as figuras-alvo aparecem para memorizar; 2) reconhecimento imediato: a pessoa aponta quais j\u00e1 viu entre alvos e distratores; 3) reten\u00e7\u00e3o (60 segundos): ap\u00f3s um intervalo, repete o reconhecimento.',
+       'O n\u00famero de figuras muda com a idade: crian\u00e7as at\u00e9 12 anos veem 5; adultos de 13 a 59, 10; idosos de 60 anos ou mais, 5 ou 10 conforme a escolaridade. Dura cerca de 4 minutos.']),
+    Q('Por que o TRMV usa figuras abstratas?', ['abstratas', 'abstrato', 'poligonos', 'nao semanticos', 'figuras sem significado', 'por que figuras'],
+      ['Os est\u00edmulos s\u00e3o pol\u00edgonos abstratos sem significado \u00f3bvio, de prop\u00f3sito: um desenho de "casa" seria memorizado pela palavra "casa". Formas sem nome obrigam o sistema visual a trabalhar e tornam o teste mais espec\u00edfico para a mem\u00f3ria visual.']),
+    Q('O que significam as m\u00e9tricas do TRMV?', ['metricas', 'metrica', 'alarmes falsos', 'alarme falso', 'omissoes', 'indice de retencao', 'acertos', 'o que mede'],
+      ['Acertos s\u00e3o as figuras-alvo reconhecidas. Alarmes falsos s\u00e3o dizer que viu uma figura nova (vi\u00e9s de resposta ou falsa mem\u00f3ria). Omiss\u00f5es s\u00e3o n\u00e3o reconhecer um alvo verdadeiro (falha de armazenamento ou recupera\u00e7\u00e3o).',
+       '\u00cdndice de reten\u00e7\u00e3o \u00e9 a diferen\u00e7a de acertos entre o 2\u00ba e o 1\u00ba reconhecimento: positivo ou zero indica reten\u00e7\u00e3o preservada; negativo indica decaimento (perder 1 ou 2 figuras \u00e9 flutua\u00e7\u00e3o esperada; 3 ou mais \u00e9 decaimento significativo).']),
+    Q('Como interpreto o TRMV?', ['interpretar', 'interpretacao', 'interpreto', 'consolidacao', 'codificacao fragilizada', 'resultado significa', 'resultado quer dizer'],
+      ['Bom reconhecimento imediato com forte queda na reten\u00e7\u00e3o aponta para problema de consolida\u00e7\u00e3o. Baixo desempenho j\u00e1 no imediato aponta para codifica\u00e7\u00e3o fragilizada (ou desaten\u00e7\u00e3o durante a memoriza\u00e7\u00e3o). Leia omiss\u00f5es e alarmes falsos juntos, n\u00e3o s\u00f3 os acertos.',
+       'Corre\u00e7\u00e3o visual (\u00f3culos ou lentes) e condi\u00e7\u00f5es da tela influenciam e devem ser garantidas antes. ' + RASTREIO]),
+    Q('Como funciona o laudo do TRMV?', ['laudo', 'parecer', 'topologico', 'relatorio', 'inteligencia artificial', 'pdf'],
+      ['O laudo em PDF inclui um parecer cl\u00ednico topol\u00f3gico apoiado por IA. \u00c9 um apoio e deve ser revisado por voc\u00ea.'])
+  ]);
+
+  // ---------- TAAV ----------
+  P('taav', 'memoria', 'taav', ['O que \u00e9 o TAAV?', 'Como \u00e9 aplicado o TAAV?', 'O que \u00e9 a curva de aprendizagem?', 'Quanto custa o TAAV?'], [
+    Q('Como \u00e9 aplicado o TAAV?', ['fases', 'etapas', 'como e aplicado', 'tentativas', 'como funciona o teste', 'paciente faz', 'o que faz', 'tarefa', 'lista de interferencia'],
+      ['S\u00e3o 15 figuras de objetos comuns e as fases s\u00e3o: 1) tentativas 1 a 5: as mesmas 15 figuras s\u00e3o estudadas (cerca de 30 segundos) e reconhecidas cinco vezes seguidas; 2) lista de interfer\u00eancia: uma lista nova \u00e9 apresentada e reconhecida uma vez; 3) evoca\u00e7\u00e3o imediata das figuras da primeira lista; 4) evoca\u00e7\u00e3o tardia, cerca de 20 minutos depois; 5) reconhecimento final entre distratores.',
+       'O intervalo de cerca de 20 minutos \u00e9 real, ent\u00e3o planeje o hor\u00e1rio da sess\u00e3o.']),
+    Q('O que \u00e9 a curva de aprendizagem?', ['curva', 'curva de aprendizagem', 'ganho', 'aprendizagem', 'ascendente', 'achatada'],
+      ['\u00c9 a evolu\u00e7\u00e3o dos acertos ao longo das 5 tentativas (T1 a T5) e, segundo o manual, o dado mais rico do TAAV. Curva ascendente indica aprendizagem preservada; curva achatada (pouco ganho de T1 para T5) sugere dificuldade de se beneficiar da repeti\u00e7\u00e3o.',
+       'O ganho de aprendizagem \u00e9 T5 menos T1.']),
+    Q('O que significam as m\u00e9tricas do TAAV?', ['metricas', 'metrica', 'interferencia proativa', 'interferencia retroativa', 'proativa', 'retroativa', 'evocacao tardia', 'o que mede', 'reconhecimento'],
+      ['Interfer\u00eancia proativa (B menos T1) \u00e9 o efeito da lista antiga sobre o aprendizado da nova. Interfer\u00eancia retroativa (A6 menos T5) \u00e9 o efeito da lista nova sobre a mem\u00f3ria da antiga. Evoca\u00e7\u00e3o tardia (reten\u00e7\u00e3o) mostra quanto se manteve ap\u00f3s cerca de 20 minutos. Reconhecimento \u00e9 a capacidade de identificar os alvos entre distratores.']),
+    Q('Como interpreto o TAAV?', ['interpretar', 'interpretacao', 'interpreto', 'consolidacao', 'resultado significa', 'resultado quer dizer', 'aprender x reter'],
+      ['Curva ascendente com boa evoca\u00e7\u00e3o tardia sugere aprendizagem e mem\u00f3ria visual preservadas. Bom aprendizado (T5) com queda acentuada na tardia aponta para consolida\u00e7\u00e3o fragilizada. Forte interfer\u00eancia sugere vulnerabilidade da mem\u00f3ria \u00e0 competi\u00e7\u00e3o entre listas.',
+       'Idade, escolaridade e corre\u00e7\u00e3o visual influenciam. ' + RASTREIO]),
+    Q('Como funciona o laudo do TAAV?', ['laudo', 'parecer', 'relatorio', 'inteligencia artificial', 'pdf'],
+      ['O laudo em PDF traz a curva de aprendizagem e uma an\u00e1lise cl\u00ednica apoiada por IA. \u00c9 um apoio e deve ser revisado por voc\u00ea.'])
+  ]);
+
+  // ---------- CORSI ----------
+  P('corsi', 'memoria', 'corsi', ['O que \u00e9 o Corsi?', 'Como funciona o Corsi?', 'O que \u00e9 span direto e inverso?', 'Como interpreto o Corsi?'], [
+    Q('Como funciona o Corsi?', ['como funciona o teste', 'cubos', 'blocos', 'sequencia', 'o que faz', 'paciente faz', 'tarefa', 'niveis', 'tentativas'],
+      ['O paciente v\u00ea cubos acendendo em sequ\u00eancia, em perspectiva 3D, e reproduz a ordem. Primeiro na ordem direta (a mesma em que acenderam) e depois na ordem inversa (de tr\u00e1s para frente).',
+       'Cada cubo fica aceso cerca de 1 segundo, com cerca de 1 segundo de intervalo, e h\u00e1 2 tentativas por n\u00edvel. A sequ\u00eancia vai aumentando at\u00e9 a pessoa n\u00e3o conseguir mais acompanhar.']),
+    Q('O que \u00e9 span direto e inverso?', ['span', 'span direto', 'span inverso', 'direto', 'inverso', 'pontuacao total', 'metricas', 'resultado'],
+      ['Span Direto \u00e9 a maior sequ\u00eancia reproduzida na ordem correta (capacidade de armazenamento visuoespacial). Span Inverso \u00e9 a maior na ordem inversa, que exige mais manipula\u00e7\u00e3o mental. Pontua\u00e7\u00e3o Total \u00e9 o desempenho global, combinando os n\u00edveis alcan\u00e7ados.']),
+    Q('Como interpreto o Corsi?', ['interpretar', 'interpretacao', 'interpreto', 'resultado significa', 'resultado quer dizer', 'span baixo', 'span baixos', 'executivo'],
+      ['Spans baixos sugerem capacidade reduzida de mem\u00f3ria de trabalho visuoespacial. Bom span direto com inverso desproporcionalmente baixo aponta para custo de manipula\u00e7\u00e3o, n\u00e3o s\u00f3 de armazenamento (componente executivo da mem\u00f3ria de trabalho).',
+       'Idade e escolaridade influenciam bastante, e a perspectiva 3D pede boas condi\u00e7\u00f5es de tela. As normas ainda s\u00e3o provis\u00f3rias (em constru\u00e7\u00e3o): interprete com cautela.']),
+    Q('O Corsi \u00e9 igual ao span de d\u00edgitos?', ['span de digitos', 'digitos', 'verbal', 'visuoespacial', 'diferenca'],
+      ['\u00c9 o an\u00e1logo visuoespacial: o span de d\u00edgitos mede a al\u00e7a verbal da mem\u00f3ria de trabalho e o Corsi mede a al\u00e7a visuoespacial.'])
+  ]);
+})(typeof window !== 'undefined' ? window : global);
+
+/* kb-prog-a2.js */
+// ============================================================
+// LAUANA - RESPOSTAS DETALHADAS: lote A2 (percepcao, linguagem, visuoconstrutivo)
+// Fonte: painel (site/online/index.html) e manuais manual-*.html, lidos em 27/11/2026.
+// ============================================================
+(function (g) {
+  'use strict';
+  var L = g.LAU, W = L.WHATS;
+  var DEEP = L._deepDados = L._deepDados || {};
+  var ABA_DE = L._deepAba = L._deepAba || {};
+  function P(id, aba, prog, chips, qa) { DEEP[id] = { chips: chips, qa: qa }; ABA_DE[id] = [aba, prog]; }
+  function Q(chip, g, r) { return { chip: chip, g: g, r: r }; }
+  var RASTREIO = 'Lembrando: \u00e9 um instrumento de rastreio experimental, sem valida\u00e7\u00e3o normativa brasileira formal. Use junto com o julgamento cl\u00ednico e outros instrumentos.';
+
+  // ---------- TREF ----------
+  P('tref', 'percepcao', 'tref', ['O que \u00e9 o TREF?', 'Como funciona o TREF?', 'Como interpreto o TREF?', 'Quanto custa o TREF?'], [
+    Q('Como funciona o TREF?', ['como funciona o teste', 'o que faz', 'paciente faz', 'tarefa', 'reconstruir', 'reconstroi', 'clicar nas regioes', 'rosto', 'codificacao'],
+      ['A pessoa observa um rosto por 30 segundos e depois o reconstr\u00f3i de mem\u00f3ria, clicando nas regi\u00f5es de que se lembra (olhos, boca, nariz e outras \u00e1reas). A ordem dos cliques \u00e9 registrada e mostra por onde a aten\u00e7\u00e3o dela "come\u00e7a" ao olhar um rosto.',
+       'Crian\u00e7as de 6 a 12 anos veem 1 rosto (do mesmo sexo); a partir de 13 anos, 2 rostos, o que permite comparar. Dura cerca de 5 minutos.']),
+    Q('O que \u00e9 o ziguezague do TREF?', ['ziguezague', 'ziguezagues', 'zig zag', 'trajetoria', 'indice de ziguezague'],
+      ['\u00c9 a dist\u00e2ncia m\u00e9dia entre cliques consecutivos ao longo de toda a reconstru\u00e7\u00e3o do rosto, numa escala de 0 a 100. Valores baixos indicam que a pessoa reconstr\u00f3i regi\u00f5es vizinhas em sequ\u00eancia (caminho organizado); valores altos, que ela salta entre regi\u00f5es distantes.',
+       '\u00c9 o \u00edndice que define a classifica\u00e7\u00e3o na vers\u00e3o atual (v3.2).']),
+    Q('Como o TREF classifica o resultado?', ['classificacao', 'classifica', 'tipico', 'atipico', 'limiar', 'limiares', '22', 'processamento atipico'],
+      ['Com 2 rostos: ziguezague acima de 22 nos dois rostos indica padr\u00e3o sugestivo de processamento at\u00edpico (e o manual recomenda investigar com outros instrumentos, como o TECFE). Alto em apenas um rosto n\u00e3o classifica como at\u00edpico.',
+       'Com 1 rosto (crian\u00e7as at\u00e9 12 anos): acima de 22 aparece "escaneamento at\u00edpico de acordo com os estudos; necess\u00e1rio investigar". Os limiares s\u00e3o provis\u00f3rios e calibr\u00e1veis, e o limiar do rosto \u00fanico foi calibrado com dados de adultos.']),
+    Q('O que \u00e9 a discrep\u00e2ncia no TREF?', ['discrepancia', 'diferenca entre rostos', 'dois rostos', 'comparar rostos', '18'],
+      ['\u00c9 a diferen\u00e7a entre o ziguezague do primeiro e do segundo rosto (s\u00f3 existe com 2 rostos). Acima de 18 aparece como um achado a investigar no inqu\u00e9rito, e n\u00e3o como diagn\u00f3stico: pode ter v\u00e1rias causas, entre elas a reatividade ao est\u00edmulo, como na ansiedade social.']),
+    Q('O que \u00e9 o IFS do TREF?', ['ifs', 'ifs o', 'fixacao social', 'indice de fixacao', 'olhos e boca', 'social first', 'periferia first', 'padrao de escaneamento'],
+      ['O IFS (\u00cdndice de Fixa\u00e7\u00e3o Social) \u00e9 a porcentagem de cliques nas regi\u00f5es sociais (olhos e boca). O IFS-O d\u00e1 mais peso aos primeiros cliques. Os dois s\u00e3o s\u00f3 informativos e n\u00e3o definem a classifica\u00e7\u00e3o.',
+       'O padr\u00e3o de escaneamento descreve por onde a pessoa come\u00e7ou: social-first (olhos ou boca primeiro, padr\u00e3o t\u00edpico), misto ou periferia-first (padr\u00e3o at\u00edpico). Tamb\u00e9m n\u00e3o decide a classifica\u00e7\u00e3o final.']),
+    Q('Como interpreto o TREF?', ['interpretar', 'interpretacao', 'interpreto', 'limitacoes', 'exclui tea', 'resultado significa', 'resultado quer dizer', 'tea'],
+      ['Ziguezague baixo nos dois rostos indica trajet\u00f3ria organizada (resultado descritivo). Alto nos dois rostos merece aprofundamento com outros instrumentos, e n\u00e3o \u00e9 diagn\u00f3stico.',
+       'Cuidado: o TREF mede a ordem de reconstru\u00e7\u00e3o de mem\u00f3ria, que n\u00e3o equivale ao olhar ao vivo. Por isso um padr\u00e3o t\u00edpico n\u00e3o exclui TEA. ' + RASTREIO]),
+    Q('Por que o TREF fala em vi\u00e9s do pr\u00f3prio g\u00eanero?', ['vies', 'proprio genero', 'rosto feminino', 'rosto masculino', 'own gender', 'genero do rosto', 'sexo do rosto'],
+      ['Quando a pessoa responde a um rosto feminino e a um masculino, \u00e9 comum haver diferen\u00e7a de engajamento entre eles. Antes de atribuir isso a uma causa cl\u00ednica, o manual pede considerar o vi\u00e9s do pr\u00f3prio g\u00eanero: mulheres e meninas tendem a processar melhor faces femininas.',
+       'Ou seja, a diferen\u00e7a entre o rosto feminino e o masculino \u00e9 um dado a interpretar com o contexto, nunca um achado diagn\u00f3stico isolado.']),
+    Q('Como funciona o laudo do TREF?', ['laudo', 'pdf', 'relatorio', 'parecer', 'inteligencia artificial'],
+      ['O laudo em PDF traz a classifica\u00e7\u00e3o do instrumento e uma an\u00e1lise descritiva por IA, que deve ser revisada por voc\u00ea. Segundo o manual, o PDF e a an\u00e1lise por IA ainda usam a leitura por IFS; a classifica\u00e7\u00e3o v3.2 \u00e9 a que aparece na tela de resultado.'])
+  ]);
+
+  // ---------- TPV-SET ----------
+  P('tpvset', 'percepcao', 'tpvset', ['O que \u00e9 o TPV-SET?', 'Qual \u00e9 a regra do SET?', 'Quais s\u00e3o os n\u00edveis do TPV-SET?', 'Como interpreto o TPV-SET?'], [
+    Q('Qual \u00e9 a regra do SET?', ['regra do set', 'o que e um set', 'set valido', 'grade', 'cartas', 'trio', 'trios', 'como funciona o teste', 'o que faz', 'paciente faz'],
+      ['A tela mostra uma grade 3x3 (9 cartas). Cada carta tem cor, forma e n\u00famero de s\u00edmbolos, e cada uma dessas tr\u00eas caracter\u00edsticas tem 3 valores. Um SET \u00e9 um trio em que, para cada caracter\u00edstica considerada, as tr\u00eas cartas s\u00e3o todas iguais ou todas diferentes, nunca duas iguais e uma diferente.',
+       'O programa s\u00f3 avalia o trio quando as tr\u00eas cartas est\u00e3o alinhadas (em linha, coluna ou diagonal). Trio desalinhado \u00e9 ignorado, e marcar s\u00f3 1 ou 2 cartas tamb\u00e9m n\u00e3o conta.']),
+    Q('Quais s\u00e3o os n\u00edveis do TPV-SET?', ['niveis', 'nivel', 'n1', 'n2', 'n3', 'rodadas', 'tempo por rodada', 'quantos niveis'],
+      ['S\u00e3o tr\u00eas, sempre em ordem crescente, e voc\u00ea escolhe no painel quais aplicar (um, dois ou os tr\u00eas); cada n\u00edvel aplicado tem 3 rodadas.',
+       'N1 (percep\u00e7\u00e3o): s\u00f3 1 caracter\u00edstica, avisada numa p\u00edlula roxa "PROCURE POR", 25 segundos por rodada. N2 (mem\u00f3ria de trabalho): 2 caracter\u00edsticas, com uma p\u00edlula vermelha "IGNORE" que some depois, 40 segundos. N3 (carga total): as 3 caracter\u00edsticas ao mesmo tempo, 60 segundos.']),
+    Q('Como \u00e9 o resultado do TPV-SET?', ['resultado', 'pontuacao', 'escore', 'percentual', 'faixas', 'escore geral', 'baixo intermediario alto', 'estabilidade', 'estavel'],
+      ['N\u00e3o h\u00e1 nota normativa: o escore \u00e9 livre, em porcentagem de SETs corretos, por n\u00edvel e geral. As faixas descritivas provis\u00f3rias s\u00e3o Baixo (menos de 33%), Intermedi\u00e1rio (33% a 66%) e Alto (mais de 66%). O escore geral \u00e9 ponderado: N1 peso 1, N2 peso 2 e N3 peso 3, s\u00f3 com os n\u00edveis aplicados.',
+       'Tamb\u00e9m h\u00e1 um indicador de estabilidade entre as 3 rodadas: amplitude at\u00e9 25 pontos percentuais \u00e9 "est\u00e1vel", acima disso "vari\u00e1vel". Valor baixo e est\u00e1vel sugere fragilidade real; baixo e vari\u00e1vel sugere inconsist\u00eancia ou distra\u00e7\u00e3o pontual.']),
+    Q('O que s\u00e3o acertos, erros e omiss\u00f5es no TPV-SET?', ['erro', 'erros', 'falso set', 'falsos sets', 'omissao', 'omissoes', 'acertos', 'impulsividade', 'indicadores'],
+      ['Acerto \u00e9 um trio alinhado que forma um SET v\u00e1lido. Erro (falso SET) \u00e9 um trio alinhado que n\u00e3o forma SET e, segundo o manual, dialoga com o controle inibit\u00f3rio: muitos falsos SETs sugerem poss\u00edvel impulsividade. Omiss\u00e3o \u00e9 um SET alinhado que existia e n\u00e3o foi marcado.',
+       'O resultado tamb\u00e9m traz a velocidade m\u00e9dia entre cliques, o tempo m\u00e9dio at\u00e9 o 1\u00ba clique e o tempo m\u00e9dio para completar a rodada (quanto menor, melhor).']),
+    Q('Como aplico o TPV-SET?', ['aplicar', 'aplicacao', 'treino', 'fluxo', 'nova aplicacao', 'como aplico'],
+      ['No painel, aba Percep\u00e7\u00e3o > TPV-SET: clique em "Nova Aplica\u00e7\u00e3o", escolha o paciente e os n\u00edveis, e gere o link (aplica\u00e7\u00e3o remota) ou aplique localmente. Antes de valer, o paciente faz um treino com feedback e exemplos de SET v\u00e1lido e inv\u00e1lido. O PDF \u00e9 gerado pelo painel.',
+       '\u00c9 gratuito.']),
+    Q('Como interpreto o TPV-SET?', ['interpretar', 'interpretacao', 'interpreto', 'resultado significa', 'resultado quer dizer', 'exploratorio', 'validacao'],
+      ['Valores muito baixos, principalmente se est\u00e1veis nas tr\u00eas rodadas, sugerem fragilidade de percep\u00e7\u00e3o ou velocidade; valores altos indicam boa percep\u00e7\u00e3o. A faixa intermedi\u00e1ria fica "em aberto" at\u00e9 haver norma.',
+       'O TPV-SET \u00e9 gratuito e explorat\u00f3rio, sem valida\u00e7\u00e3o formal nem normatiza\u00e7\u00e3o: use como fonte de hip\u00f3teses, dentro de uma avalia\u00e7\u00e3o ampla, nunca isoladamente.'])
+  ]);
+
+  // ---------- TFLOD ----------
+  P('tflod', 'linguagem', 'tflod', ['O que \u00e9 o TFLOD?', 'Como aplico o TFLOD?', 'O que \u00e9 o PCPM?', 'Quanto custa o TFLOD?'], [
+    Q('Como aplico o TFLOD?', ['aplicar', 'aplicacao', 'como aplico', 'passo a passo', 'microfone', 'volume', 'barra de volume', 'captacao', 'ambiente silencioso'],
+      ['No painel, aba Linguagem > TFLOD: "Nova Aplica\u00e7\u00e3o", preencha nome, nascimento, escolaridade e sexo, e gere o link do paciente ou use "Aplicar Localmente". O paciente confere o microfone (o bot\u00e3o s\u00f3 libera depois que a voz \u00e9 detectada), l\u00ea as instru\u00e7\u00f5es e, ao iniciar, l\u00ea o texto em voz alta por 1 minuto, com uma barra de volume ao vivo.',
+       'Boa capta\u00e7\u00e3o \u00e9 essencial: pe\u00e7a leitura em bom volume, perto do microfone e em ambiente silencioso.']),
+    Q('O que \u00e9 o PCPM?', ['pcpm', 'palavras corretas por minuto', 'fluencia', 'metricas', 'metrica', 'acertos', 'erros', 'palavras alcancadas', 'lcs', 'o que mede'],
+      ['PCPM \u00e9 Palavras Corretas Por Minuto: junta velocidade e precis\u00e3o numa s\u00f3 m\u00e9trica (palavras lidas corretamente x 60 / tempo em segundos). Junto v\u00eam acertos, erros (omiss\u00f5es, substitui\u00e7\u00f5es e trocas fonol\u00f3gicas) e as palavras alcan\u00e7adas no texto.',
+       'O alinhamento entre o que foi lido e o texto usa o algoritmo LCS (maior subsequ\u00eancia comum), que acha as palavras corretas mesmo com inser\u00e7\u00f5es, omiss\u00f5es ou repeti\u00e7\u00f5es no meio.']),
+    Q('Qual \u00e9 o PCPM esperado por ano escolar?', ['esperado', 'media esperada', 'faixas', 'classificacao', 'ano escolar', 'escolaridade', 'superior', 'insuficiente', 'limitrofe'],
+      ['Para crian\u00e7as, as m\u00e9dias de refer\u00eancia s\u00e3o aproximadamente: 1\u00ba ano 53, 2\u00ba ano 72, 3\u00ba ano 92, 4\u00ba ano 112, 5\u00ba ano 127, 6\u00ba e 7\u00ba anos 140 a 145 PCPM. Para adultos (8\u00ba ano em diante), cerca de 150 ou mais.',
+       'A classifica\u00e7\u00e3o vai de Superior, M\u00e9dia Superior, M\u00e9dia, M\u00e9dia Inferior, Lim\u00edtrofe at\u00e9 Insuficiente. As faixas s\u00e3o refer\u00eancias da literatura (Hasbrouck e Tindal; PROLEC), n\u00e3o normas amostrais nacionais deste instrumento.']),
+    Q('A transcri\u00e7\u00e3o do TFLOD corrige os erros?', ['transcricao', 'transcreve', 'whisper', 'literal', 'correcao automatica', 'trocas fonologicas', 'dislexia', 'processar'],
+      ['N\u00e3o. O \u00e1udio \u00e9 transcrito por IA (Whisper) de forma literal, sem corre\u00e7\u00e3o autom\u00e1tica, preservando trocas fonol\u00f3gicas (p/b, t/d, f/v), invers\u00f5es e omiss\u00f5es, o que permite uma an\u00e1lise qualitativa de ind\u00edcios de dislexia.',
+       'O paciente s\u00f3 l\u00ea e envia o \u00e1udio; a transcri\u00e7\u00e3o \u00e9 feita depois, no painel, quando voc\u00ea clica em "Processar". Se o servi\u00e7o oscilar, basta clicar de novo, sem custo extra.']),
+    Q('O TFLOD pede para refazer quando a leitura \u00e9 muito ruim?', ['refazer', 'leitura dificil', 'leitor com dificuldade', 'falha tecnica', 'audio ruim', 'audio vazio', 'transcricao vazia', 'pcpm baixo'],
+      ['Leitura muito dif\u00edcil n\u00e3o \u00e9 falha t\u00e9cnica: quem l\u00ea devagar, baixinho, com pausas e trocas gera um PCPM baixo que \u00e9 um resultado cl\u00ednico leg\u00edtimo, e o sistema o registra assim.',
+       'O teste s\u00f3 trata como falha t\u00e9cnica (pedindo para refazer) quando o \u00e1udio realmente n\u00e3o traz leitura reconhec\u00edvel: transcri\u00e7\u00e3o vazia, som sem fala articulada ou padr\u00e3o de repeti\u00e7\u00e3o an\u00f4malo.']),
+    Q('Como interpreto o TFLOD?', ['interpretar', 'interpretacao', 'interpreto', 'resultado significa', 'resultado quer dizer', 'abaixo do esperado', 'fluencia fragilizada'],
+      ['Um PCPM abaixo do esperado para a escolaridade sugere flu\u00eancia fragilizada e indica aprofundar a avalia\u00e7\u00e3o; n\u00e3o \u00e9 conclus\u00e3o diagn\u00f3stica isolada. O TFLOD \u00e9 um rastreio sem valida\u00e7\u00e3o normativa brasileira formal.']),
+    Q('Que textos o TFLOD usa?', ['texto', 'textos', 'palavras', '148', '247', 'crianca adulto', 'qual texto'],
+      ['Crian\u00e7as de 6 a 12 anos leem um texto infantil de 148 palavras; a partir de 13 anos, um texto adulto de 247 palavras. A leitura dura 1 minuto.'])
+  ]);
+
+  // ---------- TETaylor ----------
+  P('tetaylor', 'visuoconstrutivo', 'tetaylor', ['O que \u00e9 o TETaylor?', 'O paciente desenha na tela?', 'Como \u00e9 o resultado do TETaylor?', 'Qual a diferen\u00e7a para a vers\u00e3o simplificada?'], [
+    Q('O paciente desenha na tela?', ['desenha', 'desenho', 'tela', 'papel', 'folha', 'lapis', 'copia', 'copiar', 'como funciona o teste', 'o que faz', 'material'],
+      ['N\u00e3o. O avaliador mostra a figura na tela e o paciente desenha em uma folha de papel separada; a pontua\u00e7\u00e3o dos elementos \u00e9 registrada no sistema. Tenha papel em branco e l\u00e1pis ou caneta \u00e0 m\u00e3o antes de come\u00e7ar.',
+       'Use uma folha para a c\u00f3pia e outra para a reprodu\u00e7\u00e3o de mem\u00f3ria, porque a pessoa n\u00e3o pode ver a c\u00f3pia enquanto reproduz de mem\u00f3ria. A aplica\u00e7\u00e3o \u00e9 local (n\u00e3o h\u00e1 link para o paciente).']),
+    Q('Como \u00e9 o resultado do TETaylor?', ['resultado', 'pontuacao', 'escore', 'score', 'elementos', 'bruto', 'ajustado', 'escore equivalente', 'normas', 'casarotti'],
+      ['S\u00e3o 18 elementos, cada um de 0 a 2 pontos (total de 0 a 36), pontuados por precis\u00e3o e posi\u00e7\u00e3o. O resultado traz: score bruto, score ajustado por idade e escolaridade, escore equivalente (0 a 4) e classifica\u00e7\u00e3o. As normas seguem Casarotti et al. (2014).']),
+    Q('Como interpreto o TETaylor?', ['interpretar', 'interpretacao', 'interpreto', 'copia x memoria', 'resultado significa', 'resultado quer dizer', 'copia preservada'],
+      ['Compare as duas etapas: boa c\u00f3pia com m\u00e1 reprodu\u00e7\u00e3o aponta para mem\u00f3ria visual; c\u00f3pia j\u00e1 ruim aponta para constru\u00e7\u00e3o visuoespacial ou planejamento. A pontua\u00e7\u00e3o depende do seu julgamento sobre cada elemento, ent\u00e3o siga os crit\u00e9rios padronizados. Idade, escolaridade e corre\u00e7\u00e3o visual influenciam.']),
+    Q('Qual a diferen\u00e7a para a vers\u00e3o simplificada?', ['simplificada', 'simplificado', 'qual usar', 'qual versao', 'baixa escolaridade', 'diferenca'],
+      ['A completa tem 18 elementos, vale para adultos de 19 a 98 anos e usa normas de Casarotti et al. (2014). A simplificada tem 12 elementos e \u00e9 para adultos e idosos com baixa escolaridade, com normas de de Paula et al. (2016). Escolha pela escolaridade e pelo objetivo: misturar normas invalida a leitura.'])
+  ]);
+
+  // ---------- TETaylorSimp ----------
+  P('tetaylorsimp', 'visuoconstrutivo', 'tetaylorsimp', ['O que \u00e9 o TETaylorSimp?', 'Quando usar a vers\u00e3o simplificada?', 'Como \u00e9 o resultado do TETaylorSimp?', 'O paciente desenha na tela?'], [
+    Q('Quando usar a vers\u00e3o simplificada?', ['quando usar', 'qual usar', 'indicacao', 'baixa escolaridade', 'por que simplificada', 'efeito de piso', 'diferenca', 'completa'],
+      ['Para adultos e idosos, especialmente com baixa escolaridade, em quem a vers\u00e3o completa pode ser dif\u00edcil demais e gerar efeito de piso: instrumentos muito complexos penalizam a pessoa por motivos que n\u00e3o s\u00e3o cl\u00ednicos. A figura simplificada, com normas pr\u00f3prias, deixa a avalia\u00e7\u00e3o mais justa.',
+       'Escolha a vers\u00e3o pela escolaridade e pelo objetivo: misturar normas invalida a leitura.']),
+    Q('Como \u00e9 o resultado do TETaylorSimp?', ['resultado', 'pontuacao', 'escore', 'score', 'z score', 'zscore', 'percentil', 'elementos', 'normas', 'de paula'],
+      ['S\u00e3o 12 elementos, cada um de 0 a 2 pontos (total de 0 a 24). O resultado vem em score bruto, Z-score (quantos desvios-padr\u00e3o da m\u00e9dia normativa), percentil e classifica\u00e7\u00e3o. Diferentemente da vers\u00e3o completa, n\u00e3o usa o escore equivalente de 0 a 4.',
+       'As normas s\u00e3o de de Paula et al. (2016, N=100), uma amostra brasileira. Use s\u00f3 para a popula\u00e7\u00e3o compat\u00edvel.']),
+    Q('O paciente desenha na tela?', ['desenha', 'desenho', 'tela', 'papel', 'folha', 'lapis', 'copia', 'copiar', 'como funciona o teste', 'o que faz', 'material'],
+      ['N\u00e3o. O avaliador mostra a figura na tela e o paciente desenha em uma folha de papel separada, uma para a c\u00f3pia e outra para a reprodu\u00e7\u00e3o de mem\u00f3ria. A aplica\u00e7\u00e3o \u00e9 local: voc\u00ea usa o computador e registra a pontua\u00e7\u00e3o no sistema.']),
+    Q('Como interpreto o TETaylorSimp?', ['interpretar', 'interpretacao', 'interpreto', 'z score muito negativo', 'resultado significa', 'resultado quer dizer'],
+      ['Z-score muito negativo (percentil baixo) sugere desempenho abaixo do esperado para o grupo normativo. Comparar a c\u00f3pia com a mem\u00f3ria ajuda a separar dificuldade construtiva de dificuldade de mem\u00f3ria visual. A leitura deve integrar o contexto cl\u00ednico.'])
+  ]);
+})(typeof window !== 'undefined' ? window : global);
+
+/* kb-prog-b.js */
+// ============================================================
+// LAUANA - RESPOSTAS DETALHADAS: lote B (aba Inteligencia e AH/SD: IDEIA, BRPI, BAFC)
+// Fonte: painel (site/online/index.html) e manuais manual-ideia/brpi/bafc.html, lidos em 27/11/2026.
+// ============================================================
+(function (g) {
+  'use strict';
+  var L = g.LAU, W = L.WHATS;
+  var DEEP = L._deepDados = L._deepDados || {};
+  var ABA_DE = L._deepAba = L._deepAba || {};
+  function P(id, aba, prog, chips, qa) { DEEP[id] = { chips: chips, qa: qa }; ABA_DE[id] = [aba, prog]; }
+  function Q(chip, g, r) { return { chip: chip, g: g, r: r }; }
+
+  // ---------- IDEIA ----------
+  P('ideia', 'inteligencia', 'ideia', ['O que \u00e9 o IDEIA?', 'Como funciona o IDEIA?', 'O que o IDEIA mede?', 'Como o IDEIA classifica?'], [
+    Q('Como funciona o IDEIA?', ['como funciona o teste', 'o que faz', 'paciente faz', 'tarefa', 'blocos', 'estimulos', 'usos alternativos', 'escuta continua', 'microfone', 'silencio'],
+      ['A pessoa fala em voz alta usos alternativos para 20 est\u00edmulos, em 4 blocos de dificuldade crescente: objetos concretos (tijolo, clipe, jornal...), objetos menos \u00f3bvios (meia velha, el\u00e1stico, caixa...), conceitos abstratos (sil\u00eancio, zero, sombra...) e combina\u00e7\u00f5es (guarda-chuva + rel\u00f3gio...). O tempo m\u00e1ximo \u00e9 de 10 minutos, em segundo plano.',
+       'O microfone fica ativo o tempo todo e registra cada ideia sem interromper. Depois de cerca de 20 segundos de sil\u00eancio, o sistema pergunta se a pessoa esgotou as ideias ou quer continuar, e h\u00e1 um bot\u00e3o para passar ao pr\u00f3ximo item. Precisa de microfone funcionando e ambiente silencioso.']),
+    Q('O que o IDEIA mede?', ['mede', 'medir', 'metricas', 'metrica', 'fluencia', 'flexibilidade', 'originalidade', 'elaboracao', 'guilford', 'o que avalia'],
+      ['O \u00e1udio \u00e9 transcrito por IA (Whisper) e analisado por IA (Gemini), que avalia cada ideia nos quatro pilares de Guilford: Flu\u00eancia (quantidade de ideias v\u00e1lidas), Flexibilidade (quantas categorias diferentes de uso), Originalidade (qu\u00e3o incomuns s\u00e3o as ideias, escala de 1 a 5) e Elabora\u00e7\u00e3o (n\u00edvel de detalhe, escala de 1 a 3).',
+       'Tamb\u00e9m traz velocidade (ideias por minuto), curva temporal, repeti\u00e7\u00f5es (ideias parecidas, que indicam persevera\u00e7\u00e3o) e itens alcan\u00e7ados (de 20).']),
+    Q('Como o IDEIA classifica?', ['classifica', 'classificacao', 'faixa etaria', 'faixas', 'tabela', 'tipica', 'acima da media', 'excepcional', 'media de ideias', 'normas'],
+      ['A classifica\u00e7\u00e3o usa a m\u00e9dia de ideias por item alcan\u00e7ado, ajustada pela idade. O teste \u00e9 o mesmo para todas as idades. Faixas (T\u00edpica / Acima da m\u00e9dia / Alta criatividade-AH/SD / Excepcional): 6-7 anos: 3-5 / 6-7 / 8-11 / 12+; 8-9 anos: 3-5 / 6-8 / 9-12 / 13+; 10-11 anos: 3-6 / 7-9 / 10-13 / 14+.',
+       '12-13 anos: 3-6 / 7-9 / 10-14 / 15+; 14-17 anos: 3-7 / 8-10 / 11-15 / 16+; adultos (18+): 3-6 / 7-10 / 10-15 / 20+. Aten\u00e7\u00e3o: s\u00e3o estimativas baseadas na literatura (Guilford, Torrance), sem valida\u00e7\u00e3o normativa brasileira formal; normas definitivas dependem de coleta de amostra.']),
+    Q('O IDEIA serve para altas habilidades?', ['altas habilidades', 'ah sd', 'superdotacao', 'superdotado', 'teto alto', 'criatividade alta', 'curva temporal', 'esgotamento'],
+      ['Sim, \u00e9 especialmente \u00fatil no rastreio de Altas Habilidades/Superdota\u00e7\u00e3o. Ele adota o princ\u00edpio do "teto alto": n\u00e3o h\u00e1 limite de respostas, ent\u00e3o uma pessoa muito criativa pode ultrapassar o teto da pr\u00f3pria faixa et\u00e1ria, algo que instrumentos com limite fixo n\u00e3o captam.',
+       'A curva temporal tamb\u00e9m ajuda: as ideias mais criativas costumam surgir depois do esgotamento das \u00f3bvias, e quem tem AH/SD tende a manter a produ\u00e7\u00e3o por mais tempo. \u00c9 rastreio, n\u00e3o diagn\u00f3stico.']),
+    Q('Como compro cr\u00e9ditos do IDEIA?', ['comprar creditos', 'plano', 'planos', 'avulso', 'pacote', 'liberados', 'quando libera', 'creditos liberados'],
+      ['Em "Comprar Cr\u00e9ditos" na aba do IDEIA h\u00e1 dois planos: Avulso (R$ 10, 1 aplica\u00e7\u00e3o) e Pacote 10 (R$ 80, R$ 8 cada). Depois do pagamento, os cr\u00e9ditos s\u00e3o liberados automaticamente em at\u00e9 5 minutos.'])
+  ]);
+
+  // ---------- BRPI ----------
+  P('brpi', 'inteligencia', 'brpi', ['O que \u00e9 a BRPI?', 'O que cada m\u00f3dulo faz?', 'Como a BRPI l\u00ea as respostas?', 'A BRPI \u00e9 teste de QI?'], [
+    Q('O que cada m\u00f3dulo faz?', ['quatro modulos', 'cada modulo', 'quais modulos', 'o que cada modulo faz', 'modulos da brpi', 'a b c d'],
+      ['S\u00e3o quatro m\u00f3dulos independentes, que podem ser aplicados juntos (na ordem A a D) ou separadamente: A (Amplitude de Mem\u00f3ria: reter e reproduzir sequ\u00eancias, na ordem direta e inversa, por via auditiva e visual), B (Organiza\u00e7\u00e3o e Manipula\u00e7\u00e3o: reorganizar a informa\u00e7\u00e3o em ordem crescente e decrescente), C (Racioc\u00ednio Relacional: descobrir a regra que liga os elementos, em 7 n\u00edveis) e D (Integra\u00e7\u00e3o e Decis\u00e3o: racioc\u00ednio simb\u00f3lico com figuras).',
+       'Os problemas s\u00e3o gerados por f\u00f3rmula, ent\u00e3o nunca s\u00e3o id\u00eanticos entre aplica\u00e7\u00f5es. H\u00e1 duas tentativas por n\u00edvel, e o teto de cada trilha \u00e9 definido quando a pessoa erra as duas tentativas do mesmo n\u00edvel.']),
+    Q('Como \u00e9 o m\u00f3dulo A da BRPI?', ['amplitude de memoria', 'sequencias', 'modulo', 'modulo a', 'ordem direta e inversa', 'memoria auditiva', 'modalidade'],
+      ['O m\u00f3dulo A pergunta quanto a pessoa consegue conservar e reproduzir. Apresenta sequ\u00eancias que crescem de 2 at\u00e9 13 itens, alternando n\u00fameros e letras, ouvidas (voz sintetizada) ou vistas na tela, para reproduzir na mesma ordem ou de tr\u00e1s para frente. A pessoa responde escolhendo entre op\u00e7\u00f5es visuais, e cada op\u00e7\u00e3o errada representa um tipo de falha: ordem trocada, item substitu\u00eddo, sequ\u00eancia mais curta (omiss\u00e3o) ou sequ\u00eancia invertida.']),
+    Q('Como \u00e9 o m\u00f3dulo B da BRPI?', ['organizacao', 'manipulacao', 'modulo', 'modulo b', 'ordenar', 'crescente', 'decrescente', 'reorganizar'],
+      ['O m\u00f3dulo B pergunta se a pessoa consegue reorganizar o que conservou: ela recebe uma sequ\u00eancia e precisa orden\u00e1-la em ordem crescente ou decrescente. Isso separa manter a informa\u00e7\u00e3o de operar sobre ela: bom desempenho no A com queda no B \u00e9 uma dissocia\u00e7\u00e3o cl\u00ednica informativa. Os erros s\u00e3o classificados (identidade, omiss\u00e3o, ordena\u00e7\u00e3o incompleta, regra na dire\u00e7\u00e3o contr\u00e1ria e persevera\u00e7\u00e3o).']),
+    Q('Como \u00e9 o m\u00f3dulo C da BRPI?', ['raciocinio relacional', 'modulo', 'modulo c', 'descobrir a regra', 'sete niveis', '7 niveis', 'regua de equivalencia', 'letras e numeros'],
+      ['O m\u00f3dulo C avalia o racioc\u00ednio fluido: descobrir a regra que liga os elementos e aplic\u00e1-la, em 7 n\u00edveis crescentes, de uma transforma\u00e7\u00e3o simples (somar uma constante) at\u00e9 padr\u00f5es progressivos e revers\u00edveis. Cada alternativa representa uma hip\u00f3tese de racioc\u00ednio (soma, subtra\u00e7\u00e3o, multiplica\u00e7\u00e3o, divis\u00e3o, progress\u00e3o, regra invertida...), ent\u00e3o a escolha revela a estrat\u00e9gia usada.',
+       'Letras e n\u00fameros usam a mesma matem\u00e1tica (A=0, B=1... J=9), com uma r\u00e9gua de equival\u00eancia vis\u00edvel na tela.']),
+    Q('Como \u00e9 o m\u00f3dulo D da BRPI?', ['integracao', 'decisao', 'modulo', 'modulo d', 'raciocinio simbolico', 'figuras valem', 'regra muda', 'ouvir novamente'],
+      ['O m\u00f3dulo D \u00e9 o mais complexo: cada figura vale um n\u00famero, definido por uma r\u00e9gua que muda a cada quest\u00e3o. A pessoa ret\u00e9m a associa\u00e7\u00e3o, faz a opera\u00e7\u00e3o pedida e traduz o resultado de volta para figuras. S\u00e3o 5 n\u00edveis em 4 condi\u00e7\u00f5es: D1 (informa\u00e7\u00e3o auditiva), D2 (visual), D3 (integra\u00e7\u00e3o das duas) e D4 (regra que pode mudar a cada quest\u00e3o).',
+       'No n\u00edvel mais alto a opera\u00e7\u00e3o \u00e9 s\u00f3 falada, e o sistema registra quantas vezes a pessoa pediu para ouvir de novo, um indicador de como a aten\u00e7\u00e3o e a mem\u00f3ria de trabalho se sustentam.']),
+    Q('Como a BRPI l\u00ea as respostas?', ['opcoes de resposta', 'janela', 'tipo de erro', 'tipos de erro', 'nenhuma das respostas', 'nra', 'padrao', 'modus operandi', 'tempo de resposta', 'perseveracao'],
+      ['Cada op\u00e7\u00e3o errada foi constru\u00edda para representar um modo de errar com significado pr\u00f3prio, ent\u00e3o a escolha diz como a pessoa errou, e n\u00e3o s\u00f3 se errou. O sistema guarda o que foi apresentado, a op\u00e7\u00e3o escolhida e o tipo de comportamento dela, o tempo de resposta em milissegundos e a tentativa e o n\u00edvel.',
+       'Todas as quest\u00f5es t\u00eam o bot\u00e3o "Nenhuma das respostas anteriores" (NRA), uma op\u00e7\u00e3o como as outras, cujo significado vem do conjunto das respostas. Um erro isolado diz pouco: o que importa \u00e9 o padr\u00e3o repetido. A BRPI registra comportamentos e n\u00e3o afirma inten\u00e7\u00f5es, honestidade nem diagn\u00f3sticos.']),
+    Q('A BRPI \u00e9 teste de QI?', ['teste de qi', 'qi', 'normatizado', 'validado', 'validacao', 'wechsler', 'psicometrico', 'normas', 'limitacoes'],
+      ['N\u00e3o. A BRPI \u00e9 um rastreio explorat\u00f3rio do processamento cognitivo, sem valida\u00e7\u00e3o psicom\u00e9trica nem amostra normativa, e n\u00e3o converte o desempenho em percentis. Ela gera hip\u00f3teses de trabalho, n\u00e3o diagn\u00f3sticos, e n\u00e3o substitui testes normatizados quando eles forem indicados.',
+       'O foco \u00e9 o racioc\u00ednio fluido, a mem\u00f3ria de trabalho, as fun\u00e7\u00f5es executivas e a velocidade do racioc\u00ednio, com problemas novos a cada aplica\u00e7\u00e3o, para reduzir o peso do conhecimento pr\u00e9vio.']),
+    Q('O que traz o relat\u00f3rio da BRPI?', ['relatorio', 'laudo', 'pdf', 'resultado', 'teto', 'span', 'grafico', 'escorregadas', 'exportar', 'planilha', 'analise integrada', 'inteligencia artificial'],
+      ['Cada m\u00f3dulo gera seu relat\u00f3rio, com o resumo, o teto (ou span) em cada trilha, um gr\u00e1fico comparativo (por exemplo n\u00fameros x letras, auditivo x visual, direta x inversa), uma an\u00e1lise textual e o detalhamento tentativa a tentativa. L\u00e1 se distinguem as "escorregadas" (errar e acertar no mesmo n\u00edvel, que sugerem falha de aten\u00e7\u00e3o) dos erros repetidos perto do teto (limite da capacidade).',
+       'A IA reune todos os m\u00f3dulos aplicados numa leitura integrada, que \u00e9 um apoio e n\u00e3o substitui seu julgamento. Os dados tamb\u00e9m podem ser exportados em planilha para pesquisa.']),
+    Q('Que cuidados tenho ao aplicar a BRPI?', ['cuidados', 'aplicar', 'aplicacao', 'audio', 'som', 'ambiente silencioso', 'observacao direta', 'fones'],
+      ['Use ambiente silencioso (principalmente nas tarefas auditivas), confirme que o \u00e1udio do dispositivo funciona e, sempre que poss\u00edvel, observe a pessoa durante a aplica\u00e7\u00e3o: hesita\u00e7\u00f5es, autocorre\u00e7\u00f5es e coment\u00e1rios espont\u00e2neos s\u00f3 o olhar cl\u00ednico presencial capta. A BRPI vale a partir de 6 anos e exige alfabetiza\u00e7\u00e3o inicial.'])
+  ]);
+
+  // ---------- BAFC ----------
+  P('bafc', 'inteligencia', 'bafc', ['O que \u00e9 a BAFC?', 'Quais s\u00e3o as 4 \u00e1reas da BAFC?', 'Como a BAFC classifica?', 'Como aplico a BAFC?'], [
+    Q('Quais s\u00e3o as 4 \u00e1reas da BAFC?', ['quatro areas', '4 areas', 'areas', 'memoria operacional', 'velocidade de processamento', 'inteligencia verbal', 'nao verbal', 'o que cada area faz', 'tarefa'],
+      ['Mem\u00f3ria Operacional: d\u00edgitos falados por \u00e1udio (1 por segundo), na ordem direta (2 a 8 d\u00edgitos) e inversa (2 a 7); pontua de 0 a 26. Velocidade de Processamento e Aten\u00e7\u00e3o: 35 figuras com n\u00fameros de 2 algarismos, em 4 etapas (n\u00fameros pares, \u00edmpares, estrelas de cinco pontas e figuras vermelhas); o resultado \u00e9 um \u00edndice de efici\u00eancia.',
+       'Intelig\u00eancia Verbal: 30 perguntas de m\u00faltipla escolha (sin\u00f4nimos, opostos, analogias, intrusos e frases). Intelig\u00eancia N\u00e3o-Verbal: 24 problemas de imaginar um molde dobrado e escolher o s\u00f3lido que se forma. A ordem \u00e9 sempre Mem\u00f3ria, Velocidade, Verbal e N\u00e3o-Verbal, e voc\u00ea escolhe quais aplicar.']),
+    Q('Como a BAFC classifica?', ['classifica', 'classificacao', 'faixas', 'percentil', 'qi equivalente', 'escore ponderado', 'wechsler', 'deficitario', 'media superior', 'resultado'],
+      ['O resultado de cada \u00e1rea \u00e9 comparado ao esperado para a mesma idade e classificado nas mesmas sete faixas dos laudos Wechsler: Deficit\u00e1rio, Lim\u00edtrofe, M\u00e9dia Inferior, M\u00e9dia, M\u00e9dia Superior, Superior e Muito Superior. O relat\u00f3rio mostra tamb\u00e9m o escore ponderado equivalente (m\u00e9dia 10), o QI equivalente (m\u00e9dia 100) e o percentil.']),
+    Q('O que \u00e9 o \u00cdndice Cognitivo Global?', ['icg', 'indice cognitivo global', 'indice global', 'parcial', 'duas areas', 'media dos z', 'diferenca entre areas'],
+      ['O ICG \u00e9 a m\u00e9dia dos escores Z das \u00e1reas aplicadas, com pesos iguais, convertida para a escala de QI (100 + 15 x Z m\u00e9dio) e classificada nas mesmas sete faixas. Exige no m\u00ednimo duas \u00e1reas e fica marcado como parcial quando s\u00e3o menos de quatro. Com uma \u00e1rea s\u00f3, o relat\u00f3rio mostra apenas o resultado dela.',
+       'O relat\u00f3rio tamb\u00e9m destaca diferen\u00e7as de 15 pontos de QI ou mais entre duas \u00e1reas: mostram onde a pessoa vai melhor e onde pode precisar de apoio, sem indicar diagn\u00f3stico por si.']),
+    Q('As normas da BAFC j\u00e1 valem?', ['normas', 'normas provisorias', 'cortes', 'cortes provisorios', 'piloto', 'validacao', 'experimental', 'fase de coleta', 'coleta de dados'],
+      ['A BAFC est\u00e1 em fase de piloto. S\u00f3 a Mem\u00f3ria Operacional usa cortes de escalas Wechsler publicadas (WISC-IV, de 8 a 15 anos, e WAIS-III, de 16 a 89 anos). Os cortes de Velocidade, Verbal e N\u00e3o-Verbal s\u00e3o provis\u00f3rios e valem como uso experimental, at\u00e9 a calibra\u00e7\u00e3o com dados reais. O relat\u00f3rio traz esse aviso na primeira p\u00e1gina. Nenhum resultado isolado \u00e9 veredito.']),
+    Q('Como aplico a BAFC?', ['aplicar', 'aplicacao', 'como aplico', 'nova aplicacao', 'link', 'celular', 'fones', 'som', 'oculos', 'treino', 'condicoes'],
+      ['No painel, aba Intelig\u00eancia > BAFC: "Nova Aplica\u00e7\u00e3o", preencha os dados do paciente e marque as \u00e1reas. Voc\u00ea pode gerar o link (uso \u00fanico) ou aplicar no pr\u00f3prio aparelho. Funciona em celular, tablet e computador.',
+       'Como instru\u00e7\u00f5es e tarefas s\u00e3o faladas, use fones ou caixa de som em ambiente silencioso. A corre\u00e7\u00e3o visual (\u00f3culos ou lentes) deve estar em uso. H\u00e1 tarefa de treino antes de cada \u00e1rea. A estimativa preliminar \u00e9 de 30 a 45 minutos para as quatro \u00e1reas.']),
+    Q('O que o bot\u00e3o SAIR faz na BAFC?', ['botao sair', 'sair', 'pular area', 'pular', 'abandonado', 'nao realizado', 'concluido', 'status da area'],
+      ['Durante a bateria, o bot\u00e3o SAIR (canto inferior esquerdo) oferece tr\u00eas op\u00e7\u00f5es: continuar, pular esta \u00e1rea (a bateria segue para a pr\u00f3xima) ou sair de tudo. Cada \u00e1rea fica com um status: Conclu\u00eddo, Abandonado (come\u00e7ou e foi pulada, ou a pessoa saiu ou fechou a p\u00e1gina), N\u00e3o realizado (prevista, mas a aplica\u00e7\u00e3o acabou antes) ou N\u00e3o selecionado. \u00c1reas abandonadas n\u00e3o entram nos \u00edndices.']),
+    Q('Como funciona a \u00e1rea Verbal da BAFC?', ['area verbal', 'verbal', 'audio', 'ouvir', 'ponto de partida', 'itens', 'fases de audio', '13 anos'],
+      ['S\u00e3o 30 itens com tr\u00eas fases: itens 1 a 8 tocam a pergunta e as respostas sozinhos (d\u00e1 para ouvir de novo at\u00e9 3 vezes); itens 9 a 22 t\u00eam o bot\u00e3o "Ouvir a pergunta", e a pessoa escolhe entre ouvir e ler; itens 23 a 30 s\u00e3o s\u00f3 leitura. A interrup\u00e7\u00e3o acontece com 4 erros seguidos.',
+       'O ponto de partida depende da idade: de 8 a 12 anos come\u00e7a no item 1; a partir de 13 anos come\u00e7a no item 13, e os itens 1 a 12 contam como acertos se os itens 13 e 14 forem acertados. Errando o 13 ou o 14, o teste volta ao 12, 11, 10... at\u00e9 haver 2 acertos seguidos.']),
+    Q('O que \u00e9 o IEP da \u00e1rea de Velocidade?', ['iep', 'indice de eficiencia', 'etapas', 'busca', 'figuras', 'estrelas', 'pares', 'impares', 'comissoes', 'omissoes'],
+      ['O IEP (\u00edndice de efici\u00eancia de processamento) soma as quatro etapas: acertos divididos pelos segundos, reduzidos pela taxa de erros (comiss\u00f5es mais omiss\u00f5es sobre o total de alvos). Assim, ser r\u00e1pido errando muito n\u00e3o rende pontos. A pessoa toca "Terminei" ao acabar: n\u00e3o h\u00e1 interrup\u00e7\u00e3o.',
+       'Cada etapa tem alvos e iscas (por exemplo, estrelas de quatro pontas n\u00e3o valem). O anexo do relat\u00f3rio traz ainda o indicador Busca, de 0 a 1, que mostra se a procura foi organizada; \u00e9 s\u00f3 observa\u00e7\u00e3o cl\u00ednica, sem norma, e n\u00e3o entra nos \u00edndices.']),
+    Q('Como \u00e9 o relat\u00f3rio da BAFC?', ['relatorio', 'pdf', 'laudo', 'paginas', 'glossario', 'como ler', 'analise escrita'],
+      ['O PDF \u00e9 gerado no painel, a partir dos resultados salvos, e tem 5 p\u00e1ginas, escritas para o profissional e tamb\u00e9m para quem n\u00e3o \u00e9 da \u00e1rea: resumo (dados, ICG, curva normal, perfil das quatro \u00e1reas e "Como ler este relat\u00f3rio"), cada \u00e1rea em linguagem simples com figuras e, por fim, a compara\u00e7\u00e3o entre \u00e1reas com uma an\u00e1lise escrita (pontos fortes, pontos de aten\u00e7\u00e3o e pr\u00f3ximos passos). Nesta fase n\u00e3o h\u00e1 cobran\u00e7a de cr\u00e9ditos.'])
+  ]);
+})(typeof window !== 'undefined' ? window : global);
+
+/* kb-prog-c.js */
+// ============================================================
+// LAUANA - RESPOSTAS DETALHADAS: lote C (aba Reabilitacao: REOCUPA, LERMAIS, PRAt; o SMART esta em kb-programas.js)
+// Fonte: painel (site/online/index.html) e manuais manual-reocupa/lermais/prat.html, lidos em 27/11/2026.
+// ============================================================
+(function (g) {
+  'use strict';
+  var L = g.LAU, W = L.WHATS;
+  var DEEP = L._deepDados = L._deepDados || {};
+  var ABA_DE = L._deepAba = L._deepAba || {};
+  function P(id, aba, prog, chips, qa) { DEEP[id] = { chips: chips, qa: qa }; ABA_DE[id] = [aba, prog]; }
+  function Q(chip, g, r) { return { chip: chip, g: g, r: r }; }
+  var NAO_TESTE = 'N\u00e3o \u00e9 teste diagn\u00f3stico nem gera classifica\u00e7\u00e3o normativa: \u00e9 um apoio \u00e0 reabilita\u00e7\u00e3o, e a conduta cabe a voc\u00ea.';
+
+  // ---------- REOCUPA ----------
+  P('reocupa', 'reabilitacao', 'reocupa', ['O que \u00e9 o REOCUPA?', 'Como funciona uma sess\u00e3o?', 'Posso personalizar as perguntas?', 'E se o microfone falhar?'], [
+    Q('Como funciona uma sess\u00e3o do REOCUPA?', ['como funciona uma sessao', 'sessao', 'passo a passo', 'paciente faz', 'o que faz', 'categoria'],
+      ['Na aba Reabilita\u00e7\u00e3o, escolha o REOCUPA: 1) selecione ou preencha os dados do paciente; 2) se quiser, personalize as perguntas em "Configurar Perguntas"; 3) clique em "Iniciar Sess\u00e3o" (o programa abre em nova aba); 4) se o atendimento for por videochamada, compartilhe a tela com o paciente; 5) escolha a categoria de situa\u00e7\u00f5es-problema.',
+       'O paciente l\u00ea a situa\u00e7\u00e3o em voz alta e responde; o programa registra o tempo e classifica a resposta automaticamente, e voc\u00ea confirma ou corrige a classifica\u00e7\u00e3o de cada uma. Ao final, os resultados s\u00e3o salvos e a evolu\u00e7\u00e3o fica registrada. H\u00e1 tamb\u00e9m os bot\u00f5es "Abrir Direto" e "Imprimir".']),
+    Q('Posso personalizar as perguntas do REOCUPA?', ['personalizar', 'personalizar perguntas', 'configurar perguntas', 'editar perguntas', 'perguntas de acompanhamento', 'restaurar padrao', 'salvar perguntas', 'mudar perguntas'],
+      ['Pode. Clique em "Configurar Perguntas" e edite a pergunta de acompanhamento de cada situa\u00e7\u00e3o, para estimular diferentes \u00e2ngulos de racioc\u00ednio conforme o objetivo terap\u00eautico. O cen\u00e1rio de cada situa\u00e7\u00e3o (em negrito) \u00e9 fixo; s\u00f3 a pergunta muda. Depois, "Salvar Perguntas", ou "Restaurar Padr\u00e3o" para voltar ao original.']),
+    Q('O que o REOCUPA registra?', ['registra', 'registro', 'metricas', 'resultado', 'tempo de leitura', 'classificacao', 'evolucao', 'evolucao acumulativa', 'o que mede'],
+      ['Tr\u00eas coisas: o tempo de leitura (quanto o paciente levou para ler a situa\u00e7\u00e3o em voz alta), a classifica\u00e7\u00e3o da resposta (uma leitura qualitativa da resposta adaptativa dada) e a evolu\u00e7\u00e3o acumulativa (o hist\u00f3rico ao longo das sess\u00f5es).',
+       'N\u00e3o h\u00e1 escore normativo: a leitura mais rica \u00e9 a da evolu\u00e7\u00e3o entre sess\u00f5es, n\u00e3o a de uma sess\u00e3o isolada. ' + NAO_TESTE]),
+    Q('E se o microfone falhar no REOCUPA?', ['microfone', 'microfone falhar', 'voz nao detectada', 'nao capta', 'mic mudo', 'permissao', 'cronometro', 'cronometrar manualmente', 'reconhecimento de voz'],
+      ['Uma falha de microfone nunca interrompe o atendimento. Antes de iniciar, o programa faz um teste r\u00e1pido de microfone que n\u00e3o trava a sess\u00e3o, e o cron\u00f4metro \u00e9 sempre autom\u00e1tico: mesmo sem captar a voz (mic mudo, permiss\u00e3o negada, ambiente ruidoso), o tempo continua sendo registrado. Se preferir, voc\u00ea pode cronometrar manualmente.',
+       'Se aparecer o aviso de que a voz n\u00e3o foi detectada, reposicione o microfone. Para o reconhecimento funcionar melhor, use ambiente silencioso e pe\u00e7a leitura em bom volume, perto do microfone.']),
+    Q('Para que serve o REOCUPA?', ['para que serve', 'terapia ocupacional', 'objetivo', 'indicacao', 'respostas adaptativas', 'boas praticas'],
+      ['\u00c9 um programa de reabilita\u00e7\u00e3o na linha da Terapia Ocupacional, para avaliar e acompanhar respostas adaptativas a situa\u00e7\u00f5es-problema do cotidiano. Escolha a categoria de situa\u00e7\u00f5es de acordo com o objetivo terap\u00eautico da sess\u00e3o, personalize as perguntas para acompanhar habilidades espec\u00edficas e registre suas observa\u00e7\u00f5es cl\u00ednicas para complementar o que o sistema capta.'])
+  ]);
+
+  // ---------- LERMAIS ----------
+  P('lermais', 'reabilitacao', 'lermais', ['O que \u00e9 o LERMAIS?', 'Como funciona uma sess\u00e3o?', 'O que s\u00e3o os n\u00edveis?', 'O que \u00e9 o \u00cdndice LERMAIS?'], [
+    Q('Como funciona uma sess\u00e3o do LERMAIS?', ['como funciona uma sessao', 'sessao', 'passo a passo', 'sortear texto', 'iniciar leitura', 'paciente faz', 'o que faz', 'gerar link', 'aplicar aqui', 'link de uso unico', 'copiar', 'whatsapp'],
+      ['Na aba Reabilita\u00e7\u00e3o, escolha o LERMAIS e preencha os dados do paciente (e o n\u00edvel de dificuldade, se quiser). Depois h\u00e1 tr\u00eas caminhos: "Iniciar Sess\u00e3o" (abre em nova aba), "Gerar Link" (link de uso \u00fanico, com bot\u00f5es Copiar e WhatsApp) ou "Aplicar Aqui" (na hora, no mesmo aparelho).',
+       'O paciente clica em "Sortear Texto", depois em "Iniciar Leitura" e l\u00ea em voz alta, no ritmo natural. O gr\u00e1fico mostra velocidade x precis\u00e3o em tempo real e, ao final, os resultados s\u00e3o salvos para comparar sess\u00f5es futuras. "Ver Evolu\u00e7\u00e3o do Paciente" mostra o hist\u00f3rico.']),
+    Q('O que s\u00e3o os n\u00edveis de dificuldade do LERMAIS?', ['niveis', 'nivel', 'nivel de dificuldade', 'nivel 1', 'nivel 2', 'nivel 3', 'sem indicacao', 'texto curto', 'tamanho do texto', 'progressao', 'escada'],
+      ['O n\u00edvel controla o tamanho do texto: N\u00edvel 3 (mais f\u00e1cil, 3 linhas), N\u00edvel 2 (intermedi\u00e1rio, 1 par\u00e1grafo) e N\u00edvel 1 (mais dif\u00edcil, 2 par\u00e1grafos). Nos n\u00edveis 1, 2 e 3 a idade n\u00e3o influencia o texto: um adulto e uma crian\u00e7a podem receber o mesmo, porque conta a capacidade atual de leitura.',
+       'Funcionam como uma escada: comece no 3 e avance at\u00e9 o 1. Quando a leitura estiver consolidada, use "Sem indica\u00e7\u00e3o", que entrega o texto completo pela idade (6 a 12 anos, textos simples; 13 anos ou mais, textos reflexivos). \u00c9 \u00fatil em alfabetiza\u00e7\u00e3o inicial ou em reabilita\u00e7\u00e3o ap\u00f3s les\u00e3o neurol\u00f3gica.']),
+    Q('O que s\u00e3o as m\u00e9tricas do LERMAIS?', ['metricas', 'metrica', 'ppm', 'precisao', 'fluencia', 'completude', 'indice lermais', 'como e calculado', 'o que mede', 'peso'],
+      ['PPM \u00e9 a velocidade (palavras por minuto). Precis\u00e3o \u00e9 o percentual de palavras reconhecidas corretamente. Flu\u00eancia (de 0 a 10) mede a continuidade: cada pausa longa, de mais de 3 segundos, tira 1 ponto. Completude \u00e9 quanto do texto foi lido at\u00e9 finalizar.',
+       'O \u00cdndice LERMAIS \u00e9 a m\u00e9dia ponderada de velocidade (30%), precis\u00e3o (40%) e flu\u00eancia (30%), com 150 PPM como refer\u00eancia de 100% de velocidade. A precis\u00e3o pesa mais: ler certo importa mais do que ler r\u00e1pido.']),
+    Q('Como leio o gr\u00e1fico do LERMAIS?', ['grafico', 'scatter', 'como leio o grafico', 'interpretar', 'interpretacao', 'leitura apressada', 'leitura cuidadosa', 'evolucao'],
+      ['No gr\u00e1fico, o ideal \u00e9 a pessoa caminhar, ao longo das sess\u00f5es, para o canto de alta velocidade e alta precis\u00e3o. Precis\u00e3o baixa com velocidade alta sugere leitura apressada; velocidade baixa com precis\u00e3o alta sugere leitura cuidadosa, mas lenta.',
+       'Compare sess\u00f5es dentro do mesmo n\u00edvel (a coluna N\u00edvel do hist\u00f3rico ajuda): passar de um n\u00edvel mais curto para um mais longo j\u00e1 \u00e9 sinal de evolu\u00e7\u00e3o. ' + NAO_TESTE]),
+    Q('PPM e precis\u00e3o apareceram como zero, o que fazer?', ['zero', 'ppm zero', 'precisao zero', 'nao captou', 'microfone', 'permissao do microfone', 'voz nao detectada', 'reconhecimento de voz'],
+      ['Se PPM e Precis\u00e3o aparecerem como 0, o microfone n\u00e3o captou a voz. Repita a sess\u00e3o verificando a permiss\u00e3o do microfone no navegador (o \u00edcone de cadeado na barra de endere\u00e7o). O LERMAIS usa o reconhecimento de voz ao vivo do navegador, ent\u00e3o o microfone deve ficar perto da boca, em ambiente silencioso e com volume normal de fala.']),
+    Q('Que textos o LERMAIS usa?', ['textos', 'texto', 'temas', 'tema', 'motivacionais', 'azul', 'rosa', 'amizade', 'familia'],
+      ['Os textos s\u00e3o motivacionais e tratam de rela\u00e7\u00f5es sociais (amizade, fam\u00edlia, limites, ansiedade social, coopera\u00e7\u00e3o, autenticidade), o que torna a leitura tamb\u00e9m um est\u00edmulo socioemocional, \u00fatil para crian\u00e7as e adolescentes com dificuldades relacionais. Nos n\u00edveis 1 a 3 aparecem situa\u00e7\u00f5es reais, como bullying, mudan\u00e7a de casa, separa\u00e7\u00e3o dos pais ou conviver com um diagn\u00f3stico.',
+       'O visual \u00e9 azul para meninos e rosa para meninas. Serve para quem j\u00e1 \u00e9 alfabetizado em portugu\u00eas, a partir de 6 anos, sem limite superior.'])
+  ]);
+
+  // ---------- PRAt ----------
+  P('prat', 'reabilitacao', 'prat', ['O que \u00e9 o PRAt?', 'Como funciona uma sess\u00e3o?', 'O que o PRAt mede?', 'Onde fica a evolu\u00e7\u00e3o?'], [
+    Q('Como funciona uma sess\u00e3o do PRAt?', ['como funciona uma sessao', 'sessao', 'passo a passo', 'iniciar atividade', 'tela cheia', 'finalizar', 'paleta', 'paciente faz', 'o que faz', 'quadrados'],
+      ['Na aba Reabilita\u00e7\u00e3o, escolha o PRAt: 1) clique em "Iniciar Sess\u00e3o" (abre em nova aba); 2) preencha os dados do participante (nome, nascimento, sexo); 3) clique em "Iniciar Atividade" (entra em tela cheia, com cron\u00f4metro); 4) o participante clica nos quadrados e escolhe a cor na paleta; 5) ao terminar, clica em "Finalizar" para ver os resultados; 6) gere o PDF ou exporte o Excel para o prontu\u00e1rio.']),
+    Q('O que o PRAt mede?', ['mede', 'medidas', 'metricas', 'acertos', 'erros', 'omissoes', 'trocas', 'acertos liquidos', 'desempenho', 'estrategia', 'varredura', 'mapeamento'],
+      ['Acertos (associa\u00e7\u00f5es corretas de posi\u00e7\u00e3o para cor), erros, omiss\u00f5es (quadrados sem resposta, ind\u00edcio de desaten\u00e7\u00e3o), trocas (cor escolhida trocada por outra, ind\u00edcio de dificuldade de discrimina\u00e7\u00e3o ou monitoramento), acertos l\u00edquidos (acertos descontando os erros), tempo total e desempenho em segundos por figura.',
+       'Al\u00e9m dos n\u00fameros, registra a estrat\u00e9gia de varredura visual e o mapeamento de coordenadas: uma varredura organizada (como linha a linha) costuma indicar melhor controle atencional do que uma busca aleat\u00f3ria.']),
+    Q('Onde fica a evolu\u00e7\u00e3o do PRAt?', ['evolucao', 'historico', 'historico local', 'grafico de barras', 'navegador', 'perder historico', 'exportar', 'excel', 'pdf'],
+      ['O PRAt guarda um hist\u00f3rico local por participante e mostra a evolu\u00e7\u00e3o em gr\u00e1fico de barras por aplica\u00e7\u00e3o: d\u00e1 para ver se os acertos l\u00edquidos sobem e se erros, omiss\u00f5es e tempo por figura diminuem.',
+       'Aten\u00e7\u00e3o: o hist\u00f3rico fica registrado no navegador usado. Para n\u00e3o perder o acompanhamento, exporte o PDF ou o Excel para o prontu\u00e1rio ao final de cada sess\u00e3o.']),
+    Q('Como interpreto o PRAt?', ['interpretar', 'interpretacao', 'interpreto', 'muitas omissoes', 'muitas trocas', 'boas praticas', 'resultado significa'],
+      ['Muitas omiss\u00f5es apontam desaten\u00e7\u00e3o; muitas trocas apontam dificuldade de discrimina\u00e7\u00e3o ou monitoramento. Observe a estrat\u00e9gia de varredura, porque incentivar uma busca sistem\u00e1tica faz parte do treino. Compare aplica\u00e7\u00f5es: a leitura mais rica \u00e9 a da evolu\u00e7\u00e3o. Antes de come\u00e7ar, garanta corre\u00e7\u00e3o visual adequada e boa condi\u00e7\u00e3o de tela. ' + NAO_TESTE]),
+    Q('Para quem \u00e9 o PRAt?', ['para quem', 'publico', 'populacao', 'idade', 'criancas', 'adultos', 'indicacao'],
+      ['Para crian\u00e7as, adolescentes e adultos. \u00c9 um treino de aten\u00e7\u00e3o visual: o participante associa a posi\u00e7\u00e3o de quadrados a cores de refer\u00eancia, treinando varredura visual, foco atencional e controle da resposta.'])
+  ]);
+})(typeof window !== 'undefined' ? window : global);
+
+/* kb-prog-d.js */
+// ============================================================
+// LAUANA - RESPOSTAS DETALHADAS: lote D (ferramentas do painel: Anamnese, Agenda, Prontuario, Pacientes)
+// Fonte: painel (site/online/index.html) e manuais manual-anamnese/agenda/prontuario/pacientes.html, lidos em 27/11/2026.
+// ============================================================
+(function (g) {
+  'use strict';
+  var L = g.LAU, W = L.WHATS;
+  var DEEP = L._deepDados = L._deepDados || {};
+  var ABA_DE = L._deepAba = L._deepAba || {};
+  function P(id, aba, prog, chips, qa) { DEEP[id] = { chips: chips, qa: qa }; if (aba) { ABA_DE[id] = [aba, prog]; } }
+  function Q(chip, g, r, forte) { var q = { chip: chip, g: g, r: r }; if (forte) { q.forte = true; } return q; }
+
+  // ---------- ANAMNESE (aba Anamnese) ----------
+  P('anamnese', 'anamnese', '', ['O que \u00e9 a Anamnese?', 'Como uso a Anamnese?', 'Como personalizo a anamnese?', 'Quanto custa a Anamnese?'], [
+    Q('Qual a diferen\u00e7a entre Personalizada e Infantil?', ['personalizada', 'infantil', 'diferenca', 'qual tipo', 'tipos', 'dois tipos', 'modelo fixo'],
+      ['A Anamnese Personalizada \u00e9 ajust\u00e1vel: voc\u00ea escolhe quais se\u00e7\u00f5es incluir, edita perguntas e adiciona novas, adaptando ao seu estilo e ao perfil do paciente. A Anamnese Infantil \u00e9 um modelo fixo, voltado ao p\u00fablico infantil e respondido pelos respons\u00e1veis.',
+       'Por exemplo, a anamnese de um idoso com queixa de mem\u00f3ria n\u00e3o precisa das mesmas se\u00e7\u00f5es de uma infantil. Ajustar as se\u00e7\u00f5es deixa o question\u00e1rio mais curto e relevante, o que aumenta a ades\u00e3o de quem responde.']),
+    Q('Como o respons\u00e1vel responde?', ['como o responsavel responde', 'responsavel responde', 'quem responde', 'precisa instalar', 'instalar', 'celular do responsavel', 'sem instalar', 'receber respostas', 'onde aparecem'],
+      ['O respons\u00e1vel abre o link no navegador do celular ou do computador, sem instalar nada e sem cadastro. Quando ele conclui, as respostas aparecem sozinhas na se\u00e7\u00e3o Resultados, no fim da aba; clique no resultado para visualizar ou gerar o PDF para o prontu\u00e1rio.',
+       'Voc\u00ea tamb\u00e9m pode usar "Preencher Aqui" (presencial, na hora) ou "Imprimir". Enviar antes da primeira sess\u00e3o faz voc\u00ea chegar \u00e0 consulta j\u00e1 conhecendo o caso.']),
+    Q('Como adiciono perguntas extras na anamnese?', ['perguntas extras', 'pergunta extra', 'adicionar pergunta', 'nova pergunta', 'texto longo', 'sim nao', 'texto curto', 'personalizar perguntas', 'editar perguntas'],
+      ['Na Anamnese Personalizada, role at\u00e9 o final da aba: em "Personalizar Se\u00e7\u00f5es" marque ou desmarque os temas, edite perguntas existentes e, em "Perguntas Extras", digite o texto da pergunta, escolha o tipo (Texto longo, Texto curto ou Sim/N\u00e3o) e clique em "+ Adicionar".']),
+    Q('Como configuro o cabe\u00e7alho do PDF da anamnese?', ['cabecalho', 'logo', 'cabecalho do pdf', 'configuracoes do pdf', 'crp', 'consultorio', 'cores', 'degrade', 'telefone', 'endereco', 'identificado'],
+      ['No bot\u00e3o "Configura\u00e7\u00f5es do PDF" (no fim da aba) voc\u00ea define: logo (PNG ou JPG, clicando ou arrastando), nome do profissional, CRP, consult\u00f3rio ou cl\u00ednica, at\u00e9 tr\u00eas telefones, e-mail, endere\u00e7o e as cores (principal e secund\u00e1ria), com estilo Degrad\u00ea, Cor s\u00f3lida, Textura (linhas) ou Textura (pontos), e um preview. Clique em "Salvar Configura\u00e7\u00f5es" e o PDF sai identificado com os seus dados.']),
+    Q('A anamnese \u00e9 segura?', ['segura', 'seguranca', 'lgpd', 'dados sensiveis', 'sigilo', 'confidencial', 'privacidade', 'compartilhar link'],
+      ['A anamnese cont\u00e9m informa\u00e7\u00f5es pessoais e de sa\u00fade. Compartilhe o link s\u00f3 com o pr\u00f3prio paciente ou respons\u00e1vel e trate as respostas com a confidencialidade exigida pela \u00e9tica profissional e pela LGPD. Ela organiza a hist\u00f3ria cl\u00ednica; a interpreta\u00e7\u00e3o e a conduta cabem a voc\u00ea, e a anamnese digital complementa a entrevista, n\u00e3o a substitui.'])
+  ]);
+
+  // ---------- AGENDA (aba Agenda) ----------
+  P('agenda', 'agenda', '', ['O que \u00e9 a Agenda?', 'Como marco uma consulta?', 'Como sincronizo com o Google Calendar?', 'Como compartilho minha agenda?'], [
+    Q('Que campos tem uma consulta?', ['campos', 'campos da consulta', 'duracao', 'tipo da consulta', 'observacoes', 'o que preencho', 'nova consulta', 'hora'],
+      ['Em "+ Nova Consulta": paciente (da lista ou "+ Novo Paciente" para cadastrar na hora), nome, data, hora, tipo (digite ou selecione), dura\u00e7\u00e3o em minutos, observa\u00e7\u00f5es (motivo, queixa...) e recorr\u00eancia. Depois, "Agendar". H\u00e1 tamb\u00e9m os bot\u00f5es WhatsApp e Cancelar nessa tela.']),
+    Q('Posso repetir uma consulta toda semana?', ['recorrencia', 'repetir', 'semanal', 'mensal', 'diario', 'toda semana', 'varias vezes', 'repeticao', 'consultas repetidas'],
+      ['Pode. No campo Recorr\u00eancia escolha Nenhuma, Di\u00e1rio, Semanal ou Mensal e, em "Repetir", digite quantas vezes. A Agenda cria as consultas repetidas.']),
+    Q('Posso cadastrar paciente na hora de agendar?', ['novo paciente', 'cadastrar na hora', 'paciente novo', 'cadastro rapido', 'primeira vez', 'ligou para marcar'],
+      ['Pode. Na tela de nova consulta clique em "+ Novo Paciente" e informe nome, nascimento, sexo, WhatsApp e e-mail, depois "Cadastrar e Selecionar". \u00c9 \u00fatil quando algu\u00e9m liga para marcar pela primeira vez. Esse paciente passa a existir em todo o painel (testes, anamnese e prontu\u00e1rio).']),
+    Q('Como funciona a agenda compartilhada?', ['agenda compartilhada', 'compartilhar agenda', 'compartilhar', 'autorizar', 'ver agenda de outro', 'colega', 'colegas', 'gerenciar', 'quem ve minha agenda'],
+      ['Em "Agenda Compartilhada", clique em "Gerenciar" e informe o e-mail do profissional em "Autorizar profissional a ver minha agenda". Tamb\u00e9m d\u00e1 para ver a agenda de colegas que autorizaram voc\u00ea.',
+       'Compartilhe com crit\u00e9rio: a agenda mostra hor\u00e1rios e nomes de pacientes. Autorize s\u00f3 colegas de confian\u00e7a e revise de tempos em tempos a lista de quem tem acesso.']),
+    Q('O que aparece na tela da Agenda?', ['o que aparece', 'calendario', 'mes', 'semana', 'dia', 'consultas da semana', 'consultas do dia', 'tela da agenda'],
+      ['O calend\u00e1rio mensal (com setas para navegar entre os meses e os dias com consultas marcados), as consultas da semana e as consultas do dia, al\u00e9m da conex\u00e3o com o Google Calendar e da agenda compartilhada. A consulta nova aparece no calend\u00e1rio e nas listas da semana e do dia.'])
+  ]);
+
+  // ---------- PRONTUARIO (aba Prontuario) ----------
+  P('prontuario', 'prontuario', '', ['O que \u00e9 o Prontu\u00e1rio?', 'Como uso o Prontu\u00e1rio?', 'Quanto custa o Prontu\u00e1rio?', 'A transcri\u00e7\u00e3o saiu vazia'], [
+    Q('Quanto custa uma sess\u00e3o no Prontu\u00e1rio?', ['planos', 'plano', 'pacote', 'avulso', 'comprar creditos', 'cada credito', 'preco da sessao', 'valor da sessao', 'quanto custa sessao', 'custa sessao', 'custo da sessao', 'valor sessao'],
+      ['Cada cr\u00e9dito vale 1 sess\u00e3o (grava\u00e7\u00e3o, transcri\u00e7\u00e3o e organiza\u00e7\u00e3o por t\u00f3picos com IA). Voc\u00ea ganha 1 cr\u00e9dito gr\u00e1tis no cadastro. Depois: Avulso R$ 5 (1 sess\u00e3o), Pacote 10 por R$ 40 (R$ 4 cada) e Pacote 50 por R$ 150 (R$ 3 cada).']),
+    Q('Como ficam a grava\u00e7\u00e3o e o resumo?', ['gravador', 'abrir gravador', 'resumir com ia', 'gerar prontuario', 'salvar em html', 'copiar texto', 'revisar', 'editar o texto', 'como salvo', 'resumo', 'salvar', 'resumir'],
+      ['Clique em "Abrir Gravador" no perfil desejado: abre uma nova janela com o gravador e os t\u00f3picos. Grave a sess\u00e3o (o sistema transcreve sozinho) e, ao finalizar, clique em "Resumir com IA" (ou "Gerar Prontu\u00e1rio por T\u00f3picos"). A IA organiza a transcri\u00e7\u00e3o s\u00f3 nos t\u00f3picos do perfil: quanto mais espec\u00edficos, melhor o resultado.',
+       'Os campos s\u00e3o edit\u00e1veis. Revise, corrija o que for preciso e salve em HTML ou copie o texto para o seu prontu\u00e1rio.']),
+    Q('Dicas para a transcri\u00e7\u00e3o sair boa', ['dicas de gravacao', 'qualidade do audio', 'microfone', 'duas pessoas', 'transcricao vazia', 'transcricao ruim', 'permissao do microfone', 'ambiente silencioso', 'chrome'],
+      ['Use ambiente silencioso, microfone razoavelmente pr\u00f3ximo e fala em volume normal; em sess\u00e3o com duas pessoas, posicione o microfone entre voc\u00eas. Se a transcri\u00e7\u00e3o vier vazia, confira a permiss\u00e3o do microfone no navegador (\u00edcone de cadeado na barra de endere\u00e7o). O gravador funciona melhor no Chrome, no computador ou no celular.',
+       'Sempre revise a transcri\u00e7\u00e3o: nomes e termos t\u00e9cnicos podem sair trocados.']),
+    Q('O Prontu\u00e1rio abre pelo link direto?', ['link direto', 'abrir direto', 'abre sem painel', 'acessar direto', 'so pelo painel', 'pagina direta'],
+      ['N\u00e3o. O Prontu\u00e1rio s\u00f3 abre pelo painel, n\u00e3o \u00e9 poss\u00edvel acessar a p\u00e1gina diretamente. Isso protege o consumo de cr\u00e9dito e garante que a sess\u00e3o fique vinculada ao avaliador.']),
+    Q('O Prontu\u00e1rio \u00e9 seguro? A IA escreve o prontu\u00e1rio?', ['seguro', 'seguranca', 'lgpd', 'sigilo', 'consentimento', 'anonimizacao', 'a ia escreve', 'ia e autora', 'rascunho'],
+      ['A sess\u00e3o tem informa\u00e7\u00f5es muito sens\u00edveis. Antes de ir \u00e0 IA, os dados passam por anonimiza\u00e7\u00e3o. Mesmo assim: grave s\u00f3 com o consentimento do paciente, guarde os arquivos com seguran\u00e7a e n\u00e3o compartilhe o conte\u00fado fora do contexto cl\u00ednico.',
+       'A IA \u00e9 apoio, n\u00e3o autora: o texto organizado \u00e9 um rascunho. Voc\u00ea revisa, corrige e assume a responsabilidade cl\u00ednica pelo registro final.']),
+    Q('Como crio um perfil de t\u00f3picos?', ['criar perfil', 'novo perfil', 'perfil de topicos', 'topicos', 'salvar perfil', 'um topico por linha', 'varios perfis'],
+      ['Clique em "+ Criar novo perfil", d\u00ea um nome (por exemplo "Anamnese", "Devolutiva", "Entrevista com professores") e escreva os t\u00f3picos, um por linha (como Queixa, Hist\u00f3rico, Observa\u00e7\u00f5es, Conduta). Depois "Salvar perfil". Cada perfil guarda seus t\u00f3picos separadamente, ent\u00e3o crie quantos precisar.'])
+  ]);
+
+  // ---------- PACIENTES (aba Pacientes) ----------
+  P('pacientes', '', '', ['Como cadastro um paciente?', 'Como importo e exporto pacientes?', 'Como busco um paciente?', 'Para que serve a data de nascimento?'], [
+    Q('Que dados tem o cadastro de paciente?', ['campos', 'dados do cadastro', 'o que preencho', 'obrigatorio', 'obrigatorios', 'cpf', 'escolaridade', 'lateralidade', 'correcao visual', 'campos obrigatorios'],
+      ['Nome completo e data de nascimento s\u00e3o obrigat\u00f3rios. S\u00e3o opcionais: CPF, sexo, escolaridade, lateralidade (destro, canhoto ou ambidestro), e-mail, WhatsApp (usados para enviar links) e corre\u00e7\u00e3o visual (nenhuma, \u00f3culos ou lente de contato, relevante nos testes visuais). Clique em "+ Cadastrar Paciente".']),
+    Q('Para que serve a data de nascimento?', ['data de nascimento', 'nascimento', 'idade', 'por que obrigatoria', 'id unico', 'normas por idade', 'escolaridade influencia'],
+      ['A data de nascimento \u00e9 usada para calcular a idade, escolher normas e textos por faixa et\u00e1ria e gerar um ID \u00fanico do paciente. Preencha nascimento e escolaridade com cuidado, porque v\u00e1rios testes escolhem normas e materiais com base nesses campos.']),
+    Q('Como importo e exporto pacientes?', ['importar csv', 'exportar csv', 'csv', 'importar', 'exportar', 'importar paciente', 'importar pacientes', 'importar lista', 'exportar paciente', 'exportar pacientes', 'backup', 'planilha', 'migrar'],
+      ['"Exportar CSV" baixa a lista de pacientes (serve de backup ou para usar em planilha). "Importar CSV" traz uma lista de um arquivo, \u00fatil para migrar de outro sistema. Depois de importar, confira o resultado: nomes escritos de formas diferentes podem gerar duplicatas, e o "Verificar Duplicatas" ajuda. Fa\u00e7a o Exportar CSV de tempos em tempos como backup.']),
+    Q('Como busco um paciente ou acho duplicatas?', ['buscar', 'busca', 'buscar paciente', 'achar paciente', 'duplicata', 'duplicatas', 'verificar duplicatas', 'cadastro repetido', 'repetido', 'parecido'],
+      ['Use a barra de busca: ela encontra por nome, CPF ou e-mail. Ao digitar um cadastro novo, o sistema avisa em tempo real se j\u00e1 existe um paciente parecido, e o bot\u00e3o "Verificar Duplicatas" varre a lista em busca de cadastros repetidos para voc\u00ea organizar.'], true),
+    Q('Como encerro minha conta?', ['encerrar conta', 'apagar conta', 'excluir conta', 'deletar conta', 'cancelar conta', 'encerrar'],
+      ['No fim da aba Pacientes, o bot\u00e3o "Encerrar Conta" abre uma confirma\u00e7\u00e3o: voc\u00ea digita ENCERRAR e confirma. Aten\u00e7\u00e3o: \u00e9 irrevers\u00edvel e apaga todos os pacientes, todos os resultados de testes e escalas, o seu registro de usu\u00e1rio e a conta de acesso. Antes, use "Exportar CSV" e salve os PDFs que quiser guardar. Em caso de d\u00favida, fale com o S\u00e9rgio: ' + W + '.'])
+  ]);
+})(typeof window !== 'undefined' ? window : global);
+
+/* kb-prog-e.js */
+// ============================================================
+// LAUANA - RESPOSTAS DETALHADAS: lote E (aba Correcao: BVRT, ETDAH-PAIS, ETDAH-CriAd; e a aba Escalas)
+// Fonte: painel (site/online/index.html), lido em 27/11/2026. Esses programas nao tem manual proprio: so se afirma o que a tela mostra.
+// ============================================================
+(function (g) {
+  'use strict';
+  var L = g.LAU, W = L.WHATS;
+  var DEEP = L._deepDados = L._deepDados || {};
+  function P(id, chips, qa) { DEEP[id] = { chips: chips, qa: qa }; }
+  function Q(chip, g, r, forte) { var q = { chip: chip, g: g, r: r }; if (forte) { q.forte = true; } return q; }
+
+  // ---------- BVRT ----------
+  P('bvrt', ['O que \u00e9 o BVRT?', 'Que dados eu preencho?', 'O que fazem os bot\u00f5es?', 'Onde vejo as figuras e os erros?'], [
+    Q('Que dados eu preencho no BVRT?', ['que dados', 'campos', 'o que preencho', 'preencho', 'preencher', 'o que digito', 'administracao a', 'administracao c', 'memoria', 'copia', 'escores', 'escore de acertos'],
+      ['Primeiro os dados do paciente (escolha um cadastrado ou digite o nome), a idade em anos e a escolaridade (Fundamental, Ensino M\u00e9dio ou Superior). Depois os escores de cada administra\u00e7\u00e3o: Administra\u00e7\u00e3o A (Mem\u00f3ria) e Administra\u00e7\u00e3o C (C\u00f3pia).',
+       'Em cada uma voc\u00ea informa o escore de acertos (0 a 10), o escore de erros e o n\u00famero de omiss\u00f5es, distor\u00e7\u00f5es, persevera\u00e7\u00f5es, rota\u00e7\u00f5es, trocas de posi\u00e7\u00e3o e erros de tamanho, al\u00e9m do total de erros do lado esquerdo e do direito.']),
+    Q('O que fazem os bot\u00f5es do BVRT?', ['botoes', 'calcular resultados', 'gerar pdf', 'copiar para laudo', 'limpar', 'tabela pronta', 'z score', 'classificacao'],
+      ['"Calcular Resultados" seleciona a norma correta pela idade e escolaridade e calcula o Z-Score e a classifica\u00e7\u00e3o. "Gerar PDF" gera o documento, "Copiar para Laudo" copia a tabela pronta para colar no seu laudo e "Limpar" apaga os campos para um novo paciente.']),
+    Q('Onde vejo as figuras e os c\u00f3digos de erro do BVRT?', ['figuras', 'codigos de erro', 'consulta de figuras', 'codigos', 'tabela de erros', 'como classificar o erro', 'guia de erros'],
+      ['Na parte de cima da aba h\u00e1 o link "Consulta de Figuras e C\u00f3digos de Erro", que abre uma p\u00e1gina de consulta para voc\u00ea conferir as figuras e os c\u00f3digos de cada tipo de erro enquanto corrige.']),
+    Q('O BVRT aplica o teste no site?', ['aplica o teste', 'aplicar no site', 'paciente faz', 'o paciente responde', 'teste de papel', 'link para o paciente', 'correcao'],
+      ['N\u00e3o. O BVRT \u00e9 uma ferramenta de corre\u00e7\u00e3o: voc\u00ea aplica o teste de papel e depois digita aqui os escores e os erros que contou. O programa s\u00f3 faz o c\u00e1lculo, seleciona a norma e monta a tabela para o laudo.'], true)
+  ]);
+
+  // ---------- ETDAH-PAIS (correcao) ----------
+  P('etdah', ['O que \u00e9 o ETDAH-PAIS?', 'Como pontuo os itens?', 'Posso comparar v\u00e1rios respondentes?', 'Para que idade serve?'], [
+    Q('Como pontuo os itens do ETDAH-PAIS?', ['pontuar', 'pontuacao', 'item', 'itens', 'cada item', 'escala de 1 a 6', 'nunca', 'muito frequente', 'inversao', 'inversoes', 'como preencho'],
+      ['Marque a pontua\u00e7\u00e3o de cada item de 1 a 6: (1) Nunca, (2) Muito Pouco, (3) Pouco, (4) Geralmente, (5) Frequentemente, (6) Muito Frequente. O sistema aplica as invers\u00f5es dos itens necess\u00e1rios sozinho e calcula os percentis por sexo e faixa et\u00e1ria.']),
+    Q('Posso comparar v\u00e1rios respondentes no ETDAH-PAIS?', ['respondentes', 'varios respondentes', 'mae e pai', 'professor', 'comparar', 'lado a lado', 'adicionar respondente', 'mais de um respondente'],
+      ['Pode. O bot\u00e3o "+ Respondente" adiciona outro respondente (m\u00e3e, pai, professor...) e, no resultado, os perfis aparecem lado a lado para comparar. Informe o nome do respondente no campo "Respondente".']),
+    Q('O ETDAH-PAIS \u00e9 para que idade? Quantos itens tem?', ['idade', 'faixa etaria', 'itens', 'fatores', '58 itens', 'normas', 'benczik', 'quantos itens'],
+      ['O p\u00fablico-alvo \u00e9 de 2 a 17 anos. S\u00e3o 58 itens em 4 fatores, com normas por sexo e faixa et\u00e1ria (Benczik, 2018). \u00c9 respondido pelos pais ou respons\u00e1veis sobre o comportamento da crian\u00e7a ou do adolescente.']),
+    Q('O ETDAH-PAIS aplica no site?', ['aplica no site', 'paciente faz', 'link para os pais', 'enviar link', 'correcao', 'digitar respostas'],
+      ['Nesta aba ele funciona como corre\u00e7\u00e3o: voc\u00ea registra as respostas marcadas pelos pais e clica em "Calcular Resultados" para obter o escore geral e os percentis. "Limpar Tudo" apaga os campos.'], true)
+  ]);
+
+  // ---------- ETDAH-CriAd (correcao) ----------
+  P('criad', ['O que \u00e9 o ETDAH-CriAd?', 'Quem responde?', 'Como pontuo os itens?', 'Para que idade serve?'], [
+    Q('Quem responde o ETDAH-CriAd?', ['quem responde', 'autorrelato', 'autoavaliacao', 'a propria crianca', 'crianca responde', 'quem preenche', 'o que registro'],
+      ['\u00c9 um instrumento de autorrelato: a pr\u00f3pria crian\u00e7a ou adolescente responde sobre si mesma. Nesta aba, voc\u00ea (o profissional) registra as respostas que ela deu durante a aplica\u00e7\u00e3o.']),
+    Q('Como pontuo os itens do ETDAH-CriAd?', ['pontuar', 'pontuacao', 'itens', 'escala de 1 a 4', 'nunca', 'um pouco', 'as vezes', 'sempre', 'como preencho'],
+      ['Cada item recebe de 1 a 4: (1) Nunca, (2) Um pouco, (3) \u00c0s vezes, (4) Sempre. Depois, informe nome, idade (de 6 a 15 anos) e sexo, e clique em "Calcular Resultados" para ver o escore geral. "Limpar" apaga os campos.']),
+    Q('O ETDAH-CriAd \u00e9 para que idade? Quantos itens tem?', ['idade', 'faixa etaria', 'itens', 'fatores', '22 itens', 'normas', 'benczik', 'quantos itens'],
+      ['O p\u00fablico-alvo \u00e9 de 6 a 15 anos. S\u00e3o 22 itens em 2 fatores, com normas por faixa et\u00e1ria (Benczik, 2018).'])
+  ]);
+
+  // ---------- ESCALAS (aba Escalas) ----------
+  P('escalas', ['Como envio uma escala?', 'Quem \u00e9 o respondente?', 'Como imprimo em branco?', 'Como exporto os resultados?'], [
+    Q('Quem \u00e9 o respondente da escala?', ['respondente', 'quem responde', 'proprio paciente', 'pai ou mae', 'professor', 'outro responsavel', 'se aplicavel'],
+      ['\u00c9 quem vai responder a escala. Escolha "N/A (pr\u00f3prio paciente)" quando a pessoa responde sobre si, "Pai/M\u00e3e", "Professor(a)" ou "Outro respons\u00e1vel" quando a escala \u00e9 respondida por terceiros, como as escalas infantis.']),
+    Q('Como imprimo uma escala em branco?', ['imprimir', 'imprimir em branco', 'formulario em branco', 'papel', 'impressao', 'imprimir formulario'],
+      ['Em "Aplicar Escala", escolha a escala e clique em "Imprimir Formul\u00e1rio em Branco": sai o formul\u00e1rio para preenchimento manual, \u00fatil quando n\u00e3o d\u00e1 para responder no celular ou computador.']),
+    Q('Como exporto os resultados das escalas?', ['exportar', 'exportar excel', 'excel', 'planilha', 'baixar resultados', 'exportar resultados'],
+      ['Use o bot\u00e3o "Exportar Excel" no topo da aba para baixar os resultados das escalas em planilha.']),
+    Q('Qual a diferen\u00e7a entre Gerar Link e Aplicar Aqui?', ['gerar link', 'aplicar aqui', 'diferenca', 'link ou aplicar', 'na hora', 'no mesmo aparelho'],
+      ['"Gerar Link" cria um link de uso \u00fanico, que voc\u00ea copia ou envia pelo WhatsApp para a pessoa responder no celular ou no computador dela. "Aplicar Aqui" abre a escala no seu pr\u00f3prio aparelho para a pessoa responder na hora, na sua frente.']),
+    Q('Como apago resultados de escalas?', ['apagar', 'apagar selecionados', 'excluir resultados', 'deletar resultados', 'remover resultado', 'limpar resultados'],
+      ['Na lista de resultados, marque os que quer remover e clique em "Apagar Selecionados". Se for preciso guardar, use "Exportar Excel" antes.'])
+  ]);
 })(typeof window !== 'undefined' ? window : global);
 
 // ============================================================
