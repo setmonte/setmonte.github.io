@@ -3107,6 +3107,15 @@
     }
     return trBase.apply(this, arguments);
   };
+  // ---------- link do manual na resposta "O que e...?" de cada programa que TEM manual (site/online/manual-<id>.html) ----------
+  // (agenda, anamnese e prontuario ja trazem o link em kb-assuntos.js; BVRT, ETDAH e a aba Escalas nao tem manual, entao nao ganham link)
+  ['smart', 'tecfe', 'tte', 'bae', 'trmv', 'taav', 'corsi', 'tref', 'tpvset', 'tflod', 'tetaylor', 'tetaylorsimp', 'ideia', 'brpi', 'bafc', 'reocupa', 'lermais', 'prat'].forEach(function (id) {
+    var e = ent(id), url = BASE + 'online/manual-' + id + '.html';
+    if (!e || (e.extra && e.extra.indexOf(url) >= 0)) { return; }
+    var ex = e.extra ? String(e.extra).trim() : '';
+    if (ex && !/[.!?]$/.test(ex)) { ex += '.'; }
+    e.extra = (ex ? ex + ' ' : '') + 'Mais informa\u00e7\u00f5es no manual: ' + url;
+  });
   L.deep = DEEP;
 })(typeof window !== 'undefined' ? window : global);
 
